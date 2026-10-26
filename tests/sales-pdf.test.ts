@@ -280,7 +280,12 @@ describe("G5 · contenido real de PDF", () => {
     const db = {
       sale: { findFirstOrThrow: async () => sale },
       settings: {
-        findUnique: async () => ({ data: { name: "Grupo Macgen", receiptFooter: "Vuelve pronto a Negocio B" } }),
+        findUnique: async () => ({
+          data: {
+            name: "Grupo Macgen",
+            receiptFooter: "Vuelve pronto a Negocio B",
+          },
+        }),
       },
       customer: { findUnique: async () => null },
       user: { findUnique: async () => null },
@@ -492,6 +497,9 @@ describe("G5 · contenido real de PDF", () => {
     const assigned = await render("B02");
     expect(assigned).toContain("NCF: B0200000007");
     expect(assigned).not.toContain("pendiente de emisión fiscal");
+    // NCF-06: emitido con NCF no puede decir «sin valor fiscal».
+    expect(assigned).toContain("Comprobante emitido con NCF B0200000007");
+    expect(assigned).not.toContain("sin valor fiscal");
   });
 
   it("la nota de crédito incluye negocio, fecha, devolución y condiciones", async () => {

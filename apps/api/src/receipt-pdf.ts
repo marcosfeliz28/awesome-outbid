@@ -598,7 +598,10 @@ export function drawSaleReceipt(
   const footer = [
     returnPolicyText(business),
     privacyNoticeText(business),
-    "Documento interno, sin valor fiscal",
+    // NCF-06: con NCF asignado la venta está emitida; no se contradice.
+    sale?.ncf
+      ? `Comprobante emitido con NCF ${cleanText(sale.ncf, 20)}`
+      : "Documento interno, sin valor fiscal",
   ];
   const footerHeight =
     footer.reduce(

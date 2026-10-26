@@ -2010,6 +2010,11 @@ function Checkout({
       setError("Selecciona o crea el cliente antes de vender.");
       return;
     }
+    // NCF-02: también offline; si no, la venta se rechazaría al sincronizar.
+    if (ncfType && recipientLegalId && !/^(\d{9}|\d{11})$/.test(recipientLegalId)) {
+      setError("El RNC lleva 9 dígitos y la cédula 11.");
+      return;
+    }
     setBusy(true);
     setError("");
     const input: SaleInput = {
@@ -2315,7 +2320,7 @@ function Checkout({
     const envioText = envio
       ? `\nEnvío (mensajero ${envio.name}): ${formatMoney(envio.fee)}\nTotal pagado: ${formatMoney(envio.paid)}`
       : "";
-    const text = `${config?.name || "Nexora POS"} · Recibo ${receipt.number}\nTotal: ${formatMoney(receipt.total)}${envioText}\n${NON_FISCAL_LEGEND}\nGracias por tu compra.`;
+    const text = `${config?.name || "Nexora POS"} · Recibo ${receipt.number}\nTotal: ${formatMoney(receipt.total)}${envioText}\n${receipt.ncf ? "NCF " + receipt.ncf : NON_FISCAL_LEGEND}\nGracias por tu compra.`;
     const customer = receipt.customer;
     // SEC-05: un dato enmascarado («•••••••123») no es un destinatario; la
     // cajera elige el contacto en WhatsApp o en el correo.
@@ -2584,7 +2589,7 @@ function Checkout({
             <label className="field">
               <span>RNC o cédula del cliente</span>
               <input
-                pattern="[0-9]{9,11}"
+                pattern="[0-9]{9}|[0-9]{11}"
                 value={recipientLegalId}
                 onChange={(e) => setRecipientLegalId(e.target.value)}
               />

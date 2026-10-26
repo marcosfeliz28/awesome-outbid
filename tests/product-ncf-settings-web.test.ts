@@ -40,8 +40,8 @@ describe("PC-13: configuración visible solo como inventario declarado", () => {
     const html = renderToStaticMarkup(createElement(QueryClientProvider, { client },
       createElement(NcfSequenceSettings)));
     expect(html).toContain("Avisos de secuencias NCF");
-    expect(html).toContain("No emite NCF");
-    expect(html).toContain("no certifica que una secuencia esté vigente");
+    expect(html).toContain("si no, Nexora no emite NCF");
+    expect(html).toContain("no consulta la DGII ni certifica que una secuencia esté vigente");
     expect(html).toContain("00000001");
     expect(html).toContain("00000025");
     expect(html).toContain("Quedan 19 números declarados.");

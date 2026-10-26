@@ -427,6 +427,8 @@ model Sale {
   // (Crédito) o "cod" (Contraentrega). Mismas reglas y mismo cobro; nulo en
   // ventas anteriores o sin saldo (migración 202610250201_receivable_kind).
   receivableKind         String?
+  // CHECK sale_fiscal_status_valid, sale_issued_has_ncf y sale_ncf_matches_type,
+  // migración 202610280024_ncf_coherencia (NCF-07).
   ncf                    String?
   @@unique([tenantId, ncf])
   ncfType                String?

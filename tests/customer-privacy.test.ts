@@ -178,7 +178,18 @@ describe("G6: anonimización de clientes", () => {
     });
     expect(tx.sale.updateMany).toHaveBeenCalledWith({
       where: { id: { in: [sale.id] } },
-      data: { recipientLegalId: null, notes: "" },
+      data: { notes: "" },
+    });
+    expect(tx.sale.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: [sale.id] },
+        OR: [
+          { ncf: null },
+          { ncfType: null },
+          { ncfType: { notIn: ["B01", "E31"] } },
+        ],
+      },
+      data: { recipientLegalId: null },
     });
     expect(tx.alert.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
