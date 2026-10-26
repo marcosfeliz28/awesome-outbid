@@ -7186,3 +7186,80 @@ td strong {
 @media (prefers-reduced-motion: reduce) {
   .app-shell:not(.pos-shell) .topbar::after { animation: none; }
 }
+
+/* --- Obsidian Lumina: caja clara -------------------------------------------
+   La pantalla de venta no hereda luces ambientales: en caja manda el contraste
+   y la lectura inmediata de producto, carrito y total. */
+:root[data-theme="light"] .pos-shell {
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --surface-soft: #f7f8fc;
+  --border: #d9dfeb;
+  --text: #121827;
+  --muted: #536174;
+  --primary: #6941c6;
+  --success-strong: #087a58;
+}
+:root[data-theme="light"] .pos-shell .sidebar,
+:root[data-theme="light"] .pos-shell .topbar {
+  background: #ffffff;
+}
+:root[data-theme="light"] .pos-shell .pos-search {
+  border-color: #b8c4d6;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, .04) inset;
+}
+:root[data-theme="light"] .pos-shell .pos-search:focus-within {
+  border-color: #087a58;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, .13), 0 0 0 1px rgba(16, 185, 129, .35) inset;
+}
+:root[data-theme="light"] .pos-shell .category-tabs button.active {
+  background: #6941c6 !important;
+  border-color: #6941c6 !important;
+  box-shadow: 0 5px 13px rgba(105, 65, 198, .24);
+}
+:root[data-theme="light"] .pos-shell .product-card {
+  border-color: #d9dfeb !important;
+  box-shadow: 0 5px 16px rgba(23, 32, 53, .07);
+}
+:root[data-theme="light"] .pos-shell .product-card:hover:not(:disabled) {
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 11px 26px rgba(67, 45, 120, .14);
+}
+:root[data-theme="light"] .pos-shell .product-image {
+  background: linear-gradient(150deg, #fbfcff, #f1f4fb);
+}
+:root[data-theme="light"] .pos-shell .cart-panel {
+  border-left-color: #d9dfeb;
+  box-shadow: -12px 0 30px rgba(26, 31, 52, .045);
+}
+:root[data-theme="light"] .pos-shell .cart-heading {
+  background: linear-gradient(135deg, #ffffff, #f6f4ff);
+}
+:root[data-theme="light"] .pos-shell .cart-summary {
+  background: linear-gradient(180deg, #ffffff, #f7fbfa);
+}
+:root[data-theme="light"] .pos-shell .cart-total strong {
+  color: #073b2d;
+}
+:root[data-theme="light"] .pos-shell .charge-button {
+  background: linear-gradient(115deg, #059669, #14b88b);
+  box-shadow: 0 9px 18px rgba(5, 150, 105, .24);
+}
+:root[data-theme="light"] .pos-shell .charge-button:hover:not(:disabled) {
+  background: linear-gradient(115deg, #047857, #0da97d);
+}
+:root[data-theme="light"] .pos-shell .title-dot,
+:root[data-theme="light"] .pos-shell .live-dot {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, .12);
+}
+@media (max-width: 560px) {
+  :root[data-theme="light"] .pos-shell .pos-content {
+    padding-inline: 12px;
+  }
+  :root[data-theme="light"] .pos-shell .product-grid {
+    gap: 10px;
+  }
+  :root[data-theme="light"] .pos-shell .product-card {
+    border-radius: 11px;
+  }
+}
