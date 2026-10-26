@@ -56,10 +56,15 @@ export async function notifyOperator(
     }[];
     if (!tenant) return false;
     // status 'operator': sendPendingNotices (avisos a la empresa) nunca la toma.
+    // PLA-06: sentAt solo se llena tras una entrega. Si no salió, el mismo
+    // evento puede reclamarse de nuevo pasados 10 minutos (sin duplicar a la vez).
+    // shortcut: reintenta solo cuando el evento se vuelve a disparar; un trabajador de reintentos si hiciera falta.
     const claimed = (await db.$queryRaw`
-      INSERT INTO "TenantLifecycleNotice" (id, "tenantId", kind, "dueAt", status, "sentAt")
-      VALUES (${randomUUID()}::uuid, ${input.tenantId}::uuid, ${input.event}, ${input.key}, 'operator', now())
-      ON CONFLICT ("tenantId", kind, "dueAt") DO NOTHING RETURNING id`) as unknown[];
+      INSERT INTO "TenantLifecycleNotice" AS n (id, "tenantId", kind, "dueAt", status, attempts, "nextAttemptAt", "sentAt")
+      VALUES (${randomUUID()}::uuid, ${input.tenantId}::uuid, ${input.event}, ${input.key}, 'operator', 1, now() + interval '10 minutes', NULL)
+      ON CONFLICT ("tenantId", kind, "dueAt") DO UPDATE SET attempts = n.attempts + 1, "nextAttemptAt" = now() + interval '10 minutes'
+        WHERE n.status = 'operator' AND n."sentAt" IS NULL AND n."nextAttemptAt" <= now()
+      RETURNING id`) as { id: string }[];
     if (claimed.length !== 1) return false;
     // Import diferido: common → tenant-lifecycle → aquí → notifications → common sería un ciclo.
     const {
@@ -105,6 +110,8 @@ export async function notifyOperator(
         console.warn(
           `[plataforma] aviso al operador no salió: ${result.error}`,
         );
+    if (!results.some((result) => result?.ok)) return false;
+    await db.$queryRaw`UPDATE "TenantLifecycleNotice" SET "sentAt" = now() WHERE id = ${claimed[0].id}::uuid RETURNING id`;
     return true;
   } catch (error: any) {
     console.warn(
