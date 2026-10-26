@@ -6,6 +6,8 @@ import { Badge, Button, Modal } from "@fitstore/ui";
 import { businessDate, can, formatMoney } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { QueryState, toast } from "./helpers";
+import { GvAppointments } from "./GvCitas";
+import { GvLeads } from "./GvInteresadas";
 import "./gv.css";
 
 type Payment = {
@@ -106,9 +108,9 @@ function Options({ map }: { map: Record<string, string> }) {
 
 export function Gv() {
   const user = useStore((s) => s.user)!;
-  const [tab, setTab] = useState<"courses" | "transfers" | "reports">(
-    "courses",
-  );
+  const [tab, setTab] = useState<
+    "courses" | "appointments" | "leads" | "transfers" | "reports"
+  >("courses");
   const [courseId, setCourseId] = useState<string | null>(null);
   return (
     <section className="gv-page">
@@ -136,6 +138,22 @@ export function Gv() {
         </button>
         <button
           role="tab"
+          aria-selected={tab === "appointments"}
+          className={tab === "appointments" ? "active" : ""}
+          onClick={() => setTab("appointments")}
+        >
+          Citas
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === "leads"}
+          className={tab === "leads" ? "active" : ""}
+          onClick={() => setTab("leads")}
+        >
+          Interesadas
+        </button>
+        <button
+          role="tab"
           aria-selected={tab === "transfers"}
           className={tab === "transfers" ? "active" : ""}
           onClick={() => setTab("transfers")}
@@ -159,6 +177,8 @@ export function Gv() {
         ) : (
           <Courses open={setCourseId} />
         ))}
+      {tab === "appointments" && <GvAppointments />}
+      {tab === "leads" && <GvLeads />}
       {tab === "transfers" && <Transfers />}
       {tab === "reports" && <Reports />}
     </section>
@@ -732,6 +752,7 @@ function PaymentForm({
 
 type PendingTransfer = Payment & {
   enrollment: { clientName: string; course: { name: string } } | null;
+  appointment: { clientName: string; service: string } | null;
 };
 function Transfers() {
   const client = useQueryClient();
@@ -753,6 +774,7 @@ function Transfers() {
       await client.invalidateQueries({ queryKey: ["gv-transfers"] });
       await client.invalidateQueries({ queryKey: ["gv-course"] });
       await client.invalidateQueries({ queryKey: ["gv-courses"] });
+      await client.invalidateQueries({ queryKey: ["gv-appointments"] });
     } catch (cause: any) {
       toast(cause.message, true);
     } finally {
@@ -766,8 +788,10 @@ function Transfers() {
         {transfers.data?.map((p) => (
           <div key={p.id} className="gv-payment">
             <span>
-              <strong>{p.enrollment?.clientName}</strong> ·{" "}
-              {p.enrollment?.course.name}
+              <strong>
+                {p.enrollment?.clientName ?? p.appointment?.clientName}
+              </strong>{" "}
+              · {p.enrollment?.course.name ?? "Cita de maquillaje"}
             </span>
             <span>
               {dateText(p.date)} · {money(p.amount)} · {p.bank || "Sin banco"}
