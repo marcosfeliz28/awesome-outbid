@@ -85,6 +85,7 @@ import {
 } from "./managementMessages";
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
+import { MoreMenu } from "./admin-ui";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
@@ -196,19 +197,29 @@ function Heading({
   title,
   caption,
   children,
+  eyebrow = "TU NEGOCIO, CON CLARIDAD",
+  more,
 }: {
   title: string;
   caption: string;
+  /** La acción principal de la pantalla (una sola). */
   children?: ReactNode;
+  /** Obsidian Lumina f3: `false` quita la etiqueta; el valor por defecto no cambia el resto de pantallas. */
+  eyebrow?: string | false;
+  /** Obsidian Lumina f3: las demás acciones, dentro de «Más». */
+  more?: ReactNode;
 }) {
   return (
     <div className="page-heading">
       <div>
-        <span className="eyebrow">TU NEGOCIO, CON CLARIDAD</span>
+        {eyebrow !== false && <span className="eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
         <p>{caption}</p>
       </div>
-      <div className="heading-actions">{children}</div>
+      <div className="heading-actions">
+        {children}
+        {more ? <MoreMenu>{more}</MoreMenu> : null}
+      </div>
     </div>
   );
 }
