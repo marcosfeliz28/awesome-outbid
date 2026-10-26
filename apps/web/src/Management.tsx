@@ -820,6 +820,7 @@ function Kardex({ variantId }: { variantId: string }) {
   return (
     <QueryState query={query}>
       <DataTable
+        cards
         rows={query.data || []}
         columns={[
           { label: "Fecha", render: (m) => dateLabel(m.createdAt) },
@@ -895,30 +896,42 @@ export function Inventory() {
         title="Cada unidad, bajo control"
         caption="El inventario correcto hace espacio para mejores decisiones."
       />
-      <div className="panel">
-        <label htmlFor="warehouse-view">Almacén</label>
-        <select
-          id="warehouse-view"
-          value={warehouseView}
-          onChange={(e) => setWarehouseView(e.target.value)}
-        >
-          <option value="all">Todos</option>
-          {(warehouses.data || []).map((w: any) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
+      <div className="panel inventory-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Existencias por almacén</h2>
+            <p>Consulta cantidades, lotes y vencimientos antes de ajustar.</p>
+          </div>
+          <label className="field inventory-warehouse-field">
+            <span>Almacén</span>
+            <select
+              id="warehouse-view"
+              value={warehouseView}
+              onChange={(e) => setWarehouseView(e.target.value)}
+            >
+              <option value="all">Todos</option>
+              {(warehouses.data || []).map((w: any) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="table-toolbar">
           <div className="tabs">
             <button
+              type="button"
               className={mode === "stock" ? "active" : ""}
+              aria-pressed={mode === "stock"}
               onClick={() => setMode("stock")}
             >
               Stock actual
             </button>
             <button
+              type="button"
               className={mode === "counts" ? "active" : ""}
+              aria-pressed={mode === "counts"}
               onClick={() => setMode("counts")}
             >
               Conteos físicos
@@ -972,7 +985,12 @@ export function Inventory() {
                             : "success"
                       }
                     >
-                      {visibleStock(v)}
+                      {visibleStock(v)} ·{" "}
+                      {selectedWarehouse && !selectedWarehouse.sellable
+                        ? "En almacén"
+                        : Number(v.stock) <= Number(v.product.minStock)
+                          ? "Stock bajo"
+                          : "Disponible"}
                     </Badge>
                   ),
                 },

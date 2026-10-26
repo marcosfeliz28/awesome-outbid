@@ -7596,3 +7596,96 @@ td strong {
     border-radius: 11px;
   }
 }
+
+/* --- Obsidian Lumina: inventario -----------------------------------------
+   Usa las superficies, botones, campos, tablas y estados del marco común. */
+.inventory-panel {
+  margin-bottom: 20px;
+}
+.inventory-panel .panel-heading,
+.inventory-warehouses > .panel-heading,
+.inventory-history-heading {
+  border-bottom: 1px solid var(--lumina-card-border);
+}
+.inventory-warehouse-field {
+  width: min(240px, 100%);
+  margin: 0;
+}
+.inventory-warehouse-field select {
+  width: 100%;
+}
+.inventory-panel td .badge {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.inventory-warehouses {
+  margin-bottom: 20px;
+}
+.inventory-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1.2fr);
+  gap: 24px;
+  align-items: center;
+  padding: 22px;
+  border-top: 1px solid var(--lumina-card-border);
+}
+.inventory-workspace h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.inventory-workspace p {
+  max-width: 58ch;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.inventory-workspace > .table-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.inventory-workspace-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.inventory-workspace-action .field {
+  min-width: 0;
+  margin: 0;
+}
+.inventory-workspace-action input,
+.inventory-workspace-action select {
+  width: 100%;
+  min-width: 0;
+}
+.inventory-workspace-action input[type="file"] {
+  max-width: 100%;
+}
+.inventory-workspace-action .button {
+  min-height: 44px;
+}
+.inventory-history-heading {
+  border-top: 1px solid var(--lumina-card-border);
+}
+@media (max-width: 720px) {
+  .inventory-panel .panel-heading,
+  .inventory-workspace,
+  .inventory-workspace-action {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inventory-panel .panel-heading {
+    align-items: stretch;
+  }
+  .inventory-warehouse-field,
+  .inventory-workspace-action .button {
+    width: 100%;
+  }
+  .inventory-workspace > .table-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inventory-workspace > .table-actions .button {
+    width: 100%;
+  }
+}
