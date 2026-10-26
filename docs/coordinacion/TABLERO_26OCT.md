@@ -6,7 +6,7 @@ Cada agente (ChatGPT PC, ChatGPT nube, Claude PC) **actualiza su línea después
 
 | Agente | Rama de entrega | Tarea actual | Última entrega | Estado |
 |---|---|---|---|---|
-| ChatGPT PC | `chatgpt-pc/cola2-26oct` | P1–P3 en ramas separadas; P4 impresión térmica | 2026-10-26 12:22 UTC · P4 verificado: Windows solo detecta impresoras virtuales | BLOQUEADO: no hay impresora térmica instalada ni detectada; falta conectar la impresora real para probar 80 mm y 58 mm |
+| ChatGPT PC | `chatgpt-pc/cola2-26oct` | P1–P4 entregadas; vigilar CI final | 2026-10-26 12:40 UTC · P1 `958d8c40`, P2 `a018f13f`, P3 `7049ebef`, P4 `9597c685` | P1–P3 completos; P4 BLOQUEADO únicamente en la impresión física porque no hay impresora térmica instalada ni detectada |
 | ChatGPT nube | `chatgpt-nube/cola-26oct` | Cola de 6 tareas (`ORDEN_CHATGPT_NUBE_26OCT.md`) | — | — |
 | Claude PC | `claude-pc/auditoria-gv`, luego `claude-pc/obsidian-lumina-f3` | Auditar GV (solo lectura); luego fase 3 del rediseño | — | — |
 | Claude nube | `claude/modulo-gv`, `claude/producto-mezcla-4` | GV en la tienda antes de las 12:00 UTC; producto después | — | — |
