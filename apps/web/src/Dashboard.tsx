@@ -124,6 +124,8 @@ export function Dashboard({
 }) {
   const user = useStore((s) => s.user)!;
   const currentDay = useBusinessDay();
+  // El tablero ejecutivo de dueña/gerente abre en Hoy. La vista de caja
+  // conserva Mes para no cambiar el contexto operativo de las cajeras.
   const [period, setPeriod] = useState(executive ? "today" : "month");
   const [day, setDay] = useState(today());
   const [voidToApprove, setVoidToApprove] = useState<any>(null);

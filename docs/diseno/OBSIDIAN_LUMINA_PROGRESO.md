@@ -280,6 +280,43 @@ prueba no tiene ventas); no son datos reales.
 - La alerta del tablero solo ofrece «Revisar alertas» con `alerts:write`
   (comportamiento de C).
 
+## Adentro · 26-oct · ChatGPT PC
+
+Rama `chatgpt-pc/lumina-adentro-a`, desde `claude/producto-mezcla-4`.
+
+### Entregado por pantalla
+
+1. **Marco de administración + tema** (`c12151e8`): selector explícito Claro /
+   Oscuro, persistido en el mismo almacenamiento de tema existente; cabecera
+   con línea láser violeta→esmeralda→azul, rejilla sutil y tarjetas con
+   jerarquía obsidiana. La animación se apaga con `prefers-reduced-motion`.
+2. **Caja/POS clara** (`7edeca37`): contraste, búsqueda, categorías, productos,
+   carrito y total refinados únicamente bajo `.pos-shell` y tema claro. No se
+   modificaron flujos, atajos F2/F4/F8/F12, pagos, arqueo ciego, selectores que
+   consumen las pruebas ni los módulos fiscales.
+3. **Tablero «Hoy»** (`eabcbc4f`): el Resumen ejecutivo de dueña/gerente abre
+   en Hoy; la vista de caja conserva Mes. Los demás rangos permanecen
+   disponibles. Las tarjetas ejecutivas tienen jerarquía de cifras, foco
+   visible y lectura de hoy sin cambiar consultas, permisos, IA ni cálculo de
+   negocio.
+
+### Verificación disponible
+
+- `pnpm --filter @fitstore/web typecheck` pasó.
+- ESLint de `App.tsx`, `api.ts`, `Dashboard.tsx` y `ExecutiveDashboard.tsx`
+  pasó; `git diff --check` pasó.
+- El build web alcanzó `apps/web/dist/index.html` tras la comprobación de tipos.
+- El problema de Prisma que impedía el typecheck global en el worktree de PC
+  era de preparación local; el lote B generó el cliente y validó la base
+  completa antes de integrar el marco.
+
+### Aún pendiente en la entrega de PC
+
+- Las capturas comparativas 1366×768 y 390×844 requieren levantar la empresa
+  de prueba o el servidor local con Prisma generado.
+- Falta la prueba e2e visual contra una base local preparada; no se ejecuta
+  contra tienda o producto en vivo.
+
 ## Adentro · lote B (ChatGPT nube, 26-oct-2026)
 
 Rama `chatgpt-nube/lumina-adentro-b`, creada desde
@@ -332,5 +369,5 @@ Con Node 24, pnpm 11 y Prisma generado para este checkout:
 La implementación y las capturas antes/después empiezan al incorporar
 `origin/chatgpt-pc/lumina-adentro-a`, porque esa rama fija el marco y los
 componentes que este lote debe consumir. Al registrar esta preparación, esa
-rama todavía no estaba publicada en el remoto. Esta dependencia evita crear
-componentes duplicados; no impide continuar el desarrollo del producto.
+rama ya quedó incorporada en el lote B. La integración conserva un solo marco
+y un solo conjunto de componentes compartidos.
