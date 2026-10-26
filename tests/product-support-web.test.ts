@@ -7,6 +7,8 @@ import {
   SupportContent,
   supportMessage,
 } from "../apps/web/src/SupportHelp";
+import { SupportAccessCard } from "../apps/web/src/SupportAccess";
+import { QueryClient, QueryClientProvider } from "../apps/web/node_modules/@tanstack/react-query/build/modern/index.js";
 
 vi.mock("../apps/web/src/api", () => ({ api: vi.fn(), download: vi.fn() }));
 vi.mock("../apps/web/src/helpers", () => ({ toast: vi.fn() }));
@@ -64,5 +66,18 @@ describe("botón Ayuda", () => {
     expect(html).not.toContain("wa.me");
     expect(html).not.toContain("mailto:");
     expect(html).toContain("Descargar todos mis datos (Excel)");
+  });
+});
+
+describe("SOP-03 · consentimiento de soporte", () => {
+  it("explica finalidad, alcance, duración y bitácora antes de permitir", () => {
+    const cache = new QueryClient();
+    cache.setQueryData(["nexora-support-access"], { enabled: false, expiresAt: null });
+    const html = renderToStaticMarkup(createElement(QueryClientProvider, { client: cache }, createElement(SupportAccessCard)));
+    for (const text of ["Para qué", "productos, precios, existencias", "clientes, ventas, caja, reportes, costos ni márgenes",
+      "24 horas o 7 días", "quién abrió la sesión y por qué", "Leí lo que soporte podrá ver"])
+      expect(html).toContain(text);
+    // El botón espera la confirmación explícita.
+    expect(html).toMatch(/<button type="button" disabled=""[^>]*>Permitir soporte de Nexora/);
   });
 });
