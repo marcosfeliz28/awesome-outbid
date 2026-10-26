@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, LoaderCircle } from "lucide-react";
 
@@ -64,6 +64,8 @@ export function Modal({
   children: ReactNode;
   wide?: boolean;
 }) {
+  // Sin Dialog.Trigger Radix no sabe a quién devolver el foco: se guarda quien lo tenía al abrir.
+  const opener = useRef<HTMLElement | null>(null);
   return (
     <Dialog.Root open={open} onOpenChange={(value) => !value && onClose()}>
       <Dialog.Portal>
@@ -71,6 +73,17 @@ export function Modal({
         <Dialog.Content
           className={`modal ${wide ? "wide" : ""}`}
           aria-describedby={undefined}
+          onOpenAutoFocus={() => {
+            opener.current = document.activeElement as HTMLElement | null;
+          }}
+          onCloseAutoFocus={(event) => {
+            const back = opener.current;
+            opener.current = null;
+            if (back?.isConnected && back !== document.body) {
+              event.preventDefault();
+              back.focus();
+            }
+          }}
         >
           <div className="modal-heading">
             <Dialog.Title>{title}</Dialog.Title>
