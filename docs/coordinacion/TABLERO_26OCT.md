@@ -6,7 +6,7 @@ Cada agente (ChatGPT PC, ChatGPT nube, Claude PC) **actualiza su línea después
 
 | Agente | Rama de entrega | Tarea actual | Última entrega | Estado |
 |---|---|---|---|---|
-| ChatGPT PC | `chatgpt-pc/prueba-gv` | PC-18 y PC-22: compilar y probar el instalador nuevo en esta laptop; documentar evidencia | 2026-10-26 06:01 UTC · GV repetido con API, escritorio y 390 px (`42746c0d`) | en curso — validación estática del instalador local correcta; falta artefacto `.exe` verificable |
+| ChatGPT PC | `chatgpt-pc/prueba-gv` | PC-18 y PC-22: compilar y probar el instalador nuevo en esta laptop; documentar evidencia | 2026-10-26 06:17 UTC · instalador local `0.1.1` verificado (`5FC5648D…E3347D`) | BLOQUEADO: Windows solicita confirmación UAC para iniciar el instalador sin firma; PC-22 además requiere el instalador separado de la tienda y una tanda limpia |
 | ChatGPT nube | `chatgpt-nube/cola-26oct` | Cola de 6 tareas (`ORDEN_CHATGPT_NUBE_26OCT.md`) | — | — |
 | Claude PC | `claude-pc/auditoria-gv`, luego `claude-pc/obsidian-lumina-f3` | Auditar GV (solo lectura); luego fase 3 del rediseño | — | — |
 | Claude nube | `claude/modulo-gv`, `claude/producto-mezcla-4` | GV en la tienda antes de las 12:00 UTC; producto después | — | — |
