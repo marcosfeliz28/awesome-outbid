@@ -315,7 +315,8 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
         first.body.id,
       ]),
     ).rejects.toThrow(/sale_ncf_matches_type/);
-    // Filas antiguas que violan: la migración avisa y omite, nunca aborta.
+    // Filas antiguas que violan: la migración avisa, instala la regla solo para
+    // ventas nuevas y nunca aborta.
     const migration = await readFile(
       join(
         root,
@@ -334,7 +335,12 @@ it("cada venta toma su NCF B01/B02 consecutivo, único, por empresa y sólo con 
       off.body.id,
     ]);
     await sql.query(migration);
-    expect(await hasCheck()).toBe(0);
+    // T3: la regla se instala igual (no queda omitida para siempre); la venta
+    // antigua que viola sigue editable, así que anularla no se bloquea.
+    expect(await hasCheck()).toBe(1);
+    await sql.query(`UPDATE "Sale" SET "voidedReason"='x' WHERE id=$1`, [
+      off.body.id,
+    ]);
     await sql.query(
       `UPDATE "Sale" SET "fiscalStatus"='not_issued' WHERE id=$1`,
       [off.body.id],

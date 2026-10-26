@@ -58,6 +58,7 @@ model User {
   voidRequestsReviewed SaleVoidRequest[] @relation("VoidRequestReviewer")
   courierPaymentsMade Sale[] @relation("CourierPaidBy")
   courierPayouts CourierPayout[] @relation("CourierPayoutActor")
+  cashierSurveys CashierSurvey[]
 }
 
 model RefreshToken {
@@ -1533,6 +1534,7 @@ model CashierSurvey {
   tenantId  String   @db.Uuid
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   branchId  String   @default("main")
   answers   Json
   createdAt DateTime @default(now())

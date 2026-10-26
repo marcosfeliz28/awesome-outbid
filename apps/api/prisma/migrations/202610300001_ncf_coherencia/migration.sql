@@ -3,14 +3,19 @@
 --   sale_issued_has_ncf       emitida => tiene NCF
 --   sale_ncf_matches_type     NCF => tiene tipo, empieza por el tipo y es
 --                             Bxx + 8 dígitos o Exx + 10 dígitos
--- Aditiva e idempotente; nunca aborta un despliegue: si hay filas antiguas que
--- violan una regla, esa regla no se agrega (RAISE NOTICE) para no bloquear la
--- anulación o anonimización de esas ventas. Corrige las filas y vuelve a
--- ejecutar este archivo con psql para agregarla.
+-- Aditiva e idempotente; nunca aborta un despliegue y nunca deja una regla sin
+-- instalar. Cada CHECK se agrega NOT VALID (bloqueo instantáneo) y se valida
+-- aparte. Si hay ventas antiguas que violan una regla, la regla se instala
+-- igual pero solo se exige a las ventas creadas desde ahora («createdAt»
+-- anterior a este momento queda exenta): las filas nuevas quedan protegidas y
+-- anular o anonimizar una venta antigua no se bloquea. El RAISE NOTICE dice
+-- cuántas son; tras corregirlas, DROP CONSTRAINT y volver a ejecutar este
+-- archivo instala la regla completa.
 DO $$
 DECLARE
   spec RECORD;
   violating BIGINT;
+  rule TEXT;
 BEGIN
   FOR spec IN
     SELECT * FROM (VALUES
@@ -29,11 +34,13 @@ BEGIN
       CONTINUE;
     END IF;
     EXECUTE format('SELECT count(*) FROM "Sale" WHERE NOT (%s)', spec.body) INTO violating;
+    rule := spec.body;
     IF violating > 0 THEN
-      RAISE NOTICE 'NCF: % venta(s) antiguas violan %; no se agrega. Corrígelas y vuelve a ejecutar esta migración.',
+      RAISE NOTICE 'NCF: % venta(s) antiguas violan %; la regla se instala solo para ventas nuevas. Corrígelas y reinstala la regla completa.',
         violating, spec.name;
-    ELSE
-      EXECUTE format('ALTER TABLE "Sale" ADD CONSTRAINT %I CHECK (%s)', spec.name, spec.body);
+      rule := format('"createdAt" < %L::timestamp OR (%s)', localtimestamp::text, spec.body);
     END IF;
+    EXECUTE format('ALTER TABLE "Sale" ADD CONSTRAINT %I CHECK (%s) NOT VALID', spec.name, rule);
+    EXECUTE format('ALTER TABLE "Sale" VALIDATE CONSTRAINT %I', spec.name);
   END LOOP;
 END $$;

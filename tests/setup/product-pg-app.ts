@@ -31,7 +31,7 @@ async function freePort() {
   return address.port;
 }
 
-async function database(name: string) {
+export async function database(name: string) {
   const external = process.env.NEXORA_TEST_PG_URL;
   if (external) {
     const admin = new PrismaClient({ datasources: { db: { url: external } } });

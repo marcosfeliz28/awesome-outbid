@@ -55,7 +55,7 @@ function Sales({
 }) {
   const query = useQuery({
     queryKey: ["sales-mine", period],
-    queryFn: () => api<MySales>("/sales/mine/" + period),
+    queryFn: () => api<MySales | MySalesBlind>("/sales/mine/" + period),
     staleTime: 0,
   });
   return (

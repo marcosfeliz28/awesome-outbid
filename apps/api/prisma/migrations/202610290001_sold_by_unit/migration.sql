@@ -2,6 +2,10 @@
 -- casi todo se venden enteros; sólo kg/lb/litro admiten decimales. Para no
 -- bloquear a una tienda que ya vendía o contaba en fracciones, los productos
 -- con decimales en su historia quedan como «no por unidad».
+-- Bloqueo: el UPDATE retiene las filas de Product que cambia hasta terminar la
+-- migración. Con catálogos grandes (millones de movimientos) medirlo en una
+-- copia y aplicar en una ventana tranquila; los EXISTS usan los índices de
+-- Variant.productId, SaleItem.variantId e InventoryMovement.variantId.
 ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "soldByUnit" boolean NOT NULL DEFAULT true;
 UPDATE "Product" p SET "soldByUnit" = false
 WHERE p."soldByUnit"
