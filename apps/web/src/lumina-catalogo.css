@@ -1,0 +1,43 @@
+/* Obsidian Lumina · fase 3 · Productos. Solo tokens existentes. */
+.catalog-num {
+  font-variant-numeric: tabular-nums;
+}
+.catalog-toolbar .table-search input,
+.catalog-toolbar.table-toolbar select {
+  min-height: 44px;
+}
+.catalog-toolbar .table-search {
+  flex: 1 1 260px;
+}
+.table-actions.catalog-actions button:not(.button) {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
+}
+.catalog-tabs button {
+  min-height: 44px;
+}
+.catalog-tabs button.active,
+.catalog-tabs button[aria-current="true"] {
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--accent-violet);
+}
+.catalog-tabs button:focus-visible,
+.catalog-actions button:focus-visible {
+  outline: 2px solid var(--accent-emerald);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .catalog-toolbar select {
+    width: 100%;
+  }
+}
+/* Cabecera de esta pantalla: acciones táctiles de 44 px (el contrato común usa 40). */
+.page-heading:has(+ .catalog-panel) .button,
+.page-heading:has(+ .catalog-panel) .more-menu-trigger {
+  min-height: 44px;
+}
+.catalog-panel .pagination .button {
+  min-height: 44px;
+}
