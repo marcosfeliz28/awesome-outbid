@@ -61,7 +61,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,woff2,webp}"],
         navigateFallback: "/index.html",
         // Con "prompt", la primera instalación también controla la página
         // abierta (como antes con autoUpdate) para que funcione sin conexión
