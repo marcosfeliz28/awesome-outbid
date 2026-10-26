@@ -108,3 +108,16 @@ test("«Más»: se cierra al elegir el archivo de «Importar Excel» y al salir 
   await page.keyboard.press("Tab");
   await expect(mas).toHaveAttribute("aria-expanded", "false");
 });
+
+test("Productos: la cabecera lleva su gancho y mide 44 px", async ({
+  page,
+}) => {
+  await entrar(page, "products");
+  const alto = (sel: string) =>
+    page.locator(sel).first().evaluate((e) => e.getBoundingClientRect().height);
+  await expect(page.locator(".main-content > .page-heading.catalog-heading")).toHaveCount(1);
+  expect(await alto(".catalog-heading .more-menu-trigger")).toBeGreaterThanOrEqual(44);
+  await page.evaluate(() => (location.hash = "customers"));
+  await expect(page.locator(".main-content h1", { hasText: "Clientes" })).toBeVisible();
+  await expect(page.locator(".catalog-heading")).toHaveCount(0);
+});

@@ -34,8 +34,8 @@
   }
 }
 /* Cabecera de esta pantalla: acciones táctiles de 44 px (el contrato común usa 40). */
-.page-heading:has(+ .catalog-panel) .button,
-.page-heading:has(+ .catalog-panel) .more-menu-trigger {
+.catalog-heading .button,
+.catalog-heading .more-menu-trigger {
   min-height: 44px;
 }
 .catalog-panel .pagination .button {

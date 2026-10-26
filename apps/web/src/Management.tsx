@@ -204,6 +204,7 @@ function Heading({
   children,
   eyebrow = "TU NEGOCIO, CON CLARIDAD",
   more,
+  className,
 }: {
   title: string;
   caption: string;
@@ -213,9 +214,11 @@ function Heading({
   eyebrow?: string | false;
   /** Obsidian Lumina f3: las demás acciones, dentro de «Más». */
   more?: ReactNode;
+  /** Gancho de estilo propio de la pantalla (no cambia el de las demás). */
+  className?: string;
 }) {
   return (
-    <div className="page-heading">
+    <div className={className ? `page-heading ${className}` : "page-heading"}>
       <div>
         {eyebrow !== false && <span className="eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
@@ -327,6 +330,7 @@ export function Catalog() {
     <>
       <Heading
         title="Productos"
+        className="catalog-heading"
         caption="Busca, revisa precios y existencias, y mantén tu catálogo al día."
         eyebrow={false}
         more={
