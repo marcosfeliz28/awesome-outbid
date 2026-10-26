@@ -2484,6 +2484,18 @@ export class SalesController {
         voidedBy: actor.id,
       },
     });
+    // La venta anulada ya no cuenta en el esperado de su caja; si esa caja
+    // sigue abierta y el efectivo ya salió (retiro, vale), quedaría negativo.
+    // La caja está bloqueada: ningún retiro se cuela entre medias. Sin cifras
+    // en el mensaje (arqueo ciego).
+    if (
+      originalCash &&
+      !originalCash.closedAt &&
+      d((await cashExpected(tx, originalCash)).cash).lt(0)
+    )
+      bad(
+        "No se puede anular: la caja ya entregó ese efectivo. Pide a un gerente que lo reponga en la caja (entrada) y vuelve a anular, o anula después del cierre.",
+      );
     await refreshReceivableAlert(tx, id, actor.branchId);
     await reverseIncentives(tx, actor, "void", id, id);
     let cashDifferences: Record<string, number> | undefined;
