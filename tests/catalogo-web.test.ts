@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { matchesSearch, searchTerms } from "../packages/shared/src/index";
-import { confirmMargin, marginWarning, productSearchText } from "../apps/web/src/catalogChecks";
+import {
+  confirmMargin,
+  marginWarning,
+  productSearchText,
+} from "../apps/web/src/catalogChecks";
 
 // Auditoría de inventario (25-oct-2026), puntos 4 y 5.
 const web = (file: string) => readFileSync(`apps/web/src/${file}`, "utf8");
@@ -32,8 +36,16 @@ describe("4 · aviso de margen (precio − costo) / precio", () => {
 
 describe("5 · Productos busca como la caja", () => {
   const faja = {
-    name: "Faja colombiana Reductora", sku: "FAJ-1", brand: "Ann Chery",
-    variants: [{ sku: "FAJ-1-M", barcode: "7701234567890", attributes: { Talla: "M", Color: "Café" } }],
+    name: "Faja colombiana Reductora",
+    sku: "FAJ-1",
+    brand: "Ann Chery",
+    variants: [
+      {
+        sku: "FAJ-1-M",
+        barcode: "7701234567890",
+        attributes: { Talla: "M", Color: "Café" },
+      },
+    ],
   };
   it("encuentra por código de barras, SKU de variante y sin acentos", () => {
     const text = productSearchText(faja);
@@ -47,6 +59,8 @@ describe("5 · Productos busca como la caja", () => {
     expect(web("POS.tsx")).toContain("productSearchText(p)");
     const management = web("Management.tsx");
     expect(management).toContain("matchesWords(productSearchText(p), words)");
-    expect(management).toContain("matchesWords(productSearchText({ ...v.product, variants: [v] }), words)");
+    expect(management).toContain(
+      "matchesWords(productSearchText({ ...v.product, variants: [v] }), words)",
+    );
   });
 });

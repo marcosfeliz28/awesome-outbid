@@ -149,7 +149,7 @@ export async function assertWholeUnits(
     select: { product: { select: { name: true } } },
   });
   if (whole)
-    bad(`«${whole.product.name}» se vende por unidad: usa una cantidad entera, sin decimales.`);
+    bad(`«${whole.product.name}» se vende por unidad: usa unidades enteras, sin decimales.`);
 }
 export function denied(
   message = "No tienes permiso para realizar esta acción.",

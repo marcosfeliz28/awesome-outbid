@@ -2904,7 +2904,7 @@ export class SalesController {
         // Lo que se vende por unidad se devuelve entero (salvo el saldo de
         // una venta antigua con decimales).
         if (line.variant.product.soldByUnit && !Number.isInteger(i.qty) && !remaining.eq(i.qty))
-          bad(`«${line.variant.product.name}» se vende por unidad: devuelve una cantidad entera.`);
+          bad(`«${line.variant.product.name}» se vende por unidad: devuelve unidades enteras.`);
         if (
           i.restock &&
           (i.damaged || (i.opened && line.variant.product.category.requiresLot))
