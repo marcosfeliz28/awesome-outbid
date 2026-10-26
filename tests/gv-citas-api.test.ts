@@ -391,6 +391,41 @@ describe("GV · importación de citas e interesadas", () => {
   });
 });
 
+describe("GV · fechas inválidas", () => {
+  it("fechas imposibles o fuera de 1900-9999 dan 400, nunca 500", async () => {
+    for (const date of [
+      "2026-13-01T10:00:00-04:00",
+      "2026-02-30T10:00:00-04:00",
+      "1800-01-01T10:00:00Z",
+      "9999-12-31T23:59:59-04:00",
+    ])
+      expect(
+        (
+          await request("/gv/appointments", gv, {
+            ...cita(),
+            operationId: randomUUID(),
+            date,
+          })
+        ).status,
+        date,
+      ).toBe(400);
+    for (const date of ["2026-13-01", "1899-12-31", "0001-01-01", "2026-00-10"])
+      expect(
+        (
+          await request("/gv/courses", gv, {
+            name: "QA fecha " + suffix,
+            type: "automaquillaje",
+            date,
+            price: 100,
+            capacity: 5,
+          })
+        ).status,
+        date,
+      ).toBe(400);
+    expect((await request("/gv/reports?from=2026-13-01", gv)).status).toBe(400);
+  });
+});
+
 describe("GV · citas en reportes", () => {
   it("GV-14: el reporte de pendientes incluye las citas abiertas", async () => {
     const c = await ok("/gv/appointments", gv, {

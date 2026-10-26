@@ -30,10 +30,15 @@ const optionalText = (max: number) =>
 export const gvDay = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "debe tener el formato AAAA-MM-DD")
-  .refine(
-    (v) => new Date(v + "T00:00:00Z").toISOString().slice(0, 10) === v,
-    "no es una fecha válida",
-  );
+  .refine((v) => {
+    const t = new Date(v + "T00:00:00Z");
+    // Fecha inválida (mes 13) hace que toISOString lance: se revisa antes.
+    return (
+      Number.isFinite(t.getTime()) &&
+      t.toISOString().slice(0, 10) === v &&
+      t.getUTCFullYear() >= 1900
+    );
+  }, "no es una fecha válida (entre 1900 y 9999)");
 export const dateOnly = (value: string) => new Date(value + "T00:00:00Z");
 export const dayText = (value: Date) => value.toISOString().slice(0, 10);
 
