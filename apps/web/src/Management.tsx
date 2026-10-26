@@ -881,10 +881,10 @@ function Kardex({ variantId }: { variantId: string }) {
         empty="Este artículo aún no tiene movimientos"
         emptyDescription="Las entradas, ventas y ajustes aparecerán aquí con su saldo."
         columns={[
-          { label: "Fecha", render: (m) => dateLabel(m.createdAt) },
+          { label: "Fecha", className: "inv-nowrap", render: (m) => dateLabel(m.createdAt) },
           { label: "Tipo", render: (m) => <Badge>{m.type}</Badge> },
-          { label: "Cantidad", render: (m) => <span className="inv-num">{m.qty}</span> },
-          { label: "Saldo", render: (m) => <span className="inv-num">{m.balanceAfter}</span> },
+          { label: "Cantidad", className: "inv-numcol", render: (m) => <span className="inv-num">{m.qty}</span> },
+          { label: "Saldo", className: "inv-numcol", render: (m) => <span className="inv-num">{m.balanceAfter}</span> },
           { label: "Motivo", render: (m) => m.reason },
         ]}
       />
@@ -956,21 +956,23 @@ export function Inventory() {
         eyebrow={false}
       />
       <div className="panel inv-panel">
-        <label htmlFor="warehouse-view" className="inv-field">
-          Almacén
-        </label>
-        <select
-          id="warehouse-view"
-          value={warehouseView}
-          onChange={(e) => setWarehouseView(e.target.value)}
-        >
-          <option value="all">Todos</option>
-          {(warehouses.data || []).map((w: any) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
+        <div className="inv-filters">
+          <label htmlFor="warehouse-view" className="inv-field">
+            Almacén
+          </label>
+          <select
+            id="warehouse-view"
+            value={warehouseView}
+            onChange={(e) => setWarehouseView(e.target.value)}
+          >
+            <option value="all">Todos</option>
+            {(warehouses.data || []).map((w: any) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="table-toolbar">
           <div className="tabs inv-tabs">
             <button
@@ -1011,13 +1013,15 @@ export function Inventory() {
                     <span>
                       <strong>{v.product.name}</strong>
                       <small>
-                        {v.sku} · {attrLabel(v.attributes)}
+                        <span className="inv-sku">{v.sku}</span> ·{" "}
+                        {attrLabel(v.attributes)}
                       </small>
                     </span>
                   ),
                 },
                 {
                   label: "Precio",
+                  className: "inv-numcol",
                   render: (v) => (
                     <span className="inv-num">{formatMoney(v.price)}</span>
                   ),
@@ -1026,6 +1030,7 @@ export function Inventory() {
                   ? [
                       {
                         label: "Costo",
+                        className: "inv-numcol",
                         render: (v: any) => (
                           <span className="inv-num">
                             {formatMoney(v.costAvg)}
@@ -1058,16 +1063,19 @@ export function Inventory() {
                 },
                 {
                   label: "Total",
+                  className: "inv-numcol",
                   render: (v) => <span className="inv-num">{v.totalStock}</span>,
                 },
                 {
                   label: `Lote en ${storeWarehouseName}`,
+                  className: "inv-nowrap",
                   render: (v) =>
                     v.lots.find((l: any) => Number(l.qty) > 0)?.lotNumber ||
                     "Sin lote",
                 },
                 {
                   label: "Vencimiento",
+                  className: "inv-nowrap",
                   render: (v) => {
                     const lot = v.lots
                       .filter((l: any) => Number(l.qty) > 0 && l.expiryDate)
@@ -1109,7 +1117,7 @@ export function Inventory() {
                 empty="Todavía no hay conteos físicos"
                 emptyDescription="Pulsa Contar junto a un artículo para registrar su existencia real."
                 columns={[
-                  { label: "Fecha", render: (c) => dateLabel(c.createdAt) },
+                  { label: "Fecha", className: "inv-nowrap", render: (c) => dateLabel(c.createdAt) },
                   { label: "Artículos", render: (c) => c.items.length },
                   {
                     label: "Estado",

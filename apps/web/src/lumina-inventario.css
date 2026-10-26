@@ -31,3 +31,70 @@
   min-height: 44px;
   min-width: 44px;
 }
+/* Filtro de almacén: con aire propio y a todo el ancho en celular. */
+.inv-panel .inv-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 18px 20px 0;
+}
+.inv-panel .inv-filters .inv-field {
+  display: inline;
+  margin: 0;
+  font-size: 13px;
+}
+.inv-panel .inv-filters select {
+  min-width: 220px;
+  font-size: 13px;
+}
+/* Celdas que no deben partirse; el nombre del producto sí se parte. */
+.inv-panel .inv-nowrap,
+.inv-panel .inv-sku,
+.inv-panel .inv-numcol,
+.inv-panel .inv-numcol .inv-num {
+  white-space: nowrap;
+}
+.inv-panel .inv-sku {
+  font-variant-numeric: tabular-nums;
+}
+.inv-panel td.inv-numcol,
+.inv-panel th.inv-numcol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* Áreas táctiles solo de Inventario (≥ 44 px, sobre el mínimo de 40 de escritorio). */
+.inv-panel .table-search input {
+  min-height: 44px;
+}
+.app-shell:not(.pos-shell) .inv-panel .inv-tabs button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.inv-panel .pagination .button {
+  min-height: 44px;
+}
+.inv-panel .table-actions button:not(.button) {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 4px;
+}
+@media (max-width: 640px) {
+  .inv-panel .inv-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .inv-panel .inv-filters select {
+    width: 100%;
+    min-width: 0;
+  }
+  .inv-panel .table-cards td.inv-numcol {
+    text-align: right;
+  }
+}
+.inv-panel .table-actions {
+  gap: 2px;
+}
