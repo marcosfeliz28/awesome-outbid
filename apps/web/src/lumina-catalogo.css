@@ -19,7 +19,7 @@
   min-height: 44px;
 }
 .catalog-tabs button.active,
-.catalog-tabs button[aria-current="true"] {
+.catalog-tabs button[aria-pressed="true"] {
   font-weight: 700;
   box-shadow: inset 0 -2px 0 var(--accent-violet);
 }

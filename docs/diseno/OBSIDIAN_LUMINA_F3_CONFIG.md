@@ -5,7 +5,7 @@ Rama `claude-pc/lumina-f3-config`. Solo disposición visual; no cambia lógica, 
 ## Cambios y por qué
 
 - **Cabecera:** `Heading title="Configuración" eyebrow={false}` (el `h1` era «A la medida de tu negocio»; ahora coincide con la ruta). No hay acciones superiores: «Editar configuración» sigue siendo la única acción primaria, dentro de su tarjeta.
-- **Pestañas:** se conservan como botones con los mismos nombres («Negocio y reglas», «Usuarios y permisos», «Bitácora», «Equipos»; los leen e2e y `accessibility-contract.test.ts`). La activa lleva `aria-current="page"`, subrayado y negrita (no solo color); foco esmeralda de 3 px; alto mínimo 44 px.
+- **Pestañas:** se conservan como botones con los mismos nombres («Negocio y reglas», «Usuarios y permisos», «Bitácora», «Equipos»; los leen e2e y `accessibility-contract.test.ts`). La activa lleva `aria-pressed="true"`, subrayado y negrita (no solo color); foco esmeralda de 3 px; alto mínimo 44 px.
 - **Tarjetas con título y descripción:** «Tu negocio» (el nombre del negocio pasa de `h2` a `h3` debajo), «Equipo de tu tienda», «Permisos por rol» y «Bitácora» llevan título y una línea de descripción.
 - **Texto suelto:** los cuatro avisos de la pestaña Negocio (topes de crédito en 0, crédito deshabilitado, tasa del dólar retenida, margen bajo) pasan de `.cod-hint` a `.notice warning|danger` (tokens que funcionan en claro y oscuro), con los mismos `role` y texto.
 - **Carga:** `TableSkeleton` mientras cargan usuarios y bitácora (solo si la consulta está pendiente y no en pausa; el estado sin conexión y los errores siguen en `QueryState`).

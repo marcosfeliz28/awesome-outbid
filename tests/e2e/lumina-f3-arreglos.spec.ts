@@ -51,3 +51,39 @@ test("«Más»: una opción sin diálogo (PDF de Reportes) deja el foco en «Má
   await expect(mas).toHaveAttribute("aria-expanded", "false");
   await expect(mas).toBeFocused();
 });
+
+/** Los botones que cambian de panel marcan el activo con aria-pressed (no aria-current). */
+async function soloUnoPresionado(page: Page, grupo: string) {
+  const botones = page.locator(`${grupo} button[aria-pressed]`);
+  expect(await botones.count()).toBeGreaterThan(1);
+  await expect(page.locator(`${grupo} button[aria-pressed="true"]`)).toHaveCount(1);
+  await expect(page.locator(`${grupo} button[aria-current]`)).toHaveCount(0);
+  await expect(page.locator(`${grupo} button.active`)).toHaveCount(1);
+}
+test("pestañas: Configuración y Reportes exponen aria-pressed solo en la activa", async ({
+  page,
+}) => {
+  await entrar(page, "settings");
+  await soloUnoPresionado(page, ".cfg-tabs");
+  await page.locator(".cfg-tabs button", { hasText: "Bitácora" }).click();
+  await expect(
+    page.locator(".cfg-tabs button", { hasText: "Bitácora" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await soloUnoPresionado(page, ".cfg-tabs");
+  await page.evaluate(() => (location.hash = "reports"));
+  await expect(page.locator(".report-menu button.active")).toHaveCount(1);
+  await expect(page.locator(".report-menu button[aria-pressed=\"true\"]")).toHaveCount(1);
+  await expect(page.locator(".report-menu button[aria-current]")).toHaveCount(0);
+});
+test("pestañas: el detalle de producto expone aria-pressed solo en la activa", async ({
+  page,
+}) => {
+  await entrar(page, "products");
+  await page.locator(".catalog-panel").getByRole("button", { name: /^Ver / }).first().click();
+  await soloUnoPresionado(page, ".catalog-tabs");
+  await page.locator(".catalog-tabs button", { hasText: "Variantes" }).click();
+  await expect(
+    page.locator(".catalog-tabs button", { hasText: "Variantes" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await soloUnoPresionado(page, ".catalog-tabs");
+});

@@ -12,7 +12,7 @@
 - Carga: `TableSkeleton` mientras `query.isLoading`; el resto sigue por `QueryState`.
 - Números con `tabular-nums` (variantes, precio, stock, costo, cantidad).
 - Insignia de stock bajo: color + texto («· bajo»).
-- Pestañas del detalle: `aria-current`, subrayado violeta y negrita.
+- Pestañas del detalle: `aria-pressed`, subrayado violeta y negrita.
 - Táctil: botones de fila, filtros, cabecera y paginación a 44 px; foco esmeralda.
 - Estilos nuevos en `apps/web/src/lumina-catalogo.css` (una importación nueva).
 
