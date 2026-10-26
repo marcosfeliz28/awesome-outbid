@@ -39,14 +39,14 @@ const userId = "00000000-0000-0000-0000-000000000124";
 const sid = "00000000-0000-0000-0000-000000000125";
 
 function fixture(method: string, expiresAt = new Date(Date.now() + 3600000)) {
-  const req: any = { method, path: "/api/reports/ranking-cajeras", headers: { authorization: "Bearer prueba" } };
+  const req: any = { method, path: "/api/products", headers: { authorization: "Bearer prueba" } };
   const db: any = {
     user: { findUnique: vi.fn().mockResolvedValue({ id: userId, name: "Soporte", email: "support@example.invalid", tenantId, branchId: "main", active: true, authVersion: 1, mustChangePassword: false, supportExpiresAt: expiresAt, role: { name: "support", permissions: ["*"] } }) },
     settings: { findUnique: vi.fn().mockResolvedValue(null) },
     authSession: { findUnique: vi.fn().mockResolvedValue({ id: sid, userId, lastActivityAt: new Date() }), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     auditLog: { create: vi.fn().mockResolvedValue({ id: "audit" }) },
   };
-  const reflector: any = { getAllAndOverride: (key: string) => key === "permission" ? "reports:read" : undefined };
+  const reflector: any = { getAllAndOverride: (key: string) => key === "permission" ? "catalog:read" : undefined };
   const guard = new AuthGuard(db, { verify: () => ({ sub: userId, sid, type: "access", version: 1, tenantId }) } as any, reflector, { statusForTenant: async () => ({ status: "active" }) } as any);
   const context: any = { getHandler: () => undefined, getClass: () => undefined, switchToHttp: () => ({ getRequest: () => req }) };
   return { req, db, guard, context };
@@ -72,8 +72,8 @@ describe("N-05 · soporte solo lectura", () => {
       else process.env.PRODUCT_TENANCY = previous;
     }
   });
-  it("su rol tiene solo los tres permisos de lectura declarados", () => {
-    expect(permissions.support).toEqual(["catalog:read", "reports:read", "profit:read"]);
+  it("SOP-01: su rol solo lee el catálogo (sin reportes, costos ni margen)", () => {
+    expect(permissions.support).toEqual(["catalog:read"]);
   });
 
   it("niega POST, PATCH, PUT y DELETE aun si el rol de base fue alterado a asterisco", async () => {

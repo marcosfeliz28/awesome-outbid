@@ -762,7 +762,8 @@ export const permissions: Record<string, string[]> = {
   ],
   seller: ["catalog:read", "sale:write", "cash:write", "customers:write"],
   warehouse: ["catalog:read", "inventory:write", "purchase:write"],
-  support: ["catalog:read", "reports:read", "profit:read"],
+  // SOP-01: solo catálogo y existencias, sin costos (safe), clientes, ventas ni reportes.
+  support: ["catalog:read"],
 };
 export const can = (grants: string[], permission: string) =>
   grants.includes("*") || grants.includes(permission);
