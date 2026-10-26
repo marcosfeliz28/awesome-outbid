@@ -33,6 +33,7 @@ export default defineConfig({
       "tests/inventory-resilience.test.ts",
       "tests/lot-migration-postgres.test.ts",
       "tests/warehouses-postgres.test.ts",
+      "tests/anular-caja-abierta-postgres.test.ts",
       "tests/portabilidad.test.ts",
       "tests/e2e-higiene.test.ts",
       "tests/offline-policy.test.ts",
