@@ -25,6 +25,7 @@ export default defineConfig({
       "tests/product-local-license-web.test.ts",
       "tests/product-object-portability.test.ts",
       "tests/product-billing-plans.test.ts",
+      "tests/platform-token-rotation.test.ts",
       "tests/product-billing-web.test.ts",
       "tests/product-ncf-settings-web.test.ts",
       "tests/product-route-matrix-postgres.test.ts",

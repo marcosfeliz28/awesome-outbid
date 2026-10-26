@@ -22,16 +22,29 @@ const invitedTenant = z.object({
   adminEmail: z.string().trim().email().max(254),
 }).strict();
 
-/** Sin PLATFORM_ADMIN_TOKEN_SHA256 válido, las rutas del operador no existen (404). */
+const sha256Hex = (value: string | undefined) => {
+  const hex = value?.trim().toLowerCase();
+  return hex && /^[a-f0-9]{64}$/.test(hex) ? hex : null;
+};
+
+/**
+ * Sin PLATFORM_ADMIN_TOKEN_SHA256 válido, las rutas del operador no existen (404).
+ * PLA-01: PLATFORM_ADMIN_TOKEN_SHA256_NEXT (opcional) también vale, para rotar
+ * la credencial sin corte: se publica la nueva, se cambia el cliente y luego
+ * se mueve a la principal y se borra la vieja.
+ */
 export function authorizePlatform(req: Request, limits: RequestRateLimitService) {
-  const expected = process.env.PLATFORM_ADMIN_TOKEN_SHA256?.trim().toLowerCase();
-  if (process.env.PRODUCT_TENANCY !== "required" || !expected || !/^[a-f0-9]{64}$/.test(expected))
+  const expected = sha256Hex(process.env.PLATFORM_ADMIN_TOKEN_SHA256);
+  if (process.env.PRODUCT_TENANCY !== "required" || !expected)
     throw new HttpException("No disponible.", 404);
+  const accepted = [expected, sha256Hex(process.env.PLATFORM_ADMIN_TOKEN_SHA256_NEXT)].filter((hex): hex is string => !!hex);
   const ip = clientIp(req);
   if (limits.limited("platform-auth-fail", [ip], 5)) throw new HttpException("Demasiados intentos. Espera un minuto.", 429);
   const token = /^Platform (\S{64,512})$/.exec(req.headers.authorization ?? "")?.[1];
   const given = createHash("sha256").update(token ?? "").digest();
-  if (!token || !timingSafeEqual(given, Buffer.from(expected, "hex"))) {
+  // Compara contra todas, sin cortar en la primera, para no delatar cuál coincide.
+  const matches = accepted.map(hex => timingSafeEqual(given, Buffer.from(hex, "hex")));
+  if (!token || !matches.includes(true)) {
     limits.assert("platform-auth-fail", [ip], 5);
     throw new HttpException("No autorizado.", 401);
   }
