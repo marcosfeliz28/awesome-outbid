@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { assertSeedAllowed } from "../apps/api/prisma/seed-guard";
 import {
@@ -167,6 +167,12 @@ function scanProductBranding(): string[] {
 }
 
 describe("PC-10 marca y almacenes por empresa", () => {
+  it("revisa también el artefacto compilado antes de publicar el producto", () => {
+    const pkg = JSON.parse(readFileSync("apps/web/package.json", "utf8"));
+    expect(pkg.scripts.build).toContain("check-product-brand.mjs");
+    expect(existsSync("apps/web/scripts/check-product-brand.mjs")).toBe(true);
+  });
+
   it("ninguna pantalla, ticket, PDF, reporte, manifiesto ni README del producto muestra la marca de la tienda", () => {
     const leaks = scanProductBranding();
     expect(leaks, leaks.join("\n")).toEqual([]);
