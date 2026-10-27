@@ -6520,6 +6520,8 @@ td strong {
 .day-yesterday {
   --day-accent: #2563eb;
   --day-bg: #eff6ff;
+  /* QA B1: #64748b sobre #eff6ff daba 4,37:1; el tema oscuro conserva --muted. */
+  --day-muted: #475569;
 }
 .day-today {
   --day-accent: #059669;
@@ -6549,7 +6551,7 @@ td strong {
   font-size: 1.5rem;
 }
 .day-figures small {
-  color: var(--muted, #64748b);
+  color: var(--day-muted, var(--muted, #64748b));
 }
 .day-figures label {
   display: flex;
@@ -6641,6 +6643,7 @@ td strong {
 
 [data-theme="dark"] .day-yesterday {
   --day-bg: #172554;
+  --day-muted: var(--muted);
 }
 [data-theme="dark"] .day-today {
   --day-bg: #052e22;

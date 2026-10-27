@@ -561,3 +561,12 @@ describe("Portada y bóveda de acceso (Lumina V2)", () => {
     expect(sinSupports.match(/\.login-(vault|stage|stats)[^{]*\{[^}]*backdrop-filter/g)).toBeNull();
   });
 });
+
+describe("Resumen · QA B1 (texto «ayer» en tema claro)", () => {
+  it("el texto secundario de «ayer» se lee sobre su fondo (≥ 4.5:1)", () => {
+    const light = /\.day-yesterday\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    const muted = /--day-muted:\s*(#[0-9a-f]{6})/i.exec(light)?.[1];
+    expect(muted, "color de texto de «ayer» en tema claro").toBeTruthy();
+    meets("ayer claro", muted!, "#eff6ff", 4.5);
+  });
+});
