@@ -3,7 +3,8 @@
     "ponytail@ponytail": true,
     "supabase@anthropic-plugin-directory": true,
     "vercel@anthropic-plugin-directory": true,
-    "oh-my-claudecode@omc": true
+    "oh-my-claudecode@omc": true,
+    "chrome-devtools-mcp@chrome-devtools-plugins": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
@@ -18,6 +19,15 @@
         "source": "github",
         "repo": "Yeachan-Heo/oh-my-claudecode"
       }
+    },
+    "chrome-devtools-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "ChromeDevTools/chrome-devtools-mcp"
+      }
     }
-  }
+  },
+  "enabledMcpjsonServers": [
+    "chrome-devtools-nube"
+  ]
 }
