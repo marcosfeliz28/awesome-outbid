@@ -165,3 +165,4 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo quincenal en la nube (27-oct, 23:09 UTC)
 - RESPUESTA_CLAUDE_PC_27OCT.md: CAMBIÓ a 680bf695 (secciones 16 y 17; OBSIDIAN_LUMINA_PROGRESO.md sin cambios). Las órdenes 15-16 exigen pantalla (Gemini, ChatGPT PC/nube): no ejecutables desde la nube; quedan para Claude PC con pantalla.
 - CI: pc23 (c1fe8c0c), a1 (498df5ee), b01 (0500b03a) y lumina-motion-integracion (287db57e) en verde; visual-integracion-27oct (2a0beec6) verify rojo. Sin commits nuevos en LISTA.
+- 13.4 bajos del QA terminada: claude-pc/qa-bajos (d9d79664), 3 commits. B1 (contraste de «ayer») arreglado (dad49b02). B2 (refresh sin sesión: 400→401) arreglado (d9d79664). B4 (anillo de foco de pestañas) arreglado (95162cff). B3 (ERR_ABORTED) no reproducido: sin cambios. CI en curso (verify, windows-installer, render-images). Nota: B2 cambia el código de respuesta del refresh; las pruebas se actualizaron.
