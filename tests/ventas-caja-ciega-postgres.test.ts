@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -223,6 +224,20 @@ describe("Ventas con caja ciega (B-01)", () => {
     expect(Number(sale.total)).toBe(123.45);
     expect(sale.hiddenUntilClose).toBeUndefined();
     expect(sale.payments).toHaveLength(1);
+  });
+
+  it("Management.tsx: el detalle de venta no formatea importes ocultos (null) sin saleMoney", () => {
+    const src = readFileSync(
+      resolve(import.meta.dirname, "../apps/web/src/Management.tsx"),
+      "utf8",
+    );
+    const detail = src.slice(
+      src.indexOf("export function SalesHistory"),
+      src.indexOf("export function SalesHistory") + 30000,
+    );
+    expect(detail).not.toMatch(
+      /formatMoney[(](selected[.](discountTotal|total|subtotal|taxTotal)|p[.](amount|tendered|change)|i[.](unitPrice|discount|tax|lineTotal))/,
+    );
   });
 
   it("hideSaleAmounts conserva número, estado y artículos sin importes", () => {
