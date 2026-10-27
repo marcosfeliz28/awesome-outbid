@@ -902,8 +902,8 @@ export function Inventory() {
             <h2>Existencias por almacén</h2>
             <p>Consulta cantidades, lotes y vencimientos antes de ajustar.</p>
           </div>
-          <label className="field inventory-warehouse-field">
-            <span>Almacén</span>
+          <div className="field inventory-warehouse-field">
+            <label htmlFor="warehouse-view">Almacén</label>
             <select
               id="warehouse-view"
               value={warehouseView}
@@ -916,7 +916,7 @@ export function Inventory() {
                 </option>
               ))}
             </select>
-          </label>
+          </div>
         </div>
         <div className="table-toolbar">
           <div className="tabs">

@@ -1309,6 +1309,7 @@ function Shell() {
               <button
                 type="button"
                 className={theme === "light" ? "active" : ""}
+                aria-label="Activar modo claro"
                 aria-pressed={theme === "light"}
                 onClick={() => setTheme("light")}
               >
@@ -1318,6 +1319,7 @@ function Shell() {
               <button
                 type="button"
                 className={theme === "dark" ? "active" : ""}
+                aria-label="Activar modo oscuro"
                 aria-pressed={theme === "dark"}
                 onClick={() => setTheme("dark")}
               >

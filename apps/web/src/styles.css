@@ -7461,7 +7461,11 @@ td strong {
 }
 @media (max-width: 780px) {
   .theme-selector span { display: none; }
-  .theme-selector button { width: 34px; justify-content: center; padding: 0 !important; }
+  .theme-selector {
+    gap: 0;
+    padding: 2px;
+  }
+  .theme-selector button { width: 30px; justify-content: center; padding: 0 !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   .app-shell:not(.pos-shell) .topbar::after { animation: none; }
