@@ -3422,7 +3422,7 @@ export function SalesHistory() {
             {selected.hiddenUntilClose && <p>Se ve al cerrar tu caja.</p>}
             {Number(selected.discountTotal) > 0 && (
               <p>
-                Descuento: {formatMoney(selected.discountTotal)} · Motivo:{" "}
+                Descuento: {saleMoney(selected, selected.discountTotal)} · Motivo:{" "}
                 {selected.discountReason}
                 {selected.discountApprovedName
                   ? ` · Autorizó: ${selected.discountApprovedName}`
@@ -3436,9 +3436,9 @@ export function SalesHistory() {
                     {METHOD_LABEL[p.method] ??
                       paymentOptions.find((o) => o.value === p.method)?.label ??
                       p.method}{" "}
-                    · Recibido: {formatMoney(p.tendered ?? p.amount)} ·
-                    Aplicado: {formatMoney(p.amount)} · Cambio:{" "}
-                    {formatMoney(p.change ?? 0)}
+                    · Recibido: {saleMoney(selected, p.tendered ?? p.amount)}{" "}
+                    · Aplicado: {saleMoney(selected, p.amount)} · Cambio:{" "}
+                    {saleMoney(selected, p.change ?? 0)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
                   <ProofThumb paymentId={p.id} hasProof={p.hasProof} />

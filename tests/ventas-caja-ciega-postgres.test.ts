@@ -450,6 +450,15 @@ describe("Ventas con caja ciega (B-01)", () => {
     delete process.env[FLAG];
   });
 
+  it("Management.tsx: el detalle de venta no formatea importes ocultos (null) sin saleMoney", () => {
+    const src = readFileSync(resolve(root, "apps/web/src/Management.tsx"), "utf8");
+    const at = src.indexOf("export function SalesHistory");
+    const detail = src.slice(at, at + 30000);
+    expect(detail).not.toMatch(
+      /formatMoney[(](selected[.](discountTotal|total|subtotal|taxTotal)|p[.](amount|tendered|change)|i[.](unitPrice|discount|tax|lineTotal))/,
+    );
+  });
+
   it("bandera ENCENDIDA: al cerrar la caja la cajera vuelve a ver los importes", async () => {
     process.env[FLAG] = "1";
     await db.cashSession.update({
