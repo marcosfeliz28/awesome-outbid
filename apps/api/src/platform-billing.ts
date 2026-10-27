@@ -52,8 +52,14 @@ export function expectedPayment(plan: string, months: number, year: boolean) {
   if (!Object.prototype.hasOwnProperty.call(BILLING_PLANS, plan)) return null;
   return BILLING_PLANS[plan as keyof typeof BILLING_PLANS].monthlyDop * (year ? 10 : months);
 }
-/** Referencia comparable: sin espacios y sin distinguir mayúsculas. */
+/** Referencia comparable: sin espacios y sin distinguir mayúsculas. \s de JavaScript incluye
+ * el espacio duro (U+00A0) y U+FEFF; SQL_SPACE es esa misma lista para la base (igual que en
+ * el trigger, migración 202611030001), sin depender de la configuración regional. */
 export const normalizeReference = (value: string) => value.replace(/\s+/g, "").toLowerCase();
+const SQL_SPACE = "[\\t\\n\\v\\f\\r " + String.fromCharCode(160, 5760, 8192) + "-" +
+  String.fromCharCode(8202, 8232, 8233, 8239, 8287, 12288, 65279) + "]+";
+/** 23505 del trigger de referencia única cuando la comprobación previa no lo vio: duplicado, no 500. */
+const isUniqueViolation = (e: any) => e?.code === "P2002" || e?.meta?.code === "23505" || /\b23505\b/.test(String(e?.message ?? ""));
 
 type TenantRow = { id: string; status: string; plan: string; trialEndsAt: Date | null; paidThroughAt: Date | null };
 const paymentSelect = {
@@ -102,7 +108,7 @@ export class PlatformBillingController {
       const [same] = await tx.$queryRaw<{ createdAt: Date; amount: string }[]>`
         SELECT p."createdAt", p.amount::text FROM "PlatformPayment" p
         WHERE p."tenantId"=${tenant.id}::uuid AND p."voidsPaymentId" IS NULL
-          AND lower(regexp_replace(p.reference, '[[:space:]]+', '', 'g')) = ${normalizeReference(input.reference)}
+          AND lower(regexp_replace(p.reference, ${SQL_SPACE}, '', 'g')) = ${normalizeReference(input.reference)}
           AND NOT EXISTS (SELECT 1 FROM "PlatformPayment" v WHERE v."voidsPaymentId" = p.id)
         LIMIT 1`;
       if (same)
@@ -127,6 +133,9 @@ export class PlatformBillingController {
         after: { amount: payment.amount.toString(), method: input.method, months, plan: tenant.plan, paidUntil: paidUntil.toISOString() },
       } });
       return { tenantId: tenant.id, payment, tenant: { slug: code, status: "active", paidUntil }, replayed: false };
+    }).catch(e => {
+      if (isUniqueViolation(e)) throw new HttpException("Ya hay un pago vigente con esa referencia. Si es otro pago, usa su propia referencia.", 409);
+      throw e;
     });
     if (result.replayed) {
       const { tenantId: _tenantId, replayed: _replayed, ...response } = result;

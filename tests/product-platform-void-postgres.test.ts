@@ -206,3 +206,23 @@ describe("PC-23 · bitácora de auditoría", () => {
     expect(JSON.stringify(seen.body)).not.toContain("dueña-nexora");
   });
 });
+
+describe("PC-23 · normalización de la referencia igual en JS y en SQL (F)", () => {
+  it("espacios Unicode (NBSP, FEFF) cuentan como espacio en la API y en la base; un caracter que solo la base trataba como espacio ya no da 500", async () => {
+    const a = await tenant("ref-nbsp");
+    const keep = () => t.q(`UPDATE "Tenant" SET status='active', "paidThroughAt"=now() + interval '400 days' WHERE id=$1::uuid`, a.id);
+    const expectStatus = async (reference: string, status: number) => {
+      await keep();
+      const r = await pay("ref-nbsp", 1, reference);
+      expect(r.status, `${JSON.stringify(reference)} ${JSON.stringify(r.body)}`).toBe(status);
+    };
+    const NBSP = String.fromCharCode(0xa0), BOM = String.fromCharCode(0xfeff), MONGOLIAN = String.fromCharCode(0x180e);
+    await expectStatus("NB 1", 201);
+    await expectStatus(`NB${NBSP}1`, 409); // NBSP = espacio
+    await expectStatus(`nb${NBSP}${NBSP}1`, 409);
+    await expectStatus(`FE${BOM}2`, 201);
+    await expectStatus("FE2", 409); // la base antes no veía FEFF como espacio
+    await expectStatus("AB", 201);
+    await expectStatus(`A${MONGOLIAN}B`, 201); // U+180E no es espacio para nadie: otra referencia, no un 500
+  });
+});
