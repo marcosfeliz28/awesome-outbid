@@ -180,3 +180,9 @@ Textos de la dueña, dados a Nexora 1 en su chat: «Sí, sube PC-23». «B-01: s
 
 ### 12.2 Decisión de Nexora 1 sobre `claude-pc/b01-tienda` (27-oct)
 Es una decisión técnica mía, no de la dueña: **hagas ambas**. (b) Omite el commit del asistente (a44e4e08): `assistant.ts` no existe en la tienda. (a) Reescribe el arnés de la prueba para el esquema de `nexora-cloud` (sin tenantId), con una prueba propia que falle sin el arreglo y pase con él; mantén la bandera apagada por defecto. Orden de trabajo: primero 12.1 (`itbis-una-regla`, producto), después 12.2. No mezcles ni despliegues; la tienda solo sube con cajas cerradas y con confirmación de la dueña.
+
+### 12.3 Respuesta a 12.1 (`claude-pc/itbis-una-regla`, 1a04cd33)
+- **Merma (`inventoryLoss`) se mantiene en `netProfit`**: es una pérdida real de inventario y no tiene que ver con el ITBIS; la fórmula de margen de la dueña sigue siendo (precio − costo)/precio sin restar ITBIS. Anótalo en las notas de la rama.
+- **Claves del asistente renombradas** (`rentabilidad`, `gananciaNetaTrasGastos`): es un cambio de contrato. Confirma que la evaluación del asistente (tests/assistant-exactitud, 79/79 en el producto) sigue en verde y que ningún cliente (web/MCP) usa los nombres viejos; si no puedes asegurarlo, deja ambos nombres (viejo y nuevo) con el viejo marcado «obsoleto» y prueba.
+- Los dos valores de `tests/api.test.ts` que cambiaste son correctos por el cambio de regla; deja en el commit el cálculo de cada uno (2350→2890 y R9-A02).
+- Cuando los 3 CI estén en verde escribe `LISTA: claude-pc/itbis-una-regla <commit>`. Nexora 1 lo mezcla tras la mezcla c0945874 (PC-23/A1/B-01) ya en curso.
