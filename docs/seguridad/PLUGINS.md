@@ -4,6 +4,24 @@
 
 ## Resumen
 
+### Regla operativa vigente
+
+**«Aprobado» describe el resultado de esta revisión estática; no significa «instalar en todas las sesiones».** La política vigente es:
+
+| Entorno | Qué se permite hoy |
+|---|---|
+| Sesiones generales con llaves o datos reales | Solo `ponytail`, ya autorizado en la configuración general. No añadir plugins pesados. |
+| Taller | Plugins marcados **Solo en el Taller**, sin secretos ni datos reales y con las condiciones de cada sección. |
+| Claude PC | `claude-mem` sigue pendiente de una decisión expresa de la dueña. No instalarlo mientras tanto. |
+| Cualquier entorno | OmniRoute y Headroom están rechazados. No instalarlos. |
+
+Estados usados en este documento:
+
+- **Aprobado:** la revisión no encontró una razón para rechazarlo dentro del alcance indicado; su instalación sigue dependiendo de la política del entorno.
+- **Solo en el Taller:** puede usarse únicamente en el entorno aislado de pruebas y con sus controles obligatorios.
+- **Pendiente:** falta una decisión o una verificación; no instalar todavía.
+- **Rechazado:** no instalar.
+
 | Plugin | Versión revisada | Riesgo | Veredicto |
 |---|---|---|---|
 | claude-code-setup | 1.0.0 | bajo | **Aprobado** |
@@ -11,12 +29,22 @@
 | chrome-devtools-mcp | 1.12.0 (etiqueta) | medio | **Solo en el Taller** (`--no-usage-statistics`) |
 | supabase | 0.1.16 (pin del catálogo) | medio | **Solo en el Taller** |
 | vercel | 0.50.0 (pin del catálogo) | medio | **Solo en el Taller** (`VERCEL_PLUGIN_TELEMETRY=off`) |
-| oh-my-claudecode | 5.7.17 (etiqueta) | medio | **Solo en el Taller** |
+| oh-my-claudecode | 5.7.19 (etiqueta) | medio | **Solo en el Taller** (modo estricto, sin HUD, versión fija) |
 | claude-mem | 15.3.0 | alto | **Rechazado** para sesiones con llaves o datos reales; no aprobado aún para Claude PC |
 | OmniRoute | 3.8.53 | alto | **Rechazado** |
 | Headroom | 0.42.0 | alto | **Rechazado** |
 
-**Alerta de versiones:** la dueña indicó supabase 0.1.17 y vercel 0.49.2, pero el catálogo oficial fija supabase en `2c6d02d` (0.1.16, `marketplace.json:3805-3811`) y vercel en `882e66c` (0.50.0, `marketplace.json:4137-4143`). **Las versiones instaladas no coinciden con lo que revisé**; hay que comparar el diff antes de dar por buenas 0.1.17 y 0.49.2.
+**Alerta de versiones:** la dueña indicó supabase 0.1.17 y vercel 0.49.2, pero el catálogo oficial fija supabase en `2c6d02d` (0.1.16, `marketplace.json:3805-3811`) y vercel en `882e66c` (0.50.0, `marketplace.json:4137-4143`). **Las versiones informadas no coinciden con las revisadas.** No se consideran aprobadas hasta comparar su diff; no hay que instalarlas de nuevo para hacer esa comparación.
+
+### Qué falta antes de declarar el Taller conforme
+
+1. Comparar las versiones reales de Supabase y Vercel con las versiones revisadas.
+2. Confirmar en el Taller la huella de Task Observer 3.8.1 antes de escribirla en `docs/seguridad/plugins.lock.json`. La huella calculada desde la etiqueta oficial es `5d8583079e9d7e56503cc9b5ecd6942ed84642413bfed7806729981081b838a1` para 7 archivos; **todavía no es una huella confirmada de la instalación**.
+3. Mantener oh-my-claudecode 5.7.19 fijado, en modo estricto, sin HUD y sin autoactualización.
+4. Usar Chrome DevTools MCP con perfil vacío y `--no-usage-statistics`.
+5. Usar Vercel con `VERCEL_PLUGIN_TELEMETRY=off`.
+
+No hace falta instalar ningún plugin para completar estas comprobaciones.
 
 ---
 
@@ -32,6 +60,7 @@
 - Conexiones: ninguna en operación normal.
 - Escritura fuera del repo: sí, por diseño, `~/.claude/skill-observations/` y `~/.claude/projects/...` (`references/environments.md:365-370`). Mueve archivos (`mv -n`, `new-observation.sh:131`).
 - Riesgo real: su descripción ordena invocarse «antes de la primera llamada de cualquier sesión» y propone cambiar otros skills y hooks (`references/environments.md:1018`). Es instrucción que crece sola: que toda edición a skills/CLAUDE.md pase por la dueña.
+- Estado operativo: instalado en el Taller. La huella calculada desde la etiqueta oficial es `5d8583079e9d7e56503cc9b5ecd6942ed84642413bfed7806729981081b838a1` para 7 archivos; falta compararla con la instalación antes de añadirla al candado.
 
 ## chrome-devtools-mcp 1.12.0 — solo en el Taller (riesgo medio)
 - Fuente: `ChromeDevTools/chrome-devtools-mcp` (Google), etiqueta `chrome-devtools-mcp-v1.12.0`.
@@ -54,14 +83,17 @@
 - Escritura fuera del repo: `~/.config/vercel-plugin/` (`src/telemetry.mts:28-31`).
 - Lee el entorno para detectar proyecto (`session-start-profiler.mjs`: `.env.local` solo por nombre de archivo, ejecuta `vercel --version`).
 
-## oh-my-claudecode 5.7.17 — solo en el Taller (riesgo medio)
+## oh-my-claudecode 5.7.19 — solo en el Taller (riesgo medio)
+
+La revisión base fue 5.7.17 y la sección de actualización que sigue cubre el diff hasta 5.7.19. El veredicto operativo actual corresponde a **5.7.19**.
+
 - Fuente: `Yeachan-Heo/oh-my-claudecode`, etiqueta v5.7.17 (commit 726fa45), MIT, «contributors».
 - Ejecuta solo: ~15 hooks node (`hooks/hooks.json`) en cada prompt, herramienta y arranque, más MCP local `bridge/mcp-server.cjs` (`.mcp.json`).
 - **Aprueba permisos solo:** `PermissionRequest` sobre Bash devuelve `allow` para `git status`, `gh issue|pr view|list|status` y `ls` sin metacaracteres (`src/hooks/permission-handler/index.ts:33-37, 541-552`). Es estrecho y respeta tus reglas `ask`, pero es un hook que decide permisos.
 - Lectura de llaves: el HUD lee `CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, `MINIMAX_API_KEY`, `KIMI_API_KEY` (`src/hud/usage-api.ts:1005-1028, 2380-2384`) y consulta `api.anthropic.com` (`usage-api.ts:1207`). En una sesión con llaves es justo lo que no queremos.
 - Descargas/instalación: auto-actualización con `npm install -g oh-my-claude-sisyphus@latest` (`src/features/auto-update.ts:71, 1106`) → versión no fijada. El puente trae referencias a Telegram, Discord, Slack, GitHub (`bridge/cli.cjs`).
 - Escribe `~/.claude/CLAUDE.md` en su instalador (`src/installer/index.ts:173`).
-- Condición: desactivar auto-actualización, sin llaves en el entorno, nunca en «Llaves».
+- Condición: fijar 5.7.19, desactivar autoactualización, usar modo estricto sin HUD, mantener el entorno sin llaves y nunca usarlo en «Llaves».
 
 ### Actualización 5.7.19 (27-oct-2026) — aprobada para el Taller
 Pedido de «Llaves». Diff de las etiquetas `v5.7.17` → `v5.7.19` (41 archivos, nada ejecutado):
@@ -108,4 +140,9 @@ Pedido de «Llaves». Diff de las etiquetas `v5.7.17` → `v5.7.19` (41 archivos
 - Los ZIP/versiones exactas instaladas en las otras sesiones (0.1.17, 0.49.2): no tengo acceso.
 
 ## Reglas para todos
-Fijar versión/commit; telemetría apagada (`VERCEL_PLUGIN_TELEMETRY=off`, `--no-usage-statistics`, `HEADROOM_TELEMETRY=off`); ningún plugin con hooks sobre cada herramienta en «Llaves»; cualquier actualización vuelve a pasar por el Revisor.
+
+- Fijar versión o commit; cualquier actualización vuelve a pasar por el Revisor.
+- Apagar la telemetría de los plugins permitidos: `VERCEL_PLUGIN_TELEMETRY=off` y `--no-usage-statistics` para Chrome DevTools MCP.
+- No usar plugins con hooks sobre cada herramienta en «Llaves».
+- No usar OmniRoute ni Headroom. Sus variables de telemetría se documentan como evidencia, no como una vía para aprobarlos.
+- No añadir huellas al candado hasta comprobarlas contra la instalación real.
