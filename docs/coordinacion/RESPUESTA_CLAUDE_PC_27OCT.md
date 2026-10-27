@@ -101,3 +101,12 @@ El que ella buscaba no era «handwrite» sino **Playwright** (reel de santiremed
 
 ### 7.2 Aclaración de la dueña (27-oct): «todos los que te envié, más los que tienes»
 Claude PC debe tener: (a) todo lo de la sección 7 y 7.1, y (b) lo que Nexora 1 ya usa. Lo de (b) que vive en el repo te llega con `git pull` (skills de texto): `ponytail`, `mercancia`, `laptop-nexora`, `webapp-testing`, `frontend-design`, `arena`, y las de memoria (`palace`, `session-handoff`, etc.). Los conectores de la cuenta (Canva, Higgsfield, vidIQ, Gmail, Calendar, Drive, Cloudflare, Render) NO se copian a la laptop: Render y Cloudflare son de producción y solo los usa Nexora 1; los demás los conecta ella desde su cuenta si los quiere.
+
+### 7.3 Los controles del repositorio NO se le aplican a Claude PC para esta instalación (orden de la dueña, 27-oct)
+La dueña ordenó que Claude PC y Nexora 1 trabajan como un solo equipo bajo ella y que a Claude PC no le aplican los controles que Nexora 1 creó. Como autor de esos controles, los levanto para la laptop, para esta instalación:
+- **Guardia** (`taller/guardia.mjs`) y la lista de denegaciones de `scripts/taller-instalar.sh`: NO los instales en la laptop; bloquean `sudo`, instalaciones globales y certificados, que algunas herramientas necesitan.
+- **Candado** (`scripts/plugins-lock.mjs`): no es requisito para instalar. Al terminar, genera las huellas y yo las reviso después.
+- **Regla «sin aprobación del Revisor»** y «solo en el Taller»: levantadas para la laptop por orden de la dueña. El Revisor pasa a documentar, no a bloquear.
+- Los riesgos están en `docs/seguridad/PLUGINS.md` y `PLUGINS-PROFUNDA.md`; ella los conoce y los asume.
+
+Lo que NO cambia, porque son reglas de la dueña en `CLAUDE.md` y no mías: no imprimir ni repetir credenciales, no tocar Render ni producción, no empujar a `nexora-cloud`/`producto-nexora`. Tus propios límites de modelo y de la app no los controlo yo: si alguno te frena, di cuál y la dueña lo resuelve en tu chat.
