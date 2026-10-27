@@ -125,7 +125,14 @@ const configSchema = z.object({
   // desde el selector de clientes del POS.
   requireCustomer: z.boolean().default(true),
   // Tasa del día (RD$ por unidad) para el efectivo en dólares y euros.
-  usdRate: z.number().positive().max(10000).nullable().optional(),
+  // Cuatro decimales: los mismos que guarda cada pago en dólares.
+  usdRate: z
+    .number()
+    .positive()
+    .max(10000)
+    .transform((v) => Math.round(v * 10000) / 10000)
+    .nullable()
+    .optional(),
   eurRate: z.number().positive().max(10000).nullable().optional(),
   // Cuentas de banco donde caen las transferencias y terminales de tarjeta
   // (orden de la dueña, 20-oct): la caja elige de esta lista, no escribe.
@@ -1006,9 +1013,13 @@ export class AdminController {
     });
     // SEC-03: la lista del cambio con PIN no expone a quien tiene más
     // permisos (gerencia, administración) a una vendedora o cajera.
-    return users
-      .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions))
-      .map(({ role, ...u }) => ({ ...u, role: { name: role.name } }));
+    return (
+      users
+        // Las usuarias de GV no usan la caja de Macgen.
+        .filter((u) => u.role.name !== "gv")
+        .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions))
+        .map(({ role, ...u }) => ({ ...u, role: { name: role.name } }))
+    );
   }
   @Get("users") @Permit("*") users(@CurrentUser() actor: Actor) {
     return this.db.user.findMany({
@@ -1309,7 +1320,11 @@ export class AdminController {
   }
   @Get("audit-log") @Permit("*") auditLog(@CurrentUser() actor: Actor) {
     return this.db.auditLog.findMany({
-      where: { branchId: actor.branchId },
+      // La actividad de GV no desplaza los eventos de Macgen de esta lista.
+      where: {
+        branchId: actor.branchId,
+        NOT: { action: { startsWith: "gv_" } },
+      },
       orderBy: { createdAt: "desc" },
       take: 300,
     });

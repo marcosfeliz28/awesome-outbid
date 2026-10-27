@@ -1,0 +1,445 @@
+"""Incorporation engine for the capture index.
+
+Drains the inert backlog in ``hooks/memory-palace-index.yaml`` by
+classifying each ``pending`` entry into one of three actions:
+
+- **promote**: a recent, authoritative, or clustered capture worth
+  keeping. Assigns a real importance score, a routing type, and bumps
+  maturity ``seedling -> growing``.
+- **archive**: an orphaned capture (its backing file is gone) or an
+  ancient one that was never revisited. Following the research finding
+  that unused notes should drain rather than accumulate, these are
+  marked ``archived`` instead of promoted.
+- **hold**: everything else stays ``pending`` and emits no proposal.
+
+:func:`propose_promotions` is pure (it writes nothing). It reuses the
+structural ranking from
+:mod:`memory_palace.corpus.index_analytics` so the promote signal is
+identical to what the read-only report shows. :func:`apply_promotions`
+is the imperative shell: it backs up the index, applies the proposed
+changes in place, and persists atomically. Applying is idempotent
+because promoted and archived entries are no longer ``pending``.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import logging
+import os
+import shutil
+import tempfile
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover - yaml is a hard runtime dep
+    yaml = None  # type: ignore[assignment]  # optional-import fallback sentinel
+
+from memory_palace.corpus.index_analytics import (
+    INERT_ROUTING_TYPE,
+    _parse_timestamp,
+    load_capture_index,
+    rank_promotion_candidates,
+)
+from memory_palace.corpus.titles import looks_like_title, slug_title_from_url
+
+logger = logging.getLogger(__name__)
+
+# A pending entry scoring at or above this is promoted; below, it holds.
+PROMOTE_THRESHOLD = 0.5
+# Pending captures older than this (days) are archived, not promoted.
+ARCHIVE_AGE_DAYS = 180
+# Routing-type sentinel for entries drained out of the active corpus.
+ARCHIVED_ROUTING_TYPE = "archived"
+# Importance scale: a perfect promotion score maps to this ceiling.
+_IMPORTANCE_FLOOR = 50
+_IMPORTANCE_SPAN = 50
+
+
+@dataclass
+class Proposal:
+    """A single proposed change to one index entry."""
+
+    key: str
+    action: str  # "promote" | "archive"
+    changes: dict[str, Any]
+    reasons: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ApplyResult:
+    """Outcome of applying a batch of proposals."""
+
+    applied: int
+    backup_path: Path
+
+
+class CorpusUnavailableError(RuntimeError):
+    """The capture corpus is not present in the tree being scanned.
+
+    Raised instead of proposing a prune that would delete most of the
+    index. Only a handful of the files under ``data/staging`` are tracked
+    in git, so a fresh worktree carries an index describing captures
+    whose backing files were never checked out. Every entry then reads as
+    orphaned, and trusting that reading empties the corpus.
+    """
+
+
+# Above this share of entries looking orphaned, the tree is missing the
+# corpus rather than the corpus having rotted. Real rot is incremental:
+# captures are removed a few at a time by curation, not by the hundred.
+_MASS_ORPHAN_RATIO = 0.5
+
+
+def _is_orphan(entry: dict[str, Any], plugin_root: Path | None) -> bool:
+    """Return True when the entry's backing file is missing."""
+    if plugin_root is None:
+        return False
+    stored_at = entry.get("stored_at")
+    if not stored_at:
+        return False
+    return not (plugin_root / str(stored_at)).exists()
+
+
+def _count_orphans(entries: dict[str, Any], plugin_root: Path | None) -> int:
+    """Count the entries whose backing file is missing from this tree."""
+    return sum(1 for entry in entries.values() if _is_orphan(entry, plugin_root))
+
+
+def _corpus_is_present(entries: dict[str, Any], plugin_root: Path | None) -> bool:
+    """Report whether orphan status can be trusted in the scanned tree.
+
+    False when most of a populated index has no backing file, which
+    reports a checkout missing the corpus rather than a corpus that
+    rotted. Both consumers of orphan status consult this: pruning would
+    delete those entries, and promotion would archive them.
+    """
+    if plugin_root is None or not entries:
+        return False
+    return _count_orphans(entries, plugin_root) <= _MASS_ORPHAN_RATIO * len(entries)
+
+
+def propose_promotions(
+    index: dict[str, Any], plugin_root: Path | None = None
+) -> list[Proposal]:
+    """Classify pending entries into promote/archive proposals.
+
+    Pure: the input index is never mutated and nothing is written. Held
+    entries (middling score, not stale, not orphaned) emit no proposal.
+
+    Args:
+        index: A loaded index dict with ``entries`` and ``hashes``.
+        plugin_root: When given, used to detect orphaned ``stored_at``
+            files. When ``None`` the orphan check is skipped (age-based
+            archival still applies). The check is also skipped when most
+            of the index looks orphaned, which means this tree lacks the
+            corpus rather than the corpus having rotted. Age-based
+            archival still applies in that case, since it reads only the
+            index and needs no file on disk.
+
+    """
+    entries = index.get("entries", {})
+    scores = {c.key: c.score for c in rank_promotion_candidates(index)}
+    now = datetime.now(timezone.utc)
+    orphans_are_meaningful = _corpus_is_present(entries, plugin_root)
+
+    proposals: list[Proposal] = []
+    for key, entry in entries.items():
+        if entry.get("routing_type") != INERT_ROUTING_TYPE:
+            continue
+
+        orphan = orphans_are_meaningful and _is_orphan(entry, plugin_root)
+        # Set by the fetch hook when a 2xx response carried no content
+        # (redirect notice, zero-result set). Structural signals alone
+        # would score these on domain and cluster, promoting empty API
+        # responses above real captures (issue #649).
+        null_reason = entry.get("null_capture")
+        age_days = (now - _parse_timestamp(entry.get("last_updated"))).days
+        if orphan or null_reason or age_days >= ARCHIVE_AGE_DAYS:
+            if orphan:
+                reason = "orphan: backing file missing"
+            elif null_reason:
+                reason = f"null capture: {null_reason}"
+            else:
+                reason = f"stale: {age_days}d since capture"
+            proposals.append(
+                Proposal(
+                    key=key,
+                    action="archive",
+                    changes={"routing_type": ARCHIVED_ROUTING_TYPE},
+                    reasons=[reason],
+                )
+            )
+            continue
+
+        score = scores.get(key, 0.0)
+        if score >= PROMOTE_THRESHOLD:
+            importance = min(
+                100, _IMPORTANCE_FLOOR + int(round(score * _IMPORTANCE_SPAN))
+            )
+            # Web captures (url-keyed) are general knowledge -> meta;
+            # local docs (path-keyed) are project-scoped -> local.
+            routing = "local" if entry.get("path") and not entry.get("url") else "meta"
+            proposals.append(
+                Proposal(
+                    key=key,
+                    action="promote",
+                    changes={
+                        "importance_score": importance,
+                        "routing_type": routing,
+                        "maturity": "growing",
+                    },
+                    reasons=[
+                        f"score={score:.2f}",
+                        f"importance {entry.get('importance_score', 50)}->{importance}",
+                    ],
+                )
+            )
+        # else: hold -> no proposal
+
+    return proposals
+
+
+def _write_index_atomic(index: dict[str, Any], index_path: Path) -> None:
+    """Persist the index via tempfile + os.replace (atomic on POSIX).
+
+    The src package must stay independent of the hook runtime, so this
+    mirrors the hook-side writer rather than importing it across the
+    ``hooks/`` and ``src/`` import-root boundary.
+    """
+    if yaml is None:  # pragma: no cover - yaml is a hard runtime dep
+        msg = "PyYAML is required to write the capture index"
+        raise RuntimeError(msg)
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(
+        suffix=".tmp", prefix="memory-palace-index-", dir=index_path.parent
+    )
+    try:
+        with os.fdopen(fd, "w") as handle:
+            yaml.safe_dump(index, handle, default_flow_style=False, sort_keys=False)
+        os.replace(tmp_path, index_path)
+    except Exception:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_path)
+        raise
+
+
+def apply_promotions(
+    proposals: list[Proposal],
+    index_path: Path,
+    *,
+    backup_dir: Path,
+) -> ApplyResult:
+    """Back up the index, apply proposals in place, and persist.
+
+    Args:
+        proposals: Promote/archive proposals from
+            :func:`propose_promotions`.
+        index_path: Path to the YAML index to mutate.
+        backup_dir: Directory to write a timestamped backup into before
+            any change is persisted.
+
+    Returns:
+        An :class:`ApplyResult` with the count applied and the backup
+        path. Re-running with freshly proposed changes is a no-op.
+
+    """
+    index_path = Path(index_path)
+    backup_dir = Path(backup_dir)
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup_path = backup_dir / f"memory-palace-index-{timestamp}.yaml"
+    if index_path.exists():
+        shutil.copyfile(index_path, backup_path)
+
+    index = load_capture_index(index_path)
+    entries = index.get("entries", {})
+
+    applied = 0
+    for proposal in proposals:
+        entry = entries.get(proposal.key)
+        if entry is None:
+            logger.warning("Proposal key not in index, skipping: %s", proposal.key)
+            continue
+        entry.update(proposal.changes)
+        applied += 1
+
+    _write_index_atomic(index, index_path)
+    return ApplyResult(applied=applied, backup_path=backup_path)
+
+
+def propose_title_repairs(index: dict[str, Any]) -> list[Proposal]:
+    """Return retitle proposals for entries holding a non-title.
+
+    Fixing the capture hook only governs future captures. Entries stored
+    before the shape rules were right keep their bad titles forever, so
+    the index still shows "- A loading state" and "Response" as page
+    titles (#624).
+
+    The replacement is the URL slug, which is precisely what the hook's
+    own fallback would have produced had the filter been right at
+    capture time. That keeps repaired entries indistinguishable from
+    freshly captured ones instead of inventing a third title source.
+
+    Pure: proposes, writes nothing. An entry is left alone when its URL
+    offers nothing better, because churning the index to gain nothing
+    is its own defect (#605).
+    """
+    proposals: list[Proposal] = []
+    for key, entry in index.get("entries", {}).items():
+        if not isinstance(entry, dict):
+            continue
+        title = entry.get("title")
+        if not isinstance(title, str) or not title.strip():
+            continue
+        if looks_like_title(title.strip()):
+            continue
+        replacement = slug_title_from_url(entry.get("url") or "")
+        if replacement is None or not looks_like_title(replacement):
+            continue
+        if replacement == title.strip():
+            continue
+        proposals.append(
+            Proposal(
+                key=key,
+                action="retitle",
+                changes={"title": replacement},
+                reasons=[f"stored title is not a title: {title.strip()[:60]!r}"],
+            )
+        )
+    return proposals
+
+
+def apply_title_repairs(
+    index: dict[str, Any],
+    proposals: list[Proposal],
+    index_path: Path,
+    *,
+    backup_dir: Path | None = None,
+) -> ApplyResult:
+    """Back up the index, apply retitle proposals, and persist.
+
+    Unlike :func:`apply_promotions`, the caller owns loading: this
+    mutates and writes the ``index`` it is handed. The repair is driven
+    from an already-loaded index in every caller, and reloading here
+    would silently discard edits the caller had made.
+
+    Args:
+        index: The loaded index to mutate and persist.
+        proposals: Retitle proposals from :func:`propose_title_repairs`.
+        index_path: Path the index is persisted to.
+        backup_dir: Directory for the pre-repair backup. Defaults to the
+            index's own directory.
+
+    Returns:
+        An :class:`ApplyResult` with the count applied and the backup
+        path. Re-running is a no-op, because a repaired title passes
+        :func:`looks_like_title` and is proposed no further.
+
+    """
+    index_path = Path(index_path)
+    backup_dir = Path(backup_dir) if backup_dir is not None else index_path.parent
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup_path = backup_dir / f"memory-palace-index-{timestamp}.pre-retitle.yaml"
+    if index_path.exists():
+        shutil.copyfile(index_path, backup_path)
+
+    entries = index.get("entries", {})
+    applied = 0
+    for proposal in proposals:
+        entry = entries.get(proposal.key)
+        if entry is None:
+            logger.warning("Retitle key not in index, skipping: %s", proposal.key)
+            continue
+        entry.update(proposal.changes)
+        applied += 1
+
+    _write_index_atomic(index, index_path)
+    return ApplyResult(applied=applied, backup_path=backup_path)
+
+
+def propose_orphan_prunes(index: dict[str, Any], plugin_root: Path | None) -> list[str]:
+    """Return entry keys whose backing ``stored_at`` file is missing.
+
+    Unlike ``propose_promotions``, this targets any entry (including
+    archived ones), because an orphan record-shell carries no useful
+    information regardless of routing_type. Returns an empty list when
+    ``plugin_root`` is ``None`` so the function fails closed and never
+    proposes destructive prunes without a root to check against.
+
+    Raises :class:`CorpusUnavailableError` when most of a populated index
+    looks orphaned. That reading means the tree lacks the corpus, not
+    that the corpus rotted, and pruning on it deletes everything.
+    """
+    if plugin_root is None:
+        return []
+
+    entries = index.get("entries", {})
+    if not entries:
+        return []
+
+    if not _corpus_is_present(entries, plugin_root):
+        raise CorpusUnavailableError(
+            f"{_count_orphans(entries, plugin_root)} of {len(entries)} entries "
+            f"have no backing file under {plugin_root / 'data' / 'staging'}. "
+            "Refusing to prune: a tree missing the corpus is not a corpus that "
+            "rotted. Check out the captures, or prune from the primary checkout."
+        )
+
+    return [key for key, entry in entries.items() if _is_orphan(entry, plugin_root)]
+
+
+def apply_orphan_prunes(
+    keys: list[str],
+    index_path: Path,
+    *,
+    backup_dir: Path,
+) -> ApplyResult:
+    """Hard-delete the listed entries plus their unreferenced hash mappings.
+
+    Takes a timestamped backup before any change. A hash mapping is
+    removed alongside its entry so a stale mapping pointing at a deleted
+    file cannot re-trigger dedup confusion later, but only once no
+    surviving entry still references that content: several URLs may share
+    a single capture, and the mapping is what tells the survivors their
+    content is already stored.
+    """
+    index_path = Path(index_path)
+    backup_dir = Path(backup_dir)
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup_path = backup_dir / f"memory-palace-index-prune-{timestamp}.yaml"
+    if index_path.exists():
+        shutil.copyfile(index_path, backup_path)
+
+    index = load_capture_index(index_path)
+    entries = index.get("entries", {})
+    hashes = index.get("hashes", {})
+
+    applied = 0
+    for key in keys:
+        entry = entries.pop(key, None)
+        if entry is None:
+            continue
+        applied += 1
+        # Drop the hash mapping only when no surviving entry still points
+        # at this content. Two URLs can share one capture, and for the
+        # survivor that mapping is its dedup memory: removing it makes
+        # content already on disk look unseen, so the next fetch stores
+        # a second copy.
+        content_hash = entry.get("content_hash")
+        still_referenced = any(
+            other.get("content_hash") == content_hash for other in entries.values()
+        )
+        if content_hash and not still_referenced:
+            hashes.pop(content_hash, None)
+
+    _write_index_atomic(index, index_path)
+    return ApplyResult(applied=applied, backup_path=backup_path)

@@ -39,6 +39,9 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set("trust proxy", trustedProxies());
   app.setGlobalPrefix("api");
   app.use(helmet());
+  // La importación de GV (sólo «*») trae el Excel completo en JSON: su propio
+  // límite, por debajo del de Nginx (5 MB). El resto sigue en 100 kb.
+  app.use("/api/gv/import", jsonBodyParser({ limit: "4mb" }));
   app.use(jsonBodyParser({ limit: "100kb" }));
   app.use(cookieParser());
   app.enableCors({

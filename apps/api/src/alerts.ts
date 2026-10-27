@@ -70,6 +70,18 @@ export const MANUAL_ALERT_TYPES = [
   // Recordatorio semanal de créditos por cobrar (credit-reminder.ts).
   "credit_reminder",
   "sale_void_request",
+  // Venta offline cobrada en dólares con otra tasa (pago en dólares, 25-oct).
+  "usd_rate_offline",
+  // Cambio en una caja ya cerrada y su «falta lote» (#6, 25-oct).
+  "cash_after_close",
+  "card_batch_missing",
+];
+// Avisos que sólo ve la dueña («*»).
+export const OWNER_ONLY_ALERT_TYPES = [
+  "sale_void_request",
+  "usd_rate_offline",
+  "cash_after_close",
+  "card_batch_missing",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
@@ -490,10 +502,8 @@ export class AlertEngine {
             `${label(v)} · ${lot.lotNumber}: ${days < 0 ? "vencido" : `vence en ${days} días`}.`,
           );
       }
-      const netMargin = margin(
-        Number(v.price) / (1 + Number(v.product.taxRate) / 100),
-        cost,
-      );
+      // Margen de la dueña: sin restar ITBIS (revisión 25-oct #8).
+      const netMargin = margin(v.price, cost);
       if (netMargin < (config?.lowMargin ?? 15))
         add(
           "margin:" + v.id,
@@ -526,7 +536,7 @@ export class AlertEngine {
           margin: netMargin,
           suggestedDiscount: Math.min(
             daysToExpiry !== null && daysToExpiry < 30 ? 25 : 15,
-            safeDiscount(Number(v.price), cost, Number(v.product.taxRate)),
+            safeDiscount(Number(v.price), cost, config?.lowMargin ?? 15),
           ),
           score: clearanceScore(daysIdle, daysToExpiry, stock, cost),
         });
@@ -600,11 +610,7 @@ export class AlertEngine {
             productId: variant.productId,
             imageUrl: variant.product.imageUrl,
             category: variant.product.category.name,
-            margin: margin(
-              Number(variant.price) /
-                (1 + Number(variant.product.taxRate) / 100),
-              Number(variant.costAvg),
-            ),
+            margin: margin(variant.price, variant.costAvg),
             name: variant.product.name,
             sku: variant.sku,
             stock: Number(variant.stock),
@@ -618,7 +624,7 @@ export class AlertEngine {
             suggestedDiscount: safeDiscount(
               Number(variant.price),
               Number(variant.costAvg),
-              Number(variant.product.taxRate),
+              config?.lowMargin ?? 15,
             ),
           });
       }
@@ -855,7 +861,7 @@ export class AlertsController {
         ...(filter.type ? { type: filter.type } : {}),
         ...(filter.entityId ? { entityId: filter.entityId } : {}),
         ...(!can(actor.permissions, "*")
-          ? { AND: [{ type: { not: "sale_void_request" } }] }
+          ? { AND: [{ type: { notIn: OWNER_ONLY_ALERT_TYPES } }] }
           : {}),
       },
       orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
@@ -881,7 +887,7 @@ export class AlertsController {
         id: parse(uuid, id),
         branchId: actor.branchId,
         ...(!can(actor.permissions, "*")
-          ? { type: { not: "sale_void_request" } }
+          ? { type: { notIn: OWNER_ONLY_ALERT_TYPES } }
           : {}),
       },
     });

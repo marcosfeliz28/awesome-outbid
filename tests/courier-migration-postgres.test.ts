@@ -100,6 +100,25 @@ it("migra una base con ventas sin alterar total, costo, impuestos ni importe de 
     ]);
     expect(after.courierFee).toBe("0.00");
     expect(after.courierPaidAt).toBeNull();
+    // Revisión 25-oct #10 (202610250401): la columna ya no tiene «Addison» por
+    // defecto; las ventas guardadas no se tocan (limpiarlas lo decide la
+    // dueña) y una venta nueva sin envío queda sin mensajero.
+    expect(
+      (await client.query(`SELECT "courierName" FROM "Sale" WHERE id=$1`, [id]))
+        .rows[0].courierName,
+    ).toBe("Addison");
+    const fresh = "10000000-0000-4000-8000-000000000002";
+    await client.query(
+      `INSERT INTO "Sale" (id, number, "offlineUuid", "sellerId", subtotal, "discountTotal", "taxTotal", total, "costTotal", "updatedAt") VALUES ($1, 'FS-COURIER-QA2', $1, $1, 100, 0, 0, 100, 40, NOW())`,
+      [fresh],
+    );
+    expect(
+      (
+        await client.query(`SELECT "courierName" FROM "Sale" WHERE id=$1`, [
+          fresh,
+        ])
+      ).rows[0].courierName,
+    ).toBeNull();
     await expect(
       client.query(`UPDATE "Sale" SET "courierFee"=-1 WHERE id=$1`, [id]),
     ).rejects.toThrow();

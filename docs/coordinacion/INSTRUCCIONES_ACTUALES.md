@@ -2,6 +2,8 @@
 
 > **Versión 3.6 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
 
+> **Regla fija de la dueña (24-oct-2026), para toda orden a ChatGPT PC, ChatGPT nube, Claude PC y Gemini:** usa **la mayor cantidad de agentes posible en paralelo**, porque los planes ya están pagados. Lo normal es un agente por tarea independiente, más agentes que escriban las pruebas, revisen el diff y vigilen el CI. Cada agente trabaja en su propio `git worktree`, con su base y sus puertos. Nunca uses un solo agente si el trabajo se puede repartir.
+
 ## 1. Estado
 - **Fase 1 terminada y mezclada** en `nexora-cloud` (PR #1: T0–T5, CI verde). Claude la está desplegando a Render. `nexora-chatgpt` queda **CONGELADA**: no empujes ahí.
 - Tu trabajo ahora vive en la rama **`nexora-chatgpt-fase2`**, creada desde `origin/nexora-cloud` (que ya incluye todo lo anterior). Abre un PR hacia `nexora-cloud` titulado «Fase 2». Si ya la creaste desde otro punto, haz `git merge origin/nexora-cloud` (merge, nunca rebase).

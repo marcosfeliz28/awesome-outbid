@@ -44,6 +44,7 @@ model User {
   voidRequestsReviewed SaleVoidRequest[] @relation("VoidRequestReviewer")
   courierPaymentsMade Sale[] @relation("CourierPaidBy")
   courierPayouts CourierPayout[] @relation("CourierPayoutActor")
+  cashierSurveys CashierSurvey[]
 }
 
 model RefreshToken {
@@ -334,7 +335,8 @@ model Sale {
   costTotal              Decimal      @db.Decimal(14, 2)
   // Envío de tercero: nunca forma parte de total, costo ni caja.
   courierFee             Decimal      @default(0) @db.Decimal(12, 2)
-  courierName            String?      @default("Addison")
+  // Sin valor por defecto desde 202610250401: sólo con envío.
+  courierName            String?
   courierPaidAt          DateTime?
   courierPaidById        String?      @db.Uuid
   courierPaidBy          User?        @relation("CourierPaidBy", fields: [courierPaidById], references: [id], onDelete: Restrict)
@@ -481,6 +483,11 @@ model Payment {
   // Quién recibió el dinero de un cobro de crédito (administrador que lo
   // registró). Migración 202610240201_credito_cobros.
   receivedById   String?  @db.Uuid
+  // Efectivo en dólares (migración 202610250301_pago_dolares): amount es el
+  // equivalente en pesos; amountUsd y usdRate, lo recibido y la tasa usada.
+  currency       String   @default("DOP")
+  amountUsd      Decimal? @db.Decimal(14, 2)
+  usdRate        Decimal? @db.Decimal(12, 4)
 
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([saleId])
@@ -1045,4 +1052,156 @@ model DriveBackup {
   nextRetryAt         DateTime?
   lastAlertAt         DateTime?
   updatedAt           DateTime  @default(now()) @updatedAt
+}
+
+// Módulo GV Makeup Studio (docs/coordinacion/MODULO-GV.md). Registro de
+// cursos, inscripciones y cobros: no son ventas de la caja ni comprobantes.
+// externalId: clave de la importación (única por sucursal) para reimportar
+// sin duplicar.
+model GvCourse {
+  id          String         @id @default(uuid()) @db.Uuid
+  branchId    String         @default("main")
+  externalId  String?
+  name        String
+  // CHECK gv_course_type_valid: automaquillaje | brazilian | personalizado | otro
+  type        String
+  date        DateTime       @db.Date
+  price       Decimal        @db.Decimal(14, 2)
+  capacity    Int
+  active      Boolean        @default(true)
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  enrollments GvEnrollment[]
+
+  @@unique([branchId, externalId])
+  @@index([branchId, date])
+}
+
+model GvEnrollment {
+  id             String      @id @default(uuid()) @db.Uuid
+  branchId       String      @default("main")
+  externalId     String?
+  operationId    String?     @unique @db.Uuid
+  courseId       String      @db.Uuid
+  course         GvCourse    @relation(fields: [courseId], references: [id])
+  clientName     String
+  phone          String?
+  instagram      String?
+  agreedPrice    Decimal     @db.Decimal(14, 2)
+  // CHECK gv_enrollment_status_valid: activa | no_asistio | personalizado | cancelada | reembolsada
+  status         String      @default("activa")
+  attended       Boolean?
+  boughtBrushSet Boolean     @default(false)
+  note           String?
+  // Reembolso (estado «reembolsada»): se resta de los ingresos.
+  refundAmount   Decimal?    @db.Decimal(14, 2)
+  refundDate     DateTime?   @db.Date
+  createdBy      String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  payments       GvPayment[]
+
+  @@unique([branchId, externalId])
+  @@index([courseId])
+}
+
+model GvPayment {
+  id           String        @id @default(uuid()) @db.Uuid
+  branchId     String        @default("main")
+  externalId   String?
+  operationId  String?       @unique @db.Uuid
+  enrollmentId String?       @db.Uuid
+  enrollment   GvEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  // Cita de maquillaje (FK en la migración 202610260902_gv_citas).
+  appointmentId String?        @db.Uuid
+  appointment   GvAppointment? @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  date         DateTime      @db.Date
+  // CHECK gv_payment_amount_positive
+  amount       Decimal       @db.Decimal(14, 2)
+  // CHECK: separo | restante | segundo | tercero | otro
+  concept      String
+  // CHECK: efectivo | transferencia | tarjeta
+  method       String
+  bank         String?
+  reference    String?
+  // Transferencia: pendiente hasta verificarla; efectivo y tarjeta, verificados.
+  verified     Boolean       @default(false)
+  verifiedBy   String?
+  verifiedAt   DateTime?
+  // Rechazado (transferencia que no llegó o pago anulado): no cuenta como pagado.
+  rejectedAt   DateTime?
+  rejectedBy   String?
+  rejectReason String?
+  createdBy    String
+  createdAt    DateTime      @default(now())
+
+  @@unique([branchId, externalId])
+  @@index([enrollmentId])
+  @@index([appointmentId])
+  @@index([branchId, date])
+}
+
+// GV Makeup Studio · citas de maquillaje (docs/coordinacion/MODULO-GV.md §3 y
+// §5). Los pagos de una cita van en GvPayment.appointmentId; el pendiente se
+// calcula (total − pagos), no se guarda. externalId: clave del Excel o de la
+// pantalla (op:<uuid>) para que importar o reenviar no duplique.
+model GvAppointment {
+  id           String   @id @default(uuid()) @db.Uuid
+  branchId     String   @default("main")
+  date         DateTime @db.Timestamptz(3)
+  clientName   String
+  phone        String?
+  instagram    String?
+  service      String
+  artists      String[]
+  afterHours   Boolean  @default(false)
+  total        Decimal  @db.Decimal(14, 2)
+  tip          Decimal  @default(0) @db.Decimal(14, 2)
+  status       String   @default("agendada")
+  note         String?
+  weddingQuote Decimal? @db.Decimal(14, 2)
+  venue        String?
+  people       Int?
+  // Reembolso (estado «reembolsada»): se resta de los ingresos.
+  refundAmount Decimal? @db.Decimal(14, 2)
+  refundDate   DateTime? @db.Date
+  externalId   String?
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  payments     GvPayment[]
+
+  @@unique([branchId, externalId])
+  @@index([branchId, date])
+}
+
+// GV · interesadas (prospectos).
+model GvLead {
+  id         String   @id @default(uuid()) @db.Uuid
+  branchId   String   @default("main")
+  name       String
+  phone      String?
+  interest   String?
+  action     String?
+  status     String   @default("por_contactar")
+  note       String?
+  externalId String?
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([branchId, externalId])
+  @@index([branchId, status])
+}
+
+// Encuesta de la caja: una respuesta editable por persona (CASHIER_SURVEY).
+model CashierSurvey {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId  String   @default("main")
+  answers   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -23,6 +23,7 @@ import {
   replayReturns,
   returnedAt,
   PAYMENT_GROUPS,
+  z,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -36,7 +37,7 @@ import {
   denied,
   canViewCashExpected,
 } from "./common";
-import { alertForActor } from "./alerts";
+import { alertForActor, OWNER_ONLY_ALERT_TYPES } from "./alerts";
 import { REPORTES } from "./reportes";
 
 export function dateRange(query: Record<string, string>) {
@@ -311,7 +312,13 @@ export class ReportsController {
         any[]
       >`SELECT SUM(s.qty * v."costAvg") AS cost, SUM(s.qty * v.price) AS retail FROM "Variant" v JOIN "VariantStock" s ON s."variantId"=v.id JOIN "Warehouse" w ON w.id=s."warehouseId" AND w."branchId"=v."branchId" WHERE v."branchId"=${actor.branchId} AND v.active=true`,
       this.db.alert.findMany({
-        where: { branchId: actor.branchId, status: { not: "resolved" } },
+        where: {
+          branchId: actor.branchId,
+          status: { not: "resolved" },
+          ...(!can(actor.permissions, "*")
+            ? { type: { notIn: OWNER_ONLY_ALERT_TYPES } }
+            : {}),
+        },
         orderBy: { createdAt: "desc" },
         take: 6,
       }),
@@ -502,7 +509,8 @@ export class ReportsController {
         netProfit: money(
           d(netProfit(net, cost, expense, fees)).minus(inventoryLoss),
         ),
-        margin: margin(net, cost),
+        // Margen de la dueña sobre lo cobrado, sin restar ITBIS (#8).
+        margin: margin(revenue, cost),
         fees,
         invoices: sales._count,
         ticketAverage: averageTicket(revenue, sales._count),
@@ -573,7 +581,7 @@ export class ReportsController {
         revenue: money(revenue),
         cost: money(cost),
         profit: money(profit),
-        margin: revenue.gt(0) ? money(profit.div(revenue).times(100)) : 0,
+        margin: margin(revenue, cost),
       };
     });
     const revenue = months.reduce((a, m) => a + m.revenue, 0),
@@ -584,7 +592,7 @@ export class ReportsController {
         months,
         revenue: money(revenue),
         profit: money(profit),
-        margin: revenue > 0 ? money((profit / revenue) * 100) : 0,
+        margin: margin(revenue, revenue - profit),
       },
       actor,
     );
@@ -636,7 +644,7 @@ export class ReportsController {
         units: Number(r.units ?? 0),
         cost: money(cost),
         profit: money(profit),
-        margin: revenue.gt(0) ? money(profit.div(revenue).times(100)) : 0,
+        margin: margin(revenue, cost),
       };
     };
     const total = row({
@@ -1111,7 +1119,7 @@ export class ReportsController {
         const salesBatch = (cursor?: { at: Date; id: string }) => {
           const batch = this.db.$queryRaw<
             any[]
-          >`WITH b AS (SELECT s.id, s."costTotal", s."createdAt" FROM "Sale" s WHERE ${filter}${cursor ? Prisma.sql` AND (s."createdAt", s.id) < (${utc(cursor.at)}, ${cursor.id}::uuid)` : Prisma.empty} ORDER BY s."createdAt" DESC, s.id DESC LIMIT ${SALE_BATCH}) SELECT b.id AS "saleId", b."costTotal", b."createdAt", i.id, i.qty, i."unitCost", i."variantId", i."stockAllocations", i."lineTotal" - i.tax AS net, v."productId", p.name, p."categoryId"::text AS "categoryId", c.name AS category FROM b LEFT JOIN "SaleItem" i ON i."saleId" = b.id LEFT JOIN "Variant" v ON v.id = i."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId" ORDER BY b."createdAt" DESC, b.id DESC, i.id`;
+          >`WITH b AS (SELECT s.id, s."costTotal", s."createdAt" FROM "Sale" s WHERE ${filter}${cursor ? Prisma.sql` AND (s."createdAt", s.id) < (${utc(cursor.at)}, ${cursor.id}::uuid)` : Prisma.empty} ORDER BY s."createdAt" DESC, s.id DESC LIMIT ${SALE_BATCH}) SELECT b.id AS "saleId", b."costTotal", b."createdAt", i.id, i.qty, i."unitCost", i."variantId", i."stockAllocations", i."lineTotal" - i.tax AS net, i."lineTotal" AS gross, v."productId", p.name, p."categoryId"::text AS "categoryId", c.name AS category FROM b LEFT JOIN "SaleItem" i ON i."saleId" = b.id LEFT JOIN "Variant" v ON v.id = i."variantId" LEFT JOIN "Product" p ON p.id = v."productId" LEFT JOIN "Category" c ON c.id = p."categoryId" ORDER BY b."createdAt" DESC, b.id DESC, i.id`;
           // Si el lote en curso falla, este no queda como rechazo sin atender.
           batch.catch(() => undefined);
           return batch;
@@ -1132,6 +1140,7 @@ export class ReportsController {
                 variantId: l.variantId,
                 stockAllocations: l.stockAllocations,
                 net: l.net,
+                gross: l.gross,
                 variant: {
                   productId: l.productId,
                   product: {
@@ -1159,6 +1168,7 @@ export class ReportsController {
               // Sin redondear hasta el final: ventas y devoluciones parciales se
               // compensan exactamente.
               row.Ventas = d(row.Ventas).plus(i.net);
+              row.gross = d(row.gross ?? 0).plus(i.gross);
               row.Costo = d(row.Costo).plus(booked.get(i.id)!);
               row.Unidades += Number(i.qty);
               grouped.set(i.variant.productId, row);
@@ -1231,6 +1241,11 @@ export class ReportsController {
                   ? d(part.total).minus(part.tax)
                   : back(d(line.lineTotal)).minus(back(d(line.tax)));
               row.Ventas = d(row.Ventas).minus(net);
+              row.gross = d(row.gross ?? 0).minus(
+                typeof part.total === "number"
+                  ? d(part.total)
+                  : back(d(line.lineTotal)),
+              );
               if (found.restock) row.Costo = d(row.Costo).minus(found.cost);
               row.Unidades -= Number(part.qty);
               grouped.set(line.variant.productId, row);
@@ -1239,7 +1254,7 @@ export class ReportsController {
           if (page.length < RETURN_BATCH) break;
           cursor = page[page.length - 1].id;
         }
-        rows = [...grouped.values()].map((i) => {
+        rows = [...grouped.values()].map(({ gross, ...i }) => {
           const Ventas = money(i.Ventas),
             Costo = money(i.Costo);
           return {
@@ -1247,7 +1262,9 @@ export class ReportsController {
             Ventas,
             Costo,
             Utilidad: money(d(Ventas).minus(Costo)),
-            Margen: margin(Ventas, Costo),
+            // Ventas y Utilidad son sin ITBIS (cuadran con el estado de
+            // resultados); el margen es el de la dueña, sobre lo cobrado (#8).
+            Margen: margin(money(gross ?? 0), Costo),
           };
         });
         if (name === "abc")
@@ -1336,6 +1353,145 @@ export class ReportsController {
     }
     return res.json({ name, rows, from: range.gte, to: range.lte });
   }
+  @Get("sales/mine/:period")
+  @Permit("sale:write")
+  mine(@Param("period") period: string, @CurrentUser() actor: Actor) {
+    return mySales(
+      this.db,
+      actor,
+      parse(z.enum(["today", "week"]), period),
+    );
+  }
+}
+
+/** «Mis ventas de hoy / de la semana»: lo vendido por quien pregunta, neto
+ * de las devoluciones del período (igual que el dashboard, D-05), sin costos. */
+export async function mySales(
+  db: Database,
+  actor: Actor,
+  period: "today" | "week" = "today",
+  now = new Date(),
+) {
+  const day = businessDate(now);
+  // La semana empieza el lunes; la fecha del negocio se trata como UTC.
+  const from =
+    period === "week"
+      ? new Date(
+          +new Date(day + "T00:00:00Z") -
+            ((new Date(day + "T00:00:00Z").getUTCDay() + 6) % 7) * 86400000,
+        )
+          .toISOString()
+          .slice(0, 10)
+      : day;
+  const range = {
+    gte: new Date(from + "T00:00:00-04:00"),
+    lte: new Date(day + "T23:59:59.999-04:00"),
+  };
+  const where = {
+    branchId: actor.branchId,
+    sellerId: actor.id,
+    status: "completed",
+    createdAt: range,
+  };
+  // Arqueo ciego, igual que el dashboard: sin privilegio de caja no se
+  // desglosa lo cobrado en cajas todavía abiertas.
+  const open = canViewCashExpected(actor)
+    ? []
+    : await db.cashSession.findMany({
+        where: { branchId: actor.branchId, closedAt: null },
+        select: { id: true, userId: true },
+      });
+  const hidden = open.map((s) => s.id);
+  const ownOpen = open.some((s) => s.userId === actor.id);
+  const [sales, payments, last, top] = await Promise.all([
+    db.sale.aggregate({ where, _sum: { total: true }, _count: true }),
+    db.payment.groupBy({
+      by: ["method", "status", "cashSessionId"],
+      where: { sale: where, entryType: { not: "installment" } },
+      _sum: { amount: true },
+    }),
+    db.sale.findFirst({
+      where,
+      orderBy: { createdAt: "desc" },
+      select: { number: true, total: true, createdAt: true },
+    }),
+    db.$queryRaw<
+      { name: string; units: unknown }[]
+    >`SELECT p.name, SUM(i.qty-i."returnedQty") AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)} GROUP BY p.id,p.name HAVING SUM(i.qty-i."returnedQty")>0 ORDER BY units DESC, p.name LIMIT 1`,
+  ]);
+  const methods: Record<string, ReturnType<typeof d>> = {
+    cash: d(0),
+    card: d(0),
+    transfer: d(0),
+    credit: d(0),
+    credit_note: d(0),
+  };
+  const key = (method: string, rejected = false) =>
+    rejected || method === "cod" ? "credit" : method in methods ? method : "credit_note";
+  const shown = (sessionId: string | null) =>
+    !sessionId || !hidden.includes(sessionId);
+  let hiddenUntilClose = false;
+  for (const p of payments) {
+    if (!shown(p.cashSessionId)) {
+      hiddenUntilClose = true;
+      continue;
+    }
+    const k = key(p.method, p.status === "rejected");
+    methods[k] = methods[k].plus(p._sum.amount ?? 0);
+  }
+  let returned = d(0);
+  await forEachPeriodReturn(db, actor, range, { sellerId: actor.id }, (r) => {
+    returned = returned.plus(r.total);
+    for (const m of returnedByMethod(r, shown(r.cashSessionId)))
+      methods[key(m.method)] = methods[key(m.method)].minus(m.amount);
+    if (!shown(r.cashSessionId) && d(r.refundAmount).gt(0))
+      hiddenUntilClose = true;
+  });
+  const pending = await db.payment.aggregate({
+    where: {
+      sale: where,
+      method: "transfer",
+      status: "pending_verification",
+      entryType: { not: "installment" },
+    },
+    _sum: { amount: true },
+    _count: true,
+  });
+  // Caja ciega: con caja propia abierta (o cobros en una abierta) ningún
+  // importe, ni suelto ni sumable, para que no se deduzca el efectivo esperado.
+  if (ownOpen || hiddenUntilClose) {
+    const [{ units }] = await db.$queryRaw<{ units: unknown }[]>`SELECT COALESCE(SUM(i.qty-i."returnedQty"),0) AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
+    return {
+      day,
+      from,
+      invoices: sales._count,
+      units: d(units as any).toNumber(),
+      hiddenUntilClose: true as const,
+      topProduct: top[0]
+        ? { name: top[0].name, units: d(top[0].units as any).toNumber() }
+        : null,
+    };
+  }
+  return {
+    day,
+    from,
+    invoices: sales._count,
+    total: money(d(sales._sum.total ?? 0).minus(returned)),
+    methods: Object.fromEntries(
+      Object.entries(methods).map(([k, v]) => [k, money(v)]),
+    ) as Record<"cash" | "card" | "transfer" | "credit" | "credit_note", number>,
+    hiddenUntilClose: false as const,
+    pendingTransfers: {
+      count: pending._count,
+      amount: money(pending._sum.amount ?? 0),
+    },
+    lastSale: last
+      ? { number: last.number, total: money(last.total), createdAt: last.createdAt }
+      : null,
+    topProduct: top[0]
+      ? { name: top[0].name, units: d(top[0].units as any).toNumber() }
+      : null,
+  };
 }
 
 // ── Listados que crecen con el historial (PERF-informes) ──

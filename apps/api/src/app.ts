@@ -21,6 +21,7 @@ import { CourierController } from "./courier";
 import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
+import { CashierSurveyController } from "./cashier-survey";
 import { IncomeReportController } from "./income-report";
 import { FormalReportController } from "./formal-report";
 import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
@@ -41,6 +42,8 @@ import {
   RequestRateLimitService,
 } from "./rate-limit";
 import { SecurityMaintenance } from "./security";
+import { GvController } from "./gv";
+import { GvCitasController } from "./gv-citas";
 
 @Controller()
 export class HealthController {
@@ -82,12 +85,15 @@ export function createAppModule(secret: string) {
       IncomeReportController,
       FormalReportController,
       ReportsController,
+      CashierSurveyController,
       AlertsController,
       OfflineSalesController,
       OfflineSaleReviewController,
       NotificationsController,
       IncentivesController,
       DriveBackupController,
+      GvController,
+      GvCitasController,
     ],
     providers: [
       Database,

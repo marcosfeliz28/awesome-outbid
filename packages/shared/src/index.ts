@@ -480,8 +480,10 @@ export const receivableApprovalMessage = (
 };
 export const grossProfit = (net: number, cost: number) =>
   money(d(net).minus(cost));
-export const margin = (net: number, cost: number) =>
-  net <= 0 ? 0 : money(d(net).minus(cost).div(net).times(100));
+// Margen de la dueña, la única fórmula del sistema: (precio − costo)/precio en
+// %, con el precio tal como se cobra, SIN restar ITBIS (revisión 25-oct #8).
+export const margin = (price: Decimal.Value, cost: Decimal.Value) =>
+  d(price).lte(0) ? 0 : money(d(price).minus(cost).div(price).times(100));
 export const markup = (price: number, cost: number) =>
   cost <= 0 ? 0 : money(d(price).minus(cost).div(cost).times(100));
 export const netProfit = (
@@ -526,11 +528,24 @@ export const clearanceScore = (
       (daysToExpiry === null ? 0 : Math.max(0, 60 - daysToExpiry) * 2) +
       Math.min((stock * cost) / 1000, 40),
   );
-export const safeDiscount = (price: number, cost: number, taxRate = 18) =>
-  Math.max(
-    0,
-    Math.min(50, Math.floor(margin(price / (1 + taxRate / 100), cost))),
-  );
+// Mayor descuento (%, hasta 50) que deja el margen de la dueña en `minMargin`:
+// precio × (1 − x) ≥ costo / (1 − minMargin).
+export const safeDiscount = (price: number, cost: number, minMargin = 15) =>
+  price <= 0
+    ? 0
+    : Math.max(
+        0,
+        Math.min(
+          50,
+          d(1)
+            .minus(
+              d(cost).div(d(price).times(d(1).minus(d(minMargin).div(100)))),
+            )
+            .times(100)
+            .floor()
+            .toNumber(),
+        ),
+      );
 export const saleSchema = z.object({
   offlineUuid: z.string().uuid(),
   capturedAt: z.string().datetime().optional(),
@@ -576,40 +591,57 @@ export const saleSchema = z.object({
   receivableKind: z.enum(["credit", "cod"]).optional(),
   payments: z
     .array(
-      z.object({
-        // cod: contraentrega. La venta sale de inventario y ese importe queda
-        // pendiente hasta que el mensajero trae el dinero.
-        method: z.enum([
-          "cash",
-          "card",
-          "transfer",
-          "credit_note",
-          "credit",
-          "cod",
-        ]),
-        creditNoteId: z.string().uuid().optional(),
-        creditNoteCode: z
-          .string()
-          .trim()
-          .toUpperCase()
-          .regex(/^[0-9A-F]{32}$/)
-          .optional(),
-        amount: moneyAmount(),
-        bank: z.string().max(100).optional(),
-        reference: z.string().max(100).optional(),
-        cardBrand: z.string().max(40).optional(),
-        cardLast4: z
-          .string()
-          .regex(/^\d{4}$/)
-          .optional(),
-        cardType: z.enum(["credit", "debit"]).optional(),
-        approvalCode: z.string().max(100).optional(),
-      }),
+      z
+        .object({
+          // cod: contraentrega. La venta sale de inventario y ese importe queda
+          // pendiente hasta que el mensajero trae el dinero.
+          method: z.enum([
+            "cash",
+            "card",
+            "transfer",
+            "credit_note",
+            "credit",
+            "cod",
+          ]),
+          creditNoteId: z.string().uuid().optional(),
+          creditNoteCode: z
+            .string()
+            .trim()
+            .toUpperCase()
+            .regex(/^[0-9A-F]{32}$/)
+            .optional(),
+          amount: moneyAmount(),
+          bank: z.string().max(100).optional(),
+          reference: z.string().max(100).optional(),
+          cardBrand: z.string().max(40).optional(),
+          cardLast4: z
+            .string()
+            .regex(/^\d{4}$/)
+            .optional(),
+          cardType: z.enum(["credit", "debit"]).optional(),
+          approvalCode: z.string().max(100).optional(),
+          // Efectivo en dólares (dueña, 25-oct): `amount` es el equivalente en
+          // pesos; la API lo recalcula con la tasa de Configuración. Opcionales:
+          // la huella de una venta offline anterior no cambia.
+          currency: z.enum(["DOP", "USD"]).optional(),
+          amountUsd: moneyAmount(1000000).optional(),
+          usdRate: z.number().positive().max(10000).optional(),
+        })
+        .refine(
+          (p) =>
+            p.currency === "USD"
+              ? p.method === "cash" && p.amountUsd !== undefined
+              : p.amountUsd === undefined && p.usdRate === undefined,
+          "El pago en dólares es sólo en efectivo e indica los US$ recibidos.",
+        ),
     )
     .min(1)
     .max(20),
 });
 export type SaleInput = z.infer<typeof saleSchema>;
+/** Equivalente en pesos de un pago en dólares, al centavo. */
+export const usdToDop = (amountUsd: Decimal.Value, rate: Decimal.Value) =>
+  money(d(amountUsd).times(rate));
 
 // ── Cuadre de caja de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md) ──
 
@@ -688,6 +720,8 @@ export const cashCloseSchema = z
       .string()
       .regex(/^\d{4,6}$/)
       .optional(),
+    // CPC-2: lote del verifón (la API lo exige si hubo ventas con tarjeta).
+    batchNumber: z.string().trim().max(40).default(""),
   })
   .refine((v) => v.countedCash !== undefined || v.denominations !== undefined, {
     message: "indica el efectivo contado o el conteo por denominaciones",
@@ -739,9 +773,16 @@ export const permissions: Record<string, string[]> = {
     "customers:erase",
     "promotions:write",
     "alerts:write",
+    "gv:read",
+    "gv:write",
+    "gv:reports",
+    // Verificar o rechazar transferencias de GV: gerencia, no el rol gv.
+    "gv:verify",
   ],
   seller: ["catalog:read", "sale:write", "cash:write", "customers:write"],
   warehouse: ["catalog:read", "inventory:write", "purchase:write"],
+  // GV Makeup Studio (dueña, 25-oct): sólo cursos, inscripciones y pagos de GV.
+  gv: ["gv:read", "gv:write", "gv:reports"],
 };
 export const can = (grants: string[], permission: string) =>
   grants.includes("*") || grants.includes(permission);
@@ -954,3 +995,108 @@ export const searchVariantsForDb = (term: string): string[] => {
   const forms = u === "lb" ? ["lb", "lbs", "libra", "libras"] : [u];
   return forms.flatMap((f) => [n + f, n + " " + f]);
 };
+
+// Encuesta de la caja (dueña, 26-oct): 30 preguntas cortas, una respuesta por
+// persona que puede editar. «yesno»: sí/no; «scale»: 1 a 5; «choice»: una
+// opción; «text»: abierta (máx. 500).
+export type SurveyQuestion = {
+  id: string;
+  text: string;
+  kind: "yesno" | "scale" | "choice" | "text";
+  options?: readonly string[];
+};
+const yesno = (id: string, text: string): SurveyQuestion => ({
+  id,
+  text,
+  kind: "yesno",
+});
+const scale = (id: string, text: string): SurveyQuestion => ({
+  id,
+  text,
+  kind: "scale",
+});
+const choice = (
+  id: string,
+  text: string,
+  options: string[],
+): SurveyQuestion => ({ id, text, kind: "choice", options });
+export const CASHIER_SURVEY: readonly SurveyQuestion[] = [
+  scale("cobro_rapido", "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)"),
+  yesno("cobro_pasos", "¿Cobrar te pide más pasos de los necesarios?"),
+  scale("buscar_producto", "¿Qué tan fácil es encontrar un producto?"),
+  choice("buscar_como", "¿Cómo buscas los productos casi siempre?", [
+    "Lector de código",
+    "Escribo el nombre",
+    "Por categoría",
+    "Cámara del celular",
+  ]),
+  yesno("lector_falla", "¿El lector de código falla a menudo?"),
+  scale("cierre_facil", "¿Qué tan fácil es cerrar la caja?"),
+  yesno("cierre_dudas", "¿Tienes dudas al contar el dinero del cierre?"),
+  yesno("pin_molesta", "¿Te piden el PIN demasiadas veces?"),
+  yesno("permiso_falta", "¿Te falta algún permiso para hacer tu trabajo?"),
+  yesno("mensajes_confusos", "¿Algún mensaje del sistema te confunde?"),
+  choice("equipo_uso", "¿En qué equipo vendes más?", [
+    "Computadora",
+    "Celular",
+    "Tableta",
+    "Igual en varios",
+  ]),
+  scale("celular_comodo", "En el celular, ¿qué tan cómodo es vender?"),
+  yesno("impresion_falla", "¿La impresión del recibo falla o sale mal?"),
+  choice("recibo_prefiere", "¿Cómo prefieren los clientes su recibo?", [
+    "Impreso",
+    "WhatsApp",
+    "Correo",
+    "No lo piden",
+  ]),
+  scale("cliente_registro", "¿Qué tan fácil es registrar un cliente nuevo?"),
+  yesno("cliente_buscar", "¿Te cuesta encontrar a un cliente ya registrado?"),
+  scale("credito_facil", "¿Qué tan fácil es vender a crédito?"),
+  yesno("credito_dudas", "¿Tienes dudas sobre cuándo se puede dar crédito?"),
+  scale("devolucion_facil", "¿Qué tan fácil es hacer una devolución?"),
+  yesno("anulacion_clara", "¿Sabes cómo pedir que anulen una factura?"),
+  yesno("descuento_claro", "¿Está claro cómo aplicar un descuento u oferta?"),
+  yesno("transferencia_clara", "¿Está claro cómo registrar una transferencia?"),
+  yesno("lento_sistema", "¿El sistema se pone lento mientras vendes?"),
+  yesno("sin_internet", "¿Has tenido que vender sin internet?"),
+  choice("ver_solo", "¿Qué te gustaría ver sin tener que preguntar?", [
+    "Mis ventas del día",
+    "Existencia de productos",
+    "Mis incentivos",
+    "Precios y ofertas",
+  ]),
+  yesno("preguntas_utiles", "¿Te sirven las preguntas rápidas de la caja?"),
+  yesno("ayuda_uso", "¿Necesitas pedir ayuda seguido para usar la caja?"),
+  scale("satisfaccion", "En general, ¿qué tan a gusto estás con el sistema?"),
+  {
+    id: "mejorar",
+    text: "¿Qué cambiarías primero para vender más cómodo?",
+    kind: "text",
+  },
+  {
+    id: "comentario",
+    text: "¿Algo más que quieras decirle a la dueña?",
+    kind: "text",
+  },
+];
+/** Valida las respuestas: solo preguntas conocidas y valores de su tipo. */
+export function surveyAnswers(input: unknown) {
+  const shape = Object.fromEntries(
+    CASHIER_SURVEY.map((q) => [
+      q.id,
+      (q.kind === "yesno"
+        ? z.boolean()
+        : q.kind === "scale"
+          ? z.number().int().min(1).max(5)
+          : q.kind === "choice"
+            ? z.enum(q.options as [string, ...string[]])
+            : z.string().trim().max(500)
+      ).optional(),
+    ]),
+  );
+  return z.object(shape).strict().parse(input) as Record<
+    string,
+    boolean | number | string | undefined
+  >;
+}

@@ -54,7 +54,14 @@ describe("D-M6 · el esperado de caja no carga las fotos de evidencia", () => {
     expect(expected).toMatchObject({ cash: 1070, card: 0, transfer: 50 });
     // Sin select, Prisma trae todas las columnas: también proofUrl, una foto
     // base64 de hasta 2,7 MB por abono (26 MB para 20 abonos en una caja).
-    expect(calls.payment.select).toEqual({ method: true, amount: true });
+    // Pago en dólares (25-oct): moneda, vuelto y US$, tampoco la foto.
+    expect(calls.payment.select).toEqual({
+      method: true,
+      amount: true,
+      currency: true,
+      change: true,
+      amountUsd: true,
+    });
     expect(calls.saleReturn.select).toEqual({
       refundMethod: true,
       refundAmount: true,

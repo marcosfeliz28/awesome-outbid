@@ -15,7 +15,12 @@ import {
   Trash2,
 } from "lucide-react";
 import { Badge, Button, Modal } from "@fitstore/ui";
-import { can, formatMoney, matchesSearch } from "@fitstore/shared";
+import {
+  can,
+  formatMoney,
+  margin as ownerMargin,
+  matchesSearch,
+} from "@fitstore/shared";
 import {
   api,
   download,
@@ -946,7 +951,7 @@ export function Merchandise() {
           const price = v ? Number(v.price) : 0;
           const margin =
             seesCost && price > 0 && Number(l.unitCost) > 0
-              ? ((price - Number(l.unitCost)) / price) * 100
+              ? ownerMargin(price, Number(l.unitCost))
               : undefined;
           return (
             <article

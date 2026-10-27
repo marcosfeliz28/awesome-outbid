@@ -36,7 +36,7 @@ Base: propuesta de ChatGPT PC (`origin/nexora-chatgpt-pc-saas:docs/propuestas/PR
 - **Laptop (Windows, luego Mac)**: la app de escritorio **Tauri** que ya existe en `apps/web/src-tauri`, apuntando a la nube del producto. Descarga desde la página del producto, instalador firmado y **actualización automática**. Imprime directo a la impresora térmica. Usa internet para conectarse a nuestros servidores (fase 2). Funcionamiento sin internet completo con sincronización: fase 4, aparte.
 - Apps de Google Play / App Store: fase 3, como acompañamiento gratuito (sin compras dentro de la app).
 
-## 6. Planes (precios a validar con la dueña)
+## 6. Planes (los definitivos del 25-oct están en docs/coordinacion/ORDENES_24OCT_NOCHE_PRODUCTO.md; esta tabla es la versión anterior)
 | Plan | Precio/mes | Para quién |
 |---|---|---|
 | **Autoservicio** | RD$990 | 1 sucursal, 1 caja, 2 usuarios, IA 30 consultas, solo ayuda en línea e IA |

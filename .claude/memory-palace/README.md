@@ -1,0 +1,206 @@
+# Memory Palace Plugin
+
+Spatial knowledge organization using memory palace techniques for Claude Code.
+
+## Overview
+
+Memory Palace organizes information using spatial memory techniques for easier
+retrieval. It builds "palaces" (knowledge repositories with spatial
+metaphors), "gardens" (organic knowledge bases with bidirectional links),
+and a "review chamber" for capturing PR review knowledge.
+
+### How This Differs from Native Claude Memory
+
+| Layer | Scope | Control |
+|-------|-------|---------|
+| **Auto-Memory** (2.1.59+) | Conversation context | Implicit, managed via `/memory` |
+| **Agent `memory` Frontmatter** (2.1.33+) | Agent-scoped recall | Opt-in per agent |
+| **Memory Palace** | Domain knowledge with spatial hierarchies | Explicit, user-designed |
+
+Auto-memory (2.1.59+) saves useful conversation context
+to `~/.claude/projects/*/memory/MEMORY.md` and is
+managed via the `/memory` command. Agent memory
+frontmatter gives agents persistent recall. Memory
+Palace holds domain knowledge in navigable
+hierarchies that persist as a permanent corpus.
+The three layers work together.
+
+## Installation
+
+```bash
+claude plugins add memory-palace@claude-night-market
+```
+
+## Quick Start
+
+```bash
+# Create a palace
+/palace create "K8s Concepts"
+
+# Add knowledge from an external source
+Skill(memory-palace:knowledge-intake)
+
+# Search across palaces
+/navigate "authentication"
+
+# Check garden health
+/garden status
+```
+
+## Features
+
+- **Palace Architect**: Design spatial knowledge structures using mnemonic
+  techniques
+- **Knowledge Locator**: Multi-modal search (keyword, semantic,
+  spatial) across palaces
+- **Session Palaces**: Temporary structures for extended conversations
+- **Digital Gardens**: Evolving knowledge bases with bidirectional linking
+- **PR Review Chamber**: Capture architectural decisions, patterns,
+  and lessons from PR reviews
+- **Skill Execution Memory**:
+  Automatic logging of skill invocations for continual learning
+- **Semantic Deduplication**:
+  FAISS cosine similarity (with Jaccard fallback) prevents near-duplicate
+  storage
+- **Research Interceptor**:
+  Checks local knowledge cache before making web requests
+
+## Skills
+
+| Skill | Description |
+|-------|-------------|
+| `memory-palace-architect` | Design and construct virtual memory palaces. |
+| `knowledge-locator` | Find information using multi-modal search. |
+| `session-palace-builder` | Create temporary session-specific palaces. |
+| `digital-garden-cultivator` | Manage evolving knowledge bases. |
+| `knowledge-intake` | Process and evaluate external knowledge. |
+| `review-chamber` | Capture PR review knowledge in project palaces. |
+| `palace-diagram` | Draw palace structure and topology as Mermaid or ASCII. |
+| `palace-index-curator` | Curate the web-capture index: rebuild, promote, archive. |
+| `memory-clarity-probe` | Check session state clarity before handoff or compression. |
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/palace` | Create and manage memory palaces. |
+| `/garden` | Manage digital gardens and metrics. |
+| `/navigate` | Search and navigate across palaces. |
+| `/review-room` | Manage PR review knowledge in project palaces. |
+| `/skill-logs` | View and manage skill execution memories. |
+
+## Agents
+
+| Agent | Description |
+|-------|-------------|
+| `palace-architect` | Design palace architectures. |
+| `knowledge-navigator` | Search and retrieve information. |
+| `knowledge-librarian` | Evaluate and route knowledge. |
+| `garden-curator` | Maintain digital gardens. |
+
+## Hooks
+
+| Hook | Event | Description |
+|------|-------|-------------|
+| `research_interceptor.py` | PreToolUse | Checks local knowledge cache before web requests. |
+| `local_doc_processor.py` | PostToolUse | Monitors Read operations for indexing suggestions. |
+| `url_detector.py` | UserPromptSubmit | Detects URLs for potential knowledge intake. |
+| `web_content_processor.py` | PostToolUse | Processes web content for knowledge extraction. |
+| `skill_tracker_pre.py` | PreToolUse | Records start time when Skill tool is invoked. |
+| `skill_tracker_post.py` | PostToolUse | Logs completion, calculates metrics, stores memory. |
+
+Setup hook (`claude --init`,
+`claude --maintenance`) handles one-time initialization
+and periodic garden maintenance. See `hooks/hooks.json` for configuration.
+
+## Architecture
+
+```
+memory-palace/
+├── .claude-plugin/
+│   └── plugin.json
+├── skills/              # 9 skills (see Skills table above)
+├── commands/            # 5 commands (palace, garden, navigate, review-room, skill-logs)
+├── agents/              # 4 agents (architect, navigator, librarian, curator)
+├── hooks/               # 6 runtime hooks + setup hook
+├── src/memory_palace/
+│   ├── palace_manager.py
+│   ├── project_palace/  # rooms.py, entry.py, manager.py, capture.py
+│   ├── corpus/          # Indexing, caching, deduplication, lineage
+│   └── lifecycle/       # Autonomy state, decay model
+├── scripts/             # CLI tools, metrics, embedding builder
+└── tests/
+```
+
+### Why the capture index is committed
+
+`hooks/memory-palace-index.yaml` is tracked in git although a session
+hook rewrites it. Issue #620 proposed untracking it and set the
+tiebreak: the committed copy stays only if something needs it. Something
+does.
+
+The file is a work queue, not a cache. `web_research_handler` appends a
+capture as `pending`. `scripts/precommit_palace_maintenance.sh` runs the
+`index_promoter` drain on every commit and re-stages what changed. The
+drain promotes an entry into `docs/knowledge-corpus/`, which is itself
+committed, or archives it, or holds it. So the queue and the durable
+output it feeds have to move together. Untracking the queue would leave
+a committed corpus whose provenance lived on one contributor's disk.
+
+Three gates hold it, and they run in `make test`:
+
+- `test_capture_index_drain_gate.py` fails a commit carrying any entry
+  still `pending`, so the drain cannot quietly fall behind.
+- `test_capture_index_artifact.py` applies the dedup invariants to the
+  shipped file rather than to a fixture, so a hook that corrupts the
+  artifact fails a gate instead of landing in a commit.
+- `test_index_prune_cli_guard.py` covers the prune path that once left
+  dangling hash references behind.
+
+Issue #620 also asked for a check that the committed content matches a
+freshly derived index. That one is not implementable as written: the
+file is a log of what live sessions fetched, and there is no source to
+re-derive it from. The three gates above are the achievable equivalent,
+and they check invariants rather than provenance.
+
+What none of this cures is the diff noise #620 was filed about. The file
+still goes dirty mid-session and still conflicts between concurrent
+branches that both ran a hook. The gates make that cost safe to carry,
+not zero.
+
+## Requirements
+
+- Python 3.9+
+- Claude Code
+
+## Documentation
+
+- [Book: Memory Palace Plugin](../../book/src/plugins/memory-palace.md) for
+  detailed usage, cache modes, palace architecture, and curation workflows
+- [PR Review Chamber](skills/review-chamber/SKILL.md) for review knowledge
+  capture
+- [Skill Execution Memory](commands/skill-logs.md) for execution history
+  and metrics
+
+## Stewardship
+
+Ways to leave this plugin better than you found it:
+
+- Palace architecture examples could include a walkthrough
+  showing how spatial metaphors map to real knowledge
+- The semantic deduplication threshold (FAISS cosine
+  similarity) is an opportunity to document how to tune
+  it for different content densities
+- Hook descriptions would benefit from latency
+  expectations so users understand the per-operation cost
+- The research interceptor cache hit/miss ratio could be
+  surfaced as a quick health metric in `/palace` output
+- Garden maintenance workflows could include a short
+  guide on pruning stale nodes
+
+See [STEWARDSHIP.md](../../STEWARDSHIP.md) for the full
+stewardship principles guiding this project.
+
+## License
+
+MIT

@@ -35,6 +35,7 @@ async function ownerApi(request: any) {
       data: {
         countedCash: Math.max(0, s.expected.cash),
         countedCard: Math.max(0, s.expected.card),
+        ...(s.expected.card > 0 ? { batchNumber: "QA-LOTE" } : {}),
         countedTransfer: Math.max(0, s.expected.transfer),
         differenceReason: "QA: cierre de limpieza de la prueba",
         notes: "Cierre entre escenarios E2E",

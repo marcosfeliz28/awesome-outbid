@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
+      "tests/pago-dolares-migration-postgres.test.ts",
       "tests/customer-display.test.ts",
       "tests/conciliar-transferencias.test.ts",
       "tests/year-report.test.ts",
@@ -32,6 +33,8 @@ export default defineConfig({
       "tests/inventory-resilience.test.ts",
       "tests/lot-migration-postgres.test.ts",
       "tests/warehouses-postgres.test.ts",
+      "tests/anular-caja-abierta-postgres.test.ts",
+      "tests/mis-ventas-preguntas-postgres.test.ts",
       "tests/portabilidad.test.ts",
       "tests/e2e-higiene.test.ts",
       "tests/offline-policy.test.ts",
@@ -81,6 +84,8 @@ export default defineConfig({
       "tests/calidad-unit.test.ts",
       "tests/promociones-paridad.test.ts",
       "tests/configuracion-pruebas.test.ts",
+      "tests/gv-unit.test.ts",
+      "tests/gv-auditoria-migration-postgres.test.ts",
     ],
   },
 });

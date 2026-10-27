@@ -433,6 +433,8 @@ async function main() {
           name,
           permissions: permissions[name],
         })),
+        // La migración del módulo GV ya crea el rol «gv».
+        skipDuplicates: true,
       });
       await tx.user.createMany({ data: userRows });
       await tx.category.createMany({

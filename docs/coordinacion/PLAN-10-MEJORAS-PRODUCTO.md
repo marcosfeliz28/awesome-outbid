@@ -44,7 +44,7 @@ Orden decidido por Claude (arquitecto), 24-oct. Dos carriles en paralelo para qu
 | 7 | Conector MCP/OAuth para la IA del cliente (solo propone) | ChatGPT PC + Claude + Dueña (decide la regla del 19-oct) | Pendiente |
 | 8 | Lectura de facturas con IA para todos | Claude (cambio de modelo) + ChatGPT PC | Pendiente |
 | 9 | Asistente de WhatsApp con IA | Dueña (Meta) + ChatGPT PC + Claude | Pendiente (fase 0 Meta) |
-| 10 | Resumen diario con IA | Dueña (cuenta Resend) + ChatGPT PC + Claude | Pendiente (paso cero: RESEND_API_KEY) |
+| 10 | Resumen diario con IA | Dueña (cuenta Resend) + ChatGPT PC + Claude | Resend ya activo en la tienda (24-oct); falta el remitente con dominio propio para clientes |
 
 ---
 

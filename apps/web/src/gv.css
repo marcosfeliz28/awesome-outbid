@@ -1,0 +1,68 @@
+.gv-page .tabs {
+  margin-bottom: 16px;
+  /* Cinco pestañas: en celular bajan de línea en vez de esconderse. */
+  flex-wrap: wrap;
+}
+.gv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+.gv-money,
+.gv-table .num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.gv-table .num {
+  text-align: right;
+}
+.gv-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.gv-card {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.gv-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.gv-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gv-payments {
+  display: grid;
+  gap: 10px;
+}
+.gv-payment {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.gv-reports {
+  display: grid;
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .gv-form.form-grid {
+    grid-template-columns: 1fr;
+  }
+  .gv-cards {
+    grid-template-columns: 1fr;
+  }
+}
+.gv-page .panel {
+  padding: 16px;
+}
