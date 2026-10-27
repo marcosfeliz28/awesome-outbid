@@ -86,7 +86,12 @@ export function Assistant({
 
   // «Preguntarle a la IA» desde las preguntas rápidas de la caja (mezcla 4).
   useEffect(() => {
-    const show = () => setOpen(true);
+    const show = (event: Event) => {
+      const origin = (event as CustomEvent<{ origin?: HTMLElement }>).detail
+        ?.origin;
+      if (origin?.isConnected) returnTarget.current = origin;
+      setOpen(true);
+    };
     window.addEventListener("nexora:abrir-asistente", show);
     return () => window.removeEventListener("nexora:abrir-asistente", show);
   }, []);

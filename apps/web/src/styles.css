@@ -4425,6 +4425,9 @@ td strong {
   color: var(--muted);
   font-size: 12px;
 }
+.goods-assistant-inline {
+  display: none !important;
+}
 .goods-mode {
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
@@ -4823,6 +4826,12 @@ td strong {
   }
   .goods-header {
     align-items: stretch;
+  }
+  .goods-assistant-inline {
+    display: inline-flex !important;
+    width: auto;
+    min-height: 44px;
+    margin-top: 12px;
   }
   .goods-mode {
     width: 100%;
