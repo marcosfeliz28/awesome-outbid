@@ -178,3 +178,18 @@ describe("PC-23 · referencia con aspecto de tarjeta (E)", () => {
     expect(n).toBe(4);
   });
 });
+
+describe("PC-23 · bitácora de auditoría", () => {
+  it("cada pago y cada anulación dejan una fila en AuditLog de la empresa", async () => {
+    const a = await tenant("audita-pago");
+    const paid = await pay("audita-pago", 1, "AUD-1");
+    const again = await pay("audita-pago", 1, "AUD-1", paid.body.payment.operationId); // repetición: no duplica
+    expect(again.status).toBe(201);
+    await op("post", `/tenants/audita-pago/payments/${paid.body.payment.id}/void`, { reason: "Anotado por error" });
+    const rows = await t.q(`SELECT action, "userId", entity, "entityId", after FROM "AuditLog" WHERE "tenantId"=$1::uuid AND action LIKE 'platform_payment%' ORDER BY "createdAt"`, a.id);
+    expect(rows.map(r => r.action)).toEqual(["platform_payment", "platform_payment_void"]);
+    expect(rows[0]).toMatchObject({ userId: "plataforma:dueña-nexora", entity: "platform_payment", entityId: paid.body.payment.id });
+    expect(rows[0].after).toMatchObject({ amount: "2000", months: 1, method: "transfer" });
+    expect(rows[1].after).toEqual({ voids: paid.body.payment.id, amount: "2000" }) // el motivo es interno: la empresa exporta su AuditLog;
+  });
+});
