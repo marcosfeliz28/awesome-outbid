@@ -56,6 +56,7 @@ export default defineConfig({
       "tests/accessibility-contract.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
       "tests/reports-memory-postgres.test.ts",
+      "tests/ventas-caja-ciega-postgres.test.ts",
       "tests/telegram-render.test.ts",
       "tests/correo-avisos.test.ts",
       "tests/web-privacy.test.ts",
