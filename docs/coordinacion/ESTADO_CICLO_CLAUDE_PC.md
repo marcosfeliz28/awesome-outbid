@@ -51,3 +51,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - RESPUESTA_CLAUDE_PC_27OCT.md: sin cambios (af6b40a0). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
 - CI: pc23, a1, b01 y 287db57e en verde. visual-integracion-27oct (ac370ba9): verify sigue sin concluir; windows-installer y render-images en verde. Sin LISTA.
 - Pantalla: «Instala el documento» sigue esperando verify de GitHub (no escribí). ChatGPT nube sin cambios.
+
+## Revisión manual (27-oct, 5:08 p. m. RD) con permiso de Marcos para textinputhost
+- chatgpt-pc/visual-integracion-27oct (ac370ba9): verify en GitHub terminó en ROJO; windows-installer y render-images en verde.
+- ChatGPT PC («Instala el documento», ocupado): diagnostica una prueba de mercancía que busca un botón «SALIDA» (la interfaz lo expone con otro texto) y ajusta la prueba al control real. No escribí en el chat.
