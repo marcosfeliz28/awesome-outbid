@@ -898,10 +898,10 @@ test("R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir
   await expect(lines).not.toContainText("Faja E2E duplicada");
   // Salida: la etiqueta también se reconoce (antes: «Código desconocido»).
   const salida = page
-    .getByRole("group", { name: "Tipo de movimiento" })
-    .getByRole("button", { name: "SALIDA" });
+    .getByRole("tablist", { name: "Tipo de movimiento" })
+    .getByRole("tab", { name: "SALIDA", exact: true });
   await salida.click();
-  await expect(salida).toHaveAttribute("aria-pressed", "true");
+  await expect(salida).toHaveAttribute("aria-selected", "true");
   await scan("R9M-E-" + tag);
   await expect(lines).toContainText("Faja E2E Mercancía E " + tag);
   await expect(page.getByText(/Código desconocido/)).toHaveCount(0);
