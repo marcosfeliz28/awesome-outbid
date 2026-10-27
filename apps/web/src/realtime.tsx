@@ -8,7 +8,7 @@ import {
   ShieldAlert,
   Smartphone,
 } from "lucide-react";
-import { Badge, Button, Modal } from "@fitstore/ui";
+import { Badge, Button, Empty, Loading, Modal } from "@fitstore/ui";
 import { can, formatMoney } from "@fitstore/shared";
 import {
   api,
@@ -393,6 +393,14 @@ export function Equipment() {
           {query.error.message}
         </p>
       )}
+      {query.isPending ? (
+        <Loading />
+      ) : !query.error && rows.length === 0 ? (
+        <Empty
+          title="Todavía no hay equipos registrados"
+          description="Los equipos aparecerán aquí cuando abran Nexora POS por primera vez."
+        />
+      ) : (
       <ul className="equipment-list">
         {rows.map((t) => {
           const Icon = /celular|tel[eé]fono|m[oó]vil/i.test(t.name)
@@ -503,6 +511,7 @@ export function Equipment() {
           );
         })}
       </ul>
+      )}
     </div>
   );
 }
