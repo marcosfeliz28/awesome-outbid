@@ -3377,6 +3377,7 @@ export function SalesHistory() {
         </div>
         <QueryState query={query}>
           <DataTable
+            cards
             rows={query.data || []}
             columns={[
               {
