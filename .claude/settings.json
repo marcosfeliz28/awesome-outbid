@@ -1,8 +1,16 @@
 {
+  "enabledPlugins": {
+    "ponytail@ponytail": true,
+    "supabase@anthropic-plugin-directory": true,
+    "vercel@anthropic-plugin-directory": true
+  },
   "extraKnownMarketplaces": {
     "ponytail": {
-      "source": { "source": "github", "repo": "DietrichGebert/ponytail", "ref": "v5.1.0" }
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail",
+        "ref": "v5.1.0"
+      }
     }
-  },
-  "enabledPlugins": { "ponytail@ponytail": true }
+  }
 }
