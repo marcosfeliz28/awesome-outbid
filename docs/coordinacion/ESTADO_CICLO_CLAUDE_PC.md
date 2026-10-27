@@ -152,3 +152,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Chat nuevo en ChatGPT PC (27-oct, ~6:57 p. m. RD)
 - Abierto un chat nuevo dentro del proyecto ChatGPT PC (no el que está ocupado). Tarea: rama nueva chatgpt-pc/mercancia-salida-fix desde producto-nexora (78888542), alinear store.spec.ts (901-902) al control real de Mercancía (role=group + aria-pressed) sin aflojar aserciones. No toca visual-integracion-27oct. Respondió «Starting your task».
 - Pendiente: que el otro hilo («Corrige CI de Fase 0») termine su trabajo en visual-integracion-27oct antes de rebasarlo.
+
+## Confirmación «sí» de Marcos (27-oct, ~7:10 p. m. RD)
+- Tomado como «sí» a la orden 14: preguntar a ChatGPT PC y ChatGPT nube qué piezas de diseño hicieron con Canva o Runway, y qué está en una rama con CI verde. Texto en RESPUESTA_CLAUDE_PC_27OCT.md, sección 14.
+- Ambos chats están ocupados ahora (el chat de mercancia-salida-fix corre pnpm check; ChatGPT nube tiene una tarea en curso). Se envía en cuanto estén libres.
