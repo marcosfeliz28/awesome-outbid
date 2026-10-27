@@ -54,6 +54,7 @@ export default defineConfig({
       "tests/mis-ventas-preguntas-postgres.test.ts",
       "tests/anular-caja-abierta-postgres.test.ts",
       "tests/ganancia-bruta-postgres.test.ts",
+      "tests/utilidad-unica-postgres.test.ts",
       "tests/migraciones-t3-postgres.test.ts",
       "tests/product-registration-postgres.test.ts",
       "tests/product-inicio-sencillo-postgres.test.ts",

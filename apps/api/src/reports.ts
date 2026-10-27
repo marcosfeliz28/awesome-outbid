@@ -1128,7 +1128,6 @@ export class ReportsController {
           grouped.get(variant.productId) ?? {
             Producto: variant.product.name,
             Categoría: variant.product.category.name,
-            Ventas: 0,
             Costo: 0,
             Unidades: 0,
           };
@@ -1223,7 +1222,6 @@ export class ReportsController {
               const row = rowOf(i.variant);
               // Sin redondear hasta el final: ventas y devoluciones parciales se
               // compensan exactamente.
-              row.Ventas = d(row.Ventas).plus(i.net);
               row.gross = d(row.gross ?? 0).plus(i.gross);
               row.Costo = d(row.Costo).plus(booked.get(i.id)!);
               row.Unidades += Number(i.qty);
@@ -1285,18 +1283,13 @@ export class ReportsController {
               )
                 return;
               const row = rowOf(line.variant);
-              // Venta devuelta sin ITBIS: lo registrado en la parte desde
+              // Venta devuelta con ITBIS: lo registrado en la parte desde
               // R9-dinero-2; antes, el mismo redondeo acumulado de la línea.
               const after = found.before.plus(part.qty);
               const back = (value: ReturnType<typeof d>) =>
                 returnedAt(value, line.qty, after).minus(
                   returnedAt(value, line.qty, found.before),
                 );
-              const net =
-                typeof part.total === "number" && typeof part.tax === "number"
-                  ? d(part.total).minus(part.tax)
-                  : back(d(line.lineTotal)).minus(back(d(line.tax)));
-              row.Ventas = d(row.Ventas).minus(net);
               row.gross = d(row.gross ?? 0).minus(
                 typeof part.total === "number"
                   ? d(part.total)
@@ -1311,16 +1304,16 @@ export class ReportsController {
           cursor = page[page.length - 1].id;
         }
         rows = [...grouped.values()].map(({ gross, ...i }) => {
-          const Ventas = money(i.Ventas),
+          const Ventas = money(gross ?? 0),
             Costo = money(i.Costo);
           return {
             ...i,
             Ventas,
             Costo,
             Utilidad: money(d(Ventas).minus(Costo)),
-            // Ventas y Utilidad son sin ITBIS (cuadran con el estado de
-            // resultados); el margen es el de la dueña, sobre lo cobrado (#8).
-            Margen: margin(money(gross ?? 0), Costo),
+            // Una sola fórmula (A1, regla de la dueña): Ventas es lo cobrado con
+            // ITBIS; Utilidad y Margen salen de ahí, como el Resumen.
+            Margen: margin(Ventas, Costo),
           };
         });
         if (name === "abc")
