@@ -5,6 +5,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import process from "node:process";
 
 const PROTEGIDAS = ["nexora-cloud", "producto-nexora", "main", "master"];
 const SERVIDORES_PROHIBIDOS = ["mcp__Render", "mcp__cloudeflare", "mcp__Cloudflare_Developer_Platform"];
