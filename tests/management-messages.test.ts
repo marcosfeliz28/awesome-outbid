@@ -9,8 +9,11 @@ import {
 import {
   HIDDEN_PAYMENT_METHOD,
   HIDDEN_SALE_AMOUNT,
+  saleAmountValue,
   saleAmountText,
+  salePaymentValue,
   salePaymentText,
+  saleRowAmountsHidden,
   shouldHideSaleAmounts,
 } from "../apps/web/src/salesAmountPrivacy";
 
@@ -157,8 +160,25 @@ describe("B-01 · importes de Ventas durante el arqueo ciego", () => {
   });
 
   it("reemplaza valores en el render en vez de desenfocarlos con CSS", () => {
-    expect(management).toContain("saleAmountText(");
-    expect(management).toContain("salePaymentText(");
+    expect(management).toContain("saleAmountValue(");
+    expect(management).toContain("salePaymentValue(");
     expect(management).not.toMatch(/blur\([^)]*\).*hideSaleAmounts/s);
+  });
+
+  it("tolera el DTO redactado sin leer ni formatear campos ausentes", () => {
+    const dto: { hiddenUntilClose: true; total?: number; payments?: any[] } = {
+      hiddenUntilClose: true,
+    };
+    const hidden = saleRowAmountsHidden(false, dto);
+    const mustNotRun = () => {
+      throw new Error("intentó formatear un valor omitido por la API");
+    };
+
+    expect(saleAmountValue(dto.total, hidden, mustNotRun)).toBe(
+      HIDDEN_SALE_AMOUNT,
+    );
+    expect(salePaymentValue(dto.payments, hidden, mustNotRun)).toBe(
+      HIDDEN_PAYMENT_METHOD,
+    );
   });
 });

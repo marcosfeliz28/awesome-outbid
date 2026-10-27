@@ -85,8 +85,9 @@ import {
 } from "./managementMessages";
 import {
   HIDDEN_PAYMENT_METHOD,
-  saleAmountText,
-  salePaymentText,
+  saleAmountValue,
+  salePaymentValue,
+  saleRowAmountsHidden,
   shouldHideSaleAmounts,
 } from "./salesAmountPrivacy";
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
@@ -3363,6 +3364,10 @@ export function SalesHistory() {
     sessions.isSuccess,
     Boolean(session),
   );
+  const selectedAmountsHidden = saleRowAmountsHidden(
+    hideSaleAmounts,
+    selected,
+  );
   return (
     <>
       <Heading
@@ -3424,27 +3429,38 @@ export function SalesHistory() {
               },
               {
                 label: "Total",
-                render: (s) =>
-                  saleAmountText(formatMoney(s.total), hideSaleAmounts),
+                render: (s) => {
+                  const hidden = saleRowAmountsHidden(hideSaleAmounts, s);
+                  return saleAmountValue(s.total, hidden, formatMoney);
+                },
               },
               {
                 label: "Saldo pendiente",
-                render: (s) =>
-                  saleAmountText(
-                    formatMoney(s.creditBalance ?? 0),
-                    hideSaleAmounts,
-                  ),
+                render: (s) => {
+                  const hidden = saleRowAmountsHidden(hideSaleAmounts, s);
+                  return saleAmountValue(
+                    s.creditBalance ?? 0,
+                    hidden,
+                    formatMoney,
+                  );
+                },
               },
               {
                 label: "Pagos",
                 render: (s) => {
-                  const methods = s.payments
-                    .map(
-                      (p: any) =>
-                        paymentOptions.find((o) => o.value === p.method)?.label,
-                    )
-                    .join(" + ");
-                  return salePaymentText(methods, hideSaleAmounts);
+                  const hidden = saleRowAmountsHidden(hideSaleAmounts, s);
+                  return salePaymentValue(
+                    s.payments,
+                    hidden,
+                    (payments) =>
+                      payments
+                        .map(
+                          (p: any) =>
+                            paymentOptions.find((o) => o.value === p.method)
+                              ?.label,
+                        )
+                        .join(" + "),
+                  );
                 },
               },
               {
@@ -3628,21 +3644,19 @@ export function SalesHistory() {
                 {
                   label: "Total",
                   render: (i) =>
-                    saleAmountText(
-                      formatMoney(i.lineTotal),
-                      hideSaleAmounts,
+                    saleAmountValue(
+                      i.lineTotal,
+                      selectedAmountsHidden,
+                      formatMoney,
                     ),
                 },
               ]}
             />
             <h3>Pagos registrados</h3>
-            {Number(selected.discountTotal) > 0 && (
+            {!selectedAmountsHidden && Number(selected.discountTotal) > 0 && (
               <p>
                 Descuento:{" "}
-                {saleAmountText(
-                  formatMoney(selected.discountTotal),
-                  hideSaleAmounts,
-                )}{" "}
+                {formatMoney(selected.discountTotal)}{" "}
                 · Motivo:{" "}
                 {selected.discountReason}
                 {selected.discountApprovedName
@@ -3650,9 +3664,9 @@ export function SalesHistory() {
                   : ""}
               </p>
             )}
-            {hideSaleAmounts ? (
+            {selectedAmountsHidden ? (
               <p role="status">{HIDDEN_PAYMENT_METHOD} hasta cerrar tu caja.</p>
-            ) : selected.payments.map((p: any) => (
+            ) : (selected.payments ?? []).map((p: any) => (
               <div className="payment-list" key={p.id}>
                 <div>
                   <span>
@@ -3758,7 +3772,11 @@ export function SalesHistory() {
             ))}
             <h3>
               Total{" "}
-              {saleAmountText(formatMoney(selected.total), hideSaleAmounts)}
+              {saleAmountValue(
+                selected.total,
+                selectedAmountsHidden,
+                formatMoney,
+              )}
             </h3>
           </>
         )}

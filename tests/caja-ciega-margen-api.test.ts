@@ -195,6 +195,41 @@ afterAll(async () => {
   await db.$disconnect();
 }, 60000);
 
+describe("B-01 Ventas no rompe el arqueo ciego", () => {
+  it("la API omite importes y métodos con caja abierta y los restaura al cerrar", async () => {
+    const cashier = await person("historial", "seller", "314159");
+    const sale = await sell(cashier, [{ method: "cash", amount: 100 }]);
+    const ownOpen = await ok("/sales?q=" + sale.number, cashier.token);
+    const hidden = ownOpen.find((row: any) => row.id === sale.id);
+    expect(hidden.hiddenUntilClose).toBe(true);
+    expect(hidden).not.toHaveProperty("total");
+    expect(hidden).not.toHaveProperty("payments");
+    expect(hidden.items[0]).not.toHaveProperty("lineTotal");
+
+    const ownerView = await ok("/sales?q=" + sale.number, owner);
+    const visibleToOwner = ownerView.find((row: any) => row.id === sale.id);
+    expect(Number(visibleToOwner.total)).toBe(100);
+    expect(visibleToOwner.payments[0].method).toBe("cash");
+
+    const closed = await request(
+      "/cash-sessions/" + cashier.cash.id + "/close",
+      owner,
+      {
+        countedCash: 1100,
+        countedCard: 0,
+        countedTransfer: 0,
+        notes: "Cierre B-01",
+      },
+    );
+    expect(closed.status, JSON.stringify(closed.body)).toBe(201);
+    const ownClosed = await ok("/sales?q=" + sale.number, cashier.token);
+    const revealed = ownClosed.find((row: any) => row.id === sale.id);
+    expect(revealed.hiddenUntilClose).toBe(false);
+    expect(Number(revealed.total)).toBe(100);
+    expect(revealed.payments[0].method).toBe("cash");
+  });
+});
+
 describe("#5 cierre ciego: no se adivina reintentando", () => {
   it("después de 2 intentos que no cuadran, cerrar pide justificación y PIN de otra persona, aunque el conteo cuadre", async () => {
     const close = (countedCash: number, extra: Record<string, unknown> = {}) =>

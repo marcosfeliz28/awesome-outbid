@@ -23,3 +23,28 @@ export const saleAmountText = (formatted: string, hidden: boolean) =>
 
 export const salePaymentText = (label: string, hidden: boolean) =>
   hidden ? HIDDEN_PAYMENT_METHOD : label;
+
+/**
+ * La marca de la API manda sobre el estado local. Así, una respuesta ya
+ * redactada nunca intenta formatear campos que deliberadamente no recibió.
+ */
+export const saleRowAmountsHidden = (
+  screenHidden: boolean,
+  sale: { hiddenUntilClose?: boolean } | null | undefined,
+) => screenHidden || sale?.hiddenUntilClose === true;
+
+export function saleAmountValue<T>(
+  value: T,
+  hidden: boolean,
+  formatter: (value: T) => string,
+) {
+  return hidden ? HIDDEN_SALE_AMOUNT : formatter(value);
+}
+
+export function salePaymentValue<T>(
+  payments: T[] | undefined,
+  hidden: boolean,
+  formatter: (payments: T[]) => string,
+) {
+  return hidden ? HIDDEN_PAYMENT_METHOD : formatter(payments ?? []);
+}

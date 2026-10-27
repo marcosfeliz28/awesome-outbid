@@ -296,6 +296,31 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     expect(seller.returns[0]).not.toHaveProperty("wasteCostTotal");
     expect(seller.returns[0]).not.toHaveProperty("items");
 
+    const hidden = saleHistoryDto(
+      sale,
+      {
+        role: "seller",
+        permissions: ["sale:write"],
+      } as any,
+      true,
+    ) as any;
+    expect(hidden.hiddenUntilClose).toBe(true);
+    expect(hidden.number).toBe("N-1");
+    for (const field of [
+      "subtotal",
+      "discountTotal",
+      "taxTotal",
+      "total",
+      "creditBalance",
+      "creditDueDate",
+      "payments",
+    ])
+      expect(hidden).not.toHaveProperty(field);
+    expect(hidden.items[0]).not.toHaveProperty("unitPrice");
+    expect(hidden.items[0]).not.toHaveProperty("lineTotal");
+    expect(hidden.returns[0]).not.toHaveProperty("total");
+    expect(hidden.returns[0]).not.toHaveProperty("refundMethod");
+
     const manager = saleHistoryDto(sale, {
       role: "manager",
       permissions: ["profit:read"],

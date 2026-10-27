@@ -9,13 +9,13 @@ Una cajera con su caja abierta puede entrar en **Ventas** y ver el total y la fo
 
 ## Comportamiento preparado
 
-- Cajera con caja propia abierta: la lista y el detalle sustituyen totales, saldos, importes de línea y descuento por **Importe oculto**. La lista sustituye los métodos por **Forma de pago oculta** y el detalle no monta los datos de cada pago.
+- Cajera con caja propia abierta: `GET /api/sales` no entrega subtotal, descuento, impuestos, total, saldo, pagos, método ni importes de línea/devolución. La web sustituye esos espacios por **Importe oculto** y **Forma de pago oculta**.
 - Mientras la consulta de sesiones todavía carga o falla, la vista se cierra por defecto para evitar una revelación momentánea.
 - Cajera después de cerrar su caja: vuelve a ver los datos de sus ventas.
 - Gerencia (`sale:manage`) y quien tiene `profit:read`: conserva los importes.
-- PDF, cálculos, API, permisos, abonos, devoluciones y correcciones no cambian.
+- PDF, cálculos, permisos, abonos, devoluciones y correcciones no cambian.
 
-Los valores se reemplazan durante el render. No se usa desenfoque CSS, por lo que el importe oculto no queda como texto accesible ni como contenido visual detrás de un filtro.
+La protección principal está en la API: el navegador no recibe los datos durante la caja abierta. La web aplica además una presentación cerrada por defecto mientras confirma el estado de caja. No se usa desenfoque CSS.
 
 ## Correspondencia con el servidor
 
@@ -31,7 +31,16 @@ No se reutiliza `sale:write` como permiso de importes: ese permiso permite vende
 
 - `apps/web/src/salesAmountPrivacy.ts`
 - `apps/web/src/Management.tsx`
+- `apps/api/src/sales.ts`
 - `tests/management-messages.test.ts`
+- `tests/claude-round2.test.ts`
+- `tests/caja-ciega-margen-api.test.ts`
+
+## Validación
+
+- Integración contra PostgreSQL y API locales desechables: 10/10 pruebas de `caja-ciega-margen-api.test.ts`, incluido ocultar con caja abierta y restaurar después del cierre.
+- Web y DTO: 31/31 pruebas focales.
+- ESLint de los archivos modificados, `pnpm typecheck` y compilación web: correctos.
 
 ## Decisión pendiente
 

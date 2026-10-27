@@ -75,6 +75,7 @@ import {
   maskTail,
   RECEIVABLE_PAYMENT,
   assertWholeUnits,
+  canViewCashExpected,
 } from "./common";
 import { lockVariant, takeStock, stockChange, promotionCostFloor } from "./inventory";
 import { takeNcf } from "./ncf-sequences";
@@ -143,18 +144,27 @@ const paymentSummary = (payment: any) => {
 // `/sales` alimenta el historial operativo, no es una representación directa
 // de Prisma. Mantener una lista blanca evita que una columna nueva de costos o
 // un objeto JSON sensible aparezca automáticamente en la respuesta.
-export function saleHistoryDto(sale: any, actor: Actor) {
-  const showProfit = can(actor.permissions, "profit:read");
+export function saleHistoryDto(
+  sale: any,
+  actor: Actor,
+  hiddenUntilClose = false,
+) {
+  const showProfit =
+    !hiddenUntilClose && can(actor.permissions, "profit:read");
   const item = (row: any) => ({
     id: row.id,
     variantId: row.variantId,
     lotId: row.lotId,
     qty: row.qty,
     returnedQty: row.returnedQty,
-    unitPrice: row.unitPrice,
-    discount: row.discount,
-    tax: row.tax,
-    lineTotal: row.lineTotal,
+    ...(hiddenUntilClose
+      ? {}
+      : {
+          unitPrice: row.unitPrice,
+          discount: row.discount,
+          tax: row.tax,
+          lineTotal: row.lineTotal,
+        }),
     promotionName: row.promotionName ?? null,
     ...(showProfit ? { unitCost: row.unitCost } : {}),
     variant: row.variant
@@ -200,11 +210,15 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     id: row.id,
     number: row.number,
     reason: row.reason,
-    total: row.total,
-    taxTotal: row.taxTotal,
-    refundAmount: row.refundAmount,
-    refundMethod: row.refundMethod,
     createdAt: row.createdAt,
+    ...(hiddenUntilClose
+      ? {}
+      : {
+          total: row.total,
+          taxTotal: row.taxTotal,
+          refundAmount: row.refundAmount,
+          refundMethod: row.refundMethod,
+        }),
     ...(showProfit
       ? {
           costTotal: row.costTotal,
@@ -222,15 +236,23 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     customerName: sale.customer?.name ?? null,
     sellerId: sale.sellerId,
     cashSessionId: sale.cashSessionId,
-    subtotal: sale.subtotal,
-    discountTotal: sale.discountTotal,
     discountReason: sale.discountReason,
     discountRule: sale.discountRule,
     discountApprovedBy: sale.discountApprovedBy,
     discountApprovedName: sale.discountApprovedName,
     discountApprovedRole: sale.discountApprovedRole,
-    taxTotal: sale.taxTotal,
-    total: sale.total,
+    ...(hiddenUntilClose
+      ? { hiddenUntilClose: true as const }
+      : {
+          hiddenUntilClose: false as const,
+          subtotal: sale.subtotal,
+          discountTotal: sale.discountTotal,
+          taxTotal: sale.taxTotal,
+          total: sale.total,
+          creditBalance: sale.creditBalance,
+          creditDueDate: sale.creditDueDate,
+          payments: (sale.payments ?? []).map(payment),
+        }),
     ...(can(actor.permissions, "sale:manage")
       ? {
           courierFee: sale.courierFee,
@@ -240,8 +262,6 @@ export function saleHistoryDto(sale: any, actor: Actor) {
           courierPaidAt: sale.courierPaidAt,
         }
       : {}),
-    creditBalance: sale.creditBalance,
-    creditDueDate: sale.creditDueDate,
     ncf: sale.ncf,
     ncfType: sale.ncfType,
     // SEC-05: el historial de la caja no vuelve a mostrar el RNC del
@@ -256,7 +276,6 @@ export function saleHistoryDto(sale: any, actor: Actor) {
     createdAt: sale.createdAt,
     updatedAt: sale.updatedAt,
     items: (sale.items ?? []).map(item),
-    payments: (sale.payments ?? []).map(payment),
     returns: (sale.returns ?? []).map(returned),
     voidRequest: sale.voidRequests?.[0]
       ? {
@@ -1737,30 +1756,45 @@ export class SalesController {
         bad("Fecha inválida.");
       createdAt = { gte, lte };
     }
-    const rows = await this.db.sale.findMany({
-      where: {
-        branchId: actor.branchId,
-        ...(can(actor.permissions, "sale:manage")
-          ? {}
-          : { sellerId: actor.id }),
-        ...(filters.q
-          ? { number: { contains: filters.q, mode: "insensitive" as const } }
-          : {}),
-        ...(createdAt ? { createdAt } : {}),
-      },
-      include: {
-        items: { include: { variant: { include: { product: true } } } },
-        payments: true,
-        returns: true,
-        customer: { select: { name: true } },
-        voidRequests: { orderBy: { requestedAt: "desc" }, take: 1 },
-      },
-      orderBy: { createdAt: "desc" },
-      // La búsqueda por número o fecha alcanza todo el historial sin enviar
-      // cada artículo de todas las ventas en una sola respuesta.
-      take: filters.q || filters.date ? 500 : 100,
-    });
-    return rows.map((sale) => saleHistoryDto(sale, actor));
+    const [rows, ownOpenCash] = await Promise.all([
+      this.db.sale.findMany({
+        where: {
+          branchId: actor.branchId,
+          ...(can(actor.permissions, "sale:manage")
+            ? {}
+            : { sellerId: actor.id }),
+          ...(filters.q
+            ? { number: { contains: filters.q, mode: "insensitive" as const } }
+            : {}),
+          ...(createdAt ? { createdAt } : {}),
+        },
+        include: {
+          items: { include: { variant: { include: { product: true } } } },
+          payments: true,
+          returns: true,
+          customer: { select: { name: true } },
+          voidRequests: { orderBy: { requestedAt: "desc" }, take: 1 },
+        },
+        orderBy: { createdAt: "desc" },
+        // La búsqueda por número o fecha alcanza todo el historial sin enviar
+        // cada artículo de todas las ventas en una sola respuesta.
+        take: filters.q || filters.date ? 500 : 100,
+      }),
+      canViewCashExpected(actor)
+        ? Promise.resolve(null)
+        : this.db.cashSession.findFirst({
+            where: {
+              branchId: actor.branchId,
+              userId: actor.id,
+              closedAt: null,
+            },
+            select: { id: true },
+          }),
+    ]);
+    const hiddenUntilClose = Boolean(ownOpenCash);
+    return rows.map((sale) =>
+      saleHistoryDto(sale, actor, hiddenUntilClose),
+    );
   }
   private async voidRequestDto(id: string, actor: Actor) {
     const row = await this.db.saleVoidRequest.findFirstOrThrow({
