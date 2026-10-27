@@ -78,6 +78,14 @@
   --alert-counter-border: #e8c181;
   --muted-on-soft: #586274;
   --shadow: 0 4px 22px #29315b04;
+  --sidebar-w: clamp(185px, 15.5vw, 225px);
+  --pos-cart-w: clamp(300px, 29vw, 400px);
+  --lumina-grid: rgba(76, 60, 130, 0.055);
+  --lumina-card: linear-gradient(165deg, #ffffff 0%, #fafaff 100%);
+  --lumina-card-border: rgba(69, 52, 124, 0.14);
+  --lumina-violet-glow: rgba(124, 58, 237, 0.11);
+  --lumina-emerald-glow: rgba(16, 185, 129, 0.09);
+  --lumina-laser: linear-gradient(90deg, #7c3aed, #10b981, #3b82f6, #7c3aed);
   /* Obsidian Lumina (fase 1): violeta = acción, esmeralda = estado y foco. */
   --surface-raised: #ffffff;
   --shell-bg: #ffffff;
@@ -123,7 +131,12 @@
   --alert-counter-bg: #402b17;
   --alert-counter-border: #8b642f;
   --muted-on-soft: #c4c9da;
-  --shadow: none;
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+  --lumina-grid: rgba(255, 255, 255, 0.025);
+  --lumina-card: linear-gradient(165deg, rgba(19, 21, 36, 0.98), rgba(10, 11, 20, 0.98));
+  --lumina-card-border: rgba(255, 255, 255, 0.11);
+  --lumina-violet-glow: rgba(124, 58, 237, 0.15);
+  --lumina-emerald-glow: rgba(16, 185, 129, 0.1);
   --surface-raised: #171c2e;
   --shell-bg: #08090f;
   --border-strong: #6d7896;
@@ -5940,10 +5953,6 @@ td strong {
    filas a la vista; (3) columna del carrito fija en 390 px y barra lateral fija.
    Ahora: overflow:clip (recorta sin crear desplazamiento), rejilla fluida,
    carrito con clamp(), tipografías con clamp() y barra lateral que se encoge. */
-:root {
-  --sidebar-w: clamp(185px, 15.5vw, 225px);
-  --pos-cart-w: clamp(300px, 29vw, 400px);
-}
 .main-shell,
 .main-content {
   min-width: 0;
@@ -7369,22 +7378,6 @@ td strong {
 /* --- Obsidian Lumina: marco de administración -----------------------------
    El tema claro mantiene a la caja veloz y legible; el oscuro aporta la
    atmósfera ejecutiva sin esconder información tras transparencias. */
-:root {
-  --lumina-grid: rgba(76, 60, 130, 0.055);
-  --lumina-card: linear-gradient(165deg, #ffffff 0%, #fafaff 100%);
-  --lumina-card-border: rgba(69, 52, 124, 0.14);
-  --lumina-violet-glow: rgba(124, 58, 237, 0.11);
-  --lumina-emerald-glow: rgba(16, 185, 129, 0.09);
-  --lumina-laser: linear-gradient(90deg, #7c3aed, #10b981, #3b82f6, #7c3aed);
-}
-:root[data-theme="dark"] {
-  --lumina-grid: rgba(255, 255, 255, 0.025);
-  --lumina-card: linear-gradient(165deg, rgba(19, 21, 36, 0.98), rgba(10, 11, 20, 0.98));
-  --lumina-card-border: rgba(255, 255, 255, 0.11);
-  --lumina-violet-glow: rgba(124, 58, 237, 0.15);
-  --lumina-emerald-glow: rgba(16, 185, 129, 0.1);
-  --shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
-}
 .app-shell:not(.pos-shell) {
   background-color: var(--bg);
   background-image:

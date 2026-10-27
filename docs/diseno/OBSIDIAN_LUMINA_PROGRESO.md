@@ -451,3 +451,12 @@ se cambiaron API, base de datos, pagos, reglas fiscales o permisos.
   `ECONNREFUSED`. El contrato estático de accesibilidad sí quedó aprobado
   (36/36) y la revisión visual confirma foco visible, contraste y navegación
   móvil en el alcance de este lote.
+# Tokens visuales · 27-oct-2026
+
+La rama `chatgpt-pc/visual-tokens-27oct` integra las bases de #16, #11, #13 y
+#14 en una copia aislada y consolida las variables raíz de cada tema, conservando
+los valores efectivos anteriores. La prueba nueva falló antes: esperaba un
+`:root` y encontró tres; después pasó. Las 55 pruebas focales de tokens,
+accesibilidad y Lumina y ESLint pasaron; el build web también. La integración
+base tiene `verify` rojo por desbordes a 320 px: esta entrega no certifica que
+esos fallos estén corregidos. Capturas y CI del último SHA pendientes.
