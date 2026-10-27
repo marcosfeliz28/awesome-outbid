@@ -184,14 +184,18 @@ describe("11 · enlace para restablecer la clave de la administradora", () => {
       reset.body.invitationUrl,
       "OtraClave-2026!!",
     );
-    expect((await login("clave-olvidada", "OtraClave-2026!!")).status).toBe(
-      201,
-    );
+    const relogin = await login("clave-olvidada", "OtraClave-2026!!");
+    expect(relogin.status).toBe(201);
     const log = await t.q(
       `SELECT "userId" FROM "AuditLog" WHERE action='platform_password_reset' AND "tenantId"=$1::uuid`,
       created.id,
     );
-    expect(log).toEqual([{ userId: "plataforma:dueña-nexora" }]);
+    expect(log).toEqual([{ userId: "plataforma" }]);
+    // Lo que ve la administradora de la empresa no nombra al operador.
+    const seen = await t.http.get("/api/audit-log").set("Authorization", `Bearer ${relogin.body.accessToken}`);
+    expect(seen.status).toBe(200);
+    expect(seen.body.find((r: any) => r.action === "platform_password_reset")).toMatchObject({ userId: "plataforma" });
+    expect(JSON.stringify(seen.body)).not.toContain("dueña-nexora");
   });
 });
 

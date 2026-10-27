@@ -212,7 +212,7 @@ export class PlatformController {
       this.registration.db.refreshToken.deleteMany({ where: { userId: owner.id } }),
       this.registration.db.authSession.deleteMany({ where: { userId: owner.id } }),
       this.registration.db.auditLog.create({ data: {
-        tenantId: tenant.id, userId: "plataforma:" + operator, action: "platform_password_reset",
+        tenantId: tenant.id, userId: "plataforma", action: "platform_password_reset",
         entity: "user", entityId: owner.id, after: { email: owner.email, expiresAt: expiresAt.toISOString() },
       } }),
     ]);
