@@ -2,7 +2,8 @@
   "enabledPlugins": {
     "ponytail@ponytail": true,
     "supabase@anthropic-plugin-directory": true,
-    "vercel@anthropic-plugin-directory": true
+    "vercel@anthropic-plugin-directory": true,
+    "oh-my-claudecode@omc": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
@@ -10,6 +11,12 @@
         "source": "github",
         "repo": "DietrichGebert/ponytail",
         "ref": "v5.1.0"
+      }
+    },
+    "omc": {
+      "source": {
+        "source": "github",
+        "repo": "Yeachan-Heo/oh-my-claudecode"
       }
     }
   }
