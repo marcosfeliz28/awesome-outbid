@@ -141,3 +141,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT nube: no cargó en esta pasada; pendiente para el próximo ciclo.
 - 13.3 AT-06 terminada: claude-pc/at06-diseno (df961eaf), docs/seguridad/AT06_OPERADORA.md. Solo documento, sin código. Requiere decisiones D1 a D8 de la dueña (identidad por persona, roles, caducidad, custodia del break-glass, retención, aviso a la empresa al abrir soporte, revisor de cobros, fecha límite).
 - 13.1 auditoría visual terminada: claude-pc/auditoria-visual (be96c112), docs/qa/AUDITORIA_VISUAL_27OCT.md. Hallazgo ALTA: store.spec.ts:901-902 busca tablist/tab «SALIDA» y Merchandise.tsx usa role=group/aria-pressed (es la regresión que reporta ChatGPT PC en 2a0beec6). MEDIA: visual no tiene 1a04cd33 (ITBIS); si se publica su head sin mezclar producto, se muestra utilidad sin ITBIS. Merge-tree limpio con itbis-una-regla y con producto. Solo lectura, sin ejecutar pruebas.
+
+## Verificación de ChatGPT nube y envío (27-oct, ~6:55 p. m. RD)
+- Verificado por CI (verde en los 3): at04-ruta-320 a68fd008, at11-postgres-estable f3c57f1d, fase3-puerta-producto 305fb0ab, fase4-marca-producto 1b2c2318.
+- fase3 y fase4 ya están dentro de producto-nexora (78888542): no hay que integrarlas.
+- at04 integra limpio sobre producto. at11 integra limpio sola, pero choca con at04 en vitest.config.ts.
+- Enviado a ChatGPT nube (libre): integrar at11 sobre at04 resolviendo vitest.config.ts, y volver a correr los 3 CI. Respondió «Thinking». No mezclo en producto.
+- ChatGPT PC («Corrige CI de Fase 0»): ocupado, dice que la rama de visual-integracion fue actualizada y que su commit actual ya no es el de los CI verdes; comprueba la nueva versión. No le escribí. Pendiente cuando esté libre: el fallo de SALIDA/aria-pressed (auditoría 13.1) y rebasar sobre producto 78888542.
