@@ -733,6 +733,9 @@ kbd {
   margin: 0 10px;
   color: #8a93a6;
 }
+.breadcrumb .breadcrumb-root {
+  margin: 0;
+}
 .breadcrumb strong {
   color: var(--text);
   font-size: 10px;
@@ -4238,6 +4241,11 @@ td strong {
   }
   .breadcrumb span {
     margin: 0 5px;
+  }
+  /* A 320 px se conserva completa la pantalla actual; el prefijo repetido
+     sigue disponible en anchos mayores y no empuja la cuenta fuera. */
+  .breadcrumb .breadcrumb-root {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
