@@ -2789,6 +2789,27 @@ td strong {
     linear-gradient(to right, #ffffff08 1px, transparent 1px),
     linear-gradient(to bottom, #ffffff08 1px, transparent 1px);
   background-size: 48px 48px;
+  scrollbar-width: thin;
+  scrollbar-color: #7c3aed #090a12;
+}
+.login-page::-webkit-scrollbar {
+  width: 8px;
+}
+.login-page::-webkit-scrollbar-track {
+  background: #090a12;
+}
+.login-page::-webkit-scrollbar-thumb {
+  border: 2px solid #090a12;
+  border-radius: 999px;
+  background: #7c3aed;
+}
+.login-page a {
+  text-decoration: none;
+}
+.login-page a:hover,
+.login-page a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .login-aurora {
   position: fixed;
@@ -3036,11 +3057,10 @@ td strong {
   position: relative;
   display: block;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
   aspect-ratio: 1;
-  border-radius: 14px;
-  border: 1px solid #ffffff26;
-  background: #000;
+  border: 0;
+  background: transparent;
   isolation: isolate;
 }
 .login-prism-frame img {
@@ -3048,7 +3068,7 @@ td strong {
   width: 100%;
   height: auto;
   aspect-ratio: 1;
-  object-fit: cover;
+  object-fit: contain;
   animation: login-prism-enter 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .login-prism-scan {
@@ -3282,6 +3302,33 @@ td strong {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.password-input {
+  position: relative;
+  display: block;
+}
+.password-input input {
+  padding-right: 48px;
+}
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: inline-grid;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #c4b5fd;
+}
+.password-toggle:hover {
+  background: #ffffff0d;
+}
 .login-vault .password-change-fields {
   color: var(--lg-text);
 }
@@ -3354,16 +3401,20 @@ td strong {
   min-height: 44px;
   cursor: pointer;
   color: #c4b5fd;
+  text-decoration: none;
+}
+.login-forgot summary:hover,
+.login-forgot summary:focus-visible {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 .login-forgot a {
   color: #7dd3fc;
-  text-decoration: underline;
+  text-decoration: none;
 }
 .login-vault > p > a {
   color: #7dd3fc;
-  text-decoration: underline;
+  text-decoration: none;
 }
 .login-vault .button {
   min-height: 52px;
@@ -7113,9 +7164,7 @@ td strong {
   text-align: center;
 }
 /* INI-06: blanco sobre el violeta claro del tema oscuro no llega a 4.5:1. */
-:root[data-theme="dark"] .config-mode .active {
-  color: #0b0f19;
-}
+:root[data-theme="dark"] .config-mode .active { color: #0b0f19; }
 
 /* ==========================================================================
    Obsidian Lumina · fase 1 (docs/diseno/OBSIDIAN_LUMINA_PROGRESO.md)

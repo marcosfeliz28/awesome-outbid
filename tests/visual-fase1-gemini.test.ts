@@ -44,15 +44,14 @@ describe("F1-03 · marca, acción primaria y moneda", () => {
   });
 });
 
-describe.skip("F1-04 · portada limpia", () => {
+describe("F1-04 · portada limpia", () => {
   it("deja un solo grupo comercial, icono de contraseña y activo 840 con alfa", () => {
     const app = read("apps/web/src/App.tsx");
     const styles = read("apps/web/src/styles.css");
     expect(app.match(/className="login-stats"/g)).toHaveLength(1);
     expect(app).toContain('className="password-toggle"');
-    expect(app).toContain(
-      'showPassword ? "Ocultar contraseña" : "Mostrar contraseña"',
-    );
+    expect(app).toContain('aria-label="Mostrar contraseña"');
+    expect(app).toContain("aria-pressed={showPassword}");
     expect(styles).toContain("scrollbar-width: thin");
     expect(styles).toMatch(/\.login-page a\s*\{[^}]*text-decoration:\s*none/s);
     const file = "apps/web/public/nexora-prisma-transparent.webp";

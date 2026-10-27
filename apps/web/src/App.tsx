@@ -44,6 +44,8 @@ import {
   ScanLine,
   Info,
   KeyRound,
+  Eye,
+  EyeOff,
   Dumbbell,
   Footprints,
   Brush,
@@ -450,23 +452,6 @@ function Login() {
               <span>Todo bajo control.</span>
             </h1>
             <p>Vende. Controla. Crece.</p>
-            <ul className="login-stats">
-              <li>
-                <small>Vende</small>
-                <strong>Caja ágil</strong>
-                <span>Cobros y turnos</span>
-              </li>
-              <li>
-                <small>Controla</small>
-                <strong>Inventario claro</strong>
-                <span>Entradas y existencias</span>
-              </li>
-              <li>
-                <small>Decide</small>
-                <strong>Datos útiles</strong>
-                <span>Reportes y alertas</span>
-              </li>
-            </ul>
             <div className="login-stage">
               <span className="login-prism-frame" aria-hidden="true">
                 <img
@@ -491,18 +476,13 @@ function Login() {
           </section>
         ) : (
           <section className="login-art" aria-label="Qué hace Nexora POS">
-            <span className="eyebrow light">
-              GRUPO MACGEN · GV MAKEUP STUDIO
-            </span>
+            <span className="eyebrow light">GRUPO MACGEN · GV MAKEUP STUDIO</span>
             <h1>
               Fitness y belleza.
               <br />
               <span>Todo bajo control.</span>
             </h1>
-            <p>
-              Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los
-              cursos y servicios de GV Makeup Studio, en un solo sistema.
-            </p>
+            <p>Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema.</p>
             <ul className="login-stats">
               <li>
                 <small>Arqueo ciego</small>
@@ -710,11 +690,11 @@ function Login() {
                 role={changeRequired ? undefined : "tabpanel"}
                 aria-labelledby={changeRequired ? undefined : "login-tab-clave"}
               >
-                <label className="field">
+                <div className="field">
                   <span>
-                    <span id="login-password-label">
+                    <label id="login-password-label" htmlFor="login-password">
                       {changeRequired ? "Contraseña temporal" : "Contraseña"}
-                    </span>
+                    </label>
                     {/* Visible; el nombre accesible (aria-labelledby) sigue siendo «Contraseña» y el aviso va como descripción. */}
                     {!changeRequired && (
                       <small aria-hidden="true" id="login-password-hint">
@@ -723,28 +703,36 @@ function Login() {
                       </small>
                     )}
                   </span>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    required
-                    aria-labelledby="login-password-label"
-                    aria-describedby={
-                      changeRequired ? undefined : "login-password-hint"
-                    }
-                    placeholder="Tu contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </label>
-                {/* 05-B11: ver lo que se escribe, útil con el teclado del celular. */}
-                <button
-                  type="button"
-                  className="link-button show-password"
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  Mostrar contraseña
-                </button>
+                  <span className="password-input">
+                    <input
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      required
+                      aria-labelledby="login-password-label"
+                      aria-describedby={
+                        changeRequired ? undefined : "login-password-hint"
+                      }
+                      placeholder="Tu contraseña"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      aria-label="Mostrar contraseña"
+                      title={
+                        showPassword
+                          ? "Ocultar contraseña"
+                          : "Mostrar contraseña"
+                      }
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                    </button>
+                  </span>
+                </div>
               </div>
             ) : (
               <div
