@@ -63,3 +63,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pega a ChatGPT (sección 12): pide confirmación de la dueña en mi chat antes de pegar. No pegué.
 - CI: visual-integracion-27oct en curso (a9bedbde). ChatGPT PC: «Instala el documento» trabajando, esperando los 3 jobs de GitHub. No escribí.
 - ChatGPT nube: sin cambios visibles.
+
+## Envío confirmado por Marcos (27-oct, 5:21 p. m. RD)
+- Pegado en ChatGPT nube (libre antes de escribir) el texto de la orden 12 para ChatGPT nube: AT-04, AT-11, cierre del PR #15, fase 3 y fase 4. ChatGPT nube respondió «Thinking».
+- ChatGPT PC: pendiente. Su chat «Instala el documento» estaba ocupado; no escribí.
