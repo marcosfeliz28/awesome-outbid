@@ -18,9 +18,8 @@ vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
 let ExecutiveMetrics: typeof import("../apps/web/src/ExecutiveDashboard").ExecutiveMetrics;
 let profitOf: typeof import("../apps/web/src/ExecutiveDashboard").profitOf;
 beforeAll(async () => {
-  ({ ExecutiveMetrics, profitOf } = await import(
-    "../apps/web/src/ExecutiveDashboard"
-  ));
+  ({ ExecutiveMetrics, profitOf } =
+    await import("../apps/web/src/ExecutiveDashboard"));
 });
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -114,6 +113,14 @@ describe("Obsidian Lumina f2 · tablero ejecutivo", () => {
     expect(css).not.toContain("--lumina-");
     for (const token of css.match(/var\(--[a-z-]+/g) ?? [])
       expect(base).toContain(`${token.slice(4)}:`);
+  });
+  it("el tooltip anual usa tinta legible en claro y oscuro", () => {
+    const base = read("apps/web/src/styles.css");
+    expect(base).toMatch(/:root \{[\s\S]*?--ink: #1b2134;/);
+    expect(base).toMatch(
+      /:root\[data-theme="dark"\] \{[\s\S]*?--ink: #eef0f8;/,
+    );
+    expect(base).toMatch(/\.year-pie-tip \{[\s\S]*?color: var\(--ink/);
   });
   it("la ganancia es ventas − costo, sin restar ITBIS", () => {
     // El servidor manda grossProfit con el ITBIS restado; aquí no se usa.
