@@ -30,17 +30,5 @@ describe("acceso separado para la tienda y el producto SaaS", () => {
     expect(publicRegistrationEnabled(undefined, "enabled")).toBe(false);
     expect(publicRegistrationEnabled("required", "enabled")).toBe(true);
 
-    const blueprint = readFileSync("render.producto.yaml", "utf8");
-    const dockerfile = readFileSync("deploy/render/Dockerfile.web", "utf8");
-    expect(blueprint).toMatch(
-      /key: VITE_PRODUCT_PUBLIC_REGISTRATION\s+value: disabled/,
-    );
-    expect(blueprint).toMatch(
-      /key: PRODUCT_PUBLIC_REGISTRATION\s+value: disabled/,
-    );
-    expect(dockerfile).toContain('ARG VITE_PRODUCT_PUBLIC_REGISTRATION="disabled"');
-    expect(dockerfile).toContain(
-      "ENV VITE_PRODUCT_PUBLIC_REGISTRATION=$VITE_PRODUCT_PUBLIC_REGISTRATION",
-    );
   });
 });

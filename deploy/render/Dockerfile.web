@@ -18,9 +18,7 @@ COPY packages/ui packages/ui
 # Sin ella la app no envía nada a Sentry.
 ARG VITE_SENTRY_DSN=""
 ARG VITE_PRODUCT_TENANCY=""
-ARG VITE_PRODUCT_PUBLIC_REGISTRATION="disabled"
 ENV VITE_PRODUCT_TENANCY=$VITE_PRODUCT_TENANCY
-ENV VITE_PRODUCT_PUBLIC_REGISTRATION=$VITE_PRODUCT_PUBLIC_REGISTRATION
 RUN pnpm --filter @fitstore/web build
 
 # Nginx abierto incorpora `resolve` para upstreams desde 1.27.3. Se fija una
