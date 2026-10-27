@@ -83,6 +83,12 @@ import {
   managementQueryError,
   openCashBlindNote,
 } from "./managementMessages";
+import {
+  HIDDEN_PAYMENT_METHOD,
+  saleAmountText,
+  salePaymentText,
+  shouldHideSaleAmounts,
+} from "./salesAmountPrivacy";
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
@@ -3352,6 +3358,11 @@ export function SalesHistory() {
   const session = sessions.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
   );
+  const hideSaleAmounts = shouldHideSaleAmounts(
+    user.permissions,
+    sessions.isSuccess,
+    Boolean(session),
+  );
   return (
     <>
       <Heading
@@ -3411,20 +3422,30 @@ export function SalesHistory() {
                   </>
                 ),
               },
-              { label: "Total", render: (s) => formatMoney(s.total) },
+              {
+                label: "Total",
+                render: (s) =>
+                  saleAmountText(formatMoney(s.total), hideSaleAmounts),
+              },
               {
                 label: "Saldo pendiente",
-                render: (s) => formatMoney(s.creditBalance ?? 0),
+                render: (s) =>
+                  saleAmountText(
+                    formatMoney(s.creditBalance ?? 0),
+                    hideSaleAmounts,
+                  ),
               },
               {
                 label: "Pagos",
-                render: (s) =>
-                  s.payments
+                render: (s) => {
+                  const methods = s.payments
                     .map(
                       (p: any) =>
                         paymentOptions.find((o) => o.value === p.method)?.label,
                     )
-                    .join(" + "),
+                    .join(" + ");
+                  return salePaymentText(methods, hideSaleAmounts);
+                },
               },
               {
                 label: "Acciones",
@@ -3604,20 +3625,34 @@ export function SalesHistory() {
                 },
                 { label: "Cantidad", render: (i) => i.qty },
                 { label: "Devuelta", render: (i) => i.returnedQty },
-                { label: "Total", render: (i) => formatMoney(i.lineTotal) },
+                {
+                  label: "Total",
+                  render: (i) =>
+                    saleAmountText(
+                      formatMoney(i.lineTotal),
+                      hideSaleAmounts,
+                    ),
+                },
               ]}
             />
             <h3>Pagos registrados</h3>
             {Number(selected.discountTotal) > 0 && (
               <p>
-                Descuento: {formatMoney(selected.discountTotal)} · Motivo:{" "}
+                Descuento:{" "}
+                {saleAmountText(
+                  formatMoney(selected.discountTotal),
+                  hideSaleAmounts,
+                )}{" "}
+                · Motivo:{" "}
                 {selected.discountReason}
                 {selected.discountApprovedName
                   ? ` · Autorizó: ${selected.discountApprovedName}`
                   : ""}
               </p>
             )}
-            {selected.payments.map((p: any) => (
+            {hideSaleAmounts ? (
+              <p role="status">{HIDDEN_PAYMENT_METHOD} hasta cerrar tu caja.</p>
+            ) : selected.payments.map((p: any) => (
               <div className="payment-list" key={p.id}>
                 <div>
                   <span>
@@ -3721,7 +3756,10 @@ export function SalesHistory() {
                 </div>
               </div>
             ))}
-            <h3>Total {formatMoney(selected.total)}</h3>
+            <h3>
+              Total{" "}
+              {saleAmountText(formatMoney(selected.total), hideSaleAmounts)}
+            </h3>
           </>
         )}
       </Modal>

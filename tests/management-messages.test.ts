@@ -6,6 +6,13 @@ import {
   managementQueryError,
   openCashBlindNote,
 } from "../apps/web/src/managementMessages";
+import {
+  HIDDEN_PAYMENT_METHOD,
+  HIDDEN_SALE_AMOUNT,
+  saleAmountText,
+  salePaymentText,
+  shouldHideSaleAmounts,
+} from "../apps/web/src/salesAmountPrivacy";
 
 const management = readFileSync("apps/web/src/Management.tsx", "utf8");
 
@@ -126,5 +133,32 @@ describe("Cierre de caja · el texto coincide con lo que la API entrega por rol"
     expect(tienda).toContain('can(user?.permissions ?? [], "profit:read")');
     expect(tienda).toContain('can(user?.permissions ?? [], "sale:manage")');
     expect(management).toContain("openCashBlindNote(false)");
+  });
+});
+
+describe("B-01 · importes de Ventas durante el arqueo ciego", () => {
+  const cashier = ["sale:write"];
+  const manager = ["sale:write", "sale:manage"];
+
+  it("oculta por defecto mientras todavía no conoce el estado de caja", () => {
+    expect(shouldHideSaleAmounts(cashier, false, false)).toBe(true);
+    expect(saleAmountText("RD$ 9,999.00", true)).toBe(HIDDEN_SALE_AMOUNT);
+    expect(salePaymentText("Efectivo", true)).toBe(HIDDEN_PAYMENT_METHOD);
+  });
+
+  it("oculta a la cajera con caja propia abierta y muestra después del cierre", () => {
+    expect(shouldHideSaleAmounts(cashier, true, true)).toBe(true);
+    expect(shouldHideSaleAmounts(cashier, true, false)).toBe(false);
+  });
+
+  it("gerencia conserva importes aunque haya una caja abierta", () => {
+    expect(shouldHideSaleAmounts(manager, true, true)).toBe(false);
+    expect(shouldHideSaleAmounts(["profit:read"], true, true)).toBe(false);
+  });
+
+  it("reemplaza valores en el render en vez de desenfocarlos con CSS", () => {
+    expect(management).toContain("saleAmountText(");
+    expect(management).toContain("salePaymentText(");
+    expect(management).not.toMatch(/blur\([^)]*\).*hideSaleAmounts/s);
   });
 });
