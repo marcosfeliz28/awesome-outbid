@@ -1,9 +1,10 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 if (process.env.VITE_PRODUCT_TENANCY !== "required") process.exit(0);
 
-const root = new URL("../dist/", import.meta.url);
+const root = fileURLToPath(new URL("../dist/", import.meta.url));
 const forbidden = [
   ["MacGen", /macgen/i],
   ["GV Makeup", /gv\s*makeup/i],
@@ -24,11 +25,11 @@ async function walk(directory) {
     if (!textExtensions.test(name)) continue;
     const content = await readFile(path, "utf8");
     for (const [label, pattern] of forbidden)
-      if (pattern.test(content)) leaks.push(`${relative(root.pathname, path)}: ${label}`);
+      if (pattern.test(content)) leaks.push(`${relative(root, path)}: ${label}`);
   }
 }
 
-await walk(root.pathname);
+await walk(root);
 if (leaks.length) {
   console.error("La compilación del producto contiene marca o acceso de la tienda:");
   for (const leak of leaks) console.error(`- ${leak}`);
