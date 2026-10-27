@@ -570,3 +570,12 @@ describe("Resumen · QA B1 (texto «ayer» en tema claro)", () => {
     meets("ayer claro", muted!, "#eff6ff", 4.5);
   });
 });
+
+describe("Pestañas · QA B4 (anillo de foco dentro de .tabs con desplazamiento)", () => {
+  it("el anillo de foco de cada pestaña cae dentro de su contenedor", () => {
+    expect(/\.tabs\s*\{[^}]*overflow-x:\s*auto/.test(css)).toBe(true);
+    const focus = /\.tabs button:focus-visible\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    const offset = Number(/outline-offset:\s*(-?\d+)px/.exec(focus)?.[1]);
+    expect(offset, "outline-offset negativo en pestañas con desplazamiento").toBeLessThan(0);
+  });
+});

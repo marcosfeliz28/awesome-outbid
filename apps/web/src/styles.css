@@ -1524,6 +1524,10 @@ td strong {
   background: var(--primary-soft) !important;
   font-weight: 600;
 }
+/* QA B4: el anillo de foco va dentro de la pestaña; fuera, .tabs lo recortaría. */
+.tabs button:focus-visible {
+  outline-offset: -3px;
+}
 .tabs.outside {
   margin-bottom: 18px;
 }
