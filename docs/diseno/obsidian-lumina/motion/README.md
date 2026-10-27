@@ -4,8 +4,10 @@ Esta entrega usa movimiento como señal de calidad y transición. La operación 
 
 ## Aplicación en la interfaz
 
+- La N prismática ocupa el centro visual, sin la palabra ni el subtítulo dentro de la imagen.
 - El emblema de la cabecera aparece una sola vez y recibe un barrido de luz corto.
-- El núcleo prismático entra con profundidad mínima y un solo barrido esmeralda/violeta.
+- La N principal entra con profundidad mínima y un solo barrido esmeralda/violeta.
+- Las funciones se condensan en tres grupos: Vende, Controla y Decide.
 - La iluminación ambiental responde al puntero sin provocar renders de React.
 - `prefers-reduced-motion: reduce` elimina todas las animaciones nuevas y la línea luminosa existente.
 - No se reproduce video automáticamente en la pantalla de acceso. El clip se reserva para una portada comercial o presentación.
@@ -18,7 +20,7 @@ Esta entrega usa movimiento como señal de calidad y transición. La operación 
 python scripts/generate-nexora-motion.py
 ```
 
-El generador solo usa el activo oficial `apps/web/public/nucleo-prisma.webp`, Pillow y FFmpeg. No altera letras ni inventa una variante del logo.
+El generador usa el recorte de alta resolución `apps/web/public/nexora-prisma-mark.webp`, derivado del activo oficial, Pillow y FFmpeg. No inventa una variante del logo.
 
 ## Variante preparada para Open Higgsfield
 
@@ -26,9 +28,9 @@ Modelo recomendado: Seedance 2.5 en modo `omni_reference`, 1080p, 6 segundos, 16
 
 Prompt:
 
-> Preserve the supplied NEXORA POS prism logo, its exact geometry, spacing and every letter. A restrained emerald and violet light travels once across the beveled N, revealing subtle obsidian depth. Add a very slow two-percent camera push and refined reflections suitable for premium enterprise software. Keep the background clean black. No morphing, no extra symbols, no extra text, no particles over the wordmark, no camera shake, no lens distortion, silent.
+> Preserve the supplied prism N mark and its exact geometry. A restrained emerald and violet light travels once across the beveled N, revealing subtle obsidian depth. Add a very slow two-percent camera push and refined reflections suitable for premium enterprise software. Keep the background clean black. No morphing, no extra symbols, no text, no particles over the mark, no camera shake, no lens distortion, silent.
 
-Negativos operativos: no cambiar `NEXORA POS`, no deformar la N, no reemplazar la tipografía, no destellos repetitivos, no movimiento perpetuo y no mostrar controles de caja o credenciales.
+Negativos operativos: no deformar la N, no añadir palabras, no destellos repetitivos, no movimiento perpetuo y no mostrar controles de caja o credenciales.
 
 ## Uso recomendado
 

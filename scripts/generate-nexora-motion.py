@@ -11,18 +11,18 @@ from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "apps/web/public/nucleo-prisma.webp"
+SOURCE = ROOT / "apps/web/public/nexora-prisma-mark.webp"
 OUTPUT = ROOT / "docs/diseno/obsidian-lumina/motion"
 WIDTH, HEIGHT, FPS, SECONDS = 1280, 720, 30, 6
 
 
 def cover(image: Image.Image, width: int, height: int) -> Image.Image:
-    scale = max(width / image.width, height / image.height)
+    scale = min(width / image.width, height / image.height) * 0.82
     size = (round(image.width * scale), round(image.height * scale))
     resized = image.resize(size, Image.Resampling.LANCZOS)
-    left = (resized.width - width) // 2
-    top = (resized.height - height) // 2
-    return resized.crop((left, top, left + width, top + height))
+    canvas = Image.new("RGB", (width, height), (3, 4, 10))
+    canvas.paste(resized, ((width - resized.width) // 2, (height - resized.height) // 2))
+    return canvas
 
 
 def frame_at(source: Image.Image, index: int) -> Image.Image:

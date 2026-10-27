@@ -44,19 +44,13 @@ import {
   ScanLine,
   Info,
   KeyRound,
-  Dumbbell,
-  Footprints,
-  Brush,
-  GraduationCap,
-  Pill,
-  Shirt,
 } from "lucide-react";
 import {
   initialCompanyCode,
   productTenancyRequired,
   publicRegistrationEnabled,
 } from "./productTenancy";
-import { businessSidebarLabels, productLoginFaces } from "./product-branding";
+import { businessSidebarLabels } from "./product-branding";
 import { Registration, ConfirmEmail, AcceptInvitation } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
 import { DesktopPrinterControls } from "./DesktopPrinterControls";
@@ -314,64 +308,29 @@ const PUBLIC_REGISTRATION_ENABLED = publicRegistrationEnabled(
   import.meta.env.VITE_PRODUCT_TENANCY,
   import.meta.env.VITE_PRODUCT_PUBLIC_REGISTRATION,
 );
-// Caras del cubo de la entrada: lo que venden Grupo MacGen y GV Makeup
-// Studio, por grupo (dueña, 23-oct).
-const LOGIN_CUBE = [
+// Tres grupos explican el producto sin competir con el emblema principal.
+const LOGIN_GROUPS = [
   {
     face: "front",
-    icon: Pill,
-    title: "Suplementos",
-    items: "Proteínas · Creatinas · Vitaminas",
+    icon: ShoppingBag,
+    title: "Vende",
+    items: "Caja y cobros",
   },
   {
     face: "right",
-    icon: Shirt,
-    title: "Fajas",
-    items: "Corsets · Chalecos · Cinturillas",
+    icon: Boxes,
+    title: "Controla",
+    items: "Inventario y turnos",
   },
   {
     face: "back",
-    icon: Footprints,
-    title: "Tenis y ropa",
-    items: "Tenis · Ropa deportiva",
-  },
-  {
-    face: "left",
-    icon: Dumbbell,
-    title: "Accesorios",
-    items: "Accesorios de gym",
-  },
-  {
-    face: "top",
-    icon: Brush,
-    title: "Maquillaje",
-    items: "Bases · Correctores · Brochas",
-    gv: true,
-  },
-  {
-    face: "bottom",
-    icon: GraduationCap,
-    title: "GV Makeup Studio",
-    items: "Cursos · Servicios · Productos",
-    gv: true,
+    icon: ChartNoAxesCombined,
+    title: "Decide",
+    items: "Reportes y alertas",
   },
 ];
 
 function Login() {
-  const loginCube = PRODUCT_TENANCY_REQUIRED
-    ? productLoginFaces.map((face) => ({
-        ...face,
-        icon: {
-          front: Package,
-          right: ShoppingBag,
-          back: Users,
-          left: Boxes,
-          top: ChartNoAxesCombined,
-          bottom: Sparkles,
-        }[face.face],
-        gv: false,
-      }))
-    : LOGIN_CUBE;
   const [companyCode, setCompanyCode] = useState(() =>
       initialCompanyCode(PRODUCT_TENANCY_REQUIRED),
     ),
@@ -421,64 +380,48 @@ function Login() {
           <div>
             <span className="login-wordmark">NEXORA</span>
             <span className="login-chip">POS</span>
-            <p>Punto de venta, inventario y caja</p>
           </div>
         </div>
         <span className="login-laser" aria-hidden="true" />
       </header>
       <main className="login-main">
         <section className="login-art" aria-label="Qué hace Nexora POS">
-          <span className="eyebrow light">
-            {PRODUCT_TENANCY_REQUIRED
-              ? "NEXORA POS"
-              : "GRUPO MACGEN · GV MAKEUP STUDIO"}
-          </span>
+          <span className="eyebrow light">NEXORA POS</span>
           <h1>
-            {PRODUCT_TENANCY_REQUIRED ? "Tu negocio." : "Fitness y belleza."}
-            <br />
             <span>Todo bajo control.</span>
           </h1>
-          <p>
-            {PRODUCT_TENANCY_REQUIRED
-              ? "Ventas, inventario y caja en un solo lugar."
-              : "Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema."}
-          </p>
+          <p>Vende. Controla. Crece.</p>
           <ul className="login-stats">
             <li>
-              <small>Arqueo ciego</small>
-              <strong>Caja sin sesgo</strong>
-              <span>La cajera cuenta sin ver lo esperado</span>
+              <small>Vende</small>
+              <strong>Caja ágil</strong>
+              <span>Cobros y turnos</span>
             </li>
             <li>
-              <small>Margen</small>
-              <strong>Oculto a cajeras</strong>
-              <span>Solo lo ve quien administra</span>
+              <small>Controla</small>
+              <strong>Inventario claro</strong>
+              <span>Entradas y existencias</span>
             </li>
             <li>
-              <small>PIN rápido</small>
-              <strong>Cambio de turno</strong>
-              <span>Cada persona vende en su caja</span>
-            </li>
-            <li>
-              <small>Inventario</small>
-              <strong>Al día</strong>
-              <span>Entradas, salidas y traspasos</span>
+              <small>Decide</small>
+              <strong>Datos útiles</strong>
+              <span>Reportes y alertas</span>
             </li>
           </ul>
           <div className="login-stage">
             <span className="login-prism-frame" aria-hidden="true">
               <img
-                src="/nucleo-prisma.webp"
+                src="/nexora-prisma-mark.webp"
                 alt=""
-                width="480"
-                height="268"
+                width="900"
+                height="900"
                 loading="lazy"
               />
               <span className="login-prism-scan" />
             </span>
             <ul className="login-faces">
-              {loginCube.map(({ face, icon: Icon, title, items, gv }) => (
-                <li key={face} className={gv ? "gv" : undefined}>
+              {LOGIN_GROUPS.map(({ face, icon: Icon, title, items }) => (
+                <li key={face}>
                   <Icon aria-hidden="true" />
                   <strong>{title}</strong>
                   <small>{items}</small>
