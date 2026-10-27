@@ -51,7 +51,7 @@ describe("N-07 · resumen diario", () => {
     }
   });
 
-  it("envía una sola vez por empresa con destinatario y cifras aislados", async () => {
+  it("envía una sola vez solo a la empresa que lo activó, con destinatario y cifras aislados", async () => {
     const old = { PRODUCT_TENANCY: process.env.PRODUCT_TENANCY, RESEND_API_KEY: process.env.RESEND_API_KEY, NEXORA_RESUMEN_DIARIO: process.env.NEXORA_RESUMEN_DIARIO,
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY };
     process.env.PRODUCT_TENANCY = "required";
@@ -63,6 +63,7 @@ describe("N-07 · resumen diario", () => {
     const db: any = {
       activeTenantIds: async () => ["empresa-a", "empresa-b"],
       tenant: { findUnique: async () => ({ timeZone: "America/Santo_Domingo" }) },
+      settings: { findUnique: async () => ({ data: { dailySummaryEnabled: currentTenantId() === "empresa-a" } }) },
       user: { findMany: async () => [{ id: currentTenantId() + "-dueño", name: "Dueño",
         email: currentTenantId() + "@example.invalid", branchId: "main" }] },
       notificationOutbox: {
@@ -89,11 +90,11 @@ describe("N-07 · resumen diario", () => {
     try {
       await worker.run(new Date("2026-10-25T01:00:00Z"), deps);
       await worker.run(new Date("2026-10-25T01:00:00Z"), deps);
-      expect(rows).toHaveLength(2);
-      expect(sent).toHaveLength(2);
+      expect(rows).toHaveLength(1);
+      expect(sent).toHaveLength(1);
       expect(sent.find((mail) => mail.to === "empresa-a@example.invalid")?.text).toContain("RD$ 125.00");
       expect(sent.find((mail) => mail.to === "empresa-a@example.invalid")?.text).not.toContain("RD$ 700.00");
-      expect(sent.find((mail) => mail.to === "empresa-b@example.invalid")?.text).toContain("RD$ 700.00");
+      expect(sent.find((mail) => mail.to === "empresa-b@example.invalid")).toBeUndefined();
     } finally {
       for (const [key, value] of Object.entries(old)) {
         if (value === undefined) delete process.env[key]; else process.env[key] = value;
