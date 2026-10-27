@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startProductApp } from "./setup/product-pg-app";
 
@@ -175,6 +177,17 @@ describe("PC-23 · exportación de la empresa (D)", () => {
     expect(exported.status).toBe(200);
     expect(exported.body).toContain("EXP-1"); // sus pagos sí salen
     expect(exported.body).not.toContain("MOTIVO-INTERNO-SECRETO");
+    // Las columnas prev* (estado previo para deshacer la anulación) son internas: ni JSON ni Excel.
+    for (const column of ["prevStatus", "prevPaidThroughAt", "prevPastDueAt", "prevSuspendedAt"])
+      expect(exported.body).not.toContain(column);
+    const xlsx = await t.http.get("/api/tenant/export?format=xlsx").set("Authorization", `Bearer ${login.body.accessToken}`)
+      .buffer(true).parse((res: any, cb: any) => { const parts: Buffer[] = []; res.on("data", (c: Buffer) => parts.push(c)); res.on("end", () => cb(null, Buffer.concat(parts))); });
+    expect(xlsx.status).toBe(200);
+    const workbook = new (createRequire(resolve(import.meta.dirname, "../apps/api/package.json"))("exceljs").Workbook)();
+    await workbook.xlsx.load(xlsx.body);
+    const header = (workbook.getWorksheet("PlatformPayment")!.getRow(1).values as unknown[]).map(String);
+    expect(header).toContain("reference");
+    expect(header.filter(name => name.startsWith("prev"))).toEqual([]);
   });
 });
 

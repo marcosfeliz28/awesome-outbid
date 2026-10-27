@@ -16,8 +16,15 @@ import { tenantObjectStore } from "./tenant-object-store";
  * the encrypted disaster-recovery backup is a separate operation. */
 const SECRET_FIELD = /(?:password|pinHash|secret|token|verificationHash|api[_-]?key|private[_-]?key|credential|authorization|cookie)/i;
 const SECRET_EXACT = new Set(["hash", "codeHash", "challenge", "refreshTokenEnc", "secretHash", "emailVerificationHash"]);
-/** Notas internas del operador de la plataforma: la empresa ve sus pagos, no por qué se anularon. */
-const INTERNAL_COLUMNS = new Set(["PlatformPayment.voidReason"]);
+/** Notas internas del operador de la plataforma: la empresa ve sus pagos, no por qué se anularon
+ * ni el estado previo que la anulación usa para deshacerse. */
+const INTERNAL_COLUMNS = new Set([
+  "PlatformPayment.voidReason",
+  "PlatformPayment.prevStatus",
+  "PlatformPayment.prevPaidThroughAt",
+  "PlatformPayment.prevPastDueAt",
+  "PlatformPayment.prevSuspendedAt",
+]);
 const BATCH = 100;
 
 type ExportModel = { name: string; table: string; columns: string[]; order: string[] };
