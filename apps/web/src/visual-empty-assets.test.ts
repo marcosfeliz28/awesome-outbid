@@ -3,8 +3,20 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { EmptyIllustration } from "./EmptyIllustration";
+import { Empty } from "../../../packages/ui/src/index";
 
 describe("ilustraciones de estados vacíos", () => {
+  it("mantiene la estrella original para los estados sin ilustración", () => {
+    const markup = renderToStaticMarkup(createElement(Empty, { title: "Sin clientes" }));
+    expect(markup).toContain('class="empty-orbit"');
+  });
+  it("no añade la estrella cuando se proporciona una ilustración", () => {
+    const markup = renderToStaticMarkup(createElement(Empty, {
+      title: "Sin inventario", illustration: createElement(EmptyIllustration, { kind: "inventario" }),
+    }));
+    expect(markup).toContain('/ilustraciones/vacio-inventario.svg');
+    expect(markup).not.toContain('class="empty-orbit"');
+  });
   for (const kind of ["carrito", "inventario", "reportes"] as const) {
     it(`${kind} es pequeña y autocontenida`, () => {
       const svg = readFileSync(new URL(`../public/ilustraciones/vacio-${kind}.svg`, import.meta.url), "utf8");

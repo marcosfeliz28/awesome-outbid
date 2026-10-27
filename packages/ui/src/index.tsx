@@ -36,14 +36,16 @@ export function Empty({
   title,
   description,
   action,
+  illustration,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  illustration?: ReactNode;
 }) {
   return (
     <div className="empty">
-      <div className="empty-orbit">✦</div>
+      {illustration ?? <div className="empty-orbit">✦</div>}
       <h3>{title}</h3>
       <p>{description}</p>
       {action}

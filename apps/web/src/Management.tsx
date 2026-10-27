@@ -193,10 +193,11 @@ function DataTable({
       )}
     </>
   ) : (
-    <div>
-      {emptyIllustration && <EmptyIllustration kind={emptyIllustration} />}
-      <Empty title={empty} description={emptyDescription} />
-    </div>
+    <Empty
+      title={empty}
+      description={emptyDescription}
+      illustration={emptyIllustration ? <EmptyIllustration kind={emptyIllustration} /> : undefined}
+    />
   );
 }
 function Heading({
