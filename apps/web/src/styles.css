@@ -344,6 +344,33 @@ label:has(> input[type="file"].sr-only:focus-visible) {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
+.nx-file-dropzone {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 12px 0;
+  padding: 22px 16px;
+  border: 2px dashed var(--primary);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+}
+.nx-file-dropzone strong {
+  color: var(--text);
+  font-size: 15px;
+}
+.nx-file-dropzone span,
+.nx-file-dropzone small {
+  color: var(--muted);
+}
+.nx-file-dropzone:hover {
+  border-style: solid;
+  background: var(--surface);
+}
 kbd {
   font-family: inherit;
   font-size: 10px;

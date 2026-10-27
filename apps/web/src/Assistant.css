@@ -57,8 +57,7 @@ button.assistant-launcher.assistant-launcher {
   cursor: not-allowed;
 }
 .assistant-panel button:focus-visible,
-.assistant-launcher:focus-visible,
-.assistant-panel textarea:focus-visible {
+.assistant-launcher:focus-visible {
   outline: 3px solid #ffd166;
   outline-offset: 2px;
 }
@@ -167,9 +166,14 @@ button.assistant-launcher.assistant-launcher {
   gap: 8px;
   margin: 14px 0;
 }
-.assistant-examples button {
-  padding: 8px;
+.assistant-examples .assistant-chip {
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 7px 12px;
+  border-radius: 999px;
   text-align: left;
+  line-height: 1.25;
 }
 .assistant-body form {
   display: flex;
@@ -180,17 +184,28 @@ button.assistant-launcher.assistant-launcher {
 .assistant-body form label {
   font-weight: 700;
 }
+.assistant-question-field {
+  overflow: hidden;
+  border: 2px solid #9ee4f2;
+  border-radius: 9px;
+  background: #fff;
+}
+.assistant-question-field:focus-within {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
 .assistant-body textarea {
   width: 100%;
   min-height: 60px;
   box-sizing: border-box;
-  border: 2px solid #9ee4f2;
-  border-radius: 8px;
+  border: 0;
+  border-radius: 0;
   background: #fff;
   color: #10253d;
   font: inherit;
   padding: 8px;
-  resize: vertical;
+  resize: none;
+  outline: 0;
 }
 .assistant-body form button {
   align-self: flex-end;

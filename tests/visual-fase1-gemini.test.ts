@@ -69,7 +69,7 @@ describe("F1-04 · portada limpia", () => {
   });
 });
 
-describe.skip("F1-05 · controles terminados", () => {
+describe("F1-05 · controles terminados", () => {
   it("presenta dropzone en español, textarea simple y sugerencias tipo chip", () => {
     const warehouses = read("apps/web/src/WarehousesPanel.tsx");
     const assistantView = read("apps/web/src/Assistant.tsx");
@@ -77,6 +77,7 @@ describe.skip("F1-05 · controles terminados", () => {
     expect(warehouses).toContain('className="nx-file-dropzone"');
     expect(warehouses).toContain("Arrastra tu archivo Excel aquí");
     expect(warehouses).toContain('className="sr-only"');
+    expect(warehouses).toContain('aria-label={`Excel de ${homeName}`}');
     expect(assistantView).toContain('className="assistant-chip"');
     expect(assistantCss).toMatch(
       /\.assistant-body textarea\s*\{[^}]*border:\s*0;/s,

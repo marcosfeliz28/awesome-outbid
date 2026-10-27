@@ -43,6 +43,14 @@ export function WarehousesPanel({
   const defaultFrom = selected?.id || store?.id || home?.id || "";
   const defaultTo =
     warehouses.data?.find((w) => w.id !== defaultFrom)?.id || "";
+  function selectImportFile(nextFile: File | null) {
+    if (nextFile && !nextFile.name.toLowerCase().endsWith(".xlsx")) {
+      toast("Selecciona un archivo Excel con extensión .xlsx.", true);
+      return;
+    }
+    setFile(nextFile);
+    setPreview(null);
+  }
   async function upload(stage: "preview" | "apply") {
     if (!file) return;
     setBusy(true);
@@ -246,16 +254,29 @@ export function WarehousesPanel({
             productos nuevos se crean con cero unidades en {storeName}. Los
             productos con lote se cuentan por lote.
           </p>
-          <label htmlFor="casa-excel">Excel de {homeName}</label>
-          <input
-            id="casa-excel"
-            type="file"
-            accept=".xlsx"
-            onChange={(e) => {
-              setFile(e.target.files?.[0] || null);
-              setPreview(null);
+          <label
+            className="nx-file-dropzone"
+            htmlFor="casa-excel"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              selectImportFile(event.dataTransfer.files?.[0] || null);
             }}
-          />
+          >
+            <input
+              className="sr-only"
+              id="casa-excel"
+              type="file"
+              aria-label={`Excel de ${homeName}`}
+              accept=".xlsx"
+              onChange={(event) =>
+                selectImportFile(event.target.files?.[0] || null)
+              }
+            />
+            <strong>Arrastra tu archivo Excel aquí</strong>
+            <span>o presiona para seleccionar un archivo .xlsx</span>
+            <small>{file ? file.name : "Ningún archivo seleccionado"}</small>
+          </label>
           <Button disabled={!file || busy} onClick={() => upload("preview")}>
             Revisar archivo
           </Button>

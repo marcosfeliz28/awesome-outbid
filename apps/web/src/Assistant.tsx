@@ -389,6 +389,7 @@ export function Assistant({
                 >
                   {examples.map((example) => (
                     <button
+                      className="assistant-chip"
                       key={example}
                       type="button"
                       disabled={!online || busy}
@@ -406,21 +407,23 @@ export function Assistant({
                 }}
               >
                 <label htmlFor="assistant-question">Tu pregunta</label>
-                <textarea
-                  ref={input}
-                  id="assistant-question"
-                  rows={2}
-                  maxLength={500}
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  disabled={!online || busy}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      void send();
-                    }
-                  }}
-                />
+                <div className="assistant-question-field">
+                  <textarea
+                    ref={input}
+                    id="assistant-question"
+                    rows={2}
+                    maxLength={500}
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    disabled={!online || busy}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        void send();
+                      }
+                    }}
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={
