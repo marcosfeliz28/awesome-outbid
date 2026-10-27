@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { assertSeedAllowed } from "../apps/api/prisma/seed-guard";
 import {
   businessSidebarLabels,
-  productLoginFaces,
   warehouseLabel,
 } from "../apps/web/src/product-branding";
 import { WarehousesController } from "../apps/api/src/warehouses";
@@ -30,20 +29,22 @@ const STORE_ONLY: { file: string; line: string; guard: RegExp; scope?: "file"; r
   {
     file: "apps/web/src/App.tsx",
     line: 'title: "GV Makeup Studio",',
-    guard: /PRODUCT_TENANCY_REQUIRED\s*\?\s*productLoginFaces[\s\S]*:\s*LOGIN_CUBE/,
+    guard: /PRODUCT_TENANCY_REQUIRED\s*\?[\s\S]*:\s*<section[\s\S]*LOGIN_CUBE\.map/,
     scope: "file",
     reason: "cara de LOGIN_CUBE, solo usada en la rama de tienda de Login()",
   },
   {
     file: "apps/web/src/App.tsx",
-    line: ': "GRUPO MACGEN · GV MAKEUP STUDIO"}',
-    guard: /PRODUCT_TENANCY_REQUIRED/,
+    line: '<span className="eyebrow light">GRUPO MACGEN · GV MAKEUP STUDIO</span>',
+    guard: /PRODUCT_TENANCY_REQUIRED\s*\?[\s\S]*:\s*<section[\s\S]*GRUPO MACGEN/,
+    scope: "file",
     reason: "rama falsa del ternario PRODUCT_TENANCY_REQUIRED (tienda)",
   },
   {
     file: "apps/web/src/App.tsx",
-    line: ': "Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema."}',
-    guard: /PRODUCT_TENANCY_REQUIRED/,
+    line: '<p>Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema.</p>',
+    guard: /PRODUCT_TENANCY_REQUIRED\s*\?[\s\S]*:\s*<section[\s\S]*Suplementos, fajas/,
+    scope: "file",
     reason: "rama falsa del ternario PRODUCT_TENANCY_REQUIRED (tienda)",
   },
   {
@@ -194,10 +195,11 @@ describe("PC-10 marca y almacenes por empresa", () => {
   });
 
   it("la entrada de producto no anuncia categorías ni marcas de la tienda", () => {
-    expect(productLoginFaces).toHaveLength(6);
-    expect(JSON.stringify(productLoginFaces)).not.toMatch(
-      /Macgen|GV Makeup|FitStore|Fajas|Suplementos/i,
-    );
+    const app = readFileSync("apps/web/src/App.tsx", "utf8");
+    const productPanel = app.match(/PRODUCT_TENANCY_REQUIRED\s*\?\s*(<section className="login-art"[\s\S]*?)\s*:\s*<section className="login-art"/)?.[1];
+    expect(productPanel).toBeTruthy();
+    expect(productPanel).toContain("LOGIN_GROUPS.map");
+    expect(productPanel).not.toMatch(/Macgen|GV Makeup|FitStore|Fajas|Suplementos/i);
   });
 
   it("usa el nombre persistido de cada almacén y un fallback neutro", () => {

@@ -279,3 +279,20 @@ prueba no tiene ventas); no son datos reales.
   oscuro; no se rediseñó.
 - La alerta del tablero solo ofrece «Revisar alertas» con `alerts:write`
   (comportamiento de C).
+# Integración Lumina Motion — ChatGPT PC, 27-oct-2026
+
+Base `producto-nexora` c6148bac; portada Motion adaptada desde
+`chatgpt-nube/lumina-motion` c2cb6e0d. El producto muestra N y los grupos
+Vende, Controla y Decide; en modo tienda se conservan sus textos y categorías.
+La bóveda V2 conserva sus pestañas, formulario y lógica de acceso. La N y los
+grupos también aparecen en 390 px; el video no se reproduce en la entrada.
+
+Validación: 31 pruebas focales aprobadas, ESLint y build web; la suite completa
+de `pnpm check` ejecutó 1001 pruebas aprobadas y 11 omitidas (respaldo incluido);
+capturas nuevas
+en `obsidian-lumina/motion/capturas-pc/` para 1440 y 390 px, normales y con
+movimiento reducido, con datos simulados. El script de captura verifica los
+tres grupos, que no exista video y que no haya desbordamiento horizontal.
+La inspección visual de la N no mostró recorte. Falta auditoría independiente
+de contraste y foco y verificar los tres trabajos de CI del commit final. Las
+capturas no prueban inicio de sesión contra una API real. No se desplegó.

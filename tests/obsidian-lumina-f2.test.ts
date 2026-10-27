@@ -18,9 +18,8 @@ vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
 let ExecutiveMetrics: typeof import("../apps/web/src/ExecutiveDashboard").ExecutiveMetrics;
 let profitOf: typeof import("../apps/web/src/ExecutiveDashboard").profitOf;
 beforeAll(async () => {
-  ({ ExecutiveMetrics, profitOf } = await import(
-    "../apps/web/src/ExecutiveDashboard"
-  ));
+  ({ ExecutiveMetrics, profitOf } =
+    await import("../apps/web/src/ExecutiveDashboard"));
 });
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -90,6 +89,35 @@ describe("Obsidian Lumina f2 · marco accesible", () => {
     expect(app).toContain('"reports:read"');
     expect(app).not.toContain("useAdminAppearance");
     expect(app).toContain("executive={executiveDashboard}");
+  });
+});
+
+describe("Obsidian Lumina · movimiento de marca", () => {
+  const app = read("apps/web/src/App.tsx");
+  const css = read("apps/web/src/styles.css");
+
+  it("anima los activos decorativos sin convertirlos en contenido anunciado", () => {
+    expect(app).toContain('className="login-brand-mark" aria-hidden="true"');
+    expect(app).toContain('className="login-prism-frame" aria-hidden="true"');
+    expect(app).not.toMatch(/<video[^>]+autoplay/i);
+  });
+
+  it("da protagonismo a la marca y condensa las funciones en tres grupos", () => {
+    expect(app).toContain('src="/nexora-prisma-mark.webp"');
+    expect(app.match(/title: "(Vende|Controla|Decide)"/g)).toHaveLength(3);
+    expect(app).toContain("Vende. Controla. Crece.");
+    expect(app).toMatch(/PRODUCT_TENANCY_REQUIRED\s*\?[\s\S]*LOGIN_GROUPS\.map[\s\S]*:\s*<section[\s\S]*LOGIN_CUBE\.map/);
+  });
+
+  it("elimina todas las animaciones de marca cuando se reduce movimiento", () => {
+    const reduced = css.match(
+      /@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/,
+    )?.[1];
+    expect(reduced).toContain(".login-brand-mark");
+    expect(reduced).toContain(".login-brand-mark::after");
+    expect(reduced).toContain(".login-prism-frame img");
+    expect(reduced).toContain(".login-prism-scan");
+    expect(reduced).toMatch(/animation:\s*none/);
   });
 });
 
