@@ -548,7 +548,10 @@ async function fetchJson(get: AssistantGet, path: string): Promise<Fetched> {
     return { ok: true, data: JSON.parse(response.body) };
   } catch {
     // IA-02: un cuerpo cortado o inválido nunca va al modelo sin pasar por `redact`.
-    return { ok: false, text: "La respuesta de " + path.split("?")[0] + " no es válida." };
+    return {
+      ok: false,
+      text: "La respuesta de " + path.split("?")[0] + " no es válida.",
+    };
   }
 }
 const ROUTES: Partial<Record<ToolName, (args: any) => string[]>> = {
@@ -1013,42 +1016,63 @@ async function runTool(
       // IA-05: lista blanca; sin notas, referencias, banco, tarjeta ni RNC.
       const sales = Array.isArray(found.data) ? found.data : [];
       return {
-        facturas: sales.slice(0, 20).map((sale: any) => ({
-          numero: sale.number,
-          fecha: businessDay(sale.createdAt) || null,
-          hora: localTime(sale.createdAt),
-          estado: sale.status,
-          cliente: sale.customerName ?? null,
-          subtotal: num(sale.subtotal),
-          descuento: num(sale.discountTotal),
-          itbis: num(sale.taxTotal),
-          total: num(sale.total),
-          ...(num(sale.creditBalance)
+        facturas: sales.slice(0, 20).map((sale: any) =>
+          // B-01: caja ciega; sin importes ni «pagos: []», que se leería «sin pagos».
+          sale.hiddenUntilClose
             ? {
-                saldoPendiente: num(sale.creditBalance),
-                vence: businessDay(sale.creditDueDate) || null,
+                numero: sale.number,
+                fecha: businessDay(sale.createdAt) || null,
+                hora: localTime(sale.createdAt),
+                estado: sale.status,
+                cliente: sale.customerName ?? null,
+                importes: "se ven al cerrar tu caja",
+                articulos: (sale.items ?? []).map((item: any) => ({
+                  nombre: [
+                    item.variant?.product?.name,
+                    ...Object.values(item.variant?.attributes ?? {}),
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                  cantidad: num(item.qty),
+                })),
               }
-            : {}),
-          articulos: (sale.items ?? []).map((item: any) => ({
-            nombre: [
-              item.variant?.product?.name,
-              ...Object.values(item.variant?.attributes ?? {}),
-            ]
-              .filter(Boolean)
-              .join(" "),
-            cantidad: num(item.qty),
-            devueltas: num(item.returnedQty) || undefined,
-            precio: num(item.unitPrice),
-            total: num(item.lineTotal),
-          })),
-          pagos: (sale.payments ?? []).map((pay: any) => ({
-            forma: METHOD[pay.method] ?? pay.method,
-            monto: num(pay.amount),
-            estado: pay.status,
-          })),
-          devoluciones: (sale.returns ?? []).length || undefined,
-          solicitudAnulacion: sale.voidRequest?.status ?? undefined,
-        })),
+            : {
+                numero: sale.number,
+                fecha: businessDay(sale.createdAt) || null,
+                hora: localTime(sale.createdAt),
+                estado: sale.status,
+                cliente: sale.customerName ?? null,
+                subtotal: num(sale.subtotal),
+                descuento: num(sale.discountTotal),
+                itbis: num(sale.taxTotal),
+                total: num(sale.total),
+                ...(num(sale.creditBalance)
+                  ? {
+                      saldoPendiente: num(sale.creditBalance),
+                      vence: businessDay(sale.creditDueDate) || null,
+                    }
+                  : {}),
+                articulos: (sale.items ?? []).map((item: any) => ({
+                  nombre: [
+                    item.variant?.product?.name,
+                    ...Object.values(item.variant?.attributes ?? {}),
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                  cantidad: num(item.qty),
+                  devueltas: num(item.returnedQty) || undefined,
+                  precio: num(item.unitPrice),
+                  total: num(item.lineTotal),
+                })),
+                pagos: (sale.payments ?? []).map((pay: any) => ({
+                  forma: METHOD[pay.method] ?? pay.method,
+                  monto: num(pay.amount),
+                  estado: pay.status,
+                })),
+                devoluciones: (sale.returns ?? []).length || undefined,
+                solicitudAnulacion: sale.voidRequest?.status ?? undefined,
+              },
+        ),
         ...(sales.length > 20 ? { masFacturas: sales.length - 20 } : {}),
         nota: NOTE,
       };
@@ -1449,9 +1473,7 @@ const OWN_SALES_TODAY =
   /^¿?\s*(?:cu[aá]nto\s+(?:vend[ií]|he\s+vendido|llevo\s+vendido)|(?:cu[aá]les\s+son\s+)?mis\s+ventas|lo\s+que\s+(?:vend[ií]|he\s+vendido))(?:\s+de)?\s+hoy\s*[?.!]*$/i;
 export const isOwnSalesTodayQuestion = (text: string) =>
   OWN_SALES_TODAY.test(text.trim());
-export function ownSalesTodayAnswer(
-  r: Awaited<ReturnType<typeof mySales>>,
-) {
+export function ownSalesTodayAnswer(r: Awaited<ReturnType<typeof mySales>>) {
   const count = `${r.invoices} ${r.invoices === 1 ? "factura" : "facturas"}`;
   if (r.hiddenUntilClose)
     return `Hoy (${r.day}) llevas ${count} y ${r.units} unidades. Los importes se ven al cerrar tu caja (cierre ciego).`;
@@ -1459,7 +1481,9 @@ export function ownSalesTodayAnswer(
   return [
     `Hoy (${r.day}) llevas ${count} por ${formatMoney(r.total)}, neto de devoluciones.`,
     `Efectivo: ${formatMoney(m.cash)} · Tarjeta: ${formatMoney(m.card)} · Transferencia: ${formatMoney(m.transfer)} · Crédito: ${formatMoney(m.credit)}` +
-      (m.credit_note ? ` · Nota de crédito: ${formatMoney(m.credit_note)}` : "") +
+      (m.credit_note
+        ? ` · Nota de crédito: ${formatMoney(m.credit_note)}`
+        : "") +
       ".",
   ].join("\n");
 }
