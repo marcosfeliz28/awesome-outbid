@@ -26,6 +26,7 @@ export function Assistant({
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [usage, setUsage] = useState<Usage | null>(null);
+  const [usageError, setUsageError] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [proposal, setProposal] = useState<VoidProposal | null>(null);
@@ -54,15 +55,16 @@ export function Assistant({
     if (!open) return;
     input.current?.focus();
     if (online) {
+      setUsageError("");
       api<Usage>("/assistant/usage")
         .then(setUsage)
-        .catch((cause) =>
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "No se pudo consultar la cuota.",
+        .catch(() =>
+          setUsageError(
+            "No pudimos consultar tu cuota. Puedes intentar preguntar de todos modos.",
           ),
         );
+    } else {
+      setUsageError("");
     }
   }, [open, online]);
 
@@ -300,10 +302,20 @@ export function Assistant({
                   </button>
                 </div>
               )}
-              <p className="assistant-usage" role="status">
-                {usage
-                  ? `${usage.usadas} de ${usage.limite} este mes`
-                  : "Consultando cuota…"}
+              <p
+                className={`assistant-usage ${!online || usageError ? "is-warning" : usage && usage.usadas >= usage.limite ? "is-exhausted" : ""}`}
+                role="status"
+                aria-label="Cuota de Pregúntale a Nexora"
+              >
+                {!online
+                  ? "Cuota no disponible sin conexión"
+                  : usageError
+                    ? usageError
+                    : usage
+                      ? usage.usadas >= usage.limite
+                        ? `${usage.usadas} de ${usage.limite} este mes · cuota agotada`
+                        : `${usage.usadas} de ${usage.limite} este mes`
+                      : "Consultando cuota…"}
               </p>
               {messages.length > 0 && (
                 <button

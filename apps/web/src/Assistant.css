@@ -138,6 +138,13 @@ button.assistant-launcher.assistant-launcher {
   font-variant-numeric: tabular-nums;
 }
 
+.assistant-usage.is-warning,
+.assistant-usage.is-exhausted {
+  border-color: var(--alert-counter-border);
+  background: var(--warning-soft);
+  color: var(--warning-text);
+}
+
 .assistant-body [role="alert"] {
   padding: 10px 12px;
   border: 1px solid var(--danger-border);
@@ -349,7 +356,10 @@ button.assistant-launcher.assistant-launcher {
    (Mercancía, cobro del POS) para no taparlas. */
 @media (max-width: 900px) {
   /* prettier-ignore -- la prueba de contrato reconoce este selector literal. */
-  body:has(.goods-mobile-bar, .pos-mobile-bar, .goods-actions.has-items) .assistant-launcher { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  body:has(.goods-mobile-bar, .pos-mobile-bar, .goods-actions.has-items)
+    .assistant-launcher {
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
 }
 
 @media (max-width: 768px) {
