@@ -196,3 +196,8 @@ Es una decisión técnica mía, no de la dueña: **hagas ambas**. (b) Omite el c
 4. **Los 4 hallazgos bajos del QA** (`docs/qa/INFORME_RECORRIDO_26OCT.md`, rama `claude/qa-recorrido-26oct`): arréglalos en una rama `claude-pc/qa-bajos`, uno por commit, con prueba.
 5. **AT-08 (facturas con IA):** mide, con las 10 facturas de prueba que ya existan en el repo (no pidas fotos nuevas a la dueña), costo y exactitud de Sonnet/Haiku vs Opus para la lectura de facturas y propón el modelo por defecto en `docs/qa/AT08_MODELO_FACTURAS.md`. Sin cambiar el modelo todavía; sin enviar datos reales a servicios externos.
 Cuando una rama esté lista (3 CI en verde) escribe `LISTA:`. Nexora 1 revisa y mezcla.
+
+## 14. Orden de la dueña (27-oct, noche): averiguar si lo del tablero y lo hecho con Canva/Runway se implementó
+La dueña pregunta si los cambios del tablero de administración y el diseño que ChatGPT iba a hacer con Canva y Runway se implementaron. Nexora 1 ya revisó el repositorio; falta lo que solo se sabe preguntándole a ChatGPT. Con la dueña presente, lee y pregunta en los chats «ChatGPT PC» y «ChatGPT nube» (solo lectura y esta pregunta; sin pegar credenciales):
+> «Orden de la dueña: ¿qué piezas del diseño visual hiciste con Canva o Runway (nombres de archivo y enlaces o ID de los proyectos, SIN claves), y cuáles están ya en una rama con los 3 CI en verde? ¿El tablero de administración «Hoy» y el marco: en qué rama y commit están? ¿Algún activo (logo, ilustración, video) quedó solo en Canva/Runway sin guardarse en el repositorio?»
+Reporta aquí, en 10 líneas, lo que contesten.
