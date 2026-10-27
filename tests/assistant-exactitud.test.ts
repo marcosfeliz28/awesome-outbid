@@ -775,6 +775,7 @@ describe("IA · las respuestas fallidas no se cobran", () => {
 });
 
 describe("IA · web: markdown seguro y botón sin tapar la barra", () => {
+  const assistant = readFileSync(resolve("apps/web/src/Assistant.tsx"), "utf8");
   const webRequire = createRequire(resolve("apps/web/package.json"));
   const { createElement, Fragment } = webRequire(
     "react",
@@ -812,8 +813,14 @@ describe("IA · web: markdown seguro y botón sin tapar la barra", () => {
   it("a 390px el botón sube sobre la barra de Mercancía y del POS", () => {
     const css = readFileSync(resolve("apps/web/src/Assistant.css"), "utf8");
     expect(css).toMatch(
-      /@media \(max-width: 900px\)[\s\S]*body:has\(\.goods-mobile-bar, \.pos-mobile-bar[^)]*\) \.assistant-launcher \{ bottom: calc\(88px/,
+      /@media \(max-width: 900px\)[\s\S]*body:has\(\.goods-mobile-bar, \.pos-mobile-bar[^)]*\)\s+\.assistant-launcher\s*\{\s*bottom: calc\(88px/,
     );
+  });
+  it("la cuota deja de anunciar carga cuando falta internet o falla la consulta", () => {
+    expect(assistant).toContain("Cuota no disponible sin conexión");
+    expect(assistant).toContain("No pudimos consultar tu cuota");
+    expect(assistant).toContain("cuota agotada");
+    expect(assistant).toContain('aria-label="Cuota de Pregúntale a Nexora"');
   });
 });
 
