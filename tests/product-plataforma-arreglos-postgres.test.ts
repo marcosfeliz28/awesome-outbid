@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startProductApp } from "./setup/product-pg-app";
-import { paidUntilFrom } from "../apps/api/src/platform-billing";
 
 // Auditoría en vivo de plataforma y equipos (25-oct-2026), con PostgreSQL real.
 const platformToken = "operador-plataforma-arreglos-prueba-".padEnd(
@@ -96,7 +95,7 @@ describe("11 · cobros de la plataforma", () => {
       months: 2,
     });
     expect(second.body.tenant.paidUntil).toBe("2031-04-28T12:00:00.000Z");
-    const id = first.body.payment.id;
+    const id = second.body.payment.id;
     expect(
       (await op("post", `/tenants/cobro-ref/payments/${id}/void`, {})).status,
     ).toBe(400);
@@ -107,10 +106,10 @@ describe("11 · cobros de la plataforma", () => {
     expect(voided.body.payment).toMatchObject({
       voidsPaymentId: id,
       voidReason: "Transferencia anotada en la empresa equivocada",
-      amount: "2000",
+      amount: "4000",
     });
-    // Sin el pago anulado: 31-ene + 2 meses del segundo.
-    expect(voided.body.tenant.paidUntil).toBe("2031-03-31T12:00:00.000Z");
+    // Sin el segundo pago: vuelve al vencimiento que dejó el primero.
+    expect(voided.body.tenant.paidUntil).toBe("2031-02-28T12:00:00.000Z");
     expect(
       (
         await op("post", `/tenants/cobro-ref/payments/${id}/void`, {
@@ -123,16 +122,16 @@ describe("11 · cobros de la plataforma", () => {
       a.id,
     );
     expect(rows).toHaveLength(3);
-    expect(rows[0]).toEqual({ id, amount: "2000.00", voidsPaymentId: null });
+    expect(rows[1]).toEqual({ id, amount: "4000.00", voidsPaymentId: null });
     // La referencia anulada se puede volver a usar con el pago correcto.
     expect(
       (
         await op("post", "/tenants/cobro-ref/payments", {
       operationId: randomUUID(),
-          amount: 2000,
-          method: "transfer",
-          reference: "BHD-0001",
-          months: 1,
+          amount: 4000,
+          method: "cash",
+          reference: "Recibo 2",
+          months: 2,
         })
       ).status,
     ).toBe(201);
@@ -140,45 +139,6 @@ describe("11 · cobros de la plataforma", () => {
     expect(list.body.filter((p: any) => p.voidsPaymentId === id)).toHaveLength(
       1,
     );
-  });
-
-  it("el pagado hasta se rehace en orden con los pagos vigentes", () => {
-    const at = (s: string) => new Date(s);
-    const base = { voidsPaymentId: null };
-    const rows = [
-      {
-        ...base,
-        id: "a",
-        months: 1,
-        paidFrom: at("2031-01-31T12:00:00Z"),
-        createdAt: at("2031-01-10T00:00:00Z"),
-      },
-      {
-        ...base,
-        id: "b",
-        months: 2,
-        paidFrom: at("2031-02-28T12:00:00Z"),
-        createdAt: at("2031-01-11T00:00:00Z"),
-      },
-    ];
-    expect(paidUntilFrom(rows)?.toISOString()).toBe("2031-04-28T12:00:00.000Z");
-    expect(
-      paidUntilFrom([
-        ...rows,
-        {
-          ...rows[0],
-          id: "v",
-          voidsPaymentId: "a",
-          createdAt: at("2031-01-12T00:00:00Z"),
-        },
-      ])?.toISOString(),
-    ).toBe("2031-03-31T12:00:00.000Z");
-    expect(
-      paidUntilFrom([
-        rows[0],
-        { ...rows[0], id: "v", voidsPaymentId: "a" },
-      ])?.toISOString(),
-    ).toBe("2031-01-31T12:00:00.000Z");
   });
 
   it("el resumen cuenta «En prueba» como su filtro e incluye los paquetes IA en el ingreso del mes", async () => {

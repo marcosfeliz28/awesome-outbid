@@ -48,22 +48,6 @@ const paymentSelect = {
   voidsPaymentId: true, voidReason: true,
 } as const;
 const voidInput = z.object({ reason: z.string().trim().min(3).max(300) }).strict();
-type PaymentRow = { id: string; months: number; paidFrom: Date; createdAt: Date; voidsPaymentId: string | null };
-
-/** Pagado hasta, rehecho con los pagos vigentes en orden: cada uno extiende
- * desde lo ya pagado o, si había vencido, desde el día en que se registró.
- * Sin pagos vigentes vuelve a la fecha de antes del primer pago. */
-export function paidUntilFrom(rows: PaymentRow[]) {
-  const ordered = [...rows].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  const voided = new Set(ordered.map(r => r.voidsPaymentId).filter(Boolean));
-  const kept = ordered.filter(r => !r.voidsPaymentId && !voided.has(r.id));
-  if (!ordered.length) return null;
-  // Base: lo pagado o de prueba antes del primer pago (su paidFrom).
-  let cursor = ordered[0].paidFrom;
-  for (const p of kept)
-    cursor = addMonths(new Date(Math.max(cursor.getTime(), p.createdAt.getTime())), p.months);
-  return cursor;
-}
 
 @Controller("platform")
 export class PlatformBillingController {
@@ -138,7 +122,7 @@ export class PlatformBillingController {
   }
 
   /** Anular un pago anotado por error: fila de anulación con motivo (nunca se
-   * edita ni borra el pago) y «pagado hasta» rehecho sin ese pago. */
+   * edita ni borra el pago) y «pagado hasta» devuelto a la fecha de antes. */
   @Public() @Post("tenants/:slug/payments/:id/void")
   async void(@Param("slug") rawSlug: string, @Param("id") rawId: string, @Body() body: unknown, @Req() req: Request) {
     authorizePlatform(req, this.limits);
@@ -154,6 +138,16 @@ export class PlatformBillingController {
       const original = rows.find(r => r.id === id && !r.voidsPaymentId);
       if (!original) throw new HttpException("Pago no encontrado.", 404);
       if (rows.some(r => r.voidsPaymentId === id)) throw new HttpException("Ese pago ya está anulado.", 409);
+      // Solo el último pago vigente (mayor vencimiento; el id desempata) y solo si
+      // el vencimiento sigue siendo el que ese pago dejó: así se devuelve la fecha
+      // exacta de antes (paidFrom) sin pisar un ajuste hecho por otra vía.
+      const voided = new Set(rows.map(r => r.voidsPaymentId));
+      const [last] = rows.filter(r => !r.voidsPaymentId && !voided.has(r.id))
+        .sort((a, b) => b.paidUntil.getTime() - a.paidUntil.getTime() || (a.id < b.id ? 1 : -1));
+      if (last.id !== original.id)
+        throw new HttpException("Solo se puede anular el último pago vigente; anula antes los posteriores.", 409);
+      if (tenant.paidThroughAt?.getTime() !== original.paidUntil.getTime())
+        throw new HttpException("El vencimiento cambió después de este pago; corrígelo a mano antes de anularlo.", 409);
       const reversal = await tx.platformPayment.create({
         data: {
           tenantId: tenant.id, amount: original.amount, method: original.method, reference: original.reference,
@@ -162,9 +156,16 @@ export class PlatformBillingController {
         },
         select: paymentSelect,
       });
-      const paidUntil = paidUntilFrom([...rows, { ...reversal, voidsPaymentId: original.id }]);
-      await tx.tenant.update({ where: { id: tenant.id }, data: { paidThroughAt: paidUntil } });
-      return { payment: reversal, tenant: { slug: code, paidUntil } };
+      // Pago de la prueba: vuelve a «prueba». Si lo restaurado ya pasó, queda en mora (o
+      // suspendida si lo estaba) y el ciclo de vida la sigue; si no, sigue activa.
+      const from = original.paidFrom;
+      const data = tenant.trialEndsAt && from.getTime() === tenant.trialEndsAt.getTime()
+        ? { status: "trial", paidThroughAt: null, pastDueAt: null }
+        : from > new Date()
+          ? { paidThroughAt: from }
+          : { status: tenant.status === "suspended" ? "suspended" : "past_due", paidThroughAt: from, pastDueAt: from };
+      const updated = await tx.tenant.update({ where: { id: tenant.id }, data, select: { status: true, paidThroughAt: true } });
+      return { payment: reversal, tenant: { slug: code, status: updated.status, paidUntil: updated.paidThroughAt } };
     });
     console.log(`[plataforma] pago anulado: ${code} (${id}) por ${operator}`);
     return result;
