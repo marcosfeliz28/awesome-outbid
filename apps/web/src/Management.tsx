@@ -308,13 +308,17 @@ export function Catalog() {
     { key: "description", label: "Descripción", type: "textarea" },
   ];
   return (
-    <>
+    <div className="catalog-screen">
       <Heading
-        title="Tu catálogo, con personalidad"
-        caption="Cada producto, cada variante y cada oportunidad, en su lugar."
+        title="Catálogo de productos"
+        caption="Consulta productos, variantes, precios y existencias desde una sola vista."
       >
         {write && (
           <>
+            <Button onClick={() => setCreate(true)}>
+              <Plus size={17} />
+              Nuevo producto
+            </Button>
             <Button
               variant="secondary"
               onClick={() =>
@@ -365,15 +369,18 @@ export function Catalog() {
             {can(user.permissions, "inventory:import") && (
               <InventoryImportButton />
             )}
-            <Button onClick={() => setCreate(true)}>
-              <Plus size={17} />
-              Nuevo producto
-            </Button>
           </>
         )}
       </Heading>
-      <div className="panel">
-        <div className="table-toolbar">
+      <section className="panel catalog-panel" aria-labelledby="catalog-list-title">
+        <div className="panel-heading catalog-panel-heading">
+          <div>
+            <h2 id="catalog-list-title">Productos registrados</h2>
+            <p>Busca por nombre, código o marca y revisa el estado del inventario.</p>
+          </div>
+          <Badge tone="violet">{rows.length} productos</Badge>
+        </div>
+        <div className="table-toolbar catalog-toolbar">
           <Filter
             value={search}
             onChange={setSearch}
@@ -391,7 +398,6 @@ export function Catalog() {
               </option>
             ))}
           </select>
-          <Badge tone="violet">{rows.length} productos</Badge>
         </div>
         <QueryState query={query}>
           <DataTable
@@ -483,7 +489,7 @@ export function Catalog() {
             ]}
           />
         </QueryState>
-      </div>
+      </section>
       {create && (
         <FormModal
           title="Un nuevo producto para tu tienda"
@@ -730,7 +736,7 @@ export function Catalog() {
           Imprimir etiquetas
         </Button>
       </Modal>
-    </>
+    </div>
   );
 }
 export function Barcode({ value }: { value: string }) {
@@ -814,6 +820,7 @@ function Kardex({ variantId }: { variantId: string }) {
   return (
     <QueryState query={query}>
       <DataTable
+        cards
         rows={query.data || []}
         columns={[
           { label: "Fecha", render: (m) => dateLabel(m.createdAt) },
@@ -886,33 +893,45 @@ export function Inventory() {
   return (
     <>
       <Heading
-        title="Cada unidad, bajo control"
+        title="Inventario"
         caption="El inventario correcto hace espacio para mejores decisiones."
       />
-      <div className="panel">
-        <label htmlFor="warehouse-view">Almacén</label>
-        <select
-          id="warehouse-view"
-          value={warehouseView}
-          onChange={(e) => setWarehouseView(e.target.value)}
-        >
-          <option value="all">Todos</option>
-          {(warehouses.data || []).map((w: any) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
+      <div className="panel inventory-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Existencias por almacén</h2>
+            <p>Consulta cantidades, lotes y vencimientos antes de ajustar.</p>
+          </div>
+          <div className="field inventory-warehouse-field">
+            <label htmlFor="warehouse-view">Almacén</label>
+            <select
+              id="warehouse-view"
+              value={warehouseView}
+              onChange={(e) => setWarehouseView(e.target.value)}
+            >
+              <option value="all">Todos</option>
+              {(warehouses.data || []).map((w: any) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="table-toolbar">
           <div className="tabs">
             <button
+              type="button"
               className={mode === "stock" ? "active" : ""}
+              aria-pressed={mode === "stock"}
               onClick={() => setMode("stock")}
             >
               Stock actual
             </button>
             <button
+              type="button"
               className={mode === "counts" ? "active" : ""}
+              aria-pressed={mode === "counts"}
               onClick={() => setMode("counts")}
             >
               Conteos físicos
@@ -966,7 +985,12 @@ export function Inventory() {
                             : "success"
                       }
                     >
-                      {visibleStock(v)}
+                      {visibleStock(v)} ·{" "}
+                      {selectedWarehouse && !selectedWarehouse.sellable
+                        ? "En almacén"
+                        : Number(v.stock) <= Number(v.product.minStock)
+                          ? "Stock bajo"
+                          : "Disponible"}
                     </Badge>
                   ),
                 },
@@ -2435,19 +2459,36 @@ export function Customers() {
       : []),
     { key: "notes", label: "Notas", type: "textarea" },
   ];
+  const rows = (query.data || []).filter((c: any) =>
+    // P5: sin acceso completo la búsqueda no usa el teléfono, para
+    // no servir de oráculo de los dígitos ocultos.
+    (c.name + " " + (fullCustomer ? c.phone : ""))
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
   return (
-    <>
+    <div className="catalog-screen">
       <Heading
-        title="Personas que vuelven a elegirte"
-        caption="Conoce a tus clientes y construye relaciones que duran."
+        title="Clientes"
+        caption="Consulta contactos, compras y datos de crédito desde un solo directorio."
       >
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
           Nuevo cliente
         </Button>
       </Heading>
-      <div className="panel">
-        <div className="table-toolbar">
+      <section
+        className="panel catalog-panel"
+        aria-labelledby="customers-list-title"
+      >
+        <div className="panel-heading catalog-panel-heading">
+          <div>
+            <h2 id="customers-list-title">Directorio de clientes</h2>
+            <p>Busca por nombre o teléfono y revisa su historial comercial.</p>
+          </div>
+          <Badge tone="violet">{rows.length} clientes</Badge>
+        </div>
+        <div className="table-toolbar catalog-toolbar">
           <Filter
             value={search}
             onChange={setSearch}
@@ -2456,13 +2497,8 @@ export function Customers() {
         </div>
         <QueryState query={query}>
           <DataTable
-            rows={(query.data || []).filter((c: any) =>
-              // P5: sin acceso completo la búsqueda no usa el teléfono, para
-              // no servir de oráculo de los dígitos ocultos.
-              (c.name + " " + (fullCustomer ? c.phone : ""))
-                .toLowerCase()
-                .includes(search.toLowerCase()),
-            )}
+            cards
+            rows={rows}
             empty="No encontramos clientes"
             emptyDescription="Revisa la búsqueda o registra una persona con Nuevo cliente."
             columns={[
@@ -2520,7 +2556,7 @@ export function Customers() {
             ]}
           />
         </QueryState>
-      </div>
+      </section>
       {create && (
         <FormModal
           title="Nuevo cliente"
@@ -2561,7 +2597,7 @@ export function Customers() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 
@@ -3013,11 +3049,11 @@ export function Reports() {
   return (
     <>
       <Heading
-        title="Los números cuentan tu historia"
+        title="Reportes"
         caption="Transforma tus datos en decisiones para el próximo paso."
       />
-      <div className="reports-layout">
-        <aside className="panel report-menu">
+      <div className="reports-layout lumina-reports">
+        <aside className="panel report-menu" aria-label="Explorar reportes">
           {groupReports(
             allReports
               .filter(
@@ -3048,12 +3084,14 @@ export function Reports() {
                   list.map(({ id, name }) => (
                     <button
                       key={id}
+                      type="button"
                       onClick={() => {
                         setReport(id);
                         setOpenGroup(group);
                         setPage(1);
                       }}
                       className={report === id ? "active" : ""}
+                      aria-current={report === id ? "page" : undefined}
                     >
                       <FileText size={17} />
                       {name}
@@ -3069,13 +3107,13 @@ export function Reports() {
         ) : report === "income-by-day" ? (
           <IncomeByDay />
         ) : (
-          <section className="panel">
-            <div className="panel-heading">
+          <section className="panel report-workspace">
+            <div className="panel-heading report-workspace-heading">
               <div>
                 <h2>{allReports.find((r) => r[0] === report)?.[1]}</h2>
                 <p>Información registrada en tu tienda.</p>
               </div>
-              <div className="table-actions">
+              <div className="table-actions report-export-actions">
                 {["xlsx", "pdf"].map((format) => (
                   <Button
                     variant="secondary"
@@ -3100,7 +3138,7 @@ export function Reports() {
                 ))}
               </div>
             </div>
-            <div className="date-filters">
+            <div className="date-filters report-filters">
               <label className="field">
                 <span>Desde</span>
                 <input
@@ -4366,11 +4404,12 @@ export function Configuration() {
   };
   return (
     <>
-      <Heading
-        title="A la medida de tu negocio"
-        caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
-      />
-      <div className="tabs outside">
+      <div className={`lumina-settings lumina-settings-${tab}`}>
+        <Heading
+          title="Configuración"
+          caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
+        />
+        <div className="tabs outside">
         {[
           ["business", "Negocio y reglas"],
           ["users", "Usuarios y permisos"],
@@ -4385,7 +4424,7 @@ export function Configuration() {
             {label}
           </button>
         ))}
-      </div>
+        </div>
       {product && tab === "business" && (
         <div className="config-mode" role="group" aria-label="Vista de la configuración">
           {[
@@ -4411,7 +4450,7 @@ export function Configuration() {
           ))}
         </div>
       )}
-      <div className="panel">
+        <div className="panel lumina-settings-content">
         {tab === "equipment" ? (
           <Equipment />
         ) : tab === "business" ? (
@@ -4433,7 +4472,10 @@ export function Configuration() {
                     : "Sin NCF por venta: los recibos son internos. e-CF en pausa."}
                 </p>
               </div>
-              <Button onClick={() => setEditing(true)}>
+              <Button
+                className="lumina-primary-action"
+                onClick={() => setEditing(true)}
+              >
                 <Pencil size={16} />
                 Editar configuración
               </Button>
@@ -4531,7 +4573,10 @@ export function Configuration() {
           <>
             <div className="panel-heading">
               <h2>Equipo de tu tienda</h2>
-              <Button onClick={() => setNewUser(true)}>
+              <Button
+                className="lumina-primary-action"
+                onClick={() => setNewUser(true)}
+              >
                 <Plus size={17} />
                 Crear usuario
               </Button>
@@ -4652,6 +4697,7 @@ export function Configuration() {
             />
           </QueryState>
         )}
+        </div>
       </div>
       {editing && (
         <FormModal

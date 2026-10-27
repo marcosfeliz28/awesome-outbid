@@ -878,7 +878,9 @@ export function Merchandise() {
               </span>
             </label>
             <div className="goods-scan-actions">
-              <Button type="submit">Sumar una unidad</Button>
+              <Button type="submit" variant="secondary">
+                Sumar una unidad
+              </Button>
               <Button
                 type="button"
                 variant="secondary"

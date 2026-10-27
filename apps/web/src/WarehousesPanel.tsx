@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@fitstore/ui";
+import { Button, TableFrame } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { FormModal, toast, dateLabel } from "./helpers";
@@ -76,15 +76,20 @@ export function WarehousesPanel({
     }
   }
   return (
-    <section className="panel" aria-label="Almacenes y traspasos">
-      <h2>Dónde está la mercancía</h2>
-      <div className="table-toolbar">
-        <span>
-          Producto · {storeName} · {homeName} · Total
-          {can(user.permissions, "profit:read") ? " · Valor a costo" : ""}
-        </span>
+    <section
+      className="panel inventory-warehouses"
+      aria-label="Almacenes y traspasos"
+    >
+      <div className="panel-heading">
+        <div>
+          <h2>Dónde está la mercancía</h2>
+          <p>
+            Producto · {storeName} · {homeName} · Total
+            {can(user.permissions, "profit:read") ? " · Valor a costo" : ""}
+          </p>
+        </div>
       </div>
-      <div className="table-wrap" tabIndex={0}>
+      <TableFrame label="Existencias por almacén">
         <table>
           <thead>
             <tr>
@@ -113,16 +118,28 @@ export function WarehousesPanel({
               ))}
           </tbody>
         </table>
-      </div>
+      </TableFrame>
       {user.permissions.includes("*") && (
         <>
-          <h2>Nombres de almacenes</h2>
-          <p>Cada empresa puede nombrar sus almacenes según su operación.</p>
-          {(warehouses.data || []).map((warehouse) => (
-            <Button key={warehouse.id} onClick={() => setRenaming(warehouse)}>
-              Renombrar {warehouseLabel(warehouse)}
-            </Button>
-          ))}
+          <div className="inventory-workspace">
+            <div>
+              <h2>Nombres de almacenes</h2>
+              <p>
+                Cada empresa puede nombrar sus almacenes según su operación.
+              </p>
+            </div>
+            <div className="table-actions">
+              {(warehouses.data || []).map((warehouse) => (
+                <Button
+                  key={warehouse.id}
+                  variant="secondary"
+                  onClick={() => setRenaming(warehouse)}
+                >
+                  Renombrar {warehouseLabel(warehouse)}
+                </Button>
+              ))}
+            </div>
+          </div>
           {renaming && (
             <FormModal
               title={`Renombrar ${warehouseLabel(renaming)}`}
@@ -145,33 +162,41 @@ export function WarehousesPanel({
               }}
             />
           )}
-          <h2>Traspasar mercancía</h2>
-          <p>
-            El movimiento resta del origen y suma al destino en una sola
-            operación.
-          </p>
-          <label htmlFor="transfer-product">Producto</label>
-          <select
-            id="transfer-product"
-            value={variantId}
-            onChange={(e) => setVariantId(e.target.value)}
-          >
-            <option value="">Elige un producto</option>
-            {rows.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.product.name} · {v.sku}
-              </option>
-            ))}
-          </select>
-          <Button
-            disabled={!variantId}
-            onClick={() => {
-              setTransfer(rows.find((v) => v.id === variantId));
-              setOperationId(crypto.randomUUID());
-            }}
-          >
-            Traspasar
-          </Button>
+          <div className="inventory-workspace">
+            <div>
+              <h2>Traspasar mercancía</h2>
+              <p>
+                El movimiento resta del origen y suma al destino en una sola
+                operación.
+              </p>
+            </div>
+            <div className="inventory-workspace-action">
+              <div className="field">
+                <label htmlFor="transfer-product">Producto</label>
+                <select
+                  id="transfer-product"
+                  value={variantId}
+                  onChange={(e) => setVariantId(e.target.value)}
+                >
+                  <option value="">Elige un producto</option>
+                  {rows.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.product.name} · {v.sku}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                disabled={!variantId}
+                onClick={() => {
+                  setTransfer(rows.find((v) => v.id === variantId));
+                  setOperationId(crypto.randomUUID());
+                }}
+              >
+                Traspasar
+              </Button>
+            </div>
+          </div>
           {transfer && (
             <FormModal
               title={`Traspasar · ${transfer.product.name}`}
@@ -240,32 +265,44 @@ export function WarehousesPanel({
               }}
             />
           )}
-          <h2>Levantamiento inicial de {homeName}</h2>
-          <p>
-            El Excel usa las columnas ID, EXISTENCIA, COSTO y PRECIODETALLE. Los
-            productos nuevos se crean con cero unidades en {storeName}. Los
-            productos con lote se cuentan por lote.
-          </p>
-          <label htmlFor="casa-excel">Excel de {homeName}</label>
-          <input
-            id="casa-excel"
-            type="file"
-            accept=".xlsx"
-            onChange={(e) => {
-              setFile(e.target.files?.[0] || null);
-              setPreview(null);
-            }}
-          />
-          <Button disabled={!file || busy} onClick={() => upload("preview")}>
-            Revisar archivo
-          </Button>
+          <div className="inventory-workspace">
+            <div>
+              <h2>Levantamiento inicial de {homeName}</h2>
+              <p>
+                El Excel usa las columnas ID, EXISTENCIA, COSTO y PRECIODETALLE.
+                Los productos nuevos se crean con cero unidades en {storeName}.
+                Los productos con lote se cuentan por lote.
+              </p>
+            </div>
+            <div className="inventory-workspace-action">
+              <label className="field" htmlFor="casa-excel">
+                <span>Excel de {homeName}</span>
+                <input
+                  id="casa-excel"
+                  type="file"
+                  accept=".xlsx"
+                  onChange={(e) => {
+                    setFile(e.target.files?.[0] || null);
+                    setPreview(null);
+                  }}
+                />
+              </label>
+              <Button
+                variant="secondary"
+                disabled={!file || busy}
+                onClick={() => upload("preview")}
+              >
+                Revisar archivo
+              </Button>
+            </div>
+          </div>
           {preview && (
             <div role="status">
               <p>
                 {preview.rows} filas · {preview.blocking.length} problemas
               </p>
               {preview.changes?.length > 0 && (
-                <div className="table-wrap" tabIndex={0}>
+                <TableFrame label={`Cambios del levantamiento de ${homeName}`}>
                   <table
                     aria-label={`Cambios del levantamiento de ${homeName}`}
                   >
@@ -288,7 +325,7 @@ export function WarehousesPanel({
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TableFrame>
               )}
               {preview.blocking.map((b: any, i: number) => (
                 <p key={i}>
@@ -304,8 +341,13 @@ export function WarehousesPanel({
           )}
         </>
       )}
-      <h2>Historial de traspasos</h2>
-      <div className="table-wrap" tabIndex={0}>
+      <div className="panel-heading inventory-history-heading">
+        <div>
+          <h2>Historial de traspasos</h2>
+          <p>Movimientos registrados entre almacenes.</p>
+        </div>
+      </div>
+      <TableFrame label="Historial de traspasos">
         <table>
           <thead>
             <tr>
@@ -332,7 +374,7 @@ export function WarehousesPanel({
             )}
           </tbody>
         </table>
-      </div>
+      </TableFrame>
     </section>
   );
 }

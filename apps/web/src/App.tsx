@@ -757,7 +757,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
 }
 
 function Shell() {
-  const { user, token, online, theme, toggleTheme, setOnline } = useStore();
+  const { user, token, online, theme, setTheme, setOnline } = useStore();
   const businessSettings = useQuery<{ name?: string; branchName?: string }>({
     queryKey: ["settings", user?.branchId],
     queryFn: () => api("/settings"),
@@ -1305,15 +1305,28 @@ function Shell() {
                 {pending ? ` · ${pending}` : ""}
               </span>
             </button>
-            <button
-              className="icon-button"
-              onClick={toggleTheme}
-              aria-label={
-                theme === "light" ? "Activar modo oscuro" : "Activar modo claro"
-              }
-            >
-              {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
-            </button>
+            <div className="theme-selector" role="group" aria-label="Tema visual">
+              <button
+                type="button"
+                className={theme === "light" ? "active" : ""}
+                aria-label="Activar modo claro"
+                aria-pressed={theme === "light"}
+                onClick={() => setTheme("light")}
+              >
+                <Sun size={15} aria-hidden="true" />
+                <span>Claro</span>
+              </button>
+              <button
+                type="button"
+                className={theme === "dark" ? "active" : ""}
+                aria-label="Activar modo oscuro"
+                aria-pressed={theme === "dark"}
+                onClick={() => setTheme("dark")}
+              >
+                <Moon size={15} aria-hidden="true" />
+                <span>Oscuro</span>
+              </button>
+            </div>
             {PRODUCT_TENANCY_REQUIRED && (
               <SupportHelp
                 userName={user.name}

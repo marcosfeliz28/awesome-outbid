@@ -383,7 +383,9 @@ export function Equipment() {
               onChange={(e) => setName(e.target.value)}
             />
           </label>
-          <Button type="submit">Guardar nombre</Button>
+          <Button type="submit" className="lumina-primary-action">
+            Guardar nombre
+          </Button>
         </form>
       </section>
       {query.error && (
@@ -470,6 +472,7 @@ export function Equipment() {
               <div className="equipment-actions">
                 {t.status === "pending" && t.identified !== false && (
                   <Button
+                    variant="secondary"
                     onClick={() =>
                       act("/terminals/" + t.id + "/approve", "Equipo aprobado.")
                     }
