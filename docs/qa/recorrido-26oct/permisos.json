@@ -1,0 +1,451 @@
+{
+ "admin": {
+  "/api/products?limit=5": {
+   "estado": 200,
+   "sensibles": [
+    "items.variants.costAvg",
+    "items.variants.lots.cost"
+   ]
+  },
+  "/api/inventory/stock": {
+   "estado": 200,
+   "sensibles": [
+    "costAvg",
+    "lots.cost"
+   ]
+  },
+  "/api/sales": {
+   "estado": 200,
+   "sensibles": [
+    "items.unitCost",
+    "costTotal"
+   ],
+   "filas": 100,
+   "deHoy": 1,
+   "vendedoras": 1
+  },
+  "/api/cash-sessions": {
+   "estado": 200,
+   "sensibles": [
+    "expected"
+   ]
+  },
+  "/api/customers": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/dashboard/summary": {
+   "estado": 200,
+   "sensibles": [
+    "costTotal",
+    "margin"
+   ]
+  },
+  "/api/reportes": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/reports/income-by-day": {
+   "estado": 400,
+   "sensibles": []
+  },
+  "/api/incentives": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/settings": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/users": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/audit-log": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/expenses": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/purchase-orders": {
+   "estado": 200,
+   "sensibles": [
+    "items.unitCost"
+   ]
+  },
+  "/api/suppliers": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/promotions": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/alerts": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/sales/mine/today": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/survey/summary": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/backups/status": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/courses": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/appointments": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/leads": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/reports": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/transfers/pending": {
+   "estado": 200,
+   "sensibles": []
+  }
+ },
+ "gerente": {
+  "/api/products?limit=5": {
+   "estado": 200,
+   "sensibles": [
+    "items.variants.costAvg",
+    "items.variants.lots.cost"
+   ]
+  },
+  "/api/inventory/stock": {
+   "estado": 200,
+   "sensibles": [
+    "costAvg",
+    "lots.cost"
+   ]
+  },
+  "/api/sales": {
+   "estado": 200,
+   "sensibles": [
+    "items.unitCost",
+    "costTotal"
+   ],
+   "filas": 100,
+   "deHoy": 1,
+   "vendedoras": 1
+  },
+  "/api/cash-sessions": {
+   "estado": 200,
+   "sensibles": [
+    "expected"
+   ]
+  },
+  "/api/customers": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/dashboard/summary": {
+   "estado": 200,
+   "sensibles": [
+    "costTotal",
+    "margin"
+   ]
+  },
+  "/api/reportes": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/reports/income-by-day": {
+   "estado": 400,
+   "sensibles": []
+  },
+  "/api/incentives": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/settings": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/users": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/audit-log": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/expenses": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/purchase-orders": {
+   "estado": 200,
+   "sensibles": [
+    "items.unitCost"
+   ]
+  },
+  "/api/suppliers": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/promotions": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/alerts": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/sales/mine/today": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/survey/summary": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/backups/status": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/gv/courses": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/appointments": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/leads": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/reports": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/transfers/pending": {
+   "estado": 200,
+   "sensibles": []
+  }
+ },
+ "cajera": {
+  "/api/products?limit=5": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/inventory/stock": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/sales": {
+   "estado": 200,
+   "sensibles": [],
+   "filas": 100,
+   "deHoy": 1,
+   "vendedoras": 1
+  },
+  "/api/cash-sessions": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/customers": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/dashboard/summary": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/reportes": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/reports/income-by-day": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/incentives": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/settings": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/users": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/audit-log": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/expenses": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/purchase-orders": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/suppliers": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/promotions": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/alerts": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/sales/mine/today": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/survey/summary": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/backups/status": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/gv/courses": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/gv/appointments": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/gv/leads": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/gv/reports": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/gv/transfers/pending": {
+   "estado": 403,
+   "sensibles": []
+  }
+ },
+ "gv": {
+  "/api/products?limit=5": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/inventory/stock": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/sales": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/cash-sessions": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/customers": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/dashboard/summary": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/reportes": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/reports/income-by-day": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/incentives": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/settings": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/users": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/audit-log": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/expenses": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/purchase-orders": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/suppliers": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/promotions": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/alerts": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/sales/mine/today": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/survey/summary": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/backups/status": {
+   "estado": 403,
+   "sensibles": []
+  },
+  "/api/gv/courses": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/appointments": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/leads": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/reports": {
+   "estado": 200,
+   "sensibles": []
+  },
+  "/api/gv/transfers/pending": {
+   "estado": 200,
+   "sensibles": []
+  }
+ }
+}

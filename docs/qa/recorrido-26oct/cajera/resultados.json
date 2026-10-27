@@ -1,0 +1,1748 @@
+[
+ {
+  "rol": "cajera",
+  "pantalla": "pos",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta Buscar en Nexora ⌘ K En línea CL Camila López Vendedora Ir al carrito y cobrar Punto de venta F2 Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir Stock actualizado en línea SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILL",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "sales",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cada venta tiene una historia",
+  "hashFinal": "#sales",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Ventas Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Cada venta tiene una historia Consulta recibos, pagos y movimientos sin perder el detalle. Fecha VENTA N.º CLIENTE FECHA ESTADO TOTAL SALDO PENDIENTE PAGOS ACCIONES FS-0000847 Adriana Torres 26 oct de 2026 Completada RD$ 300.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000846 Lucía Méndez 26 oct de 2026 Completada RD$ 2,600.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000841 Sofía Martínez 25 oct de 2026 Completada RD$ 5,550.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000837 Lucía Méndez 24 oct de 2026 Completada RD$ 4,000.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000834 Camila Reyes 23 oct de 2026 Completada RD$ 3,050.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000831 Carolina Vargas 22 oct de 2026 Completada RD$ 2,200.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000828 Isabella Cruz 22 oct de 2026 Completada RD$ 3,200.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000823 Patricia Álvarez 21 oct de 2026 Completada RD$ 1,650.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000817 Mónica Peña 20 oct de 2026 Completada RD$ 1,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000820 Elena Díaz 20 oct de 2026 Completada RD$ 4,300.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000811 Natalia Rodríguez 19 oct de 2026 Completada RD$ 2,400.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000814 Elena Díaz 19 oct de 2026 Completada RD$ 900.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000806 Sofía Martínez 18 oct de 2026 Completada RD$ 3,250.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000801 María Jiménez 17 oct de 2026 Completada RD$ 1,700.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000795 Natalia Rodríguez 16 oct de 2026 Completada RD$ 1,950.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000798 Carolina Vargas 16 oct de 2026 Completada RD$ 2,000.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000792 Daniela Pérez 15 oct de 2026 Completada RD$ 2,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000787 Sara Núñez 14 oct de 2026 Completada RD$ 1,800.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000780 Alejandra Molina 13 oct de 2026 Completada RD$ 3,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000783 Camila Reyes 13 oct de 2026 Completada RD$ 1,300.00 RD$ 0.00 Efectivo Solicitar anulación 100 registros · Página 1 de 5 Anterior Siguiente Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/sales-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "void-requests",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Solicitudes de anulación",
+  "hashFinal": "#void-requests",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Solicitudes de anulación Buscar en Nexora ⌘ K En línea CL Camila López Vendedora VENTAS Solicitudes de anulación Consulta el estado de tus solicitudes. Estado Pendientes Todas Aprobadas Rechazadas Canceladas No hay solicitudes en este estado. Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/void-requests-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "products",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [
+   "FALLÓ POST /api/auth/refresh net::ERR_ABORTED"
+  ],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Tu catálogo, con personalidad",
+  "hashFinal": "#products",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Productos Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Tu catálogo, con personalidad Cada producto, cada variante y cada oportunidad, en su lugar. Todas las categorías Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos PRODUCTO CATEGORÍA VARIANTES PRECIO STOCK ACCIONES BCAA Recovery FIT-0005 · NutriLab Suplementos 2 RD$ 2,000.00 35 unidades Bandas Resistance FIT-0038 · FitStore Accesorios de gym 2 RD$ 300.00 28 unidades Base Skin Glow FIT-0049 · Bloom Beauty Maquillaje 3 RD$ 450.00 78 unidades Biker Short FIT-0021 · Motion Club Ropa deportiva 6 RD$ 1,150.00 105 unidades Body Flex FIT-0023 · Motion Club Ropa deportiva 6 RD$ 1,250.00 117 unidades Bolso Gym Day FIT-0046 · FitStore Accesorios de gym 2 RD$ 600.00 45 unidades Botella Hydrate FIT-0042 · FitStore Accesorios de gym 2 RD$ 450.00 37 unidades Camiseta Training FIT-0016 · Motion Club Ropa deportiva 6 RD$ 950.00 111 unidades Chaleco Posture FIT-0028 · FitStore Fajas 6 RD$ 1,250.00 147 unidades Chaleco Sculpt FIT-0034 · FitStore Fajas 6 RD$ 1,650.00 111 unidades Chaqueta Warm Up FIT-0022 · Motion Club Ropa deportiva 6 RD$ 1,200.00 111 unidades Cinturilla Daily FIT-0026 · FitStore Fajas 6 RD$ 1,150.00 135 unidades Cinturilla Sport FIT-0032 · FitStore Fajas 6 RD$ 1,500.00 135 unidades Cinturón Lifting FIT-0043 · FitStore Accesorios de gym 2 RD$ 500.00 39 unidades Cinturón Shape FIT-0030 · FitStore Fajas 6 RD$ 1,400.00 159 unidades Colágeno Beauty FIT-0004 · NutriLab Suplementos 2 RD$ 1,900.00 33 unidades Corrector Soft Touch FIT-0052 · Bloom Beauty Maquillaje 3 RD$ 600.00 69 unidades Creatina Monohidratada FIT-0002 · NutriLab Suplementos 2 RD$ 1,700.00 29 unidades Cuerda Speed FIT-0041 · FitStore Accesorios de gym 2 RD$ 450.00 35 unidades Faja Colombian Fit FIT-0029 · FitStore Fajas 6 RD$ 1,350.00 153 unidades 60 registros · Página 1 de 3 Anterior Siguiente Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/products-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash-cerrada",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Caja Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-cerrada-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Caja Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "customers",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Personas que vuelven a elegirte",
+  "hashFinal": "#customers",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Clientes Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Personas que vuelven a elegirte Conoce a tus clientes y construye relaciones que duran. Nuevo cliente CLIENTE CONTACTO CÉDULA / RNC ACCIÓN Adriana Torres •••010 c•••@example.test •••010 Editar Alejandra Molina •••011 c•••@example.test •••011 Editar Ana Herrera •••018 c•••@example.test •••018 Editar Camila Reyes •••009 c•••@example.test •••009 Editar Carolina Vargas •••013 c•••@example.test •••013 Editar Daniela Pérez •••004 c•••@example.test •••004 Editar Elena Díaz •••014 c•••@example.test •••014 Editar Gabriela Castillo •••002 c•••@example.test •••002 Editar Isabella Cruz •••005 c•••@example.test •••005 Editar Laura Santana •••008 c•••@example.test •••008 Editar Lucía Méndez •••000 c•••@example.test •••000 Editar María Jiménez •••006 c•••@example.test •••006 Editar Mónica Peña •••019 c•••@example.test •••019 Editar Natalia Rodríguez •••012 c•••@example.test •••012 Editar Paola Fernández •••003 c•••@example.test •••003 Editar Patricia Álvarez •••016 c•••@example.test •••016 Editar Rosa Batista •••017 c•••@example.test •••017 Editar Sara Núñez •••015 c•••@example.test •••015 Editar Sofía Martínez •••001 c•••@example.test •••001 Editar Valentina Ramos •••007 c•••@example.test •••007 Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/customers-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-cobrar",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta Buscar en Nexora ⌘ K En línea CL Camila López Vendedora Ir al carrito y cobrar Punto de venta F2 Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir Stock actualizado en línea SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILL",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-cobrar-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-preguntas",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta Buscar en Nexora ⌘ K En línea CL Camila López Vendedora Ir al carrito y cobrar Punto de venta F2 Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir Stock actualizado en línea SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILL",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-preguntas-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-mis-ventas-hoy",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta Buscar en Nexora ⌘ K En línea CL Camila López Vendedora Ir al carrito y cobrar Punto de venta F2 Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir Stock actualizado en línea SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILL",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-mis-ventas-hoy-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash-cerrar",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Caja Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno Cuadre y cierre de caja Antes de cerrar: cierra el lote del verifón (datáfono) para que los cobros con tarjeta caigan el próximo día. Conteo ciego: declara lo que realmente tienes. El cuadre que se imprime muestra lo que contaste; la comparación con lo esperado la revisa administración. Detalles de monedas 1 × = RD$ 0.00 5 × = RD$ 0.00 10 × = RD$ 0.00 20 × = RD$ 0.00 25 × = RD$ 0.00 50 × = RD$ 0.00 100 × = RD$ 0.00 200 × = RD$ 0.00 500 × = RD$ 0.00 1,000 × = RD$ 0.00 2,000 × = RD$ 0.00 Efectivo contado (Sub-total) RD$ 0.00 Tarjeta declarada Total que imprimió el verifón al cerrar el lote de hoy. Cierra el verifón antes de cerrar la caja; escribe 0 solo si no hubo cobros con tarjeta. Número de lote del verifón Obligatorio si hubo cobros con tarjeta (venta sola o mixta): el número que imprime el voucher al cerrar el lote. Entregado Efectivo que se le entrega a la dueña. Dejado en caja RD$ 0.00 Será el fondo sugerido de la próxima apertura. Notas del cierre Confirmo que conté efectivo y tarjeta. Las transferencias las suma el sistema. Los campos vacíos representan RD$ 0.00. Cancelar Cerrar caja e imprimir cuadre",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-cerrar-1366-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-merchandise",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/goods-receipts",
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers",
+   "403 GET /api/merchandise/operations",
+   "403 GET /api/merchandise/options"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-dashboard",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-transfer-reconciliation",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-courier-payouts",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-inventory",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/inventory/counts",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-purchases",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-expenses",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/expenses",
+   "403 GET /api/expense-categories"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-promotions",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/promotions/clearance-candidates"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-reports",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/reportes",
+   "403 GET /api/reports/sales?from=2026-10-01&to=2026-10-26&page=1"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-alerts",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/alerts?status=new"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-incentives",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/incentives/rates",
+   "403 GET /api/incentives?month=2026-10"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-gv",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/gv/courses"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-settings",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta Buscar en Nexora ⌘ K En línea CL Camila López Vendedora Ir al carrito y cobrar Punto de venta F2 Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir Stock actualizado en línea SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILL",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "sales",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cada venta tiene una historia",
+  "hashFinal": "#sales",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [
+   "input[Buscar ventas de una fecha]"
+  ],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Ventas Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Cada venta tiene una historia Consulta recibos, pagos y movimientos sin perder el detalle. Fecha VENTA N.º CLIENTE FECHA ESTADO TOTAL SALDO PENDIENTE PAGOS ACCIONES FS-0000847 Adriana Torres 26 oct de 2026 Completada RD$ 300.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000846 Lucía Méndez 26 oct de 2026 Completada RD$ 2,600.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000841 Sofía Martínez 25 oct de 2026 Completada RD$ 5,550.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000837 Lucía Méndez 24 oct de 2026 Completada RD$ 4,000.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000834 Camila Reyes 23 oct de 2026 Completada RD$ 3,050.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000831 Carolina Vargas 22 oct de 2026 Completada RD$ 2,200.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000828 Isabella Cruz 22 oct de 2026 Completada RD$ 3,200.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000823 Patricia Álvarez 21 oct de 2026 Completada RD$ 1,650.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000817 Mónica Peña 20 oct de 2026 Completada RD$ 1,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000820 Elena Díaz 20 oct de 2026 Completada RD$ 4,300.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000811 Natalia Rodríguez 19 oct de 2026 Completada RD$ 2,400.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000814 Elena Díaz 19 oct de 2026 Completada RD$ 900.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000806 Sofía Martínez 18 oct de 2026 Completada RD$ 3,250.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000801 María Jiménez 17 oct de 2026 Completada RD$ 1,700.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000795 Natalia Rodríguez 16 oct de 2026 Completada RD$ 1,950.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000798 Carolina Vargas 16 oct de 2026 Completada RD$ 2,000.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000792 Daniela Pérez 15 oct de 2026 Completada RD$ 2,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000787 Sara Núñez 14 oct de 2026 Completada RD$ 1,800.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000780 Alejandra Molina 13 oct de 2026 Completada RD$ 3,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000783 Camila Reyes 13 oct de 2026 Completada RD$ 1,300.00 RD$ 0.00 Efectivo Solicitar anulación 100 registros · Página 1 de 5 Anterior Siguiente Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/sales-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "void-requests",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Solicitudes de anulación",
+  "hashFinal": "#void-requests",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Solicitudes de anulación Buscar en Nexora ⌘ K En línea CL Camila López Vendedora VENTAS Solicitudes de anulación Consulta el estado de tus solicitudes. Estado Pendientes Todas Aprobadas Rechazadas Canceladas No hay solicitudes en este estado. Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/void-requests-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "products",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [
+   "FALLÓ POST /api/auth/refresh net::ERR_ABORTED"
+  ],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Tu catálogo, con personalidad",
+  "hashFinal": "#products",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Productos Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Tu catálogo, con personalidad Cada producto, cada variante y cada oportunidad, en su lugar. Todas las categorías Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos PRODUCTO CATEGORÍA VARIANTES PRECIO STOCK ACCIONES BCAA Recovery FIT-0005 · NutriLab Suplementos 2 RD$ 2,000.00 35 unidades Bandas Resistance FIT-0038 · FitStore Accesorios de gym 2 RD$ 300.00 28 unidades Base Skin Glow FIT-0049 · Bloom Beauty Maquillaje 3 RD$ 450.00 78 unidades Biker Short FIT-0021 · Motion Club Ropa deportiva 6 RD$ 1,150.00 105 unidades Body Flex FIT-0023 · Motion Club Ropa deportiva 6 RD$ 1,250.00 117 unidades Bolso Gym Day FIT-0046 · FitStore Accesorios de gym 2 RD$ 600.00 45 unidades Botella Hydrate FIT-0042 · FitStore Accesorios de gym 2 RD$ 450.00 37 unidades Camiseta Training FIT-0016 · Motion Club Ropa deportiva 6 RD$ 950.00 111 unidades Chaleco Posture FIT-0028 · FitStore Fajas 6 RD$ 1,250.00 147 unidades Chaleco Sculpt FIT-0034 · FitStore Fajas 6 RD$ 1,650.00 111 unidades Chaqueta Warm Up FIT-0022 · Motion Club Ropa deportiva 6 RD$ 1,200.00 111 unidades Cinturilla Daily FIT-0026 · FitStore Fajas 6 RD$ 1,150.00 135 unidades Cinturilla Sport FIT-0032 · FitStore Fajas 6 RD$ 1,500.00 135 unidades Cinturón Lifting FIT-0043 · FitStore Accesorios de gym 2 RD$ 500.00 39 unidades Cinturón Shape FIT-0030 · FitStore Fajas 6 RD$ 1,400.00 159 unidades Colágeno Beauty FIT-0004 · NutriLab Suplementos 2 RD$ 1,900.00 33 unidades Corrector Soft Touch FIT-0052 · Bloom Beauty Maquillaje 3 RD$ 600.00 69 unidades Creatina Monohidratada FIT-0002 · NutriLab Suplementos 2 RD$ 1,700.00 29 unidades Cuerda Speed FIT-0041 · FitStore Accesorios de gym 2 RD$ 450.00 35 unidades Faja Colombian Fit FIT-0029 · FitStore Fajas 6 RD$ 1,350.00 153 unidades 60 registros · Página 1 de 3 Anterior Siguiente Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/products-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash-cerrada",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Caja Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-cerrada-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Caja Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "customers",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Personas que vuelven a elegirte",
+  "hashFinal": "#customers",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Clientes Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Personas que vuelven a elegirte Conoce a tus clientes y construye relaciones que duran. Nuevo cliente CLIENTE CONTACTO CÉDULA / RNC ACCIÓN Adriana Torres •••010 c•••@example.test •••010 Editar Alejandra Molina •••011 c•••@example.test •••011 Editar Ana Herrera •••018 c•••@example.test •••018 Editar Camila Reyes •••009 c•••@example.test •••009 Editar Carolina Vargas •••013 c•••@example.test •••013 Editar Daniela Pérez •••004 c•••@example.test •••004 Editar Elena Díaz •••014 c•••@example.test •••014 Editar Gabriela Castillo •••002 c•••@example.test •••002 Editar Isabella Cruz •••005 c•••@example.test •••005 Editar Laura Santana •••008 c•••@example.test •••008 Editar Lucía Méndez •••000 c•••@example.test •••000 Editar María Jiménez •••006 c•••@example.test •••006 Editar Mónica Peña •••019 c•••@example.test •••019 Editar Natalia Rodríguez •••012 c•••@example.test •••012 Editar Paola Fernández •••003 c•••@example.test •••003 Editar Patricia Álvarez •••016 c•••@example.test •••016 Editar Rosa Batista •••017 c•••@example.test •••017 Editar Sara Núñez •••015 c•••@example.test •••015 Editar Sofía Martínez •••001 c•••@example.test •••001 Editar Valentina Ramos •••007 c•••@example.test •••007 Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/customers-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-cobrar",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta Buscar en Nexora ⌘ K En línea CL Camila López Vendedora Ir al carrito y cobrar Punto de venta F2 Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir Stock actualizado en línea SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILL",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-cobrar-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-preguntas",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta Buscar en Nexora ⌘ K En línea CL Camila López Vendedora Ir al carrito y cobrar Punto de venta F2 Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir Stock actualizado en línea SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILL",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-preguntas-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-mis-ventas-hoy",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta Buscar en Nexora ⌘ K En línea CL Camila López Vendedora Ir al carrito y cobrar Punto de venta F2 Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir Stock actualizado en línea SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILL",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-mis-ventas-hoy-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash-cerrar",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Caja Buscar en Nexora ⌘ K En línea CL Camila López Vendedora TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno Cuadre y cierre de caja Antes de cerrar: cierra el lote del verifón (datáfono) para que los cobros con tarjeta caigan el próximo día. Conteo ciego: declara lo que realmente tienes. El cuadre que se imprime muestra lo que contaste; la comparación con lo esperado la revisa administración. Detalles de monedas 1 × = RD$ 0.00 5 × = RD$ 0.00 10 × = RD$ 0.00 20 × = RD$ 0.00 25 × = RD$ 0.00 50 × = RD$ 0.00 100 × = RD$ 0.00 200 × = RD$ 0.00 500 × = RD$ 0.00 1,000 × = RD$ 0.00 2,000 × = RD$ 0.00 Efectivo contado (Sub-total) RD$ 0.00 Tarjeta declarada Total que imprimió el verifón al cerrar el lote de hoy. Cierra el verifón antes de cerrar la caja; escribe 0 solo si no hubo cobros con tarjeta. Número de lote del verifón Obligatorio si hubo cobros con tarjeta (venta sola o mixta): el número que imprime el voucher al cerrar el lote. Entregado Efectivo que se le entrega a la dueña. Dejado en caja RD$ 0.00 Será el fondo sugerido de la próxima apertura. Notas del cierre Confirmo que conté efectivo y tarjeta. Las transferencias las suma el sistema. Los campos vacíos representan RD$ 0.00. Cancelar Cerrar caja e imprimir cuadre",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-cerrar-1366-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-merchandise",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/goods-receipts",
+   "403 GET /api/merchandise/operations",
+   "403 GET /api/suppliers",
+   "403 GET /api/purchase-orders",
+   "403 GET /api/merchandise/options"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-dashboard",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-transfer-reconciliation",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-courier-payouts",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-inventory",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/inventory/counts",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-purchases",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-expenses",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/expenses",
+   "403 GET /api/expense-categories"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-promotions",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/promotions/clearance-candidates"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-reports",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/reportes",
+   "403 GET /api/reports/sales?from=2026-10-01&to=2026-10-26&page=1"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-alerts",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/alerts?status=new"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-incentives",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/incentives/rates",
+   "403 GET /api/incentives?month=2026-10"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-gv",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/gv/courses"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-settings",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 variantes RD$ 1,300.00 123 en stock ACCESORIOS DE GYM Toalla Sport 2 variantes RD$ 700.00 49 en stock ACCESORIOS DE GYM Tobilleras Cable 2 variantes RD$ 600.00 6 en stock ROPA DEPORTIVA Top Motion 6 variantes RD$ 850.00 135 en stoc",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "sales",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cada venta tiene una historia",
+  "hashFinal": "#sales",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [
+   "input[Buscar ventas de una fecha]"
+  ],
+  "axe": [],
+  "texto": "Mi tienda /Ventas CL TU NEGOCIO, CON CLARIDAD Cada venta tiene una historia Consulta recibos, pagos y movimientos sin perder el detalle. Fecha VENTA N.º CLIENTE FECHA ESTADO TOTAL SALDO PENDIENTE PAGOS ACCIONES FS-0000847 Adriana Torres 26 oct de 2026 Completada RD$ 300.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000846 Lucía Méndez 26 oct de 2026 Completada RD$ 2,600.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000841 Sofía Martínez 25 oct de 2026 Completada RD$ 5,550.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000837 Lucía Méndez 24 oct de 2026 Completada RD$ 4,000.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000834 Camila Reyes 23 oct de 2026 Completada RD$ 3,050.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000831 Carolina Vargas 22 oct de 2026 Completada RD$ 2,200.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000828 Isabella Cruz 22 oct de 2026 Completada RD$ 3,200.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000823 Patricia Álvarez 21 oct de 2026 Completada RD$ 1,650.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000817 Mónica Peña 20 oct de 2026 Completada RD$ 1,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000820 Elena Díaz 20 oct de 2026 Completada RD$ 4,300.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000811 Natalia Rodríguez 19 oct de 2026 Completada RD$ 2,400.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000814 Elena Díaz 19 oct de 2026 Completada RD$ 900.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000806 Sofía Martínez 18 oct de 2026 Completada RD$ 3,250.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000801 María Jiménez 17 oct de 2026 Completada RD$ 1,700.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000795 Natalia Rodríguez 16 oct de 2026 Completada RD$ 1,950.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000798 Carolina Vargas 16 oct de 2026 Completada RD$ 2,000.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000792 Daniela Pérez 15 oct de 2026 Completada RD$ 2,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000787 Sara Núñez 14 oct de 2026 Completada RD$ 1,800.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000780 Alejandra Molina 13 oct de 2026 Completada RD$ 3,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000783 Camila Reyes 13 oct de 2026 Completada RD$ 1,300.00 RD$ 0.00 Efectivo Solicitar anulación 100 registros · Página 1 de 5 Anterior Siguiente Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/sales-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "void-requests",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Solicitudes de anulación",
+  "hashFinal": "#void-requests",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Solicitudes de anulación CL VENTAS Solicitudes de anulación Consulta el estado de tus solicitudes. Estado Pendientes Todas Aprobadas Rechazadas Canceladas No hay solicitudes en este estado. Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/void-requests-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "products",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [
+   "FALLÓ POST /api/auth/refresh net::ERR_ABORTED"
+  ],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Tu catálogo, con personalidad",
+  "hashFinal": "#products",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Productos CL TU NEGOCIO, CON CLARIDAD Tu catálogo, con personalidad Cada producto, cada variante y cada oportunidad, en su lugar. Todas las categorías Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos PRODUCTO CATEGORÍA VARIANTES PRECIO STOCK ACCIONES BCAA Recovery FIT-0005 · NutriLab Suplementos 2 RD$ 2,000.00 35 unidades Bandas Resistance FIT-0038 · FitStore Accesorios de gym 2 RD$ 300.00 28 unidades Base Skin Glow FIT-0049 · Bloom Beauty Maquillaje 3 RD$ 450.00 78 unidades Biker Short FIT-0021 · Motion Club Ropa deportiva 6 RD$ 1,150.00 105 unidades Body Flex FIT-0023 · Motion Club Ropa deportiva 6 RD$ 1,250.00 117 unidades Bolso Gym Day FIT-0046 · FitStore Accesorios de gym 2 RD$ 600.00 45 unidades Botella Hydrate FIT-0042 · FitStore Accesorios de gym 2 RD$ 450.00 37 unidades Camiseta Training FIT-0016 · Motion Club Ropa deportiva 6 RD$ 950.00 111 unidades Chaleco Posture FIT-0028 · FitStore Fajas 6 RD$ 1,250.00 147 unidades Chaleco Sculpt FIT-0034 · FitStore Fajas 6 RD$ 1,650.00 111 unidades Chaqueta Warm Up FIT-0022 · Motion Club Ropa deportiva 6 RD$ 1,200.00 111 unidades Cinturilla Daily FIT-0026 · FitStore Fajas 6 RD$ 1,150.00 135 unidades Cinturilla Sport FIT-0032 · FitStore Fajas 6 RD$ 1,500.00 135 unidades Cinturón Lifting FIT-0043 · FitStore Accesorios de gym 2 RD$ 500.00 39 unidades Cinturón Shape FIT-0030 · FitStore Fajas 6 RD$ 1,400.00 159 unidades Colágeno Beauty FIT-0004 · NutriLab Suplementos 2 RD$ 1,900.00 33 unidades Corrector Soft Touch FIT-0052 · Bloom Beauty Maquillaje 3 RD$ 600.00 69 unidades Creatina Monohidratada FIT-0002 · NutriLab Suplementos 2 RD$ 1,700.00 29 unidades Cuerda Speed FIT-0041 · FitStore Accesorios de gym 2 RD$ 450.00 35 unidades Faja Colombian Fit FIT-0029 · FitStore Fajas 6 RD$ 1,350.00 153 unidades 60 registros · Página 1 de 3 Anterior Siguiente Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/products-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash-cerrada",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Caja CL TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-cerrada-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Caja CL TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "customers",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Personas que vuelven a elegirte",
+  "hashFinal": "#customers",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Clientes CL TU NEGOCIO, CON CLARIDAD Personas que vuelven a elegirte Conoce a tus clientes y construye relaciones que duran. Nuevo cliente CLIENTE CONTACTO CÉDULA / RNC ACCIÓN Adriana Torres •••010 c•••@example.test •••010 Editar Alejandra Molina •••011 c•••@example.test •••011 Editar Ana Herrera •••018 c•••@example.test •••018 Editar Camila Reyes •••009 c•••@example.test •••009 Editar Carolina Vargas •••013 c•••@example.test •••013 Editar Daniela Pérez •••004 c•••@example.test •••004 Editar Elena Díaz •••014 c•••@example.test •••014 Editar Gabriela Castillo •••002 c•••@example.test •••002 Editar Isabella Cruz •••005 c•••@example.test •••005 Editar Laura Santana •••008 c•••@example.test •••008 Editar Lucía Méndez •••000 c•••@example.test •••000 Editar María Jiménez •••006 c•••@example.test •••006 Editar Mónica Peña •••019 c•••@example.test •••019 Editar Natalia Rodríguez •••012 c•••@example.test •••012 Editar Paola Fernández •••003 c•••@example.test •••003 Editar Patricia Álvarez •••016 c•••@example.test •••016 Editar Rosa Batista •••017 c•••@example.test •••017 Editar Sara Núñez •••015 c•••@example.test •••015 Editar Sofía Martínez •••001 c•••@example.test •••001 Editar Valentina Ramos •••007 c•••@example.test •••007 Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/customers-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-cobrar",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 variantes RD$ 1,300.00 123 en stock ACCESORIOS DE GYM Toalla Sport 2 variantes RD$ 700.00 49 en stock ACCESORIOS DE GYM Tobilleras Cable 2 variantes RD$ 600.00 6 en stock ROPA DEPORTIVA Top Motion 6 variantes RD$ 850.00 135 en stoc",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-cobrar-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-preguntas",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 variantes RD$ 1,300.00 123 en stock ACCESORIOS DE GYM Toalla Sport 2 variantes RD$ 700.00 49 en stock ACCESORIOS DE GYM Tobilleras Cable 2 variantes RD$ 600.00 6 en stock ROPA DEPORTIVA Top Motion 6 variantes RD$ 850.00 135 en stoc",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-preguntas-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-mis-ventas-hoy",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 variantes RD$ 1,300.00 123 en stock ACCESORIOS DE GYM Toalla Sport 2 variantes RD$ 700.00 49 en stock ACCESORIOS DE GYM Tobilleras Cable 2 variantes RD$ 600.00 6 en stock ROPA DEPORTIVA Top Motion 6 variantes RD$ 850.00 135 en stoc",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-mis-ventas-hoy-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash-cerrar",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Caja CL TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno Cuadre y cierre de caja Antes de cerrar: cierra el lote del verifón (datáfono) para que los cobros con tarjeta caigan el próximo día. Conteo ciego: declara lo que realmente tienes. El cuadre que se imprime muestra lo que contaste; la comparación con lo esperado la revisa administración. Detalles de monedas 1 × = RD$ 0.00 5 × = RD$ 0.00 10 × = RD$ 0.00 20 × = RD$ 0.00 25 × = RD$ 0.00 50 × = RD$ 0.00 100 × = RD$ 0.00 200 × = RD$ 0.00 500 × = RD$ 0.00 1,000 × = RD$ 0.00 2,000 × = RD$ 0.00 Efectivo contado (Sub-total) RD$ 0.00 Tarjeta declarada Total que imprimió el verifón al cerrar el lote de hoy. Cierra el verifón antes de cerrar la caja; escribe 0 solo si no hubo cobros con tarjeta. Número de lote del verifón Obligatorio si hubo cobros con tarjeta (venta sola o mixta): el número que imprime el voucher al cerrar el lote. Entregado Efectivo que se le entrega a la dueña. Dejado en caja RD$ 0.00 Será el fondo sugerido de la próxima apertura. Notas del cierre Confirmo que conté efectivo y tarjeta. Las transferencias las suma el sistema. Los campos vacíos representan RD$ 0.00. Cancelar Cerrar caja e imprimir cuadre",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-cerrar-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "menu-movil",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 va",
+  "captura": "docs/qa/recorrido-26oct/cajera/menu-movil-390-claro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-merchandise",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/goods-receipts",
+   "403 GET /api/suppliers",
+   "403 GET /api/purchase-orders",
+   "403 GET /api/merchandise/operations",
+   "403 GET /api/merchandise/options"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-dashboard",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-transfer-reconciliation",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-courier-payouts",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-inventory",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/inventory/counts",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-purchases",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-expenses",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/expenses",
+   "403 GET /api/expense-categories"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-promotions",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/promotions/clearance-candidates"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-reports",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/reportes",
+   "403 GET /api/reports/sales?from=2026-10-01&to=2026-10-26&page=1"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-alerts",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/alerts?status=new"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-incentives",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/incentives?month=2026-10",
+   "403 GET /api/incentives/rates"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-gv",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/gv/courses"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-settings",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 variantes RD$ 1,300.00 123 en stock ACCESORIOS DE GYM Toalla Sport 2 variantes RD$ 700.00 49 en stock ACCESORIOS DE GYM Tobilleras Cable 2 variantes RD$ 600.00 6 en stock ROPA DEPORTIVA Top Motion 6 variantes RD$ 850.00 135 en stoc",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "sales",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cada venta tiene una historia",
+  "hashFinal": "#sales",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [
+   "input[Buscar ventas de una fecha]"
+  ],
+  "axe": [],
+  "texto": "Mi tienda /Ventas CL TU NEGOCIO, CON CLARIDAD Cada venta tiene una historia Consulta recibos, pagos y movimientos sin perder el detalle. Fecha VENTA N.º CLIENTE FECHA ESTADO TOTAL SALDO PENDIENTE PAGOS ACCIONES FS-0000847 Adriana Torres 26 oct de 2026 Completada RD$ 300.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000846 Lucía Méndez 26 oct de 2026 Completada RD$ 2,600.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000841 Sofía Martínez 25 oct de 2026 Completada RD$ 5,550.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000837 Lucía Méndez 24 oct de 2026 Completada RD$ 4,000.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000834 Camila Reyes 23 oct de 2026 Completada RD$ 3,050.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000831 Carolina Vargas 22 oct de 2026 Completada RD$ 2,200.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000828 Isabella Cruz 22 oct de 2026 Completada RD$ 3,200.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000823 Patricia Álvarez 21 oct de 2026 Completada RD$ 1,650.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000817 Mónica Peña 20 oct de 2026 Completada RD$ 1,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000820 Elena Díaz 20 oct de 2026 Completada RD$ 4,300.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000811 Natalia Rodríguez 19 oct de 2026 Completada RD$ 2,400.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000814 Elena Díaz 19 oct de 2026 Completada RD$ 900.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000806 Sofía Martínez 18 oct de 2026 Completada RD$ 3,250.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000801 María Jiménez 17 oct de 2026 Completada RD$ 1,700.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000795 Natalia Rodríguez 16 oct de 2026 Completada RD$ 1,950.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000798 Carolina Vargas 16 oct de 2026 Completada RD$ 2,000.00 RD$ 0.00 Efectivo Solicitar anulación FS-0000792 Daniela Pérez 15 oct de 2026 Completada RD$ 2,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000787 Sara Núñez 14 oct de 2026 Completada RD$ 1,800.00 RD$ 0.00 Transferencia Solicitar anulación FS-0000780 Alejandra Molina 13 oct de 2026 Completada RD$ 3,800.00 RD$ 0.00 Tarjeta Solicitar anulación FS-0000783 Camila Reyes 13 oct de 2026 Completada RD$ 1,300.00 RD$ 0.00 Efectivo Solicitar anulación 100 registros · Página 1 de 5 Anterior Siguiente Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/sales-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "void-requests",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Solicitudes de anulación",
+  "hashFinal": "#void-requests",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Solicitudes de anulación CL VENTAS Solicitudes de anulación Consulta el estado de tus solicitudes. Estado Pendientes Todas Aprobadas Rechazadas Canceladas No hay solicitudes en este estado. Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/void-requests-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "products",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [
+   "FALLÓ POST /api/auth/refresh net::ERR_ABORTED"
+  ],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Tu catálogo, con personalidad",
+  "hashFinal": "#products",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Productos CL TU NEGOCIO, CON CLARIDAD Tu catálogo, con personalidad Cada producto, cada variante y cada oportunidad, en su lugar. Todas las categorías Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos PRODUCTO CATEGORÍA VARIANTES PRECIO STOCK ACCIONES BCAA Recovery FIT-0005 · NutriLab Suplementos 2 RD$ 2,000.00 35 unidades Bandas Resistance FIT-0038 · FitStore Accesorios de gym 2 RD$ 300.00 28 unidades Base Skin Glow FIT-0049 · Bloom Beauty Maquillaje 3 RD$ 450.00 78 unidades Biker Short FIT-0021 · Motion Club Ropa deportiva 6 RD$ 1,150.00 105 unidades Body Flex FIT-0023 · Motion Club Ropa deportiva 6 RD$ 1,250.00 117 unidades Bolso Gym Day FIT-0046 · FitStore Accesorios de gym 2 RD$ 600.00 45 unidades Botella Hydrate FIT-0042 · FitStore Accesorios de gym 2 RD$ 450.00 37 unidades Camiseta Training FIT-0016 · Motion Club Ropa deportiva 6 RD$ 950.00 111 unidades Chaleco Posture FIT-0028 · FitStore Fajas 6 RD$ 1,250.00 147 unidades Chaleco Sculpt FIT-0034 · FitStore Fajas 6 RD$ 1,650.00 111 unidades Chaqueta Warm Up FIT-0022 · Motion Club Ropa deportiva 6 RD$ 1,200.00 111 unidades Cinturilla Daily FIT-0026 · FitStore Fajas 6 RD$ 1,150.00 135 unidades Cinturilla Sport FIT-0032 · FitStore Fajas 6 RD$ 1,500.00 135 unidades Cinturón Lifting FIT-0043 · FitStore Accesorios de gym 2 RD$ 500.00 39 unidades Cinturón Shape FIT-0030 · FitStore Fajas 6 RD$ 1,400.00 159 unidades Colágeno Beauty FIT-0004 · NutriLab Suplementos 2 RD$ 1,900.00 33 unidades Corrector Soft Touch FIT-0052 · Bloom Beauty Maquillaje 3 RD$ 600.00 69 unidades Creatina Monohidratada FIT-0002 · NutriLab Suplementos 2 RD$ 1,700.00 29 unidades Cuerda Speed FIT-0041 · FitStore Accesorios de gym 2 RD$ 450.00 35 unidades Faja Colombian Fit FIT-0029 · FitStore Fajas 6 RD$ 1,350.00 153 unidades 60 registros · Página 1 de 3 Anterior Siguiente Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/products-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash-cerrada",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Caja CL TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-cerrada-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Caja CL TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "customers",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Personas que vuelven a elegirte",
+  "hashFinal": "#customers",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Clientes CL TU NEGOCIO, CON CLARIDAD Personas que vuelven a elegirte Conoce a tus clientes y construye relaciones que duran. Nuevo cliente CLIENTE CONTACTO CÉDULA / RNC ACCIÓN Adriana Torres •••010 c•••@example.test •••010 Editar Alejandra Molina •••011 c•••@example.test •••011 Editar Ana Herrera •••018 c•••@example.test •••018 Editar Camila Reyes •••009 c•••@example.test •••009 Editar Carolina Vargas •••013 c•••@example.test •••013 Editar Daniela Pérez •••004 c•••@example.test •••004 Editar Elena Díaz •••014 c•••@example.test •••014 Editar Gabriela Castillo •••002 c•••@example.test •••002 Editar Isabella Cruz •••005 c•••@example.test •••005 Editar Laura Santana •••008 c•••@example.test •••008 Editar Lucía Méndez •••000 c•••@example.test •••000 Editar María Jiménez •••006 c•••@example.test •••006 Editar Mónica Peña •••019 c•••@example.test •••019 Editar Natalia Rodríguez •••012 c•••@example.test •••012 Editar Paola Fernández •••003 c•••@example.test •••003 Editar Patricia Álvarez •••016 c•••@example.test •••016 Editar Rosa Batista •••017 c•••@example.test •••017 Editar Sara Núñez •••015 c•••@example.test •••015 Editar Sofía Martínez •••001 c•••@example.test •••001 Editar Valentina Ramos •••007 c•••@example.test •••007 Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/cajera/customers-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-cobrar",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 variantes RD$ 1,300.00 123 en stock ACCESORIOS DE GYM Toalla Sport 2 variantes RD$ 700.00 49 en stock ACCESORIOS DE GYM Tobilleras Cable 2 variantes RD$ 600.00 6 en stock ROPA DEPORTIVA Top Motion 6 variantes RD$ 850.00 135 en stoc",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-cobrar-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-preguntas",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 variantes RD$ 1,300.00 123 en stock ACCESORIOS DE GYM Toalla Sport 2 variantes RD$ 700.00 49 en stock ACCESORIOS DE GYM Tobilleras Cable 2 variantes RD$ 600.00 6 en stock ROPA DEPORTIVA Top Motion 6 variantes RD$ 850.00 135 en stoc",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-preguntas-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "pos-mis-ventas-hoy",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 variantes RD$ 1,300.00 123 en stock ACCESORIOS DE GYM Toalla Sport 2 variantes RD$ 700.00 49 en stock ACCESORIOS DE GYM Tobilleras Cable 2 variantes RD$ 600.00 6 en stock ROPA DEPORTIVA Top Motion 6 variantes RD$ 850.00 135 en stoc",
+  "captura": "docs/qa/recorrido-26oct/cajera/pos-mis-ventas-hoy-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "cash-cerrar",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Una caja que siempre cuadra",
+  "hashFinal": "#cash",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /Caja CL TU NEGOCIO, CON CLARIDAD Una caja que siempre cuadra Abre el día con claridad. Ciérralo con tranquilidad. Movimiento Cerrar y arquear Caja abierta QA recorrido Arqueo ciego activo: ni abierta ni al cerrar verás los montos esperados ni las diferencias. Al cerrar cuentas lo que tienes y se imprime el cuadre con lo que contaste; administración revisa la comparación. Mis incentivos · octubre de 2026 RD$ 0.00 1 unidades · 1 ventas · 0 al por mayor Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración. Créditos pendientes Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración. Pendientes Cerrados ✦ Sin créditos pendientes Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago. Historial de cajas Un registro claro de cada jornada. EQUIPO APERTURA ESTADO EFECTIVO ESPERADO CONTADO DIFERENCIAS POR MÉTODO ACCIONES QA recorrido 26 oct de 2026 Abierta — — — Venta diaria Por forma de pago Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno Cuadre y cierre de caja Antes de cerrar: cierra el lote del verifón (datáfono) para que los cobros con tarjeta caigan el próximo día. Conteo ciego: declara lo que realmente tienes. El cuadre que se imprime muestra lo que contaste; la comparación con lo esperado la revisa administración. Detalles de monedas 1 × = RD$ 0.00 5 × = RD$ 0.00 10 × = RD$ 0.00 20 × = RD$ 0.00 25 × = RD$ 0.00 50 × = RD$ 0.00 100 × = RD$ 0.00 200 × = RD$ 0.00 500 × = RD$ 0.00 1,000 × = RD$ 0.00 2,000 × = RD$ 0.00 Efectivo contado (Sub-total) RD$ 0.00 Tarjeta declarada Total que imprimió el verifón al cerrar el lote de hoy. Cierra el verifón antes de cerrar la caja; escribe 0 solo si no hubo cobros con tarjeta. Número de lote del verifón Obligatorio si hubo cobros con tarjeta (venta sola o mixta): el número que imprime el voucher al cerrar el lote. Entregado Efectivo que se le entrega a la dueña. Dejado en caja RD$ 0.00 Será el fondo sugerido de la próxima apertura. Notas del cierre Confirmo que conté efectivo y tarjeta. Las transferencias las suma el sistema. Los campos vacíos representan RD$ 0.00. Cancelar Cerrar caja e imprimir cuadre",
+  "captura": "docs/qa/recorrido-26oct/cajera/cash-cerrar-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "menu-movil",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Punto de venta ",
+  "hashFinal": "#pos",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO Punto de venta Ventas Solicitudes de anulación Productos Caja Clientes ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /Punto de venta CL Ir al carrito y cobrar Punto de venta Preguntas En espera Todos los productos Suplementos Ropa deportiva Fajas Accesorios de gym Maquillaje 60 productos para descubrir SUPLEMENTOS BCAA Recovery 2 variantes RD$ 2,000.00 35 en stock ACCESORIOS DE GYM Bandas Resistance 2 variantes RD$ 300.00 28 en stock MAQUILLAJE Base Skin Glow 3 variantes RD$ 450.00 78 en stock ROPA DEPORTIVA Biker Short 6 variantes RD$ 1,150.00 105 en stock ROPA DEPORTIVA Body Flex 6 variantes RD$ 1,250.00 117 en stock ACCESORIOS DE GYM Bolso Gym Day 2 variantes RD$ 600.00 45 en stock ACCESORIOS DE GYM Botella Hydrate 2 variantes RD$ 450.00 37 en stock ROPA DEPORTIVA Camiseta Training 6 variantes RD$ 950.00 111 en stock FAJAS Chaleco Posture 6 variantes RD$ 1,250.00 147 en stock FAJAS Chaleco Sculpt 6 variantes RD$ 1,650.00 111 en stock ROPA DEPORTIVA Chaqueta Warm Up 6 variantes RD$ 1,200.00 111 en stock FAJAS Cinturilla Daily 6 variantes RD$ 1,150.00 135 en stock FAJAS Cinturilla Sport 6 variantes RD$ 1,500.00 135 en stock ACCESORIOS DE GYM Cinturón Lifting 2 variantes RD$ 500.00 39 en stock FAJAS Cinturón Shape 6 variantes RD$ 1,400.00 159 en stock SUPLEMENTOS Colágeno Beauty 2 variantes RD$ 1,900.00 33 en stock MAQUILLAJE Corrector Soft Touch 3 variantes RD$ 600.00 69 en stock SUPLEMENTOS Creatina Monohidratada 2 variantes RD$ 1,700.00 29 en stock ACCESORIOS DE GYM Cuerda Speed 2 variantes RD$ 450.00 35 en stock FAJAS Faja Colombian Fit 6 variantes RD$ 1,350.00 153 en stock FAJAS Faja Comfort 6 variantes RD$ 1,450.00 147 en stock FAJAS Faja High Support 6 variantes RD$ 1,750.00 18 en stock FAJAS Faja Invisible 6 variantes RD$ 1,600.00 123 en stock FAJAS Faja Power Sculpt 6 variantes RD$ 1,100.00 129 en stock FAJAS Faja Short Control 6 variantes RD$ 1,200.00 18 en stock FAJAS Faja Waist Pro 6 variantes RD$ 1,700.00 99 en stock MAQUILLAJE Gloss Shine 3 variantes RD$ 750.00 45 en stock SUPLEMENTOS Glutamina Pure 2 variantes RD$ 2,350.00 6 en stock ACCESORIOS DE GYM Guantes Training 2 variantes RD$ 350.00 31 en stock MAQUILLAJE Iluminador Golden 3 variantes RD$ 700.00 9 en stock ROPA DEPORTIVA Jogger Relax 6 variantes RD$ 1,050.00 18 en stock MAQUILLAJE Labial Velvet 3 variantes RD$ 500.00 81 en stock ROPA DEPORTIVA Legging Essential 6 variantes RD$ 800.00 147 en stock ROPA DEPORTIVA Legging Sculpt 6 variantes RD$ 1,000.00 99 en stock MAQUILLAJE Lip Tint Berry 3 variantes RD$ 900.00 54 en stock SUPLEMENTOS Magnesio Balance 2 variantes RD$ 2,450.00 45 en stock ACCESORIOS DE GYM Mat Yoga Flow 2 variantes RD$ 550.00 41 en stock ACCESORIOS DE GYM Mini Bands 2 variantes RD$ 650.00 47 en stock SUPLEMENTOS Multivitamínico Daily 2 variantes RD$ 2,250.00 41 en stock MAQUILLAJE Máscara Lash Up 3 variantes RD$ 650.00 54 en stock SUPLEMENTOS Omega 3 Essential 2 variantes RD$ 2,150.00 39 en stock MAQUILLAJE Paleta Nude Days 3 variantes RD$ 700.00 42 en stock MAQUILLAJE Polvo Skin Blur 3 variantes RD$ 850.00 51 en stock SUPLEMENTOS Pre-entreno Berry 2 variantes RD$ 2,600.00 49 en stock SUPLEMENTOS Pre-entreno Energy 2 variantes RD$ 1,800.00 31 en stock MAQUILLAJE Primer Radiance 3 variantes RD$ 950.00 57 en stock SUPLEMENTOS Proteína Vegan Blend 2 variantes RD$ 2,050.00 37 en stock SUPLEMENTOS Proteína Whey Classic 2 variantes RD$ 2,500.00 47 en stock SUPLEMENTOS Proteína Whey Isolate 2 variantes RD$ 1,600.00 27 en stock MAQUILLAJE Rubor Bloom 3 variantes RD$ 550.00 84 en stock ROPA DEPORTIVA Set Power 6 variantes RD$ 1,150.00 99 en stock ACCESORIOS DE GYM Shaker FitStore 2 variantes RD$ 300.00 27 en stock ROPA DEPORTIVA Short Active 6 variantes RD$ 900.00 123 en stock ACCESORIOS DE GYM Straps Pro 2 variantes RD$ 400.00 33 en stock MAQUILLAJE Sérum Vitamin C 3 variantes RD$ 800.00 48 en stock ROPA DEPORTIVA Tank Fit 6 va",
+  "captura": "docs/qa/recorrido-26oct/cajera/menu-movil-390-oscuro.png"
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-merchandise",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/goods-receipts",
+   "403 GET /api/suppliers",
+   "403 GET /api/merchandise/operations",
+   "403 GET /api/merchandise/options"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-dashboard",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-transfer-reconciliation",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-courier-payouts",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-inventory",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/inventory/counts",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-purchases",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-expenses",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/expenses",
+   "403 GET /api/expense-categories"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-promotions",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/promotions/clearance-candidates"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-reports",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/reportes",
+   "403 GET /api/reports/sales?from=2026-10-01&to=2026-10-26&page=1"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-alerts",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/alerts?status=new"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-incentives",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/incentives/rates",
+   "403 GET /api/incentives?month=2026-10"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-gv",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/gv/courses"
+  ]
+ },
+ {
+  "rol": "cajera",
+  "pantalla": "prohibida-settings",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#pos",
+  "titulo": "Punto de venta ",
+  "rechazada": true,
+  "red": []
+ }
+]

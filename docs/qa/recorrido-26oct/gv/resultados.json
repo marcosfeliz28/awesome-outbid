@@ -1,0 +1,1590 @@
+[
+ {
+  "rol": "gv",
+  "pantalla": "gv-cursos",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Nuevo curso Automaquillaje octubre Automaquillaje · 1 nov de 2026 2 / 12 inscritas · RD$ 6,500.00 Pagado RD$ 8,500.00 · Pendiente RD$ 4,500.00 Brazilian Glam Brazilian · 24 oct de 2026 0 / 8 inscritas · RD$ 9,000.00 Pagado RD$ 0.00 · Pendiente RD$ 0.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-cursos-1366-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-curso-detalle",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes ← Cursos Editar curso Nueva inscripción Automaquillaje octubre Automaquillaje · 1 nov de 2026 · RD$ 6,500.00 · Cupo 12 CLIENTA TELÉFONO PRECIO PAGADO PENDIENTE ESTADO ASISTIÓ SET Lucía Méndez 8095550001 RD$ 6,500.00 RD$ 2,000.00 (RD$ 1,500.00 por verificar) RD$ 4,500.00 Activa — No Pago Editar Sofía Martínez RD$ 6,500.00 RD$ 6,500.00 RD$ 0.00 Activa — No Pago Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-curso-detalle-1366-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-citas",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Estado Todas Agendada Realizada Cancelada Reembolsada Nueva cita Daniela Pérez 28 oct, 3:00 p. m. · Glam Génesis Total RD$ 4,500.00 · Pagado RD$ 1,000.00 Pendiente RD$ 3,500.00 Agendada Pago Editar Isabella Cruz 25 oct, 3:00 p. m. · Novia Maryori, Camila Total RD$ 12,000.00 · Pagado RD$ 0.00 Pendiente RD$ 12,000.00 Realizada Pago Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-citas-1366-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-interesadas",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [
+   "FALLÓ POST /api/auth/refresh net::ERR_ABORTED"
+  ],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Estado Todas Por contactar Contactada Inscrita Descartada Nueva interesada Laura Santana Interés: Brazilian Contactada Editar Valentina Ramos 8095550002 Interés: Automaquillaje Por contactar Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-interesadas-1366-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-por-verificar",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Lucía Méndez · Automaquillaje octubre 26 oct de 2026 · RD$ 1,500.00 · Banreservas · Ref. QA-p2 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-por-verificar-1366-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-reportes",
+  "ancho": 1366,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [
+   "input"
+  ],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Desde Hasta Ingresos Verificado RD$ 9,500.00 · reembolsos RD$ 0.00 · neto RD$ 9,500.00 · por verificar RD$ 1,500.00 Por día 2026-10-25 1 RD$ 2,000.00 2026-10-26 1 RD$ 6,500.00 2026-10-27 1 RD$ 1,000.00 Por método Efectivo 3 RD$ 9,500.00 Por banco Sin banco 3 RD$ 9,500.00 Por empleada Valeria Rivera 3 RD$ 9,500.00 Ocupación y pendientes por curso CURSO INSCRITAS ASISTIERON SETS PAGADO PENDIENTE Automaquillaje octubre 1 nov de 2026 2 / 12 0 0 RD$ 8,500.00 RD$ 4,500.00 Brazilian Glam 24 oct de 2026 0 / 8 0 0 RD$ 0.00 RD$ 0.00 Pendientes por clienta Lucía Méndez 8095550001 Automaquillaje octubre RD$ 4,500.00 Daniela Pérez Cita · glam RD$ 3,500.00 Isabella Cruz Cita · novia RD$ 12,000.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-reportes-1366-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-merchandise",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/goods-receipts",
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/suppliers",
+   "403 GET /api/categories",
+   "403 GET /api/purchase-orders",
+   "403 GET /api/merchandise/options",
+   "403 GET /api/merchandise/operations"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-dashboard",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-pos",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/customers",
+   "403 GET /api/cash-sessions",
+   "403 GET /api/promotions",
+   "403 GET /api/categories",
+   "403 GET /api/settings"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-sales",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/sales",
+   "403 GET /api/cash-sessions"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-void-requests",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/void-requests?status=pending"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-transfer-reconciliation",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-courier-payouts",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-products",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-inventory",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/inventory/warehouses",
+   "403 GET /api/inventory/location-report",
+   "403 GET /api/inventory/transfers",
+   "403 GET /api/inventory/stock",
+   "403 GET /api/inventory/counts",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-purchases",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers",
+   "403 GET /api/products?limit=200&page=1"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-cash",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/settings",
+   "403 GET /api/cash-sessions",
+   "403 GET /api/customers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-expenses",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/expenses",
+   "403 GET /api/expense-categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-customers",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/customers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-promotions",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/promotions/clearance-candidates",
+   "403 GET /api/promotions",
+   "403 GET /api/categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-reports",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/reportes",
+   "403 GET /api/reports/sales?from=2026-10-01&to=2026-10-26&page=1"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-alerts",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/alerts?status=new"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-incentives",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/incentives?month=2026-10",
+   "403 GET /api/incentives/rates"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-settings",
+  "ancho": 1366,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/settings"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-cursos",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Nuevo curso Automaquillaje octubre Automaquillaje · 1 nov de 2026 2 / 12 inscritas · RD$ 6,500.00 Pagado RD$ 8,500.00 · Pendiente RD$ 4,500.00 Brazilian Glam Brazilian · 24 oct de 2026 0 / 8 inscritas · RD$ 9,000.00 Pagado RD$ 0.00 · Pendiente RD$ 0.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-cursos-1366-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-curso-detalle",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes ← Cursos Editar curso Nueva inscripción Automaquillaje octubre Automaquillaje · 1 nov de 2026 · RD$ 6,500.00 · Cupo 12 CLIENTA TELÉFONO PRECIO PAGADO PENDIENTE ESTADO ASISTIÓ SET Lucía Méndez 8095550001 RD$ 6,500.00 RD$ 2,000.00 (RD$ 1,500.00 por verificar) RD$ 4,500.00 Activa — No Pago Editar Sofía Martínez RD$ 6,500.00 RD$ 6,500.00 RD$ 0.00 Activa — No Pago Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-curso-detalle-1366-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-citas",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Estado Todas Agendada Realizada Cancelada Reembolsada Nueva cita Daniela Pérez 28 oct, 3:00 p. m. · Glam Génesis Total RD$ 4,500.00 · Pagado RD$ 1,000.00 Pendiente RD$ 3,500.00 Agendada Pago Editar Isabella Cruz 25 oct, 3:00 p. m. · Novia Maryori, Camila Total RD$ 12,000.00 · Pagado RD$ 0.00 Pendiente RD$ 12,000.00 Realizada Pago Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-citas-1366-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-interesadas",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [
+   "FALLÓ POST /api/auth/refresh net::ERR_ABORTED"
+  ],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Estado Todas Por contactar Contactada Inscrita Descartada Nueva interesada Laura Santana Interés: Brazilian Contactada Editar Valentina Ramos 8095550002 Interés: Automaquillaje Por contactar Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-interesadas-1366-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-por-verificar",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Lucía Méndez · Automaquillaje octubre 26 oct de 2026 · RD$ 1,500.00 · Banreservas · Ref. QA-p2 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-por-verificar-1366-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-reportes",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 1366,
+   "clientWidth": 1366,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [
+   "input"
+  ],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio Buscar en Nexora ⌘ K En línea CG Clary GV gv GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Desde Hasta Ingresos Verificado RD$ 9,500.00 · reembolsos RD$ 0.00 · neto RD$ 9,500.00 · por verificar RD$ 1,500.00 Por día 2026-10-25 1 RD$ 2,000.00 2026-10-26 1 RD$ 6,500.00 2026-10-27 1 RD$ 1,000.00 Por método Efectivo 3 RD$ 9,500.00 Por banco Sin banco 3 RD$ 9,500.00 Por empleada Valeria Rivera 3 RD$ 9,500.00 Ocupación y pendientes por curso CURSO INSCRITAS ASISTIERON SETS PAGADO PENDIENTE Automaquillaje octubre 1 nov de 2026 2 / 12 0 0 RD$ 8,500.00 RD$ 4,500.00 Brazilian Glam 24 oct de 2026 0 / 8 0 0 RD$ 0.00 RD$ 0.00 Pendientes por clienta Lucía Méndez 8095550001 Automaquillaje octubre RD$ 4,500.00 Daniela Pérez Cita · glam RD$ 3,500.00 Isabella Cruz Cita · novia RD$ 12,000.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-reportes-1366-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-merchandise",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/goods-receipts",
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories",
+   "403 GET /api/suppliers",
+   "403 GET /api/merchandise/operations",
+   "403 GET /api/merchandise/options",
+   "403 GET /api/purchase-orders"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-dashboard",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-pos",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories",
+   "403 GET /api/customers",
+   "403 GET /api/cash-sessions",
+   "403 GET /api/promotions",
+   "403 GET /api/settings"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-sales",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/cash-sessions",
+   "403 GET /api/sales"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-void-requests",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/void-requests?status=pending"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-transfer-reconciliation",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-courier-payouts",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-products",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-inventory",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/inventory/warehouses",
+   "403 GET /api/inventory/location-report",
+   "403 GET /api/inventory/transfers",
+   "403 GET /api/inventory/stock",
+   "403 GET /api/inventory/counts",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-purchases",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers",
+   "403 GET /api/products?limit=200&page=1"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-cash",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/settings",
+   "403 GET /api/cash-sessions",
+   "403 GET /api/customers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-expenses",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/expenses",
+   "403 GET /api/expense-categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-customers",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/customers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-promotions",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/promotions/clearance-candidates",
+   "403 GET /api/promotions",
+   "403 GET /api/categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-reports",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/reportes",
+   "403 GET /api/reports/sales?from=2026-10-01&to=2026-10-26&page=1"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-alerts",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/alerts?status=new"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-incentives",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/incentives?month=2026-10",
+   "403 GET /api/incentives/rates"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-settings",
+  "ancho": 1366,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/settings"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-cursos",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Nuevo curso Automaquillaje octubre Automaquillaje · 1 nov de 2026 2 / 12 inscritas · RD$ 6,500.00 Pagado RD$ 8,500.00 · Pendiente RD$ 4,500.00 Brazilian Glam Brazilian · 24 oct de 2026 0 / 8 inscritas · RD$ 9,000.00 Pagado RD$ 0.00 · Pendiente RD$ 0.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-cursos-390-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-curso-detalle",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes ← Cursos Editar curso Nueva inscripción Automaquillaje octubre Automaquillaje · 1 nov de 2026 · RD$ 6,500.00 · Cupo 12 CLIENTA TELÉFONO PRECIO PAGADO PENDIENTE ESTADO ASISTIÓ SET Lucía Méndez 8095550001 RD$ 6,500.00 RD$ 2,000.00 (RD$ 1,500.00 por verificar) RD$ 4,500.00 Activa — No Pago Editar Sofía Martínez RD$ 6,500.00 RD$ 6,500.00 RD$ 0.00 Activa — No Pago Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-curso-detalle-390-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-citas",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Estado Todas Agendada Realizada Cancelada Reembolsada Nueva cita Daniela Pérez 28 oct, 3:00 p. m. · Glam Génesis Total RD$ 4,500.00 · Pagado RD$ 1,000.00 Pendiente RD$ 3,500.00 Agendada Pago Editar Isabella Cruz 25 oct, 3:00 p. m. · Novia Maryori, Camila Total RD$ 12,000.00 · Pagado RD$ 0.00 Pendiente RD$ 12,000.00 Realizada Pago Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-citas-390-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-interesadas",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [
+   "FALLÓ POST /api/auth/refresh net::ERR_ABORTED"
+  ],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Estado Todas Por contactar Contactada Inscrita Descartada Nueva interesada Laura Santana Interés: Brazilian Contactada Editar Valentina Ramos 8095550002 Interés: Automaquillaje Por contactar Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-interesadas-390-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-por-verificar",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Lucía Méndez · Automaquillaje octubre 26 oct de 2026 · RD$ 1,500.00 · Banreservas · Ref. QA-p2 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-por-verificar-390-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-reportes",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [
+   "input"
+  ],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Desde Hasta Ingresos Verificado RD$ 9,500.00 · reembolsos RD$ 0.00 · neto RD$ 9,500.00 · por verificar RD$ 1,500.00 Por día 2026-10-25 1 RD$ 2,000.00 2026-10-26 1 RD$ 6,500.00 2026-10-27 1 RD$ 1,000.00 Por método Efectivo 3 RD$ 9,500.00 Por banco Sin banco 3 RD$ 9,500.00 Por empleada Valeria Rivera 3 RD$ 9,500.00 Ocupación y pendientes por curso CURSO INSCRITAS ASISTIERON SETS PAGADO PENDIENTE Automaquillaje octubre 1 nov de 2026 2 / 12 0 0 RD$ 8,500.00 RD$ 4,500.00 Brazilian Glam 24 oct de 2026 0 / 8 0 0 RD$ 0.00 RD$ 0.00 Pendientes por clienta Lucía Méndez 8095550001 Automaquillaje octubre RD$ 4,500.00 Daniela Pérez Cita · glam RD$ 3,500.00 Isabella Cruz Cita · novia RD$ 12,000.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-reportes-390-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "menu-movil",
+  "ancho": 390,
+  "tema": "claro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "light",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Desde Hasta Ingresos Verificado RD$ 9,500.00 · reembolsos RD$ 0.00 · neto RD$ 9,500.00 · por verificar RD$ 1,500.00 Por día 2026-10-25 1 RD$ 2,000.00 2026-10-26 1 RD$ 6,500.00 2026-10-27 1 RD$ 1,000.00 Por método Efectivo 3 RD$ 9,500.00 Por banco Sin banco 3 RD$ 9,500.00 Por empleada Valeria Rivera 3 RD$ 9,500.00 Ocupación y pendientes por curso CURSO INSCRITAS ASISTIERON SETS PAGADO PENDIENTE Automaquillaje octubre 1 nov de 2026 2 / 12 0 0 RD$ 8,500.00 RD$ 4,500.00 Brazilian Glam 24 oct de 2026 0 / 8 0 0 RD$ 0.00 RD$ 0.00 Pendientes por clienta Lucía Méndez 8095550001 Automaquillaje octubre RD$ 4,500.00 Daniela Pérez Cita · glam RD$ 3,500.00 Isabella Cruz Cita · novia RD$ 12,000.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/menu-movil-390-claro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-merchandise",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/goods-receipts",
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories",
+   "403 GET /api/suppliers",
+   "403 GET /api/purchase-orders",
+   "403 GET /api/merchandise/operations",
+   "403 GET /api/merchandise/options"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-dashboard",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-pos",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/categories",
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/cash-sessions",
+   "403 GET /api/settings",
+   "403 GET /api/customers",
+   "403 GET /api/promotions"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-sales",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/sales",
+   "403 GET /api/cash-sessions"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-void-requests",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/void-requests?status=pending"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-transfer-reconciliation",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-courier-payouts",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-products",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-inventory",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/inventory/warehouses",
+   "403 GET /api/inventory/location-report",
+   "403 GET /api/inventory/transfers",
+   "403 GET /api/inventory/stock",
+   "403 GET /api/inventory/counts",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-purchases",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-cash",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/settings",
+   "403 GET /api/cash-sessions",
+   "403 GET /api/customers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-expenses",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/expenses",
+   "403 GET /api/expense-categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-customers",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/customers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-promotions",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/promotions/clearance-candidates",
+   "403 GET /api/promotions",
+   "403 GET /api/categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-reports",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/reportes",
+   "403 GET /api/reports/sales?from=2026-10-01&to=2026-10-26&page=1"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-alerts",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/alerts?status=new"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-incentives",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/incentives?month=2026-10",
+   "403 GET /api/incentives/rates"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-settings",
+  "ancho": 390,
+  "tema": "claro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/settings"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-cursos",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Nuevo curso Automaquillaje octubre Automaquillaje · 1 nov de 2026 2 / 12 inscritas · RD$ 6,500.00 Pagado RD$ 8,500.00 · Pendiente RD$ 4,500.00 Brazilian Glam Brazilian · 24 oct de 2026 0 / 8 inscritas · RD$ 9,000.00 Pagado RD$ 0.00 · Pendiente RD$ 0.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-cursos-390-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-curso-detalle",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes ← Cursos Editar curso Nueva inscripción Automaquillaje octubre Automaquillaje · 1 nov de 2026 · RD$ 6,500.00 · Cupo 12 CLIENTA TELÉFONO PRECIO PAGADO PENDIENTE ESTADO ASISTIÓ SET Lucía Méndez 8095550001 RD$ 6,500.00 RD$ 2,000.00 (RD$ 1,500.00 por verificar) RD$ 4,500.00 Activa — No Pago Editar Sofía Martínez RD$ 6,500.00 RD$ 6,500.00 RD$ 0.00 Activa — No Pago Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-curso-detalle-390-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-citas",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Estado Todas Agendada Realizada Cancelada Reembolsada Nueva cita Daniela Pérez 28 oct, 3:00 p. m. · Glam Génesis Total RD$ 4,500.00 · Pagado RD$ 1,000.00 Pendiente RD$ 3,500.00 Agendada Pago Editar Isabella Cruz 25 oct, 3:00 p. m. · Novia Maryori, Camila Total RD$ 12,000.00 · Pagado RD$ 0.00 Pendiente RD$ 12,000.00 Realizada Pago Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-citas-390-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-interesadas",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [
+   "FALLÓ POST /api/auth/refresh net::ERR_ABORTED"
+  ],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Estado Todas Por contactar Contactada Inscrita Descartada Nueva interesada Laura Santana Interés: Brazilian Contactada Editar Valentina Ramos 8095550002 Interés: Automaquillaje Por contactar Editar Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-interesadas-390-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-por-verificar",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Lucía Méndez · Automaquillaje octubre 26 oct de 2026 · RD$ 1,500.00 · Banreservas · Ref. QA-p2 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-por-verificar-390-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "gv-reportes",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [
+   "input"
+  ],
+  "axe": [],
+  "texto": "Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Desde Hasta Ingresos Verificado RD$ 9,500.00 · reembolsos RD$ 0.00 · neto RD$ 9,500.00 · por verificar RD$ 1,500.00 Por día 2026-10-25 1 RD$ 2,000.00 2026-10-26 1 RD$ 6,500.00 2026-10-27 1 RD$ 1,000.00 Por método Efectivo 3 RD$ 9,500.00 Por banco Sin banco 3 RD$ 9,500.00 Por empleada Valeria Rivera 3 RD$ 9,500.00 Ocupación y pendientes por curso CURSO INSCRITAS ASISTIERON SETS PAGADO PENDIENTE Automaquillaje octubre 1 nov de 2026 2 / 12 0 0 RD$ 8,500.00 RD$ 4,500.00 Brazilian Glam 24 oct de 2026 0 / 8 0 0 RD$ 0.00 RD$ 0.00 Pendientes por clienta Lucía Méndez 8095550001 Automaquillaje octubre RD$ 4,500.00 Daniela Pérez Cita · glam RD$ 3,500.00 Isabella Cruz Cita · novia RD$ 12,000.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/gv-reportes-390-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "menu-movil",
+  "ancho": 390,
+  "tema": "oscuro",
+  "consola": [],
+  "red": [],
+  "sensibles": [],
+  "excepciones": [],
+  "temaAplicado": "dark",
+  "titulo": "Cursos y cobros",
+  "hashFinal": "#gv",
+  "desborde": {
+   "scrollWidth": 390,
+   "clientWidth": 390,
+   "desborda": false,
+   "elementos": []
+  },
+  "nombresSinAccesible": [],
+  "focoSinIndicador": [],
+  "axe": [],
+  "texto": "n • nexoraPOS Tienda principal República Dominicana TU NEGOCIO GV Makeup Studio ✦ Ayuda para trabajar Consulta los pasos de venta y los atajos de tu caja. Ver ayuda Acerca de Mi tienda /GV Makeup Studio CG GV MAKEUP STUDIO Cursos y cobros Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta. Cursos Citas Interesadas Por verificar Reportes Desde Hasta Ingresos Verificado RD$ 9,500.00 · reembolsos RD$ 0.00 · neto RD$ 9,500.00 · por verificar RD$ 1,500.00 Por día 2026-10-25 1 RD$ 2,000.00 2026-10-26 1 RD$ 6,500.00 2026-10-27 1 RD$ 1,000.00 Por método Efectivo 3 RD$ 9,500.00 Por banco Sin banco 3 RD$ 9,500.00 Por empleada Valeria Rivera 3 RD$ 9,500.00 Ocupación y pendientes por curso CURSO INSCRITAS ASISTIERON SETS PAGADO PENDIENTE Automaquillaje octubre 1 nov de 2026 2 / 12 0 0 RD$ 8,500.00 RD$ 4,500.00 Brazilian Glam 24 oct de 2026 0 / 8 0 0 RD$ 0.00 RD$ 0.00 Pendientes por clienta Lucía Méndez 8095550001 Automaquillaje octubre RD$ 4,500.00 Daniela Pérez Cita · glam RD$ 3,500.00 Isabella Cruz Cita · novia RD$ 12,000.00 Nexora POS · Tu negocio, en movimiento. RD$ · ITBIS incluido · Documento interno",
+  "captura": "docs/qa/recorrido-26oct/gv/menu-movil-390-oscuro.png"
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-merchandise",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/goods-receipts",
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories",
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers",
+   "403 GET /api/merchandise/options",
+   "403 GET /api/merchandise/operations"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-dashboard",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-pos",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories",
+   "403 GET /api/customers",
+   "403 GET /api/cash-sessions",
+   "403 GET /api/promotions",
+   "403 GET /api/settings"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-sales",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/sales",
+   "403 GET /api/cash-sessions"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-void-requests",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/void-requests?status=pending"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-transfer-reconciliation",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-courier-payouts",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": []
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-products",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/products?limit=200&page=1",
+   "403 GET /api/categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-inventory",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/inventory/warehouses",
+   "403 GET /api/inventory/location-report",
+   "403 GET /api/inventory/transfers",
+   "403 GET /api/inventory/counts",
+   "403 GET /api/inventory/stock",
+   "403 GET /api/suppliers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-purchases",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/purchase-orders",
+   "403 GET /api/suppliers",
+   "403 GET /api/products?limit=200&page=1"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-cash",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/settings",
+   "403 GET /api/cash-sessions",
+   "403 GET /api/customers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-expenses",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/expenses",
+   "403 GET /api/expense-categories"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-customers",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/customers"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-promotions",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/promotions",
+   "403 GET /api/categories",
+   "403 GET /api/promotions/clearance-candidates"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-reports",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/reportes",
+   "403 GET /api/reports/sales?from=2026-10-01&to=2026-10-26&page=1"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-alerts",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/alerts?status=new"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-incentives",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/incentives?month=2026-10",
+   "403 GET /api/incentives/rates"
+  ]
+ },
+ {
+  "rol": "gv",
+  "pantalla": "prohibida-settings",
+  "ancho": 390,
+  "tema": "oscuro",
+  "hashFinal": "#gv",
+  "titulo": "Cursos y cobros",
+  "rechazada": true,
+  "red": [
+   "403 GET /api/settings"
+  ]
+ }
+]
