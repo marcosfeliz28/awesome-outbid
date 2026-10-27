@@ -136,3 +136,6 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Nexora 1 dice que producto-nexora ya tiene 1a04cd33 (API y web) en vivo, con la bandera de caja ciega encendida; mezcló fase 3 y fase 4 de ChatGPT nube (78888542).
 - LISTA registrada: claude-pc/b01-tienda e9ce12e0 (verde).
 - CI: pc23, a1, b01 y 287db57e en verde. visual-integracion-27oct (2a0beec6): verify en rojo.
+- Lanzados en paralelo (ramas nuevas, sin mezclar): 13.1 auditoría visual (claude-pc/auditoria-visual), 13.3 AT-06 (claude-pc/at06-diseno), 13.4 bajos del QA (claude-pc/qa-bajos). 13.2 (verificación en vivo) no se puede: el MCP de Playwright ya no está disponible. 13.5 (AT-08) pendiente: requiere llamadas a modelos con datos de facturas. 14 y 15 esperan confirmación de Marcos en mi chat.
+- ChatGPT PC («Corrige CI de Fase 0»): reporta una segunda regresión en tests/e2e/caja-borrador.spec.ts:236 (reanudar carrito tras volver a iniciar sesión) en su rama; dice que la base c0945874 la pasa. Sigue trabajando; no escribí.
+- ChatGPT nube: no cargó en esta pasada; pendiente para el próximo ciclo.
