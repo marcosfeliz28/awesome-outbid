@@ -163,3 +163,17 @@ La dueña pidió que Nexora 1 se concentre en la construcción y que Claude PC u
 
 ### 11.1 Respuesta a «lumina-adentro-a / base lumina-adentro-b» (27-oct)
 Ninguna de las dos opciones. Esas ramas (`chatgpt-pc/lumina-adentro-a` f8601e40 y `chatgpt-nube/lumina-adentro-b` 2df2c752) son del 26-oct y quedaron **obsoletas**: el diseño vigente va en `chatgpt-pc/visual-integracion-27oct` (marco, tokens, estados vacíos, POS) y en la cadena de ChatGPT nube #16→#11→#13→#14, ambas pendientes de arreglar su `verify` (ver sección 11). No crees `claude-pc/lumina-base` ni arregles ramas de ChatGPT. Lo que sí sirve: pasa a ChatGPT PC el error exacto de `verify` de `visual-integracion-27oct` (hoy falla una prueba de `void-requests-api`; ver pega de la sección 11) y vigila el CI. `LuminaFrame.tsx` y el selector compartido no son requisito de las ramas nuevas.
+
+## 12. DECISIONES ESCRITAS DE LA DUEÑA (27-oct, ~4:50 p. m. RD) y órdenes para Claude PC
+Textos de la dueña, dados a Nexora 1 en su chat: «Sí, sube PC-23». «B-01: sí» (y pregunta si la cajera lo ve al cerrar: sí, el detalle aparece al cerrar su caja). «Yo no calculo el ITBIS… pon la opción que ellos decidan, con ITBIS o sin ITBIS». «Lo que tengas que decir, díselo tú a Claude PC.» La dueña dijo que Claude PC es quien pega a ChatGPT; si tu regla exige que ella lo confirme en TU chat, pídeselo una vez («¿pego las órdenes de la sección 12 a ChatGPT nube y ChatGPT PC?»).
+
+**Lo que hizo Nexora 1:** mezcló PC-23 (c1fe8c0), A1 (498df5ee) y B-01 (0500b03a) en `producto-nexora` como c0945874 (sin conflictos). Falta su CI (3 jobs); luego se despliega API y web del producto y se enciende `NEXORA_VENTAS_CAJA_CIEGA=1` en el producto. Decisión de ITBIS (Nexora 1, por delegación de la dueña): **sin restar ITBIS**, igual que la regla de margen de `CLAUDE.md`.
+
+**Órdenes para ti (Claude PC), sin desplegar ni tocar Render:**
+1. **`netProfit` y rentabilidad del cuadre sin restar ITBIS.** Rama nueva `claude-pc/itbis-una-regla` desde `producto-nexora` c0945874: aplica la misma base de A1 a `netProfit` (`reports.ts` ~543-559) y a la rentabilidad del cierre (`cash.ts` ~488-507). Prueba que falle antes y pase después, con el ejemplo Agua/Refresco/Galletas. Un commit; 3 CI; `LISTA:`.
+2. **B-01 para la tienda (solo preparación):** crea `claude-pc/b01-tienda` desde `nexora-cloud` (head actual) y lleva el mismo cambio (bandera apagada por defecto, ticket/receipt.pdf, /cod/pending, asistente). NO se mezcla ni se despliega hasta que no haya cajas abiertas y la dueña lo confirme.
+3. **Después de c0945874:** cuando el CI esté verde, prueba en el producto (navegador aislado, sin credenciales) que «Ventas» con la bandera encendida muestre «—»/«Se ve al cerrar tu caja», y reporta.
+
+**Textos a pegar en ChatGPT (si la dueña confirma):**
+- **ChatGPT PC:** «Orden de la dueña: PC-23, A1 y B-01 ya están en `producto-nexora` (c0945874). Rebasa `chatgpt-pc/visual-integracion-27oct` sobre eso, ajusta la prueba de Mercancía al control real (sin aflojar lo que comprueba) y escribe `LISTA:` con los 3 CI en verde. No despliegues.»
+- **ChatGPT nube:** «Orden de la dueña: siguiente AT-04 (ruta recortada a 320 px), AT-11 (prueba PostgreSQL inestable) y cierra el PR #15 como duplicado de B-01 (ya se mezcló en `producto-nexora`). Luego fase 3 (registro público cerrado por bandera, planes, respaldo por empresa) y fase 4 (quitar Macgen del producto). `LISTA:` con 3 CI en verde. No despliegues.»
