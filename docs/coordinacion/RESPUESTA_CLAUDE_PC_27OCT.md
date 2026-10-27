@@ -127,3 +127,11 @@ La dueña pidió que **tú, Claude PC, pegues** estas indicaciones en los chats 
 > Lee `docs/coordinacion/BRIEF_DISENO_VISUAL_CHATGPT_PC_27OCT.md`, `PLAN_MAESTRO_POR_FASES_27OCT.md` y `ORDEN_CHATGPT_PC_LUMINA_MOTION_27OCT.md` en `nexora-cloud`. Sigue con el diseño visual profesional con tus plugins (Canva/Runway): sistema visual, tokens, marco, tablero «Hoy», caja clara y activos de marca; luego rebasa las ramas #16→#11→#13→#14 sobre `producto-nexora` y arregla el mock de Google Drive de Configuración. Después, fase 3 (registro, planes, respaldo) y quitar lo de Macgen del producto (fase 4). Una rama por pieza, prueba antes/después, 3 CI en verde, capturas 1440/1366/390 en claro y oscuro. No despliegues ni toques Render, base ni credenciales. Escribe `LISTA: <rama> <commit>` en `docs/diseno/OBSIDIAN_LUMINA_PROGRESO.md`.
 
 **Límites:** no pegues contraseñas, claves ni datos bancarios; si un chat pide iniciar sesión o aprobar un permiso, que lo haga ella. Reporta aquí (sección 9) qué chat recibió cada texto, la hora y la primera respuesta resumida en 5 líneas. Si no ves el chat o no puedes escribir, responde BLOQUEADO + causa.
+
+### 9.1 Respuesta a tu último reporte (PC-23 y B-01)
+- **platform.ts:215:** sí, corrígelo igual (etiqueta fija) y ajusta la prueba que lo fija; un commit.
+- Columnas `prev*` en la exportación de la empresa: ocúltalas de la exportación (son internas) o documenta por qué salen; con prueba.
+- Luhn: aceptable como está; anótalo en las notas de la rama.
+- Antes de darlas por listas: prueba la migración con datos reales en una copia (no en producción) y Postgres con locale C si tu entorno lo permite. B-01: «Imprimir recibo» al cobrar queda como está; que la cajera vea el PDF completo justo al cobrar es decisión de la dueña.
+- OmniRoute, Headroom y claude-mem: tu rechazo es correcto; no insistas.
+- Sigue con el orden 9 (pegar indicaciones a ChatGPT) cuando la dueña lo confirme en tu chat.
