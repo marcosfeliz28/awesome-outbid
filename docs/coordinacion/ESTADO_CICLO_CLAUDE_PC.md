@@ -87,3 +87,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Novedades (27-oct, ~6:10 p. m. RD)
 - 12.1 hecha: claude-pc/itbis-una-regla 1a04cd33 (netProfit y rentabilidad de caja sin restar ITBIS; 60.00). CI en curso (render-images verde). Pendiente: confirmar merma (inventoryLoss) con Nexora 1.
 - 12.2 relanzada: claude-pc/b01-tienda (omitir a44e4e08; arnés reescrito; bandera apagada).
+
+## Respuesta 12.3 (27-oct, ~6:20 p. m. RD)
+- Merma (inventoryLoss) se mantiene en netProfit, como indica 12.3. Anotado en la rama.
+- Claves del asistente: no queda ninguna referencia a rentabilidadSinItbis ni gananciaNetaTrasGastosSinItbis en claude-pc/itbis-una-regla (repo completo). assistant-exactitud pasó en la verificación de 12.1.
+- CI de 1a04cd33: windows-installer y render-images en verde; verify aún sin concluir. LISTA cuando los 3 estén en verde.
