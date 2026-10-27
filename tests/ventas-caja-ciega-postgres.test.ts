@@ -70,6 +70,18 @@ function pdfText(pdf: Buffer): string {
 const list = (actor: any) => sales.list(actor, {} as any) as Promise<any[]>;
 const byNumber = (rows: any[], n: string) =>
   rows.find((s: any) => s.number === n);
+// receipt.pdf de una venta; el texto sale de los streams de PDFKit.
+const receiptText = async (actor: any, number: string) => {
+  const s = await db.sale.findUniqueOrThrow({ where: { number } });
+  const res: any = new PassThrough();
+  res.setHeader = () => undefined;
+  const chunks: Buffer[] = [];
+  res.on("data", (c: Buffer) => chunks.push(c));
+  const end = new Promise((done) => res.on("end", done));
+  await sales.receipt(s.id, actor, res);
+  await end;
+  return pdfText(Buffer.concat(chunks));
+};
 const voids = (actor: any) =>
   sales.voidRequests("all", actor) as Promise<any[]>;
 
@@ -414,6 +426,27 @@ describe("Ventas con caja ciega (B-01)", () => {
       pending: 150,
       collected: 50,
     });
+    delete process.env[FLAG];
+  });
+
+  it("bandera APAGADA: receipt.pdf con importes, como siempre", async () => {
+    delete process.env[FLAG];
+    const text = await receiptText(cajera, "QA-2");
+    expect(text).toContain("123.45");
+    expect(text).toContain("Forma de pago");
+    expect(text).not.toContain("cerrar tu caja");
+  });
+
+  it("bandera ENCENDIDA: receipt.pdf de la caja abierta sale sin importes; la administradora y la caja cerrada, completos", async () => {
+    process.env[FLAG] = "1";
+    const blind = await receiptText(cajera, "QA-2");
+    expect(blind).toContain("QA-2");
+    expect(blind).toContain("cerrar tu caja");
+    expect(blind).not.toMatch(/123[.]45|Forma de pago|Subtotal|ITBIS|RD[$]/);
+    // Venta sin caja posterior a la apertura: también oculta.
+    expect(await receiptText(cajera, "QA-6")).not.toMatch(/77[.]77/);
+    expect(await receiptText(cajera, "QA-1")).toContain("321.45");
+    expect(await receiptText(admin, "QA-2")).toContain("123.45");
     delete process.env[FLAG];
   });
 
