@@ -140,4 +140,61 @@ describe("cartDraft · carrera entre el borrado y un guardado en cola", () => {
     expect([...rows.keys()]).toEqual(["cart-draft:u1"]);
     stop();
   });
+
+  it("recupera el carrito si el usuario vuelve a entrar antes de que termine el cierre", async () => {
+    const mod = await import("../apps/web/src/cartDraft");
+    const stop = mod.keepCartDraft();
+    const store = (await import("../apps/web/src/api")).useStore as any;
+    store.setState({});
+    await vi.advanceTimersByTimeAsync(0);
+    store.setState({ cart: [line] });
+
+    await mod.keepDraftThrough(async () => {
+      store.setState({ user: null, cart: [] });
+      rows.clear();
+      store.setState({ user: { id: "u1" }, cart: [] });
+      // Permite que la primera restauración observe la caché recién vaciada.
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.cart).toEqual([line]);
+    stop();
+  });
+
+  it("no muestra el borrador de otra persona durante un ingreso concurrente", async () => {
+    const mod = await import("../apps/web/src/cartDraft");
+    const stop = mod.keepCartDraft();
+    const store = (await import("../apps/web/src/api")).useStore as any;
+    store.setState({});
+    await vi.advanceTimersByTimeAsync(0);
+    store.setState({ cart: [line] });
+    await mod.keepDraftThrough(async () => {
+      store.setState({ user: null, cart: [] });
+      rows.clear();
+      store.setState({ user: { id: "u2" }, cart: [] });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(state.cart).toEqual([]);
+    expect(rows.has("cart-draft:u1")).toBe(true);
+    stop();
+  });
+
+  it("no sustituye un carrito nuevo al completar el cierre anterior", async () => {
+    const mod = await import("../apps/web/src/cartDraft");
+    const stop = mod.keepCartDraft();
+    const store = (await import("../apps/web/src/api")).useStore as any;
+    store.setState({});
+    await vi.advanceTimersByTimeAsync(0);
+    store.setState({ cart: [line] });
+    const fresh = { ...line, qty: 2 };
+    await mod.keepDraftThrough(async () => {
+      store.setState({ user: null, cart: [] });
+      rows.clear();
+      store.setState({ user: { id: "u1" }, cart: [] });
+      await vi.advanceTimersByTimeAsync(0);
+      store.setState({ cart: [fresh] });
+    });
+    expect(state.cart).toEqual([fresh]);
+    stop();
+  });
 });

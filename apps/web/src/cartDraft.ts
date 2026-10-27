@@ -125,7 +125,14 @@ export async function keepDraftThrough(close: () => Promise<void>) {
     ? await localDB.cache.get(draftKey(userId)).catch(() => undefined)
     : undefined;
   await close();
-  if (saved) await localDB.cache.put(saved).catch(() => {});
+  if (saved) {
+    await localDB.cache.put(saved).catch(() => {});
+    // El formulario puede aparecer antes de terminar la limpieza de caché.
+    // Si la misma persona ya volvió a entrar, su primera lectura pudo ocurrir
+    // antes de restaurar el borrador; repetirla nunca reemplaza un carrito nuevo.
+    if (userId && useStore.getState().user?.id === userId && owner === userId)
+      await restore(userId);
+  }
 }
 
 let owner: string | null = null;
