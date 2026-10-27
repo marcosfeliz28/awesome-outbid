@@ -24,6 +24,7 @@ const INTERNAL_COLUMNS = new Set([
   "PlatformPayment.prevPaidThroughAt",
   "PlatformPayment.prevPastDueAt",
   "PlatformPayment.prevSuspendedAt",
+  "PlatformPayment.operator",
 ]);
 const BATCH = 100;
 

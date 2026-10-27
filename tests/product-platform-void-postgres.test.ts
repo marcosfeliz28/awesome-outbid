@@ -160,7 +160,7 @@ describe("PC-23 · referencia única en la base (C)", () => {
 });
 
 describe("PC-23 · exportación de la empresa (D)", () => {
-  it("la exportación de la empresa no incluye el motivo interno de la anulación", async () => {
+  it("la exportación de la empresa no incluye el motivo interno de la anulación ni la etiqueta del operador", async () => {
     const created = await op("post", "/tenants", {
       businessName: "Piloto exporta", companyCode: "exporta-void", businessType: "retail", plan: "basico",
       adminName: "Dueña piloto", adminEmail: "exporta-void@example.invalid", operadora: "Ana Operadora",
@@ -180,6 +180,11 @@ describe("PC-23 · exportación de la empresa (D)", () => {
     // Las columnas prev* (estado previo para deshacer la anulación) son internas: ni JSON ni Excel.
     for (const column of ["prevStatus", "prevPaidThroughAt", "prevPastDueAt", "prevSuspendedAt"])
       expect(exported.body).not.toContain(column);
+    // La etiqueta del operador de la plataforma (PlatformPayment.operator) tampoco sale: ni columna ni valor.
+    const jsonPayments = JSON.parse(exported.body).tables.PlatformPayment as Record<string, unknown>[];
+    expect(jsonPayments.map(payment => payment.reference)).toContain("EXP-1");
+    for (const payment of jsonPayments) expect(payment).not.toHaveProperty("operator");
+    expect(JSON.stringify(jsonPayments)).not.toContain("dueña-nexora");
     const xlsx = await t.http.get("/api/tenant/export?format=xlsx").set("Authorization", `Bearer ${login.body.accessToken}`)
       .buffer(true).parse((res: any, cb: any) => { const parts: Buffer[] = []; res.on("data", (c: Buffer) => parts.push(c)); res.on("end", () => cb(null, Buffer.concat(parts))); });
     expect(xlsx.status).toBe(200);
@@ -188,6 +193,8 @@ describe("PC-23 · exportación de la empresa (D)", () => {
     const header = (workbook.getWorksheet("PlatformPayment")!.getRow(1).values as unknown[]).map(String);
     expect(header).toContain("reference");
     expect(header.filter(name => name.startsWith("prev"))).toEqual([]);
+    expect(header).not.toContain("operator");
+    expect(JSON.stringify(workbook.getWorksheet("PlatformPayment")!.getSheetValues())).not.toContain("dueña-nexora");
   });
 });
 
