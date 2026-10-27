@@ -123,7 +123,7 @@ export class PlatformBillingController {
         select: paymentSelect,
       });
       await tx.auditLog.create({ data: {
-        tenantId: tenant.id, userId: "plataforma:" + operator, action: "platform_payment", entity: "platform_payment", entityId: payment.id,
+        tenantId: tenant.id, userId: "plataforma", action: "platform_payment", entity: "platform_payment", entityId: payment.id,
         after: { amount: payment.amount.toString(), method: input.method, months, plan: tenant.plan, paidUntil: paidUntil.toISOString() },
       } });
       return { tenantId: tenant.id, payment, tenant: { slug: code, status: "active", paidUntil }, replayed: false };
@@ -186,7 +186,7 @@ export class PlatformBillingController {
           ? { paidThroughAt: from }
           : { status: tenant.status === "suspended" ? "suspended" : "past_due", paidThroughAt: from, pastDueAt: from };
       await tx.auditLog.create({ data: {
-        tenantId: tenant.id, userId: "plataforma:" + operator, action: "platform_payment_void", entity: "platform_payment", entityId: reversal.id,
+        tenantId: tenant.id, userId: "plataforma", action: "platform_payment_void", entity: "platform_payment", entityId: reversal.id,
         after: { voids: original.id, amount: original.amount.toString() },
       } });
       const updated = await tx.tenant.update({ where: { id: tenant.id }, data, select: { status: true, paidThroughAt: true } });

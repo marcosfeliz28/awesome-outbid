@@ -180,16 +180,29 @@ describe("PC-23 · referencia con aspecto de tarjeta (E)", () => {
 });
 
 describe("PC-23 · bitácora de auditoría", () => {
-  it("cada pago y cada anulación dejan una fila en AuditLog de la empresa", async () => {
-    const a = await tenant("audita-pago");
+  it("cada pago y cada anulación dejan una fila en AuditLog de la empresa, sin la etiqueta del operador", async () => {
+    const created = await op("post", "/tenants", {
+      businessName: "Piloto audita", companyCode: "audita-pago", businessType: "retail", plan: "basico",
+      adminName: "Dueña piloto", adminEmail: "audita-pago@example.invalid", operadora: "Ana Operadora",
+      acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" },
+    });
+    const password = "ClaveSegura-2026!";
+    const token = created.body.invitationUrl.split("#token=")[1];
+    expect((await t.http.post("/api/auth/accept-invitation").send({ token, password, managerPin: "869253", consentAccepted: true })).status).toBe(201);
+    const login = await t.http.post("/api/auth/login").set("x-tenant-id", "audita-pago").send({ login: "audita-pago@example.invalid", password });
     const paid = await pay("audita-pago", 1, "AUD-1");
     const again = await pay("audita-pago", 1, "AUD-1", paid.body.payment.operationId); // repetición: no duplica
     expect(again.status).toBe(201);
     await op("post", `/tenants/audita-pago/payments/${paid.body.payment.id}/void`, { reason: "Anotado por error" });
-    const rows = await t.q(`SELECT action, "userId", entity, "entityId", after FROM "AuditLog" WHERE "tenantId"=$1::uuid AND action LIKE 'platform_payment%' ORDER BY "createdAt"`, a.id);
+    const rows = await t.q(`SELECT action, "userId", entity, "entityId", after FROM "AuditLog" WHERE "tenantId"=$1::uuid AND action LIKE 'platform_payment%' ORDER BY "createdAt"`, created.body.id);
     expect(rows.map(r => r.action)).toEqual(["platform_payment", "platform_payment_void"]);
-    expect(rows[0]).toMatchObject({ userId: "plataforma:dueña-nexora", entity: "platform_payment", entityId: paid.body.payment.id });
+    expect(rows[0]).toMatchObject({ userId: "plataforma", entity: "platform_payment", entityId: paid.body.payment.id });
     expect(rows[0].after).toMatchObject({ amount: "2000", months: 1, method: "transfer" });
-    expect(rows[1].after).toEqual({ voids: paid.body.payment.id, amount: "2000" }) // el motivo es interno: la empresa exporta su AuditLog;
+    expect(rows[1].after).toEqual({ voids: paid.body.payment.id, amount: "2000" }); // el motivo es interno: la empresa exporta su AuditLog
+    // Lo que ve la administradora de la empresa no nombra al operador.
+    const seen = await t.http.get("/api/audit-log").set("Authorization", `Bearer ${login.body.accessToken}`);
+    expect(seen.status).toBe(200);
+    expect(seen.body.filter((r: any) => r.action.startsWith("platform_payment"))).toHaveLength(2);
+    expect(JSON.stringify(seen.body)).not.toContain("dueña-nexora");
   });
 });
