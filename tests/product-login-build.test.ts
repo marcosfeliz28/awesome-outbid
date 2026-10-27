@@ -29,6 +29,5 @@ describe("acceso separado para la tienda y el producto SaaS", () => {
     expect(publicRegistrationEnabled("required", undefined)).toBe(false);
     expect(publicRegistrationEnabled(undefined, "enabled")).toBe(false);
     expect(publicRegistrationEnabled("required", "enabled")).toBe(true);
-
   });
 });
