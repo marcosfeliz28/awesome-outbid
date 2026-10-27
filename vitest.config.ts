@@ -131,7 +131,7 @@ export default defineConfig({
       "tests/obsidian-lumina-f2.test.ts",
       "tests/visual-tokens.test.ts",
       "tests/visual-marco.test.ts",
-      "tests/visual-empty-assets.test.ts",
+      "apps/web/src/visual-empty-assets.test.ts",
       "tests/aud-gemini-ui.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
       "tests/reports-memory-postgres.test.ts",

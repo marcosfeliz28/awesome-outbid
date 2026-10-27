@@ -90,6 +90,7 @@ import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
 import { NcfSequenceSettings } from "./NcfSequenceSettings";
+import { EmptyIllustration } from "./EmptyIllustration";
 import {
   applyPendingSaleReprice,
   conflictHelp,
@@ -121,12 +122,14 @@ function DataTable({
   columns,
   empty = "Todavía no hay registros",
   emptyDescription = "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.",
+  emptyIllustration,
   cards = false,
 }: {
   rows: any[];
   columns: Column[];
   empty?: string;
   emptyDescription?: string;
+  emptyIllustration?: "inventario" | "reportes";
   /** En el celular cada fila es una tarjeta (sin desplazamiento horizontal). */
   cards?: boolean;
 }) {
@@ -190,7 +193,10 @@ function DataTable({
       )}
     </>
   ) : (
-    <Empty title={empty} description={emptyDescription} />
+    <div>
+      {emptyIllustration && <EmptyIllustration kind={emptyIllustration} />}
+      <Empty title={empty} description={emptyDescription} />
+    </div>
   );
 }
 function Heading({
@@ -949,6 +955,7 @@ export function Inventory() {
               cards
               rows={rows}
               empty="No encontramos artículos en el inventario"
+              emptyIllustration="inventario"
               emptyDescription="Revisa la búsqueda o registra una entrada de mercancía."
               columns={[
                 {
@@ -3203,6 +3210,7 @@ export function Reports() {
                   rows={rows}
                   columns={columns}
                   empty="No hay datos para este período"
+                  emptyIllustration="reportes"
                   emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
                 />
               </QueryState>
