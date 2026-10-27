@@ -129,6 +129,7 @@ export default defineConfig({
       "tests/retencion-seguridad-postgres.test.ts",
       "tests/accessibility-contract.test.ts",
       "tests/obsidian-lumina-f2.test.ts",
+      "tests/sistema-visual-contraste.test.ts",
       "tests/aud-gemini-ui.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
       "tests/reports-memory-postgres.test.ts",

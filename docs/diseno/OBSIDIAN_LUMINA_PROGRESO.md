@@ -279,3 +279,11 @@ prueba no tiene ventas); no son datos reales.
   oscuro; no se rediseñó.
 - La alerta del tablero solo ofrece «Revisar alertas» con `alerts:write`
   (comportamiento de C).
+# Sistema visual · 27-oct-2026
+
+Rama `chatgpt-pc/visual-sistema-27oct`: primera ficha de tokens existentes,
+pares de contraste medidos, componentes y límites, con 14 pruebas de contraste.
+La prueba sin la ficha falla por archivo ausente; con ella pasa. ESLint y build
+web pasan. Pendiente de CI, medición de contraste en pantalla y presupuesto de
+fuentes agregado. Canva no devolvió un kit de marca; se conservó la identidad V2.
+Las ramas interiores siguen bajo revisión por desbordes a 320 px.
