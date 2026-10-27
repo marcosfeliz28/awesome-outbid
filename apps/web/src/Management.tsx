@@ -3118,6 +3118,7 @@ export function Reports() {
                   <Button
                     variant="secondary"
                     key={format}
+                    disabled={inverted}
                     onClick={() =>
                       download(
                         `/reports/${report}?from=${from}&to=${to}&format=${format}`,
@@ -3163,7 +3164,11 @@ export function Reports() {
                   required
                 />
               </label>
-              <Badge tone="violet">{total} registros</Badge>
+              {inverted ? (
+                <Badge tone="danger">Corrige las fechas</Badge>
+              ) : (
+                <Badge tone="violet">{total} registros</Badge>
+              )}
             </div>
             {pages > 1 && (
               <div className="pagination">
@@ -4409,7 +4414,11 @@ export function Configuration() {
           title="Configuración"
           caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
         />
-        <div className="tabs outside">
+        <div
+          className="tabs outside"
+          role="group"
+          aria-label="Secciones de configuración"
+        >
         {[
           ["business", "Negocio y reglas"],
           ["users", "Usuarios y permisos"],
@@ -4417,7 +4426,9 @@ export function Configuration() {
           ["equipment", "Equipos"],
         ].map(([id, label]) => (
           <button
+            type="button"
             className={tab === id ? "active" : ""}
+            aria-pressed={tab === id}
             onClick={() => setTab(id)}
             key={id}
           >
