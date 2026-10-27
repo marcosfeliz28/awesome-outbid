@@ -643,20 +643,20 @@ export function Merchandise() {
         </div>
         <div
           className="goods-mode"
-          role="tablist"
+          role="group"
           aria-label="Tipo de movimiento"
         >
           <button
-            role="tab"
-            aria-selected={direction === "entry"}
+            type="button"
+            aria-pressed={direction === "entry"}
             className={direction === "entry" ? "active" : ""}
             onClick={() => switchTo("entry")}
           >
             <PackagePlus size={18} aria-hidden="true" /> ENTRADA
           </button>
           <button
-            role="tab"
-            aria-selected={direction === "exit"}
+            type="button"
+            aria-pressed={direction === "exit"}
             className={direction === "exit" ? "active exit" : ""}
             onClick={() => switchTo("exit")}
           >
