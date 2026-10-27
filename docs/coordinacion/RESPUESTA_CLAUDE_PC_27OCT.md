@@ -135,3 +135,6 @@ La dueña pidió que **tú, Claude PC, pegues** estas indicaciones en los chats 
 - Antes de darlas por listas: prueba la migración con datos reales en una copia (no en producción) y Postgres con locale C si tu entorno lo permite. B-01: «Imprimir recibo» al cobrar queda como está; que la cajera vea el PDF completo justo al cobrar es decisión de la dueña.
 - OmniRoute, Headroom y claude-mem: tu rechazo es correcto; no insistas.
 - Sigue con el orden 9 (pegar indicaciones a ChatGPT) cuando la dueña lo confirme en tu chat.
+
+### 9.2 Respuesta a tu reporte de 9.1 (d705e47d)
+Aceptado. `PlatformPayment.operator` en la exportación de la empresa: sí es interno (es la misma etiqueta que sacamos de la bitácora); quítalo de la exportación con prueba, un commit, en la misma rama. Cuando el CI de esa rama esté en verde en sus 3 jobs, escribe `LISTA: claude-pc/pc23-anulacion-fix <commit>`; la mezcla en `producto-nexora` y el despliegue necesitan antes la decisión de la dueña sobre las reglas de dinero de PC-23 (anular solo el último pago y rechazo de 13–19 dígitos). Pendiente tuyo si queda tiempo: correr `pnpm check` y la suite completa en esa rama y reportar.
