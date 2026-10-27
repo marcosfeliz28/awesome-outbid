@@ -92,3 +92,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Merma (inventoryLoss) se mantiene en netProfit, como indica 12.3. Anotado en la rama.
 - Claves del asistente: no queda ninguna referencia a rentabilidadSinItbis ni gananciaNetaTrasGastosSinItbis en claude-pc/itbis-una-regla (repo completo). assistant-exactitud pasó en la verificación de 12.1.
 - CI de 1a04cd33: windows-installer y render-images en verde; verify aún sin concluir. LISTA cuando los 3 estén en verde.
+
+## Ciclo 15 min (27-oct, ~6:35 p. m. RD)
+- RESPUESTA_CLAUDE_PC_27OCT.md: sin cambios (de494cab). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
+- CI: chatgpt-pc/visual-integracion-27oct a9bedbde en verde (LISTA registrada). Su rama avanzó a 2a0beec6 con verify en curso. claude-pc/itbis-una-regla (1a04cd33): verify en curso. pc23, a1, b01 en verde.
+- ChatGPT PC («Corrige CI de Fase 0», libre): publicó LISTA a9bedbde; dice que su regresión de mercancía y la de vendedoras quedaron arregladas. No escribí.
+- ChatGPT nube (libre): AT-04 y AT-11 cerrados con los tres CI en verde. Fase 3 y fase 4 siguen con dos de tres jobs en verde; verify en curso.
