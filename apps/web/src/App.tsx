@@ -44,7 +44,12 @@ import {
   ScanLine,
   Info,
   KeyRound,
-  Dumbbell, Footprints, Brush, GraduationCap, Pill, Shirt,
+  Dumbbell,
+  Footprints,
+  Brush,
+  GraduationCap,
+  Pill,
+  Shirt,
 } from "lucide-react";
 import {
   initialCompanyCode,
@@ -333,14 +338,44 @@ const LOGIN_GROUPS = [
 
 // El catálogo de la tienda se conserva solo en su modalidad propia.
 const LOGIN_CUBE = [
-  { face: "front", icon: Pill, title: "Suplementos", items: "Proteínas · Creatinas · Vitaminas" },
-  { face: "right", icon: Shirt, title: "Fajas", items: "Corsets · Chalecos · Cinturillas" },
-  { face: "back", icon: Footprints, title: "Tenis y ropa", items: "Tenis · Ropa deportiva" },
-  { face: "left", icon: Dumbbell, title: "Accesorios", items: "Accesorios de gym" },
-  { face: "top", icon: Brush, title: "Maquillaje", items: "Bases · Correctores · Brochas", gv: true },
-  { face: "bottom", icon: GraduationCap,
+  {
+    face: "front",
+    icon: Pill,
+    title: "Suplementos",
+    items: "Proteínas · Creatinas · Vitaminas",
+  },
+  {
+    face: "right",
+    icon: Shirt,
+    title: "Fajas",
+    items: "Corsets · Chalecos · Cinturillas",
+  },
+  {
+    face: "back",
+    icon: Footprints,
+    title: "Tenis y ropa",
+    items: "Tenis · Ropa deportiva",
+  },
+  {
+    face: "left",
+    icon: Dumbbell,
+    title: "Accesorios",
+    items: "Accesorios de gym",
+  },
+  {
+    face: "top",
+    icon: Brush,
+    title: "Maquillaje",
+    items: "Bases · Correctores · Brochas",
+    gv: true,
+  },
+  {
+    face: "bottom",
+    icon: GraduationCap,
     title: "GV Makeup Studio",
-    items: "Cursos · Servicios · Productos", gv: true },
+    items: "Cursos · Servicios · Productos",
+    gv: true,
+  },
 ];
 
 function Login() {
@@ -372,7 +407,9 @@ function Login() {
     setPassword((p) => (/^\d{0,5}$/.test(p) ? p + d : p));
   return (
     <div
-      className={PRODUCT_TENANCY_REQUIRED ? "login-page" : "login-page login-store"}
+      className={
+        PRODUCT_TENANCY_REQUIRED ? "login-page" : "login-page login-store"
+      }
       ref={page}
       onPointerMove={(e) => {
         if (moved.current) return;
@@ -393,75 +430,116 @@ function Login() {
           <div>
             <span className="login-wordmark">NEXORA</span>
             <span className="login-chip">POS</span>
-            {!PRODUCT_TENANCY_REQUIRED && <p>Punto de venta, inventario y caja</p>}
+            {!PRODUCT_TENANCY_REQUIRED && (
+              <p>Punto de venta, inventario y caja</p>
+            )}
           </div>
         </div>
         <span className="login-laser" aria-hidden="true" />
       </header>
       <main className="login-main">
-        {PRODUCT_TENANCY_REQUIRED ? <section className="login-art" aria-label="Qué hace Nexora POS">
-          <span className="eyebrow light">NEXORA POS</span>
-          <h1>
-            <span>Todo bajo control.</span>
-          </h1>
-          <p>Vende. Controla. Crece.</p>
-          <ul className="login-stats">
-            <li>
-              <small>Vende</small>
-              <strong>Caja ágil</strong>
-              <span>Cobros y turnos</span>
-            </li>
-            <li>
-              <small>Controla</small>
-              <strong>Inventario claro</strong>
-              <span>Entradas y existencias</span>
-            </li>
-            <li>
-              <small>Decide</small>
-              <strong>Datos útiles</strong>
-              <span>Reportes y alertas</span>
-            </li>
-          </ul>
-          <div className="login-stage">
-            <span className="login-prism-frame" aria-hidden="true">
+        {PRODUCT_TENANCY_REQUIRED ? (
+          <section className="login-art" aria-label="Qué hace Nexora POS">
+            <span className="eyebrow light">NEXORA POS</span>
+            <h1>
+              <span>Todo bajo control.</span>
+            </h1>
+            <p>Vende. Controla. Crece.</p>
+            <ul className="login-stats">
+              <li>
+                <small>Vende</small>
+                <strong>Caja ágil</strong>
+                <span>Cobros y turnos</span>
+              </li>
+              <li>
+                <small>Controla</small>
+                <strong>Inventario claro</strong>
+                <span>Entradas y existencias</span>
+              </li>
+              <li>
+                <small>Decide</small>
+                <strong>Datos útiles</strong>
+                <span>Reportes y alertas</span>
+              </li>
+            </ul>
+            <div className="login-stage">
+              <span className="login-prism-frame" aria-hidden="true">
+                <img
+                  src="/nexora-prisma-mark.webp"
+                  alt=""
+                  width="900"
+                  height="900"
+                  loading="lazy"
+                />
+                <span className="login-prism-scan" />
+              </span>
+              <ul className="login-faces">
+                {LOGIN_GROUPS.map(({ face, icon: Icon, title, items }) => (
+                  <li key={face}>
+                    <Icon aria-hidden="true" />
+                    <strong>{title}</strong>
+                    <small>{items}</small>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        ) : (
+          <section className="login-art" aria-label="Qué hace Nexora POS">
+            <span className="eyebrow light">
+              GRUPO MACGEN · GV MAKEUP STUDIO
+            </span>
+            <h1>
+              Fitness y belleza.
+              <br />
+              <span>Todo bajo control.</span>
+            </h1>
+            <p>
+              Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los
+              cursos y servicios de GV Makeup Studio, en un solo sistema.
+            </p>
+            <ul className="login-stats">
+              <li>
+                <small>Arqueo ciego</small>
+                <strong>Caja sin sesgo</strong>
+                <span>La cajera cuenta sin ver lo esperado</span>
+              </li>
+              <li>
+                <small>Margen</small>
+                <strong>Oculto a cajeras</strong>
+                <span>Solo lo ve quien administra</span>
+              </li>
+              <li>
+                <small>PIN rápido</small>
+                <strong>Cambio de turno</strong>
+                <span>Cada persona vende en su caja</span>
+              </li>
+              <li>
+                <small>Inventario</small>
+                <strong>Al día</strong>
+                <span>Entradas, salidas y traspasos</span>
+              </li>
+            </ul>
+            <div className="login-stage">
               <img
-                src="/nexora-prisma-mark.webp"
+                src="/nucleo-prisma.webp"
                 alt=""
-                width="900"
-                height="900"
+                width="480"
+                height="268"
                 loading="lazy"
               />
-              <span className="login-prism-scan" />
-            </span>
-            <ul className="login-faces">
-              {LOGIN_GROUPS.map(({ face, icon: Icon, title, items }) => (
-                <li key={face}>
-                  <Icon aria-hidden="true" />
-                  <strong>{title}</strong>
-                  <small>{items}</small>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section> : <section className="login-art" aria-label="Qué hace Nexora POS">
-          <span className="eyebrow light">GRUPO MACGEN · GV MAKEUP STUDIO</span>
-          <h1>Fitness y belleza.<br /><span>Todo bajo control.</span></h1>
-          <p>Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema.</p>
-          <ul className="login-stats">
-            <li><small>Arqueo ciego</small><strong>Caja sin sesgo</strong><span>La cajera cuenta sin ver lo esperado</span></li>
-            <li><small>Margen</small><strong>Oculto a cajeras</strong><span>Solo lo ve quien administra</span></li>
-            <li><small>PIN rápido</small><strong>Cambio de turno</strong><span>Cada persona vende en su caja</span></li>
-            <li><small>Inventario</small><strong>Al día</strong><span>Entradas, salidas y traspasos</span></li>
-          </ul>
-          <div className="login-stage">
-            <img src="/nucleo-prisma.webp" alt="" width="480" height="268" loading="lazy" />
-            <ul className="login-faces">
-              {LOGIN_CUBE.map(({ face, icon: Icon, title, items, gv }) => (
-                <li key={face} className={gv ? "gv" : undefined}><Icon aria-hidden="true" /><strong>{title}</strong><small>{items}</small></li>
-              ))}
-            </ul>
-          </div>
-        </section>}
+              <ul className="login-faces">
+                {LOGIN_CUBE.map(({ face, icon: Icon, title, items, gv }) => (
+                  <li key={face} className={gv ? "gv" : undefined}>
+                    <Icon aria-hidden="true" />
+                    <strong>{title}</strong>
+                    <small>{items}</small>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
         <div className="login-form-panel">
           <form
             className="login-vault"
@@ -1555,6 +1633,17 @@ function Shell() {
           />
           {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>
+        {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
+          <Assistant
+            key={`${user.id}:${user.branchId}`}
+            online={online}
+            request={
+              assistantRequest?.session === `${user.id}:${user.branchId}`
+                ? assistantRequest
+                : null
+            }
+          />
+        )}
         <footer className="app-footer">
           <span>Nexora POS · Tu negocio, en movimiento.</span>
           <span>RD$ · ITBIS incluido · Documento interno</span>
@@ -1670,17 +1759,6 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
-      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
-        <Assistant
-          key={`${user.id}:${user.branchId}`}
-          online={online}
-          request={
-            assistantRequest?.session === `${user.id}:${user.branchId}`
-              ? assistantRequest
-              : null
-          }
-        />
-      )}
       {ownPassword && (
         <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
       )}

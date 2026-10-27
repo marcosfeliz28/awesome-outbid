@@ -809,11 +809,13 @@ describe("IA · web: markdown seguro y botón sin tapar la barra", () => {
     );
     expect(html("| solo una fila |")).toBe("<p>| solo una fila |</p>");
   });
-  it("a 390px el botón sube sobre la barra de Mercancía y del POS", () => {
+  it("a 390px el botón queda sobre la barra móvil y el contenido conserva espacio seguro", () => {
     const css = readFileSync(resolve("apps/web/src/Assistant.css"), "utf8");
-    expect(css).toMatch(
-      /@media \(max-width: 900px\)[\s\S]*body:has\(\.goods-mobile-bar, \.pos-mobile-bar[^)]*\) \.assistant-launcher \{ bottom: calc\(88px/,
-    );
+    const app = readFileSync(resolve("apps/web/src/App.tsx"), "utf8");
+    expect(app).toContain("goods-mobile-bar");
+    const styles = readFileSync(resolve("apps/web/src/styles.css"), "utf8");
+    expect(styles).toMatch(/\.app-shell:has\(\.goods-mobile-bar\) \.main-content \{[\s\S]*padding-bottom: calc\(176px \+ env\(safe-area-inset-bottom\)\)/);
+    expect(css).toMatch(/body:has\(\.pos-mobile-bar, \.goods-mobile-bar,[^)]*\)[\s\S]*bottom: calc\(88px/);
   });
 });
 
