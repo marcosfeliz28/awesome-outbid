@@ -8079,8 +8079,9 @@ describe("Tienda · ajustes, contraentrega, cuadre y reportes", () => {
       differenceEur: 0,
       discounts: 50,
       total: 5990,
-      // Utilidad: (1,000 − 600) × 3 + (500 − 200) × 4 + (450 − 200) − (500 − 200) devuelto.
-      profit: 2350,
+      // Utilidad sin restar ITBIS: (1,000 − 600) × 3 + (500 − 200) × 4 + (450 − 200) − (500 − 200) devuelto.
+      // Antes, al restar el ITBIS, daba 2,350; ahora suma el ITBIS de las ventas y resta el devuelto: 2,890.
+      profit: 2890,
       openingAmount: 500,
     });
     // Desglose del punto 10 (lo que realmente entra en efectivo).
@@ -10127,13 +10128,10 @@ describe("Ronda 9 · auditoría de ChatGPT · R9-A02 cierre histórico intacto",
       refundMethod: "cash",
       items: [{ saleItemId: sale.items[0].id, qty: 1, restock: true }],
     });
+    // Rentabilidad con ITBIS incluido (misma base que el margen): total − costo.
     const adjustment =
-      Math.round(
-        (Number(returned.total) -
-          Number(returned.taxTotal) -
-          Number(returned.costTotal)) *
-          100,
-      ) / 100;
+      Math.round((Number(returned.total) - Number(returned.costTotal)) * 100) /
+      100;
     expect(adjustment).toBeGreaterThan(0);
     // El cierre de A queda como se aprobó...
     expect(await profitOf(a)).toBe(profitA);

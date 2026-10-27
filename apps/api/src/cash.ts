@@ -485,23 +485,18 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   const countedUsd = Number(details.countedUsd ?? 0);
   const countedEur = Number(details.countedEur ?? 0);
   const differenceUsd = money(d(countedUsd).minus(expectedUsd));
-  // Rentabilidad: ventas sin ITBIS menos costo, neto de las devoluciones que
-  // se registraron EN ESTA caja. Una devolución hecha después desde otra caja
-  // ajusta el cuadre de esa otra caja, con referencia a la venta original; el
-  // cierre ya aprobado no se reescribe (R9-A02).
+  // Rentabilidad: ventas con ITBIS menos costo (misma base que el margen), neto
+  // de las devoluciones que se registraron EN ESTA caja. Una devolución hecha
+  // después desde otra caja ajusta el cuadre de esa otra caja, con referencia a
+  // la venta original; el cierre ya aprobado no se reescribe (R9-A02).
   const showProfit = can(actor.permissions, "profit:read");
   const profit = showProfit
     ? money(
         completed
-          .reduce(
-            (a: any, s: any) =>
-              a.plus(s.total).minus(s.taxTotal).minus(s.costTotal),
-            d(0),
-          )
+          .reduce((a: any, s: any) => a.plus(s.total).minus(s.costTotal), d(0))
           .minus(
             returns.reduce(
-              (b: any, r: any) =>
-                b.plus(r.total).minus(r.taxTotal).minus(r.costTotal),
+              (b: any, r: any) => b.plus(r.total).minus(r.costTotal),
               d(0),
             ),
           ),

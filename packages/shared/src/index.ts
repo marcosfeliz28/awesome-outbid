@@ -531,12 +531,13 @@ export const margin = (price: Decimal.Value, cost: Decimal.Value) =>
   d(price).lte(0) ? 0 : money(d(price).minus(cost).div(price).times(100));
 export const markup = (price: number, cost: number) =>
   cost <= 0 ? 0 : money(d(price).minus(cost).div(cost).times(100));
+// Utilidad neta sobre ventas con ITBIS (la misma base del margen), sin restarlo.
 export const netProfit = (
-  net: number,
+  revenue: number,
   cost: number,
   expenses: number,
   fees = 0,
-) => money(d(net).minus(cost).minus(expenses).minus(fees));
+) => money(d(revenue).minus(cost).minus(expenses).minus(fees));
 export const breakEven = (fixedExpenses: number, marginPercent: number) =>
   marginPercent <= 0
     ? null

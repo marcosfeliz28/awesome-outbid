@@ -544,7 +544,7 @@ export class ReportsController {
         tax,
         costTotal: cost,
         // Ganancia bruta = ventas con ITBIS (netas de devoluciones) - costo, la
-        // misma base del margen (#8); netProfit sigue calculándose sobre net.
+        // misma base del margen (#8); netProfit usa esa misma base.
         grossProfit: money(d(revenue).minus(cost)),
         expenses: expense,
         // M-5: lo que salió del inventario sin venta también es pérdida.
@@ -553,7 +553,7 @@ export class ReportsController {
         supplierReturns,
         countCorrections,
         netProfit: money(
-          d(netProfit(net, cost, expense, fees)).minus(inventoryLoss),
+          d(netProfit(revenue, cost, expense, fees)).minus(inventoryLoss),
         ),
         // Margen de la dueña sobre lo cobrado, sin restar ITBIS (#8).
         margin: margin(revenue, cost),

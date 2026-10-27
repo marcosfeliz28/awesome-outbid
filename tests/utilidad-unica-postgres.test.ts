@@ -108,6 +108,30 @@ it("Utilidad por producto y Resumen dan 60.00 y 52.2 % sin restar ITBIS", async 
   );
   expect(summary.body.grossProfit).toBe(60);
   expect(Math.round(profit * 100) / 100).toBe(summary.body.grossProfit);
+  // Sin gastos ni comisiones, la utilidad neta es la misma base: ventas con ITBIS.
+  expect(summary.body.netProfit).toBe(60);
   expect(summary.body.margin).toBe(52.17);
   expect(margin(115, 55)).toBe(52.17);
+});
+
+it("la rentabilidad del cierre de caja usa la misma base: ventas con ITBIS − costo", async () => {
+  // La venta va a una caja cerrada de la administradora (la del arnés, SELLER).
+  const opened = new Date(Date.now() - 3_600_000);
+  const session = await t.db.cashSession.create({
+    data: {
+      tenantId: TENANT,
+      userId: SELLER,
+      openingAmount: 0,
+      openedAt: opened,
+      closedAt: new Date(),
+    },
+  });
+  await t.db.sale.update({
+    where: { id: SALE },
+    data: { cashSessionId: session.id },
+  });
+  const cuadre = await t.get(`/cash-sessions/${session.id}/cuadre`);
+  expect(cuadre.status, JSON.stringify(cuadre.body)).toBe(200);
+  const profit = cuadre.body.lines.find((l: any) => l.key === "profit");
+  expect(profit?.value).toBe(60);
 });

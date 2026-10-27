@@ -517,7 +517,7 @@ function cuadreRow(session: any, report: any) {
       : null;
   }
   if (has(num(lines.get("profit"))))
-    row.rentabilidadSinItbis = num(lines.get("profit"));
+    row.rentabilidad = num(lines.get("profit"));
   if (report?.descuadre)
     row.descuadre = {
       efectivo: report.descuadre.cash,
@@ -704,7 +704,7 @@ async function runTool(
               ...(has(s.fees) ? { comisionesTarjeta: s.fees } : {}),
               ...(has(s.expenses) ? { gastos: s.expenses } : {}),
               ...(has(s.netProfit)
-                ? { gananciaNetaTrasGastosSinItbis: s.netProfit }
+                ? { gananciaNetaTrasGastos: s.netProfit }
                 : {}),
             }
           : {}),
