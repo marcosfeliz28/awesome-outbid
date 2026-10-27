@@ -2820,6 +2820,26 @@ td strong {
   align-items: center;
   gap: 14px;
 }
+.login-brand-mark {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 12px;
+  isolation: isolate;
+  animation: login-mark-arrive 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.login-brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 37%, #ffffffb8 49%, #43e3b16b 52%, transparent 63%);
+  transform: translateX(-115%);
+  animation: login-mark-sheen 1.1s 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 .login-brand img {
   width: 44px;
   height: 44px;
@@ -2828,6 +2848,14 @@ td strong {
   background: #000;
   object-fit: cover;
   box-shadow: 0 0 22px #43e3b147, inset 0 0 12px #7c3aed40;
+}
+@keyframes login-mark-arrive {
+  from { opacity: 0; transform: translateY(5px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes login-mark-sheen {
+  from { transform: translateX(-115%); }
+  to { transform: translateX(115%); }
 }
 .login-wordmark {
   font-family: "Plus Jakarta Sans", "Inter", sans-serif;
@@ -2965,14 +2993,45 @@ td strong {
   padding: 16px;
   border-radius: 24px;
 }
-.login-stage > img {
+.login-prism-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  border: 1px solid #ffffff26;
+  background: #000;
+  isolation: isolate;
+}
+.login-prism-frame img {
+  display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  border-radius: 14px;
-  border: 1px solid #ffffff26;
-  background: #000;
+  animation: login-prism-enter 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.login-prism-scan {
+  position: absolute;
+  inset: -50%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(112deg, transparent 43%, #8b5cf659 48%, #43e3b199 50%, #7dd3fc4d 52%, transparent 57%);
+  transform: translateX(-68%);
+  mix-blend-mode: screen;
+  animation: login-prism-scan 1.8s 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes login-prism-enter {
+  from { opacity: 0; transform: scale(1.035); filter: saturate(0.65) brightness(0.7); }
+  to { opacity: 1; transform: scale(1); filter: none; }
+}
+@keyframes login-prism-scan {
+  0% { opacity: 0; transform: translateX(-68%); }
+  18% { opacity: 0.75; }
+  82% { opacity: 0.62; }
+  100% { opacity: 0; transform: translateX(68%); }
 }
 .login-faces {
   list-style: none;
@@ -3266,7 +3325,11 @@ td strong {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .login-laser {
+  .login-laser,
+  .login-brand-mark,
+  .login-brand-mark::after,
+  .login-prism-frame img,
+  .login-prism-scan {
     animation: none;
   }
   .login-vault .field,

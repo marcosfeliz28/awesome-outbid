@@ -415,7 +415,9 @@ function Login() {
       <div className="login-aurora" aria-hidden="true" />
       <header className="login-top">
         <div className="login-brand">
-          <img src="/emblema-prisma.webp" alt="" width="44" height="44" />
+          <span className="login-brand-mark" aria-hidden="true">
+            <img src="/emblema-prisma.webp" alt="" width="44" height="44" />
+          </span>
           <div>
             <span className="login-wordmark">NEXORA</span>
             <span className="login-chip">POS</span>
@@ -464,13 +466,16 @@ function Login() {
             </li>
           </ul>
           <div className="login-stage">
-            <img
-              src="/nucleo-prisma.webp"
-              alt=""
-              width="480"
-              height="268"
-              loading="lazy"
-            />
+            <span className="login-prism-frame" aria-hidden="true">
+              <img
+                src="/nucleo-prisma.webp"
+                alt=""
+                width="480"
+                height="268"
+                loading="lazy"
+              />
+              <span className="login-prism-scan" />
+            </span>
             <ul className="login-faces">
               {loginCube.map(({ face, icon: Icon, title, items, gv }) => (
                 <li key={face} className={gv ? "gv" : undefined}>
