@@ -218,3 +218,33 @@ for (const viewport of [
     });
   });
 }
+
+test("Mercancía móvil abre el asistente inline y recupera el foco", async ({
+  page,
+  context,
+}) => {
+  test.skip(
+    process.env.VITE_PRODUCT_TENANCY !== "required",
+    "El asistente solo se monta en el producto SaaS.",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() =>
+    localStorage.setItem("fitstore-theme", "dark"),
+  );
+  await mockApp(context);
+  await open(page, "merchandise");
+
+  const trigger = page.locator(".goods-assistant-inline");
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+
+  const dialog = page.getByRole("dialog", { name: "Pregúntale a Nexora" });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("heading", { name: "Pregúntale a Nexora" }),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "Cerrar asistente" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
