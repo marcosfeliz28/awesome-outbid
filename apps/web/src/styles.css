@@ -7635,7 +7635,7 @@ td strong {
   height: 1px;
   background: var(--lumina-laser);
   background-size: 220% 100%;
-  animation: lumina-laser 4.8s linear infinite;
+  animation: lumina-laser 4.8s linear 1 both;
 }
 .theme-selector {
   display: inline-flex;
