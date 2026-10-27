@@ -121,3 +121,6 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: claude-pc/b01-tienda e9ce12e0 con verify en curso. chatgpt-pc/visual-integracion-27oct 2a0beec6 con verify en rojo (a9bedbde sigue válida). pc23, a1, b01 y 287db57e en verde. Sin LISTA nueva.
 - ChatGPT nube (libre): sin cambios desde su resumen anterior (AT-04, AT-11, PR #15, fase 3 y fase 4 listas). No escribí.
 - ChatGPT PC («Corrige CI de Fase 0», libre): sin cambios (LISTA a9bedbde). No escribí.
+
+## Envío confirmado por Marcos (27-oct, 6:26 p. m. RD)
+- Enviado a «Corrige CI de Fase 0» (ChatGPT PC, libre antes de escribir) el mensaje sobre el verify rojo de visual-integracion-27oct en 2a0beec6. Respondió «Thinking». ChatGPT PC ya había reportado que trabajaba en ese commit.
