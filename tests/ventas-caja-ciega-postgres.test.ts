@@ -118,6 +118,17 @@ beforeAll(async () => {
   };
   await sale(1, OLD, 321.45);
   await sale(2, OPEN, 123.45);
+  // Sin caja asignada: una creada después de la apertura (rama createdAt >=
+  // openedAt) y otra anterior a ella.
+  await sale(6, null as any, 77.77);
+  await sale(7, null as any, 55.55);
+  await q(`UPDATE "Sale" SET "createdAt"=now()-interval '3 days' WHERE id=$1::uuid`, id(107));
+  // Solicitudes de anulación de la caja abierta y de la cerrada.
+  for (const [n, saleN] of [[1, 2], [2, 1]] as const)
+    await q(
+      `INSERT INTO "SaleVoidRequest" (id,"tenantId","saleId","requestedById","operationId","reasonCode",reason,"updatedAt") VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$1::uuid,'payment_error','Error al cobrar',now())`,
+      id(400 + n), TENANT, id(100 + saleN), cajera.user,
+    );
   // Ventas a crédito: en la caja abierta (100 en efectivo + 200 a crédito,
   // abono de 50 en efectivo a esa caja), en la caja vieja con un abono de 40 a
   // la caja abierta, y en la caja vieja con su propio abono (visible siempre).
@@ -215,6 +226,52 @@ describe("Ventas con caja ciega (B-01)", () => {
     expect(row("QA-5").collections).toHaveLength(1);
     const owner = await as(admin.user, admin.session)("/cod/pending");
     expect(owner.body.find((s: any) => s.number === "QA-3")).toMatchObject({ total: 300, pending: 150, collected: 50 });
+  });
+
+  it("bandera ENCENDIDA: venta sin caja creada tras la apertura queda oculta; la anterior no", async () => {
+    process.env[FLAG] = "1";
+    const r = await list(cajera);
+    expect(byNumber(r, "QA-6")).toMatchObject({ total: null, payments: [], hiddenUntilClose: true });
+    expect(Number(byNumber(r, "QA-7").total)).toBe(55.55);
+    expect(byNumber(r, "QA-7").hiddenUntilClose).toBeUndefined();
+  });
+
+  it("bandera ENCENDIDA: /void-requests oculta importes de la caja abierta", async () => {
+    process.env[FLAG] = "1";
+    const r = await as(cajera.user, cajera.session)("/void-requests");
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    const open = r.body.find((v: any) => v.sale.number === "QA-2").sale;
+    expect(open).toMatchObject({ total: null, payments: [], hiddenUntilClose: true });
+    expect(JSON.stringify(open)).not.toMatch(/123.45|"cash"/);
+    const old = r.body.find((v: any) => v.sale.number === "QA-1").sale;
+    expect(Number(old.total)).toBe(321.45);
+    expect(old.payments).toHaveLength(1);
+    const owner = await as(admin.user, admin.session)("/void-requests");
+    expect(Number(owner.body.find((v: any) => v.sale.number === "QA-2").sale.total)).toBe(123.45);
+  });
+
+  it("bandera APAGADA: misma forma de respuesta, sin hiddenUntilClose, en /sales, /cod/pending y /void-requests", async () => {
+    delete process.env[FLAG];
+    const keys = (o: any) => Object.keys(o).sort();
+    const sales = (await list(cajera)).body;
+    // Todas las ventas tienen las mismas llaves que una de la caja cerrada.
+    const baseKeys = keys(byNumber({ body: sales }, "QA-1"));
+    for (const n of ["QA-2", "QA-6"]) {
+      expect(keys(byNumber({ body: sales }, n)), n).toEqual(baseKeys);
+      expect(byNumber({ body: sales }, n).hiddenUntilClose).toBeUndefined();
+    }
+    expect(Number(byNumber({ body: sales }, "QA-6").total)).toBe(77.77);
+    const cod = (await as(cajera.user, cajera.session)("/cod/pending")).body;
+    const q3 = cod.find((s: any) => s.number === "QA-3");
+    expect(q3).toMatchObject({ total: 300, receivableAmount: 200, collected: 50, pending: 150 });
+    expect(q3.collections).toHaveLength(1);
+    expect(keys(q3)).toEqual(keys(cod.find((s: any) => s.number === "QA-5")));
+    expect(q3.hiddenUntilClose).toBeUndefined();
+    const vr = (await as(cajera.user, cajera.session)("/void-requests")).body;
+    const sale2 = vr.find((v: any) => v.sale.number === "QA-2").sale;
+    expect(Number(sale2.total)).toBe(123.45);
+    expect(sale2.hiddenUntilClose).toBeUndefined();
+    expect(keys(sale2)).toEqual(keys(vr.find((v: any) => v.sale.number === "QA-1").sale));
   });
 
   it("bandera ENCENDIDA: al cerrar la caja la cajera vuelve a ver los importes", async () => {
