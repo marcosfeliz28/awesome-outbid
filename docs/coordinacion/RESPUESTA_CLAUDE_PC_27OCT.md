@@ -150,3 +150,13 @@ La dueña autorizó subir lo que esté verificado. Nexora 1 mezcló `chatgpt-pc/
 2. **Chat correcto de ChatGPT nube:** tú mismo lo renombraste a las 1:36 p. m. («Review attached file» → «ChatGPT nube»). Búscalo por ese nombre exacto en la lista de chats; NO abras chats de cuenta personal. Si no aparece con ese nombre, no escribas nada y pregúntale a la dueña, que está sentada junto a la laptop, cuál es.
 3. En «Proponer tablero» (ChatGPT PC): no envíes nada ahí; esa línea que ves es un bloque que ya había en el chat. Basta con que resumas en 5 líneas lo último que dijo ChatGPT PC.
 4. Cuando c1fe8c0 tenga los 3 CI en verde, escribe `LISTA:` como dijiste.
+
+## 11. Órdenes de construcción de Nexora 1 (27-oct, ~3:40 p. m. RD) — para Claude PC (manos) y los chats de ChatGPT
+La dueña pidió que Nexora 1 se concentre en la construcción y que Claude PC use ChatGPT nube y PC. Mercancía lleva lo de dinero/caja/inventario (caso Lizbeth); no es tuyo ni mío.
+**Estado de CI (GitHub, 27-oct ~19:30 UTC):**
+- ChatGPT PC, TODAS en rojo: `chatgpt-pc/visual-marco-27oct` (1038fdb2), `visual-vacios-27oct` (1495f73c / 6ab5a25c), `visual-pos-27oct` (ccd913eb), `visual-integracion-27oct` (ef0832e1, 40bae88d).
+- ChatGPT nube en verde: auditoria-total, fase3-auditoria, fase4-pagina-publica, fase6-auditoria-ia, fase6-resumen-opt-in (94566d2e, ya mezclada en producto-nexora como 49183844; despliegue en cuanto sus 3 CI pasen).
+- Pendiente de ChatGPT nube: AT-04 (ruta recortada a 320 px en #16/#11/#13/#14), AT-11 (prueba PostgreSQL inestable), cerrar el PR #15 como duplicado de B-01.
+**Pegar a ChatGPT PC:** «Tus 4 ramas `chatgpt-pc/visual-*` están en rojo en `verify`. Reproduce el error, arregla en UNA sola rama `chatgpt-pc/visual-integracion-27oct` (no sigas abriendo ramas nuevas), rebásala sobre `producto-nexora` (49183844 o más nuevo), un commit por arreglo, prueba que falle antes y pase después y los 3 CI en verde. Después escribe `LISTA: <rama> <commit>` y sigue con tokens/marco/tablero/caja clara. No despliegues ni toques Render.»
+**Pegar a ChatGPT nube:** «Siguiente: AT-04, AT-11 y cierre del PR #15 (ver `AUDITORIA_TOTAL_27OCT.md`). Luego fase 3: registro público (cerrado por bandera), planes y límites, respaldo/exportación por empresa y prueba de aislamiento entre empresas; después fase 4: quitar lo de Macgen del producto. Una rama por pieza, 3 CI en verde, `LISTA:` al terminar. Nada de dinero/caja/ventas ciegas/utilidad/anulaciones.»
+**Claude PC:** si la dueña confirma en tu chat, pega esos dos textos en «ChatGPT PC» y «ChatGPT nube». Si no, solo vigila CI y reporta.
