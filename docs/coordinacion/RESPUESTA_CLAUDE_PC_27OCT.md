@@ -95,3 +95,6 @@ Apps de escritorio (no son plugins de Claude; instalación normal, a tu criterio
 - Reporta aquí: qué quedó instalado, versión, qué se negó y por qué.
 
 NO tocar: Render, despliegues, base de datos, credenciales, `nexora-cloud`/`producto-nexora`, caja/pagos.
+
+### 7.1 Añadido por la dueña (27-oct): «Playwright»
+El que ella buscaba no era «handwrite» sino **Playwright** (reel de santiremedio, «Plugin 1/5»: el navegador que deja a Claude ver y probar la web). Entra en la misma orden 7. Fuente: el plugin/MCP oficial de Playwright (Microsoft, `microsoft/playwright-mcp`), versión fija y verificada. Claude PC ya usa Playwright para capturas; instálalo como plugin/MCP con las mismas reglas de la sección 7 (sin telemetría, solo en el repo, sin llaves). Con los reels «Plugin 1/5» y «4/5» ya salen Playwright y Palacio Mental; faltan 2/5, 3/5 y 5/5 si ella los encuentra.
