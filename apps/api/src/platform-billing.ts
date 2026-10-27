@@ -74,7 +74,10 @@ export class PlatformBillingController {
         if (previousTenant !== tenant.id || Number(payment.amount) !== input.amount || payment.method !== input.method ||
           payment.months !== months || normalizeReference(payment.reference) !== normalizeReference(input.reference))
           throw new HttpException("Esa operación ya se registró con otros datos.", 409);
-        return { tenantId: tenant.id, payment, tenant: { slug: code, status: "active", paidUntil: payment.paidUntil }, replayed: true };
+        // Un pago anulado ya no es un cobro: repetirlo no debe parecer un éxito.
+        if (await tx.platformPayment.findFirst({ where: { voidsPaymentId: payment.id }, select: { id: true } }))
+          throw new HttpException("Esa operación corresponde a un pago ya anulado; registra el cobro con otra operación.", 409);
+        return { tenantId: tenant.id, payment, tenant: { slug: code, status: tenant.status, paidUntil: payment.paidUntil }, replayed: true };
       }
       const expected = expectedPayment(tenant.plan, months, !!input.year);
       if (expected === null) throw new HttpException("La empresa no tiene un plan con precio.", 409);

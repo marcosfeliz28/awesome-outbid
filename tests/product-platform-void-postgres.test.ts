@@ -98,3 +98,22 @@ describe("PC-23 · anular pago (A)", () => {
     expect((await voidPay("anula-empate", ids[1])).status).toBe(201);
   });
 });
+
+describe("PC-23 · repetir una operación (B)", () => {
+  it("repetir la operationId de un pago ya anulado da 409; si sigue vigente devuelve el estado real", async () => {
+    const a = await tenant("repite-op");
+    const operationId = randomUUID();
+    const paid = await pay("repite-op", 1, "REP-1", operationId);
+    expect(paid.status, JSON.stringify(paid.body)).toBe(201);
+    // Vigente pero la empresa ya venció: el estado que se informa es el real, no «active».
+    await t.q(`UPDATE "Tenant" SET status='past_due' WHERE id=$1::uuid`, a.id);
+    const again = await pay("repite-op", 1, "REP-1", operationId);
+    expect(again.status, JSON.stringify(again.body)).toBe(201);
+    expect(again.body.tenant.status).toBe("past_due");
+    await t.q(`UPDATE "Tenant" SET status='active' WHERE id=$1::uuid`, a.id);
+    expect((await voidPay("repite-op", paid.body.payment.id)).status).toBe(201);
+    const replay = await pay("repite-op", 1, "REP-1", operationId);
+    expect(replay.status, JSON.stringify(replay.body)).toBe(409);
+    expect(replay.body.message).toMatch(/anulad/);
+  });
+});
