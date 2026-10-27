@@ -3288,6 +3288,11 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
   );
 }
 
+// B-01: con la bandera de caja ciega la API manda los importes en null.
+const HIDDEN_AMOUNT = "—";
+const saleMoney = (s: any, value: unknown) =>
+  s.hiddenUntilClose ? HIDDEN_AMOUNT : formatMoney(value as any);
+
 export function SalesHistory() {
   const user = useStore((s) => s.user)!;
   const [selected, setSelected] = useState<any>(null),
@@ -3373,15 +3378,17 @@ export function SalesHistory() {
                   </>
                 ),
               },
-              { label: "Total", render: (s) => formatMoney(s.total) },
+              { label: "Total", render: (s) => saleMoney(s, s.total) },
               {
                 label: "Saldo pendiente",
-                render: (s) => formatMoney(s.creditBalance ?? 0),
+                render: (s) => saleMoney(s, s.creditBalance ?? 0),
               },
               {
                 label: "Pagos",
                 render: (s) =>
-                  s.payments
+                  s.hiddenUntilClose
+                    ? "Se ve al cerrar tu caja"
+                    : s.payments
                     .map(
                       (p: any) =>
                         paymentOptions.find((o) => o.value === p.method)?.label,
@@ -3566,10 +3573,14 @@ export function SalesHistory() {
                 },
                 { label: "Cantidad", render: (i) => i.qty },
                 { label: "Devuelta", render: (i) => i.returnedQty },
-                { label: "Total", render: (i) => formatMoney(i.lineTotal) },
+                {
+                  label: "Total",
+                  render: (i) => saleMoney(selected, i.lineTotal),
+                },
               ]}
             />
             <h3>Pagos registrados</h3>
+            {selected.hiddenUntilClose && <p>Se ve al cerrar tu caja.</p>}
             {Number(selected.discountTotal) > 0 && (
               <p>
                 Descuento: {formatMoney(selected.discountTotal)} · Motivo:{" "}
@@ -3683,7 +3694,7 @@ export function SalesHistory() {
                 </div>
               </div>
             ))}
-            <h3>Total {formatMoney(selected.total)}</h3>
+            <h3>Total {saleMoney(selected, selected.total)}</h3>
           </>
         )}
       </Modal>
