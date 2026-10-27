@@ -130,3 +130,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23, a1, b01 y 287db57e en verde. claude-pc/b01-tienda (e9ce12e0): verify en curso. chatgpt-pc/visual-integracion-27oct (2a0beec6): verify en rojo. Sin LISTA nueva.
 - ChatGPT PC («Corrige CI de Fase 0», libre, respondió a mi mensaje): dice que el fallo es una regresión suya en Mercancía (tests/e2e/store.spec.ts:903 espera un botón «SALIDA» como pestaña) y que lo ajusta al control real (role group + aria-pressed). No escribí más.
 - ChatGPT nube (libre): última LISTA chatgpt-nube/fase4-marca-producto 1b2c2318 (verde). Sin cambios desde su resumen anterior. No escribí.
+
+## Ciclo 15 min (27-oct, ~7:45 p. m. RD) · orden 13
+- RESPUESTA_CLAUDE_PC_27OCT.md: CAMBIÓ a b017e012 (secciones 13, 14 y 15). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
+- Nexora 1 dice que producto-nexora ya tiene 1a04cd33 (API y web) en vivo, con la bandera de caja ciega encendida; mezcló fase 3 y fase 4 de ChatGPT nube (78888542).
+- LISTA registrada: claude-pc/b01-tienda e9ce12e0 (verde).
+- CI: pc23, a1, b01 y 287db57e en verde. visual-integracion-27oct (2a0beec6): verify en rojo.
