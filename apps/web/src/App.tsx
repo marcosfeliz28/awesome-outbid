@@ -1545,6 +1545,17 @@ function Shell() {
             )}
           </div>
         </header>
+        {assistantAvailable && (
+          <Assistant
+            key={`${user.id}:${user.branchId}`}
+            online={online}
+            request={
+              assistantRequest?.session === `${user.id}:${user.branchId}`
+                ? assistantRequest
+                : null
+            }
+          />
+        )}
         <main
           id="main-content"
           tabIndex={-1}
@@ -1686,17 +1697,6 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
-      {assistantAvailable && (
-        <Assistant
-          key={`${user.id}:${user.branchId}`}
-          online={online}
-          request={
-            assistantRequest?.session === `${user.id}:${user.branchId}`
-              ? assistantRequest
-              : null
-          }
-        />
-      )}
       {ownPassword && (
         <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
       )}

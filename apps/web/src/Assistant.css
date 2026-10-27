@@ -355,6 +355,12 @@ button.assistant-launcher.assistant-launcher {
 /* En celular el botón sube por encima de las barras fijas de abajo
    (Mercancía, cobro del POS) para no taparlas. */
 @media (max-width: 900px) {
+  /* En caja el acceso forma parte del contenido, sin tapar controles al desplazarse. */
+  .pos-shell .assistant-launcher {
+    position: static;
+    display: block;
+    margin: 12px 16px 0 auto;
+  }
   /* prettier-ignore -- la prueba de contrato reconoce este selector literal. */
   body:has(.goods-mobile-bar, .pos-mobile-bar, .goods-actions.has-items)
     .assistant-launcher {
