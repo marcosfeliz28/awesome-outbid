@@ -204,6 +204,40 @@ beforeAll(async () => {
       },
     });
 
+  // Ventas a crédito: QA-3 en la caja abierta (100 en efectivo y 200 a crédito,
+  // con un abono de 50 a esa caja); QA-4 en la caja vieja con un abono de 40 a
+  // la abierta; QA-5 en la caja vieja con su propio abono.
+  const credit = (n: number, session: string, total: number, balance: number) =>
+    db.sale.create({
+      data: {
+        number: "QA-" + n,
+        offlineUuid: randomUUID(),
+        sellerId: cajera.id,
+        cashSessionId: session,
+        subtotal: total,
+        discountTotal: 0,
+        taxTotal: 0,
+        total,
+        costTotal: 1,
+        creditBalance: balance,
+        receivableKind: "credit",
+      },
+    });
+  const pay = (saleId: string, session: string, entryType: string, method: string, amount: number) =>
+    db.payment.create({
+      data: { saleId, cashSessionId: session, entryType, method, amount, tendered: amount },
+    });
+  const c3 = await credit(3, OPEN, 300, 150);
+  const c4 = await credit(4, OLD, 400, 360);
+  const c5 = await credit(5, OLD, 500, 450);
+  await pay(c3.id, OPEN, "sale", "credit", 200);
+  await pay(c3.id, OPEN, "sale", "cash", 100);
+  await pay(c3.id, OPEN, "installment", "cash", 50);
+  await pay(c4.id, OLD, "sale", "credit", 400);
+  await pay(c4.id, OPEN, "installment", "cash", 40);
+  await pay(c5.id, OLD, "sale", "credit", 500);
+  await pay(c5.id, OLD, "installment", "cash", 50);
+
   sales = new SalesController(db as any);
 }, 240_000);
 
@@ -338,6 +372,49 @@ describe("Ventas con caja ciega (B-01)", () => {
       total: null,
       refundAmount: null,
     });
+  });
+
+  it("bandera APAGADA: /cod/pending con la forma de siempre", async () => {
+    delete process.env[FLAG];
+    const rows = (await sales.codPending(cajera, "pending")) as any[];
+    const q3 = rows.find((r) => r.number === "QA-3");
+    expect(q3).toMatchObject({
+      total: 300,
+      receivableAmount: 200,
+      collected: 50,
+      pending: 150,
+    });
+    expect(q3.collections).toHaveLength(1);
+    expect(q3.hiddenUntilClose).toBeUndefined();
+  });
+
+  it("bandera ENCENDIDA: /cod/pending no entrega importes de la caja abierta", async () => {
+    process.env[FLAG] = "1";
+    const rows = (await sales.codPending(cajera, "pending")) as any[];
+    const row = (n: string) => rows.find((r) => r.number === n);
+    // QA-4 es de la caja vieja, pero tiene un abono a la caja abierta.
+    for (const n of ["QA-3", "QA-4"])
+      expect(row(n), n).toMatchObject({
+        hiddenUntilClose: true,
+        total: null,
+        codAmount: null,
+        receivableAmount: null,
+        collected: null,
+        pending: null,
+        pendingVerification: null,
+        collections: [],
+      });
+    // Una venta de la caja vieja con abono a la vieja sigue visible.
+    expect(row("QA-5")).toMatchObject({ total: 500, pending: 450, collected: 50 });
+    expect(row("QA-5").hiddenUntilClose).toBeUndefined();
+    expect(row("QA-5").collections).toHaveLength(1);
+    const owner = (await sales.codPending(admin, "pending")) as any[];
+    expect(owner.find((r) => r.number === "QA-3")).toMatchObject({
+      total: 300,
+      pending: 150,
+      collected: 50,
+    });
+    delete process.env[FLAG];
   });
 
   it("bandera ENCENDIDA: al cerrar la caja la cajera vuelve a ver los importes", async () => {
