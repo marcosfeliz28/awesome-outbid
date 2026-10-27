@@ -103,3 +103,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - claude-pc/b01-tienda (e9ce12e0), sobre nexora-cloud 86f599b3: 4 commits (ventas a ciegas, cod/pending, receipt.pdf, Management.tsx saleMoney). Bandera NEXORA_VENTAS_CAJA_CIEGA apagada por defecto. Asistente (a44e4e08) omitido por decisión. Arnés reescrito para el esquema de nexora-cloud.
 - Verificado: typecheck de api y web; suite unitaria 712/712 con Postgres local. No verificado: UI en navegador, integración.
 - CI: en curso (verify, render-images, windows-installer). LISTA cuando estén en verde.
+
+## Vigilancia (27-oct, ~7:00 p. m. RD)
+- chatgpt-pc/visual-integracion-27oct 2a0beec6 (commit nuevo, después de la LISTA a9bedbde): verify en ROJO; windows-installer y render-images en verde.
+- claude-pc/b01-tienda e9ce12e0: verify y windows-installer en curso; render-images en verde.
+- claude-pc/itbis-una-regla 1a04cd33: verify en curso; windows-installer y render-images en verde.
