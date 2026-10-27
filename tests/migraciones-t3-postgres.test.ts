@@ -110,6 +110,18 @@ beforeAll(async () => {
       A,
       `2026-01-0${n}`,
     );
+  // Pagos de plataforma anteriores a 202611040001: no tienen estado previo guardado.
+  await migrate("202611040001_pc23_payment_previous_state");
+  for (const [n, ref] of [
+    [80, "LEG-1"],
+    [81, "LEG-2"],
+  ] as const)
+    await q(
+      `INSERT INTO "PlatformPayment" (id,"tenantId",amount,method,reference,months,operator,"paidFrom","paidUntil") VALUES ($1::uuid,$2::uuid,2000,'transfer',$3,1,'op',now(),now()+interval '30 days')`,
+      id(n),
+      A,
+      ref,
+    );
   await migrate();
 }, 300_000);
 afterAll(async () => {
@@ -223,6 +235,27 @@ describe("migraciones nuevas sobre datos hostiles", () => {
       "PlatformPayment_void_reason",
       "PlatformPayment_voidsPaymentId_fkey",
       "payment_currency_valid",
+    ]);
+  });
+
+  it("pc23_payment_previous_state: los pagos anteriores siguen intactos, sin estado previo; anular usa la regla de respaldo", async () => {
+    const columns = await q(
+      `SELECT column_name FROM information_schema.columns WHERE table_name='PlatformPayment' AND column_name LIKE 'prev%' ORDER BY 1`,
+    );
+    expect(columns.map((c) => c.column_name)).toEqual([
+      "prevPaidThroughAt",
+      "prevPastDueAt",
+      "prevStatus",
+      "prevSuspendedAt",
+    ]);
+    const legacy = await q(
+      `SELECT reference, amount::text, "prevStatus", "prevPaidThroughAt", "prevPastDueAt", "prevSuspendedAt" FROM "PlatformPayment" WHERE id IN ($1::uuid,$2::uuid) ORDER BY reference`,
+      id(80),
+      id(81),
+    );
+    expect(legacy).toEqual([
+      { reference: "LEG-1", amount: "2000.00", prevStatus: null, prevPaidThroughAt: null, prevPastDueAt: null, prevSuspendedAt: null },
+      { reference: "LEG-2", amount: "2000.00", prevStatus: null, prevPaidThroughAt: null, prevPastDueAt: null, prevSuspendedAt: null },
     ]);
   });
 });
