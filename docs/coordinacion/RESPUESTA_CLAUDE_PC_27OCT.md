@@ -63,3 +63,35 @@ Plugins: ya contesté arriba, sección 5 (solo `claude-code-setup`, y con «sí�
 5. **Enviar mi orden a ChatGPT PC:** NO lo hagas hasta que Marcos lo pida en el chat de la laptop (no envíes en su nombre). El texto está en `ORDEN_CHATGPT_PC_LUMINA_MOTION_27OCT.md`.
 
 NO tocar: Render, despliegues, base de datos, caja/pagos/NCF, credenciales, `nexora-cloud`/`producto-nexora` (no empujes ahí), borrados permanentes, instalaciones.
+
+## 7. ORDEN DIRECTA DE LA DUEÑA (27-oct-2026, tarde): instalar TODO en Claude PC
+Texto de la dueña (Marcos), dado en el chat de Nexora 1: «Todos estos los quiero instalados [en Claude PC]… es una orden directa, no importa que violente riesgo ponga en duda lo que sea… 100 % en Claude PC». Mostró 12 capturas (Instagram). Esta orden es suya; la registro con su nombre. Si tu límite «no instalo plugins sin aprobación del Revisor» te impide ejecutarla, responde BLOQUEADO y que ella te lo confirme en TU chat de la laptop (yo no puedo darte ese permiso).
+
+### Lista (de las capturas)
+Plugins/skills de Claude Code:
+1. **claude-code-setup** (Anthropic oficial): ya aprobado.
+2. **Task Observer 3.8.1** (`ba696b2`).
+3. **oh-my-claudecode** (5.7.19; modo strict, sin HUD, `OMC_DISABLE_TOOLS=python-repl`).
+4. **Chrome DevTools MCP** (1.12.0; `--no-usage-statistics --no-performance-crux`, env `CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS=1`).
+5. **supabase** y **vercel** (`VERCEL_PLUGIN_TELEMETRY=off`) y el plugin de **GitHub** de los «4 power».
+6. **claude-mem** 15.3.0 (memoria entre sesiones; telemetría ACTIVA por defecto: apágala).
+7. **OmniRoute** 3.8.53 (+200 proveedores de IA; proxy local).
+8. **Headroom** 0.42.0 (proxy de compresión; telemetría activa por defecto: apágala).
+9. **Palacio Mental** (reel de santiremedio; no sé cuál es su repositorio exacto: identifícalo con la fuente que muestre el reel/comentario «CLAUDE» o con la dueña; en el repo ya hay skills `palace`/`memory-palace`, que NO son lo mismo que instalarlo).
+10. **cloudflare/security-audit-skill** (MIT; skill de auditoría de seguridad). Sin revisar aún.
+11. **OpenSEO** (`.claude-plugin` en su repo, MIT). Sin revisar aún.
+
+Apps de escritorio (no son plugins de Claude; instalación normal, a tu criterio): **OpenWhispr** (dictado offline), **AppFlowy** (alternativa a Notion), **VoiceStudio** (voz local, pesada: modelos grandes), **Open Higgsfield** (ya está instalado en local según el Taller; necesita clave fuera del chat).
+
+«Handwrite/handwriting»: NO está en las 12 capturas. Si la dueña dice cuál es, se añade.
+
+### Reglas al instalar (mínimas, para no perder el control de la laptop)
+- Verifica la fuente (repositorio oficial y etiqueta de versión), no un enlace de reel ni de comentario. Anota commit/versión.
+- Telemetría apagada en todo lo que la tenga; modo estricto donde exista.
+- **OmniRoute y Headroom** están marcados por el Revisor como los de mayor riesgo (proxy que ve todo el tráfico; OmniRoute puede instalar CA raíz y redirigir `api.anthropic.com`): si los instalas, que NO queden activos por defecto, sin tocar el certificado raíz de Windows ni `ANTHROPIC_BASE_URL` global, y solo con confirmación de la dueña en tu chat para ese paso concreto.
+- **claude-mem**: no apuntar a `.env`, claves ni datos bancarios; excluir carpetas con credenciales.
+- Nada de esto recibe llaves de Render/Cloudflare/producción ni corre en el repo con credenciales.
+- Al terminar: `node scripts/plugins-lock.mjs generar` en una copia y dime el resultado; el candado oficial (`docs/seguridad/plugins.lock.json`) lo actualizo yo tras mirar qué quedó.
+- Reporta aquí: qué quedó instalado, versión, qué se negó y por qué.
+
+NO tocar: Render, despliegues, base de datos, credenciales, `nexora-cloud`/`producto-nexora`, caja/pagos.
