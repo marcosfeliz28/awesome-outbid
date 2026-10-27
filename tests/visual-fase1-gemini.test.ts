@@ -25,7 +25,7 @@ describe("F1-02 · acciones móviles sin colisiones", () => {
   });
 });
 
-describe.skip("F1-03 · marca, acción primaria y moneda", () => {
+describe("F1-03 · marca, acción primaria y moneda", () => {
   it("usa la N transparente en el marco y formatea dinero de reportes", async () => {
     const app = read("apps/web/src/App.tsx");
     const styles = read("apps/web/src/styles.css");

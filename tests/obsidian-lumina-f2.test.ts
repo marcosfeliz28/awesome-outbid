@@ -103,10 +103,10 @@ describe("Obsidian Lumina · movimiento de marca", () => {
   });
 
   it("da protagonismo a la marca y condensa las funciones en tres grupos", () => {
-    expect(app).toContain('src="/nexora-prisma-mark.webp"');
+    expect(app).toContain('src="/nexora-prisma-transparent.webp"');
     expect(app.match(/title: "(Vende|Controla|Decide)"/g)).toHaveLength(3);
     expect(app).toContain("Vende. Controla. Crece.");
-    expect(app).toMatch(/PRODUCT_TENANCY_REQUIRED\s*\?[\s\S]*LOGIN_GROUPS\.map[\s\S]*:\s*<section[\s\S]*LOGIN_CUBE\.map/);
+    expect(app).toMatch(/PRODUCT_TENANCY_REQUIRED\s*\?[\s\S]*LOGIN_GROUPS\.map[\s\S]*:\s*\(?\s*<section[\s\S]*LOGIN_CUBE\.map/);
   });
 
   it("elimina todas las animaciones de marca cuando se reduce movimiento", () => {

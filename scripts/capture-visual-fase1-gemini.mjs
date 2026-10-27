@@ -1,4 +1,4 @@
-/* global URL, document, localStorage */
+/* global document, localStorage */
 import { chromium } from "@playwright/test";
 import { createServer } from "node:http";
 import { mkdir, readFile } from "node:fs/promises";

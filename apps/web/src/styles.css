@@ -552,24 +552,21 @@ kbd {
 .brand-icon {
   height: 35px;
   width: 35px;
-  border-radius: 11px;
-  background: #7c3aed;
-  color: #fff;
-  font-size: 33px;
-  line-height: 35px;
-  text-align: center;
-  font-style: italic;
-  position: relative;
-  letter-spacing: -3px;
-  padding-right: 5px;
-  box-shadow: 0 4px 10px #7c3aed20;
+  flex: 0 0 35px;
+  display: inline-grid;
+  place-items: center;
 }
-.brand-icon span {
-  color: #f9a8d4;
-  font-size: 22px;
-  position: absolute;
-  bottom: 1px;
-  right: 5px;
+.brand-icon img {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
+.report-number {
+  display: block;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .brand-pos {
   font-family: "Inter", sans-serif;

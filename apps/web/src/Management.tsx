@@ -90,6 +90,7 @@ import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
 import { NcfSequenceSettings } from "./NcfSequenceSettings";
+import { formatReportCell, isReportMoneyColumn } from "./report-format";
 import {
   applyPendingSaleReprice,
   conflictHelp,
@@ -3003,13 +3004,19 @@ export function Reports() {
   const pages = Math.max(1, Math.ceil(total / limit));
   const columns = Object.keys(rows[0] || {})
     .filter((k) => k !== "class")
-    .map((key) => ({
-      label: key.replace(/_/g, " "),
-      render: (row: any) =>
-        typeof row[key] === "number"
-          ? row[key].toLocaleString("es-DO", { maximumFractionDigits: 2 })
-          : String(row[key] ?? "—"),
-    }));
+    .map((key) => {
+      const money = isReportMoneyColumn(key);
+      return {
+        label: key.replace(/_/g, " "),
+        render: (row: any) => (
+          <span
+            className={money ? "report-number report-money" : undefined}
+          >
+            {formatReportCell(key, row[key])}
+          </span>
+        ),
+      };
+    });
   return (
     <>
       <Heading

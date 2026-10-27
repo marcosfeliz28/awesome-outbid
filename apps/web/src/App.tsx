@@ -425,7 +425,12 @@ function Login() {
       <header className="login-top">
         <div className="login-brand">
           <span className="login-brand-mark" aria-hidden="true">
-            <img src="/emblema-prisma.webp" alt="" width="44" height="44" />
+            <img
+              src="/nexora-prisma-transparent.webp"
+              alt=""
+              width="44"
+              height="44"
+            />
           </span>
           <div>
             <span className="login-wordmark">NEXORA</span>
@@ -465,10 +470,10 @@ function Login() {
             <div className="login-stage">
               <span className="login-prism-frame" aria-hidden="true">
                 <img
-                  src="/nexora-prisma-mark.webp"
+                  src="/nexora-prisma-transparent.webp"
                   alt=""
-                  width="900"
-                  height="900"
+                  width="840"
+                  height="840"
                   loading="lazy"
                 />
                 <span className="login-prism-scan" />
@@ -1385,9 +1390,14 @@ function Shell() {
         aria-hidden={mobile && !menu ? true : undefined}
       >
         <a className="brand" href="#dashboard">
-          <div className="brand-icon">
-            n<span>•</span>
-          </div>
+          <span className="brand-icon" aria-hidden="true">
+            <img
+              src="/nexora-prisma-transparent.webp"
+              alt=""
+              width="35"
+              height="35"
+            />
+          </span>
           <span>
             nexora<span className="brand-pos">POS</span>
           </span>
