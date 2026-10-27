@@ -6051,6 +6051,15 @@ td strong {
     flex: 1 1 auto;
     width: auto;
     min-width: 0;
+    white-space: normal;
+    text-align: center;
+  }
+  .pos-mobile-bar .pos-mobile-charge > svg {
+    flex-shrink: 0;
+  }
+  .pos-mobile-bar .pos-mobile-charge > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   /* Dos clases: button:not(.button) quitaría el fondo y el borde. */
   .pos-mobile-bar .pos-mobile-cart {
