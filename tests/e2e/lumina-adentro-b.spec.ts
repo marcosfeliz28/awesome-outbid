@@ -49,11 +49,11 @@ const product = {
   ],
 };
 
-async function mockApp(context: BrowserContext) {
+async function mockApp(context: BrowserContext, sessionUser = user) {
   await context.route("**/api/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    if (path === "/api/auth/me") return route.fulfill({ json: user });
+    if (path === "/api/auth/me") return route.fulfill({ json: sessionUser });
     if (path === "/api/settings")
       return route.fulfill({
         json: {
@@ -130,6 +130,24 @@ async function mockApp(context: BrowserContext) {
           },
         ],
       });
+    if (path === "/api/sales")
+      return route.fulfill({
+        json: [
+          {
+            id: "sale-lumina",
+            number: "FS-LUMINA",
+            customerName: "Cliente móvil",
+            createdAt: "2026-10-27T10:00:00.000Z",
+            status: "completed",
+            total: 1450,
+            creditBalance: 0,
+            sellerId: sessionUser.id,
+            payments: [{ method: "cash" }],
+            returns: [],
+          },
+        ],
+      });
+    if (path === "/api/cash-sessions") return route.fulfill({ json: [] });
     if (path === "/api/reportes") return route.fulfill({ json: [] });
     if (path.startsWith("/api/reports/"))
       return route.fulfill({
@@ -167,6 +185,26 @@ async function mockApp(context: BrowserContext) {
       return route.fulfill({ json: { enabled: false, expiresAt: null } });
     if (path === "/api/onboarding")
       return route.fulfill({ json: { available: false } });
+    if (path === "/api/backups/status")
+      return route.fulfill({
+        json: {
+          configured: false,
+          missing: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
+          redirectUri: "https://example.invalid/api/backups/google/callback",
+          folderName: "Nexora POS respaldos",
+          connected: false,
+          needsReconnect: false,
+          account: null,
+          running: false,
+          lastRun: null,
+          lastSuccess: null,
+          consecutiveFailures: 0,
+          nextRunAt: null,
+          telegramAlerts: false,
+        },
+      });
+    if (path === "/api/survey/summary")
+      return route.fulfill({ json: { responses: 0, questions: [] } });
     if (path === "/api/events") return route.fulfill({ status: 503, body: "" });
     if (request.method() === "GET") return route.fulfill({ json: [] });
     return route.fulfill({
@@ -175,6 +213,106 @@ async function mockApp(context: BrowserContext) {
     });
   });
 }
+
+test("una ruta sin permiso redirige sin montar ni consultar esa pantalla", async ({
+  page,
+  context,
+}) => {
+  const requested: string[] = [];
+  context.on("request", (request) => requested.push(request.url()));
+  await mockApp(context, {
+    ...user,
+    role: "seller",
+    permissions: ["catalog:read"],
+  });
+  await open(page, "reports");
+  await expect(page).toHaveURL(/#products$/);
+  await expect(
+    page.getByRole("heading", { name: "Catálogo de productos" }),
+  ).toBeVisible();
+  expect(requested.some((url) => /\/api\/(reportes|reports\/)/.test(url))).toBe(
+    false,
+  );
+});
+
+test("Configuración prohibida redirige sin montar sus consultas", async ({
+  page,
+  context,
+}) => {
+  const requested: string[] = [];
+  context.on("request", (request) => requested.push(request.url()));
+  await mockApp(context, {
+    ...user,
+    role: "seller",
+    permissions: ["catalog:read"],
+  });
+  await open(page, "settings");
+  await expect(page).toHaveURL(/#products$/);
+  await expect(
+    page.getByRole("heading", { name: "Catálogo de productos" }),
+  ).toBeVisible();
+  expect(
+    requested.some((url) => /\/api\/(users|roles|audit-log)(?:\?|$)/.test(url)),
+  ).toBe(false);
+});
+
+test("una ruta permitida conserva query y una desconocida vuelve a la segura", async ({
+  page,
+  context,
+}) => {
+  await mockApp(context, {
+    ...user,
+    role: "seller",
+    permissions: ["catalog:read"],
+  });
+  await open(page, "products?estado=inactivos");
+  await expect(page).toHaveURL(/#products\?estado=inactivos$/);
+  await expect(
+    page.getByRole("heading", { name: "Catálogo de productos" }),
+  ).toBeVisible();
+
+  await open(page, "ruta-desconocida?origen=prueba");
+  await expect(page).toHaveURL(/#products$/);
+  await expect(
+    page.getByRole("heading", { name: "Catálogo de productos" }),
+  ).toBeVisible();
+});
+
+test("Ventas muestra total, pagos y solicitud de anulación a 390 px", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApp(context, {
+    ...user,
+    role: "seller",
+    permissions: ["sale:write"],
+  });
+  await open(page, "sales");
+  const card = page.locator("#main-content .table-cards tbody tr").first();
+  const total = card.locator('td[data-label="Total"]');
+  const payments = card.locator('td[data-label="Pagos"]');
+  const requestVoid = card.getByRole("button", {
+    name: "Solicitar anulación",
+  });
+  await expect(total).toContainText("RD$");
+  await expect(total).toContainText("1,450");
+  await expect(payments).toContainText("Efectivo");
+  await expect(requestVoid).toBeVisible();
+  for (const element of [total, payments, requestVoid]) {
+    const box = await element.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+    expect(box!.width).toBeGreaterThan(0);
+    expect(box!.height).toBeGreaterThan(0);
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
 
 async function open(page: Page, hash: string) {
   await page.addInitScript(
