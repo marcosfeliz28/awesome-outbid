@@ -1266,7 +1266,7 @@ function Shell() {
     incentives: <IncentivesPage />,
   };
   return (
-    <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
+    <div className={`app-shell ${safePage === "pos" ? "pos-shell" : ""}`}>
       <a
         className="skip-link"
         href="#main-content"
@@ -1289,8 +1289,8 @@ function Shell() {
       )}
       {can(user.permissions, "inventory:write") &&
         user.role !== "seller" &&
-        page !== "merchandise" &&
-        page !== "pos" && (
+        safePage !== "merchandise" &&
+        safePage !== "pos" && (
           <nav className="goods-mobile-bar">
             <Button onClick={() => go("merchandise")}>
               <Truck size={24} /> Mercancía
@@ -1329,13 +1329,13 @@ function Shell() {
           {allowed.map((n) => (
             <button
               key={n.id}
-              className={`nav-item ${page === n.id ? "active" : ""}`}
-              aria-current={page === n.id ? "page" : undefined}
+              className={`nav-item ${safePage === n.id ? "active" : ""}`}
+              aria-current={safePage === n.id ? "page" : undefined}
               onClick={() => go(n.id)}
             >
               <n.icon size={19} />
               <span>{n.label}</span>
-              {page === n.id && <span className="nav-dot" />}
+              {safePage === n.id && <span className="nav-dot" />}
             </button>
           ))}
         </nav>
@@ -1354,8 +1354,8 @@ function Shell() {
           </div>
           {can(user.permissions, "sale:manage") && (
             <button
-              className={`nav-item ${page === "settings" ? "active" : ""}`}
-              aria-current={page === "settings" ? "page" : undefined}
+              className={`nav-item ${safePage === "settings" ? "active" : ""}`}
+              aria-current={safePage === "settings" ? "page" : undefined}
               onClick={() => go("settings")}
             >
               <Settings size={19} />
@@ -1397,7 +1397,7 @@ function Shell() {
               Mi tienda <span>/</span>
               <strong>
                 {current?.label ||
-                  (page === "styles" ? "Guía de estilos" : "Configuración")}
+                  (safePage === "styles" ? "Guía de estilos" : "Configuración")}
               </strong>
             </span>
           </div>
@@ -1543,7 +1543,7 @@ function Shell() {
         <main
           id="main-content"
           tabIndex={-1}
-          className={`main-content ${page === "pos" ? "pos-content" : ""}`}
+          className={`main-content ${safePage === "pos" ? "pos-content" : ""}`}
         >
           {user.role === "support" && (
             <div className="support-mode-banner" role="status">

@@ -81,8 +81,9 @@ describe("Obsidian Lumina f2 · marco accesible", () => {
   });
   it("la caja conserva sus clases y selectores", () => {
     expect(app).toContain(
-      'main-content ${page === "pos" ? "pos-content" : ""}',
+      'main-content ${safePage === "pos" ? "pos-content" : ""}',
     );
+    expect(app).toContain('app-shell ${safePage === "pos" ? "pos-shell" : ""}');
   });
   it("el tablero ejecutivo tiene condición propia, sin el hook de B", () => {
     expect(app).toMatch(/executiveDashboard =\s+PRODUCT_TENANCY_REQUIRED &&/);
