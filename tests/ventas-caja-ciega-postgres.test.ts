@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
+import { inflateSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startProductApp, TENANT } from "./setup/product-pg-app";
 import { hideSaleAmounts } from "../apps/api/src/sales";
@@ -25,6 +26,30 @@ const cajera = { user: id(11), session: id(12) };
 const admin = { user: id(13), session: id(14) };
 const OLD = id(31);
 const OPEN = id(30);
+
+// PDFKit guarda el texto en hexadecimal dentro de streams Flate.
+function pdfText(pdf: Buffer): string {
+  const raw = pdf.toString("latin1");
+  const pieces: string[] = [];
+  for (const m of raw.matchAll(/stream\r?\n([\s\S]*?)\nendstream/g)) {
+    let c = Buffer.from(m[1], "latin1");
+    try { c = inflateSync(c); } catch { continue; }
+    for (const h of c.toString("latin1").matchAll(/<([0-9a-f]+)>/gi))
+      pieces.push(Buffer.from(h[1], "hex").toString("latin1"));
+  }
+  return pieces.join("");
+}
+const receipt = async (who: typeof cajera, saleN: number) => {
+  const r = await as(who.user, who.session)("/sales/" + id(100 + saleN) + "/receipt.pdf")
+    .buffer(true)
+    .parse((res: any, done: any) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (c: Buffer) => chunks.push(Buffer.from(c)));
+      res.on("end", () => done(null, Buffer.concat(chunks)));
+    });
+  expect(r.status).toBe(200);
+  return pdfText(r.body);
+};
 
 const list = async (who: typeof cajera) => {
   const r = await as(who.user, who.session)("/sales");
@@ -272,6 +297,23 @@ describe("Ventas con caja ciega (B-01)", () => {
     expect(Number(sale2.total)).toBe(123.45);
     expect(sale2.hiddenUntilClose).toBeUndefined();
     expect(keys(sale2)).toEqual(keys(vr.find((v: any) => v.sale.number === "QA-1").sale));
+  });
+
+  it("bandera ENCENDIDA: receipt.pdf de la caja abierta sale sin importes; la administradora y la caja cerrada, completos", async () => {
+    process.env[FLAG] = "1";
+    const blind = await receipt(cajera, 2);
+    expect(blind).toContain("QA-2");
+    expect(blind).toContain("cerrar tu caja");
+    expect(blind).not.toMatch(/123[.]45|130[.]45|Forma de pago|Subtotal|ITBIS|RD[$]/);
+    // Venta sin caja posterior a la apertura: también oculta.
+    expect(await receipt(cajera, 6)).not.toMatch(/77[.]77/);
+    expect(await receipt(cajera, 1)).toContain("321.45");
+    expect(await receipt(admin, 2)).toContain("123.45");
+    delete process.env[FLAG];
+    const off = await receipt(cajera, 2);
+    expect(off).toContain("123.45");
+    expect(off).toContain("Forma de pago");
+    expect(off).not.toContain("cerrar tu caja");
   });
 
   it("bandera ENCENDIDA: al cerrar la caja la cajera vuelve a ver los importes", async () => {

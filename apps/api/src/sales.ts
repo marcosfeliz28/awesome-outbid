@@ -144,7 +144,7 @@ const paymentSummary = (payment: any) => {
 // B-01 (caja ciega): bandera APAGADA por defecto (decisión de la dueña). Con
 // NEXORA_VENTAS_CAJA_CIEGA=1, quien no ve el esperado de caja y tiene caja
 // abierta no recibe importes de las ventas de esa caja: con la apertura podría
-// reconstruir el efectivo. El ticket (receipt.pdf) no cambia.
+// reconstruir el efectivo. receipt.pdf también va sin importes en ese alcance.
 export const blindSalesEnabled = () =>
   process.env.NEXORA_VENTAS_CAJA_CIEGA === "1";
 type BlindScope = { id: string; openedAt: Date } | null;
@@ -4623,7 +4623,15 @@ export class SalesController {
       `inline; filename="${sale.number}.pdf"`,
     );
     doc.pipe(res);
-    drawSaleReceipt(doc, { sale, business, customer, seller });
+    // B-01: con la bandera encendida, el recibo de la caja abierta sale sin
+    // importes (la venta recién cobrada se imprime en la caja con el POST).
+    drawSaleReceipt(doc, {
+      sale,
+      business,
+      customer,
+      seller,
+      hidden: inBlindScope(await blindSalesScope(this.db, actor), sale),
+    });
     doc.end();
   }
 }
