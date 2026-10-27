@@ -460,3 +460,10 @@ los valores efectivos anteriores. La prueba nueva falló antes: esperaba un
 accesibilidad y Lumina y ESLint pasaron; el build web también. La integración
 base tiene `verify` rojo por desbordes a 320 px: esta entrega no certifica que
 esos fallos estén corregidos. Capturas y CI del último SHA pendientes.
+# Marco Lumina · movimiento, 27-oct-2026
+
+En `chatgpt-pc/visual-marco-27oct` se ajusta la línea decorativa de la cabecera
+para que se anime una sola vez por carga y siga apagada con movimiento reducido.
+La prueba falló antes porque la animación era infinita y pasó después; pasan 56
+pruebas focales y ESLint. Este cambio no constituye el rediseño completo del
+marco: capturas, navegación accesible y CI aún pendientes de revisión.
