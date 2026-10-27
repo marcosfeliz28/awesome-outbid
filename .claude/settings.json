@@ -6,7 +6,7 @@
     "oh-my-claudecode@omc": true,
     "supabase@anthropic-plugin-directory": true,
     "vercel@anthropic-plugin-directory": true,
-    "task-observer@one-skill-to-rule-them-all": true
+    "task-observer@one-skill-to-rule-them-all": false
   },
   "extraKnownMarketplaces": {
     "ponytail": {
