@@ -148,3 +148,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - at04 integra limpio sobre producto. at11 integra limpio sola, pero choca con at04 en vitest.config.ts.
 - Enviado a ChatGPT nube (libre): integrar at11 sobre at04 resolviendo vitest.config.ts, y volver a correr los 3 CI. Respondió «Thinking». No mezclo en producto.
 - ChatGPT PC («Corrige CI de Fase 0»): ocupado, dice que la rama de visual-integracion fue actualizada y que su commit actual ya no es el de los CI verdes; comprueba la nueva versión. No le escribí. Pendiente cuando esté libre: el fallo de SALIDA/aria-pressed (auditoría 13.1) y rebasar sobre producto 78888542.
+
+## Chat nuevo en ChatGPT PC (27-oct, ~6:57 p. m. RD)
+- Abierto un chat nuevo dentro del proyecto ChatGPT PC (no el que está ocupado). Tarea: rama nueva chatgpt-pc/mercancia-salida-fix desde producto-nexora (78888542), alinear store.spec.ts (901-902) al control real de Mercancía (role=group + aria-pressed) sin aflojar aserciones. No toca visual-integracion-27oct. Respondió «Starting your task».
+- Pendiente: que el otro hilo («Corrige CI de Fase 0») termine su trabajo en visual-integracion-27oct antes de rebasarlo.
