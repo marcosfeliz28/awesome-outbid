@@ -4,3 +4,5 @@ LISTA: claude-pc/a1-formula-utilidad 498df5ee (verify, windows-installer, render
 LISTA: claude-pc/b01-ventas-caja-ciega 0500b03a (verify, windows-installer, render-images en verde; bandera apagada, nada se aplica sin la dueña)
 LISTA: chatgpt-pc/visual-integracion-27oct a9bedbde (verify, windows-installer y render-images en verde; verificado por Claude PC. La rama tiene un commit más nuevo, 2a0beec6, con verify en curso)
 LISTA: claude-pc/itbis-una-regla 1a04cd33 (verify, windows-installer y render-images en verde; netProfit y rentabilidad de caja sin restar ITBIS; merma se mantiene por 12.3)
+LISTA: chatgpt-nube/fase4-marca-producto 1b2c2318 (CI verificado por Claude PC: verify, windows-installer y render-images en verde; rama de ChatGPT nube)
+LISTA: chatgpt-nube/fase3 305fb0ab (CI verificado por Claude PC: verify, windows-installer y render-images en verde; rama de ChatGPT nube)

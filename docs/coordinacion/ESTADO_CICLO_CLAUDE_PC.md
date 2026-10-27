@@ -108,3 +108,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - chatgpt-pc/visual-integracion-27oct 2a0beec6 (commit nuevo, después de la LISTA a9bedbde): verify en ROJO; windows-installer y render-images en verde.
 - claude-pc/b01-tienda e9ce12e0: verify y windows-installer en curso; render-images en verde.
 - claude-pc/itbis-una-regla 1a04cd33: verify en curso; windows-installer y render-images en verde.
+
+## Ciclo 15 min (27-oct, ~7:20 p. m. RD)
+- RESPUESTA_CLAUDE_PC_27OCT.md: sin cambios (de494cab). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
+- LISTA nuevas registradas: claude-pc/itbis-una-regla 1a04cd33 (CI en verde), y, verificadas por mí, chatgpt-nube/fase4-marca-producto 1b2c2318 y chatgpt-nube/fase3 305fb0ab (CI en verde).
+- ChatGPT nube (libre): AT-04 (ruta a 320 px) y AT-11 (concurrencia PostgreSQL) cerrados; PR #15 cerrado como duplicado de B-01; fase 3 con registro aislado y planes; fase 4 marca fuera del producto compilado.
+- ChatGPT PC («Corrige CI de Fase 0», libre): LISTA visual-integracion-27oct a9bedbde (verde). Dice que corrigió regresiones de vendedoras y mercancía. No escribí.
+- Pendiente: claude-pc/b01-tienda e9ce12e0 con verify en curso. visual-integracion 2a0beec6 con verify en rojo (no la registré).
