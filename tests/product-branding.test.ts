@@ -29,25 +29,6 @@ const INTERNAL_IDENTIFIERS: RegExp[] = [
 const STORE_ONLY: { file: string; line: string; guard: RegExp; scope?: "file"; reason: string }[] = [
   {
     file: "apps/web/src/App.tsx",
-    line: 'title: "GV Makeup Studio",',
-    guard: /PRODUCT_TENANCY_REQUIRED\s*\?\s*productLoginFaces[\s\S]*:\s*LOGIN_CUBE/,
-    scope: "file",
-    reason: "cara de LOGIN_CUBE, solo usada en la rama de tienda de Login()",
-  },
-  {
-    file: "apps/web/src/App.tsx",
-    line: ': "GRUPO MACGEN · GV MAKEUP STUDIO"}',
-    guard: /PRODUCT_TENANCY_REQUIRED/,
-    reason: "rama falsa del ternario PRODUCT_TENANCY_REQUIRED (tienda)",
-  },
-  {
-    file: "apps/web/src/App.tsx",
-    line: ': "Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema."}',
-    guard: /PRODUCT_TENANCY_REQUIRED/,
-    reason: "rama falsa del ternario PRODUCT_TENANCY_REQUIRED (tienda)",
-  },
-  {
-    file: "apps/web/src/App.tsx",
     line: ': "BIENVENIDA · MACGEN & GV"}',
     guard: /PRODUCT_TENANCY_REQUIRED/,
     reason: "rama falsa del ternario PRODUCT_TENANCY_REQUIRED (tienda)",
