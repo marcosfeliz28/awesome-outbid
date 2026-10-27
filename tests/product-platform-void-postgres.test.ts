@@ -70,18 +70,38 @@ describe("PC-23 · anular pago (A)", () => {
     expect((await row(a.id)).paidThroughAt.toISOString()).toBe("2032-06-15T00:00:00.000Z");
   });
 
-  it("anular el pago de una empresa que ya había vencido no la deja «al día»", async () => {
+  it("anular el pago de una empresa suspendida devuelve su vencimiento y estado originales, sin gracia nueva", async () => {
     const a = await tenant("anula-vencido");
-    await t.q(`UPDATE "Tenant" SET status='suspended', "paidThroughAt"=now() - interval '40 days', "pastDueAt"=now() - interval '40 days', "suspendedAt"=now() WHERE id=$1::uuid`, a.id);
+    await t.q(`UPDATE "Tenant" SET status='suspended', "paidThroughAt"=now() - interval '40 days', "pastDueAt"=now() - interval '33 days', "suspendedAt"=now() - interval '10 days' WHERE id=$1::uuid`, a.id);
+    const before = await row(a.id);
     const paid = await pay("anula-vencido", 1, "VENCIDO-1");
     expect((await row(a.id)).status).toBe("active");
     const voided = await voidPay("anula-vencido", paid.body.payment.id);
     expect(voided.status, JSON.stringify(voided.body)).toBe(201);
-    const after = await row(a.id);
-    expect(after.status).toBe("past_due");
-    expect(after.paidThroughAt.toISOString()).toBe(paid.body.payment.paidFrom);
-    expect(after.paidThroughAt.getTime()).toBeLessThanOrEqual(Date.now());
-    expect(voided.body.tenant.status).toBe("past_due");
+    expect(await row(a.id)).toEqual(before);
+    expect(voided.body.tenant).toMatchObject({ status: "suspended", paidUntil: before.paidThroughAt.toISOString() });
+  });
+
+  it("anular el pago de una empresa en mora devuelve la mora original", async () => {
+    const a = await tenant("anula-mora");
+    await t.q(`UPDATE "Tenant" SET status='past_due', "paidThroughAt"=now() - interval '3 days', "pastDueAt"=now() - interval '3 days', "suspendedAt"=NULL WHERE id=$1::uuid`, a.id);
+    const before = await row(a.id);
+    const paid = await pay("anula-mora", 1, "MORA-1");
+    expect((await voidPay("anula-mora", paid.body.payment.id)).status).toBe(201);
+    expect(await row(a.id)).toEqual(before);
+  });
+
+  it("un pago anterior al registro del vencimiento previo (sin dato) deja la empresa vencida suspendida, no en mora con gracia", async () => {
+    const a = await tenant("anula-legado");
+    await t.q(`UPDATE "Tenant" SET status='active', "paidThroughAt"=now() - interval '5 days' + interval '30 days' WHERE id=$1::uuid`, a.id);
+    const id = randomUUID();
+    await t.q(
+      `INSERT INTO "PlatformPayment" (id,"tenantId",amount,method,reference,months,operator,"paidFrom","paidUntil")
+       VALUES ($1::uuid,$2::uuid,2000,'cash','LEGADO-1',1,'op', now() - interval '35 days', now() - interval '5 days')`, id, a.id);
+    await t.q(`UPDATE "Tenant" SET "paidThroughAt"=(SELECT "paidUntil" FROM "PlatformPayment" WHERE id=$2::uuid) WHERE id=$1::uuid`, a.id, id);
+    const voided = await voidPay("anula-legado", id);
+    expect(voided.status, JSON.stringify(voided.body)).toBe(201);
+    expect(await row(a.id)).toMatchObject({ status: "suspended" });
   });
 
   it("con dos pagos de igual vencimiento decide el id, no el orden de inserción", async () => {

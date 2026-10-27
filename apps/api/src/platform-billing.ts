@@ -61,7 +61,10 @@ const SQL_SPACE = "[\\t\\n\\v\\f\\r " + String.fromCharCode(160, 5760, 8192) + "
 /** 23505 del trigger de referencia única cuando la comprobación previa no lo vio: duplicado, no 500. */
 const isUniqueViolation = (e: any) => e?.code === "P2002" || e?.meta?.code === "23505" || /\b23505\b/.test(String(e?.message ?? ""));
 
-type TenantRow = { id: string; status: string; plan: string; trialEndsAt: Date | null; paidThroughAt: Date | null };
+type TenantRow = {
+  id: string; status: string; plan: string; trialEndsAt: Date | null;
+  paidThroughAt: Date | null; pastDueAt: Date | null; suspendedAt: Date | null;
+};
 const paymentSelect = {
   id: true, operationId: true, plan: true, amount: true, method: true, reference: true, months: true,
   operator: true, paidFrom: true, paidUntil: true, createdAt: true,
@@ -86,7 +89,7 @@ export class PlatformBillingController {
     const result = await this.registration.db.$transaction(async tx => {
       // FOR UPDATE: dos pagos simultáneos se suman, no se pisan.
       const [tenant] = await tx.$queryRaw<TenantRow[]>`
-        SELECT id, status, plan, "trialEndsAt", "paidThroughAt" FROM "Tenant" WHERE slug=${code} FOR UPDATE`;
+        SELECT id, status, plan, "trialEndsAt", "paidThroughAt", "pastDueAt", "suspendedAt" FROM "Tenant" WHERE slug=${code} FOR UPDATE`;
       if (!tenant) throw new HttpException("Empresa no encontrada.", 404);
       const previous = await tx.platformPayment.findUnique({ where: { operationId: input.operationId }, select: { ...paymentSelect, tenantId: true } });
       if (previous) {
@@ -125,7 +128,8 @@ export class PlatformBillingController {
         data: { status: "active", paidThroughAt: paidUntil, pastDueAt: null, suspendedAt: null },
       });
       const payment = await tx.platformPayment.create({
-        data: { tenantId: tenant.id, operationId: input.operationId, plan: tenant.plan, amount: input.amount.toFixed(2), method: input.method, reference: input.reference, months, operator, paidFrom, paidUntil },
+        data: { tenantId: tenant.id, operationId: input.operationId, plan: tenant.plan, amount: input.amount.toFixed(2), method: input.method, reference: input.reference, months, operator, paidFrom, paidUntil,
+          prevStatus: tenant.status, prevPaidThroughAt: tenant.paidThroughAt, prevPastDueAt: tenant.pastDueAt, prevSuspendedAt: tenant.suspendedAt },
         select: paymentSelect,
       });
       await tx.auditLog.create({ data: {
@@ -162,7 +166,7 @@ export class PlatformBillingController {
     const operator = process.env.PLATFORM_OPERATOR_LABEL?.trim().slice(0, 100) || "operador-plataforma";
     const result = await this.registration.db.$transaction(async tx => {
       const [tenant] = await tx.$queryRaw<TenantRow[]>`
-        SELECT id, status, plan, "trialEndsAt", "paidThroughAt" FROM "Tenant" WHERE slug=${code} FOR UPDATE`;
+        SELECT id, status, plan, "trialEndsAt", "paidThroughAt", "pastDueAt", "suspendedAt" FROM "Tenant" WHERE slug=${code} FOR UPDATE`;
       if (!tenant) throw new HttpException("Empresa no encontrada.", 404);
       const rows = await tx.platformPayment.findMany({ where: { tenantId: tenant.id } });
       const original = rows.find(r => r.id === id && !r.voidsPaymentId);
@@ -186,14 +190,17 @@ export class PlatformBillingController {
         },
         select: paymentSelect,
       });
-      // Pago de la prueba: vuelve a «prueba». Si lo restaurado ya pasó, queda en mora (o
-      // suspendida si lo estaba) y el ciclo de vida la sigue; si no, sigue activa.
+      // Se devuelve el estado y los vencimientos de justo antes del pago: una empresa que ya
+      // estaba vencida o suspendida no gana gracia nueva. Pagos sin ese dato (anteriores a
+      // 202611040001): la prueba vuelve a «prueba»; lo ya vencido queda suspendido.
       const from = original.paidFrom;
-      const data = tenant.trialEndsAt && from.getTime() === tenant.trialEndsAt.getTime()
-        ? { status: "trial", paidThroughAt: null, pastDueAt: null }
-        : from > new Date()
-          ? { paidThroughAt: from }
-          : { status: tenant.status === "suspended" ? "suspended" : "past_due", paidThroughAt: from, pastDueAt: from };
+      const data = original.prevStatus
+        ? { status: original.prevStatus, paidThroughAt: original.prevPaidThroughAt, pastDueAt: original.prevPastDueAt, suspendedAt: original.prevSuspendedAt }
+        : tenant.trialEndsAt && from.getTime() === tenant.trialEndsAt.getTime()
+          ? { status: "trial", paidThroughAt: null, pastDueAt: null }
+          : from > new Date()
+            ? { paidThroughAt: from }
+            : { status: "suspended", paidThroughAt: from, pastDueAt: from, suspendedAt: new Date() };
       await tx.auditLog.create({ data: {
         tenantId: tenant.id, userId: "plataforma", action: "platform_payment_void", entity: "platform_payment", entityId: reversal.id,
         after: { voids: original.id, amount: original.amount.toString() },

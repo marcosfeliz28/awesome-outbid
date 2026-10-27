@@ -1449,6 +1449,11 @@ model PlatformPayment {
   voidsPayment   PlatformPayment?  @relation("PaymentVoid", fields: [voidsPaymentId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   voidedBy       PlatformPayment[] @relation("PaymentVoid")
   voidReason     String?
+  // Estado de la empresa justo antes de este pago: la anulación lo devuelve tal cual (nulos en filas anteriores).
+  prevStatus        String?
+  prevPaidThroughAt DateTime?
+  prevPastDueAt     DateTime?
+  prevSuspendedAt   DateTime?
 
   @@index([tenantId, createdAt])
 }
