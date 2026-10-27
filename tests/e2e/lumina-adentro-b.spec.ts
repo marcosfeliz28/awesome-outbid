@@ -49,11 +49,11 @@ const product = {
   ],
 };
 
-async function mockApp(context: BrowserContext) {
+async function mockApp(context: BrowserContext, sessionUser = user) {
   await context.route("**/api/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    if (path === "/api/auth/me") return route.fulfill({ json: user });
+    if (path === "/api/auth/me") return route.fulfill({ json: sessionUser });
     if (path === "/api/settings")
       return route.fulfill({
         json: {
@@ -175,6 +175,27 @@ async function mockApp(context: BrowserContext) {
     });
   });
 }
+
+test("una ruta sin permiso redirige sin montar ni consultar esa pantalla", async ({
+  page,
+  context,
+}) => {
+  const requested: string[] = [];
+  context.on("request", (request) => requested.push(request.url()));
+  await mockApp(context, {
+    ...user,
+    role: "seller",
+    permissions: ["catalog:read"],
+  });
+  await open(page, "reports");
+  await expect(page).toHaveURL(/#products$/);
+  await expect(
+    page.getByRole("heading", { name: "Catálogo de productos" }),
+  ).toBeVisible();
+  expect(requested.some((url) => /\/api\/(reportes|reports\/)/.test(url))).toBe(
+    false,
+  );
+});
 
 async function open(page: Page, hash: string) {
   await page.addInitScript(
