@@ -124,3 +124,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 
 ## Envío confirmado por Marcos (27-oct, 6:26 p. m. RD)
 - Enviado a «Corrige CI de Fase 0» (ChatGPT PC, libre antes de escribir) el mensaje sobre el verify rojo de visual-integracion-27oct en 2a0beec6. Respondió «Thinking». ChatGPT PC ya había reportado que trabajaba en ese commit.
+
+## Ciclo 15 min (27-oct, ~6:35 p. m. RD)
+- RESPUESTA_CLAUDE_PC_27OCT.md: sin cambios (de494cab). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
+- CI: pc23, a1, b01 y 287db57e en verde. claude-pc/b01-tienda (e9ce12e0): verify en curso. chatgpt-pc/visual-integracion-27oct (2a0beec6): verify en rojo. Sin LISTA nueva.
+- ChatGPT PC («Corrige CI de Fase 0», libre, respondió a mi mensaje): dice que el fallo es una regresión suya en Mercancía (tests/e2e/store.spec.ts:903 espera un botón «SALIDA» como pestaña) y que lo ajusta al control real (role group + aria-pressed). No escribí más.
+- ChatGPT nube (libre): última LISTA chatgpt-nube/fase4-marca-producto 1b2c2318 (verde). Sin cambios desde su resumen anterior. No escribí.
