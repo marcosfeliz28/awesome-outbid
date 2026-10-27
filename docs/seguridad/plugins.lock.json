@@ -20,6 +20,10 @@
     "oh-my-claudecode@omc@5.7.17": {
       "sha256": "8031a2329b0f96213db1982264122603c2c7e3cd1f763b8498eb22117bd1f9bf",
       "archivos": 915
+    },
+    "oh-my-claudecode@omc@5.7.19": {
+      "sha256": "1a2354c7ad10d4b35f59b2dd686713ce8800d35b3bf0b71baee466a1d42818bb",
+      "archivos": 915
     }
   }
 }
