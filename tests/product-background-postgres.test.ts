@@ -105,7 +105,7 @@ it("los trabajos de fondo recorren cada empresa sin mezclar avisos, créditos ni
       );
       await sql.query(
         `INSERT INTO "Settings" (id,data,"updatedAt","tenantId") VALUES ('main',$1::jsonb,now(),$2)`,
-        [JSON.stringify({ usdRate: index === 0 ? 63 : 65 }), tenantId],
+        [JSON.stringify({ usdRate: index === 0 ? 63 : 65, dailySummaryEnabled: true }), tenantId],
       );
     }
 

@@ -403,6 +403,7 @@ export const DEFAULT_SETTINGS = {
   allowNegativeStock: false,
   allowOfflineSales: false,
   allowCreditSales: false,
+  dailySummaryEnabled: false,
   creditApprovalThreshold: 1000,
   cashMovementApprovalLimit: 1000,
   receivableShiftLimit: RECEIVABLE_SHIFT_LIMIT,

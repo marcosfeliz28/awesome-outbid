@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { Database, type Actor } from "./common";
 import { ReportsController } from "./reports";
 import { emailSettings, sendEmail } from "./notifications";
-import { currentTenantId, forEachActiveTenant } from "./tenant-context";
+import { currentTenantId, forEachActiveTenant, tenantUnique } from "./tenant-context";
 
 export type DailyFacts = {
   day: string;
@@ -16,8 +16,8 @@ export type DailyFacts = {
 };
 
 const money = (n: number) => "RD$ " + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-// shortcut: interruptor global apagado por defecto (CPC-6 punto 8); falta el
-// interruptor por empresa en Ajustes antes de encenderlo para clientes.
+// Puerta global apagada por defecto; cada sucursal además da su consentimiento
+// en Ajustes antes de entrar al recorrido del trabajador.
 const enabled = (env: NodeJS.ProcessEnv) => env.NEXORA_RESUMEN_DIARIO === "enabled" &&
   !!env.RESEND_API_KEY?.trim() && !!env.ANTHROPIC_API_KEY?.trim();
 
@@ -116,7 +116,11 @@ export class DailySummaryWorker implements OnApplicationBootstrap, OnModuleDestr
           });
           const firstByBranch = new Map<string, typeof admins[number]>();
           for (const admin of admins) if (!firstByBranch.has(admin.branchId)) firstByBranch.set(admin.branchId, admin);
-          for (const admin of firstByBranch.values()) await this.prepare(admin, day, deps);
+          for (const admin of firstByBranch.values()) {
+            const settings = await this.db.settings.findUnique({ where: tenantUnique("id", admin.branchId) });
+            if ((settings?.data as any)?.dailySummaryEnabled !== true) continue;
+            await this.prepare(admin, day, deps);
+          }
           await this.deliver(deps);
         } catch (error: any) {
           console.warn("[resumen-diario] No se pudo procesar empresa " + currentTenantId() + ": " + String(error?.message ?? error).slice(0, 120));

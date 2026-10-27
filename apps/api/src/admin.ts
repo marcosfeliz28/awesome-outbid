@@ -103,6 +103,9 @@ const configSchema = z.object({
   // reservar la última unidad. Por seguridad se exige una decisión explícita.
   allowOfflineSales: z.boolean().default(false),
   allowCreditSales: z.boolean().default(false),
+  // Producto: consentimiento expreso por sucursal; nunca se activa por tener
+  // las claves globales de correo e IA.
+  dailySummaryEnabled: z.boolean().optional(),
   creditApprovalThreshold: amount.default(1000),
   // Salidas de efectivo del turno que una cajera registra sin PIN de gerente
   // (D-04). Sin la clave se conserva el valor guardado (RD$ 1,000 si no hay).
@@ -914,6 +917,7 @@ export class AdminController {
       returnDays: 30,
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
+      dailySummaryEnabled: data.dailySummaryEnabled === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
       requireCustomer: customerRequired(data.requireCustomer),
@@ -929,6 +933,10 @@ export class AdminController {
       typeof body === "object" &&
       body !== null &&
       Object.prototype.hasOwnProperty.call(body, "allowOfflineSales");
+    const hasDailySummary =
+      typeof body === "object" &&
+      body !== null &&
+      Object.prototype.hasOwnProperty.call(body, "dailySummaryEnabled");
     const { logo, ...config } = parse(configSchema, body);
     if (logo) checkLogo(logo);
     return this.db.$transaction(async (tx) => {
@@ -963,6 +971,11 @@ export class AdminController {
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,
+        // Una PWA anterior no conoce este consentimiento: guardar otro ajuste
+        // no lo activa ni lo desactiva.
+        dailySummaryEnabled: hasDailySummary
+          ? config.dailySummaryEnabled === true
+          : previous?.dailySummaryEnabled === true,
         // Una PWA anterior no envía el límite: no se afloja ni se endurece.
         cashMovementApprovalLimit:
           config.cashMovementApprovalLimit ?? cashMovementLimit(previous),

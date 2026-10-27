@@ -4204,6 +4204,16 @@ export function Configuration() {
       label: "Imprimir el recibo automáticamente al cobrar",
       type: "checkbox",
     },
+    ...(product
+      ? [
+          {
+            key: "dailySummaryEnabled",
+            label: "Recibir por correo el resumen diario con IA",
+            type: "checkbox" as const,
+            help: "Apagado por defecto. Se envía después de las 8:00 p. m. al primer administrador verificado de esta sucursal.",
+          },
+        ]
+      : []),
     {
       key: "usdRate",
       label: "Tasa del dólar (RD$ por US$)",
@@ -4333,6 +4343,9 @@ export function Configuration() {
       help: "Apagado: la venta queda a nombre de «Consumidor final».",
     },
     fields.find((f) => f.key === "receiptWidth")!,
+    ...(product
+      ? [fields.find((f) => f.key === "dailySummaryEnabled")!]
+      : []),
     fields.find((f) => f.key === "usdRate")!,
     {
       key: "ncfOn",
@@ -4356,6 +4369,7 @@ export function Configuration() {
     branchName: query.data?.branchName ?? "",
     phone2: query.data?.phone2 ?? "",
     autoPrintReceipt: !!query.data?.autoPrintReceipt,
+    dailySummaryEnabled: query.data?.dailySummaryEnabled === true,
     requireCustomer: query.data?.requireCustomer === true,
     allowOfflineSales: query.data?.allowOfflineSales === true,
     usdRate: query.data?.usdRate ?? "",
