@@ -2,7 +2,7 @@
 
 ## Dictamen
 
-No encontré un crítico en la base publicada del producto. `producto-nexora` (`c6148bac`) tiene los tres trabajos de CI en verde y la comprobación local completa pasó con PostgreSQL, incluida la evaluación del asistente (79/79) y las pruebas de aislamiento entre empresas.
+No encontré un crítico en la base publicada del producto. `producto-nexora` (`c6148bac`) tiene los tres trabajos de CI en verde. En la comprobación local con PostgreSQL pasaron 998 pruebas, incluida la evaluación del asistente (79/79) y el aislamiento entre empresas; una prueba agotó su tiempo solo durante la suite completa y pasó en 9,7 segundos al repetirla aislada (AT-11).
 
 Sí hay **tres hallazgos altos de dinero/caja**. Los tres ya tienen una corrección construida y verde en ramas separadas, pero cambian reglas visibles y no deben mezclarse sin la decisión de la dueña. La cadena de rediseño interior tampoco es mezclable todavía: sus trabajos `verify` están rojos.
 
@@ -14,7 +14,7 @@ Esta auditoría fue de solo lectura sobre código y ramas. Los únicos cambios d
 - Producto auditado: `origin/producto-nexora` en `c6148bac`.
 - Se revisaron los PR #11 a #16 y las ramas `chatgpt-pc/lumina-motion-integracion`, `claude-pc/pc23-anulacion-fix`, `claude-pc/a1-formula-utilidad`, `claude-pc/b01-ventas-caja-ciega` y `chatgpt-pc/cola3-26oct`.
 - Se compararon los árboles y se ejecutó `git merge-tree`: no aparecen conflictos textuales al aplicar cada rama por separado, pero eso **no** demuestra que la cadena combinada funcione.
-- En `producto-nexora`: `pnpm db:generate && pnpm check`. El primer intento, antes de generar Prisma Client, falló por tipos ausentes; después de `pnpm db:generate` la comprobación completa pasó. No fue un fallo del código.
+- En `producto-nexora`: `pnpm db:generate && pnpm check`. El primer intento, antes de generar Prisma Client, falló por tipos ausentes; no fue un fallo del código. Con el cliente generado, la suite terminó con 998 pruebas aprobadas, 10 omitidas y el timeout descrito en AT-11. La prueba afectada pasó al repetirla aislada.
 - Para móvil se usaron los resultados exactos de Playwright de los PR abiertos. No se repitió una prueba visual sobre ramas que ya estaban rojas y basadas en una revisión anterior.
 
 ## Hallazgos
@@ -31,6 +31,7 @@ Esta auditoría fue de solo lectura sobre código y ramas. Los únicos cambios d
 | AT-08 | Medio | Facturas con IA | Opus sigue predeterminado; medición pendiente |
 | AT-09 | Medio | Resumen diario | No tiene opt-in por empresa |
 | AT-10 | Bajo | Producto vendible | Código base hecho, activación comercial pendiente |
+| AT-11 | Medio | Estabilidad del CI | Prueba PostgreSQL agota tiempo bajo carga |
 
 ### AT-01 — Anular un pago puede dejar mal el estado y el vencimiento del cliente
 
@@ -132,6 +133,16 @@ Esta auditoría fue de solo lectura sobre código y ramas. Los únicos cambios d
 
 **Arreglo propuesto:** mantener cerrado. Completar auditoría de Fase 3, legales aprobados, procesador real, respaldo/restore y piloto antes de activar el registro. No convertir esta bandera en un atajo.
 
+### AT-11 — Una prueba PostgreSQL es inestable bajo la carga de la suite completa
+
+**Gravedad: medio.**
+
+**Evidencia:** `tests/product-inicio-sencillo-postgres.test.ts:32-165` levanta PostgreSQL, aplica todas las migraciones y recorre el inicio completo dentro de un timeout único de 180 segundos. En `pnpm check` falló con el texto exacto `Test timed out in 180000ms` en la línea 32, después de 998 pruebas aprobadas. Repetida sola, pasó en 9,7 segundos.
+
+**Cómo reproducir:** ejecutar `pnpm check` en un trabajador con las pruebas PostgreSQL en paralelo. La prueba puede esperar recursos hasta consumir su límite total; `pnpm exec vitest run tests/product-inicio-sencillo-postgres.test.ts` pasa inmediatamente en el mismo árbol.
+
+**Arreglo propuesto:** rama separada de estabilidad. Medir dónde se consume el tiempo, limitar la concurrencia de suites que crean PostgreSQL o compartir un arnés controlado; no subir el timeout ni omitir la prueba sin demostrar la causa. Añadir una regresión del arnés y correr varias veces el `verify`.
+
 ## Controles revisados sin hallazgo bloqueante
 
 - **Permisos:** las rutas autenticadas sin permiso declarado se deniegan por defecto en `apps/api/src/common.ts:823-833`.
@@ -189,6 +200,7 @@ No es seguro mezclar #11, #13, #14, #15 o #16 en su estado actual. PC-23, A1 y B
 - `fix/marca-instalador`: solo runtime/documentación/pruebas del instalador; después acta de prueba física.
 - `fase6/modelo-facturas`: benchmark de las 10 facturas, sin incluir documentos del negocio en Git.
 - `fase6/resumen-opt-in`: preferencia por empresa apagada por defecto y prueba multiempresa.
+- `test/inicio-sencillo-estable`: estabilizar recursos/concurrencia sin relajar aserciones ni timeout a ciegas.
 
 ## Límites y trabajo omitido deliberadamente
 
