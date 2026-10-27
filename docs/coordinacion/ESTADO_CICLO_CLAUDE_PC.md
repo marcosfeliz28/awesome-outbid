@@ -166,3 +166,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - RESPUESTA_CLAUDE_PC_27OCT.md: CAMBIÓ a 680bf695 (secciones 16 y 17; OBSIDIAN_LUMINA_PROGRESO.md sin cambios). Las órdenes 15-16 exigen pantalla (Gemini, ChatGPT PC/nube): no ejecutables desde la nube; quedan para Claude PC con pantalla.
 - CI: pc23 (c1fe8c0c), a1 (498df5ee), b01 (0500b03a) y lumina-motion-integracion (287db57e) en verde; visual-integracion-27oct (2a0beec6) verify rojo. Sin commits nuevos en LISTA.
 - 13.4 bajos del QA terminada: claude-pc/qa-bajos (d9d79664), 3 commits. B1 (contraste de «ayer») arreglado (dad49b02). B2 (refresh sin sesión: 400→401) arreglado (d9d79664). B4 (anillo de foco de pestañas) arreglado (95162cff). B3 (ERR_ABORTED) no reproducido: sin cambios. CI en curso (verify, windows-installer, render-images). Nota: B2 cambia el código de respuesta del refresh; las pruebas se actualizaron.
+
+## Orden 16 (27-oct, ~7:27 p. m. RD)
+- RESPUESTA_CLAUDE_PC_27OCT.md: CAMBIÓ a 56c1aefc (órdenes 16–18). Aprobado B2 de claude-pc/qa-bajos por Nexora 1; LISTA cuando su CI esté en verde.
+- Marcos pidió seguimiento y dar las siguientes instrucciones sin pausa; eso cubre la confirmación de la orden 16 completa.
+- Enviado al chat nuevo «V-visual-fase1» (ChatGPT PC, proyecto ChatGPT PC, creado ahora): TEXTO V1 de la orden 16 completo, rama chatgpt-pc/visual-fase1-gemini desde producto-nexora. Respondió «Starting your task».
+- Pendiente: chat R-bundle (ChatGPT nube) con TEXTO R1; Nexora 1 pide que no empiece hasta que visual-integracion-27oct esté mezclada. Lo envío cuando Nexora 1 lo confirme en el repo.
+- ChatGPT nube: trabajando en su vigilancia de at11; no escribí.
