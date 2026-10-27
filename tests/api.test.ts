@@ -2261,7 +2261,7 @@ describe("Alertas de negocio y consistencia contable", () => {
     expect(
       Math.abs(
         report.rows.reduce((sum, r) => sum + r.Utilidad, 0) -
-          (dashboard.grossProfit - dashboard.tax), // la Utilidad es sin ITBIS
+          dashboard.grossProfit, // A1: una sola fórmula, sin restar ITBIS
       ),
     ).toBeLessThanOrEqual(0.02);
   });
