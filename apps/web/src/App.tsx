@@ -821,6 +821,12 @@ function Shell() {
       (!["onboarding", "billing"].includes(n.id) || PRODUCT_TENANCY_REQUIRED) &&
       can(user.permissions, n.permission),
   );
+  const route = page.split("?")[0];
+  const routeAllowed =
+    allowed.some((item) => item.id === route) ||
+    (route === "settings" && !!user && can(user.permissions, "sale:manage")) ||
+    (route === "styles" && SHOW_STYLE_GUIDE);
+  const safePage = routeAllowed ? route : allowed[0]?.id || "products";
   const onboarding = useQuery<OnboardingStatus>({
     queryKey: ["onboarding", user?.id],
     queryFn: () => api("/onboarding"),
@@ -911,14 +917,8 @@ function Shell() {
     return () => clearInterval(timer);
   }, [online, setOnline]);
   useEffect(() => {
-    if (
-      user &&
-      !allowed.some((n) => n.id === page) &&
-      page !== "settings" &&
-      !(page === "styles" && SHOW_STYLE_GUIDE)
-    )
-      go(allowed[0]?.id || "products");
-  }, [user, page]);
+    if (user && !routeAllowed) go(safePage);
+  }, [user, page, routeAllowed, safePage]);
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -1100,7 +1100,7 @@ function Shell() {
   if (!user) return <Login />;
   if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/mcp/autorizar")
     return <McpAuthorize />;
-  const current = navigation.find((n) => n.id === page);
+  const current = navigation.find((n) => n.id === safePage);
   const initials = user.name
     .split(" ")
     .map((n) => n[0])
@@ -1431,7 +1431,7 @@ function Shell() {
               go("settings");
             }}
           />
-          {pages[page.split("?")[0]] || <Dashboard go={go} />}
+          {pages[safePage] || <Dashboard go={go} />}
         </main>
         <footer className="app-footer">
           <span>Nexora POS · Tu negocio, en movimiento.</span>
