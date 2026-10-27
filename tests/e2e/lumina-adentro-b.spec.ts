@@ -130,6 +130,24 @@ async function mockApp(context: BrowserContext, sessionUser = user) {
           },
         ],
       });
+    if (path === "/api/sales")
+      return route.fulfill({
+        json: [
+          {
+            id: "sale-lumina",
+            number: "FS-LUMINA",
+            customerName: "Cliente móvil",
+            createdAt: "2026-10-27T10:00:00.000Z",
+            status: "completed",
+            total: 1450,
+            creditBalance: 0,
+            sellerId: sessionUser.id,
+            payments: [{ method: "cash" }],
+            returns: [],
+          },
+        ],
+      });
+    if (path === "/api/cash-sessions") return route.fulfill({ json: [] });
     if (path === "/api/reportes") return route.fulfill({ json: [] });
     if (path.startsWith("/api/reports/"))
       return route.fulfill({
@@ -175,6 +193,30 @@ test("una ruta sin permiso redirige sin montar ni consultar esa pantalla", async
   expect(requested.some((url) => /\/api\/(reportes|reports\/)/.test(url))).toBe(
     false,
   );
+});
+
+test("Ventas muestra total, pagos y solicitud de anulación a 390 px", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockApp(context, {
+    ...user,
+    role: "seller",
+    permissions: ["sale:write"],
+  });
+  await open(page, "sales");
+  const main = page.locator("#main-content");
+  await expect(main.getByText("TOTAL", { exact: true })).toBeVisible();
+  await expect(main.getByText("PAGOS", { exact: true })).toBeVisible();
+  await expect(
+    main.getByRole("button", { name: "Solicitar anulación" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });
 
 async function open(page: Page, hash: string) {
