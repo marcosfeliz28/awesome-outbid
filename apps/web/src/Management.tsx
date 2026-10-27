@@ -4409,7 +4409,11 @@ export function Configuration() {
           title="Configuración"
           caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
         />
-        <div className="tabs outside">
+        <div
+          className="tabs outside"
+          role="group"
+          aria-label="Secciones de configuración"
+        >
         {[
           ["business", "Negocio y reglas"],
           ["users", "Usuarios y permisos"],
@@ -4417,7 +4421,9 @@ export function Configuration() {
           ["equipment", "Equipos"],
         ].map(([id, label]) => (
           <button
+            type="button"
             className={tab === id ? "active" : ""}
+            aria-pressed={tab === id}
             onClick={() => setTab(id)}
             key={id}
           >
