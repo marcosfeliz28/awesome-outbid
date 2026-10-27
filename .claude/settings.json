@@ -5,7 +5,8 @@
     "chrome-devtools-mcp@chrome-devtools-plugins": true,
     "oh-my-claudecode@omc": true,
     "supabase@anthropic-plugin-directory": true,
-    "vercel@anthropic-plugin-directory": true
+    "vercel@anthropic-plugin-directory": true,
+    "task-observer@one-skill-to-rule-them-all": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
