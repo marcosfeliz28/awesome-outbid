@@ -818,8 +818,19 @@ describe("IA · web: markdown seguro y botón sin tapar la barra", () => {
   });
   it("a 390px el lanzador no tapa controles de Mercancía durante el scroll", () => {
     const css = readFileSync(resolve("apps/web/src/Assistant.css"), "utf8");
+    const sharedCss = readFileSync(resolve("apps/web/src/styles.css"), "utf8");
+    const merchandise = readFileSync(
+      resolve("apps/web/src/Merchandise.tsx"),
+      "utf8",
+    );
     expect(css).toMatch(
       /@media \(max-width: 768px\)[\s\S]*body:has\(\.merchandise\) \.assistant-launcher\s*\{\s*display: none/,
+    );
+    expect(merchandise).toContain('className="goods-assistant-inline"');
+    expect(merchandise).toContain("{assistantAvailable && (");
+    expect(merchandise).toContain('new CustomEvent("nexora:abrir-asistente"');
+    expect(sharedCss).toMatch(
+      /@media \(max-width: 768px\)[\s\S]*\.goods-assistant-inline\s*\{[\s\S]*display: inline-flex !important/,
     );
   });
   it("la cuota deja de anunciar carga cuando falta internet o falla la consulta", () => {

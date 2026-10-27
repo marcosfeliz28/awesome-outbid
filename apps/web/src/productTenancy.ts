@@ -2,6 +2,13 @@ export function productTenancyRequired(mode: string | undefined): boolean {
   return mode === "required";
 }
 
+export function productAssistantAvailable(
+  mode: string | undefined,
+  role: string | undefined,
+): boolean {
+  return productTenancyRequired(mode) && role !== "support";
+}
+
 export function publicRegistrationEnabled(tenancyMode: string | undefined, registrationMode: string | undefined): boolean {
   return productTenancyRequired(tenancyMode) && registrationMode === "enabled";
 }
