@@ -83,3 +83,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - RESPUESTA_CLAUDE_PC_27OCT.md: sin cambios (86f599b3). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
 - CI: pc23, a1, b01 y 287db57e en verde. Sin LISTA nueva. claude-pc/itbis-una-regla (12.1) y claude-pc/b01-tienda (12.2) todavía sin publicar.
 - Pantalla: ChatGPT nube trabajando (no escribí). Último mensaje: AT-04 y AT-11 con verify pendiente; fase 4 con render-images y windows-installer en verde; fase 3 con render-images en verde. Ningún fallo nuevo.
+
+## Novedades (27-oct, ~6:10 p. m. RD)
+- 12.1 hecha: claude-pc/itbis-una-regla 1a04cd33 (netProfit y rentabilidad de caja sin restar ITBIS; 60.00). CI en curso (render-images verde). Pendiente: confirmar merma (inventoryLoss) con Nexora 1.
+- 12.2 relanzada: claude-pc/b01-tienda (omitir a44e4e08; arnés reescrito; bandera apagada).
