@@ -407,6 +407,34 @@ La prueba visual `tests/e2e/lumina-adentro-b.spec.ts` valida ambas anchuras, el
 tema oscuro y que el documento no produzca desbordamiento horizontal. Las
 tablas que requieren varias columnas conservan su desplazamiento interno.
 
+### Revisión de Reportes, Configuración y Equipos (27-oct-2026)
+
+- **Reportes:** auditado en 1366×768 y 390×844. Conserva una sola selección
+  actual, grupos desplegables con `aria-expanded`, exportaciones secundarias,
+  cifras tabulares, tabla desplazable y estados de carga, error, vacío,
+  paginación y rango invertido. No necesitó cambios visuales. Las capturas
+  `auditoria-reportes-rango-invalido-*` dejan evidencia del subestado que
+  detiene la consulta y explica cómo corregir las fechas. La revisión
+  adversarial posterior cerró una inconsistencia de ese subestado: con un
+  rango invertido, Excel y PDF también quedan deshabilitados y el contador se
+  reemplaza por «Corrige las fechas», en vez de presentar cero registros como
+  si fuera un resultado válido.
+- **Configuración:** la estructura visual, el resumen y los subestados de
+  negocio, usuarios, bitácora y equipos ya cumplían la orden. Se añadió al
+  grupo de secciones un nombre accesible y cada botón ahora expone su estado
+  con `aria-pressed`, sin cambiar flujos ni permisos.
+- **Equipos:** se verificaron los estados Pendiente, Aprobado y Revocado con
+  texto y color, además del equipo actual y sus acciones existentes. La lista
+  ahora usa `Loading` y `Empty` compartidos mientras carga o cuando una empresa
+  todavía no registra equipos. Las capturas `auditoria-equipos-estados-*` y
+  `auditoria-equipos-vacio-*` cubren ambos temas de contenido a 1366 y 390 px.
+
+La prueba focal `tests/e2e/lumina-reportes-config.spec.ts` cubre estas tres
+áreas con datos locales simulados: 2/2 escenarios aprobados. También pasaron
+el typecheck y build web, ESLint, las 36 pruebas del contrato de accesibilidad
+y las 12 pruebas de marca del producto. No se consultó el producto en vivo ni
+se cambiaron API, base de datos, pagos, reglas fiscales o permisos.
+
 ### Verificación final
 
 - `pnpm typecheck`, `pnpm lint` y `pnpm build`: aprobados. Vite conserva el
