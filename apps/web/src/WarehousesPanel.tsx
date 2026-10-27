@@ -171,8 +171,8 @@ export function WarehousesPanel({
               </p>
             </div>
             <div className="inventory-workspace-action">
-              <label className="field" htmlFor="transfer-product">
-                <span>Producto</span>
+              <div className="field">
+                <label htmlFor="transfer-product">Producto</label>
                 <select
                   id="transfer-product"
                   value={variantId}
@@ -185,7 +185,7 @@ export function WarehousesPanel({
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
               <Button
                 disabled={!variantId}
                 onClick={() => {

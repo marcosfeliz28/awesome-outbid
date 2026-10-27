@@ -143,6 +143,26 @@ async function mockApp(context: BrowserContext) {
       return route.fulfill({
         json: { usadas: 7, limite: 100, mes: "2026-10" },
       });
+    if (path === "/api/survey/summary")
+      return route.fulfill({ json: { responses: 0, questions: [] } });
+    if (path === "/api/backups/status")
+      return route.fulfill({
+        json: {
+          configured: false,
+          missing: [],
+          redirectUri: "https://example.invalid/backups/google/callback",
+          folderName: "Nexora POS respaldos",
+          connected: false,
+          needsReconnect: false,
+          account: null,
+          running: false,
+          lastRun: null,
+          lastSuccess: null,
+          consecutiveFailures: 0,
+          nextRunAt: null,
+          telegramAlerts: false,
+        },
+      });
     if (path === "/api/support-access")
       return route.fulfill({ json: { enabled: false, expiresAt: null } });
     if (path === "/api/onboarding")
@@ -205,16 +225,20 @@ for (const viewport of [
     }
     await open(page, "products");
     const launcher = page.getByRole("button", { name: "Pregúntale a Nexora" });
-    await expect(launcher).toBeVisible();
-    await launcher.click();
-    await expect(
-      page.getByRole("dialog", { name: "Pregúntale a Nexora" }),
-    ).toBeVisible();
-    await page.screenshot({
-      path: screenshotPath(
-        `docs/diseno/obsidian-lumina/adentro/${stage}-asistente-${viewport.name}.png`,
-      ),
-      fullPage: true,
-    });
+    // El asistente sólo se monta en la edición SaaS. La compilación local que
+    // usa verify conserva el modo de tienda y, por contrato, no debe simularlo.
+    if (await launcher.count()) {
+      await expect(launcher).toBeVisible();
+      await launcher.click();
+      await expect(
+        page.getByRole("dialog", { name: "Pregúntale a Nexora" }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: screenshotPath(
+          `docs/diseno/obsidian-lumina/adentro/${stage}-asistente-${viewport.name}.png`,
+        ),
+        fullPage: true,
+      });
+    }
   });
 }
