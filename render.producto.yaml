@@ -18,6 +18,10 @@ services:
         value: "10000"
       - key: VITE_PRODUCT_TENANCY
         value: required
+      # La web tampoco anuncia altas hasta que la dueña abra la puerta.
+      # API y web requieren cambiar sus dos banderas de forma deliberada.
+      - key: VITE_PRODUCT_PUBLIC_REGISTRATION
+        value: disabled
       - key: API_UPSTREAM
         fromService:
           type: pserv
