@@ -394,7 +394,11 @@ tablas que requieren varias columnas conservan su desplazamiento interno.
   cifras tabulares, tabla desplazable y estados de carga, error, vacío,
   paginación y rango invertido. No necesitó cambios visuales. Las capturas
   `auditoria-reportes-rango-invalido-*` dejan evidencia del subestado que
-  detiene la consulta y explica cómo corregir las fechas.
+  detiene la consulta y explica cómo corregir las fechas. La revisión
+  adversarial posterior cerró una inconsistencia de ese subestado: con un
+  rango invertido, Excel y PDF también quedan deshabilitados y el contador se
+  reemplaza por «Corrige las fechas», en vez de presentar cero registros como
+  si fuera un resultado válido.
 - **Configuración:** la estructura visual, el resumen y los subestados de
   negocio, usuarios, bitácora y equipos ya cumplían la orden. Se añadió al
   grupo de secciones un nombre accesible y cada botón ahora expone su estado
