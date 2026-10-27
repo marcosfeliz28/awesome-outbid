@@ -98,3 +98,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: chatgpt-pc/visual-integracion-27oct a9bedbde en verde (LISTA registrada). Su rama avanzó a 2a0beec6 con verify en curso. claude-pc/itbis-una-regla (1a04cd33): verify en curso. pc23, a1, b01 en verde.
 - ChatGPT PC («Corrige CI de Fase 0», libre): publicó LISTA a9bedbde; dice que su regresión de mercancía y la de vendedoras quedaron arregladas. No escribí.
 - ChatGPT nube (libre): AT-04 y AT-11 cerrados con los tres CI en verde. Fase 3 y fase 4 siguen con dos de tres jobs en verde; verify en curso.
+
+## 12.2 terminada (27-oct, ~6:50 p. m. RD)
+- claude-pc/b01-tienda (e9ce12e0), sobre nexora-cloud 86f599b3: 4 commits (ventas a ciegas, cod/pending, receipt.pdf, Management.tsx saleMoney). Bandera NEXORA_VENTAS_CAJA_CIEGA apagada por defecto. Asistente (a44e4e08) omitido por decisión. Arnés reescrito para el esquema de nexora-cloud.
+- Verificado: typecheck de api y web; suite unitaria 712/712 con Postgres local. No verificado: UI en navegador, integración.
+- CI: en curso (verify, render-images, windows-installer). LISTA cuando estén en verde.
