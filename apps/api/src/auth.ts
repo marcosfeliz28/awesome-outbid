@@ -10,6 +10,7 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { compare, hash } from "bcryptjs";
@@ -781,12 +782,14 @@ export class AuthController implements OnModuleInit {
     @Res({ passthrough: true }) res: Response,
   ) {
     const token = req.cookies?.[refreshCookieName()];
-    if (!token) bad("La sesión ha expirado.");
+    // QA B2: sesión no válida es 401 (no 400); el cliente no lo distingue, pero la consola y el monitoreo sí.
+    if (!token) throw new UnauthorizedException("La sesión ha expirado.");
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const saved = await this.db.refreshToken.findUnique({
       where: { hash: tokenHash },
     });
-    if (!saved || saved.expiresAt < new Date()) bad("La sesión ha expirado.");
+    if (!saved || saved.expiresAt < new Date())
+      throw new UnauthorizedException("La sesión ha expirado.");
     this.requestLimits.assert(
       "auth-refresh-session",
       [clientIp(req), saved.sessionId ?? saved.id],
@@ -796,7 +799,8 @@ export class AuthController implements OnModuleInit {
     const consumed = await this.db.refreshToken.deleteMany({
       where: { id: saved.id },
     });
-    if (!consumed.count) bad("La sesión ya fue renovada.");
+    if (!consumed.count)
+      throw new UnauthorizedException("La sesión ya fue renovada.");
     const user = await this.db.user.findUnique({
       where: { id: saved.userId },
       include: { role: true },
@@ -808,7 +812,7 @@ export class AuthController implements OnModuleInit {
       !saved.sessionId ||
       (user.role.name === "support" && (!user.supportExpiresAt || user.supportExpiresAt <= new Date()))
     )
-      bad("La sesión ha expirado.");
+      throw new UnauthorizedException("La sesión ha expirado.");
     return this.issue(user, res, saved.sessionId);
   }
   @Permit("authenticated")

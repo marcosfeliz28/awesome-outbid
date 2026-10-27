@@ -2105,7 +2105,7 @@ test("R9-offline-5: el cierre por inactividad revoca la sesión y al recargar se
   const renewed = await request.post("/api/auth/refresh", {
     headers: { Cookie: "fitstore_refresh=" + refresh!.value },
   });
-  expect(renewed.status()).toBe(400);
+  expect(renewed.status()).toBe(401);
 });
 
 test("R9-offline-5: una pestaña sin uso no cierra la sesión de otra pestaña activa del mismo equipo", async ({

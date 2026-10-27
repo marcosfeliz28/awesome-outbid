@@ -249,7 +249,7 @@ describe("Sesiones y equipos (API real)", () => {
       data: { authVersion: { increment: 1 } },
     });
     const refreshed = await post("/auth/refresh", {}, { Cookie: cookie });
-    expect(refreshed.status).toBe(400);
+    expect(refreshed.status).toBe(401);
     expect(refreshed.body.message).toMatch(/sesión ha expirado/);
     // Un token emitido con la versión actual, sí renueva.
     const again = await post("/auth/login", {
@@ -284,7 +284,7 @@ describe("Sesiones y equipos (API real)", () => {
         "ronda " + round,
       ).toHaveLength(1);
       expect(
-        replies.filter((r) => r.status === 400).map((r) => r.body.message),
+        replies.filter((r) => r.status === 401).map((r) => r.body.message),
       ).toEqual(Array(7).fill(expect.stringMatching(/sesión/)));
     }
   });

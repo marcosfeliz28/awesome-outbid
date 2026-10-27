@@ -113,7 +113,7 @@ it("login por código de empresa, refresh, cambio de clave y PIN aíslan identid
     expect(rotatedCookies.find((value) => value.startsWith("fitstore_refresh=")))
       .not.toBe(bCookies.find((value) => value.startsWith("fitstore_refresh=")));
     const reusedRefresh = await http.post("/api/auth/refresh").set("Cookie", bCookies).send({});
-    expect(reusedRefresh.status).toBe(400);
+    expect(reusedRefresh.status).toBe(401);
 
     const sellerLogin = await login("empresa-b", "caja", sellerTemporary);
     ok(sellerLogin, "POST auth/login clave temporal");

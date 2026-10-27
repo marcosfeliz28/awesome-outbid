@@ -197,8 +197,8 @@ describe("Cambiar mi contraseña (POST /auth/password)", () => {
     // Los tokens anteriores, de este y del otro equipo, ya no sirven.
     expect((await me(here.token, here.ip)).status).toBe(401);
     expect((await me(other.token, other.ip)).status).toBe(401);
-    expect((await refresh(here.cookie, here.ip)).status).toBe(400);
-    expect((await refresh(other.cookie, other.ip)).status).toBe(400);
+    expect((await refresh(here.cookie, here.ip)).status).toBe(401);
+    expect((await refresh(other.cookie, other.ip)).status).toBe(401);
     const row = await db.user.findUniqueOrThrow({ where: { id: seller.id } });
     expect(row).toMatchObject({ mustChangePassword: false, authVersion: 1 });
     expect(await db.authSession.count({ where: { userId: seller.id } })).toBe(
@@ -347,7 +347,7 @@ describe("Restablecer contraseña (POST /users/:id/reset-password)", () => {
     // Su sesión abierta se cerró.
     expect((await me(sellerSession.token, sellerSession.ip)).status).toBe(401);
     expect((await refresh(sellerSession.cookie, sellerSession.ip)).status).toBe(
-      400,
+      401,
     );
     // Desde la misma caja ya no está bloqueada: entra con la temporal y debe
     // elegir la suya con el flujo de cambio obligatorio.
@@ -662,7 +662,7 @@ describe("Cambios simultáneos, cambio pendiente y caché", () => {
     ).toBe(200);
     expect((await me(loser.session.token, loser.session.ip)).status).toBe(401);
     expect((await refresh(loser.session.cookie, loser.session.ip)).status).toBe(
-      400,
+      401,
     );
     const row = await db.user.findUniqueOrThrow({ where: { id: seller.id } });
     expect(row.authVersion).toBe(1);

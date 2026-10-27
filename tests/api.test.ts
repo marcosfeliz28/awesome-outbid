@@ -1961,7 +1961,7 @@ describe("Seguridad, offline y funciones completadas", () => {
         method: "POST",
         headers: { Cookie: cookie, "X-Forwarded-For": authIp },
       });
-      expect(refreshed.status).toBe(400);
+      expect(refreshed.status).toBe(401);
       expect(
         await fixtureDb.refreshToken.count({ where: { userId: u.id } }),
       ).toBe(0);
