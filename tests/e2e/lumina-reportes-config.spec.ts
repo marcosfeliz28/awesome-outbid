@@ -15,9 +15,11 @@ const user = {
 
 async function mockApp(context: BrowserContext) {
   let equipmentState: "states" | "empty" = "states";
+  let exportRequests = 0;
   await context.route("**/api/**", async (route) => {
     const request = route.request();
-    const path = new URL(request.url()).pathname;
+    const url = new URL(request.url());
+    const path = url.pathname;
     if (path === "/api/auth/me") return route.fulfill({ json: user });
     if (path === "/api/terminals/register")
       return route.fulfill({
@@ -60,7 +62,8 @@ async function mockApp(context: BrowserContext) {
               ],
       });
     if (path === "/api/reportes") return route.fulfill({ json: [] });
-    if (path.startsWith("/api/reports/"))
+    if (path.startsWith("/api/reports/")) {
+      if (url.searchParams.has("format")) exportRequests += 1;
       return route.fulfill({
         json: {
           rows: [{ fecha: "2026-10-26", ventas: 12, total: 18400 }],
@@ -68,6 +71,7 @@ async function mockApp(context: BrowserContext) {
           limit: 50,
         },
       });
+    }
     if (path === "/api/settings")
       return route.fulfill({
         json: {
@@ -98,6 +102,9 @@ async function mockApp(context: BrowserContext) {
   return {
     showEmptyEquipment() {
       equipmentState = "empty";
+    },
+    exportRequests() {
+      return exportRequests;
     },
   };
 }
@@ -141,6 +148,13 @@ for (const viewport of [
     await expect(
       page.getByText("La fecha inicial es posterior a la final."),
     ).toBeVisible();
+    await expect(
+      page.getByText("Corrige las fechas", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Excel" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "PDF" })).toBeDisabled();
+    await expect(page.getByText("0 registros", { exact: true })).toHaveCount(0);
+    expect(fixture.exportRequests()).toBe(0);
     await page.screenshot({
       path: screenshotPath(
         `docs/diseno/obsidian-lumina/adentro/auditoria-reportes-rango-invalido-${viewport.name}.png`,

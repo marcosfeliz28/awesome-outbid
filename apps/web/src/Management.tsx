@@ -3118,6 +3118,7 @@ export function Reports() {
                   <Button
                     variant="secondary"
                     key={format}
+                    disabled={inverted}
                     onClick={() =>
                       download(
                         `/reports/${report}?from=${from}&to=${to}&format=${format}`,
@@ -3163,7 +3164,11 @@ export function Reports() {
                   required
                 />
               </label>
-              <Badge tone="violet">{total} registros</Badge>
+              {inverted ? (
+                <Badge tone="danger">Corrige las fechas</Badge>
+              ) : (
+                <Badge tone="violet">{total} registros</Badge>
+              )}
             </div>
             {pages > 1 && (
               <div className="pagination">
