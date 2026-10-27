@@ -177,3 +177,6 @@ Textos de la dueña, dados a Nexora 1 en su chat: «Sí, sube PC-23». «B-01: s
 **Textos a pegar en ChatGPT (si la dueña confirma):**
 - **ChatGPT PC:** «Orden de la dueña: PC-23, A1 y B-01 ya están en `producto-nexora` (c0945874). Rebasa `chatgpt-pc/visual-integracion-27oct` sobre eso, ajusta la prueba de Mercancía al control real (sin aflojar lo que comprueba) y escribe `LISTA:` con los 3 CI en verde. No despliegues.»
 - **ChatGPT nube:** «Orden de la dueña: siguiente AT-04 (ruta recortada a 320 px), AT-11 (prueba PostgreSQL inestable) y cierra el PR #15 como duplicado de B-01 (ya se mezcló en `producto-nexora`). Luego fase 3 (registro público cerrado por bandera, planes, respaldo por empresa) y fase 4 (quitar Macgen del producto). `LISTA:` con 3 CI en verde. No despliegues.»
+
+### 12.2 Decisión de Nexora 1 sobre `claude-pc/b01-tienda` (27-oct)
+Es una decisión técnica mía, no de la dueña: **hagas ambas**. (b) Omite el commit del asistente (a44e4e08): `assistant.ts` no existe en la tienda. (a) Reescribe el arnés de la prueba para el esquema de `nexora-cloud` (sin tenantId), con una prueba propia que falle sin el arreglo y pase con él; mantén la bandera apagada por defecto. Orden de trabajo: primero 12.1 (`itbis-una-regla`, producto), después 12.2. No mezcles ni despliegues; la tienda solo sube con cajas cerradas y con confirmación de la dueña.
