@@ -117,3 +117,22 @@ describe("PC-23 · repetir una operación (B)", () => {
     expect(replay.body.message).toMatch(/anulad/);
   });
 });
+
+describe("PC-23 · referencia única en la base (C)", () => {
+  it("la base rechaza una referencia vigente repetida en la empresa (aunque no pase por la API), pero no tras anularla ni en otra empresa", async () => {
+    const a = await tenant("ref-a");
+    const b = await tenant("ref-b");
+    const insert = (tenantId: string, reference: string, extra = "", id = randomUUID()) => t.q(
+      `INSERT INTO "PlatformPayment" (id,"tenantId",amount,method,reference,months,operator,"paidFrom","paidUntil"${extra ? ',"voidsPaymentId","voidReason"' : ""})
+       VALUES ($1::uuid,$2::uuid,2000,'cash',$3,1,'op',now(),now() + interval '30 days'${extra ? `,$4::uuid,'anulado por error'` : ""})`,
+      ...(extra ? [id, tenantId, reference, extra] : [id, tenantId, reference]));
+    const first = randomUUID();
+    await insert(a.id, "BHD-77", "", first);
+    await expect(insert(a.id, " bhd-77 ")).rejects.toThrow(/23505/);
+    await insert(b.id, "BHD-77"); // otra empresa: permitido
+    // Anulada (la fila de anulación copia la referencia y no cuenta): se puede volver a anotar.
+    await insert(a.id, "BHD-77", first);
+    await insert(a.id, "bhd-77");
+    await expect(insert(a.id, "B H D-77")).rejects.toThrow(/23505/);
+  });
+});
