@@ -366,7 +366,8 @@ button.assistant-launcher.assistant-launcher {
   body:has(.goods-mobile-bar) .assistant-launcher {
     bottom: calc(84px + env(safe-area-inset-bottom));
   }
-  body:has(.goods-actions.has-items) .assistant-launcher {
+  body:has(.goods-actions.has-items) .assistant-launcher,
+  body:has(.merchandise) .assistant-launcher {
     display: none;
   }
 }
