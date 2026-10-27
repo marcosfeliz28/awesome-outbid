@@ -736,6 +736,9 @@ kbd {
   margin: 0 10px;
   color: #8a93a6;
 }
+.breadcrumb .breadcrumb-root {
+  margin: 0;
+}
 .breadcrumb strong {
   color: var(--text);
   font-size: 10px;
@@ -4036,6 +4039,10 @@ td strong {
   }
   .breadcrumb span {
     margin: 0 5px;
+  }
+  /* En la pantalla más estrecha priorizamos el nombre completo de la sección. */
+  .breadcrumb .breadcrumb-root {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {

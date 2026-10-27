@@ -1270,7 +1270,7 @@ function Shell() {
               <Menu />
             </button>
             <span className="breadcrumb">
-              Mi tienda <span>/</span>
+              <span className="breadcrumb-root">Mi tienda <span>/</span></span>
               <strong>
                 {current?.label ||
                   (safePage === "styles" ? "Guía de estilos" : "Configuración")}
