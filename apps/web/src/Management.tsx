@@ -3465,8 +3465,10 @@ export function SalesHistory() {
               },
               {
                 label: "Acciones",
-                render: (s) => (
-                  <div className="table-actions">
+                render: (s) => {
+                  const hidden = saleRowAmountsHidden(hideSaleAmounts, s);
+                  return (
+                    <div className="table-actions">
                     <button
                       onClick={() => setSelected(s)}
                       aria-label={"Ver " + s.number}
@@ -3474,15 +3476,22 @@ export function SalesHistory() {
                       <Eye size={18} />
                     </button>
                     <button
+                      disabled={hidden}
                       onClick={() =>
                         download(
                           "/sales/" + s.id + "/receipt.pdf",
                           s.number + ".pdf",
                         ).catch((e) => toast(e.message, true))
                       }
-                      aria-label={"PDF de " + s.number}
+                      aria-label={
+                        hidden
+                          ? "PDF disponible al cerrar"
+                          : "PDF de " + s.number
+                      }
+                      title={hidden ? "Disponible al cerrar" : undefined}
                     >
                       <Download size={18} />
+                      {hidden && <span>Disponible al cerrar</span>}
                     </button>
                     {can(user.permissions, "*") &&
                       s.status === "completed" &&
@@ -3561,8 +3570,9 @@ export function SalesHistory() {
                           Anular
                         </button>
                       )}
-                  </div>
-                ),
+                    </div>
+                  );
+                },
               },
             ]}
           />

@@ -1867,7 +1867,10 @@ export class SalesController {
       cancelledAt: row.cancelledAt,
       requester: row.requester,
       reviewer: row.reviewer,
-      approvalBlocker,
+      approvalBlocker:
+        hiddenUntilClose && approvalBlocker
+          ? "La solicitud requiere revisión de gerencia después del cierre."
+          : approvalBlocker,
       sale: {
         id: sale.id,
         number: sale.number,

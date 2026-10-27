@@ -181,4 +181,10 @@ describe("B-01 · importes de Ventas durante el arqueo ciego", () => {
       HIDDEN_PAYMENT_METHOD,
     );
   });
+
+  it("deshabilita el PDF de una fila redactada y explica cuándo vuelve", () => {
+    expect(management).toContain("disabled={hidden}");
+    expect(management).toContain("Disponible al cerrar");
+    expect(management).toContain("saleRowAmountsHidden(hideSaleAmounts, s)");
+  });
 });

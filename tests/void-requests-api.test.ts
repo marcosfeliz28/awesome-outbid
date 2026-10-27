@@ -576,6 +576,10 @@ describe("3p · solicitud de anulación", () => {
     });
     const installmentRequest = await ask(seller, withInstallment.id);
     expect(installmentRequest.status).toBe(201);
+    expect(installmentRequest.body.approvalBlocker).toMatch(
+      /revisión de gerencia después del cierre/i,
+    );
+    expect(installmentRequest.body.approvalBlocker).not.toMatch(/abonos/i);
     const installmentDetail = (await requests(owner, "pending")).find(
       (row: any) => row.id === installmentRequest.body.id,
     );
