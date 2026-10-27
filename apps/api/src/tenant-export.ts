@@ -16,6 +16,8 @@ import { tenantObjectStore } from "./tenant-object-store";
  * the encrypted disaster-recovery backup is a separate operation. */
 const SECRET_FIELD = /(?:password|pinHash|secret|token|verificationHash|api[_-]?key|private[_-]?key|credential|authorization|cookie)/i;
 const SECRET_EXACT = new Set(["hash", "codeHash", "challenge", "refreshTokenEnc", "secretHash", "emailVerificationHash"]);
+/** Notas internas del operador de la plataforma: la empresa ve sus pagos, no por qué se anularon. */
+const INTERNAL_COLUMNS = new Set(["PlatformPayment.voidReason"]);
 const BATCH = 100;
 
 type ExportModel = { name: string; table: string; columns: string[]; order: string[] };
@@ -34,7 +36,7 @@ export function exportModels(): ExportModel[] {
     return {
       name: model.name,
       table: model.dbName ?? model.name,
-      columns: model.fields.filter((field) => field.kind === "scalar" || field.kind === "enum").map((field) => field.dbName ?? field.name),
+      columns: model.fields.filter((field) => (field.kind === "scalar" || field.kind === "enum") && !INTERNAL_COLUMNS.has(`${model.name}.${field.name}`)).map((field) => field.dbName ?? field.name),
       order: order.map((field) => model.fields.find((candidate) => candidate.name === field)?.dbName ?? field),
     };
   });

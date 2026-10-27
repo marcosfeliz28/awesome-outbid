@@ -136,3 +136,24 @@ describe("PC-23 · referencia única en la base (C)", () => {
     await expect(insert(a.id, "B H D-77")).rejects.toThrow(/23505/);
   });
 });
+
+describe("PC-23 · exportación de la empresa (D)", () => {
+  it("la exportación de la empresa no incluye el motivo interno de la anulación", async () => {
+    const created = await op("post", "/tenants", {
+      businessName: "Piloto exporta", companyCode: "exporta-void", businessType: "retail", plan: "basico",
+      adminName: "Dueña piloto", adminEmail: "exporta-void@example.invalid", operadora: "Ana Operadora",
+      acuerdo: { version: "piloto-1", fecha: "2026-10-01", referencia: "Carpeta 12" },
+    });
+    const password = "ClaveSegura-2026!";
+    const token = created.body.invitationUrl.split("#token=")[1];
+    expect((await t.http.post("/api/auth/accept-invitation").send({ token, password, managerPin: "869253", consentAccepted: true })).status).toBe(201);
+    const login = await t.http.post("/api/auth/login").set("x-tenant-id", "exporta-void").send({ login: "exporta-void@example.invalid", password });
+    const paid = await pay("exporta-void", 1, "EXP-1");
+    expect((await op("post", `/tenants/exporta-void/payments/${paid.body.payment.id}/void`, { reason: "MOTIVO-INTERNO-SECRETO" })).status).toBe(201);
+    const exported = await t.http.get("/api/tenant/export?format=json").set("Authorization", `Bearer ${login.body.accessToken}`)
+      .buffer(true).parse((res: any, cb: any) => { let s = ""; res.on("data", (c: any) => { s += c; }); res.on("end", () => cb(null, s)); });
+    expect(exported.status).toBe(200);
+    expect(exported.body).toContain("EXP-1"); // sus pagos sí salen
+    expect(exported.body).not.toContain("MOTIVO-INTERNO-SECRETO");
+  });
+});
