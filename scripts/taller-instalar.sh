@@ -21,7 +21,18 @@ d=json.load(open(p)) if os.path.exists(p) else {}
 d.setdefault("env",{})["VERCEL_PLUGIN_TELEMETRY"]="off"
 for k,v in {"CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS":"1","CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS":"1","DO_NOT_TRACK":"1","OMC_SECURITY":"strict","OMC_DISABLE_TOOLS":"python-repl"}.items(): d["env"][k]=v
 d["enabledMcpjsonServers"]=["chrome-devtools-nube"]
+# Guardia: bloquea acciones peligrosas antes de ejecutarlas (taller/guardia.mjs, pruebas en taller/guardia.test.mjs).
+d.setdefault("hooks",{}).setdefault("PreToolUse",[])
+cmd='node "$CLAUDE_PROJECT_DIR"/taller/guardia.mjs'
+if not any(cmd in h.get("command","") for g in d["hooks"]["PreToolUse"] for h in g.get("hooks",[])):
+    d["hooks"]["PreToolUse"].append({"matcher":"*","hooks":[{"type":"command","command":cmd}]})
+# El Taller no usa Render ni Cloudflare, ni lee credenciales.
+neg=d.setdefault("permissions",{}).setdefault("deny",[])
+for r in ["mcp__Render","mcp__cloudeflare","mcp__Cloudflare_Developer_Platform","Read(~/.ssh/**)","Read(~/.aws/**)","Read(~/.config/gcloud/**)","Read(./.env)","Read(./.env.*)","Read(**/.git-credentials)"]:
+    if r not in neg: neg.append(r)
 json.dump(d,open(p,"w"),indent=2)
 PY
+# Candado de integridad: avisa si un plugin cambió respecto a lo que revisó el Revisor.
+node scripts/plugins-lock.mjs verificar || echo "AVISO: algún plugin difiere de lo revisado; no lo uses hasta que el Revisor lo apruebe." >&2
 # Nota (PLUGINS-PROFUNDA.md): no instalar el HUD de oh-my-claudecode (lee el token OAuth).
 echo "Plugins del Taller instalados. Reinicia la sesión para cargarlos."
