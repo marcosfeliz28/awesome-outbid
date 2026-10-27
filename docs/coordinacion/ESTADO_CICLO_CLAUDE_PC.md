@@ -55,3 +55,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Revisión manual (27-oct, 5:08 p. m. RD) con permiso de Marcos para textinputhost
 - chatgpt-pc/visual-integracion-27oct (ac370ba9): verify en GitHub terminó en ROJO; windows-installer y render-images en verde.
 - ChatGPT PC («Instala el documento», ocupado): diagnostica una prueba de mercancía que busca un botón «SALIDA» (la interfaz lo expone con otro texto) y ajusta la prueba al control real. No escribí en el chat.
+
+## Ciclo 15 min (27-oct, ~5:18 p. m. RD)
+- RESPUESTA_CLAUDE_PC_27OCT.md: CAMBIÓ a 8641f3d8 (sección 12: decisiones de la dueña; ITBIS sin restar; órdenes 12.1 y 12.2). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
+- Nexora 1 mezcló PC-23, A1 y B-01 en producto-nexora (c0945874); falta su CI.
+- Órdenes ejecutándose en ramas nuevas: claude-pc/itbis-una-regla (12.1) y claude-pc/b01-tienda (12.2, solo preparación). Sin mezclar ni desplegar.
+- Pega a ChatGPT (sección 12): pide confirmación de la dueña en mi chat antes de pegar. No pegué.
+- CI: visual-integracion-27oct en curso (a9bedbde). ChatGPT PC: «Instala el documento» trabajando, esperando los 3 jobs de GitHub. No escribí.
+- ChatGPT nube: sin cambios visibles.
