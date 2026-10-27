@@ -24,7 +24,10 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(app).toContain(
       "...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {})",
     );
-    expect(app).toContain('(page === "styles" && SHOW_STYLE_GUIDE)');
+    expect(app).toContain('(route === "styles" && SHOW_STYLE_GUIDE)');
+    expect(app).toContain(
+      '(safePage === "styles" ? "Guía de estilos" : "Configuración")',
+    );
   });
   it("la ayuda explica tareas reales sin prometer ventas offline siempre", () => {
     expect(app).toContain("Ayuda para trabajar");
