@@ -275,7 +275,9 @@ export function saleHistoryDto(
     voidedBy: sale.voidedBy,
     createdAt: sale.createdAt,
     updatedAt: sale.updatedAt,
-    items: (sale.items ?? []).map(item),
+    ...(hiddenUntilClose
+      ? { itemsHiddenUntilClose: true as const }
+      : { items: (sale.items ?? []).map(item) }),
     returns: (sale.returns ?? []).map(returned),
     voidRequest: sale.voidRequests?.[0]
       ? {
@@ -1756,7 +1758,7 @@ export class SalesController {
         bad("Fecha inválida.");
       createdAt = { gte, lte };
     }
-    const [rows, ownOpenCash] = await Promise.all([
+    const [rows, hiddenUntilClose] = await Promise.all([
       this.db.sale.findMany({
         where: {
           branchId: actor.branchId,
@@ -1780,53 +1782,61 @@ export class SalesController {
         // cada artículo de todas las ventas en una sola respuesta.
         take: filters.q || filters.date ? 500 : 100,
       }),
-      canViewCashExpected(actor)
-        ? Promise.resolve(null)
-        : this.db.cashSession.findFirst({
-            where: {
-              branchId: actor.branchId,
-              userId: actor.id,
-              closedAt: null,
-            },
-            select: { id: true },
-          }),
+      this.hiddenUntilCashClose(actor),
     ]);
-    const hiddenUntilClose = Boolean(ownOpenCash);
     return rows.map((sale) =>
       saleHistoryDto(sale, actor, hiddenUntilClose),
     );
   }
-  private async voidRequestDto(id: string, actor: Actor) {
-    const row = await this.db.saleVoidRequest.findFirstOrThrow({
-      where: {
-        id,
-        branchId: actor.branchId,
-        ...(can(actor.permissions, "*") ? {} : { requestedById: actor.id }),
-      },
-      include: {
-        requester: { select: { id: true, name: true } },
-        reviewer: { select: { id: true, name: true } },
-        sale: {
-          include: {
-            customer: { select: { name: true } },
-            items: { include: { variant: { include: { product: true } } } },
-            payments: {
-              select: {
-                method: true,
-                amount: true,
-                status: true,
-                entryType: true,
-              },
-            },
-            returns: { select: { id: true } },
-          },
+
+  private async hiddenUntilCashClose(actor: Actor) {
+    if (canViewCashExpected(actor)) return false;
+    return Boolean(
+      await this.db.cashSession.findFirst({
+        where: {
+          branchId: actor.branchId,
+          userId: actor.id,
+          closedAt: null,
         },
-      },
-    });
-    return this.voidRequestView(row);
+        select: { id: true },
+      }),
+    );
   }
 
-  private voidRequestView(row: any) {
+  private async voidRequestDto(id: string, actor: Actor) {
+    const [row, hiddenUntilClose] = await Promise.all([
+      this.db.saleVoidRequest.findFirstOrThrow({
+        where: {
+          id,
+          branchId: actor.branchId,
+          ...(can(actor.permissions, "*") ? {} : { requestedById: actor.id }),
+        },
+        include: {
+          requester: { select: { id: true, name: true } },
+          reviewer: { select: { id: true, name: true } },
+          sale: {
+            include: {
+              customer: { select: { name: true } },
+              items: { include: { variant: { include: { product: true } } } },
+              payments: {
+                select: {
+                  method: true,
+                  amount: true,
+                  status: true,
+                  entryType: true,
+                },
+              },
+              returns: { select: { id: true } },
+            },
+          },
+        },
+      }),
+      this.hiddenUntilCashClose(actor),
+    ]);
+    return this.voidRequestView(row, hiddenUntilClose);
+  }
+
+  private voidRequestView(row: any, hiddenUntilClose = false) {
     const sale = row.sale;
     const approvalBlocker =
       sale.status !== "completed"
@@ -1862,21 +1872,26 @@ export class SalesController {
         id: sale.id,
         number: sale.number,
         status: sale.status,
-        total: sale.total,
         createdAt: sale.createdAt,
         customer: sale.customer?.name ?? null,
-        items: sale.items.map((i: any) => ({
-          name: i.variant.product.name,
-          sku: i.variant.sku,
-          qty: i.qty,
-          lineTotal: i.lineTotal,
-        })),
-        payments: sale.payments.map((p: any) => ({
-          method: p.method,
-          amount: p.amount,
-          status: p.status,
-          entryType: p.entryType,
-        })),
+        ...(hiddenUntilClose
+          ? { hiddenUntilClose: true as const }
+          : {
+              hiddenUntilClose: false as const,
+              total: sale.total,
+              items: sale.items.map((i: any) => ({
+                name: i.variant.product.name,
+                sku: i.variant.sku,
+                qty: i.qty,
+                lineTotal: i.lineTotal,
+              })),
+              payments: sale.payments.map((p: any) => ({
+                method: p.method,
+                amount: p.amount,
+                status: p.status,
+                entryType: p.entryType,
+              })),
+            }),
       },
     };
   }
@@ -1896,35 +1911,38 @@ export class SalesController {
               status,
             ),
           };
-    const rows = await this.db.saleVoidRequest.findMany({
-      where: {
-        branchId: actor.branchId,
-        ...filter,
-        ...(can(actor.permissions, "*") ? {} : { requestedById: actor.id }),
-      },
-      include: {
-        requester: { select: { id: true, name: true } },
-        reviewer: { select: { id: true, name: true } },
-        sale: {
-          include: {
-            customer: { select: { name: true } },
-            items: { include: { variant: { include: { product: true } } } },
-            payments: {
-              select: {
-                method: true,
-                amount: true,
-                status: true,
-                entryType: true,
+    const [rows, hiddenUntilClose] = await Promise.all([
+      this.db.saleVoidRequest.findMany({
+        where: {
+          branchId: actor.branchId,
+          ...filter,
+          ...(can(actor.permissions, "*") ? {} : { requestedById: actor.id }),
+        },
+        include: {
+          requester: { select: { id: true, name: true } },
+          reviewer: { select: { id: true, name: true } },
+          sale: {
+            include: {
+              customer: { select: { name: true } },
+              items: { include: { variant: { include: { product: true } } } },
+              payments: {
+                select: {
+                  method: true,
+                  amount: true,
+                  status: true,
+                  entryType: true,
+                },
               },
+              returns: { select: { id: true } },
             },
-            returns: { select: { id: true } },
           },
         },
-      },
-      orderBy: { requestedAt: "desc" },
-      take: 100,
-    });
-    return rows.map((row) => this.voidRequestView(row));
+        orderBy: { requestedAt: "desc" },
+        take: 100,
+      }),
+      this.hiddenUntilCashClose(actor),
+    ]);
+    return rows.map((row) => this.voidRequestView(row, hiddenUntilClose));
   }
 
   @Post("sales/:id/void-requests")
@@ -4556,6 +4574,8 @@ export class SalesController {
     @CurrentUser() actor: Actor,
     @Res() res: Response,
   ) {
+    if (await this.hiddenUntilCashClose(actor))
+      denied("El recibo estará disponible después de cerrar tu caja.");
     const sale = await this.db.sale.findFirstOrThrow({
       where: {
         id: parse(uuid, id),

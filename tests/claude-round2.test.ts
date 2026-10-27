@@ -316,8 +316,8 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
       "payments",
     ])
       expect(hidden).not.toHaveProperty(field);
-    expect(hidden.items[0]).not.toHaveProperty("unitPrice");
-    expect(hidden.items[0]).not.toHaveProperty("lineTotal");
+    expect(hidden).not.toHaveProperty("items");
+    expect(hidden.itemsHiddenUntilClose).toBe(true);
     expect(hidden.returns[0]).not.toHaveProperty("total");
     expect(hidden.returns[0]).not.toHaveProperty("refundMethod");
 

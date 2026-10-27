@@ -204,7 +204,67 @@ describe("B-01 Ventas no rompe el arqueo ciego", () => {
     expect(hidden.hiddenUntilClose).toBe(true);
     expect(hidden).not.toHaveProperty("total");
     expect(hidden).not.toHaveProperty("payments");
-    expect(hidden.items[0]).not.toHaveProperty("lineTotal");
+    expect(hidden).not.toHaveProperty("items");
+    expect(hidden.itemsHiddenUntilClose).toBe(true);
+
+    const receiptWhileOpen = await fetch(
+      base + "/sales/" + sale.id + "/receipt.pdf",
+      { headers: { Authorization: "Bearer " + cashier.token } },
+    );
+    expect(receiptWhileOpen.status).toBe(403);
+    expect(receiptWhileOpen.headers.get("content-type")).not.toContain(
+      "application/pdf",
+    );
+    const ownerReceipt = await fetch(
+      base + "/sales/" + sale.id + "/receipt.pdf",
+      { headers: { Authorization: "Bearer " + owner } },
+    );
+    expect(ownerReceipt.status).toBe(200);
+    expect(ownerReceipt.headers.get("content-type")).toContain(
+      "application/pdf",
+    );
+
+    const voidRequest = await request(
+      "/sales/" + sale.id + "/void-requests",
+      cashier.token,
+      {
+        operationId: randomUUID(),
+        reasonCode: "payment_error",
+        reason: "QA B-01: comprobar respuesta redactada durante caja abierta.",
+      },
+    );
+    expect(voidRequest.status, JSON.stringify(voidRequest.body)).toBe(201);
+    expect(voidRequest.body.sale.hiddenUntilClose).toBe(true);
+    for (const field of ["total", "items", "payments"])
+      expect(voidRequest.body.sale).not.toHaveProperty(field);
+
+    const listedRequests = await ok("/void-requests?status=all", cashier.token);
+    const listedRequest = listedRequests.find(
+      (row: any) => row.id === voidRequest.body.id,
+    );
+    expect(listedRequest.sale.hiddenUntilClose).toBe(true);
+    expect(listedRequest.sale).not.toHaveProperty("total");
+    expect(listedRequest.sale).not.toHaveProperty("items");
+    expect(listedRequest.sale).not.toHaveProperty("payments");
+
+    const ownerRequests = await ok("/void-requests?status=all", owner);
+    const ownerRequest = ownerRequests.find(
+      (row: any) => row.id === voidRequest.body.id,
+    );
+    expect(ownerRequest.sale.hiddenUntilClose).toBe(false);
+    expect(Number(ownerRequest.sale.total)).toBe(100);
+    expect(ownerRequest.sale.items[0].name).toBeTruthy();
+    expect(ownerRequest.sale.payments[0].method).toBe("cash");
+
+    const cancelledRequest = await ok(
+      "/void-requests/" + voidRequest.body.id + "/cancel",
+      cashier.token,
+      {},
+    );
+    expect(cancelledRequest.sale.hiddenUntilClose).toBe(true);
+    expect(cancelledRequest.sale).not.toHaveProperty("total");
+    expect(cancelledRequest.sale).not.toHaveProperty("items");
+    expect(cancelledRequest.sale).not.toHaveProperty("payments");
 
     const ownerView = await ok("/sales?q=" + sale.number, owner);
     const visibleToOwner = ownerView.find((row: any) => row.id === sale.id);
@@ -227,6 +287,29 @@ describe("B-01 Ventas no rompe el arqueo ciego", () => {
     expect(revealed.hiddenUntilClose).toBe(false);
     expect(Number(revealed.total)).toBe(100);
     expect(revealed.payments[0].method).toBe("cash");
+    expect(revealed.items[0].variant.product.name).toBeTruthy();
+    expect(Number(revealed.items[0].qty)).toBe(1);
+
+    const receiptAfterClose = await fetch(
+      base + "/sales/" + sale.id + "/receipt.pdf",
+      { headers: { Authorization: "Bearer " + cashier.token } },
+    );
+    expect(receiptAfterClose.status).toBe(200);
+    expect(receiptAfterClose.headers.get("content-type")).toContain(
+      "application/pdf",
+    );
+
+    const revealedRequests = await ok(
+      "/void-requests?status=all",
+      cashier.token,
+    );
+    const revealedRequest = revealedRequests.find(
+      (row: any) => row.id === voidRequest.body.id,
+    );
+    expect(revealedRequest.sale.hiddenUntilClose).toBe(false);
+    expect(Number(revealedRequest.sale.total)).toBe(100);
+    expect(revealedRequest.sale.items[0].name).toBeTruthy();
+    expect(revealedRequest.sale.payments[0].method).toBe("cash");
   });
 });
 

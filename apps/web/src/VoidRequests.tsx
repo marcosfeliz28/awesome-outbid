@@ -78,29 +78,43 @@ export function VoidRequests() {
                   </p>
                   <p>
                     <strong>Cliente:</strong>{" "}
-                    {row.sale.customer || "Sin nombre"} ·{" "}
-                    <strong>Total:</strong> {formatMoney(row.sale.total)}
+                    {row.sale.customer || "Sin nombre"}
                   </p>
                   <p>
                     <strong>Motivo:</strong> {row.reason}
                   </p>
-                  <h3>Artículos</h3>
-                  <ul>
-                    {row.sale.items.map((item: any, index: number) => (
-                      <li key={index}>
-                        {item.name} · {item.sku} · {item.qty} ·{" "}
-                        {formatMoney(item.lineTotal)}
-                      </li>
-                    ))}
-                  </ul>
-                  <h3>Pagos</h3>
-                  <ul>
-                    {row.sale.payments.map((payment: any, index: number) => (
-                      <li key={index}>
-                        {payment.method} · {formatMoney(payment.amount)}
-                      </li>
-                    ))}
-                  </ul>
+                  {row.sale.hiddenUntilClose ? (
+                    <p role="status">
+                      Total, artículos y pagos ocultos hasta cerrar tu caja.
+                    </p>
+                  ) : (
+                    <>
+                      <p>
+                        <strong>Total:</strong> {formatMoney(row.sale.total)}
+                      </p>
+                      <h3>Artículos</h3>
+                      <ul>
+                        {(row.sale.items ?? []).map(
+                          (item: any, index: number) => (
+                            <li key={index}>
+                              {item.name} · {item.sku} · {item.qty} ·{" "}
+                              {formatMoney(item.lineTotal)}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                      <h3>Pagos</h3>
+                      <ul>
+                        {(row.sale.payments ?? []).map(
+                          (payment: any, index: number) => (
+                            <li key={index}>
+                              {payment.method} · {formatMoney(payment.amount)}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    </>
+                  )}
                   {row.approvalBlocker && row.status === "pending" && (
                     <p role="status" className="danger-text">
                       No se puede aprobar: {row.approvalBlocker}

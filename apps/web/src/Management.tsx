@@ -3631,27 +3631,28 @@ export function SalesHistory() {
                   Imprimir nota {r.number}
                 </Button>
               ))}
-            <DataTable
-              rows={selected.items}
-              columns={[
-                { label: "Producto", render: (i) => i.variant.product.name },
-                {
-                  label: "Variante",
-                  render: (i) => attrLabel(i.variant.attributes),
-                },
-                { label: "Cantidad", render: (i) => i.qty },
-                { label: "Devuelta", render: (i) => i.returnedQty },
-                {
-                  label: "Total",
-                  render: (i) =>
-                    saleAmountValue(
-                      i.lineTotal,
-                      selectedAmountsHidden,
-                      formatMoney,
-                    ),
-                },
-              ]}
-            />
+            {selectedAmountsHidden ? (
+              <p role="status">
+                Detalle de productos oculto hasta cerrar tu caja.
+              </p>
+            ) : (
+              <DataTable
+                rows={selected.items ?? []}
+                columns={[
+                  { label: "Producto", render: (i) => i.variant.product.name },
+                  {
+                    label: "Variante",
+                    render: (i) => attrLabel(i.variant.attributes),
+                  },
+                  { label: "Cantidad", render: (i) => i.qty },
+                  { label: "Devuelta", render: (i) => i.returnedQty },
+                  {
+                    label: "Total",
+                    render: (i) => formatMoney(i.lineTotal),
+                  },
+                ]}
+              />
+            )}
             <h3>Pagos registrados</h3>
             {!selectedAmountsHidden && Number(selected.discountTotal) > 0 && (
               <p>

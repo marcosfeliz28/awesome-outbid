@@ -343,6 +343,7 @@ describe("G5 · contenido real de PDF", () => {
           };
         },
       },
+      cashSession: { findFirst: async () => null },
       settings: { findUnique: async () => ({ data: {} }) },
       customer: { findUnique: async () => null },
       user: { findUnique: async () => null },
