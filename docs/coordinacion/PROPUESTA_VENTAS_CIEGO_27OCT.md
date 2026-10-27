@@ -1,6 +1,6 @@
 # B-01 · Propuesta sin aplicar para «Ventas» y arqueo ciego
 
-**Estado:** preparada para revisión; no integrar ni desplegar hasta decisión de la dueña.  
+**Estado:** preparada para revisión; no integrar ni desplegar hasta decisión de la dueña.
 **Rama aislada:** `chatgpt-nube/ventas-ciego`.
 
 ## Problema
