@@ -98,3 +98,6 @@ NO tocar: Render, despliegues, base de datos, credenciales, `nexora-cloud`/`prod
 
 ### 7.1 Añadido por la dueña (27-oct): «Playwright»
 El que ella buscaba no era «handwrite» sino **Playwright** (reel de santiremedio, «Plugin 1/5»: el navegador que deja a Claude ver y probar la web). Entra en la misma orden 7. Fuente: el plugin/MCP oficial de Playwright (Microsoft, `microsoft/playwright-mcp`), versión fija y verificada. Claude PC ya usa Playwright para capturas; instálalo como plugin/MCP con las mismas reglas de la sección 7 (sin telemetría, solo en el repo, sin llaves). Con los reels «Plugin 1/5» y «4/5» ya salen Playwright y Palacio Mental; faltan 2/5, 3/5 y 5/5 si ella los encuentra.
+
+### 7.2 Aclaración de la dueña (27-oct): «todos los que te envié, más los que tienes»
+Claude PC debe tener: (a) todo lo de la sección 7 y 7.1, y (b) lo que Nexora 1 ya usa. Lo de (b) que vive en el repo te llega con `git pull` (skills de texto): `ponytail`, `mercancia`, `laptop-nexora`, `webapp-testing`, `frontend-design`, `arena`, y las de memoria (`palace`, `session-handoff`, etc.). Los conectores de la cuenta (Canva, Higgsfield, vidIQ, Gmail, Calendar, Drive, Cloudflare, Render) NO se copian a la laptop: Render y Cloudflare son de producción y solo los usa Nexora 1; los demás los conecta ella desde su cuenta si los quiere.
