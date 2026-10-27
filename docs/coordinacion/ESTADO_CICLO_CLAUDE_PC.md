@@ -32,3 +32,6 @@ Límite: no se escribió en ningún chat en este ciclo.
 - OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
 - CI: pc23 c1fe8c0 y a1 498df5ee en verde; b01 0500b03a en verde; 287db57e en verde (última ejecución).
 - Pantalla: ChatGPT nube y ChatGPT PC sin cambios visibles en esta pasada; sin escritura.
+
+## Envío confirmado por Marcos (27-oct, 4:20 p. m. RD)
+- Enviado a «Instala el documento» (ChatGPT PC, libre antes de escribir): el error exacto de verify de visual-integracion-27oct (ef0832e1) según la orden 11.1, con las instrucciones de arreglo, prueba antes/después y LISTA al terminar. ChatGPT PC respondió «Thinking».
