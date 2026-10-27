@@ -157,3 +157,24 @@ describe("PC-23 · exportación de la empresa (D)", () => {
     expect(exported.body).not.toContain("MOTIVO-INTERNO-SECRETO");
   });
 });
+
+describe("PC-23 · referencia con aspecto de tarjeta (E)", () => {
+  it("rechaza 13 a 19 dígitos que pasan Luhn (con espacios o guiones, o dentro de un texto) y acepta referencias normales", async () => {
+    const a = await tenant("ref-tarjeta");
+    for (const reference of ["4111111111111111", "4111 1111 1111 1111", "4111-1111-1111-1111", "Pago tarjeta 4111 1111 1111 1111 ok", "378282246310005", "6200000000000005009"]) {
+      const r = await pay("ref-tarjeta", 1, reference);
+      expect(r.status, reference).toBe(400);
+      expect(JSON.stringify(r.body)).toMatch(/tarjeta/i);
+      expect(JSON.stringify(r.body)).not.toContain("4111");
+    }
+    expect(await t.q(`SELECT 1 FROM "PlatformPayment" WHERE "tenantId"=$1::uuid`, a.id)).toHaveLength(0);
+    // No pasa Luhn, es corto (12) o es una referencia común: se acepta.
+    let n = 0;
+    for (const reference of ["4111111111111112", "123456789012", "BHD-0001-2026", "0012345678"]) {
+      await t.q(`UPDATE "Tenant" SET status='active', "paidThroughAt"=now() + interval '400 days' WHERE id=$1::uuid`, a.id);
+      const r = await pay("ref-tarjeta", 1, reference);
+      expect(r.status, `${reference} ${JSON.stringify(r.body)}`).toBe(201); n++;
+    }
+    expect(n).toBe(4);
+  });
+});

@@ -12,12 +12,27 @@ import { RegistrationService } from "./registration";
 // puede marcar pagos. Sin pasarela ni datos de tarjeta: el dinero se cobra
 // fuera del sistema y aquí se anota.
 const slug = z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/);
+/** Aspecto de tarjeta: 13 a 19 dígitos (con espacios o guiones) que pasan Luhn. */
+export function hasCardLikeDigits(text: string) {
+  return (text.match(/\d(?:[ -]?\d)*/g) ?? []).some(run => {
+    const digits = run.replace(/\D/g, "");
+    if (digits.length < 13 || digits.length > 19) return false;
+    let sum = 0;
+    for (let i = 0; i < digits.length; i++) {
+      let n = Number(digits[digits.length - 1 - i]);
+      if (i % 2) { n *= 2; if (n > 9) n -= 9; }
+      sum += n;
+    }
+    return sum % 10 === 0;
+  });
+}
 const paymentInput = z.object({
   // PLA-02: la misma operación reenviada (doble clic, respuesta perdida) no se cobra dos veces.
   operationId: z.string().uuid(),
   amount: z.number().positive().max(10_000_000).multipleOf(0.01),
   method: z.enum(["transfer", "cash", "card_in_store", "courier"]),
-  reference: z.string().trim().min(1).max(120),
+  reference: z.string().trim().min(1).max(120)
+    .refine(v => !hasCardLikeDigits(v), "La referencia parece un número de tarjeta; anota solo el número de operación o recibo."),
   months: z.number().int().min(1).max(12).optional(),
   year: z.literal(true).optional(),
 }).strict().refine(v => (v.months === undefined) !== (v.year === undefined), "Indica los meses (1 a 12) o el año, no ambos.");
