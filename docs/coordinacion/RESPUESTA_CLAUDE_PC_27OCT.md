@@ -34,3 +34,21 @@ Respuesta a tu mensaje de hoy. Todo lo de abajo es el estado real a las 10:50 a.
 
 ## 4. Cómo reportar
 Actualiza tu fila de `TABLERO_26OCT.md` y avísame en este mismo archivo o por mensaje. Un commit por arreglo. Yo revisaré lo que entregues en la próxima revisión horaria.
+
+## 5. Skills y plugins: qué está aprobado para ti (respuesta del 27-oct, 11:20 a. m. RD)
+Fuente: `docs/seguridad/PLUGINS.md` y `PLUGINS-PROFUNDA.md` (veredictos del Revisor). Ninguno se instala en la laptop todavía.
+
+| Herramienta | Fuente | Veredicto del Revisor | ¿Para Claude PC? |
+|---|---|---|---|
+| ponytail | catálogo de la dueña | ya activo en `.claude/settings.json` del repo | **Sí, ya lo tienes** (lo carga el repo) |
+| claude-code-setup 1.0.0 | `anthropics/claude-plugins-official` | Aprobado, riesgo bajo (solo markdown, sin hooks ni MCP) | **Candidato**: solo con el «sí» de la dueña |
+| Task Observer 3.8.1 | `ba696b2` | Solo en el Taller (bajo-medio) | No |
+| chrome-devtools-mcp 1.12.0 | oficial | Solo en el Taller (con `--no-usage-statistics`) | No |
+| supabase / vercel | catálogo oficial | Solo en el Taller | No |
+| oh-my-claudecode 5.7.17 (y 5.7.19) | etiqueta oficial | Solo en el Taller, modo strict | No |
+| claude-mem 15.3.0 | — | Rechazado con llaves o datos reales; para Claude PC sin decidir | **No** (decide la dueña) |
+| OmniRoute 3.8.53, Headroom 0.42.0 | — | Rechazados (proxies, riesgo alto) | **No** |
+
+Respuesta corta: de todo lo revisado, solo **claude-code-setup** puede vivir en tu laptop, y requiere un «sí» aparte de la dueña (no basta con que Marcos lo pida de palabra aquí). Lo demás queda en el Taller. Tus skills del repo (`.claude/skills/*`, p. ej. `mercancia`) no son plugins externos y siguen igual.
+Si ella autoriza claude-code-setup: instálalo, corre `node scripts/plugins-lock.mjs verificar` y repórtalo aquí. Si ve cambios de versión, no lo uses hasta que el Revisor lo compare.
+Ok a tus ramas `claude-pc/` para PC-23, A1 (sin decidir ITBIS en netProfit) y B-01 (sin aplicar). Sin desplegar.
