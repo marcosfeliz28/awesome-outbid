@@ -19,8 +19,9 @@ import json,os
 p=".claude/settings.local.json"
 d=json.load(open(p)) if os.path.exists(p) else {}
 d.setdefault("env",{})["VERCEL_PLUGIN_TELEMETRY"]="off"
-d.setdefault("env",{})["CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS"]="1"
+for k,v in {"CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS":"1","CHROME_DEVTOOLS_MCP_NO_UPDATE_CHECKS":"1","DO_NOT_TRACK":"1","OMC_SECURITY":"strict","OMC_DISABLE_TOOLS":"python-repl"}.items(): d["env"][k]=v
 d["enabledMcpjsonServers"]=["chrome-devtools-nube"]
 json.dump(d,open(p,"w"),indent=2)
 PY
+# Nota (PLUGINS-PROFUNDA.md): no instalar el HUD de oh-my-claudecode (lee el token OAuth).
 echo "Plugins del Taller instalados. Reinicia la sesión para cargarlos."
