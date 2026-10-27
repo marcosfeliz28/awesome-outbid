@@ -4204,7 +4204,12 @@ export class SalesController {
     const sum = (rows: { amount: unknown }[]) =>
       money(rows.reduce((a, p) => a.plus(p.amount as any), d(0)));
     const now = new Date();
+    const blind = await blindSalesScope(this.db, actor);
     return sales.flatMap((s) => {
+      // B-01: venta de la caja abierta o con un abono a ella: sin importes.
+      const hide =
+        inBlindScope(blind, s) ||
+        (!!blind && s.payments.some((p) => p.cashSessionId === blind.id));
       const collections = s.payments.filter(
         (p) => p.entryType === "installment",
       );
@@ -4234,23 +4239,28 @@ export class SalesController {
           receivableKind: s.receivableKind,
           status,
           cashSessionId: s.cashSessionId,
-          total: Number(s.total),
-          codAmount: receivableAmount,
-          receivableAmount,
-          collected,
-          pending,
+          total: hide ? null : Number(s.total),
+          codAmount: hide ? null : receivableAmount,
+          receivableAmount: hide ? null : receivableAmount,
+          collected: hide ? null : collected,
+          pending: hide ? null : pending,
+          ...(hide ? { hiddenUntilClose: true } : {}),
           closedAt: s.creditClosedAt,
           closedBy: nameOf(s.creditClosedById),
           // Transferencias del mensajero registradas que falta verificar.
-          pendingVerification: sum(
-            collections.filter((p) => p.status === "pending_verification"),
-          ),
-          collections: collections.map((p) => ({
-            ...paymentSummary(p),
-            paymentId: p.id,
-            amount: Number(p.amount),
-            receivedBy: nameOf(p.receivedById),
-          })),
+          pendingVerification: hide
+            ? null
+            : sum(
+                collections.filter((p) => p.status === "pending_verification"),
+              ),
+          collections: hide
+            ? []
+            : collections.map((p) => ({
+                ...paymentSummary(p),
+                paymentId: p.id,
+                amount: Number(p.amount),
+                receivedBy: nameOf(p.receivedById),
+              })),
           customer: customerForActor(
             customers.find((c) => c.id === s.customerId) ?? null,
             actor,

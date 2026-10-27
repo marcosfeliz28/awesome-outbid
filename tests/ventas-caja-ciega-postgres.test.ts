@@ -117,6 +117,31 @@ beforeAll(async () => {
   };
   await sale(1, OLD, 321.45);
   await sale(2, OPEN, 123.45);
+  // Ventas a crédito: en la caja abierta (100 en efectivo + 200 a crédito,
+  // abono de 50 en efectivo a esa caja), en la caja vieja con un abono de 40 a
+  // la caja abierta, y en la caja vieja con su propio abono (visible siempre).
+  const pay = (n: number, saleN: number, session: string, entry: string, method: string, amount: number) =>
+    q(
+      `INSERT INTO "Payment" (id,"tenantId","saleId","cashSessionId","entryType",method,amount,tendered) VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7,$7)`,
+      id(300 + n), TENANT, id(100 + saleN), session, entry, method, amount,
+    );
+  const credit = async (n: number, session: string, total: number, balance: number) => {
+    await q(
+      `INSERT INTO "Sale" (id,"tenantId",number,"offlineUuid","sellerId",status,"cashSessionId",subtotal,"discountTotal","taxTotal",total,"costTotal","creditBalance","receivableKind","updatedAt") VALUES ($1::uuid,$2::uuid,$3,$1::uuid,$4::uuid,'completed',$5::uuid,$6,0,0,$6,1,$7,'credit',now())`,
+      id(100 + n), TENANT, "QA-" + n, cajera.user, session, total, balance,
+    );
+  };
+  await credit(3, OPEN, 300, 150);
+  await pay(1, 3, OPEN, "sale", "cash", 100);
+  await pay(2, 3, OPEN, "sale", "credit", 200);
+  await pay(3, 3, OPEN, "installment", "cash", 50);
+  await credit(4, OLD, 400, 210);
+  await pay(4, 4, OLD, "sale", "credit", 400);
+  await pay(5, 4, OLD, "installment", "cash", 150);
+  await pay(6, 4, OPEN, "installment", "cash", 40);
+  await credit(5, OLD, 500, 450);
+  await pay(7, 5, OLD, "sale", "credit", 500);
+  await pay(8, 5, OLD, "installment", "cash", 50);
 }, 180_000);
 afterAll(async () => {
   delete process.env[FLAG];
@@ -163,6 +188,32 @@ describe("Ventas con caja ciega (B-01)", () => {
     expect(Number(sale.total)).toBe(123.45);
     expect(sale.hiddenUntilClose).toBeUndefined();
     expect(Number(sale.payments[0].amount)).toBe(123.45);
+  });
+
+  it("bandera ENCENDIDA: /cod/pending no entrega importes de la caja abierta", async () => {
+    process.env[FLAG] = "1";
+    const r = await as(cajera.user, cajera.session)("/cod/pending");
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    const row = (n: string) => r.body.find((s: any) => s.number === n);
+    for (const n of ["QA-3", "QA-4"]) {
+      // QA-4 es de la caja vieja, pero tiene un abono a la caja abierta.
+      expect(row(n), n).toMatchObject({
+        hiddenUntilClose: true,
+        total: null,
+        codAmount: null,
+        receivableAmount: null,
+        collected: null,
+        pending: null,
+        pendingVerification: null,
+        collections: [],
+      });
+    }
+    // Una venta de la caja vieja con abono a la vieja sigue visible.
+    expect(row("QA-5")).toMatchObject({ total: 500, pending: 450, collected: 50 });
+    expect(row("QA-5").hiddenUntilClose).toBeUndefined();
+    expect(row("QA-5").collections).toHaveLength(1);
+    const owner = await as(admin.user, admin.session)("/cod/pending");
+    expect(owner.body.find((s: any) => s.number === "QA-3")).toMatchObject({ total: 300, pending: 150, collected: 50 });
   });
 
   it("bandera ENCENDIDA: al cerrar la caja la cajera vuelve a ver los importes", async () => {
