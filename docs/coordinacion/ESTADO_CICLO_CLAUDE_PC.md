@@ -71,3 +71,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Envío confirmado por Marcos (27-oct, 5:22 p. m. RD)
 - Pegado en «Corrige CI de Fase 0» (ChatGPT PC, libre antes de escribir) la orden 12 para ChatGPT PC: rebasar visual-integracion-27oct sobre c0945874, ajustar la prueba de Mercancía al control real, LISTA con 3 CI y «usa todos los agentes necesarios en paralelo». Respondió «Thinking».
 - Orden 12.2 (claude-pc/b01-tienda): BLOQUEADA. Conflictos grandes: tests/ventas-caja-ciega-postgres.test.ts usa un arnés con tenancy que nexora-cloud no tiene; assistant.ts no existe en nexora-cloud. Sin commits. Decisiones pendientes de la dueña: reescribir el arnés o omitir el asistente.
+
+## Ciclo 15 min (27-oct, ~5:31 p. m. RD)
+- RESPUESTA_CLAUDE_PC_27OCT.md: CAMBIÓ a 86f599b3. Decisión 12.2: hacer (b) omitir el commit del asistente a44e4e08 y (a) reescribir el arnés de la prueba para el esquema de nexora-cloud, con prueba propia y bandera apagada. Orden: primero 12.1, después 12.2. OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
+- CI: pc23 c1fe8c0, a1 498df5ee, b01 0500b03a y 287db57e en verde. chatgpt-pc/visual-integracion-27oct (a9bedbde) y claude-pc/itbis-una-regla: sin CI todavía. Sin LISTA nueva.
+- 12.1 sigue en curso (agente). 12.2 se relanza cuando 12.1 termine.
+- Pantalla: ChatGPT nube trabajando (no escribí). Según su último mensaje: AT-04 y AT-11 con windows-installer y render-images en verde, verify pendiente; fase 3 sin cambios de Render; fase 4 corrigió un fallo de globales de Node (commit 1b2c2318).
+- ChatGPT PC: «Corrige CI de Fase 0» recibió la orden 12 (5:22 p. m.); no lo revisé en este ciclo.
