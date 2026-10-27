@@ -521,6 +521,18 @@ describe("Primeros pasos · INI-06 a INI-08", () => {
   });
 });
 
+describe("Mercancía · selector de movimiento", () => {
+  const merchandise = readFileSync("apps/web/src/Merchandise.tsx", "utf8");
+
+  it("expone Entrada y Salida como botones con estado, no como pestañas sin panel", () => {
+    expect(merchandise).toContain('role="group"');
+    expect(merchandise).toContain('aria-pressed={direction === "entry"}');
+    expect(merchandise).toContain('aria-pressed={direction === "exit"}');
+    expect(merchandise).not.toContain('role="tablist"');
+    expect(merchandise).not.toContain('role="tab"');
+  });
+});
+
 describe("G11 · listener de teclado con modal", () => {
   it.each(["F4", "F8", "F12"])(
     "%s se consume y no ejecuta la acción detrás del diálogo",

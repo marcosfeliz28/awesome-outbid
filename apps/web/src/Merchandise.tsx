@@ -276,7 +276,11 @@ async function cachedReference(key: string, path: string) {
   return (await localDB.cache.get(cacheKey))?.data ?? [];
 }
 
-export function Merchandise() {
+export function Merchandise({
+  assistantAvailable = false,
+}: {
+  assistantAvailable?: boolean;
+}) {
   const { user, online } = useStore();
   const client = useQueryClient();
   const seesCost = can(user!.permissions, "profit:read");
@@ -640,23 +644,38 @@ export function Merchandise() {
         <div>
           <h1>Mercancía</h1>
           <p>Entradas y salidas con revisión antes de confirmar.</p>
+          {assistantAvailable && (
+            <Button
+              className="goods-assistant-inline"
+              variant="secondary"
+              onClick={(event) =>
+                window.dispatchEvent(
+                  new CustomEvent("nexora:abrir-asistente", {
+                    detail: { origin: event.currentTarget },
+                  }),
+                )
+              }
+            >
+              Pregúntale a Nexora
+            </Button>
+          )}
         </div>
         <div
           className="goods-mode"
-          role="tablist"
+          role="group"
           aria-label="Tipo de movimiento"
         >
           <button
-            role="tab"
-            aria-selected={direction === "entry"}
+            type="button"
+            aria-pressed={direction === "entry"}
             className={direction === "entry" ? "active" : ""}
             onClick={() => switchTo("entry")}
           >
             <PackagePlus size={18} aria-hidden="true" /> ENTRADA
           </button>
           <button
-            role="tab"
-            aria-selected={direction === "exit"}
+            type="button"
+            aria-pressed={direction === "exit"}
             className={direction === "exit" ? "active exit" : ""}
             onClick={() => switchTo("exit")}
           >
