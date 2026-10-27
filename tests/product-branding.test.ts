@@ -26,26 +26,13 @@ const INTERNAL_IDENTIFIERS: RegExp[] = [
  * 8 líneas previas (o en todo el archivo con scope "file"): prueba que la rama está
  * cerrada por la comprobación de modo producto. Una marca nueva sin entrada falla.
  */
-const STORE_ONLY: { file: string; line: string; guard: RegExp; scope?: "file"; reason: string }[] = [
-  {
-    file: "apps/web/src/App.tsx",
-    line: 'title: "GV Makeup Studio",',
-    guard: /PRODUCT_TENANCY_REQUIRED\s*\?\s*productLoginFaces[\s\S]*:\s*LOGIN_CUBE/,
-    scope: "file",
-    reason: "cara de LOGIN_CUBE, solo usada en la rama de tienda de Login()",
-  },
-  {
-    file: "apps/web/src/App.tsx",
-    line: ': "GRUPO MACGEN · GV MAKEUP STUDIO"}',
-    guard: /PRODUCT_TENANCY_REQUIRED/,
-    reason: "rama falsa del ternario PRODUCT_TENANCY_REQUIRED (tienda)",
-  },
-  {
-    file: "apps/web/src/App.tsx",
-    line: ': "Suplementos, fajas, tenis y maquillaje de Grupo MacGen, y los cursos y servicios de GV Makeup Studio, en un solo sistema."}',
-    guard: /PRODUCT_TENANCY_REQUIRED/,
-    reason: "rama falsa del ternario PRODUCT_TENANCY_REQUIRED (tienda)",
-  },
+const STORE_ONLY: {
+  file: string;
+  line: string;
+  guard: RegExp;
+  scope?: "file";
+  reason: string;
+}[] = [
   {
     file: "apps/web/src/App.tsx",
     line: ': "BIENVENIDA · MACGEN & GV"}',
@@ -56,19 +43,22 @@ const STORE_ONLY: { file: string; line: string; guard: RegExp; scope?: "file"; r
     file: "apps/web/src/App.tsx",
     line: "Cuenta: admin@fitstore.demo",
     guard: /!PRODUCT_TENANCY_REQUIRED/,
-    reason: "credenciales de demostración, ocultas con !PRODUCT_TENANCY_REQUIRED",
+    reason:
+      "credenciales de demostración, ocultas con !PRODUCT_TENANCY_REQUIRED",
   },
   {
     file: "apps/web/src/App.tsx",
     line: "Contraseña: FitStore-Demo-2026!",
     guard: /!PRODUCT_TENANCY_REQUIRED/,
-    reason: "credenciales de demostración, ocultas con !PRODUCT_TENANCY_REQUIRED",
+    reason:
+      "credenciales de demostración, ocultas con !PRODUCT_TENANCY_REQUIRED",
   },
   {
     file: "apps/api/src/reportes/margen.ts",
     line: ": Prisma.sql`CASE WHEN c.name ILIKE 'GV %' THEN 'GV Makeup Studio' ELSE 'MacGen' END`,",
     guard: /process\.env\.PRODUCT_TENANCY === "required"/,
-    reason: "rama de tienda; en modo producto el reporte usa el nombre de Ajustes",
+    reason:
+      "rama de tienda; en modo producto el reporte usa el nombre de Ajustes",
   },
   {
     file: "apps/api/src/secret-strength.ts",
@@ -81,7 +71,8 @@ const STORE_ONLY: { file: string; line: string; guard: RegExp; scope?: "file"; r
 
 /** Quita comentarios de línea y de bloque (o de HTML) respetando cadenas y plantillas. */
 function stripComments(src: string, html: boolean): string {
-  if (html) return src.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ""));
+  if (html)
+    return src.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ""));
   let out = "";
   let i = 0;
   let quote = "";
@@ -123,13 +114,23 @@ function brandLines(src: string, html = false, ids = INTERNAL_IDENTIFIERS) {
 }
 
 const scanFile = (file: string) =>
-  brandLines(readFileSync(file, "utf8"), file.endsWith(".html"), file === "README.md" ? INTERNAL_IDENTIFIERS.slice(0, 1) : INTERNAL_IDENTIFIERS);
+  brandLines(
+    readFileSync(file, "utf8"),
+    file.endsWith(".html"),
+    file === "README.md"
+      ? INTERNAL_IDENTIFIERS.slice(0, 1)
+      : INTERNAL_IDENTIFIERS,
+  );
 
 function walk(dir: string, accept: (f: string) => boolean): string[] {
   return readdirSync(dir).flatMap((name) => {
     const full = join(dir, name).replace(/\\/g, "/");
     if (name === "node_modules" || name === "dist") return [];
-    return statSync(full).isDirectory() ? walk(full, accept) : accept(full) ? [full] : [];
+    return statSync(full).isDirectory()
+      ? walk(full, accept)
+      : accept(full)
+        ? [full]
+        : [];
   });
 }
 
@@ -144,23 +145,32 @@ function scanProductBranding(): string[] {
     "README.md",
   ];
   for (const file of files) {
-    const whole = stripComments(readFileSync(file, "utf8"), file.endsWith(".html"));
+    const whole = stripComments(
+      readFileSync(file, "utf8"),
+      file.endsWith(".html"),
+    );
     const lines = whole.split("\n");
     for (const hit of scanFile(file)) {
-      const entry = STORE_ONLY.find((e) => e.file === file && e.line === hit.text);
+      const entry = STORE_ONLY.find(
+        (e) => e.file === file && e.line === hit.text,
+      );
       const guarded =
         entry &&
         (entry.scope === "file"
           ? entry.guard.test(whole)
-          : entry.guard.test(lines.slice(Math.max(0, hit.n - 9), hit.n).join("\n")));
+          : entry.guard.test(
+              lines.slice(Math.max(0, hit.n - 9), hit.n).join("\n"),
+            ));
       if (!guarded) leaks.push(`${file}:${hit.n}: ${hit.text.slice(0, 100)}`);
     }
   }
   // public/ se sirve tal cual en la compilación de producto: nombre y contenido
   for (const file of walk("apps/web/public", () => true)) {
-    if (BRAND.test(file.replace("apps/web/public/", ""))) leaks.push(`${file}: nombre de archivo`);
+    if (BRAND.test(file.replace("apps/web/public/", "")))
+      leaks.push(`${file}: nombre de archivo`);
     if (/\.(html|js|txt|svg|json|webmanifest|css|xml)$/.test(file))
-      for (const hit of scanFile(file)) leaks.push(`${file}:${hit.n}: ${hit.text.slice(0, 100)}`);
+      for (const hit of scanFile(file))
+        leaks.push(`${file}:${hit.n}: ${hit.text.slice(0, 100)}`);
   }
   return leaks;
 }
@@ -188,8 +198,12 @@ describe("PC-10 marca y almacenes por empresa", () => {
   });
 
   it("la semilla de demostración se niega en modo producto y en producción", () => {
-    expect(() => assertSeedAllowed({ PRODUCT_TENANCY: "required" })).toThrow(/modo producto/);
-    expect(() => assertSeedAllowed({ NODE_ENV: "production" })).toThrow(/producción/);
+    expect(() => assertSeedAllowed({ PRODUCT_TENANCY: "required" })).toThrow(
+      /modo producto/,
+    );
+    expect(() => assertSeedAllowed({ NODE_ENV: "production" })).toThrow(
+      /producción/,
+    );
     expect(() => assertSeedAllowed({})).not.toThrow();
   });
 
@@ -241,28 +255,55 @@ describe("PC-10 marca y almacenes por empresa", () => {
     expect(rows[0]).not.toHaveProperty("Casa");
     expect(inventario.traspasos.title).toBe("Traspasos entre almacenes");
     expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ branchId: "main" }) }),
+      expect.objectContaining({
+        where: expect.objectContaining({ branchId: "main" }),
+      }),
     );
   });
 
   it("un almacén llamado SKU no sobrescribe el SKU del reporte", async () => {
     const rows = await inventario["bajo-minimo"].run(
       {
-        $queryRaw: async () => [{ sku: "A-1", name: "Artículo", category: "General", store: 2, home: 5, min: 4 }],
-        warehouse: { findMany: async () => [{ kind: "store", name: "SKU" }, { kind: "home", name: "Mínimo" }] },
+        $queryRaw: async () => [
+          {
+            sku: "A-1",
+            name: "Artículo",
+            category: "General",
+            store: 2,
+            home: 5,
+            min: 4,
+          },
+        ],
+        warehouse: {
+          findMany: async () => [
+            { kind: "store", name: "SKU" },
+            { kind: "home", name: "Mínimo" },
+          ],
+        },
       },
       { branchId: "main" } as never,
       { gte: new Date(), lte: new Date() },
       {},
     );
-    expect(rows[0]).toMatchObject({ SKU: "A-1", Mínimo: 4, "Existencia en SKU": 2, "Existencia en Mínimo": 5 });
+    expect(rows[0]).toMatchObject({
+      SKU: "A-1",
+      Mínimo: 4,
+      "Existencia en SKU": 2,
+      "Existencia en Mínimo": 5,
+    });
   });
 
   it("la barra lateral usa la empresa y sucursal de Ajustes", () => {
-    expect(businessSidebarLabels({ name: "Empresa A", branchName: "Centro" })).toEqual({
-      branch: "Centro", business: "Empresa A",
+    expect(
+      businessSidebarLabels({ name: "Empresa A", branchName: "Centro" }),
+    ).toEqual({
+      branch: "Centro",
+      business: "Empresa A",
     });
-    expect(businessSidebarLabels()).toEqual({ branch: "Sucursal", business: "Nexora POS" });
+    expect(businessSidebarLabels()).toEqual({
+      branch: "Sucursal",
+      business: "Nexora POS",
+    });
   });
 
   it("renombra solamente un almacén activo de la sucursal y audita el cambio", async () => {
