@@ -7,9 +7,10 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const CACHE = join(homedir(), ".claude", "plugins", "cache");
-const LOCK = process.env.NEXORA_LOCK || new URL("../docs/seguridad/plugins.lock.json", import.meta.url).pathname;
+const LOCK = process.env.NEXORA_LOCK || fileURLToPath(new URL("../docs/seguridad/plugins.lock.json", import.meta.url));
 const SENSIBLES = [/^hooks\//, /^scripts\//, /^bin\//, /^bridge\//, /^dist\/hooks\//, /^\.mcp\.json$/, /^mcp\.json$/, /^\.claude-plugin\//, /^agents\/claude\/\.mcp\.json$/];
 const IGNORAR = /(^|\/)(node_modules|\.git|__tests__|tests?)(\/|$)/;
 

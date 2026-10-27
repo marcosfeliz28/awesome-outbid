@@ -43,6 +43,7 @@ export default tseslint.config(
   {
     files: [
       "scripts/*.mjs",
+      "taller/*.mjs",
       "deploy/render/**/*.mjs",
       "docs/validacion/**/*.mjs",
       "eslint.config.mjs",
