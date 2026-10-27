@@ -816,6 +816,12 @@ describe("IA · web: markdown seguro y botón sin tapar la barra", () => {
       /@media \(max-width: 900px\)[\s\S]*body:has\(\.goods-mobile-bar, \.pos-mobile-bar[^)]*\)\s+\.assistant-launcher\s*\{\s*bottom: calc\(88px/,
     );
   });
+  it("a 390px el lanzador no tapa controles de Mercancía durante el scroll", () => {
+    const css = readFileSync(resolve("apps/web/src/Assistant.css"), "utf8");
+    expect(css).toMatch(
+      /@media \(max-width: 768px\)[\s\S]*body:has\(\.merchandise\) \.assistant-launcher\s*\{\s*display: none/,
+    );
+  });
   it("la cuota deja de anunciar carga cuando falta internet o falla la consulta", () => {
     expect(assistant).toContain("Cuota no disponible sin conexión");
     expect(assistant).toContain("No pudimos consultar tu cuota");
