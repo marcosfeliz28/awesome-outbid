@@ -54,6 +54,7 @@ import {
 } from "lucide-react";
 import {
   initialCompanyCode,
+  productAssistantAvailable,
   productTenancyRequired,
   publicRegistrationEnabled,
 } from "./productTenancy";
@@ -1106,6 +1107,10 @@ function Shell() {
     .map((n) => n[0])
     .slice(0, 2)
     .join("");
+  const assistantAvailable = productAssistantAvailable(
+    import.meta.env.VITE_PRODUCT_TENANCY,
+    user.role,
+  );
   const pages: Record<string, React.ReactNode> = {
     onboarding: <Onboarding go={go} />,
     billing: <Billing />,
@@ -1133,7 +1138,7 @@ function Shell() {
     "void-requests": <VoidRequests />,
     "transfer-reconciliation": <TransferReconciliation />,
     "courier-payouts": <CourierPayouts />,
-    merchandise: <Merchandise />,
+    merchandise: <Merchandise assistantAvailable={assistantAvailable} />,
     incentives: <IncentivesPage />,
   };
   return (
@@ -1522,7 +1527,7 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
-      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
+      {assistantAvailable && (
         <Assistant
           key={`${user.id}:${user.branchId}`}
           online={online}

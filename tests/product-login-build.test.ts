@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   initialCompanyCode,
+  productAssistantAvailable,
   publicRegistrationEnabled,
   productTenancyRequired,
 } from "../apps/web/src/productTenancy";
@@ -29,5 +30,12 @@ describe("acceso separado para la tienda y el producto SaaS", () => {
     expect(publicRegistrationEnabled("required", undefined)).toBe(false);
     expect(publicRegistrationEnabled(undefined, "enabled")).toBe(false);
     expect(publicRegistrationEnabled("required", "enabled")).toBe(true);
+  });
+
+  it("solo ofrece el asistente cuando existe en SaaS y no es una sesión de soporte", () => {
+    expect(productAssistantAvailable("required", "admin")).toBe(true);
+    expect(productAssistantAvailable("required", "seller")).toBe(true);
+    expect(productAssistantAvailable(undefined, "admin")).toBe(false);
+    expect(productAssistantAvailable("required", "support")).toBe(false);
   });
 });
