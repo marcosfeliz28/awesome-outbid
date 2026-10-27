@@ -67,3 +67,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Envío confirmado por Marcos (27-oct, 5:21 p. m. RD)
 - Pegado en ChatGPT nube (libre antes de escribir) el texto de la orden 12 para ChatGPT nube: AT-04, AT-11, cierre del PR #15, fase 3 y fase 4. ChatGPT nube respondió «Thinking».
 - ChatGPT PC: pendiente. Su chat «Instala el documento» estaba ocupado; no escribí.
+
+## Envío confirmado por Marcos (27-oct, 5:22 p. m. RD)
+- Pegado en «Corrige CI de Fase 0» (ChatGPT PC, libre antes de escribir) la orden 12 para ChatGPT PC: rebasar visual-integracion-27oct sobre c0945874, ajustar la prueba de Mercancía al control real, LISTA con 3 CI y «usa todos los agentes necesarios en paralelo». Respondió «Thinking».
+- Orden 12.2 (claude-pc/b01-tienda): BLOQUEADA. Conflictos grandes: tests/ventas-caja-ciega-postgres.test.ts usa un arnés con tenancy que nexora-cloud no tiene; assistant.ts no existe en nexora-cloud. Sin commits. Decisiones pendientes de la dueña: reescribir el arnés o omitir el asistente.
