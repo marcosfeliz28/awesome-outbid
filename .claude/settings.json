@@ -1,6 +1,8 @@
 {
   "enabledPlugins": {
-    "ponytail@ponytail": true
+    "ponytail@ponytail": true,
+    "claude-code-setup@anthropic-plugin-directory": true,
+    "chrome-devtools-mcp@chrome-devtools-plugins": true
   },
   "extraKnownMarketplaces": {
     "ponytail": {
