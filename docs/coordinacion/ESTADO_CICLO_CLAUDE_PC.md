@@ -297,3 +297,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Órdenes nuevas para Claude PC: ninguna que escriba código. La orden 25 pide repartir texto a ChatGPT PC y DeepSeek; eso ya se hizo (texto 2 y texto 3). Sin cambios de código propios.
 - Decisión de la dueña: parar el trabajo de ChatGPT (cuota al 3 %) y pasarlo a DeepSeek. Registrado en `RELEVO_CHATGPT_A_DEEPSEEK_28OCT.md` (commit 780c8b87). Claude PC no escribió en los chats de ChatGPT porque el texto de parada debe venir de Nexora 1 en el repo.
 - Pendiente de dueña: alcance de la mezcla de la orden 24, cierre de verify de F1-01 y texto de parada.
+
+## Parada ordenada de ChatGPT (28-oct, ~10:50 p. m. RD)
+- Decisión de la dueña: parar ChatGPT PC para cuidar la cuota (3 %); dejar lo justo a ChatGPT nube para cerrar F1-01.
+- ChatGPT PC («Implementa Fase 1 visual»): ejecutaba la suite completa. Se envió un mensaje de parada ordenada (se encoló como Steer en el turno activo): terminar el comando en curso, no empezar cambios, subir solo lo verificado, y responder en 5 líneas. Sin confirmación de respuesta.
+- ChatGPT nube («ChatGPT nube»): terminó y reportó LISTA de F1-01. Verificado en GitHub: verify, windows-installer y render-images en verde en 980a5ca0. LISTA escrita en LISTA_CLAUDE_PC.md.
+- DeepSeek: recibe el relevo de lo que quede (ver RELEVO_CHATGPT_A_DEEPSEEK_28OCT.md). Pendiente la mezcla de la orden 24 y el cierre de la rama de ChatGPT PC.

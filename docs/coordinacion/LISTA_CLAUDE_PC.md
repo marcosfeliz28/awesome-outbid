@@ -10,3 +10,4 @@ LISTA: claude-pc/b01-tienda e9ce12e0 (verify, windows-installer y render-images 
 LISTA: chatgpt-nube/at11-postgres-estable 1da4cae6 (verify, windows-installer y render-images en verde; verificado por Claude PC; rebasada sobre at04 y producto 78888542)
 LISTA: chatgpt-pc/visual-integracion-27oct 120e4a06 (verify, windows-installer y render-images en verde; verificado por Claude PC; ChatGPT PC reporta correcciones de carrera en el carrito y de la prueba de SALIDA)
 LISTA: chatgpt-pc/visual-fase1-gemini f088c881 (verify, windows-installer y render-images en verde en f088c881; cubre F1-02 a F1-05 de ChatGPT PC; el último commit solo cambia docs/diseno/OBSIDIAN_LUMINA_PROGRESO.md; Claude PC verificó CI, no revisó el diff de F1-02 a F1-05)
+LISTA: chatgpt-nube/f1-01-bundle 980a5ca0 (verify, windows-installer y render-images en verde en 980a5ca0; bundle web dividido por pantallas, check:bundle, React.lazy; Claude PC verificó CI, no revisó el diff)
