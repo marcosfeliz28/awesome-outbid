@@ -400,3 +400,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - No tocado: d52 (espera tests-sin-literales), pedido-f2-01, D4/D26/D45 (esperan Fase 1).
 - Pendiente que no puedo hacer sin acceso: leer el log del verify de aab91c9a (requiere autenticación de GitHub). Lo mismo para `deepseek/mezcla-fase1-fix`: no lo creo porque no conozco la prueba que falla.
 - Auditoría de las 17 ramas: no completada por Claude PC; queda como pendiente.
+
+## Respuesta del Revisor (Nexora 4), 28-oct ~12:30 a. m. RD
+- Canal confirmado: el Revisor contesta por mensaje, de forma asíncrona. Su respuesta escrita está en `docs/seguridad/RESPUESTA_REVISOR_A_CLAUDE_PC_28OCT.md` (rama `claude/revisor-plugins`).
+- Escaneo de 18 ramas deepseek/*: ninguna toca áreas prohibidas. Una coincidencia: d25 usa `node:child_process` en un script y su prueba (sin red); aceptado.
+- Pendiente antes de mezclar: que Llaves revise `packages/shared/src/validators` y `packages/shared/src/format` (código compartido, api y web). Por eso d21 y d22 no tienen LISTA.
+- Pendiente de Marcos: lectura de la sesión de DeepSeek en Full access fuera de su carpeta; no se puede ver desde el diff.
+- Respondido al Revisor (send_message y SendMessage; sin confirmación de lectura).
