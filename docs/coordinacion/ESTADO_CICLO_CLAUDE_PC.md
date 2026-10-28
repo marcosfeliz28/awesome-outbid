@@ -664,3 +664,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - F2-01 en claude-pc/visual-f2-01 (7efdb784): tokens y NxMoney hechos; faltan 11 primitivos y capturas.
 - CI en verde (pc23, a1, b01, lumina) sin cambios. Sin LISTA nueva.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en 1dcd0ccd (sin cambios). RESPUESTA blob 4a156065 (orden 36 vigente, sin órdenes nuevas). OBSIDIAN ausente.
+- F2-01 (claude-pc/visual-f2-01, 86e3d4e8): hechos tokens (72f5917b, a5845333), NxMoney (7efdb784), NxStatusBadge (ef1af77f) y NxSkeleton (86e3d4e8). Faltan 8 primitivos y las capturas. Método: prueba que falla, borrador del modelo local, revisión mía (mensajes en español, rechazo de valores inválidos).
+- CI en verde (pc23, a1, b01, lumina) sin cambios. Sin LISTA nueva: F2-01 no está completo.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
