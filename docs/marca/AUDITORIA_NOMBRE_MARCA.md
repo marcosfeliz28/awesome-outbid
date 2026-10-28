@@ -8,8 +8,11 @@
 3. Entregar el resultado en el formato de abajo, en un archivo `docs/marca/RESPUESTA_<IA>.md` (GPT, GEMINI o DEEPSEEK) o pegado a Claude PC para que lo suba.
 4. Máximo 10 candidatos; el nombre actual «Nexora» entra **como candidato de control**.
 
+## CAMBIO DE REQUISITO (dueña, 28-oct): nombre INTERNACIONAL, no «latino»
+El producto se va a vender en **todo el mundo**, con la web en **español e inglés** (y más idiomas después). El nombre debe ser **internacional**: que se pronuncie y se entienda igual en inglés y en español, sin sabor «latino» ni regional ni juegos de palabras en español (por ejemplo «caja fácil» o «caja feliz» **no sirven**). Evitar palabras que signifiquen algo en un solo idioma. Los pesos cambian: *pronunciación en español* pasa a **pronunciación en inglés y español** y *significado* se revisa en inglés, español, portugués, francés, alemán y árabe.
+
 ## Contexto del producto
-Nexora POS: punto de venta, caja, inventario, facturación y asistente de IA para negocios pequeños y medianos de **República Dominicana** (maquillaje, suplementos, fajas), con meta de vender a otros negocios de **Latinoamérica y el Caribe**, en **español**. Público: dueñas y dueños de tienda, cajeras. Tono: profesional, confiable, moderno, humano (no robótico). Estilo visual vigente: Obsidian Lumina (oscuro, violeta, prisma «N»).
+Nexora POS: punto de venta, caja, inventario, facturación y asistente de IA para negocios pequeños y medianos. Nació en **República Dominicana** (maquillaje, suplementos, fajas) y se venderá **en todo el mundo**, con la web en **español e inglés**. Público: dueñas y dueños de tienda, cajeras. Tono: profesional, confiable, moderno, humano (no robótico). Estilo visual vigente: Obsidian Lumina (oscuro, violeta, prisma «N»).
 
 ## Criterios y pesos (se puntúa cada candidato de 0 a 5)
 | Criterio | Peso | Qué mirar |
