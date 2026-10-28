@@ -248,3 +248,6 @@ La dueña ordenó empezar ya los pendientes y pasar parte del trabajo a DeepSeek
 - **ChatGPT PC (V):** Fase 1 (F1-02..05) y Fase 2 visual que toca `App.tsx`/`styles.css`: F2-01 tokens y primitivos `Nx*`, F2-02 tablero, F2-03 POS, F2-04 Inventario/Mercancía.
 - **ChatGPT nube (R):** F1-01 bundle (`React.lazy`, `manualChunks`) ahora que V mezcló.
 - **DeepSeek (constructor, sin push, tú empujas):** lo que NO toca `App.tsx`/`styles.css`: D1 (`check-bundle`), D3 (docs de venta), pruebas unitarias/accesibilidad de los primitivos `Nx*` en `packages/ui` (rama `deepseek/nx-pruebas`, después de F2-01), historias Storybook (F3, después de F2-01), ilustraciones/SVG de estados vacíos nuevos en `apps/web/public/ilustraciones/`. Cuando V termine F2-01 y suelte `styles.css`, le asigno por pantalla CSS aislado en archivos `*.css` propios (no `styles.css`).
+
+## 21. Regla de la dueña (28-oct): minimizar al soltar
+Cuando termines de usar ChatGPT PC, ChatGPT nube o DeepSeek en la laptop, **minimiza su ventana** antes de pasar a otra, para que no choquen cuando vuelvas. Un solo programa activo a la vez; anota en `ESTADO_CICLO_CLAUDE_PC.md` cuál tomas y cuál sueltas. Es permanente.
