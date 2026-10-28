@@ -622,3 +622,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
 - Pendiente (orden 34): mezcla de nexora-cloud en pc23; espera a Nexora 1.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo automático detenido (28-oct, ~14:40 RD)
+- Varios ciclos seguidos sin novedades. nexora-cloud en 39884ba2; RESPUESTA_CLAUDE_PC_27OCT.md blob f756359e; CI en verde (pc23, a1, b01, lumina) con LISTA ya escrita.
+- Pendientes: prueba corta del modelo local (esperando confirmación de Marcos); mezcla de nexora-cloud en pc23 (orden 34, espera a Nexora 1).
+- Para reanudar el ciclo, pedirlo de nuevo.
