@@ -80,3 +80,20 @@ Método: 420 nombres inventados de 6 a 8 letras; 235 con `.com` libre (registro 
 | Sabrive | Medio | A 2 letras de **SABRE** (software de viajes, marca fuerte) |
 
 **Finalistas de esta ronda por sonido y riesgo:** Rifivo, Lepafi y Vemifi (cortos, 6 letras, se leen igual en inglés y español). **Aviso:** «bajo» significa solo «no encontré conflicto en una búsqueda web»; falta la búsqueda formal de marca.
+
+## Ronda de nombres con N (Nexora 1, 28-oct, a pedido de la dueña: «no puedo quedarme con Nexora; que conserve la N»)
+Hechos: de 50 nombres con N, bonitos y pronunciables, **los 50 tienen el `.com` tomado**. Los pocos libres son nombres raros. Se vetaron 10 nombres con N en la web (sin bases oficiales).
+| Nombre | `.com` / `.app` / `.ai` / `.net` | Riesgo (búsqueda web) | Hallazgo |
+|---|---|---|---|
+| **Norelna** | libre / libre / libre / libre | **Bajo** | Sin conflicto; poco memorable y difícil de pronunciar |
+| **Noravel** | tomado (2018) / libre / ? / tomado | Medio | Cerca de NOVAREL (solicitud EE. UU. de 1998) y NOREL (solicitud dic-2024); noravel.com sin respuesta (503) |
+| **Navelio** | tomado, **«en venta»** / libre / libre / libre | **Medio-alto** | NAVENIO (software, Oxford), NAVALIO (marca registrada en EE. UU.), NAVELYRA (solicitud de software en India) |
+| Nevinia, Naxinia, Nexilvio | — | Medio-alto | Empresas de software casi homónimas (Nevina, Naxilon, Nexivo) |
+| Nyxelria, Novalria, Nexinmo, Nuronli | — | Medio | Prefijos saturados (Nyx-, Nova-, Nex-, Neuron) |
+Corrección: al ver el primer dato de Navelio lo presenté como prometedor; la revisión a fondo lo deja en **medio-alto**.
+
+## Lectura general
+Casi cualquier nombre inventado tiene vecinos cercanos en el registro de marcas; lo decisivo es la **búsqueda formal** (clases 9, 35 y 42). Mejor perfil por riesgo en la web: **Lepafi, Vemifi, Rifivo** (sin N) y **Norelna** (con N). Con N y mejor sonido: **Noravel** (riesgo medio).
+
+## Regla para cerrar
+No hacer más rondas de búsqueda propia. La dueña elige **1 principal + 1 de reserva**; se compran los dominios; el abogado hace la búsqueda formal sobre esos dos; recién entonces se cambia el nombre en el repositorio (≈128 archivos fuera de `docs/`).
