@@ -316,3 +316,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - La sesión «Revisión de TEXTO_DEEPSEEK» (texto 3) se había detenido: buscaba el repo en C:\Users\marco\OneDrive\Documentos\deepseek-harness y no lo encontraba. Se le respondió con la ruta absoluta del repo y la instrucción de trabajar en worktrees nuevos desde origin/nexora-cloud, una rama deepseek/<id> por tarea. Entró en ejecución.
 - Sesión «Benchmark 20 plataformas»: terminó la entrega de D46 con una autoevaluación. Sigue sin subirse; la corrección pedida está en PEDIDOS_DEEPSEEK.md. La sesión preguntó si rehacer D46 con el brief original; la respuesta de Claude PC (incluida en el texto que se le envió) es rehacerlo con fuentes.
 - No hay pedidos de herramientas ni skills registrados en PEDIDOS_DEEPSEEK.md.
+
+## Ciclo (28-oct, ~11:10 p. m. RD)
+- Fetch: origin/nexora-cloud en 2db33369 (orden 26). RESPUESTA_CLAUDE_PC_27OCT.md blob c810e520. OBSIDIAN_LUMINA_PROGRESO.md sigue ausente en nexora-cloud.
+- Orden 26 (decisión): ChatGPT pausa por cuota. Mezcla de la orden 24: ya subida por ChatGPT PC en aab91c9a; DeepSeek no la rehace (la orden dice «no hacer las dos»). F1-01: Nexora 1 vigila su verify. F2-01, F2-03 y F3-01 pasan a DeepSeek cuando la mezcla esté en producto-nexora (todavía no lo está).
+- CI de aab91c9a (chatgpt-pc/visual-fase1-gemini): render-images verde; verify y windows-installer en curso. No hay LISTA todavía.
+- CI en verde (verify, windows-installer, render-images): pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e.
+- Órdenes nuevas para Claude PC que escriban código: ninguna.
+- Pantalla ChatGPT: no se escribió en ningún chat. La orden 26 pide el texto de parada, pero ambos chats ya cumplieron su parte (ChatGPT PC subió aab91c9a y reportó; ChatGPT nube no tiene nada en curso). Escribir de nuevo gastaría cuota del 3 %.
+- DeepSeek: la sesión de texto 3 arrancó D46 tras recibir la ruta del repo; no hay ramas deepseek/* nuevas en origin (la última es deepseek/d1-d3, cb1f1b8b).
