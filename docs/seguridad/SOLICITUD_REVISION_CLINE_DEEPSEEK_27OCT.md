@@ -120,3 +120,9 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Clon de trabajo: C:/Users/marco/AppData/Local/Temp/deepseek-constructor (origin/nexora-cloud, solo package.json de raíz y apps/web/package.json; escáner en 0; sin .env, CSV, XLSX, JSONL ni SQL). Sin .git.
 - Sesión: «Archivos creados scripts y docs…», modo Workspace Write (no Full access). Sin push por DeepSeek: Claude PC lee cada diff y lo sube a una rama deepseek/<id>.
 - Pendiente: Claude PC revisa el diff, lo verifica (pnpm check en verde antes de subir), y solo sube si pasa.
+
+## Ampliación del constructor aprobada con límites (Revisor, 28-oct)
+- Límites: máx. ~10 archivos y ~300 líneas por rama; cada cambio con prueba nueva; datos inventados; fuera de alcance: fórmulas de dinero, caja/ventas/facturas, inventario, pagos/cobros, autenticación, sesiones, permisos, cambio de contraseña, validación de rutas, offline/sync, CORS/CSRF/rate limit, cifrado, bitácoras, migraciones, despliegue, instalador, CI, .claude/ y credenciales. App.tsx y styles.css siguen apartados.
+- Revisión de D1/D3 (deepseek/d1-d3, cb1f1b8b) con estas reglas: scripts/check-bundle.mjs (solo Node; sin red, sin env, sin dependencias), una línea en apps/web/package.json, docs/venta/ (solo texto; precios como PROPUESTA; DGII con verificaciones). Sin tocar ningún área prohibida. CUMPLE.
+- Pendiente: Nexora 1 debe enumerar las tareas concretas de la ampliación dentro de esos límites. Claude PC no abre la ampliación sin esa lista. Cuando exista, el diff se envía al Revisor para escaneo antes de subirlo.
+- Orden explícita de Marcos para el modo constructor: dada («autorizo a modo constructor»). Cuota: recargada por Marcos.
