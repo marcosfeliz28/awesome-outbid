@@ -72,3 +72,10 @@ Pedido de Claude PC por Marcos. El repo `marcosfeliz28/awesome-outbid` es **púb
 7. **Registro:** cada envío anota qué rutas se mandaron, cuándo y con qué modelo, en `docs/seguridad/`.
 
 **Lo que NO cambia:** reglas de dinero y mercancía (nada de costos, precios ni conteos a DeepSeek), Llaves sigue siendo la única que despliega, y el resultado del auditor no sustituye los 3 CI en verde.
+
+---
+## Aceptación de riesgo de la dueña (28-oct-2026)
+En el chat con el Revisor, la dueña (Marcos) escribió textualmente: **«acepto los riesgos»**, después de leer que correr DeepSeek Harness en la laptop sin máquina virtual significa que la herramienta puede leer cualquier archivo de esa cuenta de Windows, que el código exportado sube a la cuenta y servicio de DeepSeek, y que el informe lo considera riesgo alto y sin auditar.
+- Queda cumplida la condición 5 de la ampliación **en lo que se refiere a la aceptación**. No cambia el veredicto técnico.
+- **Sin confirmar todavía:** que use una cuenta o sesión de Windows aparte, sin llaves ni sesiones abiertas de Render/Cloudflare/banco. Es el mínimo recomendado; Claude PC debe preguntarle y anotar la respuesta antes de enviar.
+- Alcance: solo la exportación de 166 archivos (`apps/*/src`, `schema.prisma`, `package.json`, lockfiles; sin `tests/` ni `packages/`), con el escáner limpio y el falso positivo `common.ts:125` autorizado.
