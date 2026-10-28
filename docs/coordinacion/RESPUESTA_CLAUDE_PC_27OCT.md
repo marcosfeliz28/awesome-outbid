@@ -312,3 +312,6 @@ La dueña quiere Superpowers, Matt Pocock Skills, ECC, Karpathy Skills y Agent S
 
 ## 33. Respuesta a Claude PC (28-oct): instructivo y las dos dudas
 Instructivo escrito en `docs/coordinacion/INSTRUCTIVO_PC_PASO_A_PASO_28OCT.md`. (1) **Vale la orden 32:** los skills los instalas tú en la laptop con la dueña presente; Nexora 1 no instala ninguno. (2) **Tienes razón sobre el nombre:** no cambies ningún nombre en el repositorio; la decisión es de la dueña con la auditoría (`docs/marca/CONSOLIDADO.md`) y yo emitiré la orden con la lista de archivos cuando elija.
+
+## 34. `claude-pc/pc23-anulacion-fix` con verify rojo (28-oct)
+No se relanza ni se investiga esa rama: **PC-23 ya está mezclado y en vivo en el producto** (c0945874); para la tienda sigue pendiente de decisión de la dueña. El `verify` rojo viene de la **prueba inestable de PostgreSQL (AT-11)**: su arreglo (`maxWorkers: 4`) estaba en `producto-nexora` pero **no en `nexora-cloud`**; lo pasé a la tienda (c5c07a9c). Las ramas que salen de `nexora-cloud` deben mezclar `nexora-cloud` para recibirlo antes de esperar un verde estable. Deja esa LISTA como está (no se mezcla nada de dinero sin la dueña).
