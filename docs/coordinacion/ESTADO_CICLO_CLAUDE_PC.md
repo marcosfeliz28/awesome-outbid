@@ -579,3 +579,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Plugins (órdenes 31–32): siguen pendientes, requieren a la dueña presente y el visto bueno del Revisor.
 - Órdenes nuevas que escriban código para Claude PC: ninguna.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en 80d4d3a4 (sin cambios). RESPUESTA_CLAUDE_PC_27OCT.md blob a401b6d8 (sin órdenes nuevas). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- ALERTA: verify de claude-pc/pc23-anulacion-fix (c1fe8c0c, sin commits nuevos) pasó a FAILURE (check-run 122400251614). windows-installer y render-images en verde. Sin log accesible. LISTA ya escrita; no se retira. Avisado a Nexora 1 y a Marcos. Hipótesis sin confirmar: cambio del runner ubuntu-latest.
+- a1-formula-utilidad: consulta de CI fallida por límite de la API; se reintenta.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
