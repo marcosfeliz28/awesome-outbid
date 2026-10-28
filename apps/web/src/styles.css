@@ -360,6 +360,8 @@ label:has(> input[type="file"].sr-only:focus-visible) {
   outline-offset: 3px;
 }
 .nx-file-dropzone {
+  /* El input oculto se posiciona dentro del recuadro y no fuera de la pantalla. */
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 6px;

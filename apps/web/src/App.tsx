@@ -1695,17 +1695,6 @@ function Shell() {
             {pages[safePage] || <Dashboard go={go} />}
           </Suspense>
         </main>
-        {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
-          <Assistant
-            key={`${user.id}:${user.branchId}`}
-            online={online}
-            request={
-              assistantRequest?.session === `${user.id}:${user.branchId}`
-                ? assistantRequest
-                : null
-            }
-          />
-        )}
         <footer className="app-footer">
           <span>Nexora POS · Tu negocio, en movimiento.</span>
           <span>RD$ · ITBIS incluido · Documento interno</span>
