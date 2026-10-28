@@ -309,3 +309,5 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT PC: el mensaje de parada ordenada se pulsó como Steer y dejó la cola. El chat sigue ejecutando el turno; espero su respuesta de 5 líneas (rama, commit, pruebas, pendiente, archivos sin commit).
 - Pendiente antes de pasar la mezcla de la orden 24 a DeepSeek: esa respuesta de ChatGPT PC. Sin ella, DeepSeek no empieza la mezcla.
 - Pendiente de dueña: texto escrito en el repo para DeepSeek sobre la mezcla de la orden 24.
+- ChatGPT PC respondió a la parada (5 líneas): rama `chatgpt-pc/visual-fase1-gemini`, commit `aab91c9a` («Merge producto-nexora y conserva F1 visual»), subido sin force. Contiene `producto-nexora` (orden 24 hecha por ChatGPT PC). Pasaron `pnpm check` (tipos, ESLint, build, 1055 pruebas, 11 omitidas) y 53 pruebas focalizadas. Falta: e2e completo, verify/windows-installer/render-images (en cola en GitHub al momento de verificar) y fases posteriores. Sin commits locales sin subir según el propio chat.
+- Pendiente: que los tres CI queden en verde en aab91c9a. Entonces Claude PC escribe `LISTA` y avisa a Nexora 1.

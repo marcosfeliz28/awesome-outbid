@@ -21,3 +21,8 @@ Motivo: la cuota de ChatGPT quedó al 3 % y se reinicia el 2 de noviembre. Se de
 1. Si la mezcla de la orden 24 la rehace DeepSeek o espera a ChatGPT. Recomendación de Claude PC: DeepSeek no la rehace hasta que la dueña confirme el alcance por escrito, porque toca `Management.tsx`, `WarehousesPanel.tsx` y `Assistant.css`, que están fuera de su lista de tareas.
 2. Quién cierra `verify` de `chatgpt-nube/f1-01-bundle`.
 3. Texto de parada para los chats de ChatGPT: lo escribe Nexora 1 en el repo; Claude PC no lo escribe en el chat sin esa orden.
+
+## Actualización (28-oct, ~10:53 p. m. RD)
+- La orden 24 quedó subida por ChatGPT PC: `chatgpt-pc/visual-fase1-gemini` `aab91c9a`, con `producto-nexora` ya mezclado. Ya no hay mezcla pendiente para DeepSeek.
+- Falta cerrar: e2e completo y los tres CI de `aab91c9a`. Quién lo cierra: Claude PC lee los CI y escribe LISTA; si fallan, se reporta sin tocar la rama.
+- F2-01, F2-03 y F3-01 siguen sin empezar. Según la decisión de la dueña, pasan a DeepSeek tras el cierre; las rutas `App.tsx` y `styles.css` se confirman por escrito antes.
