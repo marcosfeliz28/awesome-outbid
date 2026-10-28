@@ -529,3 +529,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Órdenes nuevas para Claude PC que escriban código: ninguna.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
 - Ollama: sin modelos instalados todavía. El reintento de deepseek-r1:7b sigue en curso.
+
+## Ciclo (28-oct, ciclo autónomo)
+- Fetch: nexora-cloud en 80d4d3a4 (órdenes 31, 32 y 33 nuevas). RESPUESTA_CLAUDE_PC_27OCT.md blob a401b6d8. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en a58efb33: Nexora 1 ya mezcló Fase 1 (05d7f4f0 y a58efb33).
+- Orden 31–32 (plugins del reel): instalar Karpathy, Matt Pocock, Agent Skills, Superpowers y ECC, un plugin a la vez, con la dueña presente, leyendo antes el repo de cada uno. NO instalado: la instalación requiere a la dueña presente y el visto bueno del Revisor. Pendiente para cuando ella esté.
+- Orden 33: el instructivo está en docs/coordinacion/INSTRUCTIVO_PC_PASO_A_PASO_28OCT.md. No se cambia ningún nombre en el repo; la decisión de marca es de la dueña.
+- CI: aab91c9a con verify en rojo (tarea 0.1 pendiente de DeepSeek). pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- Órdenes nuevas que escriban código para Claude PC: ninguna.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
