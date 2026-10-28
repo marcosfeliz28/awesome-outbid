@@ -27,8 +27,8 @@ export function FormalReports() {
     }
   };
   return (
-    <section className="panel formal-report">
-      <div className="panel-heading">
+    <section className="panel formal-report report-workspace">
+      <div className="panel-heading report-workspace-heading">
         <div>
           <h2>Informe formal diario o mensual</h2>
           <p>
@@ -40,7 +40,7 @@ export function FormalReports() {
           Descargar PDF
         </Button>
       </div>
-      <div className="date-filters">
+      <div className="date-filters report-filters">
         <label className="field">
           <span>Período</span>
           <select
@@ -66,12 +66,12 @@ export function FormalReports() {
       </div>
       <QueryState query={query}>
         {report && (
-          <div>
+          <div className="formal-report-content">
             <p>
               <strong>{report.business.name}</strong> · {report.title} ·{" "}
               {report.from} a {report.to}
             </p>
-            <div className="settings-rules">
+            <div className="settings-rules report-summary-grid">
               <div>
                 <span>Vendido neto</span>
                 <strong>{formatMoney(report.totals.sold)}</strong>

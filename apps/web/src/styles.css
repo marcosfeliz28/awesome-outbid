@@ -73,6 +73,7 @@
   --surface: #fff;
   --surface-soft: #f9fafc;
   --text: #1b2134;
+  --ink: #1b2134;
   --muted: #64748b;
   --border: #eaeaf2;
   --primary: #7c3aed;
@@ -89,6 +90,14 @@
   --alert-counter-border: #e8c181;
   --muted-on-soft: #586274;
   --shadow: 0 4px 22px #29315b04;
+  --sidebar-w: clamp(185px, 15.5vw, 225px);
+  --pos-cart-w: clamp(300px, 29vw, 400px);
+  --lumina-grid: rgba(76, 60, 130, 0.055);
+  --lumina-card: linear-gradient(165deg, #ffffff 0%, #fafaff 100%);
+  --lumina-card-border: rgba(69, 52, 124, 0.14);
+  --lumina-violet-glow: rgba(124, 58, 237, 0.11);
+  --lumina-emerald-glow: rgba(16, 185, 129, 0.09);
+  --lumina-laser: linear-gradient(90deg, #7c3aed, #10b981, #3b82f6, #7c3aed);
   /* Obsidian Lumina (fase 1): violeta = acción, esmeralda = estado y foco. */
   --surface-raised: #ffffff;
   --shell-bg: #ffffff;
@@ -119,6 +128,7 @@
   --surface: #0d0f18;
   --surface-soft: #131726;
   --text: #eef0f8;
+  --ink: #eef0f8;
   --muted: #a3abc2;
   --border: #232a3d;
   --primary: #a78bfa;
@@ -133,7 +143,12 @@
   --alert-counter-bg: #402b17;
   --alert-counter-border: #8b642f;
   --muted-on-soft: #c4c9da;
-  --shadow: none;
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+  --lumina-grid: rgba(255, 255, 255, 0.025);
+  --lumina-card: linear-gradient(165deg, rgba(19, 21, 36, 0.98), rgba(10, 11, 20, 0.98));
+  --lumina-card-border: rgba(255, 255, 255, 0.11);
+  --lumina-violet-glow: rgba(124, 58, 237, 0.15);
+  --lumina-emerald-glow: rgba(16, 185, 129, 0.1);
   --surface-raised: #171c2e;
   --shell-bg: #08090f;
   --border-strong: #6d7896;
@@ -4431,6 +4446,9 @@ td strong {
   color: var(--muted);
   font-size: 12px;
 }
+.goods-assistant-inline {
+  display: none !important;
+}
 .goods-mode {
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
@@ -4829,6 +4847,12 @@ td strong {
   }
   .goods-header {
     align-items: stretch;
+  }
+  .goods-assistant-inline {
+    display: inline-flex !important;
+    width: auto;
+    min-height: 44px;
+    margin-top: 12px;
   }
   .goods-mode {
     width: 100%;
@@ -6028,6 +6052,15 @@ td strong {
     flex: 1 1 auto;
     width: auto;
     min-width: 0;
+    white-space: normal;
+    text-align: center;
+  }
+  .pos-mobile-bar .pos-mobile-charge > svg {
+    flex-shrink: 0;
+  }
+  .pos-mobile-bar .pos-mobile-charge > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   /* Dos clases: button:not(.button) quitaría el fondo y el borde. */
   .pos-mobile-bar .pos-mobile-cart {
@@ -6154,10 +6187,6 @@ td strong {
    filas a la vista; (3) columna del carrito fija en 390 px y barra lateral fija.
    Ahora: overflow:clip (recorta sin crear desplazamiento), rejilla fluida,
    carrito con clamp(), tipografías con clamp() y barra lateral que se encoge. */
-:root {
-  --sidebar-w: clamp(185px, 15.5vw, 225px);
-  --pos-cart-w: clamp(300px, 29vw, 400px);
-}
 .main-shell,
 .main-content {
   min-width: 0;
@@ -6575,6 +6604,286 @@ td strong {
 @media (max-width: 720px) {
   .year-pie-body {
     grid-template-columns: 1fr;
+  }
+}
+
+/* --- Obsidian Lumina: Configuración y Equipos -----------------------------
+   Reutiliza el marco, los tokens y las primitivas existentes. Los flujos y
+   nombres permanecen intactos; la jerarquía deja una acción primaria visible
+   por pestaña. */
+.lumina-settings .tabs.outside {
+  padding: 4px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  box-shadow: 0 8px 22px rgba(9, 7, 25, .06);
+}
+.lumina-settings .tabs.outside button {
+  min-height: 42px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.lumina-settings .tabs.outside button.active {
+  background: var(--surface) !important;
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent-violet), 0 4px 12px rgba(9, 7, 25, .08);
+}
+.lumina-settings-content {
+  overflow: hidden;
+}
+.lumina-settings .settings-summary {
+  background:
+    radial-gradient(circle at 100% 0, var(--lumina-violet-glow), transparent 34%),
+    radial-gradient(circle at 0 100%, var(--lumina-emerald-glow), transparent 30%);
+}
+.lumina-settings .settings-summary h2 {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  letter-spacing: -.03em;
+}
+.lumina-settings .settings-rules {
+  gap: 10px;
+  background: var(--surface-soft);
+}
+.lumina-settings .settings-rules > div {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.lumina-settings .settings-rules strong {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.lumina-settings .field:focus-within,
+.equipment .field:focus-within {
+  opacity: 1;
+}
+.lumina-settings .field:focus-within :is(input, select, textarea),
+.equipment .field:focus-within :is(input, select, textarea) {
+  border-color: var(--accent-emerald);
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow);
+}
+.lumina-settings .button.primary:not(.lumina-primary-action) {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  box-shadow: none;
+}
+.lumina-settings .button.lumina-primary-action,
+.equipment .button.lumina-primary-action {
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
+  color: #031712;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, .2);
+}
+.lumina-settings .button.lumina-primary-action:hover:not(:disabled),
+.equipment .button.lumina-primary-action:hover:not(:disabled) {
+  background: linear-gradient(115deg, #10b981, var(--accent-emerald));
+  color: #031712;
+}
+.equipment-here {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 100% 0, var(--lumina-emerald-glow), transparent 36%),
+    var(--lumina-card);
+}
+.equipment-here::before,
+.equipment-item::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--accent-violet);
+}
+.equipment-item {
+  position: relative;
+  overflow: hidden;
+}
+.equipment-item.pending::before { background: var(--warning-text); }
+.equipment-item.revoked::before { background: var(--muted); }
+.equipment-item:not(.pending):not(.revoked)::before { background: var(--accent-emerald); }
+.equipment-item .badge {
+  border: 1px solid var(--lumina-card-border);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.equipment-online {
+  box-shadow: 0 0 0 3px var(--lumina-emerald-glow);
+}
+@media (max-width: 560px) {
+  .lumina-settings .tabs.outside {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .lumina-settings .tabs.outside button {
+    width: 100%;
+    white-space: normal;
+  }
+  .lumina-settings .settings-summary {
+    padding: 20px 16px;
+  }
+  .lumina-settings .settings-summary .lumina-primary-action {
+    width: 100%;
+  }
+  .lumina-settings .settings-rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 16px;
+  }
+}
+
+/* --- Obsidian Lumina: Mercancía ------------------------------------------
+   Pantalla operativa sin movimiento decorativo: superficies sobrias, estados
+   legibles y «Confirmar» como única acción primaria. */
+.merchandise {
+  max-width: 1080px;
+}
+.merchandise .goods-header {
+  position: relative;
+  overflow: hidden;
+  align-items: center;
+  padding: 20px 22px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 100% 0, var(--lumina-violet-glow), transparent 38%),
+    var(--lumina-card);
+  box-shadow: 0 12px 30px rgba(9, 7, 25, .08);
+}
+.merchandise .goods-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-violet), var(--accent-emerald), transparent);
+}
+.merchandise .goods-header h1 {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -.03em;
+}
+.merchandise .goods-mode {
+  border-color: var(--lumina-card-border);
+  background: var(--surface-soft);
+}
+.merchandise .goods-mode button {
+  color: var(--muted);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: .06em;
+}
+.merchandise .goods-mode button.active,
+.merchandise .goods-mode button.active.exit {
+  background: var(--surface) !important;
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent-violet), 0 4px 12px rgba(9, 7, 25, .08);
+}
+:root[data-theme="dark"] .merchandise .goods-mode button.active,
+:root[data-theme="dark"] .merchandise .goods-mode button.active.exit {
+  color: var(--text);
+}
+.merchandise .goods-mode button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.merchandise .goods-card,
+.merchandise .goods-line {
+  border-color: var(--lumina-card-border);
+}
+.merchandise .goods-card {
+  position: relative;
+  overflow: hidden;
+}
+.merchandise .goods-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--accent-violet);
+}
+.merchandise .field:focus-within :is(input, select, textarea),
+.merchandise .goods-search-input:focus-within {
+  border-color: var(--accent-emerald) !important;
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow) !important;
+}
+.merchandise .goods-import {
+  border-color: var(--lumina-card-border) !important;
+  background: var(--surface-soft) !important;
+  color: var(--text);
+}
+.merchandise .goods-import:hover:not(:disabled),
+.merchandise .goods-import:focus-visible {
+  border-color: var(--accent-violet) !important;
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow);
+}
+.merchandise .goods-review {
+  border-color: var(--lumina-card-border);
+  background:
+    radial-gradient(circle at 100% 0, var(--lumina-violet-glow), transparent 34%),
+    var(--surface-soft);
+}
+.merchandise .goods-line {
+  position: relative;
+  overflow: hidden;
+}
+.merchandise .goods-line::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--accent-emerald);
+}
+.merchandise .goods-line.unmatched::before {
+  background: var(--warning-text);
+}
+.merchandise .goods-sum strong,
+.merchandise .goods-actions-summary,
+.merchandise .goods-done span {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.merchandise .goods-done {
+  border-color: var(--accent-emerald);
+  background: var(--emerald-soft);
+  color: var(--positive-text);
+}
+.merchandise .goods-actions {
+  padding: 12px 14px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 10px 26px rgba(9, 7, 25, .08);
+}
+.merchandise .goods-confirm,
+.merchandise .goods-confirm.exit {
+  border-color: transparent !important;
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1) !important;
+  color: #031712;
+  box-shadow: 0 9px 22px rgba(16, 185, 129, .22);
+}
+.merchandise .goods-confirm:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+@media (max-width: 560px) {
+  .merchandise .goods-header {
+    align-items: stretch;
+    padding: 16px;
+  }
+  .merchandise .goods-mode {
+    width: 100%;
+  }
+  .merchandise .goods-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .merchandise .goods-actions.has-items {
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 14px 14px 0 0;
   }
 }
 .year-pie-list {
@@ -7298,4 +7607,576 @@ td strong {
 .table-wrap:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* --- Obsidian Lumina: marco de administración -----------------------------
+   El tema claro mantiene a la caja veloz y legible; el oscuro aporta la
+   atmósfera ejecutiva sin esconder información tras transparencias. */
+.app-shell:not(.pos-shell) {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--lumina-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lumina-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.app-shell:not(.pos-shell) .sidebar {
+  background: var(--surface);
+  border-right-color: var(--lumina-card-border);
+}
+.app-shell:not(.pos-shell) .brand-icon {
+  background: linear-gradient(145deg, #8b5cf6, #4c1d95);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 10px 24px var(--lumina-violet-glow);
+}
+.app-shell:not(.pos-shell) .store-switch,
+.app-shell:not(.pos-shell) .help-card {
+  border-color: var(--lumina-card-border);
+}
+.app-shell:not(.pos-shell) .help-card {
+  background: var(--lumina-card);
+  box-shadow: 0 12px 28px rgba(15, 10, 35, .08);
+}
+.app-shell:not(.pos-shell) .nav-item.active {
+  background: linear-gradient(90deg, var(--primary-soft), transparent) !important;
+  box-shadow: inset 2px 0 0 var(--accent-violet);
+}
+.app-shell:not(.pos-shell) .topbar {
+  background: var(--surface);
+  border-bottom-color: var(--lumina-card-border);
+}
+.app-shell:not(.pos-shell) .topbar::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: var(--lumina-laser);
+  background-size: 220% 100%;
+  animation: lumina-laser 4.8s linear 1 both;
+}
+.theme-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.theme-selector button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 0 8px !important;
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.theme-selector button.active {
+  background: var(--surface) !important;
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(6, 5, 18, .13);
+}
+.theme-selector button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.app-shell:not(.pos-shell) .panel {
+  background: var(--lumina-card);
+  border-color: var(--lumina-card-border);
+  box-shadow: 0 12px 30px rgba(9, 7, 25, .09), 0 1px 0 rgba(255,255,255,.24) inset;
+}
+:root[data-theme="dark"] .app-shell:not(.pos-shell) .panel {
+  box-shadow: 0 18px 38px rgba(0, 0, 0, .28), 0 1px 0 rgba(255,255,255,.08) inset;
+}
+.app-shell:not(.pos-shell) .panel:hover {
+  border-color: rgba(124, 58, 237, .42);
+}
+@keyframes lumina-laser {
+  to { background-position: -220% 0; }
+}
+@media (max-width: 780px) {
+  .theme-selector span { display: none; }
+  .theme-selector {
+    gap: 0;
+    padding: 2px;
+  }
+  .theme-selector button { width: 30px; justify-content: center; padding: 0 !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell:not(.pos-shell) .topbar::after { animation: none; }
+}
+
+/* --- Obsidian Lumina: catálogo --------------------------------------------
+   La vista conserva los componentes del marco y da prioridad a la búsqueda,
+   al estado del inventario y a una sola acción principal. */
+.catalog-screen {
+  display: grid;
+  gap: 20px;
+}
+.catalog-screen .page-heading {
+  margin-bottom: 0;
+}
+.catalog-screen .page-heading h1 {
+  max-width: 680px;
+}
+.catalog-screen .heading-actions {
+  justify-content: flex-end;
+}
+.catalog-screen .heading-actions .button.primary {
+  background: linear-gradient(115deg, #059669, #20c997);
+  color: #041711;
+  box-shadow: 0 9px 22px rgba(5, 150, 105, .2);
+  font-weight: 750;
+}
+.catalog-screen .heading-actions .button.primary:hover:not(:disabled) {
+  background: linear-gradient(115deg, #047857, #10b981);
+  color: #fff;
+}
+.catalog-panel {
+  overflow: hidden;
+}
+.catalog-panel-heading {
+  border-bottom: 1px solid var(--lumina-card-border);
+  background: linear-gradient(90deg, var(--lumina-emerald-glow), transparent 44%);
+}
+.catalog-panel-heading .badge {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.catalog-toolbar {
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--lumina-card-border);
+  background: var(--surface-soft);
+}
+.catalog-toolbar .table-search {
+  flex: 1 1 340px;
+  max-width: 640px;
+  background: var(--surface);
+}
+.catalog-toolbar .table-search:focus-within {
+  border-color: var(--accent-emerald);
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow);
+}
+.catalog-toolbar select {
+  min-width: 200px;
+  background: var(--surface);
+}
+.catalog-panel .table-wrap {
+  border-top: 0;
+}
+.catalog-panel tbody tr {
+  transition: background-color .16s ease;
+}
+.catalog-panel tbody tr:hover {
+  background: var(--primary-soft);
+}
+.catalog-panel .table-product img {
+  border: 1px solid var(--lumina-card-border);
+}
+.catalog-panel .table-actions button:not(.button) {
+  border: 1px solid var(--lumina-card-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+.catalog-panel .table-actions button:not(.button):hover {
+  border-color: var(--accent-violet);
+  color: var(--text);
+}
+@media (max-width: 640px) {
+  .catalog-screen {
+    gap: 16px;
+  }
+  .catalog-screen .heading-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .catalog-screen .heading-actions .button,
+  .catalog-screen .heading-actions > label {
+    width: 100%;
+    white-space: normal;
+  }
+  .catalog-screen .heading-actions .button.primary {
+    grid-column: 1 / -1;
+  }
+  .catalog-panel-heading {
+    align-items: flex-start;
+    padding: 18px 16px 14px;
+  }
+  .catalog-toolbar {
+    align-items: stretch;
+  }
+  .catalog-toolbar select {
+    width: 100%;
+    min-width: 0;
+  }
+  .catalog-panel .table-cards tr {
+    background: var(--lumina-card);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .catalog-panel tbody tr {
+    transition: none;
+  }
+}
+
+/* --- Obsidian Lumina: reportes --------------------------------------------
+   Navegación tranquila, filtros claros y tablas comparables. Reutiliza las
+   superficies y tokens del marco; no introduce otra familia de componentes. */
+.lumina-reports {
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: 18px;
+}
+.lumina-reports .report-menu {
+  position: sticky;
+  top: 82px;
+  max-height: calc(100dvh - 106px);
+  overflow-y: auto;
+  padding: 10px;
+}
+.lumina-reports .report-group + .report-group {
+  border-color: var(--lumina-card-border);
+}
+.lumina-reports .report-group-title {
+  min-height: 44px;
+  color: var(--text);
+  letter-spacing: 0.055em;
+}
+.lumina-reports .report-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  font-variant-numeric: tabular-nums;
+}
+.lumina-reports .report-group-title > svg:last-child {
+  margin-left: 0;
+}
+.lumina-reports .report-group > button:not(.report-group-title) {
+  position: relative;
+  min-height: 44px;
+  border: 1px solid transparent !important;
+  line-height: 1.35;
+}
+.lumina-reports .report-group > button:not(.report-group-title).active {
+  border-color: var(--lumina-card-border) !important;
+  background: linear-gradient(
+    90deg,
+    var(--primary-soft),
+    transparent
+  ) !important;
+  box-shadow: inset 2px 0 0 var(--accent-violet);
+  color: var(--text);
+  font-weight: 650;
+}
+.lumina-reports
+  .report-group
+  > button:not(.report-group-title).active
+  > svg:first-child {
+  color: var(--accent-violet);
+}
+.report-workspace {
+  min-height: 420px;
+}
+.report-workspace-heading {
+  min-height: 82px;
+  border-bottom: 1px solid var(--lumina-card-border);
+}
+.report-workspace-heading h2 {
+  max-width: 58ch;
+}
+.report-export-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.report-filters {
+  flex-wrap: wrap;
+  padding-top: 18px;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--lumina-card-border);
+}
+.report-filters .field {
+  min-width: 150px;
+  flex: 1 1 160px;
+  max-width: 220px;
+}
+.report-filters .badge {
+  align-self: center;
+  margin-top: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.report-workspace .table-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.report-workspace table {
+  font-variant-numeric: tabular-nums;
+}
+.report-workspace tbody tr:focus-within {
+  background: var(--surface-soft);
+}
+.formal-report-content {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+.formal-report-content > h3 {
+  margin: 8px 0 -8px;
+}
+.formal-report-content > p,
+.formal-report-content > ul {
+  margin: 0;
+}
+.report-summary-grid {
+  margin: 0;
+}
+.income-by-day > .report-export-actions {
+  justify-content: flex-start;
+  padding: 0 22px 18px;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--lumina-card-border);
+}
+.income-day-detail {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border-top: 1px solid var(--lumina-card-border);
+}
+.income-day-detail > h3,
+.income-day-detail > p {
+  margin: 0;
+}
+@media (max-width: 1020px) {
+  .lumina-reports {
+    grid-template-columns: 205px minmax(0, 1fr);
+  }
+}
+@media (max-width: 780px) {
+  .lumina-reports {
+    grid-template-columns: 1fr;
+  }
+  .lumina-reports .report-menu {
+    position: static;
+    max-height: none;
+  }
+}
+@media (max-width: 560px) {
+  .lumina-reports {
+    gap: 14px;
+  }
+  .lumina-reports .report-menu,
+  .report-workspace-heading,
+  .formal-report-content,
+  .income-day-detail {
+    padding: 16px;
+  }
+  .report-workspace-heading {
+    align-items: flex-start;
+  }
+  .report-workspace-heading,
+  .report-export-actions {
+    flex-direction: column;
+  }
+  .report-export-actions,
+  .report-export-actions .button {
+    width: 100%;
+  }
+  .report-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  .report-filters .field {
+    width: 100%;
+    max-width: none;
+  }
+  .report-filters .badge {
+    justify-self: start;
+    margin-top: 0;
+  }
+  .income-by-day > .report-export-actions {
+    padding: 0 16px 16px;
+  }
+}
+
+/* --- Obsidian Lumina: caja clara -------------------------------------------
+   La pantalla de venta no hereda luces ambientales: en caja manda el contraste
+   y la lectura inmediata de producto, carrito y total. */
+:root[data-theme="light"] .pos-shell {
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --surface-soft: #f7f8fc;
+  --border: #d9dfeb;
+  --text: #121827;
+  --muted: #536174;
+  --primary: #6941c6;
+  --success-strong: #087a58;
+}
+:root[data-theme="light"] .pos-shell .sidebar,
+:root[data-theme="light"] .pos-shell .topbar {
+  background: #ffffff;
+}
+:root[data-theme="light"] .pos-shell .pos-search {
+  border-color: #b8c4d6;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, .04) inset;
+}
+:root[data-theme="light"] .pos-shell .pos-search:focus-within {
+  border-color: #087a58;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, .13), 0 0 0 1px rgba(16, 185, 129, .35) inset;
+}
+:root[data-theme="light"] .pos-shell .category-tabs button.active {
+  background: #6941c6 !important;
+  border-color: #6941c6 !important;
+  box-shadow: 0 5px 13px rgba(105, 65, 198, .24);
+}
+:root[data-theme="light"] .pos-shell .product-card {
+  border-color: #d9dfeb !important;
+  box-shadow: 0 5px 16px rgba(23, 32, 53, .07);
+}
+:root[data-theme="light"] .pos-shell .product-card:hover:not(:disabled) {
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 11px 26px rgba(67, 45, 120, .14);
+}
+:root[data-theme="light"] .pos-shell .product-image {
+  background: linear-gradient(150deg, #fbfcff, #f1f4fb);
+}
+:root[data-theme="light"] .pos-shell .cart-panel {
+  border-left-color: #d9dfeb;
+  box-shadow: -12px 0 30px rgba(26, 31, 52, .045);
+}
+:root[data-theme="light"] .pos-shell .cart-heading {
+  background: linear-gradient(135deg, #ffffff, #f6f4ff);
+}
+:root[data-theme="light"] .pos-shell .cart-summary {
+  background: linear-gradient(180deg, #ffffff, #f7fbfa);
+}
+:root[data-theme="light"] .pos-shell .cart-total strong {
+  color: #073b2d;
+}
+:root[data-theme="light"] .pos-shell .charge-button {
+  background: linear-gradient(115deg, #059669, #14b88b);
+  box-shadow: 0 9px 18px rgba(5, 150, 105, .24);
+}
+:root[data-theme="light"] .pos-shell .charge-button:hover:not(:disabled) {
+  background: linear-gradient(115deg, #047857, #0da97d);
+}
+:root[data-theme="light"] .pos-shell .title-dot,
+:root[data-theme="light"] .pos-shell .live-dot {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, .12);
+}
+@media (max-width: 560px) {
+  :root[data-theme="light"] .pos-shell .pos-content {
+    padding-inline: 12px;
+  }
+  :root[data-theme="light"] .pos-shell .product-grid {
+    gap: 10px;
+  }
+  :root[data-theme="light"] .pos-shell .product-card {
+    border-radius: 11px;
+  }
+}
+
+/* --- Obsidian Lumina: inventario -----------------------------------------
+   Usa las superficies, botones, campos, tablas y estados del marco común. */
+.inventory-panel {
+  margin-bottom: 20px;
+}
+.inventory-panel .panel-heading,
+.inventory-warehouses > .panel-heading,
+.inventory-history-heading {
+  border-bottom: 1px solid var(--lumina-card-border);
+}
+.inventory-warehouse-field {
+  width: min(240px, 100%);
+  margin: 0;
+}
+.inventory-warehouse-field select {
+  width: 100%;
+}
+.inventory-panel td .badge {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.inventory-warehouses {
+  margin-bottom: 20px;
+}
+.inventory-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1.2fr);
+  gap: 24px;
+  align-items: center;
+  padding: 22px;
+  border-top: 1px solid var(--lumina-card-border);
+}
+.inventory-workspace h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.inventory-workspace p {
+  max-width: 58ch;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.inventory-workspace > .table-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.inventory-workspace-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.inventory-workspace-action .field {
+  min-width: 0;
+  margin: 0;
+}
+.inventory-workspace-action input,
+.inventory-workspace-action select {
+  width: 100%;
+  min-width: 0;
+}
+.inventory-workspace-action input[type="file"] {
+  max-width: 100%;
+}
+.inventory-workspace-action .button {
+  min-height: 44px;
+}
+.inventory-history-heading {
+  border-top: 1px solid var(--lumina-card-border);
+}
+@media (max-width: 720px) {
+  .inventory-panel .panel-heading,
+  .inventory-workspace,
+  .inventory-workspace-action {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inventory-panel .panel-heading {
+    align-items: stretch;
+  }
+  .inventory-warehouse-field,
+  .inventory-workspace-action .button {
+    width: 100%;
+  }
+  .inventory-workspace > .table-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inventory-workspace > .table-actions .button {
+    width: 100%;
+  }
 }

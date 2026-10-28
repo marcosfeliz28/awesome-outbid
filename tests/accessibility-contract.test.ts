@@ -24,7 +24,10 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(app).toContain(
       "...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {})",
     );
-    expect(app).toContain('(page === "styles" && SHOW_STYLE_GUIDE)');
+    expect(app).toContain('(route === "styles" && SHOW_STYLE_GUIDE)');
+    expect(app).toContain(
+      '(safePage === "styles" ? "Guía de estilos" : "Configuración")',
+    );
   });
   it("la ayuda explica tareas reales sin prometer ventas offline siempre", () => {
     expect(app).toContain("Ayuda para trabajar");
@@ -515,6 +518,18 @@ describe("Primeros pasos · INI-06 a INI-08", () => {
     expect(onboarding).toMatch(/<h2 ref=\{heading\} tabIndex=\{-1\}>/);
     expect(onboarding).toContain("heading.current?.focus()");
     expect(onboarding).toMatch(/<p aria-live="polite">Paso \{step \+ 1\} de \{STEPS\.length\}/);
+  });
+});
+
+describe("Mercancía · selector de movimiento", () => {
+  const merchandise = readFileSync("apps/web/src/Merchandise.tsx", "utf8");
+
+  it("expone Entrada y Salida como botones con estado, no como pestañas sin panel", () => {
+    expect(merchandise).toContain('role="group"');
+    expect(merchandise).toContain('aria-pressed={direction === "entry"}');
+    expect(merchandise).toContain('aria-pressed={direction === "exit"}');
+    expect(merchandise).not.toContain('role="tablist"');
+    expect(merchandise).not.toContain('role="tab"');
   });
 });
 

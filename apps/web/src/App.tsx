@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import {
   initialCompanyCode,
+  productAssistantAvailable,
   productTenancyRequired,
   publicRegistrationEnabled,
 } from "./productTenancy";
@@ -886,7 +887,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
 }
 
 function Shell() {
-  const { user, token, online, theme, toggleTheme, setOnline } = useStore();
+  const { user, token, online, theme, setTheme, setOnline } = useStore();
   const businessSettings = useQuery<{ name?: string; branchName?: string }>({
     queryKey: ["settings", user?.branchId],
     queryFn: () => api("/settings"),
@@ -950,6 +951,12 @@ function Shell() {
       (!["onboarding", "billing"].includes(n.id) || PRODUCT_TENANCY_REQUIRED) &&
       can(user.permissions, n.permission),
   );
+  const route = page.split("?")[0];
+  const routeAllowed =
+    allowed.some((item) => item.id === route) ||
+    (route === "settings" && !!user && can(user.permissions, "sale:manage")) ||
+    (route === "styles" && SHOW_STYLE_GUIDE);
+  const safePage = routeAllowed ? route : allowed[0]?.id || "products";
   const onboarding = useQuery<OnboardingStatus>({
     queryKey: ["onboarding", user?.id],
     queryFn: () => api("/onboarding"),
@@ -1040,14 +1047,8 @@ function Shell() {
     return () => clearInterval(timer);
   }, [online, setOnline]);
   useEffect(() => {
-    if (
-      user &&
-      !allowed.some((n) => n.id === page) &&
-      page !== "settings" &&
-      !(page === "styles" && SHOW_STYLE_GUIDE)
-    )
-      go(allowed[0]?.id || "products");
-  }, [user, page]);
+    if (user && !routeAllowed) go(safePage);
+  }, [user, page, routeAllowed, safePage]);
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -1229,12 +1230,16 @@ function Shell() {
   if (!user) return <Login />;
   if (PRODUCT_TENANCY_REQUIRED && window.location.pathname === "/mcp/autorizar")
     return <McpAuthorize />;
-  const current = navigation.find((n) => n.id === page);
+  const current = navigation.find((n) => n.id === safePage);
   const initials = user.name
     .split(" ")
     .map((n) => n[0])
     .slice(0, 2)
     .join("");
+  const assistantAvailable = productAssistantAvailable(
+    import.meta.env.VITE_PRODUCT_TENANCY,
+    user.role,
+  );
   const pages: Record<string, React.ReactNode> = {
     onboarding: <Onboarding go={go} />,
     billing: <Billing />,
@@ -1262,11 +1267,11 @@ function Shell() {
     "void-requests": <VoidRequests />,
     "transfer-reconciliation": <TransferReconciliation />,
     "courier-payouts": <CourierPayouts />,
-    merchandise: <Merchandise />,
+    merchandise: <Merchandise assistantAvailable={assistantAvailable} />,
     incentives: <IncentivesPage />,
   };
   return (
-    <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
+    <div className={`app-shell ${safePage === "pos" ? "pos-shell" : ""}`}>
       <a
         className="skip-link"
         href="#main-content"
@@ -1289,8 +1294,8 @@ function Shell() {
       )}
       {can(user.permissions, "inventory:write") &&
         user.role !== "seller" &&
-        page !== "merchandise" &&
-        page !== "pos" && (
+        safePage !== "merchandise" &&
+        safePage !== "pos" && (
           <nav className="goods-mobile-bar">
             <Button onClick={() => go("merchandise")}>
               <Truck size={24} /> Mercancía
@@ -1329,13 +1334,13 @@ function Shell() {
           {allowed.map((n) => (
             <button
               key={n.id}
-              className={`nav-item ${page === n.id ? "active" : ""}`}
-              aria-current={page === n.id ? "page" : undefined}
+              className={`nav-item ${safePage === n.id ? "active" : ""}`}
+              aria-current={safePage === n.id ? "page" : undefined}
               onClick={() => go(n.id)}
             >
               <n.icon size={19} />
               <span>{n.label}</span>
-              {page === n.id && <span className="nav-dot" />}
+              {safePage === n.id && <span className="nav-dot" />}
             </button>
           ))}
         </nav>
@@ -1354,8 +1359,8 @@ function Shell() {
           </div>
           {can(user.permissions, "sale:manage") && (
             <button
-              className={`nav-item ${page === "settings" ? "active" : ""}`}
-              aria-current={page === "settings" ? "page" : undefined}
+              className={`nav-item ${safePage === "settings" ? "active" : ""}`}
+              aria-current={safePage === "settings" ? "page" : undefined}
               onClick={() => go("settings")}
             >
               <Settings size={19} />
@@ -1399,7 +1404,7 @@ function Shell() {
               </span>
               <strong>
                 {current?.label ||
-                  (page === "styles" ? "Guía de estilos" : "Configuración")}
+                  (safePage === "styles" ? "Guía de estilos" : "Configuración")}
               </strong>
             </span>
           </div>
@@ -1436,15 +1441,28 @@ function Shell() {
                 {pending ? ` · ${pending}` : ""}
               </span>
             </button>
-            <button
-              className="icon-button"
-              onClick={toggleTheme}
-              aria-label={
-                theme === "light" ? "Activar modo oscuro" : "Activar modo claro"
-              }
-            >
-              {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
-            </button>
+            <div className="theme-selector" role="group" aria-label="Tema visual">
+              <button
+                type="button"
+                className={theme === "light" ? "active" : ""}
+                aria-label="Activar modo claro"
+                aria-pressed={theme === "light"}
+                onClick={() => setTheme("light")}
+              >
+                <Sun size={15} aria-hidden="true" />
+                <span>Claro</span>
+              </button>
+              <button
+                type="button"
+                className={theme === "dark" ? "active" : ""}
+                aria-label="Activar modo oscuro"
+                aria-pressed={theme === "dark"}
+                onClick={() => setTheme("dark")}
+              >
+                <Moon size={15} aria-hidden="true" />
+                <span>Oscuro</span>
+              </button>
+            </div>
             {PRODUCT_TENANCY_REQUIRED && (
               <SupportHelp
                 userName={user.name}
@@ -1529,10 +1547,21 @@ function Shell() {
             )}
           </div>
         </header>
+        {assistantAvailable && (
+          <Assistant
+            key={`${user.id}:${user.branchId}`}
+            online={online}
+            request={
+              assistantRequest?.session === `${user.id}:${user.branchId}`
+                ? assistantRequest
+                : null
+            }
+          />
+        )}
         <main
           id="main-content"
           tabIndex={-1}
-          className={`main-content ${page === "pos" ? "pos-content" : ""}`}
+          className={`main-content ${safePage === "pos" ? "pos-content" : ""}`}
         >
           {user.role === "support" && (
             <div className="support-mode-banner" role="status">
@@ -1553,7 +1582,7 @@ function Shell() {
               go("settings");
             }}
           />
-          {pages[page.split("?")[0]] || <Dashboard go={go} />}
+          {pages[safePage] || <Dashboard go={go} />}
         </main>
         <footer className="app-footer">
           <span>Nexora POS · Tu negocio, en movimiento.</span>
@@ -1670,17 +1699,6 @@ function Shell() {
         </Button>
       </Modal>
       <About open={about} onClose={() => setAbout(false)} />
-      {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
-        <Assistant
-          key={`${user.id}:${user.branchId}`}
-          online={online}
-          request={
-            assistantRequest?.session === `${user.id}:${user.branchId}`
-              ? assistantRequest
-              : null
-          }
-        />
-      )}
       {ownPassword && (
         <ChangeOwnPassword onClose={() => setOwnPassword(false)} />
       )}
