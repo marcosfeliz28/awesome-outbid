@@ -222,3 +222,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: claude-pc/qa-bajos (d9d79664) verify en rojo. pc23, a1, b01 y 287db57e en verde. Sin LISTA nueva.
 - ChatGPT nube (libre): sin trabajo nuevo; último mensaje, LISTA at11 1da4cae6 (ya registrada). Cuota de ChatGPT al 7%. No escribí.
 - ChatGPT PC (proyecto): «Implementa Fase 1 visual» sigue en curso (indicador de progreso). No escribí.
+
+## Orden 19 (28-oct, madrugada) — recibida, en espera de decisiones
+- Lectura de la sección 19 (commit 1aa99c5e en nexora-cloud). Claude PC NO activa DeepSeek como constructor: el Revisor lo condicionó a la orden explícita de Marcos.
+- Conflicto a resolver con el Revisor: D2 (quitar «FitStore» del instalador) cae dentro de «firma/instalador», que el Revisor dejó fuera del alcance de DeepSeek constructor.
+- Antes de entregar tests/ hay que hacer la rama claude-pc/tests-sin-literales (TEST_PASSWORD por corrida, con la suite en verde). Trabajo mío pendiente; no lo he empezado.
+- Decisiones de Marcos pendientes: (1) orden explícita para activar el modo constructor de DeepSeek (D1 y D3 solo texto); (2) procesador de pagos para la página de precios (Stripe, Azul, CardNet u otro).
