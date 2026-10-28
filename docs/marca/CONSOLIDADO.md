@@ -97,3 +97,14 @@ Casi cualquier nombre inventado tiene vecinos cercanos en el registro de marcas;
 
 ## Regla para cerrar
 No hacer más rondas de búsqueda propia. La dueña elige **1 principal + 1 de reserva**; se compran los dominios; el abogado hace la búsqueda formal sobre esos dos; recién entonces se cambia el nombre en el repositorio (≈128 archivos fuera de `docs/`).
+
+## Corrección y últimos candidatos con N (Nexora 1, 28-oct, tarde)
+La dueña quiso Norelna, pero un nuevo vetado a fondo lo deja en **riesgo ALTO**: es casi **NELNA** (Nelna Inc., Seúl; una marca registrada y una pendiente en clases 9, 35 y 16; estado en USPTO no confirmado). **Norelna queda descartado salvo que el abogado diga lo contrario.**
+| Nombre | `.com` / `.net` / `.app` | Riesgo (web) | Hallazgo |
+|---|---|---|---|
+| **Norexor** | libre / libre / libre | **Medio** | Sin producto con ese nombre exacto; a un carácter de **Norexa** (proyecto cripto) y **Norex** (marcas antiguas y empresa de acero); lejanamente **Nexor Limited** (RU, mensajería segura, marca en EE. UU.) |
+| Norelna | libre / libre / libre | **Alto (condicionado)** | Casi **NELNA** en la misma clase de computación |
+Los otros 58 nombres «duros» con N (Norex, Norvex, Nerox, Norvax, Nortex, Noraxis…) tienen el `.com` tomado.
+
+**Orden actual:** 1) **Norexor** (único con N, sonido fuerte y dominios libres; riesgo medio) · 2) **Rifivo / Lepafi / Vemifi** (riesgo bajo en la web, sin N, hay que rehacer el logotipo) · Norelna y Nexora descartados.
+Límite: todo es búsqueda web en agregadores; falta la búsqueda formal del abogado.
