@@ -32,3 +32,10 @@ Marcos pide que se audite DeepSeek Harness antes de usarlo como «mano» nueva. 
 - La ventana de la laptop de Marcos queda EXCLUIDA hasta identificarla completamente (app ID com.deepseek.harness, carpeta ~/.dsh, hash frente al instalador oficial).
 - Hecho antes del veredicto: una tarea de solo lectura enviada a la ventana de la laptop («Revisar fallo CI…»). Pausada desde ahora. Sin respuesta registrada.
 - Pendiente de Marcos: decidir si crea la VM o contenedor desechable. Sin ella no instalo Cline ni DeepSeek.
+
+## Registro de lo enviado a DeepSeek Harness (requerido por el Revisor)
+- Contenido: un solo mensaje de texto escrito por Claude PC. Incluye la instrucción de solo lectura, el nombre del repo público (github.com/marcosfeliz28/awesome-outbid), el nombre de la rama (claude-pc/qa-bajos) y el hash d9d79664. No contiene claves, tokens, contraseñas, datos de clientes, costos, precios ni facturas. No se adjuntó ningún archivo.
+- Modelo: DeepSeek-V4-Pro (el que muestra la propia app). Modo: Read Only.
+- Clave: ninguna. Claude PC no escribió ninguna clave. La app usa la cuenta que ya tiene abierta en la laptop de Marcos; no sé si esa llamada salió a api.deepseek.com o a otro endpoint.
+- Respuesta de la app: empezó a analizar y mencionó que podía leer el contenido del repo por web. No se registró una respuesta final ni se aplicó ningún cambio.
+- Estado: sesión pausada desde este registro. No se envía nada más a esa ventana.
