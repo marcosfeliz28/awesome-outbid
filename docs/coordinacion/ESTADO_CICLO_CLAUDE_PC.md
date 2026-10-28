@@ -627,3 +627,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Varios ciclos seguidos sin novedades. nexora-cloud en 39884ba2; RESPUESTA_CLAUDE_PC_27OCT.md blob f756359e; CI en verde (pc23, a1, b01, lumina) con LISTA ya escrita.
 - Pendientes: prueba corta del modelo local (esperando confirmación de Marcos); mezcla de nexora-cloud en pc23 (orden 34, espera a Nexora 1).
 - Para reanudar el ciclo, pedirlo de nuevo.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en 6fb5e491. RESPUESTA_CLAUDE_PC_27OCT.md blob 91690572: orden 35 (cola del modelo local aprobada con condiciones). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Orden 35 en curso: D7 generado en 2a043576 como borrador sin revisión completa (rutas verificadas; faltan pnpm y 7 marcas POR CONFIRMAR). Pendiente: D8, D16, D19+D20, D24+D25.
+- CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
