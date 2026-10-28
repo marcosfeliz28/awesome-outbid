@@ -42,6 +42,7 @@ import {
   gvUserNames,
   lockGvOwner,
   planGvImportPayments,
+  gvBankOptions,
 } from "./gv-money";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
@@ -378,6 +379,66 @@ export class GvController {
     return this.db.$transaction((tx) =>
       createGvPayment(tx, actor, "enrollment", enrollmentId, operationId, data),
     );
+  }
+
+  // Lista de bancos y terminales para el modal de pago, por empresa.
+  @Get("banks")
+  @Permit("gv:read")
+  async banks(@CurrentUser() actor: Actor) {
+    return gvBankOptions(this.db, actor.branchId);
+  }
+
+  // Anular un pago propio de GV con razón (Clary corrige sus errores sin
+  // pedir a Génesis): deja de contar, queda la auditoría y se registra el
+  // correcto con un pago nuevo. La verificación de transferencias sigue
+  // siendo sólo de gv:verify.
+  @Post("payments/:id/void")
+  @Permit("gv:write")
+  async voidPayment(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { reason } = parse(
+      z.object({ reason: z.string().trim().min(3).max(500) }),
+      body,
+    );
+    const paymentId = parse(uuid, id);
+    return this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "GvPayment" WHERE id = ${paymentId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
+      const before = await tx.gvPayment.findFirst({
+        where: { id: paymentId, branchId: actor.branchId },
+      });
+      if (!before) bad("Pago no encontrado.");
+      if (before.rejectedAt) return before; // repetir: igual.
+      const owner = before.enrollmentId
+        ? await tx.gvEnrollment.findUnique({
+            where: { id: before.enrollmentId },
+          })
+        : await tx.gvAppointment.findUnique({
+            where: { id: before.appointmentId! },
+          });
+      if (owner?.status === "reembolsada")
+        bad("Está reembolsada: sus pagos ya no se anulan.");
+      const row = await tx.gvPayment.update({
+        where: { id: before.id },
+        data: {
+          rejectedAt: new Date(),
+          rejectedBy: actor.id,
+          rejectReason: "Anulado: " + reason,
+        },
+      });
+      await audit(
+        tx,
+        actor,
+        "gv_payment_void",
+        "gv_payment",
+        row.id,
+        before,
+        row,
+      );
+      return row;
+    });
   }
 
   // Verificar o rechazar una transferencia (GV-05/06): sólo gv:verify

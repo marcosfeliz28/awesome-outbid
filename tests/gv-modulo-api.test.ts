@@ -182,6 +182,33 @@ const transferBody = (enrollmentId: string, amount: number) =>
     reference: "QA-" + randomUUID().slice(0, 8),
   });
 
+describe("GV · banco de lista y anular pago", () => {
+  it("la lista de bancos se separa por empresa y el rol gv anula con razón", async () => {
+    const banks = await ok("/gv/banks", gv);
+    expect(Array.isArray(banks.genesis)).toBe(true);
+    expect(Array.isArray(banks.macgen)).toBe(true);
+    const course = (await newCourse(gv)).body;
+    courseIds.push(course.id);
+    const e = await enroll(course.id, 3000, "Banco");
+    const paid = await ok("/gv/payments", gv, {
+      ...transferBody(e.id, 100),
+      concept: "completo",
+    });
+    expect(paid.concept).toBe("completo");
+    // Sin razón no se anula; con razón, sí, y deja de contar.
+    expect(
+      (await request("/gv/payments/" + paid.id + "/void", gv, {})).status,
+    ).toBe(400);
+    const voided = await ok("/gv/payments/" + paid.id + "/void", gv, {
+      reason: "Monto mal escrito",
+    });
+    expect(voided.rejectedAt).toBeTruthy();
+    const detail = await ok("/gv/courses/" + course.id, gv);
+    const row = detail.enrollments.find((x: any) => x.id === e.id);
+    expect(row.unverified).toBe("0.00");
+  });
+});
+
 describe("GV · cursos, inscripciones y pagos", () => {
   it("valida el curso; pagado cuenta sólo lo verificado y el pendiente es exacto", async () => {
     expect((await newCourse(gv, { type: "boda" })).status).toBe(400);
