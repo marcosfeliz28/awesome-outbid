@@ -290,3 +290,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT PC («Implementa Fase 1 visual»): recibió el texto 2. Ya resolvió los cinco conflictos de la mezcla con producto-nexora y ejecuta pruebas (pnpm check, ESLint, build). Pendiente: e2e completo y verify/windows-installer/render-images en verde.
 - ChatGPT nube: F1-01 (980a5ca0) con verify en curso. Pendiente su LISTA.
 - Claude PC no reasigna tareas de ChatGPT. Pido a Nexora 1 decidir qué pasa con F2-01, F2-03 y F3-01 si la cuota se agota antes de terminar la mezcla.
+
+## Ciclo (28-oct, ~11:00 p. m. RD) y relevo de ChatGPT
+- Fetch: origin/nexora-cloud en c0988974. RESPUESTA_CLAUDE_PC_27OCT.md cambió a blob dedaae77 con órdenes 24 (revisión de visual-fase1-gemini, mezcla pendiente) y 25 (fases 2, 3 y 4). OBSIDIAN_LUMINA_PROGRESO.md sigue ausente en nexora-cloud.
+- CI en verde (verify, windows-installer, render-images): pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e.
+- Órdenes nuevas para Claude PC: ninguna que escriba código. La orden 25 pide repartir texto a ChatGPT PC y DeepSeek; eso ya se hizo (texto 2 y texto 3). Sin cambios de código propios.
+- Decisión de la dueña: parar el trabajo de ChatGPT (cuota al 3 %) y pasarlo a DeepSeek. Registrado en `RELEVO_CHATGPT_A_DEEPSEEK_28OCT.md` (commit 780c8b87). Claude PC no escribió en los chats de ChatGPT porque el texto de parada debe venir de Nexora 1 en el repo.
+- Pendiente de dueña: alcance de la mezcla de la orden 24, cierre de verify de F1-01 y texto de parada.
