@@ -55,3 +55,6 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Nada enviado a DeepSeek.
 - Segunda exportación (sin tests/, 27-oct noche): 173 archivos. Escáner: 1 coincidencia, `apps/api/src/common.ts:191`, `password: "contraseña"` — es la etiqueta de un campo, no una credencial (falso positivo). NO enviada: requiere autorización del Revisor para el falso positivo o renombrarla.
 - Decisión de Marcos «procede» (sin escrito explícito de riesgo para la laptop): pendiente de confirmación por escrito del riesgo de correr en la laptop sin VM.
+- Exportación según la orden del Revisor (apps/*/src, schema.prisma, package.json y lockfiles; sin tests/ ni packages/): 166 archivos. Con el patrón del Revisor (password|secret|token|api_key = 'literal'): 1 coincidencia, apps/api/src/common.ts:191, `password: "contraseña"`. El Revisor indicó cero coincidencias en apps/*/src, así que hay discrepancia. NO enviada hasta que el Revisor confirme esa línea (etiqueta/valor de UI) o autorice renombrarla.
+- Pendiente aparte (para Llaves, no para DeepSeek): confirmar si FitStore-QA-2026! y los demás literales de tests/ son válidos en producción; si lo son, rotarlos (repo público).
+- Decisión de Marcos sobre la laptop sin VM: pendiente por escrito.
