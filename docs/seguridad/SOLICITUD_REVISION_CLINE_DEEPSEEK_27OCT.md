@@ -24,3 +24,11 @@ Marcos pide que se audite DeepSeek Harness antes de usarlo como «mano» nueva. 
 - Observado: en una conversación previa de la app le pedía a Marcos `gh auth login` y la ruta de un repo privado. Esa conversación no se usó.
 - Primera tarea en sesión nueva con «Read Only»: revisar `claude-pc/qa-bajos` (d9d79664) para listar pruebas e2e intermitentes. Respuesta pendiente.
 - Veredicto del Revisor: pendiente. Pedido enviado a Nexora 4.
+
+## Veredicto condicionado del Revisor (081dbb5, rama claude/revisor-plugins) y pausa
+- Cline: riesgo medio. Autorizado solo como CLI cline@3.0.74, auto-actualización apagada, sin --yolo/--auto-approve, sin cuenta Cline, con Ollama local. No la extensión de VS Code.
+- DeepSeek Harness: riesgo alto. Autorizado solo la versión oficial deepseek-ai/deepseek-harness 0.2.1-rc.3 con DSH_TELEMETRY_DISABLED=1, sin computer-use ni plugins de terceros.
+- Condición de entorno: VM o contenedor desechable, sin ~/.ssh, .env, tokens de git ni llaves de Render o Cloudflare; repo solo lectura o copia sin remoto; sin datos reales.
+- La ventana de la laptop de Marcos queda EXCLUIDA hasta identificarla completamente (app ID com.deepseek.harness, carpeta ~/.dsh, hash frente al instalador oficial).
+- Hecho antes del veredicto: una tarea de solo lectura enviada a la ventana de la laptop («Revisar fallo CI…»). Pausada desde ahora. Sin respuesta registrada.
+- Pendiente de Marcos: decidir si crea la VM o contenedor desechable. Sin ella no instalo Cline ni DeepSeek.
