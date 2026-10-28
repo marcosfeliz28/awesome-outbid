@@ -90,3 +90,12 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Estado: NO enviado, esperando cuota disponible.
 - ENVÍO REALIZADO (27-oct, 9:12 p. m. RD): sesión NUEVA «Auditoría de seguridad en código» de DeepSeek Harness, modo Read Only. Contenido enviado: texto de la tarea (instrucción de solo lectura y la carpeta C:/Users/marco/AppData/Local/Temp/auditoria-codigo-revisor, 166 archivos de apps/api/src, apps/web/src, schema.prisma, package.json y lockfiles). Sin claves, sin datos de clientes, costos o facturas; sin archivos adjuntos. Modelo: DeepSeek-V4-Pro. Sin 👍/👎. Telemetría (DSH_TELEMETRY_DISABLED=1) no verificable desde la interfaz.
 - Advertencia: la sesión antigua «Revisar fallo CI…» reanudó (tras la recarga) su análisis del repo público con 11 subtareas. NO se le envió nada nuevo ni se usó. Pendiente: que Marcos la cierre.
+
+## Resultado de la auditoría de DeepSeek y verificación (27-oct, ~9:21 p. m. RD)
+- DeepSeek: sin fallos críticos ni altos confirmados. Medios/bajos propuestos (todos como «verificar»): (1) carrera en catalog.ts:531 (edición de costAvg/price); (2) validación de precios negativos, catalog.ts:180; (3) idempotencia rota en recepción, inventory.ts:1167; (4) ITBIS en estado de resultados, reports.ts:915. Inyección SQL descartada; OAuth/PKCE correcto.
+- Verificación de Claude PC contra el código de la exportación:
+  - (2) NO confirmado: el esquema usa `amount = moneyAmount(...)` de @fitstore/shared (packages/), que NO está en la exportación. Hay que revisar packages/shared antes de confirmar.
+  - (1) Plausible, sin confirmar: findFirstOrThrow dentro de la transacción sin bloqueo visible en las líneas leídas. Hay que comprobar si hay lock posterior.
+  - (3) No concluyente con las líneas leídas; hay que revisar la rama de idempotencia completa.
+  - (4) El rótulo «Ventas sin ITBIS» coincide con netSales. Hay que confirmar la definición de netSales en dashboard.
+- Ninguno se aplica todavía. Siguiente paso: revisar esos cuatro puntos en el código completo (con packages/shared, fuera de la exportación actual).
