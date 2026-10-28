@@ -1,0 +1,65 @@
+/* Inventario.css — presentación de la pantalla de Inventario (D48).
+   Solo presentación; no cambia la lógica de conteo ni las rutas. Importado
+   desde Management.tsx; usa los tokens de styles.css. */
+
+.inventory-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1366px;
+  margin: 0 auto;
+}
+
+/* Estados vacío / carga / error, compartidos con las tablas de stock. */
+.inventory-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.inventory-empty strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.inventory-error {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--danger-text);
+  color: var(--danger-text);
+  background: var(--surface);
+}
+
+/* Fila de artículo con acción «Contar»: acento sutil al pasar el cursor. */
+.table-wrap tr[data-action] {
+  cursor: pointer;
+}
+.table-wrap tr[data-action]:hover {
+  background: var(--surface-soft);
+}
+
+/* Ajuste fino de las tablas de inventario. */
+.inventory-section .table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.inventory-section table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.inventory-section th,
+.inventory-section td {
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Responsive: 390px (móvil) y 1366px (escritorio). */
+@media (max-width: 720px) {
+  .inventory-section th,
+  .inventory-section td {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+}
