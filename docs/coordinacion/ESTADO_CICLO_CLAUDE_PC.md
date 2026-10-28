@@ -585,3 +585,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ALERTA: verify de claude-pc/pc23-anulacion-fix (c1fe8c0c, sin commits nuevos) pasó a FAILURE (check-run 122400251614). windows-installer y render-images en verde. Sin log accesible. LISTA ya escrita; no se retira. Avisado a Nexora 1 y a Marcos. Hipótesis sin confirmar: cambio del runner ubuntu-latest.
 - a1-formula-utilidad: consulta de CI fallida por límite de la API; se reintenta.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (28-oct, ciclo automático)
+- Nexora-cloud sin cambios (80d4d3a4). RESPUESTA a401b6d8 sin órdenes nuevas.
+- pc23-anulacion-fix (c1fe8c0c): verify volvió a SUCCESS en la siguiente consulta, sin cambios de código. El rojo anterior parece intermitente. Se mantiene la LISTA.
