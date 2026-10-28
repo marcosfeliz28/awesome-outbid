@@ -39,3 +39,10 @@ Marcos pide que se audite DeepSeek Harness antes de usarlo como «mano» nueva. 
 - Clave: ninguna. Claude PC no escribió ninguna clave. La app usa la cuenta que ya tiene abierta en la laptop de Marcos; no sé si esa llamada salió a api.deepseek.com o a otro endpoint.
 - Respuesta de la app: empezó a analizar y mencionó que podía leer el contenido del repo por web. No se registró una respuesta final ni se aplicó ningún cambio.
 - Estado: sesión pausada desde este registro. No se envía nada más a esa ventana.
+
+## Solicitud de ampliación: DeepSeek Harness como auditor del software completo (27-oct, noche)
+Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. Pedimos al Revisor que indique si se autoriza, y en qué condiciones.
+- Alcance propuesto: auditoría de solo lectura del repositorio completo, con hallazgos por severidad y archivo/línea.
+- Condición de datos que el Revisor debe fijar: el código fuente sube a la cuenta y al servicio de DeepSeek. ¿Se autoriza con código del repo público únicamente? ¿Se excluyen configuraciones, `.env`, scripts con URLs internas y cualquier archivo con secretos?
+- Condición de entorno: VM o contenedor desechable (sin resolver todavía).
+- Mientras no haya veredicto y VM, Claude PC audita el software con sus propios agentes en solo lectura, y lo entrega en `docs/qa/`.
