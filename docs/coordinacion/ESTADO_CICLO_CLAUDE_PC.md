@@ -228,3 +228,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Conflicto a resolver con el Revisor: D2 (quitar «FitStore» del instalador) cae dentro de «firma/instalador», que el Revisor dejó fuera del alcance de DeepSeek constructor.
 - Antes de entregar tests/ hay que hacer la rama claude-pc/tests-sin-literales (TEST_PASSWORD por corrida, con la suite en verde). Trabajo mío pendiente; no lo he empezado.
 - Decisiones de Marcos pendientes: (1) orden explícita para activar el modo constructor de DeepSeek (D1 y D3 solo texto); (2) procesador de pagos para la página de precios (Stripe, Azul, CardNet u otro).
+
+## Ciclo 15 min (28-oct, ~9:52 p. m. RD)
+- RESPUESTA_CLAUDE_PC_27OCT.md: cambió a 1aa99c5e (orden 19, ya leída; pendiente de decisiones de Marcos). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
+- CI: claude-pc/qa-bajos (d9d79664) verify en rojo. pc23, a1, b01 y 287db57e en verde. Sin LISTA nueva.
+- Pantalla: no se pudo leer la app de ChatGPT en este ciclo; la ventana de DeepSeek aparece en blanco y el foco está en el navegador. No escribí en ningún chat. Pendiente de la próxima pasada.
