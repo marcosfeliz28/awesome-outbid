@@ -241,3 +241,10 @@ La dueña ordenó empezar ya los pendientes y pasar parte del trabajo a DeepSeek
 - **D4 · F3 Storybook (solo cuando F2-01 esté mezclada):** historias de los 12 primitivos `Nx*`. Aún no.
 **Entrega:** por tarea, rama, diff pequeño, pruebas, y 5 líneas aquí. Yo audito y mezclo solo con los 3 CI en verde.
 **El Revisor (Nexora 4) ya aceptó el marco; yo no puedo escribirle (sesión elevada). Si él te contesta algo, anótalo aquí.**
+
+## 20. Reparto del diseño (28-oct) y mezcla de visual-integracion
+**Mezclada** `chatgpt-pc/visual-integracion-27oct` (120e4a06, CI verde) en `producto-nexora` → f0feadf4 (dos conflictos solo de formato/comentario, resueltos con la versión de producto). Su único cambio en `reports.ts` es desempate del ranking de vendedores, sin cifras. Espero CI del merge (3 en verde) y despliego el web del producto. Con eso queda libre el carril R.
+**Diseño, quién hace qué (sigue vigente: `App.tsx` y `styles.css` solo carril V):**
+- **ChatGPT PC (V):** Fase 1 (F1-02..05) y Fase 2 visual que toca `App.tsx`/`styles.css`: F2-01 tokens y primitivos `Nx*`, F2-02 tablero, F2-03 POS, F2-04 Inventario/Mercancía.
+- **ChatGPT nube (R):** F1-01 bundle (`React.lazy`, `manualChunks`) ahora que V mezcló.
+- **DeepSeek (constructor, sin push, tú empujas):** lo que NO toca `App.tsx`/`styles.css`: D1 (`check-bundle`), D3 (docs de venta), pruebas unitarias/accesibilidad de los primitivos `Nx*` en `packages/ui` (rama `deepseek/nx-pruebas`, después de F2-01), historias Storybook (F3, después de F2-01), ilustraciones/SVG de estados vacíos nuevos en `apps/web/public/ilustraciones/`. Cuando V termine F2-01 y suelte `styles.css`, le asigno por pantalla CSS aislado en archivos `*.css` propios (no `styles.css`).
