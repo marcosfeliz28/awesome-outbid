@@ -123,3 +123,6 @@ La dueña (Marcos) pidió «darle full acceso» y, al preguntarle qué significa
 
 Si aun así la dueña quiere dar llaves, la forma menos mala **la ejecuta ella misma, no un asistente**: un espacio de Render aparte, con llaves nuevas de alcance mínimo (solo lectura de logs, tope de gasto), distintas de las de producción, revocables en un minuto; nunca pegadas en un chat. Cualquier uso de ellas queda anotado. Y un fallo de DeepSeek no debe poder borrar nada que no tenga copia.
 Revocable en cualquier momento por el Revisor.
+
+### Corrección (28-oct-2026): las llaves de Render no se pueden limitar
+Arriba dije «llaves nuevas de alcance mínimo». Para Render eso es **incorrecto**: según su referencia de API (`api-docs.render.com/reference/authentication`), una llave se crea en Account Settings y da acceso a **todos los espacios (workspaces) a los que pertenece quien la crea**; no tiene permisos por alcance (confirmado también por una solicitud pública de la función a Render). Por tanto, una llave creada desde la cuenta principal puede operar toda la producción. La única forma de acotarla es **crearla desde una cuenta de Render aparte que pertenezca solo a un espacio separado** (sin acceso al de producción). Verificar en el panel o con el soporte de Render, por si cambió.
