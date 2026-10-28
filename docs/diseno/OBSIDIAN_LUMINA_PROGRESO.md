@@ -296,3 +296,5 @@ tres grupos, que no exista video y que no haya desbordamiento horizontal.
 La inspección visual de la N no mostró recorte. Falta auditoría independiente
 de contraste y foco y verificar los tres trabajos de CI del commit final. Las
 capturas no prueban inicio de sesión contra una API real. No se desplegó.
+
+LISTA: chatgpt-pc/visual-fase1-gemini 095bd39f6a9a36e14cba2ebcd3fdea5a8f47d788
