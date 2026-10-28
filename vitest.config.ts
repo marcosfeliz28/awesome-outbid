@@ -3,6 +3,10 @@ export default defineConfig({
   test: {
     // 5 s (el valor por defecto) se agotaban con la máquina ocupada (F-3).
     testTimeout: 30000,
+    // Cada suite PostgreSQL inicia varios procesos propios. Abrir docenas de
+    // bases a la vez agota CPU/IO también en los workers Linux del CI y puede
+    // dejar una prueba esperando hasta su timeout aunque aislada tarde segundos.
+    maxWorkers: 4,
     include: [
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
