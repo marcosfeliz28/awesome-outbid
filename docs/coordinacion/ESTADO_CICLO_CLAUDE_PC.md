@@ -303,3 +303,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT PC («Implementa Fase 1 visual»): ejecutaba la suite completa. Se envió un mensaje de parada ordenada (se encoló como Steer en el turno activo): terminar el comando en curso, no empezar cambios, subir solo lo verificado, y responder en 5 líneas. Sin confirmación de respuesta.
 - ChatGPT nube («ChatGPT nube»): terminó y reportó LISTA de F1-01. Verificado en GitHub: verify, windows-installer y render-images en verde en 980a5ca0. LISTA escrita en LISTA_CLAUDE_PC.md.
 - DeepSeek: recibe el relevo de lo que quede (ver RELEVO_CHATGPT_A_DEEPSEEK_28OCT.md). Pendiente la mezcla de la orden 24 y el cierre de la rama de ChatGPT PC.
+
+## Orden total de la dueña (28-oct, ~10:51 p. m. RD)
+- La dueña ordena pasar a DeepSeek todo el trabajo pendiente de ChatGPT, sin dejar nada a medias. ChatGPT nube queda cerrado (F1-01 en LISTA).
+- ChatGPT PC: el mensaje de parada ordenada se pulsó como Steer y dejó la cola. El chat sigue ejecutando el turno; espero su respuesta de 5 líneas (rama, commit, pruebas, pendiente, archivos sin commit).
+- Pendiente antes de pasar la mezcla de la orden 24 a DeepSeek: esa respuesta de ChatGPT PC. Sin ella, DeepSeek no empieza la mezcla.
+- Pendiente de dueña: texto escrito en el repo para DeepSeek sobre la mezcla de la orden 24.
