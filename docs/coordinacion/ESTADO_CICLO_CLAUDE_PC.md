@@ -377,3 +377,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (28-oct, quincenal)
 - Último visto: nexora-cloud 6181d72b, RESPUESTA_CLAUDE_PC_27OCT.md blob fe85eb84 (orden 29: misión nocturna DeepSeek; requiere pantalla/DeepSeek local, la nube no la ejecuta). OBSIDIAN_LUMINA_PROGRESO.md ausente.
 - CI: aab91c9a (visual-fase1-gemini) verify en ROJO otra vez, DeepSeek debe corregir en deepseek/mezcla-fase1-fix (orden 27). LISTA escrita para deepseek/d1-d3 cb1f1b8b, d12 ddd1feac, d15 4b994e65; el resto de deepseek/* con verify en curso o en cola.
+## Plan de la noche enviado a DeepSeek (28-oct, ~12:12 a. m. RD)
+- Aprobado por la dueña. Enviado en la sesión «Revisión de TEXTO_DEEPSEEK» (estado libre al enviar).
+- Orden: (1) d31 y d32 sin cifras, en ramas nuevas desde nexora-cloud; (2) d34 solo GET nexorapos.net/api/health con 5 s; (3) auditoría de d46, d47–d51 y documentos en docs/coordinacion/AUDITORIA_DEEPSEEK_28OCT.md; (4) no tocar App.tsx ni styles.css; no empezar D4, D26, D45; no hacer d52 ni pedido-f2-01; (5) sin red nueva, sin variables de entorno, sin dependencias nuevas; (6) no empujar: Claude PC revisa y empuja.
+- ChatGPT: fuera de trabajo hasta nuevo aviso (ver entrada anterior).
