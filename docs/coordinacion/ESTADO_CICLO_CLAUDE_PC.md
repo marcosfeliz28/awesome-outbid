@@ -368,3 +368,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Órdenes nuevas para Claude PC que escriban código: ninguna.
 - Pantalla ChatGPT PC (leído): sin tarea en curso; último mensaje = reporte de parada (aab91c9a). No se escribió en ningún chat.
 - ChatGPT nube: no releída; último entregable F1-01 (980a5ca0, LISTA escrita).
+
+## Decisión de la dueña: ChatGPT fuera de trabajo (28-oct, ~12:10 a. m. RD)
+- ChatGPT PC («Implementa Fase 1 visual») y ChatGPT nube quedan fuera de trabajo hasta nuevo aviso de la dueña.
+- Consecuencias: no se escribe en ningún chat de ChatGPT. Si el verify de `aab91c9a` vuelve a salir rojo, lo corrige DeepSeek en `deepseek/mezcla-fase1-fix` (orden 27), no ChatGPT PC.
+- Claude PC sigue vigilando CI y las ramas de DeepSeek; no reabre tareas de ChatGPT.
