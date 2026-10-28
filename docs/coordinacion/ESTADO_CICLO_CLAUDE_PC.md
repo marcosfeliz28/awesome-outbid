@@ -639,3 +639,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Orden 35 en curso: D7 en borrador (2a043576); pendiente pnpm y 7 marcas POR CONFIRMAR.
 - CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Orden 36 (28-oct): F2-01 con Claude PC
+- nexora-cloud en 1dcd0ccd. RESPUESTA blob 4a156065 (orden 36: el trabajo de ChatGPT pasa a Claude PC; orden 35 sigue en curso).
+- Prerrequisito cumplido: Fase 1 visual (aab91c9a) ya está en producto-nexora (a58efb33).
+- Rama `claude-pc/visual-f2-01` creada desde producto-nexora con el plan (99d1b996). Sin código todavía: `packages/ui` exporta 8 componentes; faltan los 12 `Nx*`.
+- Pendiente: tokens en tres capas, primitivos uno por uno con prueba, capturas 390/1440 claro y oscuro.
+- CI en verde (pc23, a1, b01, lumina) sin cambios. Sin LISTA nueva.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
