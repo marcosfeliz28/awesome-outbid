@@ -1,4 +1,4 @@
-> **Estado: BORRADOR, sin revisión completa.** Generado por el modelo local. Verificado: las rutas  e  existen; los comandos citados son el contenido real de los scripts de `package.json`. Pendiente: preferir `pnpm instalador:preparar`, `pnpm instalador:compilar`, `pnpm instalador:validar`; resolver los marcadores POR CONFIRMAR.
+> **Estado: BORRADOR, sin revisión completa.** Generado por el modelo local. Verificado: las rutas `instalador/build.ps1` e `instalador/tests/run-validation.mjs` existen; los comandos citados son el contenido real de los scripts de `package.json`. Pendiente: preferir `pnpm instalador:preparar`, `pnpm instalador:compilar`, `pnpm instalador:validar`; resolver los marcadores POR CONFIRMAR.
 
 # Guía de Instalación para PC (D7) - Nexora POS
 
