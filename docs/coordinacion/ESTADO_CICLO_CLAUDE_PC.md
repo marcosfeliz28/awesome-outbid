@@ -246,3 +246,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Rama: deepseek/d1-d3 (cb1f1b8b), desde origin/nexora-cloud (8641f3d8 o más nuevo). No mezclada.
 - Revisado por Claude PC: scripts/check-bundle.mjs (solo módulos de Node; sin red, sin env, sin dependencias); prueba: caso >1,90 MiB exit 1, caso pequeño exit 0; apps/web/package.json (una línea); docs/venta/ (precios marcados PROPUESTA; DGII con 21 puntos «verificar»).
 - Pendiente: 3 CI en verde antes de mezclar (Llaves). Sin mezcla ni despliegue por Claude PC.
+
+## Orden 20 (28-oct, ~10:46 p. m. RD) — ejecutada en parte
+- RESPUESTA_CLAUDE_PC_27OCT.md: cambió a 043c821e (orden 20). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
+- Nexora 1 mezcló visual-integracion-27oct (120e4a06) en producto-nexora (f0feadf4) y espera su CI del merge. Carril R libre.
+- TEXTO R1 enviado a ChatGPT nube (chat «ChatGPT nube», libre antes de escribir; no existe proyecto «ChatGPT nube», se usó el chat existente). Respondió «Compacting context» / «Working». Tarea: F1-01 (bundle, React.lazy, manualChunks, check:bundle).
+- ChatGPT PC: sin cambios visibles en esta pasada. No escribí.
+- DeepSeek: deepseek/d1-d3 (cb1f1b8b) con CI en curso. Próximas tareas de DeepSeek (orden 20): pruebas Nx* en deepseek/nx-pruebas cuando F2-01 esté mezclada; ilustraciones SVG en apps/web/public/ilustraciones/ no tocan App.tsx ni styles.css.
+- CI: pc23, a1, b01 y 287db57e en verde. qa-bajos (d9d79664) verify en rojo.
