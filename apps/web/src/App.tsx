@@ -6,7 +6,6 @@ import {
   storedTerminalCredentials,
   rememberCompany,
 } from "./realtime";
-import { Merchandise } from "./Merchandise";
 import type { AssistantRequest } from "./dashboardQuestions";
 import { supportBannerText, supportExpiresAt } from "./supportSession";
 import { PasswordChangeFields } from "./PasswordChangeFields";
@@ -16,7 +15,7 @@ import {
   friendlyPasswordChangeError,
   type PasswordPolicy,
 } from "./passwordChange";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -82,25 +81,57 @@ import { MonthReport } from "./MonthReport";
 import { VoidRequests } from "./VoidRequests";
 import { TransferReconciliation } from "./TransferReconciliation";
 import { CourierPayouts } from "./CourierPayouts";
-import { Assistant } from "./Assistant";
 import { McpAuthorize } from "./McpAuthorize";
 import { SupportAccessBanner } from "./SupportAccess";
-import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
-import {
-  Catalog,
-  Inventory,
-  Purchases,
-  Expenses,
-  Cash,
-  Customers,
-  Promotions,
-  Reports,
-  Alerts,
-  Configuration,
-  StyleGuide,
-  SalesHistory,
-} from "./Management";
+
+const Assistant = lazy(() =>
+  import("./Assistant").then(({ Assistant }) => ({ default: Assistant })),
+);
+const POS = lazy(() => import("./POS").then(({ POS }) => ({ default: POS })));
+const Merchandise = lazy(() =>
+  import("./Merchandise").then(({ Merchandise }) => ({ default: Merchandise })),
+);
+const Catalog = lazy(() =>
+  import("./Management").then(({ Catalog }) => ({ default: Catalog })),
+);
+const Inventory = lazy(() =>
+  import("./Management").then(({ Inventory }) => ({ default: Inventory })),
+);
+const Purchases = lazy(() =>
+  import("./Management").then(({ Purchases }) => ({ default: Purchases })),
+);
+const Expenses = lazy(() =>
+  import("./Management").then(({ Expenses }) => ({ default: Expenses })),
+);
+const Cash = lazy(() =>
+  import("./Management").then(({ Cash }) => ({ default: Cash })),
+);
+const Customers = lazy(() =>
+  import("./Management").then(({ Customers }) => ({ default: Customers })),
+);
+const Promotions = lazy(() =>
+  import("./Management").then(({ Promotions }) => ({ default: Promotions })),
+);
+const Reports = lazy(() =>
+  import("./Management").then(({ Reports }) => ({ default: Reports })),
+);
+const Alerts = lazy(() =>
+  import("./Management").then(({ Alerts }) => ({ default: Alerts })),
+);
+const Configuration = lazy(() =>
+  import("./Management").then(({ Configuration }) => ({
+    default: Configuration,
+  })),
+);
+const StyleGuide = lazy(() =>
+  import("./Management").then(({ StyleGuide }) => ({ default: StyleGuide })),
+);
+const SalesHistory = lazy(() =>
+  import("./Management").then(({ SalesHistory }) => ({
+    default: SalesHistory,
+  })),
+);
 
 const SHOW_DEMO_CREDENTIALS =
   import.meta.env.VITE_SHOW_DEMO_CREDENTIALS === "true";
@@ -1548,15 +1579,17 @@ function Shell() {
           </div>
         </header>
         {assistantAvailable && (
-          <Assistant
-            key={`${user.id}:${user.branchId}`}
-            online={online}
-            request={
-              assistantRequest?.session === `${user.id}:${user.branchId}`
-                ? assistantRequest
-                : null
-            }
-          />
+          <Suspense fallback={null}>
+            <Assistant
+              key={`${user.id}:${user.branchId}`}
+              online={online}
+              request={
+                assistantRequest?.session === `${user.id}:${user.branchId}`
+                  ? assistantRequest
+                  : null
+              }
+            />
+          </Suspense>
         )}
         <main
           id="main-content"
@@ -1582,7 +1615,9 @@ function Shell() {
               go("settings");
             }}
           />
-          {pages[safePage] || <Dashboard go={go} />}
+          <Suspense fallback={<Loading />}>
+            {pages[safePage] || <Dashboard go={go} />}
+          </Suspense>
         </main>
         <footer className="app-footer">
           <span>Nexora POS · Tu negocio, en movimiento.</span>
