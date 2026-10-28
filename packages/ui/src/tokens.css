@@ -1,0 +1,30 @@
+/* capa 1: base · valores crudos, sin nombre de uso */
+:root {
+  --nx-base-blanco: #ffffff;
+  --nx-base-negro: #0b0b12;
+  --nx-base-violeta: #7c3aed;
+  --nx-base-verde: #10b981;
+  --nx-base-azul: #3b82f6;
+}
+
+/* capa 2: semántica · significado de uso, referencia la capa 1 */
+:root {
+  --nx-fondo: var(--nx-base-blanco);
+  --nx-texto: var(--nx-base-negro);
+  --nx-acento: var(--nx-base-violeta);
+  --nx-exito: var(--nx-base-verde);
+  --nx-info: var(--nx-base-azul);
+}
+
+/* capa 3: componente · lo que consume cada primitivo */
+:root {
+  --nx-boton-fondo: var(--nx-acento);
+  --nx-boton-texto: var(--nx-base-blanco);
+  --nx-tarjeta-fondo: var(--nx-fondo);
+  --nx-tarjeta-texto: var(--nx-texto);
+}
+
+:root[data-theme="dark"] {
+  --nx-fondo: #14141f;
+  --nx-texto: #f5f5f7;
+}
