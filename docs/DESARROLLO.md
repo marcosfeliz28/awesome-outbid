@@ -12,6 +12,8 @@
 - `tests/`: pruebas del proyecto.
 
 ## Comandos principales
+Los comandos de la tabla son scripts de `package.json`, salvo `pnpm install`, que es un comando propio de pnpm y no un script del proyecto.
+
 | Comando | Para qué |
 |---|---|
 | `pnpm dev` | Levanta el entorno de desarrollo. |

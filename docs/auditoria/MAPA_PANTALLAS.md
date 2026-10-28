@@ -1,6 +1,6 @@
 # Mapa de pantallas (apps/web/src)
 
-Hecho a partir solo de los nombres de archivo. Lo que no se puede deducir del nombre queda marcado como **DUDOSO**: hay que abrir el archivo para confirmarlo.
+Cubre los 50 archivos de `apps/web/src` (incluidos `.ts` y `.tsx`). Hecho a partir solo de los nombres de archivo. Lo que no se puede deducir del nombre queda marcado como **DUDOSO**: hay que abrir el archivo para confirmarlo.
 
 | Archivo | Tipo probable | Pantalla o función según el nombre |
 |---|---|---|
