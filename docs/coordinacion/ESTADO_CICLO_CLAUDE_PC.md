@@ -373,3 +373,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT PC («Implementa Fase 1 visual») y ChatGPT nube quedan fuera de trabajo hasta nuevo aviso de la dueña.
 - Consecuencias: no se escribe en ningún chat de ChatGPT. Si el verify de `aab91c9a` vuelve a salir rojo, lo corrige DeepSeek en `deepseek/mezcla-fase1-fix` (orden 27), no ChatGPT PC.
 - Claude PC sigue vigilando CI y las ramas de DeepSeek; no reabre tareas de ChatGPT.
+
+## Ciclo nube (28-oct, quincenal)
+- Último visto: nexora-cloud 6181d72b, RESPUESTA_CLAUDE_PC_27OCT.md blob fe85eb84 (orden 29: misión nocturna DeepSeek; requiere pantalla/DeepSeek local, la nube no la ejecuta). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI: aab91c9a (visual-fase1-gemini) verify en ROJO otra vez, DeepSeek debe corregir en deepseek/mezcla-fase1-fix (orden 27). LISTA escrita para deepseek/d1-d3 cb1f1b8b, d12 ddd1feac, d15 4b994e65; el resto de deepseek/* con verify en curso o en cola.
