@@ -46,3 +46,10 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Condición de datos que el Revisor debe fijar: el código fuente sube a la cuenta y al servicio de DeepSeek. ¿Se autoriza con código del repo público únicamente? ¿Se excluyen configuraciones, `.env`, scripts con URLs internas y cualquier archivo con secretos?
 - Condición de entorno: VM o contenedor desechable (sin resolver todavía).
 - Mientras no haya veredicto y VM, Claude PC audita el software con sus propios agentes en solo lectura, y lo entrega en `docs/qa/`.
+
+## Preparación de la exportación para auditoría de código (27-oct, noche)
+- Exportación preparada desde origin/producto-nexora (78888542) con git archive, lista permitida: apps/api/src, apps/web/src, packages, tests, schema.prisma, package.json, lockfile y package.json de api/web. 404 archivos. Carpeta local, NO enviada.
+- Chequeo de exclusiones: sin .env*, .csv, .xlsx, .jsonl ni .sql.
+- Escáner de secretos: 320 coincidencias, casi todas contraseñas de prueba literales (p. ej. «FitStore-QA-2026!») en tests/api.test.ts y otras pruebas. No son credenciales de producción, pero según la condición del Revisor, si el escáner encuentra algo, NO se envía.
+- Pendiente de decisión: (a) el Revisor decide si las contraseñas de prueba se sustituyen por variables de entorno en la exportación, o se excluye tests/, o se autoriza su envío sabiendo que son de prueba; (b) entorno: VM desechable, o decisión escrita de Marcos para correr en la laptop.
+- Nada enviado a DeepSeek.
