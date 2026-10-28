@@ -348,3 +348,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - 17 ramas `deepseek/<id>` subidas a origin tras revisar archivos, rutas prohibidas, llamadas de red, variables de entorno y credenciales: d6, d9, d10, d12, d15, d17, d18, d21, d22, d25, d33, d46, d47, d48, d49, d50, d51.
 - Retenidas: d52 (lee variables de entorno y trae una contraseña literal), d34 (llama a nexorapos.net desde la página), d31 y d32 (precios que son PROPUESTA), pedido-f2-01 (se fusiona a mano). Motivos en PEDIDOS_DEEPSEEK.md.
 - D4, D26 y D45 siguen bloqueadas hasta que la mezcla de Fase 1 esté en producto-nexora (orden 26). Hoy no lo está.
+
+## Ciclo (28-oct, ~11:47 p. m. RD)
+- Fetch: nexora-cloud en 7d93395f (orden 27). RESPUESTA_CLAUDE_PC_27OCT.md blob c1765adc. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Orden 27: el verify de aab91c9a (visual-fase1-gemini) falló; Nexora 1 relanzó una sola vez (run 40623353697). Si vuelve a salir rojo, DeepSeek corrige en `deepseek/mezcla-fase1-fix` desde aab91c9a. Claude PC no relanza nada.
+- Hecho declarado por Nexora 1 en la orden 27: producto-nexora 35b20a2d (mezcla de F1-01, verificada en el repo) desplegado a producción web. Claude PC no despliega ni toca producción.
+- CI: verify de aab91c9a en curso (el reintento). windows-installer y render-images en verde. Sin LISTA todavía.
+- CI en verde (verify, windows-installer, render-images): pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e.
+- Órdenes nuevas para Claude PC que escriban código: ninguna.
+- Pantalla ChatGPT PC (leído): sin tarea en curso; último mensaje = reporte de parada (aab91c9a). No se escribió en ningún chat.
+- ChatGPT nube: no releída; último entregable F1-01 (980a5ca0, LISTA escrita).
