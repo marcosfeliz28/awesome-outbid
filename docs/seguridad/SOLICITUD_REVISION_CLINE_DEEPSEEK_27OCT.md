@@ -114,3 +114,9 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 3. «Colaboración Claude Render…»: sin resultados. Pide URL del repo o inicio de sesión en GitHub (gh auth login). NO se le dio nada. Modo Workspace Write.
 4. «Auditoría de seguridad en código…» (166 archivos de apps/*/src): ya registrada; sin críticos ni altos confirmados.
 - Recomendación: cerrar la sesión «Revisar fallo CI» (estaba en Full access sobre repo público) y la de «Colaboración Claude Render» (pide credenciales). Lo decide Marcos.
+
+## Modo constructor activado por Marcos (28-oct, ~9:34 p. m. RD)
+- Marcos autorizó el modo constructor. Orden 19 de Claude nube: D1 (scripts/check-bundle.mjs y script check:bundle en apps/web/package.json) y D3 (docs/venta, solo texto). D2 (instalador) queda FUERA hasta que el Revisor lo apruebe.
+- Clon de trabajo: C:/Users/marco/AppData/Local/Temp/deepseek-constructor (origin/nexora-cloud, solo package.json de raíz y apps/web/package.json; escáner en 0; sin .env, CSV, XLSX, JSONL ni SQL). Sin .git.
+- Sesión: «Archivos creados scripts y docs…», modo Workspace Write (no Full access). Sin push por DeepSeek: Claude PC lee cada diff y lo sube a una rama deepseek/<id>.
+- Pendiente: Claude PC revisa el diff, lo verifica (pnpm check en verde antes de subir), y solo sube si pasa.
