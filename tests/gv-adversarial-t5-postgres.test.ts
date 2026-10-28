@@ -239,7 +239,7 @@ describe("T5 · dinero e idempotencia de pagos GV", () => {
         paymentBody(enrollment.id, {
           amount: 40,
           method: "transferencia",
-          bank: "Popular",
+          bank: "Popular Grupo Génesis ···9797",
           reference: `T5-${marker}`,
         }),
       ),

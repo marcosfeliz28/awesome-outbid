@@ -3228,11 +3228,12 @@ export function SalesHistory() {
                   s.hiddenUntilClose
                     ? "Se ve al cerrar tu caja"
                     : s.payments
-                    .map(
-                      (p: any) =>
-                        paymentOptions.find((o) => o.value === p.method)?.label,
-                    )
-                    .join(" + "),
+                        .map(
+                          (p: any) =>
+                            paymentOptions.find((o) => o.value === p.method)
+                              ?.label,
+                        )
+                        .join(" + "),
               },
               {
                 label: "Acciones",
@@ -3422,8 +3423,8 @@ export function SalesHistory() {
             {selected.hiddenUntilClose && <p>Se ve al cerrar tu caja.</p>}
             {Number(selected.discountTotal) > 0 && (
               <p>
-                Descuento: {saleMoney(selected, selected.discountTotal)} · Motivo:{" "}
-                {selected.discountReason}
+                Descuento: {saleMoney(selected, selected.discountTotal)} ·
+                Motivo: {selected.discountReason}
                 {selected.discountApprovedName
                   ? ` · Autorizó: ${selected.discountApprovedName}`
                   : ""}
@@ -3436,8 +3437,8 @@ export function SalesHistory() {
                     {METHOD_LABEL[p.method] ??
                       paymentOptions.find((o) => o.value === p.method)?.label ??
                       p.method}{" "}
-                    · Recibido: {saleMoney(selected, p.tendered ?? p.amount)}{" "}
-                    · Aplicado: {saleMoney(selected, p.amount)} · Cambio:{" "}
+                    · Recibido: {saleMoney(selected, p.tendered ?? p.amount)} ·
+                    Aplicado: {saleMoney(selected, p.amount)} · Cambio:{" "}
                     {saleMoney(selected, p.change ?? 0)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
@@ -4054,6 +4055,12 @@ export function Configuration() {
       type: "textarea",
       help: "Ej.: Verifone G-Pro MacGen. Vacío: la caja no pregunta.",
     },
+    {
+      key: "genesisAccounts",
+      label: "Bancos de Grupo Génesis (GV), uno por línea",
+      type: "textarea",
+      help: "Ej.: Popular Grupo Génesis ···9797. GV elige de esta lista.",
+    },
     requiredNumber("sellerDiscountLimit", "Descuento máximo del vendedor (%)"),
     requiredNumber("cardFeePercent", "Comisión bancaria (%)"),
     requiredNumber("returnDays", "Plazo de devolución (días)"),
@@ -4352,6 +4359,7 @@ export function Configuration() {
             eurRate: query.data?.eurRate ?? "",
             transferAccounts: (query.data?.transferAccounts ?? []).join("\n"),
             cardTerminals: (query.data?.cardTerminals ?? []).join("\n"),
+            genesisAccounts: (query.data?.genesisAccounts ?? []).join("\n"),
           }}
           onClose={() => setEditing(false)}
           onSubmit={(data) => {
@@ -4371,6 +4379,7 @@ export function Configuration() {
                 eurRate: rate(data.eurRate),
                 transferAccounts: lines(data.transferAccounts),
                 cardTerminals: lines(data.cardTerminals),
+                genesisAccounts: lines(data.genesisAccounts),
                 currency: "DOP",
               },
               "PUT",

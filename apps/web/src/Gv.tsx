@@ -684,6 +684,10 @@ function PaymentForm({
     bank: "",
     reference: "",
   });
+  const banks = useQuery({
+    queryKey: ["gv-banks"],
+    queryFn: () => api<{ genesis: string[]; macgen: string[] }>("/gv/banks"),
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = (key: string, value: unknown) =>
@@ -756,12 +760,27 @@ function PaymentForm({
           <>
             <label className="field">
               <span>Banco</span>
-              <input
-                placeholder="Popular Grupo Génesis ···9797"
-                required={form.method === "transferencia"}
+              <select
+                required
                 value={form.bank}
                 onChange={(e) => set("bank", e.target.value)}
-              />
+              >
+                <option value="">Elige el banco…</option>
+                {(banks.data?.genesis.length ?? 0) > 0 && (
+                  <optgroup label="Grupo Génesis">
+                    {banks.data?.genesis.map((b: string) => (
+                      <option key={b}>{b}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {(banks.data?.macgen.length ?? 0) > 0 && (
+                  <optgroup label="Grupo Macgen">
+                    {banks.data?.macgen.map((b: string) => (
+                      <option key={b}>{b}</option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
             </label>
             <label className="field">
               <span>Referencia</span>

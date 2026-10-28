@@ -57,6 +57,25 @@ export const gvPaymentFields = {
   bank: optionalText(120),
   reference: optionalText(120),
 };
+// Bancos y terminales de GV (orden de la dueña, 28-oct): una sola lista por
+// empresa. Macgen sale de Configuración (la misma de la caja); Génesis, de
+// «genesisAccounts» o, si no se ha guardado, de estas cuentas.
+export const GENESIS_BANKS = [
+  "Popular Grupo Génesis ···9797",
+  "Banreservas Grupo Génesis ···5853",
+];
+export async function gvBankOptions(tx: any, branchId: string) {
+  const row = await tx.settings.findUnique({ where: { id: branchId } });
+  const data = (row?.data ?? {}) as Record<string, unknown>;
+  const list = (key: string): string[] =>
+    Array.isArray(data[key]) ? (data[key] as string[]) : [];
+  return {
+    genesis: Array.isArray(data.genesisAccounts)
+      ? list("genesisAccounts")
+      : GENESIS_BANKS,
+    macgen: [...list("transferAccounts"), ...list("cardTerminals")],
+  };
+}
 // GV-07: una transferencia sin banco o sin referencia no se puede conciliar.
 export const transferDetails = (
   p: { method: string; bank: string | null; reference: string | null },
@@ -200,6 +219,11 @@ export async function createGvPayment(
   }
   if (GV_CLOSED.has(owner.status))
     bad(`${o.label} está ${owner.status}: no acepta pagos.`);
+  if (data.method !== "efectivo") {
+    const banks = await gvBankOptions(tx, actor.branchId);
+    if (!data.bank || ![...banks.genesis, ...banks.macgen].includes(data.bank))
+      bad("Elige el banco o la terminal de la lista.");
+  }
   const room = d(owner[o.total]).minus(committed(owner.payments));
   if (d(data.amount).gt(room))
     bad(
