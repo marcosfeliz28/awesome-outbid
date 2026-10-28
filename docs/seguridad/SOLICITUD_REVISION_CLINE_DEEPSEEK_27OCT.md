@@ -61,3 +61,10 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Revisor (27-oct noche): falso positivo AUTORIZADO (apps/api/src/common.ts:125 en nexora-cloud, `password: "contraseña"` dentro del mapa de etiquetas de campos; no es secreto). Con 173 archivos sin tests/, el escáner queda limpio: exportación autorizada.
 - Condición pendiente: aceptación escrita del riesgo por Marcos, con sus palabras, para correr DeepSeek Harness en la laptop sin VM. Debe decir: (a) que corre DeepSeek Harness en la laptop sin VM; (b) que la herramienta puede leer cualquier archivo de esa cuenta de Windows; (c) que usará una cuenta o sesión de Windows aparte, sin llaves ni sesiones abiertas de Render, Cloudflare o banco.
 - Hasta que exista, NO se envía. Alternativa: VM o Windows Sandbox (no requiere esa aceptación).
+
+## Aceptación escrita del riesgo por Marcos (27-oct, ~9:30 p. m. RD)
+> «Acepto el riesgo de correr DeepSeek Harness en mi laptop sin VM. Entiendo que puede leer cualquier archivo de esta cuenta de Windows. Lo usaré desde una cuenta o sesión de Windows aparte, sin llaves ni sesiones abiertas de Render, Cloudflare o banco.»
+- Cumple los tres puntos exigidos por el Revisor.
+- Condición de ejecución: la app debe correr desde una cuenta o sesión de Windows aparte. La ventana actual está en la cuenta principal. Antes de enviar, debe confirmarse esa cuenta aparte.
+- Exportación autorizada: 173 archivos (apps/*/src, schema.prisma, package.json y lockfiles; sin tests/ ni packages/). Escáner limpio tras autorizar el falso positivo de common.ts.
+- Estado: aceptación registrada. Envío pendiente de confirmar la cuenta aparte.
