@@ -358,3 +358,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Órdenes nuevas para Claude PC que escriban código: ninguna.
 - Pantalla ChatGPT PC (leído): sin tarea en curso; último mensaje = reporte de parada (aab91c9a). No se escribió en ningún chat.
 - ChatGPT nube: no releída; último entregable F1-01 (980a5ca0, LISTA escrita).
+
+## Ciclo (28-oct, ~12:02 a. m. RD)
+- Fetch: nexora-cloud en d9f6196a (orden 28). RESPUESTA_CLAUDE_PC_27OCT.md blob 55b757ed. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 35b20a2d (sin cambios).
+- Orden 28 (decisiones a Claude PC): (1) Fase 1 se mezcla en cuanto verify de aab91c9a quede verde (relanzado, intento 2, en curso); si falla de nuevo, DeepSeek corrige en deepseek/mezcla-fase1-fix. (2) d31/d32 sin cifras, solo ramas deepseek/*. (3) d34 puede llamar solo a GET nexorapos.net/api/health (5 s, sin credenciales). (4) d52 rechazada tal cual; se rehace tras claude-pc/tests-sin-literales. (5) pedido-f2-01 espera a Fase 1. (6) Las 17 ramas deepseek/* se auditan por lotes; LISTA solo cuando sus 3 CI estén verdes.
+- CI de aab91c9a: verify en curso; windows-installer y render-images en verde. Sin LISTA.
+- CI de las 17 ramas deepseek/* (estado al revisar): ninguna tiene sus 3 CI en verde todavía. Algunas siguen en cola o en curso (d46, d49 y d51 sin ningún verde; d47 con verify en curso). Sin LISTA. Revisar en el próximo ciclo.
+- CI en verde (verify, windows-installer, render-images): pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e.
+- Órdenes nuevas para Claude PC que escriban código: ninguna.
+- Pantalla ChatGPT PC (leído): sin tarea en curso; último mensaje = reporte de parada (aab91c9a). No se escribió en ningún chat.
+- ChatGPT nube: no releída; último entregable F1-01 (980a5ca0, LISTA escrita).
