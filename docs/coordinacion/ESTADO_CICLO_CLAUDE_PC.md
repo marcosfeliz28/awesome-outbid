@@ -254,3 +254,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT PC: sin cambios visibles en esta pasada. No escribí.
 - DeepSeek: deepseek/d1-d3 (cb1f1b8b) con CI en curso. Próximas tareas de DeepSeek (orden 20): pruebas Nx* en deepseek/nx-pruebas cuando F2-01 esté mezclada; ilustraciones SVG en apps/web/public/ilustraciones/ no tocan App.tsx ni styles.css.
 - CI: pc23, a1, b01 y 287db57e en verde. qa-bajos (d9d79664) verify en rojo.
+
+## Ventanas (28-oct, ~10:49 p. m. RD)
+- ChatGPT: minimizada. DeepSeek Harness: minimizada.
+- Queda visible una pestaña de Edge de platform.deepseek.com («You're signed in», inicio de sesión de DeepSeek). Claude PC no puede minimizar Edge (solo lectura en navegadores). Pedido a Marcos que la minimice. No se hizo clic en ningún botón de esa página.
+- ChatGPT nube trabajando en F1-01 (TEXTO R1). No escribí en ningún chat en este ciclo.
