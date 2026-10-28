@@ -115,3 +115,15 @@ Límite: todo es búsqueda web en agregadores; falta la búsqueda formal del abo
 - Riesgo estimado: **medio**, similar a Norexor; sin hallazgo directo. Pendiente: búsqueda formal (clases 9, 35, 42).
 - Ventajas: empieza con N (conserva logotipo y diseño), suena duro por la «X», termina en «-os» (se lee «Norex OS», encaja con una plataforma), pronunciación estable en inglés y español.
 **Orden actual:** 1) Norexos · 2) Norexor · 3) Rifivo/Lepafi/Vemifi (sin N). Norelna y Nexora descartados.
+
+## Investigación profunda: Norexos y Orexos (Nexora 1, 28-oct, noche)
+Método: 12 búsquedas web por nombre (agregadores de terceros; **no** USPTO/EUIPO/WIPO oficiales) + registros oficiales de dominios.
+| | **Norexos** | **Orexos** |
+|---|---|---|
+| Nombre exacto existente | Ninguno | Ninguno |
+| Dominios (`.com .net .app .dev .ai .io .co .org`), npm, PyPI, Docker Hub | **Todos libres** | **Todos libres** |
+| Parecido más fuerte | **NEXOROS** (marca EE. UU., clase 35 tienda en línea, estado no confirmado); **Norexa** (cripto/IA casi homófono) | **Orexo AB** (farmacéutica sueca cotizada, marca OREXO con clase 42 y cobertura Madrid; **una letra de diferencia**); **OREXSYS** (POS para hoteles, Grecia) |
+| Significado | No es palabra real; «orexis» = apetito (griego) | «Orexis» = apetito: connotación médica/alimentaria |
+| Riesgo global (web) | **Bajo a medio** | **Medio** |
+**Conclusión:** Norexos queda mejor que Orexos (menos choques y sin empresa grande a una letra). Ambos necesitan la **búsqueda formal** del abogado en clases 9, 35 y 42, con atención a NEXOROS y Norexa (Norexos) y a Orexo AB/OREXSYS (Orexos).
+**Estado del nombre:** candidato elegido por la dueña = **Norexos** (confirmar si quería «Orexos»). El cambio en el sistema (`docs/marca/PLAN_CAMBIO_DE_NOMBRE.md`) espera la confirmación de la dueña y la búsqueda formal antes de **desplegarse**.
