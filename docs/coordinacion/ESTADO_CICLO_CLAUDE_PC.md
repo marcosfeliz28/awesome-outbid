@@ -381,3 +381,5 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Aprobado por la dueña. Enviado en la sesión «Revisión de TEXTO_DEEPSEEK» (estado libre al enviar).
 - Orden: (1) d31 y d32 sin cifras, en ramas nuevas desde nexora-cloud; (2) d34 solo GET nexorapos.net/api/health con 5 s; (3) auditoría de d46, d47–d51 y documentos en docs/coordinacion/AUDITORIA_DEEPSEEK_28OCT.md; (4) no tocar App.tsx ni styles.css; no empezar D4, D26, D45; no hacer d52 ni pedido-f2-01; (5) sin red nueva, sin variables de entorno, sin dependencias nuevas; (6) no empujar: Claude PC revisa y empuja.
 - ChatGPT: fuera de trabajo hasta nuevo aviso (ver entrada anterior).
+- Complemento enviado a la misma sesión (12:12 a. m.): misión de la noche (orden 29, `MISION_NOCHE_DEEPSEEK_28OCT.md`), con progreso en `PROGRESO_DEEPSEEK_NOCHE.md` (creado en 121bfad0) y la línea `DEEPSEEK-TERMINADO` al final. Quedó en cola: la sesión estaba analizando y no la interrumpí.
+- Nota: la base de DeepSeek avanzó a d9f6196a; sus ramas d31, d32, d34, d52 y pedido-f2-01 no están subidas (correcto).
