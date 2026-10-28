@@ -1,4 +1,4 @@
-> **Estado: BORRADOR, sin revisión completa.** Generado por el modelo local. Verificado: las rutas `instalador/build.ps1` e `instalador/tests/run-validation.mjs` existen; los comandos citados son el contenido real de los scripts de `package.json`. Pendiente: preferir `pnpm instalador:preparar`, `pnpm instalador:compilar`, `pnpm instalador:validar`; resolver los marcadores POR CONFIRMAR.
+> **Estado: BORRADOR, revisado en comandos (pnpm corregido).** Generado por el modelo local. Verificado: las rutas `instalador/build.ps1` e `instalador/tests/run-validation.mjs` existen; los comandos citados son el contenido real de los scripts de `package.json`. Pendiente: preferir `pnpm instalador:preparar`, `pnpm instalador:compilar`, `pnpm instalador:validar`; resolver los marcadores POR CONFIRMAR.
 
 # Guía de Instalación para PC (D7) - Nexora POS
 
@@ -13,16 +13,16 @@ Para realizar la instalación, se necesitan los siguientes elementos:
 ## 2. Pasos para Preparar, Compilar y Validar el Instalador
 
 ### 2.1. Preparación del Instalador
-Ejecuta el siguiente comando en la consola de comandos (CMD) o PowerShell para preparar el instalador:
+Ejecuta el siguiente comando en la raíz del repositorio para preparar el instalador:
 ```bash
-powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -SoloPreparar
+pnpm instalador:preparar
 ```
 Este comando utiliza el script `build.ps1` para realizar tareas de preparación sin compilar. **POR CONFIRMAR**: La preparación incluye acciones específicas, pero no están detalladas en los comandos.
 
 ### 2.2. Compilación del Instalador
 Después de preparar el instalador, compílalo con este comando:
 ```bash
-powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1
+pnpm instalador:compilar
 ```
 Este script generará el instalador necesario para Nexora POS. **POR CONFIRMAR**: La ruta de salida del instalador no está especificada.
 
