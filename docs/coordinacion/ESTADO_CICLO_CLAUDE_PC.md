@@ -484,3 +484,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Órdenes nuevas para Claude PC que escriban código: ninguna.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
 - Descarga de deepseek-r1:7b reiniciada: 112 MB de 4,7 GB (2%) a 1,4 MB/s. Ritmo lento; sin decisión de cancelarla.
+
+## Descarga del modelo (28-oct, ~02:40 RD)
+- La descarga de deepseek-r1:7b falló: «max retries exceeded», la conexión la cerró el servidor remoto. Quedó en 64 MB de 4,7 GB.
+- No se reintenta sola. Necesita decisión de Marcos: reintentar más tarde o cambiar de red.
