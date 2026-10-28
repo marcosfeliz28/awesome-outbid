@@ -613,3 +613,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
 - Pendientes: mezcla de nexora-cloud en pc23 (orden 34, espera a Nexora 1) y decisión de Marcos sobre la descarga del modelo.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Modelo local (28-oct, ~12:20 RD)
+- Descarga de deepseek-r1 completada en Ollama 0.40.12: `deepseek-r1:latest`, 5,2 GB (id 6995872bfe4c). Pendiente: prueba corta, sin datos del proyecto.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en 39884ba2 (sin cambios). RESPUESTA_CLAUDE_PC_27OCT.md blob f756359e (sin órdenes nuevas). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
+- Pendiente (orden 34): mezcla de nexora-cloud en pc23; espera a Nexora 1.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
