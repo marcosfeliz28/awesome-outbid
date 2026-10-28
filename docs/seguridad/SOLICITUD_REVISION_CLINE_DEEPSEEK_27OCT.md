@@ -75,3 +75,7 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Modo: Read Only, sesión nueva. No se hizo clic en 👍/👎. DSH_TELEMETRY_DISABLED=1 no se pudo verificar desde la interfaz.
 - Hora de envío: ver registro siguiente.
 - Estado al intentar el envío (27-oct, ~8:56 p. m. RD): NO enviado. La cuenta de DeepSeek muestra «Request quota exhausted» (ACCOUNT_QUOTA) en la sesión existente. El clic en «New Session» no abrió sesión nueva. La sesión antigua («Revisar fallo CI…») tiene 11 subtareas y un objetivo inactivo para auditar el repo público; no se escribió nada en ella. Pendiente: que Marcos decida si recarga la cuenta, cierra la sesión antigua y crea una nueva.
+- Revisor (27-oct noche): la aceptación escrita de Marcos está registrada y la exportación de 166 archivos puede enviarse. Falta confirmar la cuenta de Windows: si usa cuenta aparte o la principal.
+- Marcos respondió a esa pregunta con «conio procede y punto», sin elegir explícitamente cuenta. Pendiente: confirmación explícita de la cuenta (principal o aparte).
+- Además, la cuenta de DeepSeek muestra «Request quota exhausted»: el envío no tendría respuesta aunque se confirme.
+- NO enviado.
