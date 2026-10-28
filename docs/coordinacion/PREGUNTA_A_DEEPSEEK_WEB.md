@@ -23,3 +23,7 @@ Activa DeepThink. Envía las pruebas una por una, en este orden, y pega cada res
 > Responde sí o no, y una línea por cada punto: ¿puedes entrar a internet ahora mismo? ¿Puedes leer archivos de mi computadora? ¿Puedes ejecutar código y ver el resultado? ¿Recuerdas esta conversación mañana?
 
 Cuando termines las cinco, pega aquí todas las respuestas tal cual, sin resumir.
+
+## Prueba 4b · Texto mediano (8.000 caracteres)
+Copia el contenido completo de `docs/coordinacion/TEXTO_PRUEBA_8000_DEEPSEEK.txt` y pégalo en DeepSeek con esta pregunta al final:
+> ¿Cuál es la última palabra clave del texto? ¿Cuántos caracteres aproximados recibiste? Responde en dos líneas.
