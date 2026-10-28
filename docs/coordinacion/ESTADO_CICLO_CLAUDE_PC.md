@@ -407,3 +407,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente antes de mezclar: que Llaves revise `packages/shared/src/validators` y `packages/shared/src/format` (código compartido, api y web). Por eso d21 y d22 no tienen LISTA.
 - Pendiente de Marcos: lectura de la sesión de DeepSeek en Full access fuera de su carpeta; no se puede ver desde el diff.
 - Respondido al Revisor (send_message y SendMessage; sin confirmación de lectura).
+
+## Ciclo (28-oct, ~12:50 a. m. RD)
+- Fetch: nexora-cloud en 8fe483b4 (orden 30). RESPUESTA_CLAUDE_PC_27OCT.md blob ab5c5ebd. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 35b20a2d.
+- Orden 30: el verify de aab91c9a quedó en rojo confirmado tras el segundo intento; no se relanza. Tarea 0.1 (`deepseek/mezcla-fase1-fix`) es la primera para DeepSeek.
+- BLOQUEO: DeepSeek sin cuota. La tarea 0.1 necesita leer el artefacto `upload-artifact` del run 40623353697 (requiere autenticación de GitHub, que Claude PC no tiene) y correr e2e local de 28 min. Claude PC no la toma: sin saber qué spec falla, no hay corrección verificable.
+- CI: aab91c9a verify en rojo, windows-installer y render-images en verde. pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e: verify, windows-installer y render-images en verde (ya con LISTA).
+- Ramas deepseek/* en origen: sin cambios nuevos. PROGRESO_DEEPSEEK_NOCHE.md sigue vacío (DeepSeek no escribió más).
+- Órdenes nuevas para Claude PC que escriban código: ninguna.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
