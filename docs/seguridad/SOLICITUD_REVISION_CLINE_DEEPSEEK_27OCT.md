@@ -99,3 +99,8 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
   - (3) No concluyente con las líneas leídas; hay que revisar la rama de idempotencia completa.
   - (4) El rótulo «Ventas sin ITBIS» coincide con netSales. Hay que confirmar la definición de netSales en dashboard.
 - Ninguno se aplica todavía. Siguiente paso: revisar esos cuatro puntos en el código completo (con packages/shared, fuera de la exportación actual).
+
+## Ampliación de área y modo constructor (27-oct, noche)
+- Marcos pidió más área para DeepSeek. Revisión local (solo lectura): packages/shared/src + package.json = 3 archivos, sin .env/CSV/XLSX/JSONL/SQL y escáner en 0 coincidencias. Exportación de prueba en C:/Users/marco/AppData/Local/Temp/auditoria-packages-shared. NO enviada: packages/ no está en la lista autorizada de auditoría.
+- Revisor: autorizó DeepSeek Harness como CONSTRUCTOR con condiciones (sección 'DeepSeek Harness como constructor', rama claude/revisor-plugins): rama deepseek/* propia; sin push por DeepSeek (lo empuja Claude PC tras leer el diff); clon sin credenciales git, sin .env, sin docs/operacion|legal, sin CSV/XLSX/JSONL; fuera de alcance sin autorización de Llaves: dinero, mercancía, migraciones, despliegue, .github, plugins-lock, docs/seguridad, .claude, CLAUDE.md, AGENTS.md, instalador; tests/ excluido hasta que se resuelvan las contraseñas literales; aprobación manual de cada comando y escritura; sin computer-use, browser-use ni plugins; DSH_TELEMETRY_DISABLED=1; sin 👍/👎.
+- Estado: NO iniciado. Pendiente de la orden explícita de Marcos para (a) auditar packages/shared (requiere OK del Revisor) o (b) activar el modo constructor (requiere preparar el clon).
