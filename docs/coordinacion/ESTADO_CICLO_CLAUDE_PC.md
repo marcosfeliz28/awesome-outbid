@@ -284,3 +284,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - `docs/coordinacion/PEDIDOS_DEEPSEEK.md` creado (commit 05a3c3c3). Sin pedidos de herramientas aún.
 - Diffs de DeepSeek ya en `deepseek/d1-d3` (cb1f1b8b): revisados en ciclos anteriores; CI en verde.
 - Sin pedidos de skills ni plugins de DeepSeek. Ninguna instalación.
+
+## Cuota de ChatGPT (28-oct, ~10:46 p. m. RD)
+- Marcador de la app ChatGPT: «3 % usage remaining», se reinicia cada semana el 2 de noviembre a la 1:59 a. m.
+- ChatGPT PC («Implementa Fase 1 visual»): recibió el texto 2. Ya resolvió los cinco conflictos de la mezcla con producto-nexora y ejecuta pruebas (pnpm check, ESLint, build). Pendiente: e2e completo y verify/windows-installer/render-images en verde.
+- ChatGPT nube: F1-01 (980a5ca0) con verify en curso. Pendiente su LISTA.
+- Claude PC no reasigna tareas de ChatGPT. Pido a Nexora 1 decidir qué pasa con F2-01, F2-03 y F3-01 si la cuota se agota antes de terminar la mezcla.
