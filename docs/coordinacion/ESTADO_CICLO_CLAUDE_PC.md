@@ -517,3 +517,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
 - Descarga del modelo: sigue parada, pendiente de decisión de Marcos.
+
+## Plugins del reel: Karpathy (28-oct, ~03:50 RD)
+- Karpathy Skills (multica-ai/andrej-karpathy-skills @ 2c60614): texto copiado a `C:\Users\marco\.claude\CLAUDE.md` con marca de origen. No se usó `/plugin install`.
+- Hallazgo: el README del commit dice instalar desde `forrestchang/andrej-karpathy-skills`, distinto del repo auditado. Por eso se usó la copia de texto.
+- Pendientes: Matt Pocock, Agent Skills, Superpowers (comandos `/plugin` que corre Marcos); claude-code-setup 1.0.0 sin verificar por el Revisor.
