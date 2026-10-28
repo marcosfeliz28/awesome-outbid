@@ -27,3 +27,7 @@ Cuando termines las cinco, pega aquí todas las respuestas tal cual, sin resumir
 ## Prueba 4b · Texto mediano (8.000 caracteres)
 Copia el contenido completo de `docs/coordinacion/TEXTO_PRUEBA_8000_DEEPSEEK.txt` y pégalo en DeepSeek con esta pregunta al final:
 > ¿Cuál es la última palabra clave del texto? ¿Cuántos caracteres aproximados recibiste? Responde en dos líneas.
+
+## Prueba 4c · Texto grande (500.000 caracteres)
+Sube el archivo `docs/coordinacion/TEXTO_PRUEBA_500000_DEEPSEEK.txt` como adjunto en DeepSeek web (no lo pegues: es demasiado para el cuadro de texto) y pregunta:
+> ¿Cuál es la última palabra clave del texto? ¿Cuántos caracteres aproximados recibiste? ¿Lo recibiste completo o lo truncaste? Responde en tres líneas.
