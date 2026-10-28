@@ -35,7 +35,6 @@ import {
   withoutImages,
 } from "./common";
 import { moneyDb } from "./database-errors";
-import { GENESIS_BANKS } from "./gv-money";
 import {
   can,
   d,
@@ -142,8 +141,6 @@ const configSchema = z.object({
     .max(20)
     .optional(),
   cardTerminals: z.array(z.string().trim().min(3).max(80)).max(20).optional(),
-  // Bancos de Grupo Génesis (GV); Macgen usa las dos listas de arriba.
-  genesisAccounts: z.array(z.string().trim().min(3).max(80)).max(20).optional(),
 });
 const cashMovementLimit = (data: Record<string, unknown> | undefined) =>
   typeof data?.cashMovementApprovalLimit === "number"
@@ -836,9 +833,6 @@ export class AdminController {
       allowOfflineSales: data.allowOfflineSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
-      genesisAccounts: Array.isArray(data.genesisAccounts)
-        ? data.genesisAccounts
-        : GENESIS_BANKS,
       requireCustomer: true,
     };
   }
@@ -878,13 +872,6 @@ export class AdminController {
           [],
         cardTerminals:
           config.cardTerminals ?? (previous?.cardTerminals as string[]) ?? [],
-        ...((config.genesisAccounts ?? previous?.genesisAccounts)
-          ? {
-              genesisAccounts:
-                config.genesisAccounts ??
-                (previous?.genesisAccounts as string[]),
-            }
-          : {}),
         // Compatibilidad con clientes anteriores, pero la regla comercial es
         // invariable: toda venta se guarda a nombre de un cliente.
         requireCustomer: true,

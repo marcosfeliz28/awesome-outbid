@@ -186,10 +186,7 @@ describe("GV · citas", () => {
         amount,
         concept: "separo",
         method,
-        bank:
-          method === "transferencia"
-            ? "Popular Grupo Génesis ···9797"
-            : undefined,
+        bank: method === "transferencia" ? "Popular" : undefined,
         reference: method === "transferencia" ? "QA-" + suffix : undefined,
       });
     const payOp = randomUUID();
@@ -302,7 +299,7 @@ describe("GV · importación de citas e interesadas", () => {
             amount: 1500.5,
             concept: "separo",
             method: "transferencia",
-            bank: "Banreservas Grupo Génesis ···5853",
+            bank: "BHD",
             reference: "QA-BHD-1",
             verified: true,
           },

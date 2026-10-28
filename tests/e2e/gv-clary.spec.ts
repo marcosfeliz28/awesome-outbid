@@ -108,7 +108,7 @@ async function seedGvFlow(
       enrollmentId: enrollments[0].id,
       date: "2026-10-26",
       method: "transferencia",
-      bank: "Popular Grupo Génesis ···9797",
+      bank: "Banco E2E",
       ...payment,
     });
 

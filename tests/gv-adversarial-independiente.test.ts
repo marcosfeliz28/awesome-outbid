@@ -348,7 +348,7 @@ for (const kind of ["inscripción", "cita"] as const)
       const owner = await entity(kind);
       const transfer = await pay(kind, owner.id, {
         method: "transferencia",
-        bank: "Popular Grupo Génesis ···9797",
+        bank: "Banco QA",
         reference: randomUUID(),
       });
       expect(transfer.status).toBeLessThan(300);
@@ -425,7 +425,7 @@ function imported(
     date: "2026-10-26",
     concept: "separo",
     method: "transferencia",
-    bank: "Popular Grupo Génesis ···9797",
+    bank: "Banco QA",
     reference: prefix,
     verified: true,
   };

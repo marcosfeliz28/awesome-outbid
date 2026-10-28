@@ -57,24 +57,29 @@ export const gvPaymentFields = {
   bank: optionalText(120),
   reference: optionalText(120),
 };
-// Bancos y terminales de GV (orden de la dueña, 28-oct): una sola lista por
-// empresa. Macgen sale de Configuración (la misma de la caja); Génesis, de
-// «genesisAccounts» o, si no se ha guardado, de estas cuentas.
-export const GENESIS_BANKS = [
-  "Popular Grupo Génesis ···9797",
-  "Banreservas Grupo Génesis ···5853",
-];
+// Bancos de GV (orden de la dueña, 28-oct): la misma lista de la caja
+// (Configuración → cuentas de banco), agrupada por empresa según su nombre.
 export async function gvBankOptions(tx: any, branchId: string) {
   const row = await tx.settings.findUnique({ where: { id: branchId } });
   const data = (row?.data ?? {}) as Record<string, unknown>;
-  const list = (key: string): string[] =>
-    Array.isArray(data[key]) ? (data[key] as string[]) : [];
+  const all = [data.transferAccounts, data.cardTerminals].flatMap((v) =>
+    Array.isArray(v) ? (v as string[]) : [],
+  );
+  const genesis = (b: string) => /g[eé]nesis/i.test(b);
   return {
-    genesis: Array.isArray(data.genesisAccounts)
-      ? list("genesisAccounts")
-      : GENESIS_BANKS,
-    macgen: [...list("transferAccounts"), ...list("cardTerminals")],
+    genesis: all.filter(genesis),
+    macgen: all.filter((b) => !genesis(b)),
   };
+}
+// Con lista en Configuración, el banco debe ser de la lista; sin lista no se
+// exige (igual que la caja).
+export function assertGvBank(
+  banks: { genesis: string[]; macgen: string[] },
+  bank: string | null,
+) {
+  const listed = [...banks.genesis, ...banks.macgen];
+  if (listed.length && (!bank || !listed.includes(bank)))
+    bad("Elige el banco de la lista.");
 }
 // GV-07: una transferencia sin banco o sin referencia no se puede conciliar.
 export const transferDetails = (
@@ -219,11 +224,8 @@ export async function createGvPayment(
   }
   if (GV_CLOSED.has(owner.status))
     bad(`${o.label} está ${owner.status}: no acepta pagos.`);
-  if (data.method !== "efectivo") {
-    const banks = await gvBankOptions(tx, actor.branchId);
-    if (!data.bank || ![...banks.genesis, ...banks.macgen].includes(data.bank))
-      bad("Elige el banco o la terminal de la lista.");
-  }
+  if (data.method !== "efectivo")
+    assertGvBank(await gvBankOptions(tx, actor.branchId), data.bank);
   const room = d(owner[o.total]).minus(committed(owner.payments));
   if (d(data.amount).gt(room))
     bad(
