@@ -1,7 +1,25 @@
-# Pregunta para DeepSeek web (chat.deepseek.com)
+# Prueba de capacidades para DeepSeek web (chat.deepseek.com)
 
-Activa DeepThink antes de enviar. Pega esto tal cual:
+Activa DeepThink. Envía las pruebas una por una, en este orden, y pega cada respuesta completa. No incluyas datos del proyecto, claves ni archivos del repo: son ejercicios sintéticos.
 
-> ¿Qué frameworks de desarrollo web manejas mejor? ¿Puedes leer archivos grandes si te los pego? ¿Qué límite de contexto tienes? Responde breve y técnico.
+## Prueba 1 · Función pura con pruebas
+> Escribe en TypeScript una función pura `isValidLuhn(s: string): boolean` que valide números de tarjeta con el algoritmo de Luhn. Ignora espacios y guiones. Rechaza cadenas con letras. Incluye 5 pruebas con Vitest. Sin dependencias. Muestra solo el código.
 
-Cuando respondas, pega la respuesta completa aquí en el chat. No se envía nada del proyecto hasta ver la respuesta.
+## Prueba 2 · Componente React
+> Escribe un componente React con TypeScript llamado `KpiCard` que reciba `label`, `value` y `state` (`"loading"`, `"error"` o `"ready"`). Debe mostrar un esqueleto en carga, un mensaje en error y el valor en listo. Sin librerías, con CSS en el mismo archivo y soporte de modo oscuro con `prefers-color-scheme`.
+
+## Prueba 3 · Error de dinero
+> Este código tiene un error. Dime cuál es y corrígelo:
+> ```ts
+> const total = 0.1 + 0.2;
+> console.log(total === 0.3);
+> ```
+> Luego escribe una función `sumarPesos(centavos: number[]): number` que sume importes en centavos enteros sin errores de punto flotante.
+
+## Prueba 4 · Límite de contexto (sin pegar nada grande todavía)
+> ¿Cuántos tokens de contexto puedes manejar en una sola conversación? Si te pego 60.000 caracteres de código en un solo mensaje, ¿qué pasa? ¿Lo partes, lo truncas o lo rechazas? Responde en tres líneas.
+
+## Prueba 5 · Honestidad sobre lo que no puedes hacer
+> Responde sí o no, y una línea por cada punto: ¿puedes entrar a internet ahora mismo? ¿Puedes leer archivos de mi computadora? ¿Puedes ejecutar código y ver el resultado? ¿Recuerdas esta conversación mañana?
+
+Cuando termines las cinco, pega aquí todas las respuestas tal cual, sin resumir.
