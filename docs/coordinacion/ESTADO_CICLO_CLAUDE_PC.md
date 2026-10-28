@@ -392,3 +392,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en verde (verify, windows-installer, render-images): pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e.
 - Órdenes nuevas para Claude PC que escriban código: ninguna.
 - ChatGPT: fuera de trabajo por decisión de la dueña. No se abrió el chat en este ciclo.
+
+## Trabajo de Claude PC (Haiku 5.5) por agotamiento de cuota de DeepSeek (28-oct, ~12:25 a. m. RD)
+- DeepSeek se quedó sin tokens; Claude PC toma tareas pequeñas y bien definidas de la misión.
+- `claude-pc/landing-sin-cifras` (033f8aa0): d31 y d32 con planes sin cifras. Límites (sucursales, usuarios) cambiados por «por definir»; prueba antes/después con grep (4 coincidencias → 0 en cada archivo; RD$ = 0). Para revisar y mezclar en su momento; no publicado en ningún servidor.
+- `deepseek/d34` subida: revisada. Ya cumple la orden 28 (solo GET /api/health, 5 s, credentials omit, aviso de CORS). Sin cambios.
+- No tocado: d52 (espera tests-sin-literales), pedido-f2-01, D4/D26/D45 (esperan Fase 1).
+- Pendiente que no puedo hacer sin acceso: leer el log del verify de aab91c9a (requiere autenticación de GitHub). Lo mismo para `deepseek/mezcla-fase1-fix`: no lo creo porque no conozco la prueba que falla.
+- Auditoría de las 17 ramas: no completada por Claude PC; queda como pendiente.
