@@ -58,3 +58,25 @@ Quedan fuera: **Ordizo** (sufijo español, `.com` tomado), **Veyra** (veto condi
 1. **Reservar ya los `.com` de los finalistas** que quieras mantener vivos durante la revisión legal (cuesta unos 10–15 dólares al año cada uno; lo compras tú en un registrador acreditado, como Cloudflare o Porkbun). Yo no puedo comprar.
 2. Decidir tu preferencia: entre Dorenivo, Merelivo y Korenivo, ¿cuál te suena mejor al oído? Si ninguno, pedimos una ronda más.
 3. Contratar la búsqueda formal de marca sobre tu elegido y de reserva.
+
+## Ronda de búsqueda adicional (Nexora 1, 28-oct, a pedido de la dueña: «sigue buscando»)
+Método: 420 nombres inventados de 6 a 8 letras; 235 con `.com` libre (registro oficial Verisign RDAP). De los 99 nombres cortos «de diccionario» que probé, **los 99 tenían el `.com` tomado**. Se escogieron 14 pronunciables y dos investigadores buscaron en la web conflictos y significados (solo web: **no** bases oficiales de marcas).
+
+| Nombre | Riesgo hallado | Detalle |
+|---|---|---|
+| **Rifivo** | Bajo | Sin empresa/app homónima; lejano: «Rivo» (app de comercio en Shopify), «RIFO» (bolsos, EE. UU.) |
+| **Lepafi** | Bajo | Sin hallazgos; lejanos: «Lepsta», «LemFi» (fintech) |
+| **Vemifi** | Bajo | Sin hallazgos; lejanos: «Vemy», «WeFi» |
+| **Thasivo** | Bajo | Sin hallazgos; la «th» se pronuncia distinto en español e inglés |
+| **Xesani** | Bajo | Sin coincidencia exacta; «XENI» (UK, software, clases 9/42) algo cerca; la «X» se pronuncia distinto según el idioma |
+| Mifize | Medio | A 2 letras de **Mifiel** (software legal mexicano) |
+| Fimiri | Medio | A 1 letra de **Fitiri** (soluciones empresariales) |
+| Doloze | Medio | Cerca de Doozle y Dolox (software) |
+| Zalybri | Medio | Cerca de **Zybra** (contabilidad, mismo nicho) |
+| Naxeta | Medio | Familia NAX- (NAX Group, IA empresarial) |
+| Tafivex | Medio | A 1 letra de TAIVEX (farmacéutica) |
+| Dozelu | Medio | A 1 letra de DOZELF (solicitud USPTO) |
+| Vovedo | Medio | A 1 letra de VOVEO (solicitud USPTO) |
+| Sabrive | Medio | A 2 letras de **SABRE** (software de viajes, marca fuerte) |
+
+**Finalistas de esta ronda por sonido y riesgo:** Rifivo, Lepafi y Vemifi (cortos, 6 letras, se leen igual en inglés y español). **Aviso:** «bajo» significa solo «no encontré conflicto en una búsqueda web»; falta la búsqueda formal de marca.
