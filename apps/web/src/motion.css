@@ -1,0 +1,65 @@
+/* motion.css — movimiento del sistema (F3-01 · D51).
+   CSS nativo, sin librerías. Transiciones de 180 ms y respeto de
+   `prefers-reduced-motion`. Se engancha después (ChatGPT PC lo importa al
+   cablear las pantallas); aquí quedan los primitivos de animación. */
+
+:root {
+  --motion-fast: 180ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Pastilla deslizante del menú lateral. Se coloca en el contenedor del nav y
+   se mueve con transform (no re-render) entre el elemento activo. */
+.nav-pill {
+  position: absolute;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    width var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
+  will-change: transform, width;
+  pointer-events: none;
+}
+
+/* Contador del carrito: rebota una vez al cambiar su valor. */
+.cart-count {
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+.cart-count.bump {
+  animation: cart-bump 280ms var(--motion-ease);
+}
+@keyframes cart-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Aparición y deslizamiento genéricos para paneles y modales. */
+.motion-fade {
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+.motion-slide-in {
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
+}
+
+/* Accesibilidad: quien pide menos movimiento lo recibe. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-pill,
+  .cart-count,
+  .motion-fade,
+  .motion-slide-in {
+    transition: none;
+  }
+  .cart-count.bump {
+    animation: none;
+  }
+}
