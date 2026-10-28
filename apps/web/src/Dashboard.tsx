@@ -30,6 +30,7 @@ import { formatMoney, can, weekStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
+import "./Dashboard.css";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -98,6 +99,85 @@ function DayCard() {
           />
         </div>
       </div>
+    </section>
+  );
+}
+
+function HoyStrip() {
+  const user = useStore((s) => s.user)!;
+  const showProfit = can(user.permissions, "profit:read");
+  const to = today();
+  const summary = useQuery({
+    queryKey: ["hoy-summary", to],
+    queryFn: () => api("/dashboard/summary?from=" + to + "&to=" + to),
+    enabled: can(user.permissions, "reports:read"),
+  });
+  const sessions = useQuery<any[]>({
+    queryKey: ["cash-sessions"],
+    queryFn: () => api("/cash-sessions"),
+    enabled: can(user.permissions, "cash:write"),
+  });
+  const data = summary.data;
+  // Caja ciega: solo se muestra lo que el servidor entrega; no se calcula
+  // ningún importe en el cliente. El número de cajas abiertas es un conteo,
+  // no un monto.
+  const openCash = (sessions.data ?? []).filter((s: any) => s.closedAt == null)
+    .length;
+  const stockAlerts = (data?.alerts ?? []).filter(
+    (a: any) => a.type === "low_stock",
+  ).length;
+  const kpis = [
+    {
+      label: "Ventas de hoy",
+      value: formatMoney(data?.revenue ?? 0),
+      note: (data?.invoices ?? 0) + " facturas",
+      icon: ShoppingBag,
+      tone: "violet",
+    },
+    showProfit
+      ? {
+          label: "Utilidad",
+          value: formatMoney(data?.grossProfit ?? 0),
+          note: (data?.margin ?? 0) + "% de margen",
+          icon: TrendingUp,
+          tone: "green",
+        }
+      : {
+          label: "Inventario a la venta",
+          value: formatMoney(data?.inventoryRetail ?? 0),
+          note: "Valor del stock disponible",
+          icon: Package,
+          tone: "green",
+        },
+    {
+      label: "Cajas activas",
+      value: String(openCash),
+      note: "abiertas ahora",
+      icon: Wallet,
+      tone: "blue",
+    },
+    {
+      label: "Alertas de inventario",
+      value: String(stockAlerts),
+      note: "stock por reponer",
+      icon: TriangleAlert,
+      tone: "orange",
+    },
+  ];
+  return (
+    <section className="hoy-strip" aria-label="Resumen de hoy">
+      {kpis.map((k) => (
+        <article className="hoy-card" key={k.label}>
+          <span className="hoy-label">
+            <span className={`hoy-icon ${k.tone}`}>
+              <k.icon size={18} />
+            </span>
+            {k.label}
+          </span>
+          <strong>{k.value}</strong>
+          <div className="hoy-note">{k.note}</div>
+        </article>
+      ))}
     </section>
   );
 }
@@ -219,6 +299,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           )}
         </div>
       </div>
+      <HoyStrip />
       {can(user.permissions, "*") && !!voidRequests.data?.length && (
         <section
           className="void-request-dashboard"
