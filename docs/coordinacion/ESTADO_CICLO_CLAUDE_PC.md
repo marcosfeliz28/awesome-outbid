@@ -259,3 +259,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT: minimizada. DeepSeek Harness: minimizada.
 - Queda visible una pestaña de Edge de platform.deepseek.com («You're signed in», inicio de sesión de DeepSeek). Claude PC no puede minimizar Edge (solo lectura en navegadores). Pedido a Marcos que la minimice. No se hizo clic en ningún botón de esa página.
 - ChatGPT nube trabajando en F1-01 (TEXTO R1). No escribí en ningún chat en este ciclo.
+
+## Órdenes 19–23 (28-oct, ~10:06 p. m. RD)
+- Leídas las órdenes 19 a 23. D46 es el benchmark de 20 plataformas (cola 3 de TEXTO_DEEPSEEK_28OCT.md).
+- D46 enviado a DeepSeek en sesión NUEVA «Benchmark 20 plataformas» (carpeta de trabajo C:/Users/marco/AppData/Local/Temp/deepseek-benchmark; salida docs/venta/BENCHMARK_20_PLATAFORMAS.md). Solo nombres públicos; sin cuentas, login ni credenciales; investigación web de DeepSeek (no datos de la empresa).
+- INCIDENCIA: la sesión nueva apareció con «Full access» al enviar. Se cambió a Workspace Write de inmediato. Tarea iniciada antes del cambio; a revisar qué hizo en ese intervalo.
+- Pendiente de las órdenes 19–23: pasos (3) avisar a ChatGPT PC y ChatGPT nube del reparto D47–D51 (texto de la orden 23; solo en chats libres); (4) minimizar la ventana que se suelte. D47–D52 se envían después de D46.
