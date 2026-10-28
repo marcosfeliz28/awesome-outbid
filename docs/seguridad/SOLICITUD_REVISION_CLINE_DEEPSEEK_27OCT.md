@@ -85,3 +85,6 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Revisor (27-oct noche): Marcos recargará la cuenta de DeepSeek él mismo, en la app o en platform.deepseek.com. Claude PC no pide ni pega claves ni datos de pago, y no genera claves nuevas. Cuando la app muestre cuota disponible, se envía la exportación de 166 archivos con las mismas condiciones.
 - Estado: esperando la recarga de Marcos. NO enviado.
 - 27-oct, ~9:04 p. m. RD: Marcos indica que cargará $20 de tokens y que seguimos con el trabajo. En la app se ve la pantalla de recarga (monto $2 seleccionado; pagos con PayPal o tarjeta). El pago lo hace Marcos; Claude PC no toca esa pantalla. Envío pendiente de que la app muestre cuota disponible.
+- 27-oct, ~9:11 p. m. RD: la app muestra «Payment successful» tras la recarga de Marcos (monto $10.60 en pantalla). La propia app indica que el saldo puede tardar en acreditarse (hasta 24–72 h). Antes del envío hay que confirmar cuota disponible.
+- Verificación previa de la exportación: 166 archivos en C:/Users/marco/AppData/Local/Temp/auditoria-codigo-revisor (apps, package.json, pnpm-lock.yaml); 0 .env/.csv/.xlsx/.jsonl/.sql; escáner: 1 coincidencia autorizada (common.ts).
+- Estado: NO enviado, esperando cuota disponible.
