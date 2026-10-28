@@ -1,53 +1,49 @@
-> **Estado: BORRADOR, revisado en comandos (pnpm corregido).** Generado por el modelo local. Verificado: las rutas `instalador/build.ps1` e `instalador/tests/run-validation.mjs` existen; los comandos citados son el contenido real de los scripts de `package.json`. Pendiente: preferir `pnpm instalador:preparar`, `pnpm instalador:compilar`, `pnpm instalador:validar`; resolver los marcadores POR CONFIRMAR.
+# Guía de instalación para PC (D7) — BORRADOR
 
-# Guía de Instalación para PC (D7) - Nexora POS
+> **Estado: BORRADOR. No cerrado.** Solo lo marcado como verificado viene del código (`instalador/build.ps1`, `package.json`). Lo marcado como [POR CONFIRMAR EN PC LIMPIA] no está probado y no debe darse por cierto hasta probarlo en una PC limpia.
 
 ## 1. Requisitos
-Para realizar la instalación, se necesitan los siguientes elementos:
-- Sistema operativo Windows (versión no especificada, pero compatible con PowerShell).
-- Node.js instalado en el equipo (versión requerida no especificada).
-- Acceso al directorio raíz del proyecto, donde se encuentran los scripts necesarios.
-- **POR CONFIRMAR**: Espacio en disco requerido (no especificado en los comandos).
-- **POR CONFIRMAR**: Cualquier permiso especial necesario (no confirmado).
+- Windows con PowerShell.
+- Node.js y pnpm 11 (el repo fija `pnpm@11.19.0` en `package.json`).
+- Conexión a internet: el script descarga componentes (Node, PostgreSQL, WinSW) y los guarda en la caché local `%LOCALAPPDATA%\FitStore POS\InstallerCache`.
+- [POR CONFIRMAR EN PC LIMPIA] Espacio en disco requerido. El script no lo comprueba.
+- [POR CONFIRMAR EN PC LIMPIA] Permisos: el script descarga e instala WinSW y PostgreSQL; se sospecha que requiere Administrador, no verificado.
 
-## 2. Pasos para Preparar, Compilar y Validar el Instalador
+## 2. Preparar el instalador
+Desde la raíz del repositorio:
 
-### 2.1. Preparación del Instalador
-Ejecuta el siguiente comando en la raíz del repositorio para preparar el instalador:
 ```bash
 pnpm instalador:preparar
 ```
-Este comando utiliza el script `build.ps1` para realizar tareas de preparación sin compilar. **POR CONFIRMAR**: La preparación incluye acciones específicas, pero no están detalladas en los comandos.
 
-### 2.2. Compilación del Instalador
-Después de preparar el instalador, compílalo con este comando:
+Ejecuta `instalador/build.ps1` con `-SoloPreparar`.
+
+## 3. Compilar el instalador
 ```bash
 pnpm instalador:compilar
 ```
-Este script generará el instalador necesario para Nexora POS. **POR CONFIRMAR**: La ruta de salida del instalador no está especificada.
 
-### 2.3. Validación del Instalador
-Finalmente, valida el instalador usando el comando:
+Ruta de salida: el instalador se genera en `instalador\dist` (verificado en `instalador/build.ps1`, variable `$dist`).
+
+## 4. Validación automatizada
+Las pruebas automatizadas del instalador se ejecutan con:
+
 ```bash
-node instalador/tests/run-validation.mjs
+pnpm instalador:validar
 ```
-Este paso verifica que todo el proceso de instalación se haya realizado correctamente y que el archivo generado cumpla con los requisitos necesarios. **POR CONFIRMAR**: La naturaleza de la validación y qué aspectos se comprueban no están detallados.
 
-## 3. Qué hacer si `instalador:validar` falla
+Equivale a `node instalador/tests/run-validation.mjs` (verificado). Algunas pruebas lanzan PowerShell y pueden tocar SQL real: no correr en una PC con datos reales sin revisar antes.
 
-Si el comando `instalador:validar` (equivalente a `node instalador/tests/run-validation.mjs`) falla, revisa los siguientes aspectos:
+## 5. Validación visual (manual)
+- [POR CONFIRMAR EN PC LIMPIA] Abrir la aplicación desde el menú de inicio.
+- [POR CONFIRMAR EN PC LIMPIA] Comprobar que la ventana principal carga sin pantalla en blanco.
+- [POR CONFIRMAR EN PC LIMPIA] Comprobar que el número de versión coincide con el compilado.
 
-- **Verifica el proceso de preparación y compilación**: Asegúrate de que no hubo errores en las etapas anteriores. Si el error se originó antes de la validación, repite los pasos de preparación y compilación.
-- **Revisa los logs de validación**: El comando `instalador:validar` debe generar una salida con detalles del error. Busca en esa salida información específica sobre qué salió mal (por ejemplo, archivos faltantes, dependencias no satisfechas).
-- **Requisitos no confirmados**: Si el error se debe a un requisito no especificado (como espacio en disco o permisos), **POR CONFIRMAR** los detalles específicos y soluciona cualquier obstáculo externo.
-- **Contacta con el equipo de desarrollo**: Si no puedes identificar el problema, comunícate con el equipo de Nexora POS para obtener más detalles sobre la validación y cómo resolver el error específico.
+## 6. Configuración
+- [POR CONFIRMAR EN PC LIMPIA] Si la aplicación requiere configuración manual al abrirse. El script excluye los archivos `.env` del paquete, pero no está verificado que la app funcione sin ellos.
+
+## 7. Qué hacer si `pnpm instalador:validar` falla
+Revisar la salida de la prueba que falló. No está documentado en el repo un procedimiento de recuperación para el usuario final: [POR CONFIRMAR EN PC LIMPIA].
 
 ---
-
-## Lista de elementos POR CONFIRMAR
-- Espacio en disco requerido para la instalación.
-- Ruta de salida del instalador compilado.
-- Naturaleza de la validación (qué aspectos se comprueban).
-- Errores específicos que pueden ocurrir durante la validación.
-
-DEEPSEEK-TERMINADO
+**Cierre de D7:** pendiente. Requiere una prueba completa en una PC limpia.
