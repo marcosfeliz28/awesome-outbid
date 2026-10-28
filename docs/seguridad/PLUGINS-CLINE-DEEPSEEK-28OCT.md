@@ -48,3 +48,12 @@ No puedo ver esa laptop, así que **no puedo afirmar que sea el producto oficial
 - Ejecución real (tráfico de red observado), código compilado, dependencias transitivas, ni la extensión de VS Code de Cline más allá de su configuración de PostHog.
 - Si `DSH_TELEMETRY_DISABLED` apaga la analítica de producto del escritorio.
 - La laptop de Marcos.
+
+---
+## Autorización de la dueña (28-oct-2026)
+La dueña decidió usar **Cline** y **DeepSeek Harness**. Es decisión suya; **el veredicto técnico del Revisor no cambia** (riesgo medio y alto, ver arriba). Queda autorizado **solo bajo estas condiciones mínimas**:
+1. **Cline:** solo la CLI `cline@3.0.74`, auto-actualización apagada, sin `--yolo`/`--auto-approve`/zen, sin cuenta Cline, modelo local (Ollama).
+2. **DeepSeek Harness oficial** (`deepseek-ai/deepseek-harness` 0.2.1-rc.3, instalado desde `download.deepseek.com` o desde el repo): con `DSH_TELEMETRY_DISABLED=1`, sin `computer-use`/`browser-use`, sin plugins de terceros.
+3. **Ambos dentro de una máquina virtual o contenedor desechable**, sin `~/.ssh`, sin `.env`, sin tokens de git ni llaves de Render/Cloudflare, con el repo en solo lectura o una copia sin remoto. Si usan una API externa, una clave desechable con tope de gasto, nunca las del negocio.
+4. **Excluida:** la ventana que apareció en la laptop de Marcos. No se autoriza hasta identificar su origen (ruta, firma, app ID `com.deepseek.harness`, hash). Si resulta ser el producto oficial, entra en el punto 2.
+5. Datos reales (clientes, costos, precios, facturas) **no** se pegan en ninguna de las dos.
