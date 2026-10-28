@@ -68,3 +68,9 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Condición de ejecución: la app debe correr desde una cuenta o sesión de Windows aparte. La ventana actual está en la cuenta principal. Antes de enviar, debe confirmarse esa cuenta aparte.
 - Exportación autorizada: 173 archivos (apps/*/src, schema.prisma, package.json y lockfiles; sin tests/ ni packages/). Escáner limpio tras autorizar el falso positivo de common.ts.
 - Estado: aceptación registrada. Envío pendiente de confirmar la cuenta aparte.
+
+## Decisión explícita de Marcos: envío desde la cuenta principal (27-oct, ~9:40 p. m. RD)
+- Marcos responde «procede y punto»: decide enviar la exportación desde la cuenta principal de Windows, sin cuenta aparte. Esto supera la condición de su aceptación escrita (usar cuenta aparte); la decisión es suya y queda registrada.
+- Exportación enviada: lista estricta del Revisor (apps/*/src, schema.prisma, package.json, pnpm-lock.yaml, apps/api/package.json, apps/web/package.json): 166 archivos. Carpeta: C:/Users/marco/AppData/Local/Temp/auditoria-codigo-revisor. Sin tests/, sin packages/, sin .env, CSV, XLSX, JSONL ni SQL. Escáner de secretos: 1 coincidencia autorizada (apps/api/src/common.ts:125 en nexora-cloud, `password: "contraseña"`, etiqueta de UI).
+- Modo: Read Only, sesión nueva. No se hizo clic en 👍/👎. DSH_TELEMETRY_DISABLED=1 no se pudo verificar desde la interfaz.
+- Hora de envío: ver registro siguiente.
