@@ -311,3 +311,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente de dueña: texto escrito en el repo para DeepSeek sobre la mezcla de la orden 24.
 - ChatGPT PC respondió a la parada (5 líneas): rama `chatgpt-pc/visual-fase1-gemini`, commit `aab91c9a` («Merge producto-nexora y conserva F1 visual»), subido sin force. Contiene `producto-nexora` (orden 24 hecha por ChatGPT PC). Pasaron `pnpm check` (tipos, ESLint, build, 1055 pruebas, 11 omitidas) y 53 pruebas focalizadas. Falta: e2e completo, verify/windows-installer/render-images (en cola en GitHub al momento de verificar) y fases posteriores. Sin commits locales sin subir según el propio chat.
 - Pendiente: que los tres CI queden en verde en aab91c9a. Entonces Claude PC escribe `LISTA` y avisa a Nexora 1.
+
+## DeepSeek (28-oct, ~10:55 p. m. RD)
+- La sesión «Revisión de TEXTO_DEEPSEEK» (texto 3) se había detenido: buscaba el repo en C:\Users\marco\OneDrive\Documentos\deepseek-harness y no lo encontraba. Se le respondió con la ruta absoluta del repo y la instrucción de trabajar en worktrees nuevos desde origin/nexora-cloud, una rama deepseek/<id> por tarea. Entró en ejecución.
+- Sesión «Benchmark 20 plataformas»: terminó la entrega de D46 con una autoevaluación. Sigue sin subirse; la corrección pedida está en PEDIDOS_DEEPSEEK.md. La sesión preguntó si rehacer D46 con el brief original; la respuesta de Claude PC (incluida en el texto que se le envió) es rehacerlo con fuentes.
+- No hay pedidos de herramientas ni skills registrados en PEDIDOS_DEEPSEEK.md.
