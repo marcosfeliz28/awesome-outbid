@@ -383,3 +383,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT: fuera de trabajo hasta nuevo aviso (ver entrada anterior).
 - Complemento enviado a la misma sesión (12:12 a. m.): misión de la noche (orden 29, `MISION_NOCHE_DEEPSEEK_28OCT.md`), con progreso en `PROGRESO_DEEPSEEK_NOCHE.md` (creado en 121bfad0) y la línea `DEEPSEEK-TERMINADO` al final. Quedó en cola: la sesión estaba analizando y no la interrumpí.
 - Nota: la base de DeepSeek avanzó a d9f6196a; sus ramas d31, d32, d34, d52 y pedido-f2-01 no están subidas (correcto).
+
+## Ciclo nocturno (28-oct, ~12:17 a. m. RD)
+- Fetch: nexora-cloud en 6181d72b. RESPUESTA_CLAUDE_PC_27OCT.md blob fe85eb84 (último orden: 29). OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 35b20a2d.
+- ALERTA: `verify` de chatgpt-pc/visual-fase1-gemini `aab91c9a` volvió a FAILURE tras el reintento. windows-installer y render-images en verde. Según la orden 27, DeepSeek debe corregir en `deepseek/mezcla-fase1-fix` (todavía no existe en origin). Claude PC no relanza ni toca la rama.
+- DeepSeek (pantalla, 12:16): leyó las órdenes 28 y 29, confirmó el alcance (d31/d32 sin cifras; d34 solo /api/health; no tocar d52 ni pedido-f2-01), actualizó su plan y está en el paso 3: auditoría de las 17 ramas. PROGRESO_DEEPSEEK_NOCHE.md sigue vacío en origin; le pedí que lo actualice por tarea.
+- Sin ramas nuevas de DeepSeek en origin. Sin LISTA nueva.
+- CI en verde (verify, windows-installer, render-images): pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e.
+- Órdenes nuevas para Claude PC que escriban código: ninguna.
+- ChatGPT: fuera de trabajo por decisión de la dueña. No se abrió el chat en este ciclo.
