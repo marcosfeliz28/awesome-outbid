@@ -1,0 +1,45 @@
+/* Configuracion.css — presentación de la pantalla de Configuración (D50).
+   Solo presentación; no cambia lógica ni rutas. Importado desde Management.tsx;
+   usa los tokens de styles.css. */
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1366px;
+  margin: 0 auto;
+}
+
+.config-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.config-empty strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.config-error {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--danger-text);
+  color: var(--danger-text);
+  background: var(--surface);
+}
+
+/* Formularios de ajustes: campos con separación clara. */
+.config-section .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .config-section .field {
+    font-size: 12.5px;
+  }
+}

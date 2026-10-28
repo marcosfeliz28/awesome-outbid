@@ -80,6 +80,8 @@ import {
 } from "./managementMessages";
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
+import "./Clientes.css";
+import "./Configuracion.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";

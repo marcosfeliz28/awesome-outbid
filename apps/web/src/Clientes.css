@@ -1,0 +1,41 @@
+/* Clientes.css — presentación de la pantalla de Clientes (D50).
+   Solo presentación; no cambia lógica ni rutas. Importado desde Management.tsx;
+   usa los tokens de styles.css. */
+
+.customers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1366px;
+  margin: 0 auto;
+}
+
+.customers-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.customers-empty strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.customers-error {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--danger-text);
+  color: var(--danger-text);
+  background: var(--surface);
+}
+
+/* Tarjeta de cliente: deuda y saldo legibles. */
+.customer-card .deuda {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .customers-section .table-wrap {
+    font-size: 13px;
+  }
+}
