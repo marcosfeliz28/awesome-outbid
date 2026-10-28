@@ -3,6 +3,8 @@
 > **BORRADOR** — español dominicano neutro, sin promesas que el sistema no
 > cumpla. Se usan en `apps/landing/` (D31–D34). Fecha: 2026-10-27.
 
+> **Revisión de Nexora 1 (28-oct):** antes de publicar, quitar toda mención a **e-CF** (está en pausa y no se ofrece), no prometer «respaldo cifrado» ni «control de acceso» sin respaldo en el código, y no usar el nombre «Nexora» en público hasta cerrar la auditoría de marca (`docs/marca/AUDITORIA_NOMBRE_MARCA.md`). Nada de esto se publica sin la orden escrita de la dueña.
+
 ## Titular
 
 **Tu negocio, en movimiento.**
