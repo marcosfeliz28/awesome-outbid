@@ -56,3 +56,34 @@ Ejecuta una rama por tarea (`deepseek/<id>`), entrega 5 líneas y pasa a la sigu
 
 ## Orden sugerido
 D5 → D6 → D9 → D21 → D22 → D17 → D18 → D15 → D8 → D12 → D13 → D10 → D11 → D14 → D7 → D16 → D19 → D20 → D23 → D24 → D25 → D27 → D28 → D29 → D30 → (D4, D26 cuando se desbloqueen).
+
+---
+# COLA 2 (28-oct): lo pendiente de modificar o agregar, asignado a DeepSeek
+Mismas reglas de arriba. Todo es **código nuevo en archivos nuevos y aislados** (sin cablear a pantallas ni a rutas existentes; el cableado lo decide Nexora 1 después de auditar). Cada uno con pruebas que fallen antes y pasen después.
+
+## Bloque E · Venta pública
+- **D31** `apps/landing/` (carpeta nueva, HTML + CSS + un JS mínimo, **sin dependencias ni CDN**): página pública con los textos de D12. Estilo Obsidian Lumina (`docs/diseno/`). Responsive 320–1440, sin imágenes externas, accesible (contraste AA, foco visible). Incluye sección de precios leyendo `docs/venta/precios.md` como PROPUESTA.
+- **D32** `apps/landing/precios.html`: página de planes (cuatro planes de la propuesta), tabla comparativa y FAQ; botón «Empezar prueba» apunta a `https://nexorapos.net` (sin formulario ni captura de datos).
+- **D33** `apps/landing/legal/`: páginas estáticas de términos y privacidad con el texto de D10, encabezadas «BORRADOR — no publicar sin revisión legal».
+- **D34** `apps/landing/estado.html`: página de estado estática que consulta `https://nexorapos.net/api/health` y la de la tienda solo si la dueña lo decide (por ahora solo el producto), con aviso claro si no responde.
+
+## Bloque F · Fiscal (funciones puras, sin acceso a base de datos ni cableado)
+- **D35** `packages/shared/src/dgii/606.ts`: función pura `build606(rows)` → líneas y texto del formato 606 según D3, con validación de campos y pruebas con casos de la especificación. Marca cada regla dudosa con `// verificar con contador`.
+- **D36** `packages/shared/src/dgii/607.ts` y **D37** `608.ts`: lo mismo para ventas y anulados.
+- **D38** `packages/shared/src/dgii/ncf.ts`: validación y secuencia de NCF (B01, B02, B14, B15; **B04 queda pausado**, no lo implementes) con pruebas.
+
+## Bloque G · Planes e IA (funciones puras)
+- **D39** `packages/shared/src/plans/limits.ts`: catálogo de planes y límites como datos (usuarios, sucursales, consultas de IA por mes, productos) y `canUse(plan, uso)`; valores marcados PROPUESTA; pruebas.
+- **D40** `packages/shared/src/plans/ia-quota.ts`: contador de cuota de consultas de IA por mes con reinicio, función pura sobre el estado que se le pasa; pruebas de borde (cambio de mes, plan nuevo a mitad de mes).
+
+## Bloque H · Calidad
+- **D41** `tests/e2e/humo-producto.spec.ts`: recorrido de humo del producto (login, abrir caja, venta, cierre) con datos de prueba del arnés existente; no uses contraseñas literales (usa la variable de `tests-sin-literales` cuando esté mezclada).
+- **D42** `tests/formatos-moneda.test.ts`: pruebas de tabla de redondeo, centavos y márgenes (margen = (precio−costo)/precio sin restar ITBIS, mínimo 15 %) sobre las funciones que ya existen en `packages/shared`; solo pruebas, no cambies la lógica; si una prueba revela un fallo, **no lo arregles**: repórtalo.
+- **D43** `docs/auditoria/MAPA_DE_PANTALLAS.md`: inventario de todas las pantallas del producto con ruta, rol, componentes y estado vacío/carga/error presente o ausente. Insumo para la Fase 2.
+- **D44** `CONTRIBUTING.md` y `docs/DESARROLLO.md`: cómo clonar, instalar, correr pruebas, ramas, reglas de CI, qué no tocar. En español.
+
+## Bloque I · Diseño en CSS aislado (solo cuando ChatGPT PC suelte `styles.css`; no empezar antes)
+- **D45** por pantalla, un `*.css` propio (Catálogo, Clientes, Reportes, Configuración) con los tokens de F2-01; ChatGPT PC los importa. Primero pide a Nexora 1 el visto bueno de la lista de clases.
+
+## Orden de la cola 2
+D39 → D40 → D35 → D36 → D37 → D38 → D42 → D43 → D44 → D31 → D32 → D34 → D33 → D41 → (D45 cuando se desbloquee). Después regresa a lo que falte de la cola 1.
