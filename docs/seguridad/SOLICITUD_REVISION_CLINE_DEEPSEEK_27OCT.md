@@ -126,3 +126,9 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Revisión de D1/D3 (deepseek/d1-d3, cb1f1b8b) con estas reglas: scripts/check-bundle.mjs (solo Node; sin red, sin env, sin dependencias), una línea en apps/web/package.json, docs/venta/ (solo texto; precios como PROPUESTA; DGII con verificaciones). Sin tocar ningún área prohibida. CUMPLE.
 - Pendiente: Nexora 1 debe enumerar las tareas concretas de la ampliación dentro de esos límites. Claude PC no abre la ampliación sin esa lista. Cuando exista, el diff se envía al Revisor para escaneo antes de subirlo.
 - Orden explícita de Marcos para el modo constructor: dada («autorizo a modo constructor»). Cuota: recargada por Marcos.
+
+## Full acceso (Revisor, 28-oct): límites de Claude PC
+- Marcos pidió «full acceso» y eligió «Literalmente todo». El Revisor lo autorizó solo como propuesta de cambios en todo el código, con revisión de Llaves y 3 CI en verde antes de mezclar, y empuje solo a deepseek/*.
+- NO autorizado: llaves de Render, Cloudflare o base de datos; despliegue; empuje directo a nexora-cloud o producto-nexora sin PR y CI.
+- Claude PC: no entrega ni pega credenciales a DeepSeek. No activa «Full access» en la app. Mantiene Workspace Write y lee cada diff antes de subirlo. Si Marcos quiere dar llaves, las crea él fuera de un chat, con alcance mínimo y revocables.
+- Pedido a Llaves: proteger nexora-cloud y producto-nexora (PR + 3 CI) para que la barrera sea técnica.
