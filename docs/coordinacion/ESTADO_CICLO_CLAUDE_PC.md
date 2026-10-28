@@ -658,3 +658,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Preparación y compilación correctas desde `C:\nxp` (ruta corta). Instalador generado: `instalador\dist\Nexora-POS-Setup-0.1.1-prueba.exe` (141,7 MB), hash verificado.
 - Fallo real desde una ruta larga: límite de 260 caracteres de Windows en `build.ps1` línea 344. Documentado en D7.
 - Pruebas de contrato sin SQL: 19 pasan, 0 fallan. Pruebas PowerShell y la instalación quedan para PC limpia o máquina virtual.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en 1dcd0ccd (sin cambios). RESPUESTA blob 4a156065 (orden 36 vigente, sin órdenes nuevas). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- F2-01 en claude-pc/visual-f2-01 (7efdb784): tokens y NxMoney hechos; faltan 11 primitivos y capturas.
+- CI en verde (pc23, a1, b01, lumina) sin cambios. Sin LISTA nueva.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
