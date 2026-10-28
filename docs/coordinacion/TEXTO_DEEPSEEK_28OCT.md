@@ -87,3 +87,26 @@ Mismas reglas de arriba. Todo es **código nuevo en archivos nuevos y aislados**
 
 ## Orden de la cola 2
 D39 → D40 → D35 → D36 → D37 → D38 → D42 → D43 → D44 → D31 → D32 → D34 → D33 → D41 → (D45 cuando se desbloquee). Después regresa a lo que falte de la cola 1.
+
+---
+# COLA 3 (28-oct): investigación de plataformas y trabajo repartido desde ChatGPT
+Acceso: construcción amplia con los límites de siempre (nada de despliegue, llaves, dinero, mercancía, migraciones, instalador, CI). Si necesitas una herramienta, skill o plugin, **escribe en `docs/coordinacion/PEDIDOS_DEEPSEEK.md` (una línea: qué, para qué, riesgo)**; Claude PC se lo pasa a la dueña, que lo instala. No instales nada por tu cuenta.
+
+## D46 · Benchmark de 20 plataformas de facturación/POS (PRIORIDAD 1)
+Usa la web (o la herramienta que tengas). Evalúa **20 plataformas** parecidas a Nexora POS, mezcla de RD/LatAm y globales: Alegra, Siigo, Odoo, Square, Lightspeed, Shopify POS, Toast, Clover, Zoho Books/Invoice, QuickBooks, Vend/Lightspeed X, Loyverse, Treinta, Contífico, Defontana, Bind ERP, Facturama, Holded, Quipu, Sage; sustituye las que no apliquen por competidores dominicanos reales que encuentres (Cuenta Contable, Edt, Nubox RD, etc.).
+**Por cada una (ficha de 12 líneas):** público objetivo, precios públicos (planes y límites, con fecha de consulta y URL), funciones de facturación/NCF/e-CF, caja/POS, inventario, reportes, multi-sucursal, IA o automatización, integraciones, app móvil/offline, qué hacen especialmente bien, qué les falta, y una captura o descripción de su UX. **Solo hechos con URL; lo no confirmado va marcado «NO CONFIRMADO».**
+**Entrega:** `docs/venta/BENCHMARK_20_PLATAFORMAS.md` con (a) tabla comparativa de las 20, (b) matriz de funciones frente a Nexora POS, (c) «lo mejor de cada una» (los 15 mejores patrones de producto y de UX que deberíamos copiar o superar), (d) huecos que Nexora tiene y los competidores no, (e) **propuesta final a Nexora 1:** 10 mejoras priorizadas (impacto, esfuerzo en horas, riesgo, archivos probables) y una propuesta de precios sostenida en la tabla.
+
+## Trabajo que pasa de ChatGPT a DeepSeek (se queda en ChatGPT lo marcado «CHATGPT»)
+- **CHATGPT PC (carril V):** `App.tsx`, `styles.css`, F1-02..05, F2-01 (tokens y primitivos `Nx*`), F2-03 (POS).
+- **CHATGPT nube (carril R):** F1-01 bundle (en curso) y luego QA medios.
+- **D47 · F2-02 tablero «Hoy»** (antes de ChatGPT PC): franja de 4 KPIs (Ventas de hoy, Utilidad/margen con la misma fórmula del producto —solo lectura de lo que las rutas ya devuelven—, cajas activas, alertas de inventario). Archivos: `apps/web/src/Dashboard.tsx` y un CSS propio `apps/web/src/Dashboard.css` (importado desde el componente). Sin tocar `styles.css` ni `App.tsx`. Caja ciega: respeta lo que el servidor envía; no calcules ni muestres importes que la API no entregue.
+- **D48 · F2-04a Inventario** (antes de ChatGPT nube): rediseño de la pantalla en `Management.tsx` (solo la parte de inventario) + `Inventario.css` propio; estados vacío/carga/error; 390 px y 1366 px; sin cambiar lógica ni rutas.
+- **D49 · F2-04b Mercancía y Equipos** (antes de ChatGPT nube): `Merchandise.tsx` + `Mercancia.css`. Solo presentación; **no toques ninguna operación de mercancía** (entradas, salidas, traspasos, ajustes).
+- **D50 · Clientes y Configuración:** `Clientes.css`, `Configuracion.css` con la misma consigna.
+- **D51 · F3-01 movimiento** (después de D47–D50): `apps/web/src/motion.css` con transiciones de 180 ms, pastilla deslizante, contador del carrito, `prefers-reduced-motion` respetado; CSS nativo, sin librerías.
+- **D52 · Capturas y pruebas visuales:** por cada pantalla de D47–D50, pruebas e2e de humo y capturas a 390×844 y 1366×768 en `docs/diseno/capturas-deepseek/`.
+Para D47–D51: rama `deepseek/<id>`, Claude PC empuja, yo audito y mezclo con 3 CI en verde. Si necesitas una clase o un token que viva en `styles.css`, pídelo a Nexora 1 en `PEDIDOS_DEEPSEEK.md`.
+
+## Orden de la cola 3
+D46 primero y de corrido; en paralelo D47 → D48 → D49 → D50 → D52 → D51.
