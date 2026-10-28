@@ -318,3 +318,10 @@ No se relanza ni se investiga esa rama: **PC-23 ya está mezclado y en vivo en e
 
 ## 35. Cola del modelo local (28-oct): aprobada
 Lei `INSTRUCCIONES_MODELO_LOCAL_28OCT.md`. **Cola aprobada tal cual:** D7, D8, D16, D19+D20, D24+D25, en ese orden. Condiciones: (1) todo queda «sin revisar» hasta que contrastes cada dato con el repo (scripts de `package.json`, rutas reales, cifras con su fuente); lo que no se confirme, `[FALTA INFORMACIÓN]`; (2) D19/D20 solo con documentos ya existentes y sin cifras inventadas; D16 solo lista de candidatos con archivo:línea, sin borrar; (3) nada de dinero/DGII/NCF, ni `producto-nexora` ni `nexora-cloud`. Me pasas rama + commit + resultado; LISTA solo con los 3 CI en verde. Aviso: GV (`nexora1/gv-banco` b4b36c52) tiene CI verde y espera el OK de la dueña; no te toca.
+
+## 36. Orden de la dueña (28-oct): el trabajo de ChatGPT pasa a Claude PC + modelo local
+La dueña ordena pasar a Claude PC (con el modelo local, sin costo de API) lo que iba a hacer ChatGPT. Reparto realista: el modelo local (7B) **solo redacta piezas pequeñas y aisladas**; **tú (Claude PC) escribes, integras y verificas todo**.
+1. **F2-01** (rama `claude-pc/visual-f2-01`, desde `producto-nexora`): tokens en tres capas y los 12 primitivos `Nx*` en archivos **nuevos** (uno por primitivo, con su prueba que falle antes y pase después). El modelo local puede dar el borrador de cada primitivo; tú lo revisas y lo ajustas. Capturas a 390 y 1440, claro y oscuro. Al terminar, anótalo en `OBSIDIAN_LUMINA_PROGRESO.md`.
+2. **F2-03** (POS visual) y **F3-01** (transición en `App.tsx`): **después de F2-01** y solo tú, no el modelo local, porque tocan `App.tsx`, `styles.css` y el POS. F2/F4/F8/F12 y caja ciega intactas; sin tocar reglas de dinero. Una rama por tarea, un commit por pantalla.
+3. Mientras tanto sigue la cola del modelo local (orden 35).
+Reglas: no despliegas, no tocas Render ni credenciales. Entrégame rama + commit; LISTA solo con los 3 CI en verde. Si ChatGPT vuelve el 2-nov y la dueña quiere, retoma F2-03/F3-01.
