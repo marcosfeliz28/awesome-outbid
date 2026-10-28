@@ -107,3 +107,19 @@ Adicionales:
 5. **Primero lo ya subido:** D1 y D3 (`deepseek/d1-d3`) se revisan con estas reglas antes de ampliar; si salen limpios, se abre la ampliación.
 6. **Pendiente de la activación:** sigue haciendo falta la orden explícita de Marcos para el modo constructor, y la cuota de DeepSeek.
 7. `docs/venta/procesador-pagos.md` (investigación de pagos) **no la revisé**; DeepSeek no escribe código de cobro bajo esta autorización.
+
+---
+## «Full acceso» para DeepSeek (28-oct-2026)
+La dueña (Marcos) pidió «darle full acceso» y, al preguntarle qué significa, eligió **«Literalmente todo»**: incluye llaves de Render/Cloudflare, despliegue y empujar a `nexora-cloud`. Es su sistema y su decisión; el Revisor **no puede otorgar llaves ni accesos** (no tiene credenciales) y deja constancia de su veredicto:
+
+**Autorizado (se quitan los límites anteriores de tamaño y carpetas):**
+- DeepSeek puede leer y proponer cambios en **todo el código** (`apps/`, `packages/`, pruebas, `scripts/`), incluida la lógica de dinero y mercancía, **siempre que Llaves revise el diff** y los 3 CI estén en verde antes de mezclar. `tests/` se le entrega cuando Llaves confirme o sustituya las contraseñas literales.
+- Puede empujar a ramas `deepseek/*`. Para que sea una barrera real y no una promesa: `nexora-cloud` y `producto-nexora` con rama protegida (exigir PR y los 3 CI), como ya recomienda `docs/coordinacion/SESIONES_Y_LIMITES.md`.
+
+**Rechazado (no lo recomiendo; no lo certifico como seguro):**
+1. **Llaves de Render/Cloudflare, de base de datos o de producción.** La herramienta se declara no auditada (`SAFETY.md`), ejecuta comandos generados por un modelo y envía contexto a DeepSeek (China) si se da feedback; una llave a su alcance es una llave filtrable o usable por un error o una instrucción maliciosa en cualquier archivo o página que lea. El repo trae datos de otros negocios (Ley 172-13).
+2. **Despliegue a Render.** Contradice la regla de la dueña en `CLAUDE.md` («solo Claude nube despliega, con los 3 CI en verde»).
+3. **Empuje directo a `nexora-cloud`/`producto-nexora` sin PR ni CI.**
+
+Si aun así la dueña quiere dar llaves, la forma menos mala **la ejecuta ella misma, no un asistente**: un espacio de Render aparte, con llaves nuevas de alcance mínimo (solo lectura de logs, tope de gasto), distintas de las de producción, revocables en un minuto; nunca pegadas en un chat. Cualquier uso de ellas queda anotado. Y un fallo de DeepSeek no debe poder borrar nada que no tenga copia.
+Revocable en cualquier momento por el Revisor.
