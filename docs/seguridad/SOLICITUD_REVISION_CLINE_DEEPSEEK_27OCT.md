@@ -82,3 +82,5 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Revisor (27-oct noche): la pregunta de cuenta queda cerrada. Marcos aceptó los riesgos por escrito y respondió «procede y punto», y se toma como decisión suya de enviar desde la cuenta principal. Sin cuenta aparte. Se mantienen: solo las 166 rutas, Read Only, DSH_TELEMETRY_DISABLED=1, sin 👍/👎, sin computer-use ni browser-use.
 - Bloqueo real: cuota agotada en DeepSeek. No se evita con otra cuenta, otra clave ni otro modelo sin petición expresa de Marcos.
 - NO enviado: falta recargar la cuenta de DeepSeek (decisión de Marcos).
+- Revisor (27-oct noche): Marcos recargará la cuenta de DeepSeek él mismo, en la app o en platform.deepseek.com. Claude PC no pide ni pega claves ni datos de pago, y no genera claves nuevas. Cuando la app muestre cuota disponible, se envía la exportación de 166 archivos con las mismas condiciones.
+- Estado: esperando la recarga de Marcos. NO enviado.
