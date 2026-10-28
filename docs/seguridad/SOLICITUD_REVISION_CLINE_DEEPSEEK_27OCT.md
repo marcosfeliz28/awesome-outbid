@@ -53,3 +53,5 @@ Marcos pide ampliar el uso de DeepSeek Harness a auditor del software completo. 
 - Escáner de secretos: 320 coincidencias, casi todas contraseñas de prueba literales (p. ej. «FitStore-QA-2026!») en tests/api.test.ts y otras pruebas. No son credenciales de producción, pero según la condición del Revisor, si el escáner encuentra algo, NO se envía.
 - Pendiente de decisión: (a) el Revisor decide si las contraseñas de prueba se sustituyen por variables de entorno en la exportación, o se excluye tests/, o se autoriza su envío sabiendo que son de prueba; (b) entorno: VM desechable, o decisión escrita de Marcos para correr en la laptop.
 - Nada enviado a DeepSeek.
+- Segunda exportación (sin tests/, 27-oct noche): 173 archivos. Escáner: 1 coincidencia, `apps/api/src/common.ts:191`, `password: "contraseña"` — es la etiqueta de un campo, no una credencial (falso positivo). NO enviada: requiere autorización del Revisor para el falso positivo o renombrarla.
+- Decisión de Marcos «procede» (sin escrito explícito de riesgo para la laptop): pendiente de confirmación por escrito del riesgo de correr en la laptop sin VM.
