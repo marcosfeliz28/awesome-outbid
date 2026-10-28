@@ -241,3 +241,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - ChatGPT nube (libre): sin novedades desde at11 (1da4cae6).
 - DeepSeek: minimizado tras cada uso, según la regla de Marcos.
 - Petición de Marcos: pasar parte del diseño (las 118 h de Gemini) a DeepSeek. La distribución de carriles la decide Nexora 1; hasta su orden, DeepSeek no toca App.tsx ni styles.css.
+
+## DeepSeek D1 y D3 revisadas y subidas (28-oct, ~10:10 p. m. RD)
+- Rama: deepseek/d1-d3 (cb1f1b8b), desde origin/nexora-cloud (8641f3d8 o más nuevo). No mezclada.
+- Revisado por Claude PC: scripts/check-bundle.mjs (solo módulos de Node; sin red, sin env, sin dependencias); prueba: caso >1,90 MiB exit 1, caso pequeño exit 0; apps/web/package.json (una línea); docs/venta/ (precios marcados PROPUESTA; DGII con 21 puntos «verificar»).
+- Pendiente: 3 CI en verde antes de mezclar (Llaves). Sin mezcla ni despliegue por Claude PC.
