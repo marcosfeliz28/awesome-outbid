@@ -343,3 +343,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Órdenes nuevas para Claude PC que escriban código: ninguna.
 - Pantalla ChatGPT: no releída en este ciclo; no se escribió en ningún chat.
 - DeepSeek: sin ramas deepseek/* nuevas (última deepseek/d1-d3 cb1f1b8b).
+
+## Entregas de DeepSeek revisadas (28-oct, ~11:40 p. m. RD)
+- 17 ramas `deepseek/<id>` subidas a origin tras revisar archivos, rutas prohibidas, llamadas de red, variables de entorno y credenciales: d6, d9, d10, d12, d15, d17, d18, d21, d22, d25, d33, d46, d47, d48, d49, d50, d51.
+- Retenidas: d52 (lee variables de entorno y trae una contraseña literal), d34 (llama a nexorapos.net desde la página), d31 y d32 (precios que son PROPUESTA), pedido-f2-01 (se fusiona a mano). Motivos en PEDIDOS_DEEPSEEK.md.
+- D4, D26 y D45 siguen bloqueadas hasta que la mezcla de Fase 1 esté en producto-nexora (orden 26). Hoy no lo está.
