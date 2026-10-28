@@ -3,30 +3,39 @@
   z-index: 69;
   right: 16px;
   bottom: 16px;
-  min-height: 48px;
   min-width: 48px;
+  min-height: 48px;
   padding: 10px 18px;
-  border: 2px solid #a5f3fc;
+  border: 1px solid var(--accent-emerald);
   border-radius: 999px;
-  background: #12345a;
-  color: #fff;
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
+  color: #031712;
+  box-shadow: var(--shadow);
   font: inherit;
   font-weight: 700;
-  box-shadow: 0 4px 18px #0009;
   cursor: pointer;
 }
-/* `button:not(.button)` de styles.css (0,1,1) igualaba la regla y dejaba el botón sin fondo: texto blanco sobre blanco. */
+
+/* `button:not(.button)` de styles.css tiene la misma especificidad. */
 button.assistant-launcher.assistant-launcher {
-  border: 2px solid #a5f3fc;
-  background: #12345a;
+  border-color: var(--accent-emerald);
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
+  color: #031712;
 }
+
+.assistant-launcher:hover:not(:disabled) {
+  background: linear-gradient(115deg, #10b981, var(--accent-emerald));
+}
+
 .assistant-backdrop {
   position: fixed;
   z-index: 70;
   inset: 0;
   border: 0;
-  background: #000a;
+  background: var(--bg);
+  opacity: 0.78;
 }
+
 .assistant-panel {
   position: fixed;
   z-index: 71;
@@ -36,229 +45,388 @@ button.assistant-launcher.assistant-launcher {
   flex-direction: column;
   width: min(420px, calc(100vw - 24px));
   max-height: min(700px, calc(100dvh - 24px));
-  border: 2px solid #8acfe1;
-  border-radius: 18px;
-  background: #10253d;
-  color: #fff;
-  box-shadow: 0 10px 40px #000c;
+  overflow: hidden;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: var(--radius-lg);
+  background: var(--lumina-card);
+  color: var(--text);
+  box-shadow: var(--shadow);
 }
+
 .assistant-panel button {
   min-width: 44px;
   min-height: 44px;
-  border: 1px solid #9ee4f2;
-  border-radius: 9px;
-  background: #173f62;
-  color: #fff;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
   font: inherit;
+  font-weight: 650;
   cursor: pointer;
 }
+
+.assistant-panel button:hover:not(:disabled) {
+  border-color: var(--accent-violet);
+  background: var(--primary-soft);
+}
+
 .assistant-panel button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
 .assistant-panel button:focus-visible,
-.assistant-launcher:focus-visible {
-  outline: 3px solid #ffd166;
+.assistant-launcher:focus-visible,
+.assistant-panel textarea:focus-visible,
+.assistant-panel summary:focus-visible,
+.assistant-table:focus-visible {
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+
 .assistant-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
-  padding: 16px;
-  border-bottom: 1px solid #6289a0;
+  gap: 12px;
+  padding: 18px;
+  border-bottom: 1px solid var(--lumina-card-border);
+  background: var(--surface);
 }
+
 .assistant-header h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text);
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
   font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
+
 .assistant-header p {
   margin: 4px 0 0;
-  color: #e4f2fa;
+  color: var(--muted);
   font-size: 0.9rem;
 }
+
 .assistant-header button {
-  padding: 6px 10px;
+  border-color: var(--border);
+  background: var(--surface-soft);
+  color: var(--muted-on-soft);
 }
+
 .assistant-body {
   overflow-y: auto;
-  padding: 16px;
+  padding: 18px;
+  scrollbar-color: var(--border-strong) transparent;
 }
+
 .assistant-usage {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
   margin: 0 0 12px;
-  color: #e3f9ff;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted-on-soft);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
+
+.assistant-usage.is-warning,
+.assistant-usage.is-exhausted {
+  border-color: var(--alert-counter-border);
+  background: var(--warning-soft);
+  color: var(--warning-text);
+}
+
 .assistant-body [role="alert"] {
-  color: #fff;
-  background: #713238;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger-text);
 }
+
+.assistant-body details {
+  margin-block: 4px 12px;
+  border-block: 1px solid var(--border);
+}
+
+.assistant-body summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted-on-soft);
+  font-weight: 650;
+  cursor: pointer;
+}
+
 .assistant-messages {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   max-height: min(55dvh, 520px);
   overflow-y: auto;
+  padding: 2px;
 }
+
 .assistant-message {
   margin: 0;
-  padding: 10px;
-  border: 1px solid #789ab2;
-  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
   overflow-wrap: anywhere;
 }
+
 .assistant-message p,
 .assistant-message ul,
 .assistant-message ol {
   margin: 6px 0 0;
+  color: inherit;
   white-space: pre-line;
 }
+
 .assistant-message ul,
 .assistant-message ol {
   padding-left: 20px;
 }
+
 .assistant-author {
   display: block;
+  color: var(--muted-on-soft);
 }
+
 .assistant-table {
-  margin-top: 6px;
+  margin-top: 8px;
   overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
+
 .assistant-table table {
+  width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
 }
+
 .assistant-table th,
 .assistant-table td {
-  padding: 4px 8px;
-  border: 1px solid #6289a0;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--border);
   text-align: left;
+  white-space: nowrap;
 }
+
+.assistant-table th {
+  background: var(--surface-soft);
+  color: var(--muted-on-soft);
+}
+
+.assistant-table tr:last-child td {
+  border-bottom: 0;
+}
+
 .assistant-user {
-  background: #1a425f;
+  margin-left: 24px;
+  border-color: var(--lumina-card-border);
+  background: var(--primary-soft);
 }
+
 .assistant-assistant {
-  background: #18314a;
+  margin-right: 24px;
+  background: var(--surface-raised);
 }
+
 .assistant-proposal {
   margin-top: 12px;
   padding: 12px;
-  border: 2px solid #ffd166;
-  border-radius: 10px;
-  background: #2d3450;
+  border: 1px solid var(--alert-counter-border);
+  border-radius: var(--radius);
+  background: var(--warning-soft);
+  color: var(--warning-text);
 }
+
 .assistant-proposal p {
   margin: 0 0 10px;
+  color: inherit;
   overflow-wrap: anywhere;
 }
+
 .assistant-proposal div {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.assistant-proposal button:first-child {
+  border-color: var(--alert-counter-border);
+  color: var(--warning-text);
+}
+
 .assistant-examples {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin: 14px 0;
 }
-.assistant-examples .assistant-chip {
+
+.assistant-examples button {
   width: fit-content;
   max-width: 100%;
   min-height: 44px;
-  padding: 7px 12px;
+  padding: 10px;
+  border-color: var(--border);
   border-radius: 999px;
+  background: var(--surface-soft);
   text-align: left;
   line-height: 1.25;
 }
+
 .assistant-body form {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-top: 14px;
 }
+
 .assistant-body form label {
-  font-weight: 700;
+  color: var(--muted-on-soft);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
+
 .assistant-question-field {
   overflow: hidden;
-  border: 2px solid #9ee4f2;
-  border-radius: 9px;
-  background: #fff;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
 }
+
 .assistant-question-field:focus-within {
-  outline: 3px solid #ffd166;
-  outline-offset: 2px;
+  border-color: var(--accent-emerald);
+  box-shadow: 0 0 0 3px var(--lumina-violet-glow);
 }
+
 .assistant-body textarea {
   width: 100%;
-  min-height: 60px;
-  box-sizing: border-box;
+  min-height: 76px;
+  padding: 10px 12px;
   border: 0;
   border-radius: 0;
-  background: #fff;
-  color: #10253d;
+  background: var(--surface);
+  color: var(--text);
+  box-sizing: border-box;
   font: inherit;
-  padding: 8px;
   resize: none;
   outline: 0;
 }
-.assistant-body form button {
+
+.assistant-body textarea:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.assistant-body form button[type="submit"] {
   align-self: flex-end;
-  padding: 8px 14px;
+  border-color: var(--success-strong);
+  background: linear-gradient(115deg, var(--accent-emerald), #43e3b1);
+  color: #031712;
 }
-/* En el celular el botón sube por encima de la confirmación fija del POS. */
-@media (max-width: 900px) {
-  body:has(.pos-mobile-bar, .goods-mobile-bar, .goods-actions.has-items)
-    .assistant-launcher {
-    bottom: calc(88px + env(safe-area-inset-bottom));
-  }
+
+.assistant-body form button[type="submit"]:hover:not(:disabled) {
+  border-color: var(--accent-emerald);
+  background: linear-gradient(115deg, #10b981, var(--accent-emerald));
 }
-@media (max-width: 350px) {
-  .assistant-examples {
-    grid-template-columns: 1fr;
-  }
-  .assistant-header {
-    padding: 12px;
-  }
-  .assistant-body {
-    padding: 12px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .assistant-panel,
-  .assistant-launcher {
-    scroll-behavior: auto;
-    transition: none;
-    animation: none;
-  }
-}
-/* En celular la acción flota sobre la navegación fija, nunca sobre ella. */
-@media (max-width: 768px) {
-  body:has(.goods-actions.has-items) .assistant-launcher {
-    display: none;
-  }
-}
+
 /* Pregunta que llega desde una tarjeta del tablero: se revisa antes de enviar. */
 .assistant-context,
 .assistant-context-suggestion {
   margin: 0 0 14px;
   padding: 12px;
-  border: 1px solid #9ee4f2;
-  border-radius: 10px;
-  background: #173f62;
-  color: #fff;
+  border: 1px solid var(--lumina-card-border);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  color: var(--text);
   font-size: 0.9rem;
   line-height: 1.6;
 }
+
 .assistant-context-suggestion p {
   margin: 0;
+  color: inherit;
 }
+
 .assistant-context-suggestion button {
   margin: 8px 8px 0 0;
-  padding: 8px;
+}
+
+/* En celular el botón sube por encima de las barras fijas de abajo
+   (Mercancía, cobro del POS) para no taparlas. */
+@media (max-width: 900px) {
+  /* En caja el acceso forma parte del contenido, sin tapar controles al desplazarse. */
+  .pos-shell .assistant-launcher {
+    position: static;
+    display: block;
+    margin: 12px 16px 0 auto;
+  }
+  /* prettier-ignore -- la prueba de contrato reconoce este selector literal. */
+  body:has(.pos-mobile-bar, .goods-mobile-bar, .goods-actions.has-items)
+    .assistant-launcher,
+  body:has(.goods-mobile-bar, .pos-mobile-bar, .goods-actions.has-items)
+    .assistant-launcher {
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 768px) {
+  body:has(.goods-mobile-bar) .assistant-launcher {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  body:has(.goods-actions.has-items) .assistant-launcher,
+  body:has(.merchandise) .assistant-launcher {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .assistant-panel {
+    right: 8px;
+    bottom: 8px;
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: var(--radius);
+  }
+  .assistant-header,
+  .assistant-body {
+    padding: 12px;
+  }
+  .assistant-examples {
+    grid-template-columns: 1fr;
+  }
+  .assistant-user {
+    margin-left: 12px;
+  }
+  .assistant-assistant {
+    margin-right: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-panel,
+  .assistant-launcher,
+  .assistant-panel button {
+    scroll-behavior: auto;
+    transition: none;
+    animation: none;
+  }
 }

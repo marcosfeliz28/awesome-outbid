@@ -298,3 +298,154 @@ de contraste y foco y verificar los tres trabajos de CI del commit final. Las
 capturas no prueban inicio de sesión contra una API real. No se desplegó.
 
 LISTA: chatgpt-pc/visual-fase1-gemini 095bd39f6a9a36e14cba2ebcd3fdea5a8f47d788
+
+## Adentro · lote B (ChatGPT nube, 26-oct-2026)
+
+Rama `chatgpt-nube/lumina-adentro-b`, creada desde
+`origin/claude/producto-mezcla-4` en `8ae06d8d`. Alcance asignado: Catálogo,
+Inventario, Clientes, Reportes, Configuración, Mercancía/Equipos y Asistente.
+No incluye caja/POS, tablero «Hoy» ni marco de administración, que pertenecen a
+`chatgpt-pc/lumina-adentro-a`.
+
+### Preparación e inventario
+
+- Catálogo, Inventario, Clientes, Reportes y Configuración comparten
+  `Heading`, `Filter` y `DataTable` en `Management.tsx`, además de `Button`,
+  `Badge`, `Card`, `Field`, `TableFrame`, `Modal`, `Empty` y `Loading` de
+  `@fitstore/ui`. El lote B reutilizará las primitivas y extensiones publicadas
+  por ChatGPT PC; no añadirá un segundo sistema de componentes.
+- Mercancía conserva su selector Entrada/Salida, revisión previa, operación sin
+  conexión, escáner, lotes y barra móvil. Equipos conserva sus estados con
+  texto y color, aprobación, revocación y equipo actual.
+- El Asistente conserva diálogo, foco, cuota, apertura desde tarjetas,
+  confirmación de anulaciones, Markdown seguro y límites. Su cambio visual se
+  limita a sustituir colores directos por el tema compartido.
+- No se cambiarán APIs, permisos, cálculos, pagos, NCF/DGII, base de datos,
+  migraciones, Render ni despliegue.
+
+### Contratos visuales y móviles identificados
+
+- Una acción principal por vista; filtros y exportaciones quedan como acciones
+  secundarias.
+- Tablas numéricas con cifras tabulares, estados con texto además de color,
+  foco visible y regiones desplazables alcanzables por teclado.
+- A 390×844, Catálogo, Inventario y Clientes reutilizan el patrón de tarjetas
+  de `DataTable`; las tablas financieras de Reportes conservan columnas y
+  desplazamiento horizontal accesible.
+- Configuración, Mercancía, Equipos y Asistente no tendrán láser, halo ni
+  movimiento ambiental. `prefers-reduced-motion` continúa desactivando el
+  movimiento no esencial.
+
+### Base verificada antes de cambios visuales
+
+Con Node 24, pnpm 11 y Prisma generado para este checkout:
+
+- `pnpm typecheck`: aprobado.
+- `pnpm lint`: aprobado.
+- `pnpm build`: aprobado; Vite solo informa el aviso previo de tamaño de chunk.
+- `pnpm test`: 152 archivos aprobados y 1 omitido; 998 pruebas aprobadas y 10
+  omitidas. La evaluación local del asistente respondió 79/79 casos.
+
+### Integración con el lote A
+
+`origin/chatgpt-pc/lumina-adentro-a` quedó incorporada mediante el commit de
+mezcla `43e75b9e`. El lote B conserva su selector claro/oscuro, su marco y las
+primitivas existentes de `@fitstore/ui`; no introduce componentes paralelos.
+
+### Implementación terminada
+
+- **Catálogo:** título funcional, una acción principal, conteo y filtros en un
+  panel único, y tarjetas legibles a 390 px.
+- **Inventario:** filtros y Kardex ordenados, estado de existencias expresado
+  con texto y color, y depósitos dentro de `TableFrame` desplazables.
+- **Clientes:** directorio, conteo y búsqueda en una jerarquía única; en móvil
+  cada cliente pasa a tarjeta sin ocultar compras, gasto ni última compra.
+- **Reportes:** navegación lateral con nombre y estado actual, espacio de
+  trabajo flexible, filtros y exportaciones secundarios, y tablas financieras
+  desplazables en móvil.
+- **Configuración y Equipos:** pestañas, resumen del negocio y estados de los
+  equipos alineados con Lumina; «Editar configuración» es la única acción
+  principal del resumen. Se conserva sin cambios el comportamiento conocido de
+  «Guardar».
+- **Mercancía:** entrada/salida, proveedor, escáner, revisión e historial usan
+  las superficies compartidas; el modo activo conserva texto visible en tema
+  oscuro y «Confirmar» mantiene la prioridad.
+- **Asistente:** panel, mensajes, tablas, propuestas y formulario usan tokens
+  compartidos. El lanzador y «Enviar pregunta» usan el acento esmeralda; se
+  mantienen foco, cuota, preguntas desde tarjetas y Markdown seguro.
+
+No se modificaron reglas fiscales o financieras, permisos, autenticación,
+pagos, APIs, base de datos, migraciones ni flujos de negocio. Tampoco hubo
+despliegue ni acceso a Render.
+
+### Capturas comparativas
+
+`docs/diseno/obsidian-lumina/adentro/` contiene 28 PNG: `antes-*` y
+`despues-*` de Catálogo, Inventario, Clientes, Reportes, Configuración,
+Mercancía y Asistente, en 1366×768 y 390×844. Se generaron contra servidores
+locales con una empresa y datos simulados; no se usó el producto en vivo.
+
+La prueba visual `tests/e2e/lumina-adentro-b.spec.ts` valida ambas anchuras, el
+tema oscuro y que el documento no produzca desbordamiento horizontal. Las
+tablas que requieren varias columnas conservan su desplazamiento interno.
+
+### Revisión de Reportes, Configuración y Equipos (27-oct-2026)
+
+- **Reportes:** auditado en 1366×768 y 390×844. Conserva una sola selección
+  actual, grupos desplegables con `aria-expanded`, exportaciones secundarias,
+  cifras tabulares, tabla desplazable y estados de carga, error, vacío,
+  paginación y rango invertido. No necesitó cambios visuales. Las capturas
+  `auditoria-reportes-rango-invalido-*` dejan evidencia del subestado que
+  detiene la consulta y explica cómo corregir las fechas. La revisión
+  adversarial posterior cerró una inconsistencia de ese subestado: con un
+  rango invertido, Excel y PDF también quedan deshabilitados y el contador se
+  reemplaza por «Corrige las fechas», en vez de presentar cero registros como
+  si fuera un resultado válido.
+- **Configuración:** la estructura visual, el resumen y los subestados de
+  negocio, usuarios, bitácora y equipos ya cumplían la orden. Se añadió al
+  grupo de secciones un nombre accesible y cada botón ahora expone su estado
+  con `aria-pressed`, sin cambiar flujos ni permisos.
+- **Equipos:** se verificaron los estados Pendiente, Aprobado y Revocado con
+  texto y color, además del equipo actual y sus acciones existentes. La lista
+  ahora usa `Loading` y `Empty` compartidos mientras carga o cuando una empresa
+  todavía no registra equipos. Las capturas `auditoria-equipos-estados-*` y
+  `auditoria-equipos-vacio-*` cubren ambos temas de contenido a 1366 y 390 px.
+
+La prueba focal `tests/e2e/lumina-reportes-config.spec.ts` cubre estas tres
+áreas con datos locales simulados: 2/2 escenarios aprobados. También pasaron
+el typecheck y build web, ESLint, las 36 pruebas del contrato de accesibilidad
+y las 12 pruebas de marca del producto. No se consultó el producto en vivo ni
+se cambiaron API, base de datos, pagos, reglas fiscales o permisos.
+
+### Verificación final
+
+- `pnpm typecheck`, `pnpm lint` y `pnpm build`: aprobados. Vite conserva el
+  aviso informativo previo por un chunk mayor de 500 kB.
+- Suite completa: 152 archivos y 998 pruebas aprobadas; 1 archivo y 10 pruebas
+  omitidas por su configuración explícita.
+- Pruebas focales de accesibilidad, Asistente y contratos Lumina: 84/84
+  aprobadas; pruebas focales de las siete áreas: 128/128 aprobadas.
+- Inventario a 390 px: 5/5 escenarios e2e aprobados.
+- Capturas y contrato visual del lote B: 2/2 escenarios e2e aprobados, tanto
+  sobre la base anterior como sobre el resultado.
+- La e2e general `accesibilidad.spec.ts` requiere API local en el puerto 3001;
+  al ejecutar solo la previsualización web su preparación termina con
+  `ECONNREFUSED`. El contrato estático de accesibilidad sí quedó aprobado
+  (36/36) y la revisión visual confirma foco visible, contraste y navegación
+  móvil en el alcance de este lote.
+# Tokens visuales · 27-oct-2026
+
+La rama `chatgpt-pc/visual-tokens-27oct` integra las bases de #16, #11, #13 y
+#14 en una copia aislada y consolida las variables raíz de cada tema, conservando
+los valores efectivos anteriores. La prueba nueva falló antes: esperaba un
+`:root` y encontró tres; después pasó. Las 55 pruebas focales de tokens,
+accesibilidad y Lumina y ESLint pasaron; el build web también. La integración
+base tiene `verify` rojo por desbordes a 320 px: esta entrega no certifica que
+esos fallos estén corregidos. Capturas y CI del último SHA pendientes.
+# Marco Lumina · movimiento, 27-oct-2026
+
+En `chatgpt-pc/visual-marco-27oct` se ajusta la línea decorativa de la cabecera
+para que se anime una sola vez por carga y siga apagada con movimiento reducido.
+La prueba falló antes porque la animación era infinita y pasó después; pasan 56
+pruebas focales y ESLint. Este cambio no constituye el rediseño completo del
+marco: capturas, navegación accesible y CI aún pendientes de revisión.

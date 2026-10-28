@@ -27,6 +27,11 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+.dashboard-freshness button:focus-visible,
+.nexora-card-question:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
 .executive-period {
   font-size: 12px;
   color: var(--muted);
@@ -42,6 +47,18 @@
   display: flex;
   flex-direction: column;
   padding: 22px;
+  position: relative;
+  overflow: hidden;
+}
+.executive-metric::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 22px;
+  left: 22px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-violet), var(--accent-emerald), transparent);
+  opacity: .85;
 }
 .executive-metric h2 {
   font-size: 13px;
@@ -57,6 +74,7 @@
   overflow-wrap: anywhere;
   margin-top: 10px;
   font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 .executive-metric > p {
   color: var(--muted);
@@ -96,6 +114,9 @@
 }
 :is(.daily-brief, .intelligent-alerts) {
   padding: 24px;
+  background:
+    radial-gradient(circle at 100% 0, var(--primary-soft), transparent 34%),
+    var(--surface);
 }
 .executive-card-heading {
   display: flex;
@@ -120,6 +141,10 @@
   font-size: 17px;
   line-height: 1.8;
   margin: 0 0 12px;
+}
+.daily-brief-facts strong {
+  color: var(--accent-emerald);
+  font-variant-numeric: tabular-nums;
 }
 .executive-source {
   display: block;
@@ -151,6 +176,9 @@
   padding: 16px;
   margin-top: 16px;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.intelligent-alerts .badge {
+  border: 1px solid var(--border);
 }
 .daily-ai-answer .daily-ai-text {
   overflow-wrap: anywhere;

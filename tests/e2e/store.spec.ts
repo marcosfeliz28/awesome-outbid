@@ -897,7 +897,11 @@ test("R9-codigos-2 y R9-codigos-3: Mercancía reconoce el código sin distinguir
   await quick.getByRole("button", { name: "Cancelar" }).click();
   await expect(lines).not.toContainText("Faja E2E duplicada");
   // Salida: la etiqueta también se reconoce (antes: «Código desconocido»).
-  await page.getByRole("tab", { name: /SALIDA/ }).click();
+  const salida = page
+    .getByRole("group", { name: "Tipo de movimiento" })
+    .getByRole("button", { name: "SALIDA", exact: true });
+  await salida.click();
+  await expect(salida).toHaveAttribute("aria-pressed", "true");
   await scan("R9M-E-" + tag);
   await expect(lines).toContainText("Faja E2E Mercancía E " + tag);
   await expect(page.getByText(/Código desconocido/)).toHaveCount(0);

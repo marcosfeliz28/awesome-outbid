@@ -14,6 +14,40 @@ const actor = (permissions: string[], id = "cashier-1") =>
   }) as any;
 
 describe("C2 · privacidad de arqueo por rutas indirectas", () => {
+  it("el dashboard conserva el orden de vendedoras empatadas aunque PostgreSQL cambie el orden", async () => {
+    const zero = {
+      _sum: { total: 0, taxTotal: 0, costTotal: 0, amount: 0, feeAmount: 0 },
+      _count: 0,
+    };
+    let reverse = false;
+    const db = {
+      cashSession: { findMany: async () => [] },
+      sale: { aggregate: async () => zero },
+      saleReturn: { aggregate: async () => zero, findMany: async () => [] },
+      expense: { aggregate: async () => zero },
+      payment: { aggregate: async () => zero, groupBy: async () => [] },
+      alert: { findMany: async () => [] },
+      $queryRaw: async (strings: TemplateStringsArray) => {
+        if (strings.join("").includes('JOIN "User" u ON u.id=s."sellerId"')) {
+          const rows = [
+            { name: "Zoe", total: 1200 },
+            { name: "Ana", total: 1200 },
+          ];
+          return reverse ? rows.reverse() : rows;
+        }
+        return [];
+      },
+    };
+    const controller = new ReportsController(db as any);
+    const first: any = await controller.dashboard({}, actor(["reports:read"]));
+    reverse = true;
+    const second: any = await controller.dashboard({}, actor(["reports:read"]));
+    expect(first.sellers).toEqual([
+      { name: "Ana", total: 1200 },
+      { name: "Zoe", total: 1200 },
+    ]);
+    expect(second.sellers).toEqual(first.sellers);
+  });
   it("B4: rechaza un retiro sin efectivo suficiente sin revelar cifras", async () => {
     let created = false;
     const session = {

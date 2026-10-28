@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
+import { EmptyIllustration } from "./EmptyIllustration";
 import { DEFAULT_COURIER, PRODUCT_MODE } from "./productTenancy";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1180,7 +1181,7 @@ export function POS({ go }: { go: (page: string) => void }) {
             ))
           ) : (
             <div className="cart-empty-state">
-              <ShoppingCart size={34} aria-hidden="true" />
+              <EmptyIllustration kind="carrito" />
               <strong>Carrito vacío</strong>
               <span>Escanea o busca un artículo</span>
             </div>

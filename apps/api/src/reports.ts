@@ -586,7 +586,14 @@ export class ReportsController {
         })),
         sellers: [...sellersNet]
           .map(([name, total]) => ({ name, total: money(total) }))
-          .sort(byAmount),
+          // El orden SQL no define los empates; estabilizarlos también tras
+          // descontar devoluciones evita que el ranking cambie entre lecturas.
+          .sort(
+            (a, b) =>
+              byAmount(a, b) ||
+              a.name.localeCompare(b.name, "es") ||
+              (a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
+          ),
         alerts: alerts.map((alert) => alertForActor(alert, actor)),
         from: range.gte,
         to: range.lte,

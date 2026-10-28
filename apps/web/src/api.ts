@@ -109,6 +109,7 @@ export const useStore = create<{
   setCustomer: (id: string | null) => void;
   setDiscount: (percent: number) => void;
   setOnline: (online: boolean) => void;
+  setTheme: (theme: "light" | "dark") => void;
   toggleTheme: () => void;
 }>((set) => ({
   user: null,
@@ -154,6 +155,10 @@ export const useStore = create<{
   setCustomer: (customerId) => set({ customerId }),
   setDiscount: (globalDiscount) => set({ globalDiscount }),
   setOnline: (online) => set({ online }),
+  setTheme: (theme) => {
+    localStorage.setItem("fitstore-theme", theme);
+    set({ theme });
+  },
   toggleTheme: () =>
     set((state) => {
       const theme = state.theme === "light" ? "dark" : "light";

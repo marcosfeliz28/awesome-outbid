@@ -775,6 +775,7 @@ describe("IA · las respuestas fallidas no se cobran", () => {
 });
 
 describe("IA · web: markdown seguro y botón sin tapar la barra", () => {
+  const assistant = readFileSync(resolve("apps/web/src/Assistant.tsx"), "utf8");
   const webRequire = createRequire(resolve("apps/web/package.json"));
   const { createElement, Fragment } = webRequire(
     "react",
@@ -815,7 +816,32 @@ describe("IA · web: markdown seguro y botón sin tapar la barra", () => {
     expect(app).toContain("goods-mobile-bar");
     const styles = readFileSync(resolve("apps/web/src/styles.css"), "utf8");
     expect(styles).toMatch(/\.app-shell:has\(\.goods-mobile-bar\) \.main-content \{[\s\S]*padding-bottom: calc\(176px \+ env\(safe-area-inset-bottom\)\)/);
-    expect(css).toMatch(/body:has\(\.pos-mobile-bar, \.goods-mobile-bar,[^)]*\)[\s\S]*bottom: calc\(88px/);
+    expect(css).toMatch(
+      /@media \(max-width: 900px\)[\s\S]*body:has\(\.goods-mobile-bar, \.pos-mobile-bar[^)]*\)\s+\.assistant-launcher\s*\{\s*bottom: calc\(88px/,
+    );
+  });
+  it("a 390px el lanzador no tapa controles de Mercancía durante el scroll", () => {
+    const css = readFileSync(resolve("apps/web/src/Assistant.css"), "utf8");
+    const sharedCss = readFileSync(resolve("apps/web/src/styles.css"), "utf8");
+    const merchandise = readFileSync(
+      resolve("apps/web/src/Merchandise.tsx"),
+      "utf8",
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 768px\)[\s\S]*body:has\(\.merchandise\) \.assistant-launcher\s*\{\s*display: none/,
+    );
+    expect(merchandise).toContain('className="goods-assistant-inline"');
+    expect(merchandise).toContain("{assistantAvailable && (");
+    expect(merchandise).toContain('new CustomEvent("nexora:abrir-asistente"');
+    expect(sharedCss).toMatch(
+      /@media \(max-width: 768px\)[\s\S]*\.goods-assistant-inline\s*\{[\s\S]*display: inline-flex !important/,
+    );
+  });
+  it("la cuota deja de anunciar carga cuando falta internet o falla la consulta", () => {
+    expect(assistant).toContain("Cuota no disponible sin conexión");
+    expect(assistant).toContain("No pudimos consultar tu cuota");
+    expect(assistant).toContain("cuota agotada");
+    expect(assistant).toContain('aria-label="Cuota de Pregúntale a Nexora"');
   });
 });
 
