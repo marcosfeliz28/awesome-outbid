@@ -1,4 +1,4 @@
-/* capa 1: base · valores crudos, sin nombre de uso */
+/* capa 1: base */
 :root {
   --nx-base-blanco: #ffffff;
   --nx-base-negro: #0b0b12;
@@ -7,7 +7,7 @@
   --nx-base-azul: #3b82f6;
 }
 
-/* capa 2: semántica · significado de uso, referencia la capa 1 */
+/* capa 2: semántica */
 :root {
   --nx-fondo: var(--nx-base-blanco);
   --nx-texto: var(--nx-base-negro);
@@ -16,7 +16,7 @@
   --nx-info: var(--nx-base-azul);
 }
 
-/* capa 3: componente · lo que consume cada primitivo */
+/* capa 3: componente */
 :root {
   --nx-boton-fondo: var(--nx-acento);
   --nx-boton-texto: var(--nx-base-blanco);
