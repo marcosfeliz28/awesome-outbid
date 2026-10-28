@@ -500,3 +500,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
 - Descarga del modelo: sigue parada, pendiente de decisión de Marcos.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en 15baa833. RESPUESTA_CLAUDE_PC_27OCT.md blob 8d4b680c. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- ORDEN 31 (nueva): plugins del reel (Superpowers, Matt Pocock Skills, ECC, Karpathy Skills, Agent Skills). Nada se instala todavía: el Revisor audita cada uno con commit fijado y huella en plugins.lock.json. Claude PC instala solo los que el Revisor apruebe «para Claude PC», con Marcos presente y un plugin a la vez. ECC queda solo para Taller.
+- Nexora 1 mezcló en nexora-cloud: deepseek/d12 (0651ebc0) y deepseek/d15 (456de09e). Sin LISTA nueva para Claude PC.
+- CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+- Descarga del modelo: sigue parada, pendiente de decisión de Marcos.
