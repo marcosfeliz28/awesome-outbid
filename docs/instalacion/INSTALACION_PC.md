@@ -47,3 +47,10 @@ Revisar la salida de la prueba que falló. No está documentado en el repo un pr
 
 ---
 **Cierre de D7:** pendiente. Requiere una prueba completa en una PC limpia.
+
+## 8. Resultado de la prueba en esta PC (28-oct, verificado)
+- **Preparación** (`pnpm instalador:preparar`): correcta desde una ruta corta (`C:\nxp`). Descarga Node 24.21.0, PostgreSQL 18.6, WinSW 2.12.0 y Visual C++ Redistributable (`vc_redist.x64.exe`), todos desde su sitio oficial.
+- **Fallo confirmado desde una ruta larga:** con el repo en una ruta profunda, el paso de manifiesto (`instalador/build.ps1`, línea 344) falla con «Could not find a part of the path»: es el límite de 260 caracteres de Windows. Solución en la guía: trabajar desde una ruta corta, o habilitar rutas largas (cambio de sistema, requiere Administrador: [POR CONFIRMAR]).
+- **Compilación** (`pnpm instalador:compilar`): correcta. Genera `instalador\dist\Nexora-POS-Setup-0.1.1-prueba.exe` (141,7 MB) y su `.sha256`. El hash del archivo coincide con el `.sha256`.
+- **Pruebas de contrato sin SQL** (`installer-session`, `web-server`, `deploy-lock`, `recovery-error-contract`, `recovery-documentation`): 19 pasan, 0 fallan.
+- **No ejecutado aquí:** las pruebas en PowerShell de `run-validation.mjs` (incluyen SQL real y servicios) y la instalación del `.exe`. Eso queda para una PC limpia o una máquina virtual.

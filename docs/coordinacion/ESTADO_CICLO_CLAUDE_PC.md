@@ -653,3 +653,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - F2-01 (claude-pc/visual-f2-01): 12 primitivos definidos en docs/diseno/AUDITORIA_GEMINI_VISUAL_27OCT.md (§ 1-12). Hechos: tokens en tres capas (72f5917b, a5845333) y NxMoney (formatDOP, 8b53dc1a y 7efdb784). Faltan 11 primitivos y capturas.
 - CI en verde (pc23, a1, b01, lumina) sin cambios. Sin LISTA nueva: F2-01 aún no tiene su CI.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## D7 · prueba del instalador en esta PC (28-oct)
+- Preparación y compilación correctas desde `C:\nxp` (ruta corta). Instalador generado: `instalador\dist\Nexora-POS-Setup-0.1.1-prueba.exe` (141,7 MB), hash verificado.
+- Fallo real desde una ruta larga: límite de 260 caracteres de Windows en `build.ps1` línea 344. Documentado en D7.
+- Pruebas de contrato sin SQL: 19 pasan, 0 fallan. Pruebas PowerShell y la instalación quedan para PC limpia o máquina virtual.
