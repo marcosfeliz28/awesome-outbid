@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estado del servicio — Nexora POS</title>
+  <meta name="description" content="Estado de Nexora POS." />
+  <link rel="stylesheet" href="landing.css" />
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="index.html"><span class="dot"></span> Nexora POS</a>
+      <nav class="nav-links" aria-label="Principal">
+        <a href="index.html">Inicio</a>
+        <a href="precios.html">Precios</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" style="max-width:640px">
+    <section>
+      <span class="eyebrow" style="color:var(--amber)">Estado</span>
+      <h1 style="font-size:clamp(26px,4vw,40px)">¿Está funcionando Nexora?</h1>
+      <p style="color:var(--muted)">Consultamos el producto con un solo
+        <code>GET https://nexorapos.net/api/health</code>, sin credenciales ni
+        cookies. No consultamos la tienda.</p>
+
+      <div id="status" class="benefit" style="margin-top:24px">
+        <div class="icon">⏳</div>
+        <h3 id="status-title">Consultando…</h3>
+        <p id="status-detail">Esperando respuesta del servicio (máximo 5 segundos).</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap"><p>© 2026 Nexora POS</p></div>
+  </footer>
+
+  <script>
+    // Sin dependencias. Solo una llamada a la salud del producto:
+    // GET https://nexorapos.net/api/health, sin credenciales ni cookies,
+    // con un límite de 5 s. No se consulta ninguna otra ruta ni la tienda.
+    (function () {
+      var status = document.getElementById("status");
+      var title = document.getElementById("status-title");
+      var detail = document.getElementById("status-detail");
+
+      function render(state, message) {
+        status.style.borderColor =
+          state === "ok" ? "var(--green)" : "var(--amber)";
+        title.textContent =
+          state === "ok" ? "Todo en orden" : "No se pudo confirmar";
+        detail.textContent = message;
+      }
+
+      var controller = new AbortController();
+      var timeout = setTimeout(function () { controller.abort(); }, 5000);
+
+      fetch("https://nexorapos.net/api/health", {
+        method: "GET",
+        signal: controller.signal,
+        credentials: "omit",
+        cache: "no-store",
+      })
+        .then(function (r) {
+          clearTimeout(timeout);
+          if (r.ok) {
+            render("ok", "El servicio responde correctamente.");
+          } else {
+            render(
+              "fail",
+              "El servicio respondió con un error (HTTP " + r.status + ")."
+            );
+          }
+        })
+        .catch(function (err) {
+          clearTimeout(timeout);
+          var blocked = err && err.name === "AbortError";
+          if (blocked) {
+            render(
+              "fail",
+              "La consulta tardó más de 5 segundos y se detuvo. Inténtalo de nuevo."
+            );
+          } else {
+            render(
+              "fail",
+              "No se pudo consultar el servicio. Puede ser un bloqueo de CORS " +
+                "(el servidor no autoriza esta página) o una caída temporal. " +
+                "Inténtalo de nuevo en unos minutos."
+            );
+          }
+        });
+    })();
+  </script>
+</body>
+</html>
