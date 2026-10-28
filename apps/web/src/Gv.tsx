@@ -632,6 +632,23 @@ function EnrollmentForm({
 }
 
 function PaymentList({ enrollment }: { enrollment: Enrollment }) {
+  const client = useQueryClient();
+  const user = useStore((s) => s.user);
+  const canVoid = can(user?.permissions ?? [], "gv:write");
+  // Anular un pago equivocado con razón; se registra el correcto aparte.
+  const voidPayment = async (p: Payment) => {
+    const reason = prompt("¿Por qué se anula este pago?");
+    if (!reason || reason.trim().length < 3) return;
+    try {
+      await post("/gv/payments/" + p.id + "/void", { reason });
+      toast("Pago anulado.");
+      await client.invalidateQueries({ queryKey: ["gv-course"] });
+      await client.invalidateQueries({ queryKey: ["gv-courses"] });
+      await client.invalidateQueries({ queryKey: ["gv-appointments"] });
+    } catch (cause: any) {
+      toast(cause.message, true);
+    }
+  };
   if (!enrollment.payments.length)
     return <p className="full">Sin pagos todavía.</p>;
   return (
@@ -655,6 +672,15 @@ function PaymentList({ enrollment }: { enrollment: Enrollment }) {
             )}
           </span>
           {p.createdByName && <small>Registró: {p.createdByName}</small>}
+          {canVoid && !p.rejectedAt && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => voidPayment(p)}
+            >
+              Anular
+            </Button>
+          )}
         </div>
       ))}
     </div>
