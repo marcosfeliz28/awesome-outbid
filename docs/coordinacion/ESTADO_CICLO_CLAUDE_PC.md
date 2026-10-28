@@ -647,3 +647,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente: tokens en tres capas, primitivos uno por uno con prueba, capturas 390/1440 claro y oscuro.
 - CI en verde (pc23, a1, b01, lumina) sin cambios. Sin LISTA nueva.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en 1dcd0ccd (sin cambios). RESPUESTA blob 4a156065 (orden 36 vigente).
+- F2-01 (claude-pc/visual-f2-01): 12 primitivos definidos en docs/diseno/AUDITORIA_GEMINI_VISUAL_27OCT.md (§ 1-12). Hechos: tokens en tres capas (72f5917b, a5845333) y NxMoney (formatDOP, 8b53dc1a y 7efdb784). Faltan 11 primitivos y capturas.
+- CI en verde (pc23, a1, b01, lumina) sin cambios. Sin LISTA nueva: F2-01 aún no tiene su CI.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
