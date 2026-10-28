@@ -33,6 +33,7 @@ import {
   type Variant,
 } from "./api";
 import { FormModal, attrLabel, toast } from "./helpers";
+import "./Mercancia.css";
 import { registerTerminal } from "./realtime";
 import { Barcode } from "./Management";
 import {

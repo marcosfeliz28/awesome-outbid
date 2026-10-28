@@ -1,0 +1,122 @@
+/* Mercancia.css — presentación de la pantalla de Mercancía (D49).
+   Solo presentación; no cambia ninguna operación de mercancía (entradas,
+   salidas, traspasos ni ajustes). Importado desde Merchandise.tsx; usa los
+   tokens de styles.css. */
+
+.merchandise {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1366px;
+  margin: 0 auto;
+}
+
+/* Encabezado con pestañas de ENTRADA / SALIDA. */
+.goods-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.goods-mode {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+}
+
+.goods-mode button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.goods-mode button.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.goods-mode button.active.exit {
+  background: var(--warning-text);
+  color: #fff;
+}
+
+/* Aviso de éxito al registrar un movimiento. */
+.goods-done {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--positive-text);
+  background: var(--surface);
+}
+
+/* Formulario de entrada/salida. */
+.goods-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.goods-card {
+  padding: 18px;
+}
+
+/* Estados vacío / carga / error. */
+.goods-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.goods-empty strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.goods-error {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--danger-text);
+  color: var(--danger-text);
+  background: var(--surface);
+}
+
+/* Responsive: 390px (móvil) y 1366px (escritorio). */
+@media (max-width: 720px) {
+  .goods-grid {
+    grid-template-columns: 1fr;
+  }
+  .goods-header {
+    align-items: stretch;
+  }
+  .goods-mode {
+    width: 100%;
+  }
+  .goods-mode button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .goods-card {
+    padding: 14px;
+  }
+}
