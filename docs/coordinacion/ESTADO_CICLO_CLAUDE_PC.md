@@ -430,3 +430,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Órdenes nuevas para Claude PC que escriban código: ninguna.
 - ChatGPT: fuera de trabajo por decisión de la dueña; no se abrió en este ciclo.
 - Lote 2 (D7, guía de instalación): preparado en claude-pc/cola2-26oct (abb2fefd), pendiente de DeepSeek web.
+
+## Ciclo (28-oct, siguiente ciclo autónomo)
+- Fetch: nexora-cloud sin cambios (226bd960). RESPUESTA_CLAUDE_PC_27OCT.md blob ab5c5ebd (sin orden nueva). OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 35b20a2d.
+- CI: sin cambios. aab91c9a con verify en rojo (confirmado, sin relanzar; tarea 0.1 pendiente de DeepSeek). pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- Órdenes nuevas para Claude PC que escriban código: ninguna.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
