@@ -275,3 +275,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Ventanas: ChatGPT minimizada tras la lectura.
 - D46 (benchmark DeepSeek): sigue sin docs/venta/BENCHMARK_20_PLATAFORMAS.md en la carpeta de trabajo.
 - Sin cambios de nexora-cloud ni producto-nexora. Sin despliegue.
+
+## Cola de Nexora 1 (28-oct, ~10:45 p. m. RD)
+- Texto 2 (ChatGPT PC) pegado en el chat «Implementa Fase 1 visual». Asumido como `V-visual-fase1`: el nombre exacto no se leyó en pantalla. Sin confirmación de que el mensaje quedó registrado; el chat mostró estado de trabajo tras el envío.
+- Texto 3 (DeepSeek) pegado en sesión NUEVA (Workspace Write). La sesión «Benchmark 20 plataformas» seguía con D46 y no se tocó. D46 ahora corre en dos sesiones.
+- Limpieza de contraseñas en tests (`claude-pc/tests-sin-literales`): no hecha, por decisión de Marcos. 47 archivos en tests/ con literales, más scripts en docs/validacion con la misma clave.
+- D46: `docs/venta/BENCHMARK_20_PLATAFORMAS.md` existe en la carpeta de trabajo. NO subido: la fila «Nexora POS (asumido)» marca como S funciones sin verificar; las rutas de la sección (e) no existen en este repo; la sección (d) mezcla hechos con opinión. Correcciones pedidas en `PEDIDOS_DEEPSEEK.md`.
+- `docs/coordinacion/PEDIDOS_DEEPSEEK.md` creado (commit 05a3c3c3). Sin pedidos de herramientas aún.
+- Diffs de DeepSeek ya en `deepseek/d1-d3` (cb1f1b8b): revisados en ciclos anteriores; CI en verde.
+- Sin pedidos de skills ni plugins de DeepSeek. Ninguna instalación.
