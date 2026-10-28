@@ -108,3 +108,10 @@ Los otros 58 nombres «duros» con N (Norex, Norvex, Nerox, Norvax, Nortex, Nora
 
 **Orden actual:** 1) **Norexor** (único con N, sonido fuerte y dominios libres; riesgo medio) · 2) **Rifivo / Lepafi / Vemifi** (riesgo bajo en la web, sin N, hay que rehacer el logotipo) · Norelna y Nexora descartados.
 Límite: todo es búsqueda web en agregadores; falta la búsqueda formal del abogado.
+
+## Propuesta de la dueña: «Norexos» (28-oct)
+- Dominios (registro oficial, 28-oct): `norexos.com`, `.net`, `.app` y `.ai` **libres** (no registrados en este momento).
+- Búsqueda web (2 consultas, sin bases oficiales): **ningún software, empresa ni marca con ese nombre exacto**. Parecidos: **Nexosis** (software, 2015), **Nexios** (TI, Australia), **Norexa** (cripto), **Norex** (acero/marcas antiguas), Orexo AB (farmacéutica).
+- Riesgo estimado: **medio**, similar a Norexor; sin hallazgo directo. Pendiente: búsqueda formal (clases 9, 35, 42).
+- Ventajas: empieza con N (conserva logotipo y diseño), suena duro por la «X», termina en «-os» (se lee «Norex OS», encaja con una plataforma), pronunciación estable en inglés y español.
+**Orden actual:** 1) Norexos · 2) Norexor · 3) Rifivo/Lepafi/Vemifi (sin N). Norelna y Nexora descartados.
