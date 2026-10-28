@@ -522,3 +522,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Karpathy Skills (multica-ai/andrej-karpathy-skills @ 2c60614): texto copiado a `C:\Users\marco\.claude\CLAUDE.md` con marca de origen. No se usó `/plugin install`.
 - Hallazgo: el README del commit dice instalar desde `forrestchang/andrej-karpathy-skills`, distinto del repo auditado. Por eso se usó la copia de texto.
 - Pendientes: Matt Pocock, Agent Skills, Superpowers (comandos `/plugin` que corre Marcos); claude-code-setup 1.0.0 sin verificar por el Revisor.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en 80d4d3a4 (ronda de nombres con N; sin órdenes nuevas para Claude PC). RESPUESTA_CLAUDE_PC_27OCT.md blob a401b6d8 (sin cambios para Claude PC). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
+- Órdenes nuevas para Claude PC que escriban código: ninguna.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+- Ollama: sin modelos instalados todavía. El reintento de deepseek-r1:7b sigue en curso.
