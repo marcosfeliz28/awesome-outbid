@@ -508,3 +508,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
 - Descarga del modelo: sigue parada, pendiente de decisión de Marcos.
+
+## Ciclo (28-oct, ciclo automático)
+- Fetch: nexora-cloud en ae219dea. RESPUESTA_CLAUDE_PC_27OCT.md blob f8fcd5e3. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- ORDEN 32 (nueva): instalar en la PC los skills del reel, uno a la vez (Karpathy, Matt Pocock, Agent Skills, Superpowers y, al final, ECC solo si la dueña lo confirma de nuevo), con la dueña presente. Antes de instalar, leer el contenido de cada repo; si trae hooks, scripts, npx, curl|sh, red o variables de entorno, no instalar.
+- CONFLICTO sin resolver: la orden 31 dice que nada se instala hasta que el Revisor apruebe «para Claude PC»; la orden 32 dice que se instale, y que el Revisor revisa después. Además, instalar requiere que la dueña esté presente, y hoy no lo está. No instalo nada. Pendiente de decisión de Marcos.
+- Leer el contenido de los repos implica descargarlos; eso también necesita permiso de Marcos.
+- CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion. Sin LISTA nueva.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+- Descarga del modelo: sigue parada, pendiente de decisión de Marcos.
