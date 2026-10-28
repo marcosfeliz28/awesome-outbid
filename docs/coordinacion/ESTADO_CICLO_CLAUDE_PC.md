@@ -233,3 +233,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - RESPUESTA_CLAUDE_PC_27OCT.md: cambió a 1aa99c5e (orden 19, ya leída; pendiente de decisiones de Marcos). OBSIDIAN_LUMINA_PROGRESO.md: sin cambios.
 - CI: claude-pc/qa-bajos (d9d79664) verify en rojo. pc23, a1, b01 y 287db57e en verde. Sin LISTA nueva.
 - Pantalla: no se pudo leer la app de ChatGPT en este ciclo; la ventana de DeepSeek aparece en blanco y el foco está en el navegador. No escribí en ningún chat. Pendiente de la próxima pasada.
+
+## Ciclo (28-oct, ~9:35 p. m. RD) · redistribución de diseño
+- LISTA verificada: chatgpt-pc/visual-integracion-27oct 120e4a06 (3 CI en verde).
+- ChatGPT PC («Instala el documento»): reporta carrito sin carrera y prueba de SALIDA alineada; sigue la portada y la verificación final. Libre.
+- ChatGPT PC («Implementa Fase 1 visual»): en curso.
+- ChatGPT nube (libre): sin novedades desde at11 (1da4cae6).
+- DeepSeek: minimizado tras cada uso, según la regla de Marcos.
+- Petición de Marcos: pasar parte del diseño (las 118 h de Gemini) a DeepSeek. La distribución de carriles la decide Nexora 1; hasta su orden, DeepSeek no toca App.tsx ni styles.css.

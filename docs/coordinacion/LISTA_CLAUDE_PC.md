@@ -8,3 +8,4 @@ LISTA: chatgpt-nube/fase4-marca-producto 1b2c2318 (CI verificado por Claude PC: 
 LISTA: chatgpt-nube/fase3 305fb0ab (CI verificado por Claude PC: verify, windows-installer y render-images en verde; rama de ChatGPT nube)
 LISTA: claude-pc/b01-tienda e9ce12e0 (verify, windows-installer y render-images en verde; B-01 para la tienda sin asistente, arnés reescrito, bandera apagada)
 LISTA: chatgpt-nube/at11-postgres-estable 1da4cae6 (verify, windows-installer y render-images en verde; verificado por Claude PC; rebasada sobre at04 y producto 78888542)
+LISTA: chatgpt-pc/visual-integracion-27oct 120e4a06 (verify, windows-installer y render-images en verde; verificado por Claude PC; ChatGPT PC reporta correcciones de carrera en el carrito y de la prueba de SALIDA)
