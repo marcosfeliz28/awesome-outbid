@@ -12,6 +12,7 @@ import { Actor, audit, bad } from "./common";
 
 export const GV_CONCEPTS = [
   "separo",
+  "completo",
   "restante",
   "segundo",
   "tercero",

@@ -59,6 +59,7 @@ const STATUS: Record<string, string> = {
 };
 const CONCEPTS: Record<string, string> = {
   separo: "Separo",
+  completo: "Pago completo",
   restante: "Restante",
   segundo: "Segundo pago",
   tercero: "Tercer pago",

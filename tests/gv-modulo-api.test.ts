@@ -190,7 +190,11 @@ describe("GV · banco de lista y anular pago", () => {
     const course = (await newCourse(gv)).body;
     courseIds.push(course.id);
     const e = await enroll(course.id, 3000, "Banco");
-    const paid = await ok("/gv/payments", gv, transferBody(e.id, 100));
+    const paid = await ok("/gv/payments", gv, {
+      ...transferBody(e.id, 100),
+      concept: "completo",
+    });
+    expect(paid.concept).toBe("completo");
     // Sin razón no se anula; con razón, sí, y deja de contar.
     expect(
       (await request("/gv/payments/" + paid.id + "/void", gv, {})).status,
