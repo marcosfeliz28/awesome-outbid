@@ -40,3 +40,6 @@ Margen = (precio − costo)/precio **sin restar ITBIS**, mínimo 15 %. No cambia
 
 ## Cómo entrar al sistema sin imprimir nada
 `docs/coordinacion/claude-nube/entrar.py` (lee NEXORA_CLAUDE_USER/NEXORA_CLAUDE_PASSWORD del entorno o su archivo local). Reportes: `reportes.py diario|anomalias`. Mercancía: `mercancia.py` con bitácora `docs/operacion/bitacora-mercancia.jsonl`. Filtro correcto de ventas: `/sales?date=YYYY-MM-DD&limit=500` (from/to no funcionan).
+
+## ACTUALIZACIÓN (27-oct, noche) — REGLA PERMANENTE
+La dueña solo interviene en lo que las sesiones no pueden hacer. Nexora 1 manda a Claude PC instrucciones detalladas; Claude PC ejecuta con ChatGPT PC y nube (chats NUEVOS si los abiertos están ocupados). Detalle: `docs/coordinacion/REGLA_OPERATIVA_CLAUDE_PC_MANOS.md`. Carriles: `LEVANTAMIENTO_Y_CARRILES_27OCT.md`. Plan visual (Gemini, 119 h): `PLAN_VISUAL_GEMINI_27OCT.md`. Estado: producto en vivo con 1a04cd33; B-01 tienda mezclado (3a6096fb, falta CI/despliegue con cajas cerradas); relevo del jueves pendiente.
