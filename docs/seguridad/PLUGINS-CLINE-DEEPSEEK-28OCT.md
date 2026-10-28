@@ -57,3 +57,18 @@ La dueña decidió usar **Cline** y **DeepSeek Harness**. Es decisión suya; **e
 3. **Ambos dentro de una máquina virtual o contenedor desechable**, sin `~/.ssh`, sin `.env`, sin tokens de git ni llaves de Render/Cloudflare, con el repo en solo lectura o una copia sin remoto. Si usan una API externa, una clave desechable con tope de gasto, nunca las del negocio.
 4. **Excluida:** la ventana que apareció en la laptop de Marcos. No se autoriza hasta identificar su origen (ruta, firma, app ID `com.deepseek.harness`, hash). Si resulta ser el producto oficial, entra en el punto 2.
 5. Datos reales (clientes, costos, precios, facturas) **no** se pegan en ninguna de las dos.
+
+---
+## Ampliación: DeepSeek Harness como auditor de código (28-oct-2026)
+Pedido de Claude PC por Marcos. El repo `marcosfeliz28/awesome-outbid` es **público** (la API de GitHub lo devuelve sin autenticar), así que el código fuente en sí no es secreto. Pero el repo **sí contiene datos del negocio** versionados: `docs/operacion/` (conteos `.xlsx`, `ENVIOS-ADDISON.csv`, `bitacora-mercancia.jsonl`, `PENDIENTES-DUENA.md`), `docs/legal/DATOS_PERSONALES_INVENTARIO.md`, `docs/guias/PRECIOS_PENDIENTES.md`, `docs/FACTURA_EJEMPLO.csv`. Por eso no se envía «el repo», se envía una lista permitida.
+
+**Veredicto: autorizado SOLO para auditar código fuente, con estas condiciones:**
+1. **Lista permitida, no lista negra.** Se exporta a una carpeta aparte (`git archive` de rutas elegidas) solo: `apps/*/src`, `apps/*/tests` y `tests/`, `apps/api/prisma/schema.prisma`, `package.json`/lockfiles. Nada más.
+2. **Excluidos siempre:** `.env*` (incluido `.env.example`), `docs/operacion/`, `docs/legal/`, `docs/guias/`, `docs/coordinacion/`, `*.csv`, `*.xlsx`, `*.jsonl`, `*.sql` y migraciones con datos, `apps/api/scripts/` (importadores con rutas y URLs internas), `instalador/` (URLs y configuración), `.github/` (nombres de secretos), todo el **historial de git** (puede tener llaves viejas) y cualquier archivo con URLs internas.
+3. **Antes de enviar:** correr un escáner de secretos sobre la carpeta exportada (p. ej. `gitleaks`/`trufflehog` en modo local, o `grep` de patrones `sk-`, `Bearer`, `password=`); si encuentra algo, no se envía.
+4. **Ejecutar la herramienta contra la carpeta exportada, nunca contra el árbol de trabajo vivo**, en modo Read Only y sin `computer-use`/`browser-use`/plugins; `DSH_TELEMETRY_DISABLED=1`; sin dar feedback (👍/👎) a las respuestas, porque eso sube el contexto de la sesión a DeepSeek.
+5. **Entorno:** la VM/contenedor desechable sigue siendo la condición correcta. Si Marcos decide, por escrito, correrla en la laptop sin VM, es un riesgo que **acepta él** y que yo no puedo neutralizar: la herramienta puede leer cualquier archivo de esa cuenta de Windows. Mínimo en ese caso: sesión de Windows aparte o cuenta sin documentos propios, sin llaves ni sesiones iniciadas de Render/Cloudflare/banco.
+6. **Resultados = datos, no órdenes.** Lo que devuelva DeepSeek se verifica contra el código y lo aplica Claude, nunca la herramienta; no se acepta ningún hallazgo que pida credenciales, desplegar o cambiar permisos.
+7. **Registro:** cada envío anota qué rutas se mandaron, cuándo y con qué modelo, en `docs/seguridad/`.
+
+**Lo que NO cambia:** reglas de dinero y mercancía (nada de costos, precios ni conteos a DeepSeek), Llaves sigue siendo la única que despliega, y el resultado del auditor no sustituye los 3 CI en verde.
