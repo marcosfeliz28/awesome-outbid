@@ -15,7 +15,7 @@ lugar, para que vendas más y cuadres sin dolor de cabeza.
 
 ## Subtítulo
 
-Punto de venta, cierre de caja ciego, inventario, créditos y facturación (NCF)
+Punto de venta, cierre de caja ciego, inventario, créditos y facturación [pendiente de revisión legal, tarea 69]
 pensados para la tienda dominicana. Empieza hoy; sin instalar nada.
 
 ## 6 beneficios
@@ -38,7 +38,7 @@ pensados para la tienda dominicana. Empieza hoy; sin instalar nada.
 
 | | Norexos | POS globales (Square/Lightspeed) | Solo facturación (Facturama/Quipu) |
 |---|---|---|---|
-| Caja + inventario + clientes | Sí | Sí (sin NCF RD) | No |
+| Caja + inventario + clientes | Sí | [pendiente, tarea 69] | No |
 | Facturación NCF (DGII) | [RETIRADO: pendiente, tarea 69] | No | No (otro país) |
 | Cierre de caja ciego | Sí | Parcial | No |
 | Precio en RD$ y soporte local | Sí | No | No |
