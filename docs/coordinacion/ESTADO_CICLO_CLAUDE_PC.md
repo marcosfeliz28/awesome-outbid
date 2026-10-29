@@ -1402,3 +1402,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - Órdenes nuevas que escriban código para Claude PC: ninguna.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 min (29-oct): LISTA de cola-b13 y cola-n
+- Fetch: nexora-cloud 738ae71c. RESPUESTA_CLAUDE_PC_27OCT.md blob e559232e (sin cambio desde la orden 74). OBSIDIAN_LUMINA_PROGRESO.md ausente en nexora-cloud.
+- CI: pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e: verify, windows-installer y render-images en verde (ya con LISTA). claude-pc/cola-b13 8d728e9b y claude-pc/cola-n a2dd21d3: en verde los tres; LISTA añadida ahora.
+- Bloque 14: `claude-pc/cola-b14` ya existía con commits de otra sesión (2ed73f14, tareas 85, 86 y 89); no añadí nada ahí. Hice 87 y 88 en `claude-pc/cola-b14-resto` (d69650cf, 3155712c), sin subir todavía.
+- ChatGPT (paso 5): la app se abre en Configuración (Uso y facturación) y no logré llegar a la lista de chats; no se leyó «ChatGPT nube» ni «ChatGPT PC»; no se tocó ningún ajuste. Bloqueo.
