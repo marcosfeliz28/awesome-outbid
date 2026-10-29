@@ -1076,3 +1076,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Cola local: sin tareas nuevas; pedido enviado a Norexos 1 en esta consulta.
 - CI: pc23, a1 y b01 en verde; lumina en verde.
 - ChatGPT: sin cambios (Marcos pidió no tocarlo).
+
+## Orden 52 (29-oct 17:15Z): funciones puras de Forja (50) y pruebas límite (56)
+- nexora-cloud e8af88ae. RESPUESTA 84a06c44 (orden 52: tareas 50 y 56 con el bucle validar.mjs y EDUCACION_MODELO_LOCAL.md; rama claude-pc/b9-<n>).
+- Hecha: 50 nx-iniciales en claude-pc/b9-50-iniciales (8a0bb48c): 5/5 pruebas, eslint limpio; pnpm check completo no corrido. Revisión mía: el borrador del modelo tenía imports faltantes y un fallo con espacios repetidos; corregido.
+- Pendientes de la 50: nx-tiempo-relativo, nx-contraste, nx-breakpoint, nx-truncar, nx-foco-ciclico, nx-ordenar-estable, nx-etiqueta-cupo, nx-validar-telefono, nx-normalizar-texto, nx-copia-segura (10 más).
+- CI de claude-pc/cola-b10 (630a437d): verify y windows-installer en curso. LISTA cuando terminen.
+- Cola local activa: vacía.
