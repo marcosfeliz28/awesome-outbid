@@ -28,3 +28,20 @@ Un skill es texto que el modelo obedece: lo que un skill o su documentación pid
 
 ## No revisé
 Cada archivo de los repos grandes; el cambio de nombre/marca (es de la auditoría de `docs/marca/`, no mía); el comportamiento al ejecutarlos.
+
+---
+## wayfinder (Matt Pocock) — pedido de Norexos PC, 29-oct-2026
+- **Fuente y commit fijado desde el origen público:** `mattpocock/skills`, commit **`a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`** (`a496f55`, «implement-spec: a fresh implementer subagent per ticket (#1342)», 29-oct-2026). Es hoy el último commit de la rama principal; el `a496f55` de la orden 46 sí existe en el repo público (en el repo local de Norexos PC faltaba, bastaba hacer `git fetch`).
+- **No es un plugin aparte:** wayfinder es uno de los 27 skills del plugin `mattpocock-skills` (ahora **1.3.2**, antes aprobado en 1.3.1/`59db609`). Se instala el plugin completo; el veredicto cubre los 27.
+- **Qué cambió respecto a lo aprobado (`59db609` → `a496f55`):** 32 archivos, todos texto (`.md`) salvo los dos manifiestos, que solo suben la versión (1.3.1 → 1.3.2). Sin skills nuevos, sin hooks, sin MCP, sin scripts nuevos o modificados.
+- **wayfinder en sí** (`skills/engineering/wayfinder/SKILL.md`, 128 líneas; `agents/openai.yaml`; `docs/engineering/wayfinder.md`): solo texto. `disable-model-invocation: true` y `allow_implicit_invocation: false`: **solo corre si alguien escribe `/wayfinder`**. Sin `curl`, `npx`, `eval`, `sudo`, `.env`, llaves ni lectura de variables.
+- **Qué hace al correr:** crea **issues en el rastreador del repo** (un mapa y tickets hijos), los asigna, los cierra, comenta y lanza **subagentes de investigación que dejan ramas `research/<nombre>`** (`SKILL.md`, «Chart the map», paso 5). Llama a otros skills del plugin (`grilling`, `domain-modeling`, `research`, `prototype`).
+- **Riesgo:** bajo-medio. No hay código peligroso, pero **escribe fuera de tu carpeta si el rastreador es GitHub** y este repo es **público**: mapa y decisiones quedarían a la vista de todos.
+- **Veredicto: Aprobado para Claude PC** (plugin `mattpocock-skills` 1.3.2 en `a496f55`), con estas condiciones:
+  1. Rastreador **local en markdown** (`.scratch/`, soportado de fábrica por `/setup-matt-pocock-skills`; `issue-tracker-local.md`), **no GitHub Issues** de este repo público. No usar GitLab/Linear.
+  2. **No correr `/setup-matt-pocock-skills`** sin Marcos: escribe `docs/agents/issue-tracker.md` en el repo.
+  3. **Sin `git push` de las ramas `research/*`** ni de `.scratch/`; que `.scratch/` no se suba al repo.
+  4. Solo por invocación manual de Marcos; **no** para decisiones de dinero, mercancía, precios o producción.
+  5. Un ticket por sesión (lo dice el propio skill) y subagentes sin credenciales.
+- **Huella del candado** (`scripts/plugins-lock.mjs`, calculada sobre `a496f55`): `mattpocock-skills@…@1.3.2` → **`34a90bcc8e5b25a8c3402632faac077f9ec7eb6c165ce77561fc89d0df2d9d6f`**, 5 archivos. **Ojo:** el candado solo cubre `.claude-plugin/` y `scripts/`; los `SKILL.md` (texto que el modelo obedece) **no** entran en la huella. Por eso, además de la huella, **verifica el commit** (`a496f55`) después de instalar.
+- **No revisé:** cada uno de los 27 skills línea por línea (solo wayfinder, los cambios desde `59db609`, manifiestos, scripts y patrones peligrosos), ni cómo se comporta al ejecutarse.
