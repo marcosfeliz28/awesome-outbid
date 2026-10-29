@@ -12,6 +12,7 @@ import { Actor, audit, bad } from "./common";
 
 export const GV_CONCEPTS = [
   "separo",
+  "completo",
   "restante",
   "segundo",
   "tercero",
@@ -57,6 +58,30 @@ export const gvPaymentFields = {
   bank: optionalText(120),
   reference: optionalText(120),
 };
+// Bancos de GV (orden de la dueña, 28-oct): la misma lista de la caja
+// (Configuración → cuentas de banco), agrupada por empresa según su nombre.
+export async function gvBankOptions(tx: any, branchId: string) {
+  const row = await tx.settings.findUnique({ where: { id: branchId } });
+  const data = (row?.data ?? {}) as Record<string, unknown>;
+  const all = [data.transferAccounts, data.cardTerminals].flatMap((v) =>
+    Array.isArray(v) ? (v as string[]) : [],
+  );
+  const genesis = (b: string) => /g[eé]nesis/i.test(b);
+  return {
+    genesis: all.filter(genesis),
+    macgen: all.filter((b) => !genesis(b)),
+  };
+}
+// Con lista en Configuración, el banco debe ser de la lista; sin lista no se
+// exige (igual que la caja).
+export function assertGvBank(
+  banks: { genesis: string[]; macgen: string[] },
+  bank: string | null,
+) {
+  const listed = [...banks.genesis, ...banks.macgen];
+  if (listed.length && (!bank || !listed.includes(bank)))
+    bad("Elige el banco de la lista.");
+}
 // GV-07: una transferencia sin banco o sin referencia no se puede conciliar.
 export const transferDetails = (
   p: { method: string; bank: string | null; reference: string | null },
@@ -200,6 +225,8 @@ export async function createGvPayment(
   }
   if (GV_CLOSED.has(owner.status))
     bad(`${o.label} está ${owner.status}: no acepta pagos.`);
+  if (data.method !== "efectivo")
+    assertGvBank(await gvBankOptions(tx, actor.branchId), data.bank);
   const room = d(owner[o.total]).minus(committed(owner.payments));
   if (d(data.amount).gt(room))
     bad(

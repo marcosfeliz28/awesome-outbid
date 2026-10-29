@@ -24,6 +24,12 @@ ChatGPT PC y ChatGPT nube siguen como constructores, sin llaves: nunca tocan Ren
 7. **Solo la sesión «Llaves» despliega**, con los 3 CI en verde (`verify`, `windows-installer`, `render-images`).
 8. **Producto que se vende:** otro espacio de Render, otras llaves y otro entorno de Claude, sin ninguna de estas herramientas con acceso. Hay datos de otros negocios (Ley 172-13 de protección de datos).
 
+## Cómo quedó la configuración (27-oct)
+- `.claude/settings.json` (lo cargan **todas** las sesiones) deja solo `ponytail`.
+- Los plugins pesados (oh-my-claudecode, supabase, vercel, claude-code-setup, Chrome DevTools) se instalan **solo en el Taller** con `bash scripts/taller-instalar.sh`. El script también apaga la telemetría de Vercel y de Chrome DevTools (`VERCEL_PLUGIN_TELEMETRY=off`, `--no-usage-statistics`).
+- La plantilla del navegador de la nube está en `taller/mcp.chrome-devtools-nube.json`; el script la copia a `.mcp.json`, que está en `.gitignore`.
+- Skills (webapp-testing, Memory Palace, frontend-design) son solo texto y siguen cargándose con el pull.
+
 ## Lo que la dueña debe hacer para que el aislamiento sea real
 Las reglas de arriba son instrucciones. Para que sean **técnicas**:
 - Crear un **entorno de Claude llamado «Taller»** sin secretos (menú del entorno en la nube → Edit) y abrir allí la sesión del Taller.

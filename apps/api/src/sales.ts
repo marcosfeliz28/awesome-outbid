@@ -68,6 +68,7 @@ import {
   canViewCustomerPii,
   customerForActor,
   maskTail,
+  canViewCashExpected,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
 import { captureApiException } from "./monitoring";
@@ -130,6 +131,44 @@ const paymentSummary = (payment: any) => {
       : 0,
   };
 };
+
+// B-01 (caja ciega): bandera APAGADA por defecto (decisión de la dueña). Con
+// NEXORA_VENTAS_CAJA_CIEGA=1, quien no ve el esperado de caja y tiene caja
+// abierta no recibe importes de las ventas de esa caja: con la apertura podría
+// reconstruir el efectivo. receipt.pdf también va sin importes en ese alcance.
+export const blindSalesEnabled = () =>
+  process.env.NEXORA_VENTAS_CAJA_CIEGA === "1";
+type BlindScope = { id: string; openedAt: Date } | null;
+export async function blindSalesScope(
+  db: any,
+  actor: Actor,
+): Promise<BlindScope> {
+  if (!blindSalesEnabled() || canViewCashExpected(actor)) return null;
+  return db.cashSession.findFirst({
+    where: { branchId: actor.branchId, userId: actor.id, closedAt: null },
+    select: { id: true, openedAt: true },
+  });
+}
+export const inBlindScope = (scope: BlindScope, sale: any) =>
+  !!scope &&
+  (sale.cashSessionId
+    ? sale.cashSessionId === scope.id
+    : new Date(sale.createdAt) >= scope.openedAt);
+const nulled = (row: any, keys: string[]) =>
+  Object.fromEntries(
+    Object.entries(row).map(([k, v]) => [k, keys.includes(k) ? null : v]),
+  );
+export const hideSaleAmounts = (dto: any) => ({
+  ...nulled(dto, ["subtotal", "discountTotal", "taxTotal", "total", "creditBalance"]),
+  items: dto.items.map((i: any) =>
+    nulled(i, ["unitPrice", "discount", "tax", "lineTotal", "unitCost"]),
+  ),
+  payments: [],
+  returns: dto.returns.map((r: any) =>
+    nulled(r, ["total", "taxTotal", "refundAmount", "refundMethod"]),
+  ),
+  hiddenUntilClose: true,
+});
 
 // `/sales` alimenta el historial operativo, no es una representación directa
 // de Prisma. Mantener una lista blanca evita que una columna nueva de costos o
@@ -1674,7 +1713,11 @@ export class SalesController {
       // cada artículo de todas las ventas en una sola respuesta.
       take: filters.q || filters.date ? 500 : 100,
     });
-    return rows.map((sale) => saleHistoryDto(sale, actor));
+    const blind = await blindSalesScope(this.db, actor);
+    return rows.map((sale) => {
+      const dto = saleHistoryDto(sale, actor);
+      return inBlindScope(blind, sale) ? hideSaleAmounts(dto) : dto;
+    });
   }
   private async voidRequestDto(id: string, actor: Actor) {
     const row = await this.db.saleVoidRequest.findFirstOrThrow({
@@ -1703,10 +1746,13 @@ export class SalesController {
         },
       },
     });
-    return this.voidRequestView(row);
+    return this.voidRequestView(
+      row,
+      inBlindScope(await blindSalesScope(this.db, actor), row.sale),
+    );
   }
 
-  private voidRequestView(row: any) {
+  private voidRequestView(row: any, hide = false) {
     const sale = row.sale;
     const approvalBlocker =
       sale.status !== "completed"
@@ -1742,21 +1788,24 @@ export class SalesController {
         id: sale.id,
         number: sale.number,
         status: sale.status,
-        total: sale.total,
+        total: hide ? null : sale.total,
+        ...(hide ? { hiddenUntilClose: true } : {}),
         createdAt: sale.createdAt,
         customer: sale.customer?.name ?? null,
         items: sale.items.map((i: any) => ({
           name: i.variant.product.name,
           sku: i.variant.sku,
           qty: i.qty,
-          lineTotal: i.lineTotal,
+          lineTotal: hide ? null : i.lineTotal,
         })),
-        payments: sale.payments.map((p: any) => ({
-          method: p.method,
-          amount: p.amount,
-          status: p.status,
-          entryType: p.entryType,
-        })),
+        payments: hide
+          ? []
+          : sale.payments.map((p: any) => ({
+              method: p.method,
+              amount: p.amount,
+              status: p.status,
+              entryType: p.entryType,
+            })),
       },
     };
   }
@@ -1804,7 +1853,10 @@ export class SalesController {
       orderBy: { requestedAt: "desc" },
       take: 100,
     });
-    return rows.map((row) => this.voidRequestView(row));
+    const blind = await blindSalesScope(this.db, actor);
+    return rows.map((row) =>
+      this.voidRequestView(row, inBlindScope(blind, row.sale)),
+    );
   }
 
   @Post("sales/:id/void-requests")
@@ -4020,7 +4072,12 @@ export class SalesController {
     const sum = (rows: { amount: unknown }[]) =>
       money(rows.reduce((a, p) => a.plus(p.amount as any), d(0)));
     const now = new Date();
+    const blind = await blindSalesScope(this.db, actor);
     return sales.flatMap((s) => {
+      // B-01: venta de la caja abierta o con un abono a ella: sin importes.
+      const hide =
+        inBlindScope(blind, s) ||
+        (!!blind && s.payments.some((p) => p.cashSessionId === blind.id));
       const collections = s.payments.filter(
         (p) => p.entryType === "installment",
       );
@@ -4048,23 +4105,28 @@ export class SalesController {
           receivableKind: s.receivableKind,
           status,
           cashSessionId: s.cashSessionId,
-          total: Number(s.total),
-          codAmount: receivableAmount,
-          receivableAmount,
-          collected,
-          pending,
+          total: hide ? null : Number(s.total),
+          codAmount: hide ? null : receivableAmount,
+          receivableAmount: hide ? null : receivableAmount,
+          collected: hide ? null : collected,
+          pending: hide ? null : pending,
+          ...(hide ? { hiddenUntilClose: true } : {}),
           closedAt: s.creditClosedAt,
           closedBy: nameOf(s.creditClosedById),
           // Transferencias del mensajero registradas que falta verificar.
-          pendingVerification: sum(
-            collections.filter((p) => p.status === "pending_verification"),
-          ),
-          collections: collections.map((p) => ({
-            ...paymentSummary(p),
-            paymentId: p.id,
-            amount: Number(p.amount),
-            receivedBy: nameOf(p.receivedById),
-          })),
+          pendingVerification: hide
+            ? null
+            : sum(
+                collections.filter((p) => p.status === "pending_verification"),
+              ),
+          collections: hide
+            ? []
+            : collections.map((p) => ({
+                ...paymentSummary(p),
+                paymentId: p.id,
+                amount: Number(p.amount),
+                receivedBy: nameOf(p.receivedById),
+              })),
           customer: customerForActor(
             customers.find((c) => c.id === s.customerId) ?? null,
             actor,
@@ -4431,7 +4493,15 @@ export class SalesController {
       `inline; filename="${sale.number}.pdf"`,
     );
     doc.pipe(res);
-    drawSaleReceipt(doc, { sale, business, customer, seller });
+    // B-01: con la bandera encendida, el recibo de la caja abierta sale sin
+    // importes (la venta recién cobrada se imprime en la caja con el POST).
+    drawSaleReceipt(doc, {
+      sale,
+      business,
+      customer,
+      seller,
+      hidden: inBlindScope(await blindSalesScope(this.db, actor), sale),
+    });
     doc.end();
   }
 }
