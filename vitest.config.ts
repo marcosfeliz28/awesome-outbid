@@ -142,6 +142,8 @@ export default defineConfig({
       "tests/f2-01-nx-money.test.ts",
       "tests/f2-01-nx-status-badge.test.ts",
       "tests/f2-01-nx-skeleton.test.ts",
+      "tests/f2-01-nx-card.test.ts",
+      "tests/f2-01-nx-button.test.ts",
       "apps/web/src/visual-empty-assets.test.ts",
       "tests/aud-gemini-ui.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
