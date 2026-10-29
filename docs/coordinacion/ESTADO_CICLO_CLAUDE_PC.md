@@ -1113,3 +1113,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo quincenal (29-oct 18:20Z): orden 56
 - nexora-cloud aea59cdc (última revisión; antes 66be2d3f). Orden 56 ejecutada en claude-pc/b9-50-grupo-2, head 33dc20dd: nx-breakpoint NaN→móvil y nx-tiempo-relativo con trunc, horas y días (2 commits, prueba roja antes); 40/40 en tests/f2-01-nx-*, pnpm check no corrido (node 22 aquí, repo pide 24).
 - CI: grupo-1 (e49709ec) verify en curso, resto verde; grupo-2 33dc20dd recién subido; cola-b10 ya con LISTA. Sin LISTA nueva este ciclo.
+
+## Orden 56 (29-oct 18:10Z): ajustes del grupo 2
+- nexora-cloud aea59cdc. RESPUESTA 88c711c4 (orden 56: auditoría del grupo 2; nx-tiempo-relativo con Math.trunc, horas y días; nx-breakpoint con NaN = móvil).
+- Los dos ajustes ya estaban hechos en claude-pc/b9-50-grupo-2 por otra sesión (91efdf76 y 33dc20dd). Los revisé: 16/16 pruebas en las 4 funciones, eslint limpio. Mi copia duplicada quedó en la rama local claude-pc/b9-50-grupo-2-dup-local (sin subir).
+- Head del grupo 2 para auditoría: 33dc20dd. CI en curso.
+- Grupo 1 (e49709ec): verify en curso.
+- Pendientes: grupo 3 (nx-ordenar-estable, nx-etiqueta-cupo, nx-validar-telefono, nx-copia-segura) y la 56 (pruebas de casos límite).
+- ChatGPT: sin cambios.
