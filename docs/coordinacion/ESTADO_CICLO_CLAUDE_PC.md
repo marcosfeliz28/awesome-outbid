@@ -1430,3 +1430,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e, cola-b13 8d728e9b y cola-n a2dd21d3: verify, windows-installer y render-images en verde; LISTA ya presente. claude-pc/lote-local-tanda3 73b9ba5f: verify en curso, sin LISTA todavía.
 - Cola N9–N16 (`claude-pc/cola-n`, nuevo commit b0605125): N9 a N12 subidas con encabezado de revisión. N13 (meta descripciones) RECHAZADA: 8 de 9 superan 155 caracteres (160 a 163), una vuelve a afirmar «Facturación conforme a la DGII» (retirada) y usa «Nexora». No se sube. N14 en curso; N15 y N16 pendientes. Sin LISTA nueva.
 - ChatGPT (paso 5): la app se abre pero la ventana no aparece (pantalla vacía). No se leyeron «ChatGPT nube» ni «ChatGPT PC»; no se escribió en ningún chat. Bloqueo que sigue.
+
+## Ciclo (29-oct): orden 75–76 (Forja 3 y reparto)
+- Fetch: nexora-cloud en 5e9048dd. Órdenes 75 y 76 nuevas. RESPUESTA_CLAUDE_PC_27OCT.md blob 7e4e8832. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en d6adc554.
+- Orden 75 (auditoría de mi tanda de Forja 3): arreglado el obligatorio. `formatearPorcentaje` usa punto decimal en español («15.5 %»), con prueba. Commit 1fee43e3 en `claude-pc/forja3-grupo-1`. Prueba antes: falla con coma (0,1,). Después: 3 de 3 OK con Node.
+- Orden 75 (nota): `quitarEmojis` fija como comportamiento conocido ©, ®, ™, ↔ y el keycap 1️⃣ (U+20E3 suelto). Commit 203aa519. Sin cambio de código.
+- Reparto nuevo (orden 75): Forja 3 F3-01, F3-02, F3-04 y F3-05 las hace la fork. Claude PC: cola del modelo local (JSON N9–N16, luego N17), listados por script del bloque 14 e informes.
+- Orden 76: N13 rechazada; las meta descripciones se midieron a mano (≤155). Nueva N17 en la cola. Regla: los límites numéricos los mide un script, no el modelo.
+- Rama `claude-pc/forja3-grupo-1` es mía (tanda 1 y 2 más las correcciones). Sin LISTA; la combina Norexos 1.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Cambio de CI en curso para la rama Forja 3 tras el último empuje.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
