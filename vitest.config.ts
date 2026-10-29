@@ -142,6 +142,7 @@ export default defineConfig({
       "tests/visual-tokens.test.ts",
       "tests/visual-marco.test.ts",
       "tests/f2-01-tokens.test.ts",
+      "tests/f2-01-nx-tiempo-relativo.test.ts",
       "tests/f2-01-nx-contraste.test.ts",
       "tests/f2-01-nx-foco-ciclico.test.ts",
       "tests/f2-01-nx-breakpoint.test.ts",
