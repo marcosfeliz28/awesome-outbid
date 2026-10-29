@@ -157,6 +157,7 @@ export default defineConfig({
       "tests/f2-01-nx-plural.test.ts",
       "tests/f2-01-nx-agrupar-por-dia.test.ts",
       "tests/f2-01-nx-paginar.test.ts",
+      "tests/f2-01-nx-slugify.test.ts",
       "tests/f2-01-nx-fecha.test.ts",
       "tests/f2-01-nx-money.test.ts",
       "tests/f2-01-nx-status-badge.test.ts",
