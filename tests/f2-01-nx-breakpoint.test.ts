@@ -18,4 +18,8 @@ describe("nx-breakpoint", () => {
     expect(clasificarAncho(1200)).toBe("escritorio");
     expect(clasificarAncho(1440)).toBe("escritorio");
   });
+
+  it("trata un ancho no finito (NaN) como móvil", () => {
+    expect(clasificarAncho(NaN)).toBe("movil");
+  });
 });

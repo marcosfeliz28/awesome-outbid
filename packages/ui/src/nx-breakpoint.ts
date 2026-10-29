@@ -2,6 +2,7 @@
 export function clasificarAncho(
   ancho: number,
 ): "movil" | "tableta" | "escritorio" {
+  if (!Number.isFinite(ancho)) return "movil";
   if (ancho < 768) return "movil";
   if (ancho < 1200) return "tableta";
   return "escritorio";
