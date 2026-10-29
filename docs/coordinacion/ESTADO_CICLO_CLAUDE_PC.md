@@ -1319,3 +1319,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Hechas en b13 hasta ahora: 77, 78, 80, 82 y 83. Pendientes: 79, 81 y 84.
 - Forja 2: sin cambios esta consulta.
 - LISTA: ninguna para b13 todavía; esperar verify, windows-installer y render-images en verde de c6f6a8f0.
+
+## Ciclo (29-oct): órdenes 68–71 (Forja 2 integrada, cola del ejecutor)
+- Fetch: nexora-cloud en f0446d50 (órdenes 68 a 71). RESPUESTA_CLAUDE_PC_27OCT.md blob 7a6234d0. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 415f602a.
+- Forja 2: Norexos 1 integró F2-01..F2-10 en `claude/forja2-final` (d6adc554), desde producto-nexora, con una versión por función. Mis ramas `claude-pc/forja2-grupo-1/2/3` quedan como historial: no las toco ni las borro, y no escribo LISTA de ellas. Forja = solo Claude PC.
+- CI de `claude-pc/forja2-grupo-1` (8066b75e): windows-installer y render-images en verde; verify en curso. Sin LISTA: está superada por `claude/forja2-final`.
+- Cola del ejecutor: añadí las 8 tareas N1 a N8 de `COLA_LOCAL_ACTIVA_NUEVA.json` a `COLA_LOCAL_ACTIVA.json` (commit 48e60489). No reemplacé las dos tareas existentes; las ids no chocan (10 en total).
+- Bloque 13: pedido termina 79, 81 y 84; 77 y 82 quedan en PARCIAL según la orden 70.
+- Pendiente: aviso de Norexos 1 sobre el CI de `claude/forja2-final` (21:55 UTC). Después, Forja 3.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
