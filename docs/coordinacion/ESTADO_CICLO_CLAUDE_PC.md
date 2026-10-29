@@ -883,3 +883,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Lote local: tarea 16 (RUTAS de la API) pendiente. Antes de escribir, comprobaré que el archivo no existe en docs-noche.
 - Órdenes nuevas que escriban código para Claude PC: ninguna.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (29-oct): LISTA de la tarea 15
+- Fetch: nexora-cloud 6fce9dad. RESPUESTA 70092dc6 sin cambio. OBSIDIAN ausente.
+- CI: claude-pc/docs-noche (8226b8de) con verify, windows-installer y render-images en verde. LISTA escrita. Resto de ramas en verde sin cambios.
