@@ -1386,3 +1386,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Bloque 14: 85, 86 y 89 hechas; 87, 88, 90, 91 y 92 pendientes.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo (29-oct): Forja 3, segunda tanda
+- Fetch: nexora-cloud en 6f83d277 (sin orden nueva). RESPUESTA_CLAUDE_PC_27OCT.md blob e559232e. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en d6adc554.
+- Tanda 1 (32f375d4): CI de verify en curso; sin LISTA.
+- Tanda 2 subida en un solo empuje a `claude-pc/forja3-grupo-1` (head b9835f3b): F3-08 `compararNatural` (4df91f7e), F3-09 `parecEmail` (8f992bc1) y F3-10 `quitarEmojis` (b9835f3b). Cada una con prueba. Comprobadas con Node 24 (lote de 12 comprobaciones: OK). Límite conocido de F3-10: quita © y ®.
+- Pendiente de Forja 3: F3-01 (fecha larga), F3-02 (hora) y F3-04 (cantidad, pendiente de la duda del separador de miles), F3-05 (abreviar números).
+- Bloque 14: 85, 86 y 89 hechas por script; 87, 88, 90, 91 y 92 pendientes.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
