@@ -8,3 +8,10 @@
 | ChatGPT PC | `chatgpt-pc/visual-*` | | tokens, marco, tablero «Hoy», caja clara, activos | |
 | Taller | `claude/taller-plugins` | | esperar tarea | |
 | Revisor | `claude/revisor-plugins` | | esperar tarea | |
+
+## 29-oct-2026 15:30 UTC (Norexos 1)
+- Producto en vivo con Norexos: producto-nexora 58f7fb65 (API dep-dbhm7gmc6qcc73fpqoeg, web dep-dbhm9661egvs73fug3vg), 3 CI verdes del SHA exacto, portada verificada.
+- Mezclado en nexora-cloud (solo docs, sin deploy): claude-pc/cola-b7 bc061e2d (bloque 7 parcial, borradores sin verificar). Inventario PERMISOS.md comprobado por muestreo contra el código.
+- En CI/espera: claude/taller-tickets a2b9cb9b (con migración 202611050001; deploy solo con 3 CI verdes), claude/taller-i18n-selector 988d3c0a.
+- Pendientes de la dueña: aprobar "Send Message" de Norexos 4; decisiones D1/D7, modelo de venta y actualización.
+- Reparto B9 en REPARTO_B9.md; dictamen de Claude PC en claude-pc/cola2-26oct.
