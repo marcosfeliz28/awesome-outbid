@@ -832,3 +832,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Sin cambios.
 - Órdenes nuevas que escriban código para Claude PC: ninguna.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Consulta de 30 min (29-oct): cola del modelo local
+- Fetch: nexora-cloud 70454c45. COLA_LOTE_LOCAL.md ausente. RESPUESTA_CLAUDE_PC_27OCT.md blob 4e9b3d9d (sin cambio).
+- Sin tareas: no se ejecutó tarea.mjs ni hubo commits de tareas.
+- Envío: pedido de cola enviado a Norexos 1 [d21984] y Norexos 4 [40a558] mediante SendMessage (entrega confirmada a la ruta de sesión en la nube; sin respuesta confirmada todavía). Los intentos anteriores con send_message devolvieron "session not found".
+- Recordatorio: la LISTA de claude-pc/visual-f2-01 (ef063f6a, commit 5fcddfb3) no llegó por el envío anterior; se anota aquí para que Norexos 1 la lea en el repo.
