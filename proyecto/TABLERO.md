@@ -9,13 +9,13 @@
 | T04 | GV «Cambiar fecha/curso» | E0 | Taller → Norexos 1 | en curso | Rama `claude/taller-gv` 280f2e0f; falta D1, 3 CI y «cajas cerradas» |
 | T05 | Diagnóstico completo + qué falta para vender | E0 | Taller | en curso | Documento en `claude/taller-estado` 796d573c |
 | T06 | Cambio de nombre en código | E1 | Taller | hecho | En vivo desde 15:23 UTC (29-oct) en el producto: `producto-nexora` 58f7fb65, 3 CI verdes del SHA exacto, API y web. Tienda no tocada. Carpeta de Drive corregida a «Nexora POS respaldos» (80c47980) |
-| T07 | Cola de Forja (14 piezas) y de Brazo (bloques 3–5) | E1–E4 | Norexos PC | en curso | Laptop activa desde 13:02 UTC; piezas 1 y 2 de Forja hechas (`claude-pc/forja-noche`). E1 ya no es suya |
+| T07 | Cola de Forja (14 piezas) y de Brazo (bloques 3–5) | E1–E4 | Norexos PC | bloqueado | Sin commits desde 13:20 UTC (`claude-pc/forja-noche` 0f727725, Forja 3). Sesión inactiva desde 16:22 UTC. Causa probable: cola agotada o sin orden nueva (por confirmar con Norexos 1). Más de 6 h sin avance en horario diurno |
 | T08 | Conectar animaciones y F2-03/F3-01 | E2 | Taller; ChatGPT desde 2-nov | pendiente | Entrega 7-nov. Piezas en `producto-nexora` ef063f6a (parcial: 6 de 12 primitivos Nx*) |
 | T09 | Instalador vendible (licencia/activación, actualización, respaldo local; firma si D7) | E3 | Norexos PC (licencia y actualización, `claude-pc/instalador-e3`) + Taller + Revisor | pendiente | Entrega 10-nov. Depende de D7, de T05 y de la decisión de T21 |
-| T10 | Español/Inglés | E4 | Taller + Forja + Brazo | en curso | Selector ES/EN entregado por el Taller (T23). CI de la mezcla con `producto-nexora` en curso (92f77795); se publica si da verde. Entrega 12-nov. Plan en `docs/coordinacion/PLAN_INTERNACIONAL_28OCT.md` |
+| T10 | Español/Inglés | E4 | Taller + Forja + Brazo | en curso | Selector ES/EN entregado por el Taller (T23) y mezclado en `producto-nexora` (92f77795, 16:36 UTC). CI de esa mezcla por confirmar con Norexos 1. Entrega 12-nov. Plan en `docs/coordinacion/PLAN_INTERNACIONAL_28OCT.md` |
 | T11 | Precios (D2) | E8 | Dueña vía Norexos 1 | pendiente | Al final del plan. Cobro (Azul) fuera de v1 |
 | T12 | Términos y privacidad | — | — | fuera de v1 | Retirado del alcance v1 (29-oct) |
-| T13 | Tickets «Pedir un cambio» | E6 | Taller | en curso | API en vivo (`producto-nexora` d3acef4f, migración 202611050001, rutas `/api/change-requests`). Web en despliegue. Entrega 14-nov |
+| T13 | Tickets «Pedir un cambio» | E6 | Taller | en curso | API en vivo (`producto-nexora` d3acef4f, migración 202611050001, rutas `/api/change-requests`). El commit 92f77795 dice «tickets publicados»; web en despliegue por confirmar. Entrega 14-nov |
 | T14 | Traspasos, cuadres y verificación de transferencias del 25-oct | — | Norexos 2 | bloqueado | Norexos 2 pide a la dueña: confirmar anulación de FS-8 (Pérez Sosa) y decir si FS-77 (Robert Junior Bertre) se pagó en efectivo o transferencia, o si es prueba para anular. Además, movimientos bancarios del 25-oct |
 | T15 | Piloto cerrado | E7 | Dueña | pendiente | 15–21 nov. Elegir 1–2 clientes (D6) |
 | T16 | Sesión de Norexos 1 (despliegue) | E0 | Norexos 1 | hecho | Norexos 1 confirma que su cuota se renovó hoy a las 7:00 (RD); no vence. Riesgo retirado |
