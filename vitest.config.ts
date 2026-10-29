@@ -142,6 +142,7 @@ export default defineConfig({
       "tests/visual-tokens.test.ts",
       "tests/visual-marco.test.ts",
       "tests/f2-01-tokens.test.ts",
+      "tests/forja2-f2-01-moneda-rd.test.ts",
       "tests/f2-01-nx-iniciales.test.ts",
       "tests/f2-01-nx-normalizar-texto.test.ts",
       "tests/f2-01-nx-truncar.test.ts",
