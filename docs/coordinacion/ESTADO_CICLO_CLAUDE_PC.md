@@ -838,3 +838,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Sin tareas: no se ejecutó tarea.mjs ni hubo commits de tareas.
 - Envío: pedido de cola enviado a Norexos 1 [d21984] y Norexos 4 [40a558] mediante SendMessage (entrega confirmada a la ruta de sesión en la nube; sin respuesta confirmada todavía). Los intentos anteriores con send_message devolvieron "session not found".
 - Recordatorio: la LISTA de claude-pc/visual-f2-01 (ef063f6a, commit 5fcddfb3) no llegó por el envío anterior; se anota aquí para que Norexos 1 la lea en el repo.
+
+## Ciclo (29-oct, ciclo autónomo)
+- Fetch: nexora-cloud en 6fce9dad. RESPUESTA_CLAUDE_PC_27OCT.md blob 70092dc6. Orden 44 nueva: la cola del modelo local está en `docs/coordinacion/COLA_LOTE_LOCAL.md` de nexora-cloud. Claude PC ejecuta los bloques 3, 4 y 5 (salta 1 a 14). Registro en `ESTADO_LOTE_LOCAL.md`. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Modelos locales confirmados en esta PC: qwen2.5-coder:14b y deepseek-r1 (7b y latest). Ollama responde.
+- Plan de ejecución, aún sin código: rama `claude-pc/docs-noche` desde nexora-cloud (no desde producto-nexora). Primera tarea: D7 (instalación en PC), redactada desde el repo y no desde memoria, marcada «sin revisar» hasta contrastarla con los scripts reales.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Lectura de la API falló una vez por carrera de fetch; se repitió bien.
+- Órdenes que escriban código para Claude PC: ninguna nueva; el lote local es documentación y borradores.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
