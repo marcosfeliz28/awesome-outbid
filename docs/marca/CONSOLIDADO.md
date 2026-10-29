@@ -130,3 +130,6 @@ Método: 12 búsquedas web por nombre (agregadores de terceros; **no** USPTO/EUI
 
 ## Nombre elegido por la dueña (29-oct-2026): **Norexos** (N-O-R-E-X-O-S)
 Estado: **elegido, pendiente de dominios y abogado.** Dominios libres al 28-oct según RDAP: `norexos.com`, `.net`, `.app`, `.ai`, `.io` (`neroxos.com` ya está registrado: no usar esa grafía). La dueña registra `norexos.com` (+ `.ai`, opcional `.app`) a su nombre, con 2FA. Abogado: búsqueda formal de marca en clases 9, 35 y 42 (USPTO, EUIPO, UKIPO, ONAPI); vigilar NEXOROS (reg. EE. UU. 6458723) y Norexa. «Norexos» empieza con N: **el logotipo con la N se conserva**.
+
+### Aclaración de la dueña (29-oct): dominio principal **norexos.ai**
+«Norexos.ai, porque usamos IA»: dominio principal `norexos.ai`; además `norexos.com` para proteger la marca (y redirigir). **Neroxos queda descartado** (grafía equivocada). Si la búsqueda de marca en República Dominicana (ONAPI) no muestra un registro igual o parecido en las clases 9, 35 y 42, se procede con Norexos; el abogado confirma también EE. UU., Europa y Reino Unido. `.ai` suele costar más que `.com` y se renueva cada año: comprobar el precio al registrar.

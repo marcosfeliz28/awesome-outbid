@@ -17,7 +17,7 @@ Para quien llegue sin haber participado. Sin claves ni credenciales (nunca se gu
 - Seguimiento automático: una rutina cada 3 h (las otras tres, apagadas por costo).
 
 ## Decisiones
-- **Nombre: Norexos** (N-O-R-E-X-O-S), confirmado por la dueña el 29-oct. Pendiente de dominios y abogado: registrar norexos.com (+ .ai/.app) a nombre de la dueña; búsqueda formal de marca en clases 9/35/42; vigilar NEXOROS (reg. EE. UU. 6458723) y Norexa; no usar «neroxos». Logo con N se conserva. Plan: `docs/marca/PLAN_CAMBIO_DE_NOMBRE.md`; rama `marca/cambio-nombre` desde `producto-nexora`; no desplegar hasta dominios y abogado; la tienda no se renombra sin decisión de la dueña.
+- **Nombre: Norexos** (N-O-R-E-X-O-S), confirmado por la dueña el 29-oct; dominio principal **norexos.ai** (+ norexos.com para proteger la marca). Pendiente de dominios y abogado: registrar norexos.ai y norexos.com a nombre de la dueña; búsqueda formal de marca en clases 9/35/42; vigilar NEXOROS (reg. EE. UU. 6458723) y Norexa; no usar «neroxos». Logo con N se conserva. Plan: `docs/marca/PLAN_CAMBIO_DE_NOMBRE.md`; rama `marca/cambio-nombre` desde `producto-nexora`; no desplegar hasta dominios y abogado; la tienda no se renombra sin decisión de la dueña.
 - Web en español e inglés: `docs/coordinacion/PLAN_INTERNACIONAL_28OCT.md`. App animada: `docs/diseno/PLAN_APP_ANIMADA_29OCT.md`.
 - Trabajo de ChatGPT pasa a Claude PC + modelo local (`docs/coordinacion/COLA_LOTE_LOCAL.md`, rama `nexora1/cola-lote-local`); ChatGPT vuelve el 2-nov.
 
