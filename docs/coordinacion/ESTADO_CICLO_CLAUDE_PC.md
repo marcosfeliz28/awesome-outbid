@@ -1440,3 +1440,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Rama `claude-pc/forja3-grupo-1` es mía (tanda 1 y 2 más las correcciones). Sin LISTA; la combina Norexos 1.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Cambio de CI en curso para la rama Forja 3 tras el último empuje.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 min (29-oct): orden 76 y cola N14–N17
+- Fetch: nexora-cloud 5e9048dd. RESPUESTA_CLAUDE_PC_27OCT.md blob 7e4e8832 (cambió desde 09053fe0). OBSIDIAN_LUMINA_PROGRESO.md ausente. COLA_LOTE_LOCAL.md blob c3ecfbb0 (sin cambio).
+- Orden 76: N13 sale de la cola; las meta descripciones las hizo Norexos 1 a mano y medidas en Python. Todo límite de longitud lo mide un script, no el modelo. N17 reemplaza a N13 (titulares <50).
+- CI: pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e: verify, windows-installer y render-images en verde (ya con LISTA). claude-pc/cola-n b0605125 (anterior): verify en curso; el head actual 95416979 aún sin CI. claude-pc/lote-local-tanda3 73b9ba5f: verify en curso. Sin LISTA nueva.
+- Cola N14–N17 (`claude-pc/cola-n`):
+  - N14 mensaje de WhatsApp: RECHAZADA (usa «Nexora POS» y «facturas NCF conforme a la DGII»). No se sube.
+  - N15 preguntas de caja (21f2a2a3) y N16 resumen de portada en inglés (b477d107): subidas con encabezado de revisión; citas N15 no comprobadas una a una (PARCIAL).
+  - N17 titulares <50 (954169799604): dos titulares, medidos con wc -m (18 y 22). Los otros tres del listado del modelo se quitan.
+- ChatGPT (paso 5): la app se abre, pantalla vacía sin ventana. No se leyeron «ChatGPT nube» ni «ChatGPT PC»; no se escribió en ningún chat. Bloqueo que sigue.
