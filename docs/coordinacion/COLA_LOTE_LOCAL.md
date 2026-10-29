@@ -80,3 +80,16 @@ Solo lectura del repo; salida en `docs/`; sin tocar código. Si falta dato: escr
 | 38 | Pruebas sin dueño claro | `tests/` | `docs/auditoria/MAPA_PRUEBAS.md` | prueba → área (GV, caja, instalador…); marcar las que requieren Postgres |
 | 39 | Preguntas frecuentes de la dueña | `docs/operacion`, `docs/venta` | `docs/venta/FAQ_BORRADOR.md` | 15 preguntas con respuesta citando el documento fuente |
 | 40 | Revisión de enlaces rotos en docs | `docs/**/*.md` | `docs/auditoria/ENLACES_ROTOS.md` | ruta citada que no existe, archivo:línea |
+
+## Bloque 8 · Tandas nuevas (pedido de Claude PC, 29-oct) — rama `claude-pc/cola-b8`
+Solo lectura del repo; salida en `docs/`; sin tocar código. Todo borrador lleva encabezado «Borrador sin verificar», rama+commit de la fuente y archivo:línea en cada cita. Si falta dato: «NO ENCONTRADO». Si no cubres todo, escribe «PARCIAL» y cuántos archivos miraste de cuántos.
+| # | Tarea | Entrada | Salida | Aceptación (verificable) |
+|---|---|---|---|---|
+| 41 | Índice de documentos | `docs/**/*.md` | `docs/INDICE.md` | `wc -l` ≥ nº de .md bajo `docs/`; cada línea: ruta + título (primera línea `#`) |
+| 42 | Modelos de datos en palabras simples | `apps/api/prisma/schema.prisma` | `docs/api/MODELOS.md` | `grep -c '^## '` = nº de `model` del schema; sin campos inventados |
+| 43 | Eventos de auditoría | `apps/api/src` (llamadas a audit) | `docs/api/EVENTOS_AUDITORIA.md` | cada evento `gv_payment_void`… con archivo:línea; `grep -c` ≥ 20 o «PARCIAL» |
+| 44 | Atajos y textos de la caja | `apps/web/src/POS.tsx` | `docs/i18n/INVENTARIO_POS_ATAJOS.md` | solo lectura; lista de textos visibles con línea |
+| 45 | Dependencias y para qué sirven | `package.json` de la raíz y `apps/*` | `docs/auditoria/DEPENDENCIAS.md` | nombre, versión exacta, una línea de uso; `wc -l` ≥ nº de dependencias |
+| 46 | Resumen de cada workflow de CI | `.github/workflows/*.yml` | `docs/operacion/CI_RESUMEN.md` | un apartado por job (`verify`, `windows-installer`, `render-images`) con pasos reales |
+| 47 | Manual de la caja para cajera (borrador) | `docs/operacion`, `apps/web/src/POS.tsx` | `docs/venta/MANUAL_CAJA_BORRADOR.md` | pasos numerados; sin prometer funciones que no estén en el código |
+| 48 | Lista de TODO/FIXME del código | `apps/**/src`, `tests/` | `docs/auditoria/TODOS.md` | `grep -rn 'TODO\|FIXME' apps tests \| wc -l` coincide con las líneas listadas |
