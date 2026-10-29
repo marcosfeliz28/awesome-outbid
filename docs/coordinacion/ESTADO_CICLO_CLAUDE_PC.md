@@ -779,3 +779,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. aab91c9a con verify en rojo (tarea 0.1 pendiente de DeepSeek).
 - Órdenes nuevas que escriban código para Claude PC: ninguna.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (29-oct, revisión de 15 min)
+- Fetch: nexora-cloud en 70454c45 (antes c0b83c0a). RESPUESTA_CLAUDE_PC_27OCT.md blob 4e9b3d9d (antes 872f894e): CAMBIÓ. OBSIDIAN_LUMINA_PROGRESO.md ausente. COLA_LOTE_LOCAL.md ausente en nexora-cloud.
+- Órdenes nuevas para Claude PC (34-43 leídas): 37-38 cambio de nombre a Norexos en marca/cambio-nombre desde producto-nexora (pasos 1-3, sin desplegar, sin renombrar servicio/carpeta/dominios/llaves); 36 F2-01 pendiente (primitivos 7-12 y capturas 390/1440); 40 el Brazo salta tareas 1-14 y el Taller tiene primitivos 1-8; 42 revisión de taller-anim hecha por Norexos 1; 43 producto-nexora avanzado a ef063f6a sin esperar CI, sin despliegue hasta que los 3 CI estén en verde.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y chatgpt-pc/lumina-motion-integracion: 3 CI en verde (ya tienen LISTA, sin cambios). claude-pc/visual-f2-01 (ef063f6a): windows-installer y render-images verdes; verify in_progress. Sin LISTA nueva.
+- Pendiente de ejecución (no iniciado en este ciclo): cambio de nombre (orden 37-38) y primeros primitivos restantes de F2-01 (orden 36).
+- ChatGPT (paso 5): no se abrió. Requiere acceso de computer use a la app de ChatGPT, que no está concedido en esta sesión. Pausado por cuota hasta el 2-nov (orden 26). Ningún chat escrito.
+- Modelo local: qwen2.5-coder:14b instalado y respondiendo; sin tareas de Norexos 1 (COLA_LOTE_LOCAL.md ausente).
