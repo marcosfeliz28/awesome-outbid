@@ -846,3 +846,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Lectura de la API falló una vez por carrera de fetch; se repitió bien.
 - Órdenes que escriban código para Claude PC: ninguna nueva; el lote local es documentación y borradores.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Cola del lote local (29-oct): inicio de ejecución
+- Fetch: nexora-cloud 6fce9dad. RESPUESTA_CLAUDE_PC_27OCT.md blob 70092dc6 (orden 44: cola en nexora-cloud). COLA_LOTE_LOCAL.md ahora existe. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Cola: bloques 3, 4 y 5 (tareas 15-32). Tareas 1-14 saltadas (las hizo el Taller, orden 44). Bloque 2 (9-14) fuera de alcance según la orden.
+- Tarea 15 (guía de instalación, docs/instalacion/INSTALACION_PC.md): 1er intento RECHAZADO (preámbulo, comandos ubicados en carpeta instalador, resultados esperados inventados). 2do intento con encargo estricto ACEPTADO tras revisión. Rama claude-pc/docs-noche, commit 8226b8de, subido a origin. LISTA pendiente de CI verify/windows-installer/render-images.
+- Tareas 16-32: pendientes.
+- Envío de cola (SendMessage a Norexos 1 y 4) ya enviado en ciclo anterior; la cola llegó en 6fce9dad.
+- ChatGPT (paso 5): sin cambios; pendiente acceso de computer use.
