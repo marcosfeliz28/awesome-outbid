@@ -1348,3 +1348,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Cola activa N1–N8 terminada (ejecutor en `claude-pc/cola-n`). Salidas revisadas y subidas en a2dd21d3 (8 commits, un archivo por tarea). N1–N4 dicen «Sin erratas detectadas» sin comprobación de Claude PC; N6 todo «no definido»; N7 temas no verificados en código. Encabezado de cada archivo lo dice.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde (ya en LISTA). cola-b13 c6f6a8f0: verify en curso. cola-n a2dd21d3: en curso. Ninguna LISTA nueva.
 - ChatGPT (paso 5): la app se abre, pero no aparece ventana; no se leyeron «ChatGPT nube» ni «ChatGPT PC». No se escribió en ningún chat. Bloqueo que sigue.
+
+## Consulta 30 min (29-oct): bloque 13 terminado y petición de cola
+- Fetch: nexora-cloud f0446d50. RESPUESTA_CLAUDE_PC_27OCT.md blob 7a6234d0 (sin cambio). COLA_LOTE_LOCAL.md blob 4c0edc17: sin bloques nuevos después del 13.
+- Bloque 13 (`claude-pc/cola-b13`, 8d728e9b): 77 PARCIAL; 78 y 83 completas; 79, 80, 81 y 82 PARCIAL; 84 NO ENCONTRADO (0 de 12; Management.tsx no tiene FAQ). Trabajo: 78, 79, 81, 83 y 84 por script; 80 con modelo (corregida a mano).
+- Sin LISTA: CI de 8d728e9b aún no verificado. Escribir LISTA cuando verify, windows-installer y render-images estén en verde.
+- Petición enviada a Norexos 1 (d21984) y a Norexos 4 (40a558) para la siguiente cola (hasta 8 tareas).
