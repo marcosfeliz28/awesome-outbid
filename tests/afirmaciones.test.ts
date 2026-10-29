@@ -53,10 +53,10 @@ describe("G13 · afirmaciones verificables", () => {
     }
   });
 
-  it("el manifest de la PWA se llama «Nexora POS» y no promete facturación", () => {
+  it("el manifest de la PWA se llama «Norexos» y no promete facturación", () => {
     const config = read("apps/web/vite.config.ts");
     const manifest = config.slice(config.indexOf("manifest:"));
-    expect(manifest).toMatch(/^manifest:\s*\{\s*name:\s*"Nexora POS",/);
+    expect(manifest).toMatch(/^manifest:\s*\{\s*name:\s*"Norexos",/);
     const description = manifest.match(/description:\s*"([^"]*)"/)?.[1];
     expect(description).toBeTruthy();
     expect(description).not.toMatch(/factura/i);

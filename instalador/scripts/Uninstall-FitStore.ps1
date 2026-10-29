@@ -185,12 +185,21 @@ Get-NetFirewallRule -DisplayName "FitStore POS - Bloquear API directa" -ErrorAct
 $desktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
 $programs = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "FitStore POS"
 $nexoraPrograms = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Nexora POS"
+$norexosPrograms = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Norexos"
 Remove-Item -LiteralPath (Join-Path $desktop "FitStore POS.lnk") -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath (Join-Path $desktop "Nexora POS.lnk") -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath (Join-Path $desktop "Norexos.lnk") -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath (Join-Path $desktop "Certificado FitStore para celulares.cer") -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath (Join-Path $desktop "FitStore - acceso en celulares.txt") -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $programs -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath (Join-Path $nexoraPrograms "Nexora POS.lnk") -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath (Join-Path $norexosPrograms "Norexos.lnk") -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath (Join-Path $norexosPrograms "Restaurar un respaldo.lnk") -Force -ErrorAction SilentlyContinue
+if (Test-Path -LiteralPath $norexosPrograms -PathType Container) {
+  if (@(Get-ChildItem -LiteralPath $norexosPrograms -Force).Count -eq 0) {
+    Remove-Item -LiteralPath $norexosPrograms -Force -ErrorAction SilentlyContinue
+  }
+}
 Remove-Item -LiteralPath (Join-Path $nexoraPrograms "Restaurar un respaldo.lnk") -Force -ErrorAction SilentlyContinue
 if (Test-Path -LiteralPath $nexoraPrograms -PathType Container) {
   if (@(Get-ChildItem -LiteralPath $nexoraPrograms -Force).Count -eq 0) {

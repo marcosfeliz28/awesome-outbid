@@ -33,7 +33,7 @@ SetDatablockOptimize on
 
 Name "${PRODUCT_NAME}"
 Caption "Instalar ${PRODUCT_NAME}"
-OutFile "${OUTPUT_DIR}\Nexora-POS-Setup-${VERSION}.exe"
+OutFile "${OUTPUT_DIR}\Norexos-Setup-${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\FitStore POS"
 InstallDirRegKey HKLM "${PRODUCT_KEY}" "InstallLocation"
 BrandingText "Norexos"
@@ -258,7 +258,7 @@ Function BackupPageCreate
   nsDialogs::Show
 FunctionEnd
 
-Section "Nexora POS" SecMain
+Section "Norexos" SecMain
   SetRegView 64
   SetShellVarContext all
   InitPluginsDir

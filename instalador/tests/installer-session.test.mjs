@@ -25,7 +25,7 @@ test('B11: la sesion se genera como GUID y ambas operaciones comparten esa ident
 // reescribir funciones. El proceso hijo nunca tiene marcador, base ni servicios
 // de fixture; ProgramData y la ruta instalada quedan en un TEMP exclusivo.
 function stagedScripts() {
-  const section = source.slice(source.indexOf('Section "Nexora POS"'), source.indexOf('  SetOutPath "$INSTDIR"'));
+  const section = source.slice(source.indexOf('Section "Norexos"'), source.indexOf('  SetOutPath "$INSTDIR"'));
   return [...section.matchAll(/File \/oname=([^\s]+) "\$\{PAYLOAD_DIR\}\\scripts\\([^"\r\n]+)"/g)]
     .map(match => ({ target: match[1], file: match[2] }));
 }

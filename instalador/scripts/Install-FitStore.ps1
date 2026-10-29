@@ -258,15 +258,18 @@ function New-FitStoreShortcuts {
   param($Paths)
   $shell = New-Object -ComObject WScript.Shell
   $desktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
-  $programs = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Nexora POS"
+  $programs = Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Norexos"
   New-FitStoreDirectory -Path $programs
-  $open = $shell.CreateShortcut((Join-Path $desktop "Nexora POS.lnk"))
+  $open = $shell.CreateShortcut((Join-Path $desktop "Norexos.lnk"))
   $open.TargetPath = "$env:SystemRoot\explorer.exe"
   $open.Arguments = "https://localhost:4173"
   $open.IconLocation = (Join-Path $Paths.Install "assets\fitstore.ico")
   $open.Description = "Abrir Norexos"
   $open.Save()
-  Copy-Item -LiteralPath (Join-Path $desktop "Nexora POS.lnk") -Destination (Join-Path $programs "Nexora POS.lnk") -Force
+  Copy-Item -LiteralPath (Join-Path $desktop "Norexos.lnk") -Destination (Join-Path $programs "Norexos.lnk") -Force
+  # Accesos con el nombre anterior de instalaciones viejas.
+  Remove-Item -LiteralPath (Join-Path $desktop "Nexora POS.lnk") -Force -ErrorAction SilentlyContinue
+  Remove-Item -LiteralPath (Join-Path (Join-Path ([Environment]::GetFolderPath("CommonPrograms")) "Nexora POS") "Nexora POS.lnk") -Force -ErrorAction SilentlyContinue
   $restore = $shell.CreateShortcut((Join-Path $programs "Restaurar un respaldo.lnk"))
   $restore.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
   $restore.Arguments = ("-STA -NoProfile -ExecutionPolicy Bypass -File `"{0}`" -InstallDir `"{1}`"" -f (Join-Path $Paths.Scripts "Restore-FitStore.ps1"), $Paths.Install)
