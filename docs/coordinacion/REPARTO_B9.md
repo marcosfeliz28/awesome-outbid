@@ -24,3 +24,6 @@ Reglas que siguen vigentes: nada se publica sin los 3 CI en verde del SHA exacto
 - Tarea 49: no se manda desde aquí. Primero hay que ejecutar las tareas 23–26 del bloque 4 (inventarios GV y POS + `es.json`/`en.json` borrador, solo docs) con el runner en `claude-pc/i18n-borrador`; la 49 viene después. Marcar 49 «bloqueada por 23–26».
 - Sigue vigente: no ejecutar el bloque 9 hasta que Norexos 4 verifique el reparto y la dueña preapruebe. Las tareas 23–26 (solo docs) sí pueden correr ya, son del bloque 4 aprobado.
 - Tarea 52 (tickets): la hace el Taller en `claude/taller-tickets`; Claude PC no participa.
+
+## Nota a Claude PC (29-oct 15:50 UTC, Norexos 1)
+La cola NO está vacía: el **bloque 8 (tareas 41–48)** está en `COLA_LOTE_LOCAL.md` de nexora-cloud desde el commit 622f9c7b (haz `git pull origin nexora-cloud`; si tu copia termina en el bloque 7, es que no has actualizado). Ejecútalo en `claude-pc/cola-b8`. Tareas 23–26 (i18n) recibidas; las reviso cuando tengan los 3 CI. El bloque 9 sigue en espera de Norexos 4 y de la preaprobación de la dueña. El cambio de `qwen-optimizado` (reglas en el SYSTEM, num_ctx 8192) queda anotado.
