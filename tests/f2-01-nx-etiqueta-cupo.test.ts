@@ -29,4 +29,13 @@ describe("nx-etiqueta-cupo", () => {
     expect(etiquetaCupo(NaN, 10)).toBe("Disponible");
     expect(etiquetaCupo(-4, 10)).toBe("Disponible");
   });
+
+  it("el umbral de pocos es un parámetro; por defecto es 3 y se puede fijar", () => {
+    expect(etiquetaCupo(6, 10)).toBe("Disponible"); // 4 libres > 3 (defecto)
+    expect(etiquetaCupo(6, 10, 3)).toBe("Disponible");
+    expect(etiquetaCupo(5, 10, 5)).toBe("Quedan 5");
+    expect(etiquetaCupo(8, 10)).toBe("Quedan 2");
+    expect(etiquetaCupo(4, 10, 5)).toBe("Disponible"); // 6 libres > 5
+    expect(etiquetaCupo(8, 10, 5)).toBe("Quedan 2");
+  });
 });
