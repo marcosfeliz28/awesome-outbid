@@ -113,3 +113,13 @@ Solo lectura del repo; salida en `docs/`; sin tocar código. Todo borrador lleva
 | 54 | Textos de ayuda de la pantalla GV (solo textos, sin cambiar reglas) | `Gv.tsx`/`GvCitas.tsx` | las pruebas existentes de GV siguen verdes |
 | 55 | Vista de impresión de la factura: ajustar solo estilos | CSS + captura | cero cambios en cálculos |
 | 56 | Pruebas extra de funciones puras ya existentes (casos límite) | `tests/` | `pnpm check` verde; no modifica código de producción |
+
+## Bloque 10 · Más tareas de solo lectura (29-oct 16:40 UTC, Norexos 1) — rama `claude-pc/cola-b10`
+**Aclaraciones:** (a) Tarea 46: SÍ puede leer `.github/workflows/*.yml`; lo prohibido era *modificarlos*. Salida solo en `docs/operacion/CI_RESUMEN.md`. (b) Tarea 47: NO leer `docs/operacion/` (tiene datos del negocio); hazla solo con `apps/web/src/POS.tsx` y `docs/venta/`, y llámala `docs/venta/MANUAL_CAJA_BORRADOR.md`. Mismas reglas del bloque 8 (encabezado «Borrador sin verificar», fuente rama+commit, archivo:línea, «PARCIAL» si no cubriste todo, «NO ENCONTRADO» si falta dato).
+| # | Tarea | Entrada | Salida | Aceptación |
+|---|---|---|---|---|
+| 57 | Inventario de textos de Management (i18n) | `apps/web/src/Management.tsx` | `docs/i18n/INVENTARIO_MANAGEMENT.md` | textos visibles con línea; solo lectura |
+| 58 | Inventario de textos del asistente y la ayuda | `apps/web/src/Assistant.tsx`, `SupportHelp.tsx`, `SupportAccess.tsx` | `docs/i18n/INVENTARIO_AYUDA.md` | textos con línea y clave propuesta |
+| 59 | Traducción EN borrador de los textos de la ayuda (de la tarea 58) | salida de 58 + `docs/i18n/borrador/en.json` | `docs/i18n/borrador/en-ayuda.json` | misma cantidad de claves que el inventario; RD$ y NCF sin traducir |
+| 60 | FAQ de GV para el personal (12 preguntas) | `apps/web/src/Gv.tsx`, `GvCitas.tsx` | `docs/venta/FAQ_GV_BORRADOR.md` | cada respuesta cita archivo:línea; sin prometer funciones inexistentes |
+| 61 | Glosario ES→EN de términos del negocio | `docs/GLOSARIO.md`, `docs/i18n/borrador/es.json` | `docs/i18n/GLOSARIO_ES_EN.md` | cada término con su traducción y nota de uso; `wc -l` ≥ términos del glosario |
