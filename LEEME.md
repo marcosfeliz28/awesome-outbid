@@ -12,3 +12,4 @@ Esta rama (`control/norexos`) es la **fuente única** del cronograma. Se lee sin
 3. Reglas que no cambian: margen = (precio − costo)/precio sin restar ITBIS, mínimo 15 %; no cambiar precios por ofertas; caja ciega; no tocar lo contado por la dueña; la tienda solo con cajas cerradas y OK de la dueña; nunca credenciales en archivos; usar «Norexos» en todo texto nuevo.
 4. Si te detienes (laptop apagada, cuota, CI en rojo, falta una decisión), escríbelo en el TABLERO: el Director reasigna o abre un agente.
 5. Decisiones de la dueña pendientes: ver «Decisiones» en el plan. Sin su respuesta, sigue con lo recomendado **solo** si no toca dinero, caja ni producción.
+6. Skills de Matt Pocock: en `.claude/skills/` de `nexora-cloud` solo hay enlaces rotos hasta que se suban los archivos (T25). Cuando estén, se usan **solo** si la tarea las pide.
