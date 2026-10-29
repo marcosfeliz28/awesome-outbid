@@ -145,6 +145,7 @@ export default defineConfig({
       "tests/f2-01-nx-iniciales.test.ts",
       "tests/f2-01-nx-normalizar-texto.test.ts",
       "tests/f2-01-nx-truncar.test.ts",
+      "tests/f2-01-nx-copia-segura.test.ts",
       "tests/f2-01-nx-validar-telefono.test.ts",
       "tests/f2-01-nx-etiqueta-cupo.test.ts",
       "tests/f2-01-nx-ordenar-estable.test.ts",
