@@ -930,3 +930,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Forja 3 (nx-fecha): borrador del 14B revisado. Corregido un error de tipos (opciones de Intl sin tipar). Prueba fallaba antes (módulo inexistente) y pasa después (3/3). Commit en claude-pc/forja-noche (ver rama). LISTA cuando CI esté en verde.
 - Forja 4-14: pendientes.
 - ChatGPT (paso 5): sin acceso de computer use; sin cambios.
+
+## Ciclo (29-oct, ciclo autónomo): orden 46 (plan v2)
+- Fetch: nexora-cloud en b3af7ce7. Orden 46 nueva: la dueña habla solo con Norexos 1; abogado/legal y cobro (Azul) salen del plan; plan v2 con fin estimado 24-nov-2026 (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md`); E1 (cambio de nombre) pasa al Taller; Claude PC se concentra en E3 (instalador) y en revisar las ramas que pidan. RESPUESTA_CLAUDE_PC_27OCT.md blob 95c141d2. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en ef063f6a.
+- E3 según el plan: 3–14 nov. Taller analiza, Norexos PC construye, Revisor audita. Las piezas pendientes en E3 necesitan decisión de la dueña: modelo de licencia, si la actualización basta con reinstalar, firma de código (compra) y prueba física en PC limpia. Por eso no empiezo a construir E3 todavía.
+- Lote Forja: `claude-pc/forja-noche` tiene 3 piezas (nx-brand 004f4b22, nx-plural b7543d3b, nx-fecha 0f727725). CI de 0f727725: windows-installer y render-images en verde, verify en curso. Sin LISTA hasta que los tres estén en verde.
+- Instalar la skill de Matt Pocock (`wayfinder`, commit a496f55) requiere a la dueña presente; no se instala en este ciclo.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
