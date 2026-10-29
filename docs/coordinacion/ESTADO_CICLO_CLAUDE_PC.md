@@ -1064,3 +1064,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - NO ENCONTRADO (archivos de entrada inexistentes en nexora-cloud): 58 (Assistant.tsx, SupportHelp.tsx, SupportAccess.tsx), 59 (depende de 58), 61 (docs/GLOSARIO.md).
 - Pendiente: LISTA de claude-pc/cola-b10 cuando su CI esté en verde.
 - Bloque 8 (cola-b8, 16829a65): CI completo en verde; LISTA escrita en el siguiente paso.
+
+## Ciclo quincenal (29-oct, 17:10Z)
+- nexora-cloud 056143df. RESPUESTA cambió: orden 51 (58, 59 y 61 con fuentes nuevas). Hecho en claude-pc/cola-b10 (630a437d): 58 inventario de ayuda (75 textos, producto-nexora d3acef4f), 59 en-ayuda.json (75 claves), 61 glosario (81 términos, PARCIAL: faltan GLOSARIO.md y glosario-siglas.md). OBSIDIAN ausente.
+- CI: pc23, a1, b01 y lumina en verde; cola-b8 con LISTA ya escrita; cola-b10 630a437d en curso. LISTA cuando termine.
