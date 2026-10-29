@@ -1220,3 +1220,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - nexora-cloud 525f864f. RESPUESTA d337e7ff (sin cambio). OBSIDIAN ausente.
 - CI: pc23, a1, b01 y lumina en verde. claude/forja-grupos-12 (grupos 1 y 2, aún sin grupo 3 ni forja-noche): verify, windows-installer y render-images en verde. La rama final la integra Norexos 1; no escribo LISTA para ella.
 - Cola local activa: vacía. ChatGPT: sin cambios.
+
+## Consulta de 30 min (29-oct)
+- nexora-cloud 525f864f. COLA_LOTE_LOCAL.md sin bloques nuevos (último: bloque 10, 23482acb). RESPUESTA d337e7ff (sin cambio).
+- Cola local activa: vacía. Pedido de tareas enviado a Norexos 1 y a Norexos 4 (hasta 8, con entrada, salida en docs/ y criterio verificable).
+- Sin tareas que ejecutar; sin LISTA nueva.
+- Pendiente: tarea 56 (pruebas límite) en la rama final que prepara Norexos 1.
