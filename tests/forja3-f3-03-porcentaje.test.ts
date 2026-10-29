@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { formatearPorcentaje } from "../packages/ui/src/nx-porcentaje";
 
 describe("formatearPorcentaje (F3-03)", () => {
-  it("español usa coma decimal y espacio antes del %", () => {
+  it("español usa punto decimal y espacio antes del %", () => {
     expect(formatearPorcentaje(15, 0)).toBe("15 %");
-    expect(formatearPorcentaje(12.5, 2)).toBe("12,50 %");
+    expect(formatearPorcentaje(12.5, 2)).toBe("12.50 %");
   });
 
   it("inglés pega el % y usa punto decimal", () => {
@@ -17,11 +17,11 @@ describe("formatearPorcentaje (F3-03)", () => {
   });
 
   it("negativos llevan signo", () => {
-    expect(formatearPorcentaje(-5, 1)).toBe("-5,0 %");
+    expect(formatearPorcentaje(-5, 1)).toBe("-5.0 %");
   });
 
   it("los decimales se ajustan al rango 0 a 4", () => {
-    expect(formatearPorcentaje(1, 9)).toBe("1,0000 %");
+    expect(formatearPorcentaje(1, 9)).toBe("1.0000 %");
     expect(formatearPorcentaje(1, -2)).toBe("1 %");
   });
 
