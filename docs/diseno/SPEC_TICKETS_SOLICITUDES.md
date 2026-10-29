@@ -35,7 +35,7 @@ Nadie ve tickets de otra sucursal. La captura solo la ven quienes ven el ticket.
 [FALTA INFORMACIÓN]: confirmar si gerencia cambia de sucursal a todas las sucursales.
 
 ## 5. Tabla propuesta (PostgreSQL, Prisma)
-Nombre: `support_ticket` (se usa el prefijo `support_`, como ya existe en la base; confirmar en `apps/api/prisma/schema.prisma` antes de crear nada).
+Nombre propuesto: `support_ticket`. No existe ningún modelo de tickets en `apps/api/prisma/schema.prisma` hoy (revisado el 29-oct), así que es un modelo nuevo.
 
 | Campo | Tipo | Notas |
 |---|---|---|
