@@ -1264,3 +1264,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Orden 63: defecto en `LANDING_EN_PLANES.md`: «Facturación conforme a la DGII» y «comprobantes de la DGII» fuera de la versión 1. No usar en la portada.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Órdenes 63 y 64 (29-oct 21:00Z)
+- nexora-cloud 3de64575. RESPUESTA 937df69f (órdenes 63 y 64). Revisado tras la orden 62.
+- Orden 63: corregida la portada en inglés (cola-b11): retiradas las afirmaciones DGII/NCF (5e41b712 y cb4f2382). Head de cola-b11: cb4f2382.
+- Orden 64: tarea 56 en claude-pc/b9-56-limites desde producto-nexora 8a94a996. Otra sesión había subido la parte de nx-truncar y nx-breakpoint (223dfa53); la continué sin duplicar. Head: bf989b05. 26/26 pruebas de los 4 archivos de límites.
+- Bloque 12 (tareas 69 a 76) completo en claude-pc/cola-b12, head 3986a3db: 70–75 por script (66, 15, 17 textos; 187 mensajes de error; 206 rutas; 35 módulos ui + tokens.css); 69 cruce por palabra clave (8 filas, veredicto por fila); 76 guía del modelo local (5 pasos con citas verificadas).
+- LISTA pendiente de CI: claude-pc/cola-b11 (cb4f2382), claude-pc/lote-local-tanda2 (2332bdb9), claude-pc/cola-b12 (3986a3db), claude-pc/b9-56-limites (bf989b05). Norexos 1 audita por muestreo estos documentos (orden 63).
+- Cola local: bloque 12 completo (8 de 8) y bloque 11 (7 de 7), tanda 2 (8 de 8).
+- ChatGPT: sin cambios.
