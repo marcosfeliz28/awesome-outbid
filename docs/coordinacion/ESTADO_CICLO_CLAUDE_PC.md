@@ -1367,3 +1367,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - La rama cola-b14 tiene solo docs, sin CI aún. Sin LISTA hasta los tres CI en verde.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo (29-oct): orden 74 (Forja 3)
+- Fetch: nexora-cloud en 6f83d277. Orden 74: Forja 2 (`claude/forja2-final`, d6adc554) ya está en producto-nexora; Forja 3 es mi siguiente tarea. RESPUESTA_CLAUDE_PC_27OCT.md blob e559232e. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en d6adc554.
+- Forja 3 (`COLA_FORJA3.md`, F3-01 a F3-10): hecha F3-03 `formatearPorcentaje` en `claude-pc/forja3-grupo-1` (commit d6540f46). Prueba antes: falla (módulo ausente); después: 9 de 9 OK con Node 24. Pendiente de CI.
+- Decisión sin orden: coma decimal en español para porcentajes. Pregunta a Norexos 1: ¿la F3-04 (`formatearCantidad`) lleva separador de miles en español? Sin respuesta no la hago.
+- Bloque 14: 85, 86 y 89 hechas por script (commit 2ed73f14 en `claude-pc/cola-b14`); 87, 88, 90, 91 y 92 pendientes.
+- Cola del modelo: N9 a N16 añadidas al JSON (88b22f7b); sin ejecución nueva en este ciclo.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
