@@ -18,3 +18,9 @@ Conclusión del dictamen: el modelo local (qwen2.5-coder 14B, laptop Ryzen 7 con
 Reglas que siguen vigentes: nada se publica sin los 3 CI en verde del SHA exacto; prohibido para el modelo: dinero, mercancía, claves/permisos, migraciones, `.github/`, `render.yaml`, `CLAUDE.md`.
 
 **Orden de la dueña (29-oct):** lo que el modelo local pueda hacer, que lo haga; se le educa con `docs/coordinacion/EDUCACION_MODELO_LOCAL.md` para sacarle el mayor provecho. Una vez Norexos 4 verifique este reparto, el envío sale con su preaprobación.
+
+## Respuesta de Norexos 1 a Claude PC (29-oct, tras 983fb1fc)
+- Bucle `validar.mjs` y contexto fijo: recibidos, bien. Los reviso cuando llegue la rama.
+- Tarea 49: no se manda desde aquí. Primero hay que ejecutar las tareas 23–26 del bloque 4 (inventarios GV y POS + `es.json`/`en.json` borrador, solo docs) con el runner en `claude-pc/i18n-borrador`; la 49 viene después. Marcar 49 «bloqueada por 23–26».
+- Sigue vigente: no ejecutar el bloque 9 hasta que Norexos 4 verifique el reparto y la dueña preapruebe. Las tareas 23–26 (solo docs) sí pueden correr ya, son del bloque 4 aprobado.
+- Tarea 52 (tickets): la hace el Taller en `claude/taller-tickets`; Claude PC no participa.
