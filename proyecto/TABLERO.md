@@ -8,7 +8,7 @@
 | T03 | Abogado de marca | — | — | fuera de v1 | Retirado del alcance v1 (29-oct). Norexos 1 lo plantea a la dueña |
 | T04 | GV «Cambiar fecha/curso» | E0 | Taller → Norexos 1 | en curso | Rama `claude/taller-gv` 280f2e0f; falta D1, 3 CI y «cajas cerradas» |
 | T05 | Diagnóstico completo + qué falta para vender | E0 | Taller | en curso | Documento en `claude/taller-estado` 796d573c |
-| T06 | Cambio de nombre en código | E1 | Taller | en curso | Asignado por Norexos 1. Rama `claude/taller-marca` (no `marca/cambio-nombre`, por los límites del Taller). Entrega 2-nov con 3 CI verdes del SHA exacto |
+| T06 | Cambio de nombre en código | E1 | Taller | en curso | Zonas 1–2 entregadas; zonas 3–4 en curso (reportado por Norexos 1, 29-oct 13:43 UTC). Asignado por Norexos 1. Rama `claude/taller-marca` (no `marca/cambio-nombre`, por los límites del Taller). Entrega 2-nov con 3 CI verdes del SHA exacto |
 | T07 | Cola de Forja (14 piezas) y de Brazo (bloques 3–5) | E1–E4 | Norexos PC | en curso | Laptop activa desde 13:02 UTC; piezas 1 y 2 de Forja hechas (`claude-pc/forja-noche`). E1 ya no es suya |
 | T08 | Conectar animaciones y F2-03/F3-01 | E2 | Taller; ChatGPT desde 2-nov | pendiente | Entrega 7-nov. Piezas en `producto-nexora` ef063f6a (parcial: 6 de 12 primitivos Nx*) |
 | T09 | Instalador vendible (licencia/activación, actualización, respaldo local; firma si D7) | E3 | Norexos PC (licencia y actualización, `claude-pc/instalador-e3`) + Taller + Revisor | pendiente | Entrega 10-nov. Depende de D7, de T05 y de la decisión de T21 |
@@ -24,4 +24,5 @@
 | T19 | Lanzamiento controlado | E8 | Dueña + Norexos 1 | pendiente | 24-nov (mejor caso 18-nov). Checklist firmada |
 | T20 | Skill `mattpocock/skills@wayfinder` (propuesta) | E0 | Norexos 1 | hecho | Instalada por Norexos 1 en su propia sesión, auditada por Norexos 1 (commit a496f55, solo texto). Reportado por Norexos 1; no es auditoría del Revisor. Norexos 5 no instala skills |
 | T21 | Licencia (suscripción o por PC) y actualización simple (reinstalar encima) | E3 | Norexos PC, rama `claude-pc/instalador-e3` | bloqueado | Espera decisión de la dueña sobre el modelo de venta y de actualización. Norexos 1 lo plantea a la dueña |
+| T23 | CI pendientes de los SHA 33c0f4cc y 7e80dfae | E1 | Norexos 1 (verifica) | pendiente | Reportados por Norexos 1 el 29-oct 13:43 UTC. Sin rama identificada en el repo; Norexos 5 lo pregunta en la siguiente revisión |
 | T22 | Instalaciones de skills (órdenes 32 y 33) | E0 | Norexos 1 y Taller | en curso | Norexos 1, por orden directa de la dueña: `wayfinder` y `karpathy-guidelines` (commit 2c60614), solo texto, instaladas. Agent Skills (eb07f19, solo skills, sin hooks) y ECC (aislado, solo markdown, sin hooks, MCP ni scripts) delegadas al Taller con esas restricciones. Superpowers no se toca (ya existía). Pendiente: el Taller reporta cuando termine |
