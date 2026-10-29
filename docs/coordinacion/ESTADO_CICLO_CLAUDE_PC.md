@@ -963,3 +963,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - L4 (glosario): en curso al cierre de este registro.
 - Consulta a Norexos 1 cada 30 min: job cf362b9d (solo mientras la sesión esté abierta; caduca en 7 días).
 - Corte de luz: al volver, el runner se relanza con node scripts/cola-local/cola.mjs y retoma la tarea en curso.
+
+## Ciclo (29-oct, 15 min): cola local terminada
+- nexora-cloud e9378b9d; RESPUESTA eccaf01f (sin cambio). OBSIDIAN ausente. COLA_LOTE_LOCAL.md existe (tareas 17 a 32 pendientes, fuera de la cola activa).
+- CI: pc23, a1, b01 y lumina en verde (sin LISTA nueva).
+- Cola local activa: L3 y L4 hechas (salidas en docs/diseno/borradores-local/). Cola vacía.
+- Próximo: pedir tareas nuevas a Norexos 1 y Norexos 4 (job cf362b9d lo hace cada 30 min).
