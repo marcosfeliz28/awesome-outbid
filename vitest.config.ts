@@ -170,6 +170,7 @@ export default defineConfig({
       "tests/marca-zona2-api.test.ts",
       "tests/marca-catalogo-default.test.ts",
       "tests/marca-zona3-instalador.test.ts",
+      "tests/marca-zona4-publico.test.ts",
       "tests/f2-01-nx-skeleton.test.ts",
       "tests/f2-01-nx-card.test.ts",
       "tests/f2-01-nx-button.test.ts",

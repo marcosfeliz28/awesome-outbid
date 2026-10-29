@@ -1,6 +1,6 @@
 # Respaldo y exportar datos
 
-Tus datos se guardan en la nube de Nexora, no en este equipo. Si cambias de computadora o de celular, entra con tu código de empresa y tu usuario y todo sigue ahí.
+Tus datos se guardan en la nube de Norexos, no en este equipo. Si cambias de computadora o de celular, entra con tu código de empresa y tu usuario y todo sigue ahí.
 
 Descargar informes:
 - «Reportes»: elige el informe y descárgalo en Excel o PDF.

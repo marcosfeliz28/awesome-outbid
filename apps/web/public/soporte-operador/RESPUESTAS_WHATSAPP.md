@@ -4,15 +4,15 @@ Textos listos para copiar y completar antes de enviarlos. Sustituye los campos e
 
 ## Bienvenida y orientación
 
-1. Hola, [NOMBRE]. Gracias por escribir a Nexora POS. Cuéntame qué necesitas y te orientamos con gusto.
+1. Hola, [NOMBRE]. Gracias por escribir a Norexos. Cuéntame qué necesitas y te orientamos con gusto.
 
-2. Bienvenido/a, [NOMBRE]. Nexora POS ayuda a manejar ventas, caja e inventario. Para recomendarte el plan adecuado, cuéntame cuántas sucursales, cajas y personas usarán el sistema.
+2. Bienvenido/a, [NOMBRE]. Norexos ayuda a manejar ventas, caja e inventario. Para recomendarte el plan adecuado, cuéntame cuántas sucursales, cajas y personas usarán el sistema.
 
 3. Hola, [NOMBRE]. Recibimos tu mensaje. Para ayudarte, indícanos el nombre de tu negocio y describe qué quieres resolver. No compartas contraseñas, PIN ni datos bancarios por este chat.
 
 ## Pagos
 
-4. Hola, [NOMBRE]. Confirmamos que recibimos tu pago de [MONTO] en la fecha [FECHA]. Gracias. El pago quedó registrado en tu cuenta de Nexora POS.
+4. Hola, [NOMBRE]. Confirmamos que recibimos tu pago de [MONTO] en la fecha [FECHA]. Gracias. El pago quedó registrado en tu cuenta de Norexos.
 
 5. Hola, [NOMBRE]. Recibimos tu comprobante de [MONTO] con fecha [FECHA]. Lo revisaremos antes de confirmar el pago. Por seguridad, no envíes contraseñas, PIN ni números completos de cuentas.
 
@@ -38,15 +38,15 @@ Textos listos para copiar y completar antes de enviarlos. Sustituye los campos e
 
 ## Planes y paquetes de IA
 
-15. Hola, [NOMBRE]. Estos son los planes mensuales vigentes de Nexora POS: Autoservicio RD$1,250 con 100 preguntas de IA; Básico RD$2,000 con 250; Pro RD$4,000 con 600; y Premium RD$7,000 con 1,500. Dinos cuántas sucursales, cajas y usuarios necesitas para orientarte.
+15. Hola, [NOMBRE]. Estos son los planes mensuales vigentes de Norexos: Autoservicio RD$1,250 con 100 preguntas de IA; Básico RD$2,000 con 250; Pro RD$4,000 con 600; y Premium RD$7,000 con 1,500. Dinos cuántas sucursales, cajas y usuarios necesitas para orientarte.
 
-16. Hola, [NOMBRE]. Tu plan incluye una cantidad mensual de preguntas de IA. Cuando se agotan, se pausa únicamente el uso de la IA; las demás funciones de Nexora POS continúan disponibles.
+16. Hola, [NOMBRE]. Tu plan incluye una cantidad mensual de preguntas de IA. Cuando se agotan, se pausa únicamente el uso de la IA; las demás funciones de Norexos continúan disponibles.
 
 17. Hola, [NOMBRE]. Hay dos paquetes extra de IA: RD$399 por 100 preguntas y RD$999 por 300 preguntas. Confírmanos cuál deseas solicitar y te indicaremos cómo continuar.
 
 18. Hola, [NOMBRE]. Recibimos tu solicitud de un paquete de IA por [MONTO] en [FECHA]. Primero revisaremos el pago; te confirmaremos por este medio cuando el paquete quede registrado.
 
-19. Hola, [NOMBRE]. Para revisar tu consumo de IA, indícanos el nombre de la empresa y el mensaje que muestra Nexora POS. No necesitamos tu contraseña ni tu PIN.
+19. Hola, [NOMBRE]. Para revisar tu consumo de IA, indícanos el nombre de la empresa y el mensaje que muestra Norexos. No necesitamos tu contraseña ni tu PIN.
 
 ## Ayuda de uso
 
@@ -58,9 +58,9 @@ Textos listos para copiar y completar antes de enviarlos. Sustituye los campos e
 
 23. Hola, [NOMBRE]. Si una venta no aparece, busca por fecha, número de venta o cliente y revisa si quedó anulada o pendiente. No vuelvas a cobrar hasta confirmar qué ocurrió. Envíanos la fecha [FECHA] y el mensaje que ves.
 
-24. Hola, [NOMBRE]. Si la impresora no imprime, confirma que esté encendida, con papel y conectada a la computadora correcta. Intenta imprimir de nuevo desde Nexora POS. Si continúa, envíanos una foto del error y el modelo de la impresora.
+24. Hola, [NOMBRE]. Si la impresora no imprime, confirma que esté encendida, con papel y conectada a la computadora correcta. Intenta imprimir de nuevo desde Norexos. Si continúa, envíanos una foto del error y el modelo de la impresora.
 
-25. Hola, [NOMBRE]. Si tu empresa tiene habilitadas las ventas sin conexión y vendiste sin internet, conserva abierta la aplicación y no repitas la venta. Cuando regrese la conexión, deja que Nexora POS procese la cola y verifica el resultado antes de cobrar otra vez.
+25. Hola, [NOMBRE]. Si tu empresa tiene habilitadas las ventas sin conexión y vendiste sin internet, conserva abierta la aplicación y no repitas la venta. Cuando regrese la conexión, deja que Norexos procese la cola y verifica el resultado antes de cobrar otra vez.
 
 26. Hola, [NOMBRE]. Para investigar el problema, envíanos: qué estabas haciendo, fecha y hora aproximadas [FECHA], texto completo del error, dispositivo y navegador. Puedes adjuntar una captura, pero oculta contraseñas, PIN y datos sensibles.
 
@@ -68,7 +68,7 @@ Textos listos para copiar y completar antes de enviarlos. Sustituye los campos e
 
 27. Hola, [NOMBRE]. Con la información recibida no podemos resolverlo de forma segura todavía. Vamos a escalar el caso al equipo de soporte. No repitas la operación ni cambies registros mientras se revisa.
 
-28. Hola, [NOMBRE]. Escalamos tu caso porque involucra una venta, un pago o un cuadre. Envíanos la fecha [FECHA], el monto [MONTO] y el número del documento que muestra Nexora POS. No compartas contraseñas ni PIN.
+28. Hola, [NOMBRE]. Escalamos tu caso porque involucra una venta, un pago o un cuadre. Envíanos la fecha [FECHA], el monto [MONTO] y el número del documento que muestra Norexos. No compartas contraseñas ni PIN.
 
 29. Hola, [NOMBRE]. Seguimos revisando tu caso. Aún no tenemos una conclusión confirmada y preferimos no darte una respuesta incorrecta. Te escribiremos por este mismo medio cuando exista un resultado verificable.
 
