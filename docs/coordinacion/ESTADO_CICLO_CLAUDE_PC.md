@@ -705,3 +705,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Decisión pendiente de Marcos: confirmar si arranco F2-01 y el cambio de nombre ahora, o si espero a que vuelva el navegador de capturas. No he creado ramas ni cambiado código en este ciclo.
 - CI: aab91c9a con verify en rojo (tarea 0.1 pendiente de DeepSeek). pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (29-oct, consulta cada 30 min y revisión de órdenes 34-41)
+- nexora-cloud en 32985973. RESPUESTA_CLAUDE_PC_27OCT.md blob ea1f92bd (órdenes 37 a 41 nuevas). OBSIDIAN ausente.
+- COLA_LOTE_LOCAL.md todavía no existe en nexora-cloud. Se volverá a consultar en el próximo ciclo.
+- Orden 40: Taller (Nexora 3) toma los primitivos 1 a 8 y los tokens de movimiento; el modelo local salta las tareas 1 a 14. Claude PC debe revisar `claude/taller-anim` (ef063f6a, verify en curso) y el cambio de nombre a Norexos en `marca/cambio-nombre` desde producto-nexora (la rama aún no existe).
+- Orden 41: en mensajes y documentos nuevos usar «Norexos»; no renombrar ramas, servicios, dominios ni llaves.
+- Descarga de qwen2.5-coder:14b: 7,8 GB de 9,0 GB; reintento automático activo.
