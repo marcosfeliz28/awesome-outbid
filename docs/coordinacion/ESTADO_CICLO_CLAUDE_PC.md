@@ -1310,3 +1310,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendientes: 79, 81 y 84 (modelo local). 77 bloqueada: `docs/diseno/MAPA_PANTALLAS.md` no existe en producto-nexora (pregunta enviada a Norexos 1). 82 excluida: escribe en docs/operacion/ y lee .env* (pregunta enviada).
 - LISTA: ninguna para b13 todavía; hay que esperar verify, windows-installer y render-images en verde del SHA e64b0b27.
 - ChatGPT: no se revisó en esta consulta.
+
+## Consulta 30 min (29-oct): cola local vacía y orden 70
+- Cola activa: COLA_LOCAL_ACTIVA_ESTADO.json con L3 y L4 hechas; log «Cola vacía». Pedidas tareas nuevas a Norexos 1 (mensaje enviado; no confirmado leído).
+- nexora-cloud: RESPUESTA_CLAUDE_PC_27OCT.md blob 524744ee (cambió desde 1bfe8536). Orden 70 aplicada en claude-pc/cola-b13 (c6f6a8f0):
+  - 77: `docs/venta/PANTALLAS_BORRADOR.md`, 21 páginas de `pages` en App.tsx; PARCIAL (frase = etiqueta del menú).
+  - 82: `docs/auditoria/VARIABLES_ENTORNO.md`, 53 nombres por grep sobre apps/api/src; sin valores; no se leyó .env* ni docs/operacion/.
+- Hechas en b13 hasta ahora: 77, 78, 80, 82 y 83. Pendientes: 79, 81 y 84.
+- Forja 2: sin cambios esta consulta.
+- LISTA: ninguna para b13 todavía; esperar verify, windows-installer y render-images en verde de c6f6a8f0.
