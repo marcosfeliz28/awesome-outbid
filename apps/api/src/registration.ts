@@ -80,8 +80,8 @@ async function sendVerification(email: string, token: string) {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from, to: [email], subject: "Confirma tu correo de Nexora POS",
-      html: `<p>Confirma tu correo para entrar a Nexora POS.</p><p><a href="${url.toString()}">Confirmar correo</a></p><p>El enlace vence en 24 horas.</p>`,
+      from, to: [email], subject: "Confirma tu correo de Norexos",
+      html: `<p>Confirma tu correo para entrar a Norexos.</p><p><a href="${url.toString()}">Confirmar correo</a></p><p>El enlace vence en 24 horas.</p>`,
     }),
     signal: AbortSignal.timeout(8000),
   }).catch(() => null);
@@ -198,7 +198,7 @@ export class RegistrationService implements OnModuleDestroy {
       consent = { metodo: "digital", ...legal };
     } else if (tenant?.termsVersion?.startsWith("papel:"))
       consent = { metodo: "papel", termsVersion: tenant.termsVersion, privacyVersion: tenant.privacyVersion ?? tenant.termsVersion };
-    else throw new HttpException("Falta registrar el acuerdo de servicio de esta empresa. Pide a Nexora una invitación nueva.", 409);
+    else throw new HttpException("Falta registrar el acuerdo de servicio de esta empresa. Pide a Norexos una invitación nueva.", 409);
     const [passwordHash, pinHash] = await Promise.all([hash(input.password, 12), hash(input.managerPin, 12)]);
     const acceptedAt = new Date();
     await this.db.$transaction(async (tx) => {

@@ -101,7 +101,7 @@ export function decodeHeader(header: Buffer) {
   if (header.length < HEADER_BYTES)
     throw new BackupFormatError("El archivo es demasiado corto.");
   if (!header.subarray(0, 4).equals(MAGIC))
-    throw new BackupFormatError("No es un respaldo cifrado de Nexora (NXBK).");
+    throw new BackupFormatError("No es un respaldo cifrado de Norexos (NXBK).");
   if (header[4] !== FORMAT_VERSION)
     throw new BackupFormatError(
       `Versión de formato no soportada: ${header[4]}.`,

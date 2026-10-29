@@ -3594,7 +3594,7 @@ export class SalesController {
     res.setHeader("Content-Type", "application/pdf");
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     doc.pipe(res);
-    doc.fontSize(22).text(business.name || "Nexora POS", { align: "center" });
+    doc.fontSize(22).text(business.name || "Norexos", { align: "center" });
     if (business.branchName)
       doc.fontSize(11).text(business.branchName, { align: "center" });
     if (business.address)
@@ -3947,7 +3947,7 @@ export class SalesController {
       'inline; filename="estado-de-cuenta.pdf"',
     );
     doc.pipe(res);
-    doc.fontSize(18).text(business.name || "Nexora POS", { align: "center" });
+    doc.fontSize(18).text(business.name || "Norexos", { align: "center" });
     doc.fontSize(14).text("Estado de cuenta", { align: "center" });
     doc
       .fontSize(9)

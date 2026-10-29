@@ -40,7 +40,7 @@ export function ncfSequenceWarnings(row: NcfSequenceSnapshot, today: string) {
   if (remaining < 20n) {
     const declaredOn = row.nextConfirmedAt.toISOString().slice(0, 10).split("-").reverse().join("/");
     warnings.push({ kind: "numbers",
-      message: `${row.type}: quedan ${remaining < 0n ? "0" : remaining.toString()} números según el próximo declarado el ${declaredOn} (fecha UTC). Confirma uso fuera de Nexora y saldo con la contable.` });
+      message: `${row.type}: quedan ${remaining < 0n ? "0" : remaining.toString()} números según el próximo declarado el ${declaredOn} (fecha UTC). Confirma uso fuera de Norexos y saldo con la contable.` });
   }
   if (row.expiryApplies && row.expiresOn) {
     const due = Date.parse(row.expiresOn.toISOString().slice(0, 10) + "T12:00:00Z");

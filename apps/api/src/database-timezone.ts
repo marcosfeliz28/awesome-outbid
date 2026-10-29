@@ -28,7 +28,7 @@ export const isUtcTimeZone = (name: unknown) =>
   typeof name === "string" && UTC_NAMES.has(name.trim().toLowerCase());
 
 export const timeZoneWarning = (name: string) =>
-  `[Nexora] AVISO: la zona horaria de la sesión de PostgreSQL es «${name}», no UTC. ` +
+  `[Norexos] AVISO: la zona horaria de la sesión de PostgreSQL es «${name}», no UTC. ` +
   "Las fechas guardadas (timestamp sin zona) pueden correrse horas. " +
   "Agrega `?options=-c%20TimeZone%3DUTC` a DATABASE_URL o ejecuta " +
   "ALTER ROLE <usuario> SET TimeZone TO 'UTC'.";

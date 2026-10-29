@@ -80,7 +80,7 @@ import {
 // Configuración
 
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
-export const FOLDER_NAME = "Nexora POS respaldos";
+export const FOLDER_NAME = "Norexos respaldos";
 const STATE_TTL_MS = 10 * 60000;
 const COOKIE = "nexora_drive_oauth";
 const COOKIE_PATH = "/api/backups/google";
@@ -995,7 +995,7 @@ export class DriveBackupService {
       parents: [folderId],
       mimeType: "application/octet-stream",
       description:
-        "Respaldo cifrado de Nexora POS. Se abre con scripts/decrypt-backup.mjs y la frase BACKUP_ENCRYPTION_KEY.",
+        "Respaldo cifrado de Norexos. Se abre con scripts/decrypt-backup.mjs y la frase BACKUP_ENCRYPTION_KEY.",
       appProperties: {
         nexoraBackup: "1",
         format: "NXBK1",

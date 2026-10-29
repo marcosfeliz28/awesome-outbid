@@ -311,7 +311,7 @@ export class TenantExportController {
 
   @Get("export") @Permit("*")
   async download(@CurrentUser() actor: Actor, @Query("format") format: string | undefined, @Req() req: Request, @Res() res: Response) {
-    if (process.env.PRODUCT_TENANCY !== "required") throw new HttpException("Disponible en el producto Nexora.", 404);
+    if (process.env.PRODUCT_TENANCY !== "required") throw new HttpException("Disponible en el producto Norexos.", 404);
     if (format !== "json" && format !== "xlsx") throw new HttpException("Elige JSON o Excel.", 400);
     const abort = new AbortController();
     req.once("aborted", () => abort.abort());

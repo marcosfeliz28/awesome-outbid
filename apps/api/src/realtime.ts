@@ -333,7 +333,7 @@ export class RealtimeController {
       // operar al primero que envíe su ID.
       if (!t.secretHash)
         bad(
-          "Este equipo todavía no se ha identificado. Abre Nexora POS en ese equipo y vuelve a intentarlo.",
+          "Este equipo todavía no se ha identificado. Abre Norexos en ese equipo y vuelve a intentarlo.",
         );
       if (t.approvedAt) return publicTerminal(t);
       await enforcePlanQuota(tx as any, "boxes");

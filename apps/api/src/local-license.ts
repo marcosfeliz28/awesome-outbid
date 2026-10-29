@@ -254,7 +254,7 @@ export function localLicense() {
   );
   const installationId = process.env.PRODUCT_LOCAL_INSTALLATION_ID;
   if (!directory || !publicKey || !installationId)
-    throw new Error("Falta configurar la licencia de Nexora POS Local.");
+    throw new Error("Falta configurar la licencia de Norexos Local.");
   configured = new LocalLicense({
     directory,
     publicKey,
