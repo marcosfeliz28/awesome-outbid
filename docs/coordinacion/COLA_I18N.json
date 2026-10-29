@@ -1,0 +1,25 @@
+{
+  "descripcion": "Bloque 4 (tareas 23–26), rama claude-pc/i18n-borrador. 23 y 24 y 25 por script; 26 por modelo. Todo borrador sin verificar. Partida en dos por tiempo de respuesta (GV y POS).",
+  "tareas": [
+    {
+      "id": "26a-en-gv",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1500,
+      "instrucciones": "Traduce al inglés cada valor del archivo de abajo. Reglas: 1) devuelve SOLO un objeto JSON válido, con exactamente las mismas claves (lo que está a la izquierda de '='), sin texto antes ni después; 2) traducción literal y clara para una app de caja y gestión; 3) mantén RD$, ITBIS y DGII sin traducir; 4) 'Cursos' y 'GV' se quedan igual; 5) si un valor no se entiende, pon el original entre corchetes y NO inventes. Lista de claves y valores:",
+      "entradas": [
+        "docs/i18n/borrador/CLAVES_GV.md"
+      ],
+      "salida": "docs/i18n/borrador/en-gv.json"
+    },
+    {
+      "id": "26b-en-pos",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1500,
+      "instrucciones": "Traduce al inglés cada valor del archivo de abajo. Reglas: 1) devuelve SOLO un objeto JSON válido, con exactamente las mismas claves (lo que está a la izquierda de '='), sin texto antes ni después; 2) traducción literal y clara para una app de caja y gestión; 3) mantén RD$, ITBIS y DGII sin traducir; 4) 'Cursos' y 'GV' se quedan igual; 5) si un valor no se entiende, pon el original entre corchetes y NO inventes. Lista de claves y valores:",
+      "entradas": [
+        "docs/i18n/borrador/CLAVES_POS.md"
+      ],
+      "salida": "docs/i18n/borrador/en-pos.json"
+    }
+  ]
+}
