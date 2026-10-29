@@ -40,3 +40,8 @@ Script rechaza archivos prohibidos → `vitest` del archivo → `pnpm check` →
 - Borradores con datos inventados y pasos que no existían.
 - «Sin erratas» tras mirar 1 archivo (alcance sin decir).
 - Cambiar un nombre que no debía cambiarse (la carpeta de Drive «Nexora POS respaldos» se conserva).
+- Funciones con un límite numérico (`truncar`, `recortar`, páginas, máximos): prueba SIEMPRE 0, 1 y negativos. Un `slice` con índice negativo no falla: corta desde el final y devuelve más de lo permitido (caso `truncar("hola mundo", 0)`, 29-oct).
+- Antes de `normalize("NFD")` protege la «ñ»: NFD la separa en n + tilde y se pierde al quitar diacríticos.
+- No cortes cadenas con emojis por la mitad: respeta pares de surrogados.
+- Las pruebas de Vitest necesitan `import { describe, it, expect } from "vitest"`; sin eso no corren.
+- `split(" ")` falla con espacios repetidos: usa `split(/\s+/)` después de `trim()`.
