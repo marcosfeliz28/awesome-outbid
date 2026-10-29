@@ -48,5 +48,50 @@
     "estado": "hecha",
     "actualizado": "2026-10-29T21:54:03.809Z",
     "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
+  },
+  "N9-faq-gv-en": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "claude-pc/cola-n 2f4d91a9 (sin verificar)"
+  },
+  "N10-manual-caja-en": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "claude-pc/cola-n 2b2820d8 (guía, citas no comprobadas)"
+  },
+  "N11-faq-caja-simple": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "claude-pc/cola-n b67fd574"
+  },
+  "N12-titulares-portada": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "claude-pc/cola-n b0605125 (conteos del modelo no verificados)"
+  },
+  "N15-preguntas-que-faltan-caja": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "claude-pc/cola-n 21f2a2a3 (PARCIAL)"
+  },
+  "N16-resumen-landing-en": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "claude-pc/cola-n b477d107"
+  },
+  "N17-titulares-largos": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "claude-pc/cola-n 954169799604 (2 titulares, wc -m)"
+  },
+  "N13-meta-descripciones": {
+    "estado": "retirada",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "orden 76: Norexos 1 la hizo a mano y medida; sale de la cola"
+  },
+  "N14-mensaje-whatsapp": {
+    "estado": "rechazada",
+    "actualizado": "2026-10-29T23:49:25.700Z",
+    "nota": "usa Nexora POS y NCF conforme a la DGII; no se sube"
   }
 }
