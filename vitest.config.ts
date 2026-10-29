@@ -145,6 +145,7 @@ export default defineConfig({
       "tests/f2-01-nx-iniciales.test.ts",
       "tests/f2-01-nx-normalizar-texto.test.ts",
       "tests/f2-01-nx-truncar.test.ts",
+      "tests/f2-01-nx-ordenar-estable.test.ts",
       "tests/f2-01-nx-tiempo-relativo.test.ts",
       "tests/f2-01-nx-contraste.test.ts",
       "tests/f2-01-nx-foco-ciclico.test.ts",
