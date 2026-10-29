@@ -45,3 +45,5 @@ Script rechaza archivos prohibidos → `vitest` del archivo → `pnpm check` →
 - No cortes cadenas con emojis por la mitad: respeta pares de surrogados.
 - Las pruebas de Vitest necesitan `import { describe, it, expect } from "vitest"`; sin eso no corren.
 - `split(" ")` falla con espacios repetidos: usa `split(/\s+/)` después de `trim()`.
+- En una tabla, una fila = una cita (texto + archivo:línea). Nunca pegar líneas de código fuente ni dejar una fila cortada: si la salida sale partida, se rehace por partes pequeñas (caso tarea 80, 29-oct).
+- Nombres de variables de entorno: salen del código (`process.env.X`), nunca de archivos `.env*`, y nunca con su valor.
