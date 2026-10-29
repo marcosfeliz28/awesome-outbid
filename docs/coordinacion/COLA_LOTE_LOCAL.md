@@ -67,3 +67,49 @@ Se ejecuta **en orden, un bloque tras otro**, sin esperar a Nexora 1. Reglas de 
 
 ## Bloque 6 · Si sobra tiempo (mismo trato) 
 Repite la verificación de los bloques 2 a 5 contra el repositorio actual y corrige los borradores con los comandos reales; después, una prueba extra por cada función pura (casos límite). Avisa a Nexora 1 con un solo resumen: tareas hechas, saltadas y por qué.
+
+## Bloque 7 · Tandas nuevas (pedido de Claude PC, 29-oct) — rama `claude-pc/cola-b7`
+Solo lectura del repo; salida en `docs/`; sin tocar código. Si falta dato: escribir «NO ENCONTRADO», no inventar.
+| # | Tarea | Entrada | Salida | Aceptación |
+|---|---|---|---|---|
+| 33 | Lista de permisos de la API | `apps/api/src/*.ts` | `docs/api/PERMISOS.md` | cada permiso (`gv:read`…) con las rutas que lo exigen |
+| 34 | Variables de entorno | `apps/api/src`, `render.yaml`, `.env.example` | `docs/operacion/VARIABLES_ENTORNO.md` | nombre, para qué sirve, obligatoria sí/no; **sin valores ni claves** |
+| 35 | Migraciones en orden | `apps/api/prisma/migrations` | `docs/api/MIGRACIONES.md` | una línea por migración: qué tabla/columna toca |
+| 36 | Textos de error al usuario | `apps/api/src` | `docs/i18n/ERRORES_API.md` | mensaje en español, archivo:línea, clave propuesta |
+| 37 | Pantallas y rutas del web | `apps/web/src` | `docs/diseno/MAPA_PANTALLAS.md` | ruta → componente → permiso necesario |
+| 38 | Pruebas sin dueño claro | `tests/` | `docs/auditoria/MAPA_PRUEBAS.md` | prueba → área (GV, caja, instalador…); marcar las que requieren Postgres |
+| 39 | Preguntas frecuentes de la dueña | `docs/operacion`, `docs/venta` | `docs/venta/FAQ_BORRADOR.md` | 15 preguntas con respuesta citando el documento fuente |
+| 40 | Revisión de enlaces rotos en docs | `docs/**/*.md` | `docs/auditoria/ENLACES_ROTOS.md` | ruta citada que no existe, archivo:línea |
+
+## Bloque 8 · Tandas nuevas (pedido de Claude PC, 29-oct) — rama `claude-pc/cola-b8`
+Solo lectura del repo; salida en `docs/`; sin tocar código. Todo borrador lleva encabezado «Borrador sin verificar», rama+commit de la fuente y archivo:línea en cada cita. Si falta dato: «NO ENCONTRADO». Si no cubres todo, escribe «PARCIAL» y cuántos archivos miraste de cuántos.
+| # | Tarea | Entrada | Salida | Aceptación (verificable) |
+|---|---|---|---|---|
+| 41 | Índice de documentos | `docs/**/*.md` | `docs/INDICE.md` | `wc -l` ≥ nº de .md bajo `docs/`; cada línea: ruta + título (primera línea `#`) |
+| 42 | Modelos de datos en palabras simples | `apps/api/prisma/schema.prisma` | `docs/api/MODELOS.md` | `grep -c '^## '` = nº de `model` del schema; sin campos inventados |
+| 43 | Eventos de auditoría | `apps/api/src` (llamadas a audit) | `docs/api/EVENTOS_AUDITORIA.md` | cada evento `gv_payment_void`… con archivo:línea; `grep -c` ≥ 20 o «PARCIAL» |
+| 44 | Atajos y textos de la caja | `apps/web/src/POS.tsx` | `docs/i18n/INVENTARIO_POS_ATAJOS.md` | solo lectura; lista de textos visibles con línea |
+| 45 | Dependencias y para qué sirven | `package.json` de la raíz y `apps/*` | `docs/auditoria/DEPENDENCIAS.md` | nombre, versión exacta, una línea de uso; `wc -l` ≥ nº de dependencias |
+| 46 | Resumen de cada workflow de CI | `.github/workflows/*.yml` | `docs/operacion/CI_RESUMEN.md` | un apartado por job (`verify`, `windows-installer`, `render-images`) con pasos reales |
+| 47 | Manual de la caja para cajera (borrador) | `docs/operacion`, `apps/web/src/POS.tsx` | `docs/venta/MANUAL_CAJA_BORRADOR.md` | pasos numerados; sin prometer funciones que no estén en el código |
+| 48 | Lista de TODO/FIXME del código | `apps/**/src`, `tests/` | `docs/auditoria/TODOS.md` | `grep -rn 'TODO\|FIXME' apps tests \| wc -l` coincide con las líneas listadas |
+
+## Bloque 9 · PROPUESTA DE CONSTRUCCIÓN — **NO EJECUTAR todavía: espera el dictamen de Claude PC** (una rama por tarea: `claude-pc/b9-<número>`)
+**Pedido a Claude PC (orden de la dueña, 29-oct):** antes de empezar nada, escribe `docs/coordinacion/DICTAMEN_PC.md`: (a) modelo local y capacidad real de la PC ampliada (tamaño, velocidad, contexto); (b) para cada tarea 49–56: «puede / puede con ayuda / no puede», con motivo y tiempo estimado; (c) qué otras tareas de mayor tamaño sí podría construir; (d) cómo auditarás tú lo que construya el modelo local. Decides tú qué se le asigna. Después Norexos 1 analiza tu dictamen, desglosa de nuevo, **Norexos 4 (Revisor) lo verifica** y la dueña da su preaprobación al envío final.
+**Reparto fijado por la dueña:** la PC (modelo local, capacidad ampliada) CONSTRUYE; Norexos 1 AUDITA y ARREGLA lo que falle; Claude PC revisa y sube. Nada se publica sin los 3 CI en verde y mi revisión del diff.
+**Reglas de construcción (todas):**
+1. Cada tarea trae su prueba (vitest) y debe pasar `pnpm check` en la laptop antes de subir. Sin prueba no se acepta.
+2. **Prohibido tocar:** dinero (márgenes, precios, cobros, cuadre), mercancía/inventario, autenticación y permisos, migraciones de base de datos, `.github/`, `render.yaml`, `CLAUDE.md`, llaves y variables de entorno.
+3. Cambios pequeños: máximo 5 archivos por tarea. Si necesita más, parar y avisar.
+4. Al subir, el mensaje del commit dice: qué hizo, cómo lo probó, qué NO probó.
+5. Primero escribir `docs/coordinacion/ESTADO_PC.md` con: modelo local, tamaño, velocidad aproximada y límites reales (para repartir bien lo siguiente).
+| # | Tarea | Salida | Aceptación |
+|---|---|---|---|
+| 49 | `t()` de textos con respaldo en español y archivos `es.json`/`en.json` (de las tareas 25–27) | `packages/ui/src/nx-i18n.ts` + prueba | clave faltante → texto en español; `pnpm check` verde |
+| 50 | Las 14 funciones puras de `COLA_FORJA.md` con su prueba cada una | `packages/ui/src/` o ruta indicada en esa cola | cada función con ≥3 casos incluidos los límite |
+| 51 | Selector de idioma ES/EN en la portada pública (solo textos, sin tocar la caja) | componente web + prueba | cambia de idioma sin recargar; recuerda la elección en el navegador |
+| 52 | Formulario «Pedir un cambio» (ticket) en la app: solo captura título y descripción y los guarda en la ruta que ya exista | componente + prueba | si no existe ruta de API, **parar y avisar** (no inventar API) |
+| 53 | Animaciones del plan `docs/diseno/PLAN_APP_ANIMADA_29OCT.md` (las 4 primeras): CSS nativo, ≤240 ms, respetan «reducir movimiento» | componentes + prueba de la preferencia | no cambian la lógica de ninguna pantalla |
+| 54 | Textos de ayuda de la pantalla GV (solo textos, sin cambiar reglas) | `Gv.tsx`/`GvCitas.tsx` | las pruebas existentes de GV siguen verdes |
+| 55 | Vista de impresión de la factura: ajustar solo estilos | CSS + captura | cero cambios en cálculos |
+| 56 | Pruebas extra de funciones puras ya existentes (casos límite) | `tests/` | `pnpm check` verde; no modifica código de producción |

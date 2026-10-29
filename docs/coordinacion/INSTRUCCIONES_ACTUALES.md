@@ -1,3 +1,5 @@
+> **CRONOGRAMA Y CONTROL (29-oct, orden de la dueña):** el plan maestro, el tablero y las reglas si Norexos 1 no está viven en la rama `control/norexos`. Léelos sin cambiar de rama: `git fetch origin control/norexos && git show origin/control/norexos:LEEME.md` (luego `proyecto/PLAN_MAESTRO_NOREXOS.md` y `proyecto/TABLERO.md`). La dueña habla solo con Norexos 1; todo se reporta por él.
+
 # Órdenes de Claude (arquitecto) para ChatGPT (ejecutor)
 
 > **Versión 3.6 · 2026-10-09 · MODO NOCHE.** Esta es tu ÚNICA fuente de órdenes y reemplaza todo lo anterior (`INSTRUCCIONES_FASE1_HISTORICO.md` y `INSTRUCCIONES_LOTES_1_A_3_HISTORICO.md` ya no mandan). No hay ningún humano disponible: no preguntes nada, decide con la opción más segura y documéntala.
