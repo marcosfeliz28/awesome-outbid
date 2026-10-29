@@ -136,7 +136,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     expect((await panel.get("/api/requests").set("Host", "evil.example").set("Authorization", credential)).status).toBe(403);
     const panelPage = await panel.get("/").set("Host", "127.0.0.1").set("Authorization", credential);
     expect(panelPage.status).toBe(200);
-    expect(panelPage.text).toContain("Conciliación de planes Nexora");
+    expect(panelPage.text).toContain("Conciliación de planes Norexos");
     expect(panelPage.headers["content-security-policy"]).toContain("frame-ancestors 'none'");
     expect((await panel.get("/panel.js").set("Host", "127.0.0.1").set("Authorization", credential)).status).toBe(200);
     expect((await http.post(`/api/platform/billing/requests/${id}/decision`).set("Authorization", ownerA).send({ decision: "approved" })).status).toBe(404);

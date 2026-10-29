@@ -113,7 +113,7 @@ it("PC-13: avisa con 19 números o 15 días, aísla empresas y deniega cajera/ge
     const advanced = await http.patch(`/api/ncf-sequences/${id}`).set(as(tenantA, "admin")).send({ nextNumber: "00000082" });
     expect(advanced.body.warnings).toHaveLength(2);
     expect(advanced.body.warnings.find((warning: { kind: string }) => warning.kind === "numbers").message)
-      .toContain("Confirma uso fuera de Nexora");
+      .toContain("Confirma uso fuera de Norexos");
     expect((await http.patch(`/api/ncf-sequences/${id}`).set(as(tenantA, "admin")).send({ nextNumber: "00000081" })).status).toBe(400);
     const expiring = await http.post("/api/ncf-sequences").set(as(tenantA, "admin")).send({ ...payload,
       type: "B14", authorizationReference: "otra-autorización-de-prueba", nextNumber: "00000001", expiresOn: plus(14) });
