@@ -854,3 +854,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Tareas 16-32: pendientes.
 - Envío de cola (SendMessage a Norexos 1 y 4) ya enviado en ciclo anterior; la cola llegó en 6fce9dad.
 - ChatGPT (paso 5): sin cambios; pendiente acceso de computer use.
+
+## Ciclo (29-oct, cola local): estado
+- Fetch: nexora-cloud 6fce9dad. RESPUESTA_CLAUDE_PC_27OCT.md blob 70092dc6 (sin cambio desde orden 44). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI: claude-pc/docs-noche (8226b8de) con verify en curso; windows-installer y render-images en verde. pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y chatgpt-pc/lumina-motion-integracion en verde (sin LISTA nueva).
+- Tarea 16 (docs/api/RUTAS.md): SALTADA por juicio propio. Hay 209 decoradores en apps/api/src y varios controladores usan @Controller() sin prefijo; el prefijo real no está en el archivo. El modelo local no puede resolverlo bien y un RUTAS.md generado tendría rutas inventadas. Pendiente de decisión de Nexora 1 (o generar a mano con mapeo de prefijos).
+- Tareas 17-32: pendientes.
+- ChatGPT (paso 5): sin acceso de computer use; sin cambios.
