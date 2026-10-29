@@ -982,3 +982,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23, a1, b01 y lumina en verde. claude-pc/cola-b7 (bc061e2d): verify en curso; windows-installer y render-images en verde. LISTA cuando verify termine.
 - Cola local activa vacía. Recordatorio enviado a Norexos 1 y 4 pidiendo tareas.
 - ChatGPT (paso 5): acceso concedido. Última lectura: «ChatGPT nube» recomienda «Dorenivo» como marca (contradice la orden 38: Norexos). Aviso enviado a Norexos 1. «ChatGPT PC»: sin leer (el chat más reciente no se abrió). No se escribió en ningún chat.
+
+## Ciclo (29-oct): reparto del bloque 9 aceptado para empezar
+- nexora-cloud 9ff83ac0. RESPUESTA eccaf01f (sin cambio). Norexos 1 publicó REPARTO_B9.md y EDUCACION_MODELO_LOCAL.md (pendiente verificación de Norexos 4 y preaprobación de la dueña antes del envío final).
+- Hecho: bucle de seguridad (validar.mjs, 5 pruebas) y contexto fijo de educación en el runner (cola.mjs). 14/14 pruebas. Commits f345222b y e72c164d en claude-pc/cola2-26oct.
+- Tarea 49: NO puede hacerse. Las tareas 25–27 (docs/i18n con es.json/en.json) no existen en nexora-cloud.
+- Pendiente antes de enviar tareas al modelo: verificación de Norexos 4 y preaprobación de la dueña.
+- CI: pc23, a1, b01, lumina y cola-b7 en verde.
+- ChatGPT: sin cambios (fuera de función; no tocado, como indicó Marcos).
