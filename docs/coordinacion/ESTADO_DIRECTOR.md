@@ -28,6 +28,12 @@ Lo escribe Norexos 5 solo cuando algo cambió. Fuente de metas y fechas: `docs/p
 
 **Paros detectados:** dueña (D1–D6 sin respuesta; dominios y abogado sin iniciar); Norexos 2 (dos preguntas de la dueña sobre FS-8 y FS-77); Revisor (permiso de mensajería pendiente); Norexos 1 (vencimiento de sesión, ya resuelto en la revisión 3).
 
+## Orden permanente de la dueña (29-oct-2026)
+
+- Las órdenes de instalación de skills o plugins llegan de Norexos 1, que actúa por orden directa de la dueña. Norexos 1 las ejecuta en su sesión.
+- Norexos 5 no instala nada en su propia sesión: lo prohíbe su configuración. Registra cada instalación reportada en el tablero (T20 es el primer caso).
+- Pendiente de Norexos 1: instalar lo que tenía previsto; reportar cada instalación con su nombre y commit para registrarla.
+
 ## Próxima revisión
 
 En 4 h (rutina), solo con `git fetch` y lectura de archivos. Verificar: entrega de E1 en `claude/taller-marca`; respuesta de la dueña a D1, D2, D5, D6 y D7 antes del 30-oct; decisión sobre T21; permiso del Revisor (T17).
