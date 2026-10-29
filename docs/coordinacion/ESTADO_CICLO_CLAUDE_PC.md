@@ -1094,3 +1094,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendientes de la 50: nx-tiempo-relativo, nx-contraste, nx-breakpoint, nx-foco-ciclico, nx-ordenar-estable, nx-etiqueta-cupo, nx-validar-telefono, nx-copia-segura (8).
 - CI: claude-pc/cola-b10 (630a437d): windows-installer y render-images en verde; verify en curso. LISTA cuando termine.
 - CI de claude-pc/b9-50-grupo-1 (6d99528e): en curso.
+
+## Orden 54 (29-oct 17:45Z): corrección de nx-truncar en el grupo 1
+- nexora-cloud 75b4f147. RESPUESTA f5b568e6 (orden 54: truncar con límite 0 o negativo; 2 pruebas nuevas; la lección va a EDUCACION_MODELO_LOCAL.md).
+- claude-pc/b9-50-grupo-1: head e49709ec (4 commits): nx-iniciales, nx-normalizar-texto, nx-truncar y su corrección (límite 0 o negativo; prueba roja antes). Grupo completo 15/15 pruebas, eslint limpio.
+- La lección no se añadió al archivo de nexora-cloud (no se toca desde esta rama); pedido a Norexos 1 que la añada.
+- LISTA de claude-pc/cola-b10 (630a437d) escrita (9fb1f971): verify, windows-installer y render-images en verde.
+- Pendientes de la 50: 8 funciones. Tarea 56 sin empezar.
+- CI de claude-pc/b9-50-grupo-1 (e49709ec): en curso para auditoría.
