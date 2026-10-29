@@ -135,3 +135,16 @@ Solo lectura del repo (usa `origin/producto-nexora` para el código del producto
 | 66 | Borrador en inglés de los textos de Management (de la tarea 57) | `docs/i18n/INVENTARIO_MANAGEMENT.md` + `docs/i18n/borrador/en.json` | `docs/i18n/borrador/en-management.json` | mismas claves que el inventario; RD$, NCF e ITBIS sin traducir |
 | 67 | Qué flujo cubre cada prueba de navegador | `tests/e2e/*.spec.ts` | `docs/auditoria/MAPA_E2E.md` | un renglón por spec: archivo, nº de pruebas, flujo; `ls tests/e2e | wc -l` coincide |
 | 68 | Lista de revisión manual de la caja (checklist para probar antes de una entrega) | `apps/web/src/POS.tsx` + `tests/e2e/*caja*` | `docs/auditoria/CHECKLIST_CAJA.md` | casillas numeradas, cada una con la pantalla y el resultado esperado |
+
+## Bloque 12 · Reposición de cola (29-oct 20:55 UTC, Norexos 1) — rama `claude-pc/cola-b12`
+Mismas reglas que los bloques 8, 10 y 11 (solo lectura; salida en `docs/`; sin `docs/operacion/`; encabezado «Borrador sin verificar»; fuente rama+commit; archivo:línea; «PARCIAL» / «NO ENCONTRADO»). Código del producto: `origin/producto-nexora`. Nuevas lecciones en `EDUCACION_MODELO_LOCAL.md`: léelas antes.
+| # | Tarea | Entrada | Salida | Aceptación |
+|---|---|---|---|---|
+| 69 | Revisión de `LANDING_EN_PLANES.md` contra el original | `docs/venta/LANDING_TEXTOS.md` y `LANDING_EN_PLANES.md` | `docs/venta/LANDING_EN_REVISION.md` | lista cada afirmación del inglés sin respaldo en el original (p. ej. «conforme a la DGII»: e-CF/DGII está FUERA de la versión 1); sin cambiar el original |
+| 70 | Inventario de textos de reportes y panel | los `.tsx` de `apps/web/src` cuyo nombre contenga Dashboard, Report o Executive | `docs/i18n/INVENTARIO_REPORTES.md` | texto, línea, clave propuesta; `grep -c` ≥ 30 o «PARCIAL» |
+| 71 | Inventario de textos de clientes y crédito | `.tsx` con Customer o Credit en el nombre | `docs/i18n/INVENTARIO_CLIENTES.md` | texto, línea, clave |
+| 72 | Inventario de textos de configuración y primeros pasos | `.tsx` con Setting, Config, Onboard o First en el nombre | `docs/i18n/INVENTARIO_CONFIG.md` | texto, línea, clave |
+| 73 | Textos de error de la API al usuario | `apps/api/src/*.ts` | `docs/i18n/ERRORES_API.md` | mensaje en español, archivo:línea, clave propuesta; nº de filas = nº de mensajes encontrados |
+| 74 | Rutas de la API sin prueba que las nombre | `docs/api/PERMISOS.md`, `tests/` | `docs/auditoria/RUTAS_SIN_PRUEBA.md` | ruta → «nombrada en tests / no nombrada»; conteo por módulo; sin inventar |
+| 75 | Mapa de componentes del paquete de interfaz | `packages/ui/src/` | `docs/diseno/MAPA_UI.md` | archivo, qué exporta, si tiene prueba (`tests/f2-01-*`); `ls packages/ui/src \| wc -l` coincide |
+| 76 | Guía de inicio rápido para una dueña nueva (5 pasos, borrador) | los textos del asistente «Primeros pasos» del producto | `docs/venta/INICIO_RAPIDO_BORRADOR.md` | 5 pasos numerados con pantalla y archivo:línea; sin prometer funciones inexistentes |
