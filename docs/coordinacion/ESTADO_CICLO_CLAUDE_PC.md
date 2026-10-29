@@ -712,3 +712,17 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Orden 40: Taller (Nexora 3) toma los primitivos 1 a 8 y los tokens de movimiento; el modelo local salta las tareas 1 a 14. Claude PC debe revisar `claude/taller-anim` (ef063f6a, verify en curso) y el cambio de nombre a Norexos en `marca/cambio-nombre` desde producto-nexora (la rama aún no existe).
 - Orden 41: en mensajes y documentos nuevos usar «Norexos»; no renombrar ramas, servicios, dominios ni llaves.
 - Descarga de qwen2.5-coder:14b: 7,8 GB de 9,0 GB; reintento automático activo.
+
+## Ciclo (29-oct, ciclo autónomo)
+- Fetch: nexora-cloud en 8634e4fe (órdenes 40 y 41). RESPUESTA_CLAUDE_PC_27OCT.md blob 597646e0. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en a58efb33.
+- Orden 41: el producto se llama Norexos; las sesiones se renombran (Norexos 1, 2, 3, 4 y Norexos PC). En documentos e informes nuevos se usa «Norexos». No se renombran ramas, servicios, dominios ni llaves.
+- Orden 40: el Taller (Nexora 3) entregó el Bloque 2 en `claude/taller-anim` (HEAD ef063f6a). Pedido a Claude PC: revisarla y confirmar.
+- REVISIÓN de `claude/taller-anim`: NO apta para mezclar tal cual.
+  - Son 360 commits por encima de nexora-cloud, no solo los de animación. Incluye la base de aislamiento de inquilinos del producto, migraciones de base de datos, `.github/workflows/ci.yml`, `instalador/` y cambios en `packages/shared/src/index.ts`.
+  - Los 40 commits de F2-01 y animación están mezclados en esa historia.
+  - Toca `apps/web/src/App.tsx` y `styles.css`, que solo puede tocar ChatGPT PC o DeepSeek según las órdenes.
+  - El CI del HEAD estaba en curso (verify y windows-installer), así que no hay veredicto todavía.
+  - Recomendación: que el Taller reconstruya la rama desde `producto-nexora` (a58efb33) con solo sus commits de animación (cherry-pick), y que no mezcle la base de producto. Lo digo a Nexora 1 para que decida.
+- Órdenes nuevas que escriban código para Claude PC: ninguna nueva. La 36 (F2-01 en `claude-pc/visual-f2-01`) sigue pendiente de confirmación por Marcos.
+- CI: aab91c9a con verify en rojo (tarea 0.1 pendiente de DeepSeek). pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
