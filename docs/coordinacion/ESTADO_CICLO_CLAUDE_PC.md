@@ -969,3 +969,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23, a1, b01 y lumina en verde (sin LISTA nueva).
 - Cola local activa: L3 y L4 hechas (salidas en docs/diseno/borradores-local/). Cola vacía.
 - Próximo: pedir tareas nuevas a Norexos 1 y Norexos 4 (job cf362b9d lo hace cada 30 min).
+
+## Ciclo (29-oct, 15 min)
+- nexora-cloud 26b8b1e9 (avanzó: skill pensar-antes y skill comunicación, copiadas del Revisor; sin órdenes nuevas para Claude PC). RESPUESTA eccaf01f (sin cambio). OBSIDIAN ausente.
+- COLA_LOTE_LOCAL: sin bloque nuevo tras el bloque 7.
+- CI: pc23, a1, b01, lumina, lote-local-1 y forja-noche en verde. claude-pc/cola-b7 (bc061e2d) con CI en curso: LISTA cuando los 3 estén en verde.
+- Cola local activa vacía. Consultas a Norexos 1 y 4 cada 30 min (job cf362b9d).
+- ChatGPT (paso 5): sin acceso de computer use; sin cambios.
