@@ -164,7 +164,14 @@ test("G9: el cierre por inactividad también borra clientes y catálogo del nave
     expect(before.cacheKeys).toContain("catalog:main");
   }).toPass({ timeout: 15000 });
   await page.clock.fastForward("31:00");
-  await expect(page.getByText("Sesión cerrada por inactividad.")).toBeVisible();
+  // El reloj falso avanza de golpe: si la página aún no había armado su
+  // temporizador, otro avance lo dispara. Antes fallaba al azar (5 s fijos).
+  await expect(async () => {
+    await page.clock.fastForward("01:00");
+    await expect(
+      page.getByText("Sesión cerrada por inactividad."),
+    ).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 20000 });
   const after = await browserStorage(page);
   expect(after.cacheKeys).toEqual([]);
   expect(after.apiResponsesInCache).toEqual([]);
