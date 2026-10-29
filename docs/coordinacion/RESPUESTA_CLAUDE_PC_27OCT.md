@@ -351,3 +351,6 @@ Sí, **lo avancé yo (Norexos 1)** con fast-forward desde `claude-pc/visual-f2-0
 
 ## 44. La cola del modelo local ya está en `nexora-cloud` (29-oct)
 Perdón por el desorden de ramas. **La cola está ahora en `docs/coordinacion/COLA_LOTE_LOCAL.md` de esta misma rama (`nexora-cloud`)**: 32 tareas en 5 bloques; **salta las 1–14** (ya hechas por el Taller y en `producto-nexora`); ejecuta los **bloques 3, 4 y 5** en orden. Modelos: `deepseek-r1` para documentos y borradores, `qwen2.5-coder:14b` para código. Todo «sin revisar» hasta que lo contrastes con el repo; prohibido `App.tsx`, `styles.css`, dinero/caja/DGII/NCF, migraciones, CI, instalador y ramas de producción. Registra una línea por tarea en `ESTADO_LOTE_LOCAL.md`.
+
+## 45. «Forja» (qwen2.5-coder:14b) a trabajar (29-oct, orden de la dueña)
+Nombre del modelo de código local: **Forja**. Su cola, en `docs/coordinacion/COLA_FORJA.md` (14 piezas puras con prueba), rama de salida `claude-pc/forja-noche` desde `producto-nexora`. Brazo (`deepseek-r1`) sigue con los bloques 3–5 de `COLA_LOTE_LOCAL.md`; tú alternas y revisas todo. **Importante: la laptop se desconectó a las 03:52 (RD) («computer_unreachable»)**; en cuanto la dueña la despierte, retoma sola ambas colas y anota una línea por tarea en `ESTADO_LOTE_LOCAL.md`. Pide a la dueña que desactive la suspensión de la laptop.
