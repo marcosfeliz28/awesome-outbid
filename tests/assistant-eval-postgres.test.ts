@@ -31,7 +31,7 @@ import { ApiExceptionFilter } from "../apps/api/src/common";
 import { askAssistant, businessDay } from "../apps/api/src/assistant";
 
 /**
- * Evaluación automática de «Pregúntale a Nexora» (auditoría en vivo del
+ * Evaluación automática de «Pregúntale a Norexos» (auditoría en vivo del
  * 25-oct, empresa aud-ia). Datos sembrados por la API real sobre PostgreSQL:
  * 30 productos, 2 cajeras con rol `seller`, 26 ventas, 2 clientes que deben,
  * una caja cerrada con faltante de RD$50 y otra abierta. Cada pregunta pasa

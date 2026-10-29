@@ -176,7 +176,7 @@ assert.match(
 assert.equal(asks.length, 0, "Cargar el tablero no consume IA");
 await page.screenshot({ path: out + "tablero-desktop.png", fullPage: false });
 const cardQuestion = page.getByRole("button", {
-  name: "Pregúntale a Nexora: Ventas del período",
+  name: "Pregúntale a Norexos: Ventas del período",
   exact: true,
 });
 await cardQuestion.click();
@@ -185,7 +185,7 @@ await question.waitFor();
 assert.match(await question.inputValue(), new RegExp(day));
 assert.equal(asks.length, 0, "Abrir tarjeta no envía pregunta");
 const dialog = page.getByRole("dialog", {
-  name: "Pregúntale a Nexora",
+  name: "Pregúntale a Norexos",
   exact: true,
 });
 const firstControl = dialog.getByRole("button", {
@@ -212,7 +212,7 @@ assert.equal(
   true,
 );
 await page
-  .getByRole("button", { name: "Pregúntale a Nexora: Alertas", exact: true })
+  .getByRole("button", { name: "Pregúntale a Norexos: Alertas", exact: true })
   .click();
 assert.equal(await question.inputValue(), "Borrador que se debe conservar");
 await page.getByRole("button", { name: "Usar pregunta de la tarjeta" }).click();
@@ -295,7 +295,7 @@ for (const width of [1440, 901, 780, 390, 320]) {
     await page.screenshot({ path: out + "tablero-mobile.png", fullPage: true });
     await page
       .getByRole("button", {
-        name: "Pregúntale a Nexora: Ticket promedio",
+        name: "Pregúntale a Norexos: Ticket promedio",
         exact: true,
       })
       .click();

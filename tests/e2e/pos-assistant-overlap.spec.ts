@@ -102,7 +102,7 @@ test("El asistente no tapa el cliente y su panel cabe en la caja móvil", async 
   await expect(page.locator(".product-card").first()).toBeVisible();
   const customer = page.getByRole("button", { name: /Selecciona el cliente/ });
   const launcher = page.getByRole("button", {
-    name: "Pregúntale a Nexora",
+    name: "Pregúntale a Norexos",
     exact: true,
   });
   await expect(customer).toBeVisible();
@@ -123,7 +123,7 @@ test("El asistente no tapa el cliente y su panel cabe en la caja móvil", async 
   await page.keyboard.press("Escape");
   await launcher.click();
   const dialog = page.getByRole("dialog", {
-    name: "Pregúntale a Nexora",
+    name: "Pregúntale a Norexos",
     exact: true,
   });
   await expect(dialog).toBeVisible();
