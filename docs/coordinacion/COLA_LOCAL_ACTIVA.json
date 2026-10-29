@@ -1,0 +1,21 @@
+{
+  "descripcion": "Cola activa del modelo local (Revisor L3 y L4). Salidas solo en docs/. Todo borrador sin verificar: lo revisa Norexos PC.",
+  "tareas": [
+    {
+      "id": "L3-erratas-venta",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1500,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios ni datos legales; si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
+      "entradas": ["docs/venta/procesador-pagos.md"],
+      "salida": "docs/diseno/borradores-local/erratas-venta.md"
+    },
+    {
+      "id": "L4-glosario-siglas",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nCrea una tabla con cada sigla o término interno que aparece en los archivos de abajo (por ejemplo CI, ITBIS, DGII, Llaves, Taller). Columnas: término, definición de una línea, archivo donde aparece. Si el término no está definido en los archivos, escribe 'no definido'. No inventes definiciones.",
+      "entradas": ["AGENTS.md", "docs/coordinacion/FORJA_INSTRUCCIONES.md", "docs/coordinacion/COLA_REVISOR_PROPUESTA.md"],
+      "salida": "docs/diseno/borradores-local/glosario-siglas.md"
+    }
+  ]
+}
