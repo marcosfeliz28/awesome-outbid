@@ -1057,3 +1057,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - nexora-cloud 419ec9e3. RESPUESTA 84a8aa23 (sin cambio desde la orden 49). OBSIDIAN ausente.
 - CI: pc23, a1, b01 y lumina en verde. claude-pc/cola-b8 (16829a65): windows-installer y render-images en verde; verify en curso (desde 16:34Z). LISTA cuando termine.
 - Sin órdenes nuevas que aplicar. Sin cambios en ChatGPT.
+
+## Orden 50 (29-oct 16:40Z): bloque 10 en claude-pc/cola-b10
+- nexora-cloud 46aee2be. RESPUESTA f37b2053 (orden 50: 46 y 47 pasan al bloque 10; 57–61 nuevas).
+- Hechas: 46 resumen de CI (4 jobs; d4af5f6d), 57 inventario de Management (98039e36, 46 textos), 60 FAQ GV (99782a7a, 12 preguntas con línea), 47 manual de caja (8c149a31, modelo; 5 pasos corregidos al revisar).
+- NO ENCONTRADO (archivos de entrada inexistentes en nexora-cloud): 58 (Assistant.tsx, SupportHelp.tsx, SupportAccess.tsx), 59 (depende de 58), 61 (docs/GLOSARIO.md).
+- Pendiente: LISTA de claude-pc/cola-b10 cuando su CI esté en verde.
+- Bloque 8 (cola-b8, 16829a65): CI completo en verde; LISTA escrita en el siguiente paso.
