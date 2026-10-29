@@ -1,6 +1,6 @@
 # Textos de notificaciones salientes (tarea 80)
 
-Borrador sin verificar. Fuente: `origin/producto-nexora` (`8f8c6fbc`), rama `claude-pc/cola-b13`. **PARCIAL**: la búsqueda cubrió solo Telegram (`sendMessage`, `telegram`) y correo (`sendMail`, `sendEmail`) en `apps/api/src`; no se revisaron avisos de otras rutas.
+Borrador sin verificar. Fuente: `origin/producto-nexora` (`415f602a`), rama `claude-pc/cola-b13`. **PARCIAL**: la búsqueda cubrió solo Telegram (`sendMessage`, `telegram`) y correo (`sendMail`, `sendEmail`) en `apps/api/src`; no se revisaron avisos de otras rutas.
 
 | Texto | Archivo:línea | Dice Nexora o Norexos |
 |---|---|---|

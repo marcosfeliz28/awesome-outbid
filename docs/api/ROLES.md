@@ -1,6 +1,6 @@
 # Roles y permisos del producto (tarea 83)
 
-Borrador sin verificar. Fuente: `origin/producto-nexora` (`fa92d0f5`), rama `claude-pc/cola-b13`. Definición única en `packages/shared/src/index.ts:839` (objeto `permissions`). Generado por script desde esas líneas; no se inventan roles.
+Borrador sin verificar. Fuente: `origin/producto-nexora` (`415f602a`), rama `claude-pc/cola-b13`. Definición única en `packages/shared/src/index.ts:839` (objeto `permissions`). Generado por script desde esas líneas; no se inventan roles.
 
 | Rol | Permisos | Archivo:línea |
 |---|---|---|
