@@ -25,3 +25,4 @@ LISTA: claude-pc/cola-b10 630a437d (verify, windows-installer y render-images en
 LISTA: claude-pc/b9-50-grupo-1 e49709ec (verify, windows-installer y render-images en verde; tarea 50 grupo 1: nx-iniciales, nx-normalizar-texto, nx-truncar con su corrección para límite 0 o negativo; prueba roja antes y verde después; 15/15 pruebas del grupo; sin producto ni dinero)
 LISTA: claude-pc/forja-noche 0f727725 (verify, windows-installer y render-images en verde en 0f727725; piezas nx-brand, nx-plural y nx-fecha de Forja; revisión de Norexos PC: nx-plural correcta; no mezclado)
 LISTA: claude-pc/lote-local-tanda2 2332bdb9 (verify, windows-installer y render-images en verde; tanda 2 de la cola local, 8 de 8; solo docs)
+LISTA: claude-pc/cola-b11 cb4f2382 (verify, windows-installer y render-images en verde; bloque 11, tareas 62 a 68: portada en inglés sin afirmaciones DGII/NCF, FAQ de caja con 12 preguntas y citas de POS.tsx, inventarios, MAPA_E2E y CHECKLIST_CAJA; solo docs)
