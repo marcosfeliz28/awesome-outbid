@@ -270,7 +270,7 @@ describe("PC-10 marca y almacenes por empresa", () => {
     expect(businessSidebarLabels({ name: "Empresa A", branchName: "Centro" })).toEqual({
       branch: "Centro", business: "Empresa A",
     });
-    expect(businessSidebarLabels()).toEqual({ branch: "Sucursal", business: "Nexora POS" });
+    expect(businessSidebarLabels()).toEqual({ branch: "Sucursal", business: "Norexos" });
   });
 
   it("renombra solamente un almacén activo de la sucursal y audita el cambio", async () => {

@@ -36,10 +36,10 @@ export function SupportAccessCard() {
   }
 
   return <section aria-labelledby="support-access-title" style={{ marginBlock: 20, padding: 16, border: "1px solid currentColor", borderRadius: 12 }}>
-    <h3 id="support-access-title">Soporte de Nexora</h3>
+    <h3 id="support-access-title">Soporte de Norexos</h3>
     {/* SOP-03: alcance real (permissions.support = catalog:read) antes de confirmar. */}
     <ul>
-      <li><strong>Para qué:</strong> que el equipo de Nexora revise un problema que reportaste.</li>
+      <li><strong>Para qué:</strong> que el equipo de Norexos revise un problema que reportaste.</li>
       <li><strong>Qué verá, solo para leer:</strong> productos, precios, existencias, movimientos de inventario, compras recibidas, promociones y la configuración de la empresa.</li>
       <li><strong>Qué no verá:</strong> clientes, ventas, caja, reportes, costos ni márgenes. No puede cambiar nada.</li>
       <li><strong>Cuánto dura:</strong> el plazo que elijas (24 horas o 7 días); puedes quitarlo antes.</li>
@@ -53,7 +53,7 @@ export function SupportAccessCard() {
       <option value="24h">24 horas</option><option value="7d">7 días</option>
     </select>{" "}
     <label style={{ display: "block", marginBlock: 8 }}><input type="checkbox" checked={understood} onChange={event => setUnderstood(event.target.checked)} /> Leí lo que soporte podrá ver y lo permito.</label>
-    <button type="button" disabled={busy || !understood} onClick={() => void enable()} style={{ minHeight: 44 }}>Permitir soporte de Nexora</button>{" "}
+    <button type="button" disabled={busy || !understood} onClick={() => void enable()} style={{ minHeight: 44 }}>Permitir soporte de Norexos</button>{" "}
     {status.data?.enabled && <button type="button" disabled={busy} onClick={() => void disable()} style={{ minHeight: 44 }}>Quitar acceso</button>}
   </section>;
 }
@@ -64,7 +64,7 @@ export function SupportAccessBanner() {
   const [error, setError] = useState("");
   if (!status.data?.enabled || !status.data.expiresAt) return null;
   return <div role="status" style={{ padding: 12, background: "#153b54", color: "#fff", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-    Soporte de Nexora con acceso hasta {format(status.data.expiresAt)}.
+    Soporte de Norexos con acceso hasta {format(status.data.expiresAt)}.
     <button type="button" style={{ minHeight: 44, background: "#fff", color: "#123044", border: "2px solid #123044", borderRadius: 6 }} onClick={async () => {
       try { await api("/support-access/disable", { method: "POST", body: "{}" }); client.setQueryData(key, { enabled: false, expiresAt: null }); }
       catch (cause) { setError(cause instanceof Error ? cause.message : "No se pudo quitar el acceso."); }

@@ -56,7 +56,7 @@ export function Registration() {
   return <main className="product-registration">
     <form onSubmit={submit}>
       <a href="/">← Entrar</a>
-      <h1>Prueba Nexora POS durante 14 días</h1>
+      <h1>Prueba Norexos durante 14 días</h1>
       <p>Crea tu empresa. Confirma el correo antes de entrar y vender.</p>
       <label className="field"><span>Nombre del negocio</span><input required maxLength={120} value={businessName} onChange={e => setBusinessName(e.target.value)} /></label>
       <label className="field"><span>Tu nombre</span><input required maxLength={120} value={ownerName} onChange={e => setOwnerName(e.target.value)} /></label>
@@ -123,7 +123,7 @@ export function AcceptInvitation() {
     finally { setBusy(false); }
   };
   return <main className="product-registration"><form onSubmit={submit}>
-    <h1>Activa tu cuenta de Nexora POS</h1>
+    <h1>Activa tu cuenta de Norexos</h1>
     <p>Elige tu contraseña y tu PIN de gerente.</p>
     {!message && <>
       <label className="field"><span>Contraseña</span><input required type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} /><small>12 caracteres; incluye mayúscula, minúscula, número y símbolo.</small></label>
@@ -131,8 +131,8 @@ export function AcceptInvitation() {
       {/* INV-01: aceptación explícita; queda con fecha y versión en la empresa. */}
       <label className="field"><span><input required type="checkbox" checked={consentAccepted} onChange={e => setConsentAccepted(e.target.checked)} />{" "}
         {legalAvailable
-          ? <>Acepto los <a href={termsUrl} target="_blank" rel="noreferrer">términos</a> y la <a href={privacyUrl} target="_blank" rel="noreferrer">política de privacidad</a> de Nexora POS.</>
-          : "Acepto usar Nexora POS bajo el acuerdo de servicio y privacidad que firmé con Nexora."}</span></label>
+          ? <>Acepto los <a href={termsUrl} target="_blank" rel="noreferrer">términos</a> y la <a href={privacyUrl} target="_blank" rel="noreferrer">política de privacidad</a> de Norexos.</>
+          : "Acepto usar Norexos bajo el acuerdo de servicio y privacidad que firmé con Norexos."}</span></label>
     </>}
     {error && <p className="form-error" role="alert">{error}</p>}
     {message && <p role="status">{message}</p>}

@@ -291,7 +291,7 @@ export function Catalog() {
       required: true,
       options: cats.data?.map((c: any) => ({ label: c.name, value: c.id })),
     },
-    { key: "brand", label: "Marca", initial: "Nexora" },
+    { key: "brand", label: "Marca", initial: "Norexos" },
     { key: "barcode", label: "Código de barras", required: true },
     requiredNumber("price", "Precio de venta"),
     requiredNumber("costAvg", "Costo de entrada"),
@@ -4041,7 +4041,7 @@ function TelegramNotices() {
           <li>Agrega el bot al grupo privado de la administración.</li>
           <li>
             {productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY)
-              ? "Pide a soporte de Nexora que active los avisos por Telegram para tu empresa."
+              ? "Pide a soporte de Norexos que active los avisos por Telegram para tu empresa."
               : "En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve a desplegar."}
           </li>
         </ol>
@@ -4730,9 +4730,9 @@ export function Configuration() {
                   render: (l) => (
                     <Badge>
                       {l.action === "support.read"
-                        ? `Soporte de Nexora consultó ${String(l.after?.ruta ?? "").includes("reports") ? "un reporte" : String(l.after?.ruta ?? "").includes("dashboard") ? "el resumen" : "una pantalla"}`
+                        ? `Soporte de Norexos consultó ${String(l.after?.ruta ?? "").includes("reports") ? "un reporte" : String(l.after?.ruta ?? "").includes("dashboard") ? "el resumen" : "una pantalla"}`
                         : l.action === "support.enable"
-                          ? "Permitió soporte de Nexora"
+                          ? "Permitió soporte de Norexos"
                           : l.action === "support.disable"
                             ? "Quitó acceso de soporte"
                             : l.action === "support.expired"
@@ -4918,7 +4918,7 @@ export function StyleGuide() {
   return (
     <>
       <Heading
-        title="La energía de Nexora"
+        title="La energía de Norexos"
         caption="Un sistema visual para que cada interacción se sienta familiar."
       />
       <div className="panel style-guide">
@@ -5014,7 +5014,7 @@ export function StyleGuide() {
       <Modal
         open={modal}
         onClose={() => setModal(false)}
-        title="Diálogo Nexora"
+        title="Diálogo Norexos"
       >
         <p>Navega con Tab. Esc cierra. El foco regresa al control de origen.</p>
         <Button onClick={() => setModal(false)}>Entendido</Button>

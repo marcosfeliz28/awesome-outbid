@@ -103,7 +103,7 @@ export async function nativePrintTest(): Promise<void> {
   if (!call) throw new Error("Esta función solo está disponible en la app de escritorio.");
   const name = selectedPrinter();
   if (!name) throw new Error("Elige la impresora térmica en el menú de la app.");
-  await call("print_thermal", { printerName: name, text: "NEXORA POS\nPrueba de impresora - 80 mm\nSin venta ni comprobante fiscal", columns: 48 });
+  await call("print_thermal", { printerName: name, text: "NOREXOS\nPrueba de impresora - 80 mm\nSin venta ni comprobante fiscal", columns: 48 });
 }
 
 export async function nativeOpenDrawer(authorization: DrawerAuthorization): Promise<void> {

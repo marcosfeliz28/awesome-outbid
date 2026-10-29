@@ -4,7 +4,7 @@ if (hosted && !hosted.startsWith("https://"))
   throw new Error("La aplicación nativa debe abrir un sitio HTTPS.");
 const config: CapacitorConfig = {
   appId: "com.fitstore.pos",
-  appName: "Nexora POS",
+  appName: "Norexos",
   webDir: "dist",
   ...(hosted ? { server: { url: hosted, cleartext: false } } : {}),
 };

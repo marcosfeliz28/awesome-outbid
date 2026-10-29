@@ -11,6 +11,6 @@ export function businessSidebarLabels(settings?: {
 } | null) {
   return {
     branch: settings?.branchName?.trim() || "Sucursal",
-    business: settings?.name?.trim() || "Nexora POS",
+    business: settings?.name?.trim() || "Norexos",
   };
 }

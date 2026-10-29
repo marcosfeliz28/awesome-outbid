@@ -28,7 +28,7 @@ export function McpAuthorize() {
   return <main style={{ maxWidth: 560, margin: "3rem auto", padding: "1.5rem" }}>
     <h1>Autorizar lectura para una IA</h1>
     {query.isLoading && <p>Comprobando la solicitud…</p>}
-    {query.isError && <p role="alert">Esta aplicación no está autorizada para conectarse a Nexora POS. Revisa la dirección con administración.</p>}
+    {query.isError && <p role="alert">Esta aplicación no está autorizada para conectarse a Norexos. Revisa la dirección con administración.</p>}
     {!allowed && <p role="alert">Solo la administración puede autorizar esta conexión.</p>}
     {query.data && <section className="panel">
       <h2>{query.data.name}</h2>

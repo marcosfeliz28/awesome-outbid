@@ -118,7 +118,7 @@ function NcfSequenceSettingsContent() {
   };
   const create = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!window.confirm("¿Los números y la fecha coinciden con la autorización de la DGII? Nexora no los verifica ni emite NCF.")) return;
+    if (!window.confirm("¿Los números y la fecha coinciden con la autorización de la DGII? Norexos no los verifica ni emite NCF.")) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -146,7 +146,7 @@ function NcfSequenceSettingsContent() {
     }
   };
   const update = async (id: string, change: { nextNumber?: string; active?: boolean }) => {
-    if (!window.confirm("¿Confirmas este cambio del inventario NCF declarado? Nexora no altera ni emite comprobantes.")) return;
+    if (!window.confirm("¿Confirmas este cambio del inventario NCF declarado? Norexos no altera ni emite comprobantes.")) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -166,11 +166,11 @@ function NcfSequenceSettingsContent() {
       <div className="ncf-sequence-intro">
         <h3 id="ncf-sequence-title">Avisos de secuencias NCF</h3>
         <p>
-          Inventario declarado por administración. Nexora no consulta la DGII ni
+          Inventario declarado por administración. Norexos no consulta la DGII ni
           certifica que una secuencia esté vigente. Registra solo datos de una
-          autorización real y concilia el próximo número utilizado fuera de Nexora.
+          autorización real y concilia el próximo número utilizado fuera de Norexos.
           Solo si en Ajustes eliges «NCF por venta», cada venta emite aquí su
-          próximo NCF (B01/B02); si no, Nexora no emite NCF.
+          próximo NCF (B01/B02); si no, Norexos no emite NCF.
         </p>
       </div>
       <form className="ncf-sequence-form" onSubmit={(event) => void create(event)}>
@@ -182,7 +182,7 @@ function NcfSequenceSettingsContent() {
               setType(value);
               if (WITHOUT_EXPIRY.has(value)) setExpiresOn("");
             }} />
-          <small>Escribe el código Bxx o Exx tal como aparece en la autorización; Nexora no lo valida con la DGII.</small>
+          <small>Escribe el código Bxx o Exx tal como aparece en la autorización; Norexos no lo valida con la DGII.</small>
         </label>
         <label className="field">
           <span>Referencia de autorización</span>
@@ -206,7 +206,7 @@ function NcfSequenceSettingsContent() {
           <input required type="text" inputMode="numeric" pattern="[0-9]+"
             minLength={numberWidth} maxLength={numberWidth + 1} value={nextNumber}
             onChange={(event) => setNextNumber(event.target.value)} />
-          <small>Usa {numberWidth} dígitos (o uno más solo si se agotó). Incluye comprobantes utilizados fuera de Nexora; nunca se deduce de las ventas.</small>
+          <small>Usa {numberWidth} dígitos (o uno más solo si se agotó). Incluye comprobantes utilizados fuera de Norexos; nunca se deduce de las ventas.</small>
         </label>
         {WITHOUT_EXPIRY.has(type) && <p className="ncf-sequence-no-expiry">
           {type} no recibe aviso de vencimiento según la regla general de DGII.

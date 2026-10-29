@@ -89,7 +89,7 @@ export function supportMessage(
   const company = info.company
     ? `${info.company.name} (código ${info.company.slug})`
     : "mi empresa";
-  return `Hola, soy ${userName} de ${company}. Estoy en la pantalla «${screen}» de Nexora POS y necesito ayuda con: `;
+  return `Hola, soy ${userName} de ${company}. Estoy en la pantalla «${screen}» de Norexos y necesito ayuda con: `;
 }
 
 export function SupportContent({
@@ -122,7 +122,7 @@ export function SupportContent({
         <p>
           Correo:{" "}
           <a
-            href={`mailto:${info.email}?subject=${encodeURIComponent("Ayuda con Nexora POS")}&body=${text}`}
+            href={`mailto:${info.email}?subject=${encodeURIComponent("Ayuda con Norexos")}&body=${text}`}
           >
             {info.email}
           </a>

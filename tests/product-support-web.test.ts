@@ -38,7 +38,7 @@ describe("botón Ayuda", () => {
     );
     const text = encodeURIComponent(supportMessage(info, "Ana", "Caja"));
     expect(supportMessage(info, "Ana", "Caja")).toBe(
-      "Hola, soy Ana de Salón Bella (código salon-bella). Estoy en la pantalla «Caja» de Nexora POS y necesito ayuda con: ",
+      "Hola, soy Ana de Salón Bella (código salon-bella). Estoy en la pantalla «Caja» de Norexos y necesito ayuda con: ",
     );
     expect(html).toContain(`href="https://wa.me/18095551234?text=${text}"`);
     expect(html).toContain("mailto:soporte@nexorapos.net?subject=");
@@ -91,6 +91,6 @@ describe("SOP-03 · consentimiento de soporte", () => {
       "24 horas o 7 días", "quién abrió la sesión y por qué", "Leí lo que soporte podrá ver"])
       expect(html).toContain(text);
     // El botón espera la confirmación explícita.
-    expect(html).toMatch(/<button type="button" disabled=""[^>]*>Permitir soporte de Nexora/);
+    expect(html).toMatch(/<button type="button" disabled=""[^>]*>Permitir soporte de Norexos/);
   });
 });
