@@ -955,3 +955,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Bloqueo registrado: el TABLERO marca T21 como «bloqueado», pero la orden 47 dice lo contrario. Sigo la orden 47. El cambio al formato firmado (versión 3 del payload) no lo hago sin que Norexos 1 lo confirme, porque toca licencias en uso.
 - CI: pc23, a1, b01, lumina, lote-local-1 y forja-noche en verde.
 - ChatGPT (paso 5): sin acceso de computer use; sin cambios.
+
+## Modo 24/7 (29-oct): cola local en marcha
+- Runner: scripts/cola-local/cola.mjs (retoma tras corte; estado en docs/coordinacion/COLA_LOCAL_ACTIVA_ESTADO.json). Pruebas: scripts/cola-local/cola.test.mjs (8/8).
+- Modelo: qwen-optimizado (elegido por Marcos). Tareas: docs/coordinacion/COLA_LOCAL_ACTIVA.json.
+- L3 (erratas venta): hecha, sin erratas (comprobado a mano contra el original).
+- L4 (glosario): en curso al cierre de este registro.
+- Consulta a Norexos 1 cada 30 min: job cf362b9d (solo mientras la sesión esté abierta; caduca en 7 días).
+- Corte de luz: al volver, el runner se relanza con node scripts/cola-local/cola.mjs y retoma la tarea en curso.
