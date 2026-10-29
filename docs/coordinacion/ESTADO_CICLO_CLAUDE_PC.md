@@ -899,3 +899,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Prueba corta: respuesta correcta y concisa en 45 s (prueba en carpeta temporal, sin commit).
 - Lote local: se usa OLLAMA_MODEL=qwen2.5-coder:14b por defecto. DeepSeek-R1 queda como respaldo para documentos. No se borra ningún modelo.
 - Próxima tarea del lote: 17 (candidatos a código muerto), con el listado de archivos que yo aporte, sin inventar.
+
+## Ciclo (29-oct, ciclo autónomo): orden 45 (Forja)
+- Fetch: nexora-cloud en 2471d2b0. Orden 45 nueva: Forja (qwen2.5-coder:14b) trabaja la cola `COLA_FORJA.md` (14 piezas puras con prueba) en `claude-pc/forja-noche` desde producto-nexora. Brazo (deepseek-r1) sigue con los bloques 3–5. RESPUESTA_CLAUDE_PC_27OCT.md blob 4d48775e. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Hecho: pieza 1 de Forja, `nx-brand` (commit 004f4b22 en `claude-pc/forja-noche`). Prueba antes: el módulo no existía (falla). Prueba después: la comprobación pasa con Node 24 y el test Vitest queda registrado en vitest.config.ts. Pendiente: que CI de la rama quede en verde antes de escribir LISTA.
+- Nota de método: en esta pieza escribí yo el código, sin pasar por Forja. El borrador de Forja no se ha generado todavía; lo anoto para que la orden 45 se cumpla como está escrita en las siguientes piezas.
+- Pendiente para la dueña: la orden 45 pide desactivar la suspensión de la laptop; la última desconexión fue a las 03:52 (RD).
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
