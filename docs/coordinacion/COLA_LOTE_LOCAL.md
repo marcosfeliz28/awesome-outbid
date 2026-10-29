@@ -94,7 +94,8 @@ Solo lectura del repo; salida en `docs/`; sin tocar código. Todo borrador lleva
 | 47 | Manual de la caja para cajera (borrador) | `docs/operacion`, `apps/web/src/POS.tsx` | `docs/venta/MANUAL_CAJA_BORRADOR.md` | pasos numerados; sin prometer funciones que no estén en el código |
 | 48 | Lista de TODO/FIXME del código | `apps/**/src`, `tests/` | `docs/auditoria/TODOS.md` | `grep -rn 'TODO\|FIXME' apps tests \| wc -l` coincide con las líneas listadas |
 
-## Bloque 9 · CONSTRUCCIÓN por la PC de la dueña (orden de la dueña, 29-oct) — una rama por tarea: `claude-pc/b9-<número>`
+## Bloque 9 · PROPUESTA DE CONSTRUCCIÓN — **NO EJECUTAR todavía: espera el dictamen de Claude PC** (una rama por tarea: `claude-pc/b9-<número>`)
+**Pedido a Claude PC (orden de la dueña, 29-oct):** antes de empezar nada, escribe `docs/coordinacion/DICTAMEN_PC.md`: (a) modelo local y capacidad real de la PC ampliada (tamaño, velocidad, contexto); (b) para cada tarea 49–56: «puede / puede con ayuda / no puede», con motivo y tiempo estimado; (c) qué otras tareas de mayor tamaño sí podría construir; (d) cómo auditarás tú lo que construya el modelo local. Decides tú qué se le asigna. Después Norexos 1 analiza tu dictamen, desglosa de nuevo y la dueña da su preaprobación al envío final.
 **Reparto fijado por la dueña:** la PC (modelo local, capacidad ampliada) CONSTRUYE; Norexos 1 AUDITA y ARREGLA lo que falle; Claude PC revisa y sube. Nada se publica sin los 3 CI en verde y mi revisión del diff.
 **Reglas de construcción (todas):**
 1. Cada tarea trae su prueba (vitest) y debe pasar `pnpm check` en la laptop antes de subir. Sin prueba no se acepta.
