@@ -80,7 +80,7 @@ import {
 // Configuración
 
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
-export const FOLDER_NAME = "Norexos respaldos";
+export const FOLDER_NAME = "Nexora POS respaldos";
 const STATE_TTL_MS = 10 * 60000;
 const COOKIE = "nexora_drive_oauth";
 const COOKIE_PATH = "/api/backups/google";
