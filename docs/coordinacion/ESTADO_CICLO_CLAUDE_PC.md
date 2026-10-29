@@ -1359,3 +1359,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Cola activa: COLA_LOCAL_ACTIVA_ESTADO.json en esta rama mostraba N1 a N8 en error (intento fallido por insumos ausentes en esta rama). Corregido a hecha: las ocho están hechas en `claude-pc/cola-n` (a2dd21d3). Log de cola: «Cola vacía».
 - RESPUESTA_CLAUDE_PC_27OCT.md blob 7a6234d0 (sin cambio desde la orden 71). No hay órdenes nuevas.
 - Petición de tareas reenviada a Norexos 1 (d21984): la anterior no tuvo respuesta en la cola.
+
+## Ciclo (29-oct): órdenes 72–73 (cola local)
+- Fetch: nexora-cloud en cfd99550 (órdenes 72 y 73). RESPUESTA_CLAUDE_PC_27OCT.md blob 7c08f157. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 415f602a.
+- Orden 73: añadí N9 a N16 a `COLA_LOCAL_ACTIVA.json` (commit 88b22f7b), sin tocar las anteriores; 18 tareas en total.
+- Orden 72 (bloque 14, por script): en `claude-pc/cola-b14` (commit 2ed73f14) hice las tareas 85, 86 y 89 con git ls-tree, wc y git grep. Verificado: 85 suma 271 archivos igual que ls-tree; 86 tiene 20 filas; 89 suma 39 igual al total. La clasificación por tipo de la 89 queda PARCIAL. Pendientes: 87, 88, 90, 91 y 92.
+- La rama cola-b14 tiene solo docs, sin CI aún. Sin LISTA hasta los tres CI en verde.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
