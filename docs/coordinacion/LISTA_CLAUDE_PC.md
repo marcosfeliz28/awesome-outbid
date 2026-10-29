@@ -21,3 +21,4 @@ LISTA: claude-pc/docs-noche 8226b8de (verify, windows-installer y render-images 
 LISTA: claude-pc/cola-b7 bc061e2d (verify, windows-installer y render-images en verde; bloque 7 tareas 33, 35, 37, 38 y 40 por grep, borradores sin verificar; 34 y 39 no ejecutadas por reglas; 36 pendiente)
 LISTA: claude-pc/i18n-borrador ee22f267 (verify, windows-installer y render-images en verde en ee22f267; borrador i18n, sin mezclar ni desplegar)
 LISTA: claude-pc/cola-b8 16829a65 (verify, windows-installer y render-images en verde; bloque 8, tareas 41, 42, 43, 44, 45 y 48 por script con conteos verificados; 46 y 47 pasan al bloque 10; solo docs)
+LISTA: claude-pc/cola-b10 630a437d (verify, windows-installer y render-images en verde; bloque 10: 46 resumen de CI, 47 manual de caja revisado, 57 inventario de Management, 58 inventario de ayuda, 59 en-ayuda (75 claves), 60 FAQ de GV, 61 glosario ES-EN; solo docs)
