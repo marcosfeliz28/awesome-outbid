@@ -742,3 +742,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: aab91c9a con verify en rojo (tarea 0.1 pendiente de DeepSeek). pc23-anulacion-fix, b01-ventas-caja-ciega y lumina-motion-integracion en verde con LISTA. a1-formula-utilidad: lectura de la API falló; se repite en el siguiente ciclo.
 - Reparto acordado con la sesión bifurcada: ella lleva marca/cambio-nombre y la revisión de taller-anim.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Orden 42 (29-oct): taller-anim sobre visual-f2-01
+- nexora-cloud en c0b83c0a. RESPUESTA blob 872f894e: orden 42. Base correcta: producto-nexora (no nexora-cloud).
+- Medido: visual-f2-01 = 16 commits sobre producto-nexora; CI en verde (verify, windows-installer, render-images) en a8898ea3.
+- claude/taller-anim = 25 commits sobre visual-f2-01; ningún archivo protegido (App.tsx, styles.css, ci.yml, migraciones, instalador/, packages/shared) cambia.
+- Hecho: fast-forward de claude-pc/visual-f2-01 a ef063f6a (sin force), subido. CI del nuevo head en curso. LISTA solo si los 3 quedan en verde.
+- Pendiente: mezcla hacia producto-nexora (la decide Norexos 1), marca/cambio-nombre.
+- COLA_LOTE_LOCAL.md no existe. Descarga del 14B: reintento automático con registro «intento 1»; aún no instalado.
