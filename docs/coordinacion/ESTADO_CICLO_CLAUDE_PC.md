@@ -1014,3 +1014,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Cola local: vacía. Pedido de tareas enviado a Norexos 1.
 - Modelo local: qwen-optimizado recreado con reglas en SYSTEM, num_ctx 8192, num_thread 8 (mismo modelo base). Modelfile anterior guardado en el Escritorio como Modelfile.v1-respaldo. Medición: salida ~5,8 tok/s (sin mejora); entrada en caché 2 045 tok/s (mejora clara en el prefijo de reglas).
 - ChatGPT: sin cambios (Marcos pidió no tocarlo).
+
+## Mejora del modelo local (29-oct): respuesta de DeepSeek web, verificada
+- Dato de DeepSeek incorrecto: el backend Vulkan ya está activo por defecto (OLLAMA_VULKAN:true). Lo que bloqueaba la GPU era «dropping integrated GPU; set OLLAMA_IGPU_ENABLE=1».
+- Aplicado: OLLAMA_IGPU_ENABLE=1 (variable de usuario, persistente). Carga de 49/49 capas en la Radeon 780M (Vulkan, 15,9 GiB compartidos).
+- Medido: generación 7,9 tok/s (antes ~6); entrada en caché ~2 500 tok/s. Mejora de ~30 %, no los 15–25 tok/s que dijo DeepSeek.
+- Probado y descartado: OLLAMA_FLASH_ATTENTION=1 (sin cambio en la generación; no se deja).
+- No aplicado: OLLAMA_KV_CACHE_TYPE=q8_0 y num_batch 1024 (sin prueba; la memoria no es el cuello de botella con contexto de 8 192).
+- No usar: las cifras de HumanEval+ por cuantización que citó DeepSeek no tienen fuente comprobable.
+- Reversión: borrar OLLAMA_IGPU_ENABLE del usuario y reiniciar Ollama.
