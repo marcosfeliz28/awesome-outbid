@@ -1301,3 +1301,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI (API check-runs): pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e: verify, windows-installer y render-images en verde (ya tienen LISTA). cola-b11 cb4f2382: verde en los tres; LISTA añadida. cola-b12 3986a3db: verify en curso. b9-56-limites bf989b05 (sesión fork): verify en curso; no es mi LISTA. forja2-grupo-2 b13d95a3: en curso. forja2-grupo-3 82eda660: en cola.
 - Forja 2: `claude-pc/forja2-grupo-1` (8066b75e) contiene F2-04 ajena y mía, duplicada con `claude-pc/forja2-grupo-2` (efd2d9dc). Corrijo a Norexos 1 que 8066b75e la hice yo en un ciclo anterior. Sin LISTA de Forja hasta la rama final.
 - ChatGPT (paso 5): se pidió acceso a la app ChatGPT y se abrió, pero la ventana no apareció en pantalla tras esperar. No se leyeron «ChatGPT nube» ni «ChatGPT PC». No se escribió en ningún chat. Pendiente para el próximo ciclo.
+
+## Consulta 30 min (29-oct): cola local bloque 13
+- Fetch: nexora-cloud 7135bdc0. RESPUESTA_CLAUDE_PC_27OCT.md blob 1bfe8536 (cambió desde c64a057f). Órdenes 68–69: Forja 2 integrada en `claude/forja2-final` (d6adc554); la fork no toca Forja; cola-b11 mezclada en nexora-cloud. Mi `forja2-grupo-1` local se descarta (no subir).
+- Cola: COLA_LOTE_LOCAL.md existe; bloque 13 (tareas 77 a 84) en `claude-pc/cola-b13`, empujado en e64b0b27 con 4 commits.
+- Hechas por script (sin modelo): 78 términos fiscales (`docs/i18n/TERMINOS_FISCALES.md`), 83 roles y permisos (`docs/api/ROLES.md`).
+- Hecha con modelo y corregida a mano: 80 notificaciones (`docs/i18n/NOTIFICACIONES.md`, PARCIAL). La salida de deepseek-r1 se descartó.
+- Pendientes: 79, 81 y 84 (modelo local). 77 bloqueada: `docs/diseno/MAPA_PANTALLAS.md` no existe en producto-nexora (pregunta enviada a Norexos 1). 82 excluida: escribe en docs/operacion/ y lee .env* (pregunta enviada).
+- LISTA: ninguna para b13 todavía; hay que esperar verify, windows-installer y render-images en verde del SHA e64b0b27.
+- ChatGPT: no se revisó en esta consulta.
