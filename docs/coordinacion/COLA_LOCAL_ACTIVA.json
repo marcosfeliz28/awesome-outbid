@@ -6,7 +6,9 @@
       "modelo": "qwen-optimizado",
       "maxTokens": 1500,
       "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios ni datos legales; si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
-      "entradas": ["docs/venta/procesador-pagos.md"],
+      "entradas": [
+        "docs/venta/procesador-pagos.md"
+      ],
       "salida": "docs/diseno/borradores-local/erratas-venta.md"
     },
     {
@@ -14,8 +16,93 @@
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
       "instrucciones": "Borrador sin verificar, hecho por modelo local.\nCrea una tabla con cada sigla o término interno que aparece en los archivos de abajo (por ejemplo CI, ITBIS, DGII, Llaves, Taller). Columnas: término, definición de una línea, archivo donde aparece. Si el término no está definido en los archivos, escribe 'no definido'. No inventes definiciones.",
-      "entradas": ["AGENTS.md", "docs/coordinacion/FORJA_INSTRUCCIONES.md", "docs/coordinacion/COLA_REVISOR_PROPUESTA.md"],
+      "entradas": [
+        "AGENTS.md",
+        "docs/coordinacion/FORJA_INSTRUCCIONES.md",
+        "docs/coordinacion/COLA_REVISOR_PROPUESTA.md"
+      ],
       "salida": "docs/diseno/borradores-local/glosario-siglas.md"
+    },
+    {
+      "id": "N1-erratas-faq-gv",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios, datos legales ni código. Si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Una fila = una cita; no pegues el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
+      "entradas": [
+        "docs/venta/FAQ_GV_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/erratas-faq-gv.md"
+    },
+    {
+      "id": "N2-erratas-manual-caja",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios, datos legales ni código. Si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Una fila = una cita; no pegues el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
+      "entradas": [
+        "docs/venta/MANUAL_CAJA_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/erratas-manual-caja.md"
+    },
+    {
+      "id": "N3-erratas-faq-caja",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios, datos legales ni código. Si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Una fila = una cita; no pegues el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
+      "entradas": [
+        "docs/venta/FAQ_CAJA_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/erratas-faq-caja.md"
+    },
+    {
+      "id": "N4-erratas-landing",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios, datos legales ni código. Si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Una fila = una cita; no pegues el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
+      "entradas": [
+        "docs/venta/LANDING_TEXTOS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/erratas-landing.md"
+    },
+    {
+      "id": "N5-frases-tecnicas-manual",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nLee el manual de caja de abajo. Una cajera sin estudios técnicos lo va a leer. Lista las frases o palabras demasiado técnicas (siglas sin explicar, términos de programación, nombres de archivos). Tabla: línea, frase original, propuesta más simple. Máximo 12 filas. No inventes pasos nuevos ni cambies el sentido.",
+      "entradas": [
+        "docs/venta/MANUAL_CAJA_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/frases-tecnicas-manual.md"
+    },
+    {
+      "id": "N6-glosario-atajos-pos",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nDel inventario de abajo, extrae una tabla de los términos propios de la caja (por ejemplo cuadre, contraentrega, crédito, apertura). Columnas: término, definición de una línea SOLO si el inventario la deja ver, línea del inventario. Si el término no está definido en el archivo, escribe 'no definido'. No inventes definiciones.",
+      "entradas": [
+        "docs/i18n/INVENTARIO_POS_ATAJOS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/glosario-caja.md"
+    },
+    {
+      "id": "N7-preguntas-que-faltan-gv",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nLee las preguntas frecuentes de GV de abajo. Propón 6 preguntas que una persona nueva del personal probablemente haría y que NO están cubiertas. Solo la pregunta, sin respuesta; cada una marcada [SIN RESPUESTA: falta fuente]. Tabla de una columna con la pregunta y otra con el tema (pagos, citas, cursos, bancos).",
+      "entradas": [
+        "docs/venta/FAQ_GV_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/preguntas-faltan-gv.md"
+    },
+    {
+      "id": "N8-consistencia-marca",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa los dos textos de la portada de abajo (español e inglés). Lista toda aparición de 'Nexora', 'Norexos' y 'DGII'/'NCF': archivo, línea y la frase. Marca con [REVISAR] cada 'Nexora' que sea nombre de producto (debería decir Norexos) y cada mención de DGII/NCF (esas afirmaciones fiscales están fuera de la versión 1). No corrijas nada, solo lista.",
+      "entradas": [
+        "docs/venta/LANDING_TEXTOS.md",
+        "docs/venta/LANDING_EN_PLANES.md"
+      ],
+      "salida": "docs/diseno/borradores-local/consistencia-marca.md"
     }
   ]
 }
