@@ -20,6 +20,15 @@ describe("nx-truncar", () => {
     expect(truncar("abcdefghij", 5)).toBe("abcd…");
   });
 
+  it("con límite 0 o negativo devuelve cadena vacía (nunca más de max)", () => {
+    expect(truncar("hola", 0)).toBe("");
+    expect(truncar("hola mundo", -3)).toBe("");
+  });
+
+  it("con límite 1 devuelve solo los puntos suspensivos", () => {
+    expect(truncar("hola mundo", 1)).toBe("…");
+  });
+
   it("no parte un par de surrogados (emoji)", () => {
     expect(truncar("😀😀😀", 5)).toBe("😀😀…");
     expect(truncar("😀😀😀", 4)).toBe("😀…");
