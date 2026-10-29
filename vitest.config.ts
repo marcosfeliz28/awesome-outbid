@@ -142,6 +142,8 @@ export default defineConfig({
       "tests/visual-marco.test.ts",
       "tests/f2-01-tokens.test.ts",
       "tests/f2-01-nx-iniciales.test.ts",
+      "tests/f2-01-nx-normalizar-texto.test.ts",
+      "tests/f2-01-nx-truncar.test.ts",
       "tests/f2-01-nx-money.test.ts",
       "tests/f2-01-nx-status-badge.test.ts",
       "tests/f2-01-nx-motion.test.ts",
