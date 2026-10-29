@@ -1037,3 +1037,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Modelo: descarga de qwen2.5-coder:7b en curso (~52 % al momento de la consulta). El 14B sigue activo.
 - ChatGPT: sin cambios (Marcos pidió no tocarlo).
 - Modelo: descarga de qwen2.5-coder:7b en curso (~52 % en la consulta de 30 min). El 14B sigue activo.
+
+## Ciclo (29-oct): orden 49 — bloque 8 (tareas 41 a 48) en claude-pc/cola-b8
+- nexora-cloud 419ec9e3. RESPUESTA cambió: 84a8aa23 (orden 49: cola local no vacía; bloque 8 en COLA_LOTE_LOCAL.md de nexora-cloud).
+- Hechas (script, sin modelo): 41 índice (parcial: 201 de 225 .md; omitidos operacion, legal y seguridad), 42 modelos (64, sin descripciones), 43 eventos de auditoría (95 entidad.acción), 44 textos POS (57, parcial sin atributos), 45 dependencias (66 con versión), 48 TODO/FIXME (1 línea, verificada con git grep).
+- No ejecutadas: 46 (toca .github/, prohibido al modelo) y 47 (lee docs/operacion y trata de caja, prohibido).
+- Subida: claude-pc/cola-b8 (6 commits, 1ca42091 a 16829a65). LISTA pendiente de CI.
+- CI: pc23, a1, b01, lumina e i18n en verde.
+- Modelo: qwen2.5-coder:7b descargado en curso (~76 %).
+- ChatGPT: sin cambios.
