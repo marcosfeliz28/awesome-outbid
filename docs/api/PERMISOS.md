@@ -2,6 +2,8 @@ Borrador sin verificar, hecho por script (grep sobre origin/nexora-cloud, solo l
 
 # Permisos de la API (por @Permit)
 
+ADVERTENCIA: lista de inventario, NO completa. No la uses para decisiones de seguridad hasta que alguien la compruebe contra todas las rutas.
+
 | Permiso | Usos (archivo:línea) |
 |---|---|
 | `*` | 40: apps/api/src/admin.ts:840, apps/api/src/admin.ts:900, apps/api/src/admin.ts:936 … |

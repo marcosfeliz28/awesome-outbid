@@ -2,6 +2,8 @@ Borrador sin verificar, hecho por script (grep sobre origin/nexora-cloud, solo l
 
 # Pruebas por área (por nombre de archivo)
 
+INVENTARIO, no mapa por área: muchas pruebas salen como «sin área clara» porque su nombre no lo dice.
+
 | Prueba | Área (por nombre) | Requiere Postgres (por nombre) |
 |---|---|---|
 | `tests/accessibility-contract.test.ts` | sin área clara | no (por nombre) |
