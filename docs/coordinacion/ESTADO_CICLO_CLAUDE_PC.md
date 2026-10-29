@@ -1250,3 +1250,17 @@ Límite: no se escribió en ningún chat en este ciclo.
 5. Próximo paso: LISTA de ambas ramas al verde; luego la 56 sobre claude/forja-grupos-12 cuando Norexos 1 la prepare.
 6. Cola del modelo local, bloque 11: 7 de 7 hechas (62 a 68), ninguna en curso. Tanda 2: 8 de 8.
 - Skills de Matt Pocock (orden 61): disponibles en nexora-cloud, .claude/skills/; no instalados (solo lectura).
+
+## Ciclo (29-oct): orden 61–64 e informe de estado (orden 62)
+- Fetch: nexora-cloud en 3de64575. RESPUESTA_CLAUDE_PC_27OCT.md blob 937df69f. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 8a94a996.
+- Informe (máx. 8 líneas, orden 62):
+  1. Desde 17:00 UTC: escribí las órdenes de Forja en la rama final, revisé nx-plural y nx-fecha, y dejé tests de límites de nx-truncar y nx-breakpoint.
+  2. Ahora: rama `claude-pc/b9-56-limites` (223dfa53), desde producto-nexora 8a94a996. Tarea 56 parcial.
+  3. Bloqueo: sin bloqueo. El CI no se ha visto aún para 223dfa53.
+  4. No comprobado: vitest y `pnpm check` (sin node_modules en el worktree); solo Node 24 sobre los módulos.
+  5. Próximo paso: tests límite de nx-iniciales, nx-normalizar-texto, nx-contraste, nx-foco-ciclico y nx-tiempo-relativo, en el mismo archivo.
+  6. Cola del modelo local: bloque 11 en curso (tarea 67 hecha, 62/63/66 con borradores sin confirmar, sin revisar). Bloque 12 repuesto.
+- Skills de Matt Pocock: en el repo, rama `nexora-cloud`, carpeta `.claude/skills/` (orden 61). No instalados en la laptop; se leen con git show.
+- Orden 63: defecto en `LANDING_EN_PLANES.md`: «Facturación conforme a la DGII» y «comprobantes de la DGII» fuera de la versión 1. No usar en la portada.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
