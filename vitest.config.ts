@@ -148,6 +148,7 @@ export default defineConfig({
       "tests/f2-01-nx-count-bump.test.ts",
       "tests/f2-01-nx-progress.test.ts",
       "tests/f2-01-nx-i18n.test.ts",
+      "tests/f2-01-tokens-movimiento.test.ts",
       "tests/f2-01-nx-skeleton.test.ts",
       "tests/f2-01-nx-card.test.ts",
       "tests/f2-01-nx-button.test.ts",

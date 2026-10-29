@@ -28,3 +28,11 @@
   --nx-fondo: #14141f;
   --nx-texto: #f5f5f7;
 }
+
+/* capa 4: movimiento (≤240 ms; solo transform y opacity) */
+:root {
+  --nx-dur-fast: 120ms;
+  --nx-dur-base: 180ms;
+  --nx-dur-slow: 240ms;
+  --nx-ease-out: cubic-bezier(.2,.8,.2,1);
+}
