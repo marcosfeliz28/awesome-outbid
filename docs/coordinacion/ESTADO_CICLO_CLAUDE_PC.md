@@ -691,3 +691,17 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo (29-oct, segundo ciclo quincenal automático)
 - nexora-cloud sigue en 548a789e; RESPUESTA blob 4a156065 (sin órdenes nuevas); OBSIDIAN ausente. CI verde en pc23, a1, b01, lumina y F2-01 (a8898ea3: verify, windows-installer, render-images).
 - Sin LISTA nueva: F2-01 sigue incompleto (faltan primitivos y capturas).
+
+## Ciclo (29-oct, ciclo autónomo)
+- Fetch: nexora-cloud en a8c5d843 (órdenes 34 a 39 nuevas). RESPUESTA_CLAUDE_PC_27OCT.md blob 50d6e6aa. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en a58efb33.
+- Órdenes nuevas para Claude PC (registradas, no ejecutadas aún):
+  - 34: pc23 con verify rojo viene de la prueba inestable de PostgreSQL (AT-11); el arreglo está en nexora-cloud (c5c07a9c). Mantener la LISTA de pc23 como está.
+  - 35: cola del modelo local aprobada (D7, D8, D16, D19+D20, D24+D25) con condiciones: todo «sin revisar», sin cifras inventadas, nada de dinero/DGII/NCF.
+  - 36: el trabajo de ChatGPT pasa a Claude PC con el modelo local: F2-01 en `claude-pc/visual-f2-01` desde producto-nexora (a58efb33); luego F2-03 y F3-01 (solo Claude PC).
+  - 37 y 38: cambio de nombre a Norexos en `marca/cambio-nombre` desde producto-nexora (pasos 1 a 3); sin renombrar servicio, carpeta de instalación ni dominios. App animada (`PLAN_APP_ANIMADA_29OCT.md`) después de F2-01.
+  - 39: cola de la noche del modelo local (32 tareas) en la rama `nexora1/cola-lote-local`.
+- Lo que sí existe: Ollama con deepseek-r1:7b (modelo local de 7B).
+- Lo que bloquea F2-01 y las capturas de 390 y 1440: el MCP de Playwright no conectó en esta sesión, y no hay navegador disponible para capturas. Sin eso no se puede cumplir la prueba visual de la orden 36.
+- Decisión pendiente de Marcos: confirmar si arranco F2-01 y el cambio de nombre ahora, o si espero a que vuelva el navegador de capturas. No he creado ramas ni cambiado código en este ciclo.
+- CI: aab91c9a con verify en rojo (tarea 0.1 pendiente de DeepSeek). pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
