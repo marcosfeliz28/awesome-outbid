@@ -677,3 +677,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo (28-oct, ciclo automático)
 - nexora-cloud sigue en 1dcd0ccd; RESPUESTA blob 4a156065 (sin órdenes nuevas); OBSIDIAN ausente. CI verde en pc23, a1, b01 y lumina; F2-01 (3fb0d657) ya en verde (verify, windows-installer, render-images).
 - Sin LISTA: F2-01 sigue incompleto (faltan 8 primitivos y capturas); se marcará LISTA al cerrarlo.
+
+## Revisión programada (cada 4 horas)
+- nexora-cloud en 548a789e: merges de GV (nexora1/gv-banco), no son órdenes para Claude PC. RESPUESTA blob 4a156065 (orden 36 vigente, sin órdenes nuevas).
+- COLA_LOTE_LOCAL.md todavía no existe en nexora-cloud.
+- CI en verde (pc23, a1, b01, lumina) sin cambios. Sin LISTA nueva.
+- F2-01: 6 de 12 primitivos en claude-pc/visual-f2-01.
+- ChatGPT: fuera de trabajo; no se abrió.
