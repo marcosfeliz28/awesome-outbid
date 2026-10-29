@@ -12,7 +12,9 @@ Conclusión del dictamen: el modelo local (qwen2.5-coder 14B, laptop Ryzen 7 con
 | 51 | Selector ES/EN | Taller (tiene navegador) | Norexos 1 + captura | Depende de 49 |
 | 53 | Animaciones CSS | Taller con navegador y «reducir movimiento» | Norexos 1 + captura | Plan ya escrito |
 | 55 | Vista de impresión de factura | Taller con captura | Norexos 1 | Sin tocar cálculos |
-| 54 | Textos de ayuda de GV | Norexos 1 / Taller con pruebas de GV | Norexos 1 | Negocio |
-| 52 | «Pedir un cambio» | **Norexos 1** | Norexos 4 | No existe la ruta de API: hay que crearla (posible migración), no se le da al modelo |
+| 54 | Textos de ayuda de GV | **modelo local, educado con `EDUCACION_MODELO_LOCAL.md`** (orden de la dueña, solo textos) | Norexos 1 (diff + pruebas de GV + 3 CI) | Cero cambios de lógica |
+| 52 | «Pedir un cambio» | **Taller construye (API + migración + formulario) bajo especificación de Norexos 1; se instala en el producto** (orden de la dueña) | Norexos 1 + Norexos 4 | Ruta nueva: se audita línea por línea |
 
 Reglas que siguen vigentes: nada se publica sin los 3 CI en verde del SHA exacto; prohibido para el modelo: dinero, mercancía, claves/permisos, migraciones, `.github/`, `render.yaml`, `CLAUDE.md`.
+
+**Orden de la dueña (29-oct):** lo que el modelo local pueda hacer, que lo haga; se le educa con `docs/coordinacion/EDUCACION_MODELO_LOCAL.md` para sacarle el mayor provecho. Una vez Norexos 4 verifique este reparto, el envío sale con su preaprobación.
