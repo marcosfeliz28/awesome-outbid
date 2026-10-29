@@ -148,3 +148,16 @@ Mismas reglas que los bloques 8, 10 y 11 (solo lectura; salida en `docs/`; sin `
 | 74 | Rutas de la API sin prueba que las nombre | `docs/api/PERMISOS.md`, `tests/` | `docs/auditoria/RUTAS_SIN_PRUEBA.md` | ruta → «nombrada en tests / no nombrada»; conteo por módulo; sin inventar |
 | 75 | Mapa de componentes del paquete de interfaz | `packages/ui/src/` | `docs/diseno/MAPA_UI.md` | archivo, qué exporta, si tiene prueba (`tests/f2-01-*`); `ls packages/ui/src \| wc -l` coincide |
 | 76 | Guía de inicio rápido para una dueña nueva (5 pasos, borrador) | los textos del asistente «Primeros pasos» del producto | `docs/venta/INICIO_RAPIDO_BORRADOR.md` | 5 pasos numerados con pantalla y archivo:línea; sin prometer funciones inexistentes |
+
+## Bloque 13 · Reposición (29-oct 21:10 UTC, Norexos 1) — rama `claude-pc/cola-b13`
+Mismas reglas de siempre (solo lectura; salida en `docs/`; sin `docs/operacion/` ni valores de variables/claves; encabezado «Borrador sin verificar»; fuente rama+commit; archivo:línea; «PARCIAL» / «NO ENCONTRADO»). Código del producto: `origin/producto-nexora`. Lo del bloque 12 que dependía de coincidencias por nombre (p. ej. «tiene prueba: no») puede dar falsos negativos: di en el encabezado cómo lo calculaste.
+| # | Tarea | Entrada | Salida | Aceptación |
+|---|---|---|---|---|
+| 77 | Qué hace cada pantalla, en palabras simples | `docs/diseno/MAPA_PANTALLAS.md` + el `.tsx` de cada pantalla | `docs/venta/PANTALLAS_BORRADOR.md` | una frase por pantalla con archivo:línea; sin funciones inexistentes |
+| 78 | Términos fiscales y dónde aparecen | `apps/` y `packages/` | `docs/i18n/TERMINOS_FISCALES.md` | NCF, ITBIS, RNC, DGII, e-CF: nº de apariciones por archivo (`grep -c`) y 1 ejemplo con línea |
+| 79 | Mensajes de validación de formularios | `packages/shared/src` y `apps/api/src` (mensajes de zod/validación) | `docs/i18n/VALIDACIONES.md` | mensaje, archivo:línea, clave propuesta |
+| 80 | Textos de notificaciones salientes (Telegram, correo, avisos) | `apps/api/src` | `docs/i18n/NOTIFICACIONES.md` | texto, archivo:línea; marca cuáles dicen «Nexora» y cuáles «Norexos» |
+| 81 | Textos de recibos y PDF impresos | `apps/api/src` y `apps/web/src` (recibo, factura, PDF) | `docs/i18n/RECIBOS.md` | texto, archivo:línea, clave |
+| 82 | Variables de entorno (nombres, no valores) | `apps/api/src`, `render.yaml`, `.env.example` | `docs/operacion/VARIABLES_ENTORNO.md` | nombre, para qué sirve, obligatoria sí/no; **cero valores** (`grep -E "=[^ ]"` no debe mostrar secretos) |
+| 83 | Roles y permisos del producto | `apps/api/src` (definiciones de roles/permisos) | `docs/api/ROLES.md` | rol → permisos, archivo:línea; sin inventar roles |
+| 84 | Preguntas frecuentes de administración (12) | `apps/web/src/Management.tsx` | `docs/venta/FAQ_ADMIN_BORRADOR.md` | cada respuesta cita archivo:línea |
