@@ -287,7 +287,7 @@ describe("Telegram · renderizado de avisos", () => {
 
   it("prueba de conexión", () => {
     expect(renderTest(new Date(), "Admin <x>")).toMatch(
-      /^✅ <b>Prueba de Nexora<\/b>\n.*\nEnviado: .* · por: Admin &lt;x&gt;$/,
+      /^✅ <b>Prueba de Norexos<\/b>\n.*\nEnviado: .* · por: Admin &lt;x&gt;$/,
     );
   });
 });

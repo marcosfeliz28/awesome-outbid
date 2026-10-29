@@ -1396,7 +1396,7 @@ export class ReportsController {
       doc.pipe(res);
       doc
         .fontSize(18)
-        .text("Nexora POS · " + name)
+        .text("Norexos · " + name)
         .fontSize(9)
         .text(
           range.gte.toLocaleDateString("en-CA", {
@@ -1885,7 +1885,7 @@ async function sendListing(
     doc.pipe(res);
     doc
       .fontSize(18)
-      .text("Nexora POS · " + name)
+      .text("Norexos · " + name)
       .fontSize(9)
       .text(
         range.gte.toLocaleDateString("en-CA", {
@@ -2252,7 +2252,7 @@ export async function sendStoreReport(
         : "";
     doc
       .fontSize(14)
-      .text(report.business.name || "Nexora POS")
+      .text(report.business.name || "Norexos")
       .fontSize(12)
       .text(report.title)
       .fontSize(9)

@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $source = Get-Content -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) "installer\FitStore.nsi") -Raw
-$section = $source.Substring($source.IndexOf('Section "Nexora POS" SecMain'))
+$section = $source.Substring($source.IndexOf('Section "Norexos" SecMain'))
 $ready = $section.IndexOf('StrCpy $UpdatePrepared "1"')
 $preflight = $section.IndexOf('-File "$PLUGINSDIR\Preflight-FitStore.ps1"')
 if ($ready -lt 0 -or $ready -ge $preflight) { throw "A6: rollback no esta habilitado antes de Preflight." }

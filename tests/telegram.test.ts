@@ -645,13 +645,13 @@ describe("Telegram · avisos de facturas", () => {
     expect(await db.notificationOutbox.count()).toBe(before);
   }, 30000);
 
-  it("prueba de conexión: sólo administración, encola «Prueba de Nexora» sin revelar el token", async () => {
+  it("prueba de conexión: sólo administración, encola «Prueba de Norexos» sin revelar el token", async () => {
     mode = "ok";
     const r = await ok(withTg.base, "/notifications/telegram/test", {});
     expect(r).toMatchObject({ enabled: true, queued: true });
     expect(JSON.stringify(r)).not.toContain(TOKEN);
     await waitFor(
-      () => texts().some((t) => t.includes("Prueba de Nexora")),
+      () => texts().some((t) => t.includes("Prueba de Norexos")),
       "mensaje de prueba",
     );
     // Una cuenta sin permiso de administración no puede.

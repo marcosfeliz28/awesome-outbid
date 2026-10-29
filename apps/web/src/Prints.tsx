@@ -89,7 +89,7 @@ export function BusinessHeader({
   return (
     <header className="tp-header">
       {b.logo && <img className="tp-logo" src={b.logo} alt="" />}
-      <h2>{b.name || "Nexora POS"}</h2>
+      <h2>{b.name || "Norexos"}</h2>
       {b.branchName && <p className="tp-branch">{b.branchName}</p>}
       {b.address && <p>{b.address}</p>}
       {b.legalId && <p>RNC: {b.legalId}</p>}
@@ -512,7 +512,7 @@ export const METHOD_LABEL: Record<string, string> = {
 };
 
 // 03-M1: la misma leyenda en el ticket térmico, el PDF y WhatsApp/correo.
-// Nexora POS no emite NCF/e-CF: el recibo nunca se llama «factura».
+// Norexos no emite NCF/e-CF: el recibo nunca se llama «factura».
 export const NON_FISCAL_LEGEND =
   "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL";
 // 03-M3/A1 (V2-01, V2-02): la política de devolución y el aviso de privacidad

@@ -656,7 +656,7 @@ export function Merchandise({
                 )
               }
             >
-              Pregúntale a Nexora
+              Pregúntale a Norexos
             </Button>
           )}
         </div>

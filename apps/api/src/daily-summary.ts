@@ -48,7 +48,7 @@ export async function summarizeDailyFacts(facts: DailyFacts, model: (prompt: str
 
 export function renderDailySummary(facts: DailyFacts, sentence: string) {
   return [
-    `Resumen de Nexora POS · ${facts.day}`,
+    `Resumen de Norexos · ${facts.day}`,
     sentence,
     `Ventas netas: ${money(facts.revenue)} · ${facts.invoices} ${facts.invoices === 1 ? "factura" : "facturas"}. Fuente: Dashboard, ${facts.day}.`,
     `Diferencia de cajas cerradas: ${money(facts.cashDifference)}. Fuente: cierres de caja, ${facts.day}.`,

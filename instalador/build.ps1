@@ -413,7 +413,7 @@ Invoke-Checked -File $makeNsisPath -Arguments @(
   "/DOUTPUT_DIR=$dist",
   $nsisScript
 ) -Message "NSIS no pudo construir el instalador"
-$setupName = if ($ProductoLocal) { "Nexora-POS-Local-Setup-$version.exe" } else { "Nexora-POS-Setup-$version.exe" }
+$setupName = if ($ProductoLocal) { "Norexos-Local-Setup-$version.exe" } else { "Norexos-Setup-$version.exe" }
 $setup = Join-Path $dist $setupName
 if (-not (Test-Path -LiteralPath $setup)) { throw "NSIS terminó sin crear $setup." }
 $setupHash = Get-Sha256 -Path $setup

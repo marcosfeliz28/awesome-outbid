@@ -105,7 +105,7 @@ async function proofForReview(db: PrismaClient, id: string) {
 }
 
 const page = `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Nexora · Conciliación de planes</title><style>
+<title>Norexos · Conciliación de planes</title><style>
 body{font:16px system-ui;background:#f4f6fa;color:#182333;max-width:1100px;margin:auto;padding:1.5rem}
 h1{font-size:1.5rem} .card{background:white;border:1px solid #bcc8d6;border-radius:12px;padding:1rem;margin:1rem 0}
 button,input,select,textarea{font:inherit;padding:.65rem;border:1px solid #566c84;border-radius:7px}
@@ -113,7 +113,7 @@ button{background:#163b77;color:white;cursor:pointer;min-height:44px} button:dis
 label{display:block;margin:.7rem 0} input,textarea,select{display:block;width:100%;box-sizing:border-box}
 img{max-width:100%;max-height:360px;object-fit:contain} .muted{color:#42566d} .warning{background:#fff4d1;padding:.7rem}
 @media(max-width:390px){body{padding:.6rem}.card{padding:.7rem}}
-</style><h1>Conciliación de planes Nexora</h1>
+</style><h1>Conciliación de planes Norexos</h1>
 <p class="warning">La imagen no acredita el pago. Comprueba el movimiento en el banco antes de aprobar.</p>
 <button id="reload">Actualizar solicitudes</button><p id="status" role="status"></p><main id="requests"></main>
 <script src="/panel.js" defer></script></html>`;

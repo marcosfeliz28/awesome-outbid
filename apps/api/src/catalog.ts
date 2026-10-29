@@ -185,7 +185,7 @@ const productSchema = z.object({
   name: z.string().trim().min(2).max(150),
   sku: z.string().trim().min(1).max(80),
   categoryId: uuid,
-  brand: z.string().max(80).default("Nexora"),
+  brand: z.string().max(80).default("Norexos"),
   supplierId: uuid.nullable().optional(),
   description: z.string().max(3000).default(""),
   imageUrl: z.string().max(1000).optional(),

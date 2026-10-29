@@ -25,8 +25,8 @@ export function Billing() {
     try {
       await api("/billing/requests", { method: "POST", body: JSON.stringify({ plan: selected, provider }) });
       setMessage(provider === "test"
-        ? "Solicitud de prueba creada. No mueve dinero real y Nexora debe aprobarla antes de activar el plan."
-        : "Solicitud creada. Haz la transferencia y sube el comprobante. Nexora la verificará antes de activar el plan.");
+        ? "Solicitud de prueba creada. No mueve dinero real y Norexos debe aprobarla antes de activar el plan."
+        : "Solicitud creada. Haz la transferencia y sube el comprobante. Norexos la verificará antes de activar el plan.");
       await cache.invalidateQueries({ queryKey: ["billing-requests"] });
     } catch (cause: any) { setError(cause.message); }
     finally { setBusy(false); }
@@ -41,7 +41,7 @@ export function Billing() {
     try {
       const body = new FormData(); body.append("file", file);
       await api(`/billing/requests/${id}/proof`, { method: "POST", body });
-      setMessage("Comprobante recibido. El plan sigue pendiente hasta la verificación de Nexora.");
+      setMessage("Comprobante recibido. El plan sigue pendiente hasta la verificación de Norexos.");
       await cache.invalidateQueries({ queryKey: ["billing-requests"] });
     } catch (cause: any) { setError(cause.message); }
     finally { setBusy(false); }
@@ -54,7 +54,7 @@ export function Billing() {
     <select id="billing-plan" value={selected} onChange={(event) => setSelected(event.target.value)}>
       {(plans.data ?? []).map((plan) => <option key={plan.id} value={plan.id}>{planName(plan.id)} · RD$ {plan.monthlyPrice.toLocaleString("es-DO")}/mes</option>)}
     </select>
-    {bank?.instructions ? <section aria-label="Cuenta bancaria de Nexora">
+    {bank?.instructions ? <section aria-label="Cuenta bancaria de Norexos">
       <h2>Transferencia bancaria</h2>
       <p>Banco: {bank.instructions.bank}<br />Titular: {bank.instructions.holder}<br />Cuenta: {bank.instructions.account}</p>
       <p>Importe: RD$ {(plans.data?.find((plan) => plan.id === selected)?.monthlyPrice ?? 0).toLocaleString("es-DO")}</p>
@@ -64,7 +64,7 @@ export function Billing() {
       : "WhatsApp"}.</p>}
     {testProvider && <section aria-label="Facturación de prueba">
       <h2>Simulación de facturación</h2>
-      <p>No mueve dinero real. La solicitud de prueba también requiere revisión de Nexora para activar el plan.</p>
+      <p>No mueve dinero real. La solicitud de prueba también requiere revisión de Norexos para activar el plan.</p>
       <button disabled={busy || plans.isLoading} onClick={() => { void createRequest("test"); }}>Crear solicitud de prueba</button>
     </section>}
     <section aria-label="Solicitudes de pago">

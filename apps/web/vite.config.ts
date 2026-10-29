@@ -53,8 +53,8 @@ export default defineConfig({
       // precachear el logo de otra empresa en el producto multiempresa.
       includeAssets: ["icon.svg", "products/*.svg"],
       manifest: {
-        name: "Nexora POS",
-        short_name: "Nexora",
+        name: "Norexos",
+        short_name: "Norexos",
         lang: "es",
         description: "Caja e inventario para tu tienda",
         theme_color: "#7C3AED",

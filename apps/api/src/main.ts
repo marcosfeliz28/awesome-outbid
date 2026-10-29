@@ -74,7 +74,7 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder()
-        .setTitle("Nexora POS")
+        .setTitle("Norexos")
         .setDescription(
           "API interna · comprobantes no fiscales · RBAC y transacciones",
         )

@@ -48,10 +48,10 @@ export function AskNexora({
     <button
       type="button"
       className="nexora-card-question"
-      aria-label={`Pregúntale a Nexora: ${label}`}
+      aria-label={`Pregúntale a Norexos: ${label}`}
       onClick={() => onAsk(label, dashboardQuestion(topic, from, to))}
     >
-      <Sparkles size={15} aria-hidden="true" /> Pregúntale a Nexora
+      <Sparkles size={15} aria-hidden="true" /> Pregúntale a Norexos
     </button>
   );
 }
@@ -193,7 +193,7 @@ export function DailyBrief({
       if (current !== generation.current) return;
       if (!result.answer?.trim())
         throw new Error(
-          "Nexora no devolvió una lectura. Puedes intentarlo de nuevo.",
+          "Norexos no devolvió una lectura. Puedes intentarlo de nuevo.",
         );
       setAnswer(result.answer);
       setRemaining(result.remaining);
@@ -250,7 +250,7 @@ export function DailyBrief({
         </p>
         <p className="executive-source">
           Se prepara solo cuando pulsas el botón, y esa consulta cuenta en la
-          cuota de tu plan. Abrir una tarjeta con «Pregúntale a Nexora» no gasta
+          cuota de tu plan. Abrir una tarjeta con «Pregúntale a Norexos» no gasta
           cuota; sí la gasta enviar la pregunta.
         </p>
         <Button
@@ -266,7 +266,7 @@ export function DailyBrief({
               ? "Actualizar lectura de IA"
               : "Preparar resumen con IA"}
         </Button>
-        {!online && <p role="status">Conéctate para consultar a Nexora.</p>}
+        {!online && <p role="status">Conéctate para consultar a Norexos.</p>}
         {busy && <div role="status">Consultando las fuentes disponibles…</div>}
         {error && (
           <p role="alert" className="form-error">
@@ -276,7 +276,7 @@ export function DailyBrief({
         {answer && (
           <div
             className="daily-ai-answer"
-            aria-label="Lectura generada por Nexora"
+            aria-label="Lectura generada por Norexos"
           >
             <p className="executive-source">
               Interpretación de IA ·{" "}
@@ -410,7 +410,7 @@ export function IntelligentAlerts({
         />
       </div>
       <small className="executive-source">
-        Nexora explica cómo priorizar alertas; esta pregunta no verifica la
+        Norexos explica cómo priorizar alertas; esta pregunta no verifica la
         muestra visible ni cambia sus estados.
       </small>
     </section>

@@ -19,7 +19,7 @@ test("perfil local separa identidad, datos y puertos de la tienda", () => {
     assert.match(common, /nexoralocal/);
     assert.match(common, /licenseAcl\.SetAccessRule/);
     assert.doesNotMatch(common, /FitStore POS|FitStorePostgreSQL|5434/);
-    assert.match(installer, /Nexora-POS-Local-Setup/);
+    assert.match(installer, /Norexos-Local-Setup/);
     assert.match(installer, /NexoraPOSLocal/);
     assert.doesNotMatch(installer, /FitStorePOS|FitStore POS/);
     assert.match(installer, /\$PROGRAMFILES64\\Nexora POS Local/);
@@ -45,9 +45,9 @@ test("perfil local separa identidad, datos y puertos de la tienda", () => {
     assert.match(install, /-TemplateName "NexoraLocalWeb"/);
     assert.doesNotMatch(install, /FitStoreAPI|FitStoreWeb/);
     assert.match(install, /postgre[sS]qlPort = 5544/);
-    assert.match(install, /Nexora POS Local\.lnk/);
+    assert.match(install, /Norexos Local\.lnk/);
     assert.doesNotMatch(install, /"Nexora POS\.lnk"/);
-    assert.doesNotMatch(install, /Remove-Item[^\n]+Nexora POS Local\.lnk/);
+    assert.doesNotMatch(install, /Remove-Item[^\n]+Norexos Local\.lnk/);
     const uninstall = readFileSync(join(root, "scripts", "Uninstall-FitStore.ps1"), "utf8");
     assert.match(uninstall, /ProgramData\\Nexora POS Local/);
     assert.doesNotMatch(uninstall, /"Nexora POS\.lnk"/);

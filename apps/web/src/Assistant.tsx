@@ -244,7 +244,7 @@ export function Assistant({
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        Pregúntale a Nexora
+        Pregúntale a Norexos
       </button>
       {open && (
         <>
@@ -265,7 +265,7 @@ export function Assistant({
           >
             <header className="assistant-header">
               <div>
-                <h2 id="assistant-title">Pregúntale a Nexora</h2>
+                <h2 id="assistant-title">Pregúntale a Norexos</h2>
                 <p>Consulta tus datos y aprende a usar el sistema.</p>
               </div>
               <button
@@ -310,7 +310,7 @@ export function Assistant({
               <p
                 className={`assistant-usage ${!online || usageError ? "is-warning" : usage && usage.usadas >= usage.limite ? "is-exhausted" : ""}`}
                 role="status"
-                aria-label="Cuota de Pregúntale a Nexora"
+                aria-label="Cuota de Pregúntale a Norexos"
               >
                 {!online
                   ? "Cuota no disponible sin conexión"
@@ -359,7 +359,7 @@ export function Assistant({
                     className={`assistant-message assistant-${message.role}`}
                   >
                     <strong className="assistant-author">
-                      {message.role === "user" ? "Tú" : "Nexora"}:
+                      {message.role === "user" ? "Tú" : "Norexos"}:
                     </strong>
                     {message.role === "assistant" ? (
                       renderMarkdown(message.content)

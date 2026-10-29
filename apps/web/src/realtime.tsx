@@ -398,7 +398,7 @@ export function Equipment() {
       ) : !query.error && rows.length === 0 ? (
         <Empty
           title="Todavía no hay equipos registrados"
-          description="Los equipos aparecerán aquí cuando abran Nexora POS por primera vez."
+          description="Los equipos aparecerán aquí cuando abran Norexos por primera vez."
         />
       ) : (
       <ul className="equipment-list">
@@ -458,7 +458,7 @@ export function Equipment() {
                       ? "Equipo de antes de la actualización, reclamado por " +
                         t.createdByName +
                         ". Apruébalo sólo si es el mismo dispositivo; si no, revócalo."
-                      : "Equipo de antes de la actualización. Debe abrir Nexora POS para identificarse antes de aprobarlo."}
+                      : "Equipo de antes de la actualización. Debe abrir Norexos para identificarse antes de aprobarlo."}
                   </small>
                 )}
               </div>

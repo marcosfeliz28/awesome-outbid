@@ -4,7 +4,9 @@ import { pathToFileURL } from "node:url";
 import process from "node:process";
 
 const replacements = [
+  [/Norexos-Setup-/g, "Norexos-Local-Setup-"],
   [/FitStore POS/g, "Nexora POS Local"],
+  [/Norexos(?![ -]Local)/g, "Norexos Local"],
   [/Nexora POS(?! Local)/g, "Nexora POS Local"],
   [/Certificado FitStore/g, "Certificado Nexora Local"],
   [/FitStore - acceso/g, "Nexora Local - acceso"],

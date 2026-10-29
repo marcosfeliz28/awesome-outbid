@@ -145,7 +145,7 @@ export class TenantLifecycleService implements OnModuleDestroy {
     });
     if (!branches.length) return;
     const what = kind.startsWith("trial_") ? "Tu prueba" : "Tu plan";
-    const message = `${what} de Nexora vence en ${days} días (${due.toISOString().slice(0, 10)}). ` +
+    const message = `${what} de Norexos vence en ${days} días (${due.toISOString().slice(0, 10)}). ` +
       `Después hay ${GRACE_DAYS} días de gracia y luego el sistema queda en solo lectura (nada se borra).`;
     // El trigger de Alert publica un evento en tiempo real: debe salir con esta empresa.
     await this.root.$transaction([
@@ -193,8 +193,8 @@ export class TenantLifecycleService implements OnModuleDestroy {
       });
       if (!owner) continue;
       const days = notice.kind.endsWith("_7") ? "7" : "3";
-      const subject = notice.kind.startsWith("trial_") ? "Tu prueba de Nexora vence pronto" : "Tu plan de Nexora vence pronto";
-      const text = `Tu ${notice.kind.startsWith("trial_") ? "prueba" : "período de cobro"} vence en ${days} días. Ingresa a Nexora para revisar el estado de tu plan.`;
+      const subject = notice.kind.startsWith("trial_") ? "Tu prueba de Norexos vence pronto" : "Tu plan de Norexos vence pronto";
+      const text = `Tu ${notice.kind.startsWith("trial_") ? "prueba" : "período de cobro"} vence en ${days} días. Ingresa a Norexos para revisar el estado de tu plan.`;
       const settings: TenantNoticeMailSettings = {
         apiKey: key, from, to: owner.email,
         apiBase: (process.env.RESEND_API_BASE?.trim() || "https://api.resend.com").replace(/\/+$/, ""),

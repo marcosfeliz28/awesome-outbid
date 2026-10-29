@@ -96,7 +96,7 @@ export async function notifyOperator(
       mail.enabled
         ? sendEmail(
             mail,
-            `Nexora · ${TITLE[input.event]}`,
+            `Norexos · ${TITLE[input.event]}`,
             lines.map(escapeHtml).join("\n"),
             idempotencyKey,
           )

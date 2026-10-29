@@ -45,7 +45,7 @@ export class SupportAccessController {
       const user = await tx.user.upsert({
         where: tenantUnique("email", supportEmail),
         create: {
-          name: "Soporte de Nexora", username: "soporte-nexora", usernameKey: "soporte-nexora",
+          name: "Soporte de Norexos", username: "soporte-nexora", usernameKey: "soporte-nexora",
           email: supportEmail, passwordHash, pinHash, roleId: role.id,
           branchId: req.actor.branchId, active: true, supportExpiresAt: expiresAt,
           emailVerifiedAt: new Date(),

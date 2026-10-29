@@ -1291,7 +1291,7 @@ export class AdminController {
       include: { role: true },
     });
     if (isSupportAccount(target))
-      bad("La cuenta de soporte se maneja solo en «Soporte de Nexora».");
+      bad("La cuenta de soporte se maneja solo en «Soporte de Norexos».");
     const role = data.roleId
       ? await this.db.role.findUniqueOrThrow({ where: { id: data.roleId } })
       : target.role;
@@ -1405,7 +1405,7 @@ export class AdminController {
       include: { role: true },
     });
     if (isSupportAccount(target))
-      bad("La cuenta de soporte se maneja solo en «Soporte de Nexora».");
+      bad("La cuenta de soporte se maneja solo en «Soporte de Norexos».");
     const temporaryPassword = data.password
       ? parse(passwordSchemaForRole(target.role.name), data.password)
       : generateTemporaryPasswordForRole(target.role.name);

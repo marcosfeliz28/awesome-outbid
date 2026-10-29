@@ -182,10 +182,10 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
       return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ status: "pending" }) });
     });
     await page.setViewportSize({ width: 320, height: 700 });
-    await page.getByRole("button", { name: "Pregúntale a Nexora", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "Pregúntale a Nexora" })).toBeVisible();
+    await page.getByRole("button", { name: "Pregúntale a Norexos", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Pregúntale a Norexos" })).toBeVisible();
     await expect(page.getByLabel("Tu pregunta")).toBeFocused();
-    const panelBounds = await page.getByRole("dialog", { name: "Pregúntale a Nexora" }).boundingBox();
+    const panelBounds = await page.getByRole("dialog", { name: "Pregúntale a Norexos" }).boundingBox();
     expect(panelBounds?.x).toBeGreaterThanOrEqual(0);
     expect((panelBounds?.x ?? 0) + (panelBounds?.width ?? 0)).toBeLessThanOrEqual(320);
     await expect(page.getByText("12 de 30 este mes")).toBeVisible();
@@ -202,8 +202,8 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await expect(page.getByText("Solicitud de anulación de FS-0123 pendiente de revisión.")).toBeVisible();
     expect(sentVoid).toBe(1);
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: "Pregúntale a Nexora" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Pregúntale a Nexora", exact: true })).toBeFocused();
+    await expect(page.getByRole("dialog", { name: "Pregúntale a Norexos" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Pregúntale a Norexos", exact: true })).toBeFocused();
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.unroute("**/api/assistant/usage");
     await page.unroute("**/api/assistant/ask");
@@ -305,16 +305,16 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     if (business === 1) {
       await page.goto(`${web}/#settings`);
       await page.getByRole("button", { name: "Avanzado" }).click();
-      const support = page.getByRole("region", { name: "Soporte de Nexora" });
+      const support = page.getByRole("region", { name: "Soporte de Norexos" });
       await expect(support).toContainText("Acceso apagado");
       await support.getByLabel("Duración del acceso").selectOption("24h");
       await support.getByLabel("Leí lo que soporte podrá ver y lo permito.").check();
-      await support.getByRole("button", { name: "Permitir soporte de Nexora" }).click();
+      await support.getByRole("button", { name: "Permitir soporte de Norexos" }).click();
       await expect(support).toContainText("Contraseña, visible solo ahora");
-      await expect(page.getByText(/Soporte de Nexora con acceso hasta/)).toBeVisible();
+      await expect(page.getByText(/Soporte de Norexos con acceso hasta/)).toBeVisible();
       await page.getByRole("button", { name: "Quitar acceso" }).first().click();
       await expect(support).toContainText("Acceso apagado");
-      await expect(page.getByText(/Soporte de Nexora con acceso hasta/)).toHaveCount(0);
+      await expect(page.getByText(/Soporte de Norexos con acceso hasta/)).toHaveCount(0);
     }
     await page.locator("button.account").click();
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
@@ -390,10 +390,10 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.goto(`${web}/#dashboard`);
     await expect(page.getByText("Completa tu tienda cuando tengas tiempo (opcional) · 3 pendientes")).toBeVisible();
 
-    // En el celular «Pregúntale a Nexora» no tapa la barra de Mercancía.
+    // En el celular «Pregúntale a Norexos» no tapa la barra de Mercancía.
     await page.goto(`${web}/#dashboard`);
     const bar = await page.locator(".goods-mobile-bar").boundingBox();
-    const launcher = await page.getByRole("button", { name: "Pregúntale a Nexora", exact: true }).boundingBox();
+    const launcher = await page.getByRole("button", { name: "Pregúntale a Norexos", exact: true }).boundingBox();
     expect(launcher!.y + launcher!.height).toBeLessThanOrEqual(bar!.y);
 
     // Configuración arranca en «Básico»: sin RNC mientras el NCF esté apagado.

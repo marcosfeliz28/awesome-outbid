@@ -841,7 +841,7 @@ describe("IA · web: markdown seguro y botón sin tapar la barra", () => {
     expect(assistant).toContain("Cuota no disponible sin conexión");
     expect(assistant).toContain("No pudimos consultar tu cuota");
     expect(assistant).toContain("cuota agotada");
-    expect(assistant).toContain('aria-label="Cuota de Pregúntale a Nexora"');
+    expect(assistant).toContain('aria-label="Cuota de Pregúntale a Norexos"');
   });
 });
 

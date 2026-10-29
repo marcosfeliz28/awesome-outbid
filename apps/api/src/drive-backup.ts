@@ -995,7 +995,7 @@ export class DriveBackupService {
       parents: [folderId],
       mimeType: "application/octet-stream",
       description:
-        "Respaldo cifrado de Nexora POS. Se abre con scripts/decrypt-backup.mjs y la frase BACKUP_ENCRYPTION_KEY.",
+        "Respaldo cifrado de Norexos. Se abre con scripts/decrypt-backup.mjs y la frase BACKUP_ENCRYPTION_KEY.",
       appProperties: {
         nexoraBackup: "1",
         format: "NXBK1",

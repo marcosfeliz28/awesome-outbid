@@ -173,7 +173,7 @@ fn send(printer_name: &str, bytes: &[u8]) -> Result<(), String> {
         if OpenPrinterW(name.as_mut_ptr(), &mut handle, ptr::null_mut()) == 0 {
             return Err("No se pudo abrir la impresora seleccionada.".into());
         }
-        let title = wide("Nexora POS");
+        let title = wide("Norexos");
         let raw = wide("RAW");
         let doc = DocInfo1 {
             name: title.as_ptr(),

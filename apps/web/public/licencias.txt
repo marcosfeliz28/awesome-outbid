@@ -1,4 +1,4 @@
-Nexora POS · Avisos de terceros de la aplicación web
+Norexos · Avisos de terceros de la aplicación web
 
 Este archivo lo genera `node scripts/licencias-web.mjs` a partir de lo que
 entra en la compilación de apps/web (JavaScript, CSS y fuentes) y del

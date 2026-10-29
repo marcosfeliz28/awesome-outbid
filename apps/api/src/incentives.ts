@@ -1042,7 +1042,7 @@ export class IncentivesController {
     );
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     doc.pipe(res);
-    doc.fontSize(18).text(business.name || "Nexora POS", { align: "center" });
+    doc.fontSize(18).text(business.name || "Norexos", { align: "center" });
     if (business.branchName)
       doc.fontSize(10).text(business.branchName, { align: "center" });
     doc

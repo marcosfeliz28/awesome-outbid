@@ -40,6 +40,6 @@ export function canApplyPwaUpdate(state: PwaUpdateState): boolean {
 /** Texto del aviso según haya o no una venta en curso. */
 export function pwaUpdateMessage(cartItems: number): string {
   return cartItems > 0
-    ? "Hay una versión nueva de Nexora. Podrás instalarla al terminar esta venta."
-    : "Hay una versión nueva de Nexora. Se instala sola si la caja queda libre unos minutos.";
+    ? "Hay una versión nueva de Norexos. Podrás instalarla al terminar esta venta."
+    : "Hay una versión nueva de Norexos. Se instala sola si la caja queda libre unos minutos.";
 }

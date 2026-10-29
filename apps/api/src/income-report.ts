@@ -482,7 +482,7 @@ export class IncomeReportController {
       where: tenantUnique("id", actor.branchId),
       select: { data: true },
     });
-    const businessName = String((settings?.data as any)?.name || "Nexora POS");
+    const businessName = String((settings?.data as any)?.name || "Norexos");
     res.setHeader("Content-Type", "application/pdf");
     const doc = new PDFDocument({
       size: "A4",

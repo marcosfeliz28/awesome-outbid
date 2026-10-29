@@ -187,7 +187,7 @@ export function drawSaleReceipt(
     const textX = left + logoWidth;
     const textWidth = width - logoWidth;
     let cursor = top;
-    const businessName = cleanText(business?.name) || "Nexora POS";
+    const businessName = cleanText(business?.name) || "Norexos";
     cursor = drawText(doc, businessName, textX, cursor, textWidth, {
       font: "Helvetica-Bold",
       fontSize: 16,

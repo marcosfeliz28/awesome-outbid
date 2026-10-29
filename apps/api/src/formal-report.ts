@@ -450,7 +450,7 @@ export class FormalReportController {
       title: `Informe formal · ${period.label}`,
       storeWarehouseName: sellableWarehouse?.name || "Almacén vendible",
       business: {
-        name: (settings?.data as any)?.name || "Nexora POS",
+        name: (settings?.data as any)?.name || "Norexos",
         branch: (settings?.data as any)?.branchName || "",
       },
       from: period.from,
@@ -537,7 +537,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
     doc
       .font("Helvetica-Bold")
       .fontSize(14)
-      .text(report.business.name || "Nexora POS", { align: "center" });
+      .text(report.business.name || "Norexos", { align: "center" });
     if (report.business.branch)
       doc.fontSize(9).text(report.business.branch, { align: "center" });
     doc.font("Helvetica").fontSize(9).text(report.title, { align: "center" });
@@ -672,7 +672,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
       .font("Helvetica")
       .fontSize(8)
       .text(
-        `${report.business.name || "Nexora POS"} · Control interno · Página ${i - pages.start + 1} de ${pages.count}`,
+        `${report.business.name || "Norexos"} · Control interno · Página ${i - pages.start + 1} de ${pages.count}`,
         42,
         780,
         { width: 510, align: "center" },

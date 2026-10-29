@@ -205,7 +205,7 @@ export function Dashboard({
           </h1>
           <p>
             {executive
-              ? "Cifras del negocio, pendientes y una lectura con Nexora."
+              ? "Cifras del negocio, pendientes y una lectura con Norexos."
               : "Un vistazo a tu tienda. Un paso más hacia tus metas."}
           </p>
         </div>

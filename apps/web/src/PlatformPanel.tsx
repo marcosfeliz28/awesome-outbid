@@ -1,4 +1,4 @@
-// Panel de la operadora de Nexora POS (/plataforma). Vive fuera de la interfaz de
+// Panel de la operadora de Norexos (/plataforma). Vive fuera de la interfaz de
 // las empresas: no usa su sesión ni su navegación, solo el token de plataforma.
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -255,9 +255,9 @@ export function InviteLink({
   // Dice con qué correo y código se entra: sin eso la persona no sabía cuál usar.
   const login = `Para entrar usa el código de empresa «${slug}» y el correo ${adminEmail}.`;
   const message = reset
-    ? `Hola ${adminName}, este es tu enlace para crear una contraseña y un PIN nuevos en Nexora POS (empresa «${businessName}»): ${url} ` +
+    ? `Hola ${adminName}, este es tu enlace para crear una contraseña y un PIN nuevos en Norexos (empresa «${businessName}»): ${url} ` +
       `${login} El enlace vence en 24 horas y sirve una sola vez.`
-    : `Hola ${adminName}, te damos la bienvenida a Nexora POS. ` +
+    : `Hola ${adminName}, te damos la bienvenida a Norexos. ` +
       `Para activar tu empresa «${businessName}», abre este enlace y crea tu contraseña: ${url} ` +
       `${login} El enlace vence en 7 días y sirve una sola vez.`;
   const copy = async () => {
@@ -1450,7 +1450,7 @@ export function PlatformPanel() {
       <header className="flex items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-3">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-violet-800">
-            Nexora POS
+            Norexos
           </div>
           <h1 className="text-xl leading-tight">Panel de plataforma</h1>
         </div>

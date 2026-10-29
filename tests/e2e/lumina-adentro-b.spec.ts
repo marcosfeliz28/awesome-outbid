@@ -362,14 +362,14 @@ for (const viewport of [
       });
     }
     await open(page, "products");
-    const launcher = page.getByRole("button", { name: "Pregúntale a Nexora" });
+    const launcher = page.getByRole("button", { name: "Pregúntale a Norexos" });
     // El asistente sólo se monta en la edición SaaS. La compilación local que
     // usa verify conserva el modo de tienda y, por contrato, no debe simularlo.
     if (await launcher.count()) {
       await expect(launcher).toBeVisible();
       await launcher.click();
       await expect(
-        page.getByRole("dialog", { name: "Pregúntale a Nexora" }),
+        page.getByRole("dialog", { name: "Pregúntale a Norexos" }),
       ).toBeVisible();
       await page.screenshot({
         path: screenshotPath(
@@ -400,10 +400,10 @@ test("Mercancía móvil abre el asistente inline y recupera el foco", async ({
   await expect(trigger).toBeVisible();
   await trigger.click();
 
-  const dialog = page.getByRole("dialog", { name: "Pregúntale a Nexora" });
+  const dialog = page.getByRole("dialog", { name: "Pregúntale a Norexos" });
   await expect(dialog).toBeVisible();
   await expect(
-    dialog.getByRole("heading", { name: "Pregúntale a Nexora" }),
+    dialog.getByRole("heading", { name: "Pregúntale a Norexos" }),
   ).toBeVisible();
   await dialog.getByRole("button", { name: "Cerrar asistente" }).click();
 

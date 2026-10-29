@@ -65,7 +65,7 @@ export function emailSettings(
   const apiKey = env.RESEND_API_KEY?.trim() ?? "";
   const to = env.NOTIFY_EMAIL_TO?.trim() ?? "";
   const from =
-    env.NOTIFY_EMAIL_FROM?.trim() || "Nexora POS <onboarding@resend.dev>";
+    env.NOTIFY_EMAIL_FROM?.trim() || "Norexos <onboarding@resend.dev>";
   const apiBase = (
     env.RESEND_API_BASE?.trim() || "https://api.resend.com"
   ).replace(/\/+$/, "");
@@ -101,7 +101,7 @@ export async function sendEmail(
         subject,
         html:
           text.replace(/\n/g, "<br>") +
-          (appUrl ? `<br><br><a href="${appUrl}">Abrir Nexora POS</a>` : ""),
+          (appUrl ? `<br><br><a href="${appUrl}">Abrir Norexos</a>` : ""),
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -413,7 +413,7 @@ export function renderCashClose(c: CashCloseView) {
 
 export function renderTest(at: Date, by: string) {
   return [
-    "✅ <b>Prueba de Nexora</b>",
+    "✅ <b>Prueba de Norexos</b>",
     "Los avisos de facturas llegarán a este grupo.",
     `Enviado: ${formatDate(at)} · por: ${cleanText(by, 40)}`,
   ].join("\n");
@@ -569,8 +569,8 @@ export async function renderEvent(
       branchId: row.branchId,
       text:
         row.status === "pending"
-          ? `Solicitud de anulación pendiente · Factura ${escapeHtml(row.sale.number)}. Revisa Solicitudes de anulación en Nexora POS.`
-          : `Solicitud de anulación registrada · Factura ${escapeHtml(row.sale.number)}. Consulta su estado en Nexora POS.`,
+          ? `Solicitud de anulación pendiente · Factura ${escapeHtml(row.sale.number)}. Revisa Solicitudes de anulación en Norexos.`
+          : `Solicitud de anulación registrada · Factura ${escapeHtml(row.sale.number)}. Consulta su estado en Norexos.`,
     };
   }
   if (event === "sale" || event === "sale_voided") {
@@ -1046,7 +1046,7 @@ export class NotificationWorker
 export class NotificationsController {
   constructor(@Inject(Database) private readonly db: Database) {}
 
-  /** Encola «Prueba de Nexora». Nunca devuelve el token ni el chat. */
+  /** Encola «Prueba de Norexos». Nunca devuelve el token ni el chat. */
   @Post("telegram/test")
   @Permit("*")
   async test(@CurrentUser() actor: Actor) {

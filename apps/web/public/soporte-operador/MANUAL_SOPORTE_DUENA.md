@@ -1,14 +1,14 @@
-# Manual de soporte para la dueña de Nexora POS
+# Manual de soporte para la dueña de Norexos
 
 Esta guía sirve para atender problemas cotidianos sin pedir contraseñas, PIN, números completos de tarjeta ni datos reales de clientes. Primero identifica a la persona, el equipo, la hora aproximada y el texto exacto que aparece en pantalla. No repitas un cobro para “probar” y no borres los datos del navegador cuando haya ventas pendientes.
 
-Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si el sistema no ofrece la acción indicada para la cuenta que está atendiendo, no intentes saltar el permiso: escala el caso a administración.
+Las soluciones siguientes usan únicamente funciones presentes en Norexos. Si el sistema no ofrece la acción indicada para la cuenta que está atendiendo, no intentes saltar el permiso: escala el caso a administración.
 
 ## 1. No puedo entrar o la página no termina de cargar
 
-- **Qué preguntarle:** si otras páginas abren, qué mensaje muestra Nexora, desde qué equipo intenta entrar y si arriba aparece **Sin conexión**.
-- **Qué revisar:** conexión del equipo, que esté usando la dirección habitual de Nexora y si el problema afecta a una sola persona o a todos los equipos.
-- **Cómo resolverlo:** recupera la conexión y recarga una vez. Si Nexora abre pero pide credenciales, continúa con los casos 2 a 4. Si ningún equipo puede cargarla, anota la hora y escala a soporte técnico; no reinstales ni borres el navegador.
+- **Qué preguntarle:** si otras páginas abren, qué mensaje muestra Norexos, desde qué equipo intenta entrar y si arriba aparece **Sin conexión**.
+- **Qué revisar:** conexión del equipo, que esté usando la dirección habitual de Norexos y si el problema afecta a una sola persona o a todos los equipos.
+- **Cómo resolverlo:** recupera la conexión y recarga una vez. Si Norexos abre pero pide credenciales, continúa con los casos 2 a 4. Si ningún equipo puede cargarla, anota la hora y escala a soporte técnico; no reinstales ni borres el navegador.
 
 ## 2. Olvidé la contraseña o la contraseña temporal venció
 
@@ -19,7 +19,7 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 ## 3. La cuenta está bloqueada por intentos fallidos
 
 - **Qué preguntarle:** texto exacto del bloqueo, hace cuánto ocurrió y si está en un equipo aprobado de la tienda.
-- **Qué revisar:** que no sea una contraseña olvidada y que nadie siga intentando repetidamente; Nexora distingue bloqueos del equipo, de la dirección de conexión y de la cuenta.
+- **Qué revisar:** que no sea una contraseña olvidada y que nadie siga intentando repetidamente; Norexos distingue bloqueos del equipo, de la dirección de conexión y de la cuenta.
 - **Cómo resolverlo:** espera el plazo que indica la pantalla —el bloqueo habitual es de 15 minutos— o usa **Configuración → Usuarios y permisos → Restablecer contraseña**. Restablecerla revoca sesiones, quita el bloqueo y obliga a cambiar la temporal al entrar.
 
 ## 4. El equipo necesita aprobación o fue revocado
@@ -38,7 +38,7 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 
 - **Qué preguntarle:** monto del fondo contado, mensaje exacto, si ya existe una caja abierta y si está usando su propio usuario.
 - **Qué revisar:** estado de la caja, equipo asignado y comparación entre el efectivo inicial escrito y el fondo sugerido.
-- **Cómo resolverlo:** si ya está abierta, continúa con esa caja o resuelve el traslado del caso 5. Si el fondo real es menor que el sugerido, escribe la explicación que solicita Nexora. Nunca cambies el conteo para evitar el control.
+- **Cómo resolverlo:** si ya está abierta, continúa con esa caja o resuelve el traslado del caso 5. Si el fondo real es menor que el sugerido, escribe la explicación que solicita Norexos. Nunca cambies el conteo para evitar el control.
 
 ## 7. El lector no escanea
 
@@ -62,7 +62,7 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 
 - **Qué preguntarle:** proveedor, referencia del documento, producto, cantidad, costo, lote y vencimiento; pregunta también si la operación estaba pendiente sin conexión.
 - **Qué revisar:** en **Mercancía → ENTRADA**, confirma que cada línea tenga producto, cantidad y los datos obligatorios de lote/vencimiento. Revisa **Pendientes de este equipo** antes de repetir la entrada.
-- **Cómo resolverlo:** completa los datos reales y pulsa **Confirmar entrada** una sola vez. Si quedó pendiente, reconecta y deja que Nexora la sincronice; usa **Reintentar** solamente si la operación aparece en conflicto y ofrece ese botón. Si la factura se importó desde Excel, revisa la vista previa: el archivo no sustituye la captura manual de lote y vencimiento cuando la pantalla los exige.
+- **Cómo resolverlo:** completa los datos reales y pulsa **Confirmar entrada** una sola vez. Si quedó pendiente, reconecta y deja que Norexos la sincronice; usa **Reintentar** solamente si la operación aparece en conflicto y ofrece ese botón. Si la factura se importó desde Excel, revisa la vista previa: el archivo no sustituye la captura manual de lote y vencimiento cuando la pantalla los exige.
 
 ## 11. El precio cambió o el carrito muestra información vieja
 
@@ -91,7 +91,7 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 ## 15. Falta el lote o cierre del verifón
 
 - **Qué preguntarle:** si cerraron el lote de hoy, qué total imprimió el verifón y si contiene operaciones de otros días o personas.
-- **Qué revisar:** comprobantes físicos y total del lote del verifón antes de cerrar la caja. Nexora registra pagos por tarjeta, pero no descarga ni reconstruye el lote del aparato.
+- **Qué revisar:** comprobantes físicos y total del lote del verifón antes de cerrar la caja. Norexos registra pagos por tarjeta, pero no descarga ni reconstruye el lote del aparato.
 - **Cómo resolverlo:** cierra el lote en el verifón y escribe su total real en **Tarjeta declarada**; escribe cero solo si no hubo tarjetas. Si falta el comprobante o mezcla períodos, no inventes el monto: deja la justificación del descuadre y pásalo a administración para comparar ventas y comprobantes.
 
 ## 16. Una transferencia está pendiente, rechazada o tiene banco/referencia incorrectos
@@ -110,13 +110,13 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 
 - **Qué preguntarle:** hora, cliente, total, equipo y si vio número de venta, **Venta registrada**, **Pendiente de sincronizar** o un error.
 - **Qué revisar:** primero **Ventas** por número/fecha y después **Caja → Ventas guardadas en este dispositivo**. Conserva el carrito y el mismo equipo mientras se confirma.
-- **Cómo resolverlo:** si ya está en **Ventas**, no cobres de nuevo. Si está local, deja que sincronice o usa **Sincronizar/Reintentar** según el estado. Nexora reutiliza el identificador del mismo cobro para evitar duplicarlo; si existen dos ventas reales, administración anula la repetida con motivo.
+- **Cómo resolverlo:** si ya está en **Ventas**, no cobres de nuevo. Si está local, deja que sincronice o usa **Sincronizar/Reintentar** según el estado. Norexos reutiliza el identificador del mismo cobro para evitar duplicarlo; si existen dos ventas reales, administración anula la repetida con motivo.
 
 ## 19. “Se borró” o no aparece una venta
 
 - **Qué preguntarle:** número, fecha, cajera, monto, equipo y si se hizo sin conexión o se solicitó/anuló después.
 - **Qué revisar:** en **Ventas**, limpia la búsqueda, elige la fecha correcta y busca el número. Revisa el estado **Completada** o **Anulada** y la cola local del equipo si aún no se sincronizó.
-- **Cómo resolverlo:** si está anulada, abre su detalle: Nexora conserva la venta y su historia; no la vuelve a completar. Si está local, resuelve la sincronización. Si no figura en ninguno, anota los datos y escala a soporte para revisar la bitácora; no crees una copia hasta confirmar si existió.
+- **Cómo resolverlo:** si está anulada, abre su detalle: Norexos conserva la venta y su historia; no la vuelve a completar. Si está local, resuelve la sincronización. Si no figura en ninguno, anota los datos y escala a soporte para revisar la bitácora; no crees una copia hasta confirmar si existió.
 
 ## 20. La solicitud de anulación no avanza
 
@@ -151,7 +151,7 @@ Las soluciones siguientes usan únicamente funciones presentes en Nexora POS. Si
 ## 25. La caja no cierra o el cuadre tiene diferencia
 
 - **Qué preguntarle:** efectivo contado por denominación, total real del verifón, vales, efectivo entregado y si quedan ventas locales pendientes.
-- **Qué revisar:** sincroniza primero la cola del equipo; vuelve a contar dinero y comprobantes. Cierra el lote del verifón y escribe en **Tarjeta declarada** su total real. Las transferencias las calcula Nexora. Revisa cualquier vale y salida de efectivo registrada.
+- **Qué revisar:** sincroniza primero la cola del equipo; vuelve a contar dinero y comprobantes. Cierra el lote del verifón y escribe en **Tarjeta declarada** su total real. Las transferencias las calcula Norexos. Revisa cualquier vale y salida de efectivo registrada.
 - **Cómo resolverlo:** corrige solo errores de conteo comprobados. Si la diferencia es real, escribe la **Justificación del descuadre** con qué pasó y quién lo conoce; pide la aprobación requerida y pulsa **Cerrar caja e imprimir cuadre** una sola vez. No alteres números para que coincidan. Administración puede revisar después el cierre, sus diferencias y la bitácora.
 
 ## Trazabilidad de las funciones comprobadas
@@ -170,5 +170,5 @@ Este manual se contrastó con la versión de `origin/producto-nexora` disponible
 
 - Conteo: **25 problemas**, numerados del 1 al 25; cada uno contiene exactamente **Qué preguntarle**, **Qué revisar** y **Cómo resolverlo**.
 - Casos obligatorios cubiertos: entrada al sistema (1–4), descuadre (25), lote del verifón (15), venta aparentemente borrada (19), impresora (22) y venta sin internet (23–24).
-- Límites expresos: no se afirma que Nexora lea el verifón; no se promete recuperar datos borrando o reinstalando; no se permite repetir cobros, saltar permisos, inventar stock/lotes ni compartir credenciales.
+- Límites expresos: no se afirma que Norexos lea el verifón; no se promete recuperar datos borrando o reinstalando; no se permite repetir cobros, saltar permisos, inventar stock/lotes ni compartir credenciales.
 - Datos: no contiene secretos, contraseñas, PIN, clientes, cuentas bancarias ni cifras reales de un negocio.
