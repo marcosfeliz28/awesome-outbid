@@ -1329,3 +1329,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente: aviso de Norexos 1 sobre el CI de `claude/forja2-final` (21:55 UTC). Después, Forja 3.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 min (29-oct): orden 71 y cola activa nueva
+- Fetch: nexora-cloud f0446d50. RESPUESTA_CLAUDE_PC_27OCT.md blob 7a6234d0 (cambió desde 524744ee). OBSIDIAN_LUMINA_PROGRESO.md ausente en nexora-cloud.
+- Orden 71: la cola activa nueva está en `docs/coordinacion/COLA_LOCAL_ACTIVA_NUEVA.json` de nexora-cloud (tareas N1 a N8). Copiadas a `COLA_LOCAL_ACTIVA.json` de esta rama (L3 y L4 conservadas, hechas). El ejecutor no corre aquí: sus insumos no están en esta rama. Se corrió desde `claude-pc/cola-n` (desde nexora-cloud, sin tocarla). Primer intento fallido por insumos ausentes; estado de error reiniciado solo en el worktree.
+- CI (API check-runs): pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e: verify, windows-installer y render-images en verde (ya tienen LISTA). cola-b13 c6f6a8f0: verify en curso. forja2-grupo-2 b13d95a3 y forja2-grupo-3 82eda660: verify en curso. Ninguna LISTA nueva.
+- ChatGPT (paso 5): la app «ChatGPT» granted (paquete Codex) se abre pero no muestra ventana; «ChatGPT Classic» existe en el equipo pero no está concedida. No se leyó «ChatGPT nube» ni «ChatGPT PC». No se escribió en ningún chat. Bloqueo: Marcos debe confirmar qué app contiene esos chats.
