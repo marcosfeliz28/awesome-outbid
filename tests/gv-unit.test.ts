@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { gvTotals } from "../apps/api/src/gv-money";
+import {
+  assertGvBank,
+  gvBankOptions,
+  gvTotals,
+} from "../apps/api/src/gv-money";
 import { can, permissions } from "../packages/shared/src/index";
 
 describe("GV · pendiente exacto", () => {
@@ -37,5 +41,38 @@ describe("GV · rol", () => {
       expect(can(permissions.seller, p)).toBe(false);
     }
     expect(can(permissions.gv, "gv:verify")).toBe(false);
+  });
+});
+
+describe("GV · banco de la lista", () => {
+  const fakeTx = (data: unknown) => ({
+    settings: { findUnique: async () => ({ data }) },
+  });
+  it("agrupa la lista de la caja por empresa", async () => {
+    const banks = await gvBankOptions(
+      fakeTx({
+        transferAccounts: [
+          "Popular MacGen ···3620",
+          "Popular Grupo Génesis ···9797",
+          "BHD Grupo Génesis ···0015",
+        ],
+        cardTerminals: [],
+      }),
+      "b",
+    );
+    expect(banks.genesis).toEqual([
+      "Popular Grupo Génesis ···9797",
+      "BHD Grupo Génesis ···0015",
+    ]);
+    expect(banks.macgen).toEqual(["Popular MacGen ···3620"]);
+  });
+  it("exige un banco de la lista; sin lista no exige", () => {
+    const banks = { genesis: ["A Génesis"], macgen: ["B Macgen"] };
+    expect(() => assertGvBank(banks, "A Génesis")).not.toThrow();
+    expect(() => assertGvBank(banks, "Otro")).toThrow();
+    expect(() => assertGvBank(banks, null)).toThrow();
+    expect(() =>
+      assertGvBank({ genesis: [], macgen: [] }, "Libre"),
+    ).not.toThrow();
   });
 });
