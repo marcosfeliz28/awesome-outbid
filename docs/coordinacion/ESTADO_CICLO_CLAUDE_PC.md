@@ -1234,3 +1234,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Sin cambios.
 - Órdenes nuevas que escriban código para Claude PC: ninguna.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Tanda 2 (M1-M8) y bloque 11 (orden 60), 29-oct tarde
+- Tanda 2 aceptada por Marcos en el chat del Revisor. Ejecutada en claude-pc/lote-local-tanda2 (último commit 2332bdb9), ocho commits, borradores en docs/diseno/borradores-local/ con encabezado. Revisor avisado para revisar.
+- Bloque 11 (tareas 62 a 68) en claude-pc/cola-b11 (desde nexora-cloud). Hechas: 64 y 65 (inventarios por script), 67 (mapa e2e, 36 specs), 62 (portada en inglés; limpiada de notas y rutas internas), 63 (FAQ de caja; 12 de 15), 66 (en-management.json; 45 claves). Head: aa47c3ce.
+- 68 (checklist de caja): en curso con qwen-optimizado.
+- Skill propia creada por pedido de Marcos: claude-pc-instrucciones (C:\Users\marco\.claude\skills\claude-pc-instrucciones\SKILL.md).
+- Mensaje a la sesión fork respondido: descargas de qwen2.5-coder:7b, qwen-optimizado y mcp-ollama son mías, con autorización de Marcos.
