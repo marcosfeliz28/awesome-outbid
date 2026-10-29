@@ -1023,3 +1023,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - No aplicado: OLLAMA_KV_CACHE_TYPE=q8_0 y num_batch 1024 (sin prueba; la memoria no es el cuello de botella con contexto de 8 192).
 - No usar: las cifras de HumanEval+ por cuantización que citó DeepSeek no tienen fuente comprobable.
 - Reversión: borrar OLLAMA_IGPU_ENABLE del usuario y reiniciar Ollama.
+
+## Ciclo (29-oct, 15 min)
+- nexora-cloud a4368a68. RESPUESTA eccaf01f (sin cambio). OBSIDIAN ausente.
+- CI: pc23, a1, b01 y lumina en verde. claude-pc/i18n-borrador (ee22f267): windows-installer y render-images en verde; verify en curso (desde 15:40Z; suele tardar ~28 min). LISTA cuando termine.
+- Cola local: vacía (pedido a Norexos 1 en la consulta anterior).
+- ChatGPT: sin cambios (Marcos pidió no tocarlo).
