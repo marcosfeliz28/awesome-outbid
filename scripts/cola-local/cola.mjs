@@ -26,6 +26,11 @@ export function construirEncargo(tarea, leer, contexto = "") {
   return [contexto, tarea.instrucciones, "", ...bloques].filter(Boolean).join("\n");
 }
 
+// Une los archivos de contexto fijo (en orden); omite los que no existen.
+export function cargarContexto(rutas, leer, existe) {
+  return rutas.filter(existe).map((r) => leer(r).trim()).join("\n\n");
+}
+
 export function registrar(estado, id, cambios) {
   return { ...estado, [id]: { ...(estado[id] ?? {}), ...cambios, actualizado: new Date().toISOString() } };
 }
@@ -42,8 +47,12 @@ async function main() {
   const cola = JSON.parse(readFileSync(rutaCola, "utf8"));
   const leer = (ruta) => readFileSync(ruta, "utf8");
   // Contexto fijo: la guía de educación que Norexos 1 escribió para el modelo (si existe).
-  const rutaContexto = "docs/coordinacion/EDUCACION_MODELO_LOCAL.md";
-  const contexto = existsSync(rutaContexto) ? readFileSync(rutaContexto, "utf8") : "";
+  // Contexto fijo: la guía de Norexos 1 y las reglas de Claude PC (en ese orden).
+  const contexto = cargarContexto(
+    ["docs/coordinacion/EDUCACION_MODELO_LOCAL.md", "docs/coordinacion/INSTRUCCIONES_QWEN_CLAUDE_PC.md"],
+    leer,
+    existsSync,
+  );
   for (;;) {
     let estado = cargarEstado(rutaEstado);
     const tarea = siguienteTarea(cola, estado);

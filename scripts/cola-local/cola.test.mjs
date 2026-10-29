@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { siguienteTarea, construirEncargo, registrar } from "./cola.mjs";
+import { siguienteTarea, construirEncargo, registrar, cargarContexto } from "./cola.mjs";
 
 const cola = { tareas: [
   { id: "a", salida: "docs/a.md" },
@@ -54,4 +54,12 @@ test("antepone el contexto fijo (educación del modelo) antes de la instrucción
   const enc = construirEncargo({ instrucciones: "Haz X.", entradas: [] }, () => "", "Reglas fijas.");
   assert.match(enc, /Reglas fijas./);
   assert.ok(enc.indexOf("Reglas fijas.") < enc.indexOf("Haz X."));
+});
+
+test("carga varios archivos de contexto en orden y omite los que no existen", () => {
+  const archivos = { "a.md": "Regla A.", "c.md": "Regla C." };
+  const ctx = cargarContexto(["a.md", "b.md", "c.md"], (r) => archivos[r], (r) => r in archivos);
+  assert.match(ctx, /Regla A\./);
+  assert.match(ctx, /Regla C\./);
+  assert.ok(ctx.indexOf("Regla A.") < ctx.indexOf("Regla C."));
 });
