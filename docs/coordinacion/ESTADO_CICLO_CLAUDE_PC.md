@@ -1155,3 +1155,5 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Correcciones del modelo: validar-telefono (const reasignado), copia-segura (función de nivel superior y ciclos). ordenar: ajuste de contrato sin prueba que lo detecte.
 - Pendiente: CI del grupo 3 y auditoría de Norexos 1. Luego la tarea 56 (pruebas límite).
 - CI de claude/forja-grupos-12: en curso.
+- Corrección: claude-pc/b9-50-grupo-3 tiene como head 70f4084b (otra sesión subió el mismo grupo en paralelo, 5df3f012 a 70f4084b). Lo revisé: 20/20 pruebas de las 4 funciones, eslint y prettier limpios. Me quedo con esa versión. Mi copia duplicada (4d9066b3 y anteriores) está en la rama local claude-pc/b9-50-grupo-3-dup-local, sin subir.
+- Head para auditoría: 70f4084b. CI en curso.
