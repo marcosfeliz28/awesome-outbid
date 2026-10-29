@@ -1,0 +1,82 @@
+# Variables de entorno que el código lee (S1, tanda 3)
+
+Borrador sin verificar. Fuente: `origin/producto-nexora` (`d6adc554`), rama `claude-pc/lote-local-tanda3`. Solo **nombres** de `process.env.X` en apps/ y packages/ (.ts/.tsx/.mjs/.js), excluidas pruebas. Sin valores. Lista por `grep -rnoE`; primer uso con archivo:línea. Archivos revisados: 226 de 226 (completo).
+
+| Nombre | Primer uso (archivo:línea) | Usos totales |
+|---|---|---|
+| `ADMIN_EMAIL` | `apps/api/scripts/create-admin.ts:22` | 1 |
+| `ADMIN_MODE` | `apps/api/scripts/create-admin.ts:26` | 1 |
+| `ADMIN_NAME` | `apps/api/scripts/create-admin.ts:25` | 1 |
+| `ADMIN_PASSWORD` | `apps/api/scripts/create-admin.ts:23` | 1 |
+| `ADMIN_PIN` | `apps/api/scripts/create-admin.ts:24` | 1 |
+| `ANTHROPIC_API_KEY` | `apps/api/src/assistant.ts:1283` | 9 |
+| `ANTHROPIC_MODEL` | `apps/api/src/merchandise.ts:278` | 1 |
+| `APP_PUBLIC_URL` | `apps/api/src/mcp.ts:25` | 4 |
+| `AUTH_ACCOUNT_RATE_LIMIT` | `apps/api/src/rate-limit.ts:26` | 1 |
+| `AUTH_IP_RATE_LIMIT` | `apps/api/src/rate-limit.ts:31` | 1 |
+| `AUTH_UNKNOWN_GLOBAL_RATE_LIMIT` | `apps/api/src/rate-limit.ts:33` | 1 |
+| `BACKUP_ENCRYPTION_KEY` | `apps/api/scripts/tenant-backup.ts:8` | 1 |
+| `BILLING_TEST_MODE` | `apps/api/src/product-billing.ts:21` | 1 |
+| `DATABASE_URL` | `apps/api/scripts/seed-audit-sandbox.ts:13` | 3 |
+| `ENABLE_SWAGGER` | `apps/api/src/main.ts:73` | 1 |
+| `FITSTORE_API_PROXY` | `apps/web/vite.config.ts:92` | 2 |
+| `FITSTORE_WEB_URL` | `apps/web/capacitor.config.ts:2` | 1 |
+| `IMPORT_SESSION_RATE_LIMIT` | `apps/api/src/rate-limit.ts:42` | 1 |
+| `INVENTORY_IMPORT_SESSION_RATE_LIMIT` | `apps/api/src/rate-limit.ts:46` | 1 |
+| `JWT_SECRET` | `apps/api/src/drive-backup.ts:1163` | 3 |
+| `LOGOUT_SESSION_RATE_LIMIT` | `apps/api/src/rate-limit.ts:38` | 1 |
+| `MCP_OAUTH_CLIENTS` | `apps/api/src/mcp.ts:27` | 2 |
+| `MCP_TOKEN_SECRET` | `apps/api/src/mcp.ts:24` | 1 |
+| `NEXORA_AUDIT_SANDBOX` | `apps/api/scripts/seed-audit-sandbox.ts:15` | 1 |
+| `NEXORA_BILLING_BANK_ACCOUNT` | `apps/api/src/product-billing.ts:27` | 2 |
+| `NEXORA_BILLING_BANK_HOLDER` | `apps/api/src/product-billing.ts:27` | 2 |
+| `NEXORA_BILLING_BANK_NAME` | `apps/api/src/product-billing.ts:27` | 2 |
+| `NEXORA_BILLING_OPERATOR_ID` | `apps/api/scripts/platform-billing-panel.ts:202` | 2 |
+| `NEXORA_DISPOSABLE_RESTORE` | `apps/api/scripts/tenant-backup.ts:25` | 1 |
+| `NEXORA_IA_MODEL` | `apps/api/src/assistant.ts:1299` | 3 |
+| `NEXORA_RETENTION` | `apps/api/src/retention.ts:218` | 1 |
+| `NEXORA_VENTAS_CAJA_CIEGA` | `apps/api/src/sales.ts:149` | 1 |
+| `NODE_ENV` | `apps/api/scripts/seed-audit-sandbox.ts:19` | 9 |
+| `NOTIFY_EMAIL_FROM` | `apps/api/src/registration.ts:64` | 2 |
+| `PASSWORD_CHANGE_CONFIRM` | `apps/api/scripts/require-password-change.ts:13` | 1 |
+| `PASSWORD_CHANGE_USERNAMES` | `apps/api/scripts/require-password-change.ts:19` | 1 |
+| `PATH` | `apps/api/src/drive-backup.ts:533` | 1 |
+| `PIN_SESSION_RATE_LIMIT` | `apps/api/src/rate-limit.ts:36` | 1 |
+| `PLATFORM_ADMIN_TOKEN_SHA256_NEXT` | `apps/api/src/platform.ts:58` | 1 |
+| `PLATFORM_ADMIN_TOKEN_SHA256` | `apps/api/src/platform.ts:55` | 1 |
+| `PLATFORM_BILLING_DATABASE_URL` | `apps/api/scripts/platform-billing-panel.ts:201` | 2 |
+| `PLATFORM_OPERATOR_LABEL` | `apps/api/src/platform-billing.ts:88` | 3 |
+| `PORT` | `apps/api/src/assistant.ts:1311` | 2 |
+| `PRODUCT_LEGAL_APPROVED` | `apps/api/src/registration.ts:54` | 2 |
+| `PRODUCT_LOCAL_INSTALLATION_ID` | `apps/api/src/local-license.ts:255` | 1 |
+| `PRODUCT_LOCAL_LICENSE_DIR` | `apps/api/src/local-license.ts:250` | 1 |
+| `PRODUCT_LOCAL_LICENSE_PUBLIC_KEY` | `apps/api/src/local-license.ts:251` | 1 |
+| `PRODUCT_LOCAL_LICENSE_RENEW_TOKEN` | `apps/api/src/local-license.ts:224` | 1 |
+| `PRODUCT_LOCAL_LICENSE_RENEW_URL` | `apps/api/src/main.ts:56` | 1 |
+| `PRODUCT_LOCAL_LICENSE` | `apps/api/src/local-license.ts:249` | 2 |
+| `PRODUCT_LOCAL_TENANT_ID` | `apps/api/src/local-license.ts:262` | 1 |
+| `PRODUCT_MCP_ENABLED` | `apps/api/src/mcp.ts:26` | 1 |
+| `PRODUCT_OBJECT_BUCKET` | `apps/api/src/tenant-object-store.ts:101` | 2 |
+| `PRODUCT_OBJECT_ENDPOINT` | `apps/api/src/tenant-object-store.ts:113` | 1 |
+| `PRODUCT_OBJECT_REGION` | `apps/api/src/tenant-object-store.ts:101` | 2 |
+| `PRODUCT_OBJECT_STORE_DIR` | `apps/api/src/tenant-object-store.ts:109` | 1 |
+| `PRODUCT_PRIVACY_VERSION` | `apps/api/src/registration.ts:50` | 1 |
+| `PRODUCT_PUBLIC_REGISTRATION` | `apps/api/src/registration.ts:135` | 1 |
+| `PRODUCT_TENANCY` | `apps/api/scripts/platform-billing-panel.ts:203` | 36 |
+| `PRODUCT_TERMS_VERSION` | `apps/api/src/registration.ts:49` | 1 |
+| `REFRESH_SESSION_RATE_LIMIT` | `apps/api/src/rate-limit.ts:37` | 1 |
+| `RENDER_DATABASE_URL` | `apps/api/scripts/seed-audit-sandbox.ts:16` | 1 |
+| `RENDER_GIT_COMMIT` | `apps/web/vite.config.ts:12` | 3 |
+| `RESEND_API_BASE` | `apps/api/src/registration.ts:70` | 2 |
+| `RESEND_API_KEY` | `apps/api/src/registration.ts:63` | 2 |
+| `SALES_SESSION_RATE_LIMIT` | `apps/api/src/rate-limit.ts:39` | 1 |
+| `SEED_DEMO_PASSWORD` | `apps/api/prisma/seed.ts:99` | 1 |
+| `TENANT_BACKUP_DATABASE_URL` | `apps/api/scripts/tenant-backup.ts:14` | 1 |
+| `TENANT_RESTORE_DATABASE_URL` | `apps/api/scripts/tenant-backup.ts:27` | 1 |
+| `TRUSTED_PROXIES` | `apps/api/src/rate-limit.ts:144` | 1 |
+| `USD_RATE_AUTO` | `apps/api/src/usd-rate.ts:162` | 1 |
+| `VITE_PRODUCT_TENANCY` | `apps/web/scripts/check-product-brand.mjs:6` | 1 |
+| `VITE_SENTRY_RELEASE` | `apps/web/vite.config.ts:15` | 1 |
+| `WEB_ORIGIN` | `apps/api/src/main.ts:23` | 2 |
+
+Nombres distintos: 74 · usos totales: 154
