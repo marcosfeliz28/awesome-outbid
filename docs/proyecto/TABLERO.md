@@ -24,3 +24,4 @@
 | T19 | Lanzamiento controlado | E8 | Dueña + Norexos 1 | pendiente | 24-nov (mejor caso 18-nov). Checklist firmada |
 | T20 | Skill `mattpocock/skills@wayfinder` (propuesta) | E0 | Norexos 1 | hecho | Instalada por Norexos 1 en su propia sesión, auditada por Norexos 1 (commit a496f55, solo texto). Reportado por Norexos 1; no es auditoría del Revisor. Norexos 5 no instala skills |
 | T21 | Licencia (suscripción o por PC) y actualización simple (reinstalar encima) | E3 | Norexos PC, rama `claude-pc/instalador-e3` | bloqueado | Espera decisión de la dueña sobre el modelo de venta y de actualización. Norexos 1 lo plantea a la dueña |
+| T22 | Instalar en la laptop: Karpathy, Agent Skills, Superpowers, ECC (órdenes 32 y 33) | E0 | Norexos PC | bloqueado | Norexos 1 no las instala sin auditoría del Revisor. El Revisor está bloqueado (T17). Decisión pendiente: la dueña aprueba instalar sin auditoría, o se desbloquea el Revisor. Norexos 1 lo plantea a la dueña |
