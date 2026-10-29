@@ -765,3 +765,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion (estas últimas dos verificadas en reintento).
 - COLA_LOTE_LOCAL.md no existe. Descarga del 14B sin instalar.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (29-oct, consulta de 30 min para cola del modelo local)
+- Fetch: nexora-cloud en c0b83c0a. No existe COLA_LOTE_LOCAL.md. RESPUESTA_CLAUDE_PC_27OCT.md blob 872f894e: sin órdenes nuevas. Sin tareas, no se ejecutó tarea.mjs.
+- Envío de petición de cola: NO entregado. Las sesiones d21984 (Nexora 1) y 40a558 (Nexora 4) no aparecen en la lista de sesiones de Claude PC; el envío devolvió "session not found". Pendiente: Marcos debe confirmar los ids o pedir la cola por otra vía.
+- Modelo: qwen2.5-coder:14b descargado (9.0 GB) y respondiendo en 127.0.0.1:11434. Descarga completada por reintento automático.
+- CI claude-pc/visual-f2-01 (ef063f6a): windows-installer y render-images en verde; verify sigue sin conclusión (en curso). Sin LISTA hasta que verify esté en verde.
