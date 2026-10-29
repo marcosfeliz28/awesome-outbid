@@ -1376,3 +1376,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Cola del modelo: N9 a N16 añadidas al JSON (88b22f7b); sin ejecución nueva en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo (29-oct): Forja 3, primera tanda
+- Fetch: nexora-cloud en 6f83d277 (sin orden nueva). RESPUESTA_CLAUDE_PC_27OCT.md blob e559232e. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en d6adc554.
+- Tanda 1 de Forja 3 subida en un solo empuje a `claude-pc/forja3-grupo-1` (head 32f375d4): F3-03 `formatearPorcentaje` (d6540f46), F3-06 `rangoDeDias` (017319ec) y F3-07 `esMismoDia` (32f375d4). Cada una con su prueba. Verificado con Node 24: 9/9, 6/6 y 4/4.
+- Corrección honesta: en F3-07 la primera comprobación tenía expectativas de zona horaria mal calculadas. Las corregí; la función no cambió.
+- CI de la tanda: en curso. Sin LISTA hasta que verify, windows-installer y render-images estén en verde en 32f375d4.
+- Pendiente: F3-01, F3-02, F3-04 (duda de separador de miles en español), F3-05, F3-08, F3-09 y F3-10.
+- Bloque 14: 85, 86 y 89 hechas; 87, 88, 90, 91 y 92 pendientes.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
