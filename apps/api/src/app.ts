@@ -39,6 +39,7 @@ import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
 import { CashierSurveyController } from "./cashier-survey";
+import { ChangeRequestsController } from "./change-requests";
 import { IncomeReportController } from "./income-report";
 import { FormalReportController } from "./formal-report";
 import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
@@ -116,6 +117,7 @@ export function createAppModule(secret: string) {
       FormalReportController,
       ReportsController,
       CashierSurveyController,
+      ChangeRequestsController,
       AlertsController,
       ...(product ? [NcfSequencesController] : []),
       OfflineSalesController,
