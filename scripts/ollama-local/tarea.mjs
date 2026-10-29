@@ -19,11 +19,11 @@ export function quitarRazonamiento(texto) {
   return texto.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
 
-export async function ejecutar({ encargo, maxTokens, fetchFn = fetch }) {
+export async function ejecutar({ encargo, maxTokens, modelo = MODELO, fetchFn = fetch }) {
   const r = await fetchFn(`${URL_LOCAL}/api/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODELO, stream: false, prompt: encargo, options: { num_predict: maxTokens } }),
+    body: JSON.stringify({ model: modelo, stream: false, prompt: encargo, options: { num_predict: maxTokens } }),
   });
   if (!r.ok) throw new Error(`Ollama respondió HTTP ${r.status}`);
   const j = await r.json();
