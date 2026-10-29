@@ -1083,3 +1083,14 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendientes de la 50: nx-tiempo-relativo, nx-contraste, nx-breakpoint, nx-truncar, nx-foco-ciclico, nx-ordenar-estable, nx-etiqueta-cupo, nx-validar-telefono, nx-normalizar-texto, nx-copia-segura (10 más).
 - CI de claude-pc/cola-b10 (630a437d): verify y windows-installer en curso. LISTA cuando terminen.
 - Cola local activa: vacía.
+
+## Órdenes 52 y 53 (29-oct 17:20Z): grupo 1 de Forja (tarea 50)
+- nexora-cloud 517bd8a6. RESPUESTA 98e07123 (orden 53: nx-iniciales aprobada; ramas desde producto-nexora; grupos de 3–4 funciones por rama).
+- Rama: claude-pc/b9-50-grupo-1, desde origin/producto-nexora (d3acef4f). Head 6d99528e, con 3 funciones:
+  - nx-iniciales (c559be57): 5/5 pruebas.
+  - nx-normalizar-texto (254697db): 3/3. El borrador del modelo eliminaba la ñ (NFD); corregido.
+  - nx-truncar (6d99528e): 5/5. El borrador podía dar max+1 caracteres y partir emojis; corregido.
+  - pnpm check completo no corrido (lo corre el CI).
+- Pendientes de la 50: nx-tiempo-relativo, nx-contraste, nx-breakpoint, nx-foco-ciclico, nx-ordenar-estable, nx-etiqueta-cupo, nx-validar-telefono, nx-copia-segura (8).
+- CI: claude-pc/cola-b10 (630a437d): windows-installer y render-images en verde; verify en curso. LISTA cuando termine.
+- CI de claude-pc/b9-50-grupo-1 (6d99528e): en curso.
