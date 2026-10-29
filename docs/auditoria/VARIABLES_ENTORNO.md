@@ -1,6 +1,6 @@
 # Variables de entorno (tarea 82)
 
-Borrador sin verificar. Columna 3: solo indica si la línea de lectura tiene `||` o `??`; algunos casos no son valores por defecto (p. ej. comparaciones con `===`). Fuente: `origin/producto-nexora` (`e64b0b27`), rama `claude-pc/cola-b13`. Nombres leídos con `grep -rnoE "process\.env\.[A-Z0-9_]+" apps/api/src`. **Sin valores**: no se leyeron archivos `.env*` ni `docs/operacion/` (orden 70).
+Borrador sin verificar. Columna 3: solo indica si la línea de lectura tiene `||` o `??`; algunos casos no son valores por defecto (p. ej. comparaciones con `===`). Fuente: `origin/producto-nexora` (`415f602a`), rama `claude-pc/cola-b13`. Nombres leídos con `grep -rnoE "process\.env\.[A-Z0-9_]+" apps/api/src`. **Sin valores**: no se leyeron archivos `.env*` ni `docs/operacion/` (orden 70).
 
 | Nombre | Archivo:línea donde se lee | ¿La línea usa `||` o `??`? (indicio, no prueba de valor por defecto) |
 |---|---|---|
