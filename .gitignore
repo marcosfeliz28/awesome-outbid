@@ -25,3 +25,7 @@ __pycache__/
 # Configuración de escritorio generada para el origen de cada producto.
 apps/web/src-tauri/product-build.json
 apps/web/src-tauri/capabilities/product-remote.json
+
+# Taller: configuración local de plugins y estado de OMC (no se versiona)
+.mcp.json
+.omc/
