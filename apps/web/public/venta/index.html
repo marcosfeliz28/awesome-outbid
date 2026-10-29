@@ -489,15 +489,19 @@
         <a class="brand" href="#inicio" aria-label="Norexos, inicio"
           >NOREXOS</a
         >
-        <a class="header-link" href="mailto:soporte@nexorapos.net">Ayuda</a>
+        <div class="lang-switch" role="group" aria-label="Idioma">
+          <button type="button" class="lang-button" data-idioma="es" aria-pressed="true">ES</button>
+          <button type="button" class="lang-button" data-idioma="en" aria-pressed="false">EN</button>
+        </div>
+        <a class="header-link" href="mailto:soporte@nexorapos.net" data-es="Ayuda" data-en="Help">Ayuda</a>
       </div>
     </header>
 
     <main id="contenido">
       <section class="hero" id="inicio" aria-labelledby="titulo-principal">
         <div class="container">
-          <p class="eyebrow">Tu operación, en orden</p>
-          <h1 id="titulo-principal">Vende con claridad. Decide con datos.</h1>
+          <p class="eyebrow" data-es="Tu operación, en orden" data-en="Your operation, in order">Tu operación, en orden</p>
+          <h1 id="titulo-principal" data-es="Vende con claridad. Decide con datos." data-en="Sell with clarity. Decide with data.">Vende con claridad. Decide con datos.</h1>
           <p class="hero-copy">
             Norexos reúne ventas, inventario y asistencia de IA en una
             experiencia sencilla para tu negocio.
@@ -507,6 +511,7 @@
             href="https://wa.me/?text=Hola%2C%20quiero%20probar%20Nexora%20POS%20gratis."
             target="_blank"
             rel="noopener noreferrer"
+            data-es="Quiero probarlo gratis" data-en="Try it free"
             >Quiero probarlo gratis</a
           >
           <p class="helper">
@@ -683,5 +688,38 @@
       </div>
     </footer>
     <script src="whatsapp.js"></script>
+    <script>
+      // Idioma de la portada. La elección se guarda solo en este navegador.
+      (function () {
+        var textos = document.querySelectorAll("[data-es][data-en]");
+        function aplicar(idioma) {
+          document.documentElement.lang = idioma;
+          textos.forEach(function (el) {
+            el.textContent = el.getAttribute("data-" + idioma);
+          });
+          document.querySelectorAll("[data-idioma]").forEach(function (b) {
+            b.setAttribute("aria-pressed", String(b.getAttribute("data-idioma") === idioma));
+          });
+        }
+        document.querySelectorAll("[data-idioma]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var idioma = b.getAttribute("data-idioma");
+            try {
+              localStorage.setItem("norexos-idioma", idioma);
+            } catch (e) {
+              /* sin almacenamiento: solo cambia en esta carga */
+            }
+            aplicar(idioma);
+          });
+        });
+        var guardado = null;
+        try {
+          guardado = localStorage.getItem("norexos-idioma");
+        } catch (e) {
+          guardado = null;
+        }
+        if (guardado === "en" || guardado === "es") aplicar(guardado);
+      })();
+    </script>
   </body>
 </html>

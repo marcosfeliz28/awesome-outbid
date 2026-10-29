@@ -8,6 +8,7 @@ export default defineConfig({
     // dejar una prueba esperando hasta su timeout aunque aislada tarde segundos.
     maxWorkers: 4,
     include: [
+      "tests/i18n-selector-portada.test.ts",
       "tests/visual-fase1-gemini.test.ts",
       "tests/assistant-n01.test.ts",
       "tests/assistant-n04.test.ts",
