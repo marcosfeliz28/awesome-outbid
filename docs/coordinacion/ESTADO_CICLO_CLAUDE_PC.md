@@ -1287,3 +1287,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo (29-oct 21:10Z): órdenes 66–67
 - nexora-cloud df878cea; RESPUESTA blob c64a057f (antes e43d47a2). Órdenes 66/67 informativas (CI cancela ejecuciones viejas: empujar por tanda, fusionar producto-nexora antes). LISTA añadida: lote-local-tanda2 (3 CI verdes). cola-b11, cola-b12 y b9-56-limites: verify aún en curso.
 - Forja 2: fusionado producto-nexora en forja2-grupo-1 y F2-04 agruparPorDia (prueba roja→5/5 verde, vitest local no disponible: Node 22, se usó shim). Un solo empuje, head 8066b75e; CI pendiente, sin LISTA.
+
+## Ciclo (29-oct): orden 67 (CI y empujes por tanda) y solapamiento en Forja 2
+- Fetch: nexora-cloud en df878cea. Orden 67: el CI cancela la ejecución anterior de cada rama. Hay que agrupar commits y empujar una vez por tanda, y hacer `git merge origin/producto-nexora` antes del siguiente empuje. RESPUESTA_CLAUDE_PC_27OCT.md blob c64a057f. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 415f602a.
+- Forja 2 grupo 1 (`claude-pc/forja2-grupo-1`, head 8066b75e): ya tiene las cuatro funciones F2-01 a F2-04 (commits de otra sesión y de la mía). Mi F2-01 (0e37c1c7) quedó reemplazada por la de la otra sesión (4a245c8b). No añado más en esta rama para no duplicar.
+- CI de 8066b75e: en cola (verify, windows-installer, render-images). Sin LISTA hasta los tres en verde. Cuando estén, escribo LISTA de ese SHA.
+- Pendiente de Claude PC: Forja 2 grupo 2 (F2-05 a F2-08) y grupo 3 (F2-09 y F2-10), con ramas nuevas `claude-pc/forja2-grupo-2` y `-3`, desde producto-nexora 415f602a, si la otra sesión no las toma. Antes de empezar, coordinar con esa sesión.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
