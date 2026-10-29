@@ -1030,6 +1030,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Cola local: vacía (pedido a Norexos 1 en la consulta anterior).
 - ChatGPT: sin cambios (Marcos pidió no tocarlo).
 
-## Ciclo (29-oct, quincenal 16:11Z)
-- nexora-cloud a4368a68. RESPUESTA eccaf01f (sin cambio). OBSIDIAN ausente. CI de pc23, a1, b01, lumina e i18n-borrador (ee22f267) en verde.
-- LISTA escrita para claude-pc/i18n-borrador ee22f267. Sin órdenes nuevas de Nexora 1.
+## Ciclo (29-oct, 15 min + consulta de 30 min)
+- nexora-cloud a4368a68. RESPUESTA eccaf01f (sin cambio). OBSIDIAN ausente. COLA_LOTE_LOCAL sin cambios.
+- CI: pc23, a1, b01, lumina e i18n en verde. LISTA escrita para claude-pc/i18n-borrador ee22f267 y enviada a Norexos 1 (la primera vez falló por error temporal de sesiones; el reintento fue aceptado por la ruta de sesión).
+- Cola local: vacía. Pedido de tareas a Norexos 1 enviado en esta consulta (recordatorio de las anteriores).
+- Modelo: descarga de qwen2.5-coder:7b en curso (~52 % al momento de la consulta). El 14B sigue activo.
+- ChatGPT: sin cambios (Marcos pidió no tocarlo).
+- Modelo: descarga de qwen2.5-coder:7b en curso (~52 % en la consulta de 30 min). El 14B sigue activo.
