@@ -750,3 +750,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Hecho: fast-forward de claude-pc/visual-f2-01 a ef063f6a (sin force), subido. CI del nuevo head en curso. LISTA solo si los 3 quedan en verde.
 - Pendiente: mezcla hacia producto-nexora (la decide Norexos 1), marca/cambio-nombre.
 - COLA_LOTE_LOCAL.md no existe. Descarga del 14B: reintento automático con registro «intento 1»; aún no instalado.
+
+## Ciclo (29-oct, ciclo autónomo)
+- Fetch: nexora-cloud en c0b83c0a (sin orden nueva). RESPUESTA_CLAUDE_PC_27OCT.md blob 872f894e. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- ALERTA DE RAMA: `producto-nexora` pasó de a58efb33 a ef063f6a, que es el HEAD de `claude/taller-anim` (25 commits de animación del Taller). `claude-pc/visual-f2-01` también apunta ahora a ef063f6a. Ni Norexos PC ni yo hemos mezclado en producto-nexora. Esto no lo hizo este ciclo. Lo mezcló otra sesión o Norexos 1, sin que el CI de ef063f6a esté en verde (verify en curso).
+- Pendiente de decisión: si ese avance de producto-nexora es intencional, y si cumple la regla de tres CI en verde antes de desplegar. No revierto nada.
+- CI: pc23-anulacion-fix, a1-formula-utilidad y b01-ventas-caja-ciega: lectura de la API falló por respuesta incompleta; se repite. lumina-motion-integracion en verde. aab91c9a con verify en rojo (tarea 0.1 pendiente de DeepSeek).
+- Órdenes nuevas que escriban código para Claude PC: ninguna.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
