@@ -42,16 +42,6 @@
       "salida": "docs/diseno/borradores-local/titulares-portada.md"
     },
     {
-      "id": "N13-meta-descripciones",
-      "modelo": "qwen-optimizado",
-      "maxTokens": 1200,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, precios ni cifras que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. No prometas facturación electrónica, DGII ni seguridad que el texto no sostenga.\nPropón 3 meta descripciones para buscadores, de MÁXIMO 155 caracteres cada una, basadas solo en el texto de abajo. Tabla: texto, número de caracteres (cuéntalos). Si alguna pasa de 155, recórtala.",
-      "entradas": [
-        "docs/venta/LANDING_TEXTOS.md"
-      ],
-      "salida": "docs/diseno/borradores-local/meta-descripciones.md"
-    },
-    {
       "id": "N14-mensaje-whatsapp",
       "modelo": "qwen-optimizado",
       "maxTokens": 1200,
@@ -80,6 +70,16 @@
         "docs/venta/LANDING_EN_PLANES.md"
       ],
       "salida": "docs/diseno/borradores-local/resumen-landing-en.md"
+    },
+    {
+      "id": "N17-titulares-largos",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana. De los 5 titulares del archivo de abajo, reescribe los 2 más largos para que tengan MENOS de 50 caracteres cada uno (cuenta con cuidado; si dudas, hazlos más cortos). No uses e-CF, DGII, NCF ni promesas de seguridad o ganancias. Tabla: titular original, titular nuevo. NO escribas el número de caracteres: lo medirá un script.",
+      "entradas": [
+        "docs/diseno/borradores-local/titulares-portada.md"
+      ],
+      "salida": "docs/diseno/borradores-local/titulares-cortos.md"
     }
   ]
 }
