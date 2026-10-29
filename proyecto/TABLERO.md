@@ -28,3 +28,23 @@
 | T24 | Reparto de la laptop: `docs/coordinacion/REPARTO_B9.md` y `DICTAMEN_PC.md` | E1–E4 | Norexos 4 (verifica) | bloqueado | Norexos 4 debe verificarlo. Bloqueado por el permiso de la dueña (T17) |
 | T25 | Skills de Matt Pocock en `.claude/skills/` (tdd, diagnosing-bugs, domain-modeling, research, handoff, writing-for-agents, pr, codebase-design) | E0 | Norexos 1 | hecho | Archivos reales en `nexora-cloud` 5aedea50 (0 enlaces rotos). Se usan solo si la tarea las pide. Norexos 5 solo lee, no instala |
 | T22 | Instalaciones de skills (órdenes 32 y 33) | E0 | Norexos 1 y Taller | en curso | Norexos 1, por orden directa de la dueña: `wayfinder` y `karpathy-guidelines` (commit 2c60614), solo texto, instaladas. Agent Skills (eb07f19, solo skills, sin hooks) y ECC (aislado, solo markdown, sin hooks, MCP ni scripts) delegadas al Taller con esas restricciones. Superpowers no se toca (ya existía). Pendiente: el Taller reporta cuando termine |
+
+## Estado de sesiones (29-oct-2026, 20:34 UTC)
+Ociosa = sin actividad de sesión en 60 min. Ninguna cumple ese criterio hoy.
+
+| Sesión | Qué hace ahora | Rama / SHA | Último commit o mensaje (UTC) | Estado |
+|---|---|---|---|---|
+| Norexos 1 · Software (cerebro) | Decide, mezcla y despliega; CI | `nexora-cloud` 5aedea50; `producto-nexora` 8a94a996 | 20:33 (skills reales); 19:41 (prueba G9 corregida) | trabajando |
+| Norexos 2 · Mercancía | Inventario y cajas; reporta a Norexos 1 | sin rama de código | mensajes 15:44 | trabajando |
+| Norexos 3 · Taller | E1 entregado; tickets; selector ES/EN; partes de E2/E3 | `claude/taller-marca` 58f7fb65; `claude/taller-tickets` d3acef4f; `claude/taller-i18n-selector` 92f77795 | 14:34 (marca); 15:40 (tickets) | bloqueado: permiso de mensajería pendiente de la dueña |
+| Norexos 4 · Revisor | Auditorías; veredicto de wayfinder | `claude/revisor-plugins` 866d3989 | 20:25 | bloqueado: pide que la dueña instale el plugin de Matt Pocock en su terminal. Norexos 5 no lo ejecuta |
+| Norexos 5 · Director | Tablero y revisiones | `control/norexos` d57ce25a; `claude/director` | 20:33 | trabajando |
+| Claude PC (laptop) | Forja 50: grupos 1–3 y rama final | `claude-pc/b9-50-grupo-1` e49709ec; `-grupo-2` 33dc20dd; `-grupo-3` b4c5ac1a; `claude/forja-final` 1c19e225 | forja-final 20:21; grupo-3 19:32 | trabajando |
+| Fork («Sesión local») | Diagnóstico de E3 (licencia y actualización) | `claude-pc/instalador-e3` a8d9b8c4 | diagnóstico 14:02 | bloqueado: espera 4 decisiones de la dueña (E3) |
+
+**Riesgos para el 24-nov:**
+1. Taller sin mensajería desde 15:23 UTC: aprobación de la dueña.
+2. E3 sin decisiones (modelo de licencia, actualización, firma D7, prueba en PC limpia): bloquea el instalador.
+3. Cuello en CI de Norexos 1 (~35 min por corrida) para Forja y B9.
+4. T02 (registro de norexos.ai) sin hacer: bloquea la landing (E5, 8–12 nov).
+5. Revisor pide acción manual de la dueña para un plugin; hay que decidir si aplica.
