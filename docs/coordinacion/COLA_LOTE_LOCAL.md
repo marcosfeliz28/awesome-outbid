@@ -67,3 +67,16 @@ Se ejecuta **en orden, un bloque tras otro**, sin esperar a Nexora 1. Reglas de 
 
 ## Bloque 6 · Si sobra tiempo (mismo trato) 
 Repite la verificación de los bloques 2 a 5 contra el repositorio actual y corrige los borradores con los comandos reales; después, una prueba extra por cada función pura (casos límite). Avisa a Nexora 1 con un solo resumen: tareas hechas, saltadas y por qué.
+
+## Bloque 7 · Tandas nuevas (pedido de Claude PC, 29-oct) — rama `claude-pc/cola-b7`
+Solo lectura del repo; salida en `docs/`; sin tocar código. Si falta dato: escribir «NO ENCONTRADO», no inventar.
+| # | Tarea | Entrada | Salida | Aceptación |
+|---|---|---|---|---|
+| 33 | Lista de permisos de la API | `apps/api/src/*.ts` | `docs/api/PERMISOS.md` | cada permiso (`gv:read`…) con las rutas que lo exigen |
+| 34 | Variables de entorno | `apps/api/src`, `render.yaml`, `.env.example` | `docs/operacion/VARIABLES_ENTORNO.md` | nombre, para qué sirve, obligatoria sí/no; **sin valores ni claves** |
+| 35 | Migraciones en orden | `apps/api/prisma/migrations` | `docs/api/MIGRACIONES.md` | una línea por migración: qué tabla/columna toca |
+| 36 | Textos de error al usuario | `apps/api/src` | `docs/i18n/ERRORES_API.md` | mensaje en español, archivo:línea, clave propuesta |
+| 37 | Pantallas y rutas del web | `apps/web/src` | `docs/diseno/MAPA_PANTALLAS.md` | ruta → componente → permiso necesario |
+| 38 | Pruebas sin dueño claro | `tests/` | `docs/auditoria/MAPA_PRUEBAS.md` | prueba → área (GV, caja, instalador…); marcar las que requieren Postgres |
+| 39 | Preguntas frecuentes de la dueña | `docs/operacion`, `docs/venta` | `docs/venta/FAQ_BORRADOR.md` | 15 preguntas con respuesta citando el documento fuente |
+| 40 | Revisión de enlaces rotos en docs | `docs/**/*.md` | `docs/auditoria/ENLACES_ROTOS.md` | ruta citada que no existe, archivo:línea |
