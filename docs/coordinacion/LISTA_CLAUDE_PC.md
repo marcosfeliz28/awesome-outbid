@@ -14,3 +14,4 @@ LISTA: chatgpt-nube/f1-01-bundle 980a5ca0 (verify, windows-installer y render-im
 LISTA: deepseek/d1-d3 cb1f1b8b (verify, windows-installer y render-images en verde; Claude PC verificó CI, no revisó el diff)
 LISTA: deepseek/d12 ddd1feac (verify, windows-installer y render-images en verde; Claude PC verificó CI, no revisó el diff)
 LISTA: deepseek/d15 4b994e65 (verify, windows-installer y render-images en verde; Claude PC verificó CI, no revisó el diff)
+LISTA: claude-pc/visual-f2-01 a8898ea3 (verify, windows-installer y render-images en verde en a8898ea3; revisado por Claude PC: 16 commits sobre producto-nexora, 14 archivos nuevos, ninguno toca App.tsx, styles.css, CI, migraciones, instalador ni packages/shared; PARCIAL: 6 primitivos y tokens de F2-01, sin capturas 390/1440; los primitivos 1-8 del Taller van en claude/taller-anim)
