@@ -127,3 +127,6 @@ Método: 12 búsquedas web por nombre (agregadores de terceros; **no** USPTO/EUI
 | Riesgo global (web) | **Bajo a medio** | **Medio** |
 **Conclusión:** Norexos queda mejor que Orexos (menos choques y sin empresa grande a una letra). Ambos necesitan la **búsqueda formal** del abogado en clases 9, 35 y 42, con atención a NEXOROS y Norexa (Norexos) y a Orexo AB/OREXSYS (Orexos).
 **Estado del nombre:** candidato elegido por la dueña = **Norexos** (confirmar si quería «Orexos»). El cambio en el sistema (`docs/marca/PLAN_CAMBIO_DE_NOMBRE.md`) espera la confirmación de la dueña y la búsqueda formal antes de **desplegarse**.
+
+## Nombre elegido por la dueña (29-oct-2026): **Norexos** (N-O-R-E-X-O-S)
+Estado: **elegido, pendiente de dominios y abogado.** Dominios libres al 28-oct según RDAP: `norexos.com`, `.net`, `.app`, `.ai`, `.io` (`neroxos.com` ya está registrado: no usar esa grafía). La dueña registra `norexos.com` (+ `.ai`, opcional `.app`) a su nombre, con 2FA. Abogado: búsqueda formal de marca en clases 9, 35 y 42 (USPTO, EUIPO, UKIPO, ONAPI); vigilar NEXOROS (reg. EE. UU. 6458723) y Norexa. «Norexos» empieza con N: **el logotipo con la N se conserva**.
