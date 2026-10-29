@@ -15,7 +15,7 @@ Dos cosas distintas que Norexos 2 mezcla:
 - **(a) Pregunta necesaria:** falta un dato para hacerlo bien (monto, método de pago, qué producto).
 - **(b) Orden ya dada:** la dueña ya mandó hacerlo; volver a preguntar, o ponerlo como «pendiente» y luego decir «es verdad, me lo habías pedido», es un fallo.
 
-Ejemplo del encargo: ella dijo «cerrar a [cliente A] y [cliente B]»; Norexos 2 volvió a preguntar y puso a [cliente B] en pendientes.
+Ejemplo del encargo: ella dijo «cerrar a [cliente A] y [cliente B]» (cerrar = cobrado); Norexos 2 volvió a preguntar y puso a [cliente B] en pendientes.
 
 ## Procedimiento obligatorio (en este orden, antes de contestar)
 1. **Buscar si ya hay orden**, en las cuatro fuentes y diciendo cuáles miró:
@@ -41,7 +41,7 @@ Ejemplo del encargo: ella dijo «cerrar a [cliente A] y [cliente B]»; Norexos 2
 ## Interpretar lo que ella dice
 | Fallo | Regla |
 |---|---|
-| 5. Palabras de doble sentido: **cerrar** (anular o cobrar), **terminal** (terminación de cuenta o terminal de tarjeta), **verificar** (ella o yo), **cuadre del día** | Tabla de uso: si la palabra aparece, primero buscar su uso en la bitácora y el contexto; si sigue doble, **una pregunta A/B** (nunca abierta). Una vez aclarada, anotar el significado en `MEMORIA_NEXORA1.md` para no preguntar de nuevo. |
+| 5. Palabras de doble sentido: **cerrar** (anular o cobrar), **terminal** (terminación de cuenta o terminal de tarjeta), **verificar** (ella o yo), **cuadre del día** | **Aclarado por la dueña (29-oct):** «cerrar» va de la mano con *cobrado*: «cerrar a X» = marcar su cuenta como cobrada, no anularla. Si el contexto fuera claramente otro, preguntar A/B. Para las demás, tabla de uso: si la palabra aparece, primero buscar su uso en la bitácora y el contexto; si sigue doble, **una pregunta A/B** (nunca abierta). Una vez aclarada, anotar el significado en `MEMORIA_NEXORA1.md` para no preguntar de nuevo. |
 | 6. Dictado por voz mal transcrito | Si un nombre, monto o producto «suena raro», repetirlo de vuelta en una línea para confirmar antes de aplicar. |
 | 7. Producto en foto borrosa | No adivinar sabor, tamaño ni marca: listar los candidatos posibles y preguntar A/B, o pedir la foto del código. |
 | 8. Nombres del Excel vs SKU del sistema | Emparejar por SKU/código si existe; por nombre solo con coincidencia exacta; todo lo demás va a una lista «sin pareja segura» que ella decide. |
@@ -84,4 +84,4 @@ Margen ≥ 15 % sin restar ITBIS · no tocar precios por una oferta · verificar
 ## Lo que no revisé y límites de esta propuesta
 - No abrí la bitácora, los pendientes ni los archivos de cuentas (son datos del negocio); asumo que existen y su formato por `mercancia/SKILL.md` y `CLAUDE.md`.
 - No probé el skill con la sesión real de Norexos 2; los 5 casos son para hacerlo.
-- Falta decidir con la dueña: la señal exacta para «no guardar» (hoy es solo una frase suya) y el lugar donde se anota el significado de las palabras ambiguas (propongo `MEMORIA_NEXORA1.md`).
+- Decidido por la dueña (29-oct): para no guardar algo basta con que escriba «no guardes esto»; el significado de las palabras ambiguas se anota en `MEMORIA_NEXORA1.md`; «cerrar» = cobrado.
