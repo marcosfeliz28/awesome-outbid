@@ -1187,3 +1187,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente: Norexos 1 avisa cuando la rama final dé verde.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Sin cambios.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Orden 59 (29-oct 19:30Z): plan de integración de Forja
+- nexora-cloud 525f864f. RESPUESTA d337e7ff (orden 59).
+- Orden 58 auditada y aceptada: claude-pc/b9-50-grupo-3 (b4c5ac1a) es la versión correcta. No se repiten esos ajustes.
+- Plan de Norexos 1: rama final = claude/forja-grupos-12 + grupo 3 + claude-pc/forja-noche (0f727725), con un solo CI. No se escriben LISTA de ramas sueltas de Forja; Norexos 1 avisa cuando la rama final dé verde.
+- Pendiente de mi lado: la tarea 56 (pruebas límite) y revisar el CI de la rama final cuando exista.
+- Sin cambios en worktree b9-grupo-3 (sin confirmar: 0).
+- CI de pc23, a1, b01 y lumina: en verde. Cola local activa: vacía. ChatGPT: sin cambios.
