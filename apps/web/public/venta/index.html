@@ -120,6 +120,33 @@
         letter-spacing: 0.04em;
       }
 
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .lang-switch {
+        display: inline-flex;
+        gap: 0.25rem;
+      }
+
+      .lang-button {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        border: 1px solid rgba(82, 114, 143, 0.55);
+        border-radius: 0.5rem;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .lang-button[aria-pressed="true"] {
+        color: var(--text, #f5f5f7);
+        border-color: currentColor;
+      }
+
       .header-link {
         display: inline-flex;
         min-height: 2.75rem;
@@ -489,11 +516,13 @@
         <a class="brand" href="#inicio" aria-label="Norexos, inicio"
           >NOREXOS</a
         >
-        <div class="lang-switch" role="group" aria-label="Idioma">
-          <button type="button" class="lang-button" data-idioma="es" aria-pressed="true">ES</button>
-          <button type="button" class="lang-button" data-idioma="en" aria-pressed="false">EN</button>
+        <div class="header-actions">
+          <a class="header-link" href="mailto:soporte@nexorapos.net" data-es="Ayuda" data-en="Help">Ayuda</a>
+          <div class="lang-switch" role="group" aria-label="Idioma">
+            <button type="button" class="lang-button" data-idioma="es" aria-pressed="true">ES</button>
+            <button type="button" class="lang-button" data-idioma="en" aria-pressed="false">EN</button>
+          </div>
         </div>
-        <a class="header-link" href="mailto:soporte@nexorapos.net" data-es="Ayuda" data-en="Help">Ayuda</a>
       </div>
     </header>
 
