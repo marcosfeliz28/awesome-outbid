@@ -7,6 +7,7 @@ import { CircleHelp } from "lucide-react";
 import { Modal } from "@fitstore/ui";
 import { api, download } from "./api";
 import { toast } from "./helpers";
+import { ChangeRequestPanel } from "./ChangeRequests";
 
 export type SupportInfo = {
   whatsapp: string | null;
@@ -164,6 +165,7 @@ export function SupportHelp({
   admin: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [changing, setChanging] = useState(false);
   const [article, setArticle] = useState<{
     title: string;
     text: string;
@@ -186,6 +188,7 @@ export function SupportHelp({
   const close = () => {
     setOpen(false);
     setArticle(null);
+    setChanging(false);
   };
   return (
     <>
@@ -198,7 +201,9 @@ export function SupportHelp({
         <CircleHelp size={19} />
       </button>
       <Modal open={open} onClose={close} title={article?.title ?? "Ayuda"}>
-        {article ? (
+        {changing ? (
+          <ChangeRequestPanel onBack={() => setChanging(false)} />
+        ) : article ? (
           <>
             <HelpArticle text={article.text} />
             <button className="text-link" onClick={() => setArticle(null)}>
@@ -227,6 +232,11 @@ export function SupportHelp({
               ? "No se pudo cargar el contacto de soporte."
               : "Cargando…"}
           </p>
+        )}
+        {!changing && !article && (
+          <button className="text-link" onClick={() => setChanging(true)}>
+            Pedir un cambio
+          </button>
         )}
       </Modal>
     </>
