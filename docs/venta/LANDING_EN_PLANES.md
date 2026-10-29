@@ -30,8 +30,7 @@ pensados para la tienda dominicana. Empieza hoy; sin instalar nada.
 4. **Créditos y contraentrega bajo control.** Deja pendiente lo que el cliente
    debe y cobra los abonos cuando lleguen, con aprobación de gerencia cuando
    toca.
-5. **Facturación conforme a la DGII.** Emite tus comprobantes (NCF B01/B02/B14/
-   B15) y reportes 606/607/608. *(verificar con contador).*
+5. **[RETIRADO]** Facturación DGII: fuera de la versión 1; pendiente de revisión legal (tarea 69).
 6. **Funciona con o sin internet.** La caja sigue vendiendo sin conexión y
    sincroniza al volver; tu negocio no se detiene.
 
@@ -40,7 +39,7 @@ pensados para la tienda dominicana. Empieza hoy; sin instalar nada.
 | | Norexos | POS globales (Square/Lightspeed) | Solo facturación (Facturama/Quipu) |
 |---|---|---|---|
 | Caja + inventario + clientes | Sí | Sí (sin NCF RD) | No |
-| Facturación NCF (DGII) | Sí | No | No (otro país) |
+| Facturación NCF (DGII) | [RETIRADO: pendiente, tarea 69] | No | No (otro país) |
 | Cierre de caja ciego | Sí | Parcial | No |
 | Precio en RD$ y soporte local | Sí | No | No |
 | Offline | Sí | Parcial | No |
@@ -55,8 +54,7 @@ pensados para la tienda dominicana. Empieza hoy; sin instalar nada.
    internet puedes instalarlo en tu PC.
 2. **¿Sirve para una sola tienda?** Sí, y escala a varias sucursales y bodegas.
 3. **¿Puedo cobrar a crédito?** Sí, con aprobación de gerencia sobre el umbral.
-4. **¿Emite facturas con NCF?** Sí, los comprobantes de la DGII. *(verificar con
-   contador).*
+4. **¿Emite facturas con NCF?** [RETIRADO: pendiente de revisión legal, tarea 69].
 5. **¿Qué pasa si se va la luz o internet?** La caja sigue vendiendo sin conexión
    y sincroniza al volver.
 6. **¿Mis datos están seguros?** Control de acceso por rol.
