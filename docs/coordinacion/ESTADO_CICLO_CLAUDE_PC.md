@@ -923,3 +923,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI de `claude-pc/forja-noche` (b7543d3b): windows-installer y render-images en verde; verify en curso. LISTA pendiente de los tres verdes.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (29-oct): Forja pieza 3 y reglas para Forja
+- Fetch: nexora-cloud a1f20427. RESPUESTA_CLAUDE_PC_27OCT.md blob 4d48775e (sin cambio desde la orden 45). OBSIDIAN ausente.
+- Reglas para Forja escritas en docs/coordinacion/FORJA_INSTRUCCIONES.md (commit 3359163b).
+- Forja 3 (nx-fecha): borrador del 14B revisado. Corregido un error de tipos (opciones de Intl sin tipar). Prueba fallaba antes (módulo inexistente) y pasa después (3/3). Commit en claude-pc/forja-noche (ver rama). LISTA cuando CI esté en verde.
+- Forja 4-14: pendientes.
+- ChatGPT (paso 5): sin acceso de computer use; sin cambios.
