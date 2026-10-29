@@ -947,3 +947,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Lote local L1 (claude-pc/lote-local-1, cd2475f7): CI en curso. Resto de L2-L8 pendiente.
 - CI sin cambios: pc23, a1, b01 y lumina en verde.
 - ChatGPT (paso 5): sin acceso de computer use; sin cambios.
+
+## Ciclo (29-oct): órdenes 47 y 48, E3 arranca
+- Fetch: nexora-cloud e9378b9d. RESPUESTA_CLAUDE_PC_27OCT.md blob eccaf01f (CAMBIÓ: órdenes 47 y 48). OBSIDIAN ausente.
+- Orden 48: leído control/norexos (LEEME.md y proyecto/TABLERO.md). Mi fila: T21 (licencia y actualización, E3).
+- Orden 47: no esperar a la dueña. Diagnóstico de E3 en claude-pc/instalador-e3 (commit a8d9b8c4, sobre origin/producto-nexora): la licencia ya existe (apps/api/src/local-license.ts, firmada y atada al equipo); falta el interruptor de modo y el periodo de gracia. La actualización ya existe en el NSIS (UpdateMode, rollback); falta la prueba en PC limpia.
+- Bloqueo registrado: el TABLERO marca T21 como «bloqueado», pero la orden 47 dice lo contrario. Sigo la orden 47. El cambio al formato firmado (versión 3 del payload) no lo hago sin que Norexos 1 lo confirme, porque toca licencias en uso.
+- CI: pc23, a1, b01, lumina, lote-local-1 y forja-noche en verde.
+- ChatGPT (paso 5): sin acceso de computer use; sin cambios.
