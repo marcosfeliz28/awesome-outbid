@@ -861,3 +861,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Tarea 16 (docs/api/RUTAS.md): SALTADA por juicio propio. Hay 209 decoradores en apps/api/src y varios controladores usan @Controller() sin prefijo; el prefijo real no está en el archivo. El modelo local no puede resolverlo bien y un RUTAS.md generado tendría rutas inventadas. Pendiente de decisión de Nexora 1 (o generar a mano con mapeo de prefijos).
 - Tareas 17-32: pendientes.
 - ChatGPT (paso 5): sin acceso de computer use; sin cambios.
+
+## Lote local (29-oct, ciclo autónomo): D7 y un incidente de worktree
+- Fetch: nexora-cloud en 6fce9dad. RESPUESTA_CLAUDE_PC_27OCT.md blob 70092dc6 (sin orden nueva). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI: pc23, a1, b01 y lumina en verde, con LISTA. Sin cambios.
+- Tarea 15 del lote (D7, guía de instalación): ya existe en `claude-pc/docs-noche` como commit 8226b8de («borrador, tarea 15 de la cola local; revisada»). Verificado: los tres comandos `pnpm instalador:*` existen en package.json, y no hay rutas citadas que no existan.
+- INCIDENTE: al intentar escribir mi propia versión de D7, sobrescribí `docs/instalacion/INSTALACION_PC.md` en el worktree `docs-noche`, que ya tenía un archivo. No verifiqué antes que existiera; el archivo sí existía. Mi versión quedó guardada en el directorio temporal de la sesión y la restauré al commit 8226b8de. Si había cambios sin confirmar de otra sesión en ese archivo, se perdieron; no lo puedo recuperar desde aquí. Lo reporto a Marcos.
+- Órdenes nuevas que escriban código para Claude PC: ninguna.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
