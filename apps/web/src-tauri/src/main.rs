@@ -106,7 +106,7 @@ fn drawer_audit_id(body: &str, automatic: bool) -> Option<String> {
 
 async fn post_drawer(access_token: &str, route: &str, body: String) -> Result<String, String> {
     let origin = option_env!("NEXORA_PRODUCT_URL")
-        .ok_or("Falta el origen aprobado de Nexora para autorizar la gaveta.")?;
+        .ok_or("Falta el origen aprobado de Norexos para autorizar la gaveta.")?;
     let response = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(std::time::Duration::from_secs(10))
@@ -189,5 +189,5 @@ fn main() {
             open_cash_drawer
         ])
         .run(tauri::generate_context!())
-        .expect("No se pudo iniciar Nexora POS");
+        .expect("No se pudo iniciar Norexos");
 }

@@ -537,7 +537,7 @@ async function main() {
         data: {
           id: "main",
           data: {
-            name: "Nexora POS",
+            name: "Norexos",
             legalId: "",
             address: "",
             phone: "",

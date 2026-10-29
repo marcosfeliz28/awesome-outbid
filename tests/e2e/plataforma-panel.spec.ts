@@ -102,7 +102,7 @@ test("el token de plataforma queda en sessionStorage, nunca en localStorage, y Â
   await expect(
     page.getByRole("heading", { name: "Panel de plataforma" }),
   ).toBeVisible();
-  await expect(page.getByText("Nexora POS", { exact: true })).toBeVisible();
+  await expect(page.getByText("Norexos", { exact: true })).toBeVisible();
 
   await page
     .getByLabel("Token de plataforma")

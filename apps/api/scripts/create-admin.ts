@@ -156,7 +156,7 @@ async function main() {
         create: {
           id: "main",
           data: {
-            name: "Nexora POS",
+            name: "Norexos",
             legalId: "",
             address: "",
             phone: "",
