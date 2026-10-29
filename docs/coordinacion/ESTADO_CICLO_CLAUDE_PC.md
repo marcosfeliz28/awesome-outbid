@@ -1001,3 +1001,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Incidencia: el modelo falló dos veces con la tarea entera (tiempo de respuesta). Partida en GV y POS. Respondió con bloques ```json: se limpian al unir.
 - Pendiente: CI de claude-pc/i18n-borrador (docs), LISTA cuando esté en verde. 27 y 28 sin asignar en esta orden.
 - Bloque 9: sin ejecutar. Bucle y contexto listos (983fb1fc).
+
+## Ciclo (29-oct, 15 min)
+- nexora-cloud bb23d9fc. RESPUESTA eccaf01f (sin cambio). OBSIDIAN ausente.
+- nexora-cloud incluye ahora el merge de claude-pc/cola-b7 (0a64a8a6, decisión de Norexos 1; no lo hice yo) y skills nuevas (ordenes-duena).
+- CI: pc23, a1, b01 y lumina en verde. claude-pc/i18n-borrador (ee22f267): CI en curso. LISTA cuando esté en verde.
+- ChatGPT: sin acceso ni cambios (Marcos pidió no gastar tokens ni autorizar nada en esa parte).
