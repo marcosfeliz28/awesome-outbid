@@ -41,4 +41,16 @@ describe("nx-copia-segura", () => {
     expect(c.a).toEqual({ v: 1 });
     expect(c.a).not.toBe(c.b);
   });
+
+  it("rechaza tipos que no son JSON simple (Date, Map, Set) en vez de copiarlos como {}", () => {
+    expect(() => copiarSinAliasing({ fecha: new Date() })).toThrowError(
+      /objeto no plano/,
+    );
+    expect(() => copiarSinAliasing({ m: new Map([["a", 1]]) })).toThrowError(
+      /objeto no plano/,
+    );
+    expect(() => copiarSinAliasing(new Set([1]))).toThrowError(
+      /objeto no plano/,
+    );
+  });
 });

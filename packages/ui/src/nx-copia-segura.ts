@@ -11,6 +11,13 @@ function copiar(valor: unknown, camino: unknown[]): unknown {
     case "function":
       throw new Error("copiarSinAliasing: no se puede copiar una función");
     case "object": {
+      if (!Array.isArray(valor)) {
+        const proto = Object.getPrototypeOf(valor);
+        if (proto !== Object.prototype && proto !== null)
+          throw new Error(
+            "copiarSinAliasing: solo JSON simple (objeto no plano)",
+          );
+      }
       if (camino.includes(valor))
         throw new Error("copiarSinAliasing: la estructura tiene un ciclo");
       const dentro = [...camino, valor];
