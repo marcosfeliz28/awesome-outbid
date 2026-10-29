@@ -1241,3 +1241,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - 68 (checklist de caja): en curso con qwen-optimizado.
 - Skill propia creada por pedido de Marcos: claude-pc-instrucciones (C:\Users\marco\.claude\skills\claude-pc-instrucciones\SKILL.md).
 - Mensaje a la sesión fork respondido: descargas de qwen2.5-coder:7b, qwen-optimizado y mcp-ollama son mías, con autorización de Marcos.
+
+## Informe de estado (orden 62, 29-oct 20:50 UTC)
+1. Desde 17:00 UTC: orden 58 aplicada (b4c5ac1a, grupo 3); tanda 2 M1–M8 ejecutada (lote-local-tanda2, 2332bdb9); bloque 11 (tareas 62–68) completo (cola-b11, 56a43b04); skill claude-pc-instrucciones creado; respuestas a la sesión fork y al Revisor.
+2. Ahora: esperando CI de cola-b11 (56a43b04) y de lote-local-tanda2 (2332bdb9) para escribir sus LISTA.
+3. Bloqueos: no tengo acceso a los logs de CI (403 sin credenciales). La tarea 56 (pruebas límite) sigue sin empezar en claude/forja-grupos-12.
+4. No comprobado: pnpm check completo de los grupos (lo corre el CI); que las casillas del checklist de caja se cumplan en la app; las afirmaciones de los borradores (la verificación al azar la pide Norexos 1 para la sesión fork).
+5. Próximo paso: LISTA de ambas ramas al verde; luego la 56 sobre claude/forja-grupos-12 cuando Norexos 1 la prepare.
+6. Cola del modelo local, bloque 11: 7 de 7 hechas (62 a 68), ninguna en curso. Tanda 2: 8 de 8.
+- Skills de Matt Pocock (orden 61): disponibles en nexora-cloud, .claude/skills/; no instalados (solo lectura).
