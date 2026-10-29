@@ -123,3 +123,15 @@ Solo lectura del repo; salida en `docs/`; sin tocar código. Todo borrador lleva
 | 59 | Traducción EN borrador de los textos de la ayuda (de la tarea 58) | salida de 58 + `docs/i18n/borrador/en.json` | `docs/i18n/borrador/en-ayuda.json` | misma cantidad de claves que el inventario; RD$ y NCF sin traducir |
 | 60 | FAQ de GV para el personal (12 preguntas) | `apps/web/src/Gv.tsx`, `GvCitas.tsx` | `docs/venta/FAQ_GV_BORRADOR.md` | cada respuesta cita archivo:línea; sin prometer funciones inexistentes |
 | 61 | Glosario ES→EN de términos del negocio | `docs/GLOSARIO.md`, `docs/i18n/borrador/es.json` | `docs/i18n/GLOSARIO_ES_EN.md` | cada término con su traducción y nota de uso; `wc -l` ≥ términos del glosario |
+
+## Bloque 11 · Trabajo para la noche (29-oct 20:20 UTC, Norexos 1) — rama `claude-pc/cola-b11`
+Solo lectura del repo (usa `origin/producto-nexora` para el código del producto y `origin/nexora-cloud` para docs); salida en `docs/`; sin datos sensibles, sin leer `docs/operacion/`. Mismas reglas: encabezado «Borrador sin verificar», fuente (rama+commit), archivo:línea, «PARCIAL» si no cubriste todo, «NO ENCONTRADO» si falta dato. Lee `docs/coordinacion/EDUCACION_MODELO_LOCAL.md` primero.
+| # | Tarea | Entrada | Salida | Aceptación |
+|---|---|---|---|---|
+| 62 | Planes y comparativa de la portada en inglés | `docs/venta/LANDING_TEXTOS.md` | `docs/venta/LANDING_EN_PLANES.md` | sin «e-CF», sin promesas de seguridad, RD$ sin traducir; mismas secciones que el original |
+| 63 | FAQ de la caja para cajeras (12 preguntas) | `apps/web/src/POS.tsx` (producto-nexora) | `docs/venta/FAQ_CAJA_BORRADOR.md` | cada respuesta cita archivo:línea; sin funciones inexistentes |
+| 64 | Inventario de textos de la navegación y el inicio de sesión | `apps/web/src/App.tsx` | `docs/i18n/INVENTARIO_APP.md` | texto, línea y clave propuesta |
+| 65 | Inventario de textos de Mercancía | `apps/web/src/Merchandise.tsx` | `docs/i18n/INVENTARIO_MERCANCIA.md` | texto, línea y clave propuesta |
+| 66 | Borrador en inglés de los textos de Management (de la tarea 57) | `docs/i18n/INVENTARIO_MANAGEMENT.md` + `docs/i18n/borrador/en.json` | `docs/i18n/borrador/en-management.json` | mismas claves que el inventario; RD$, NCF e ITBIS sin traducir |
+| 67 | Qué flujo cubre cada prueba de navegador | `tests/e2e/*.spec.ts` | `docs/auditoria/MAPA_E2E.md` | un renglón por spec: archivo, nº de pruebas, flujo; `ls tests/e2e | wc -l` coincide |
+| 68 | Lista de revisión manual de la caja (checklist para probar antes de una entrega) | `apps/web/src/POS.tsx` + `tests/e2e/*caja*` | `docs/auditoria/CHECKLIST_CAJA.md` | casillas numeradas, cada una con la pantalla y el resultado esperado |
