@@ -814,3 +814,51 @@ describe("GV · reportes", () => {
     expect(JSON.stringify(r)).not.toContain("Andrea Gómez");
   });
 });
+
+describe("GV · cambiar curso de una inscripción", () => {
+  it("mueve la inscripción con pagos: los pagos siguen, el total no baja de lo cobrado y queda auditoría", async () => {
+    const origen = (await newCourse(gv)).body;
+    courseIds.push(origen.id);
+    // Cupo 1: el servidor no aplica cupo al mover (igual que al inscribir); queda documentado.
+    const destino = (
+      await newCourse(gv, { name: "QA Destino " + suffix, capacity: 1 })
+    ).body;
+    courseIds.push(destino.id);
+    const e = await enroll(origen.id, 4500, "QA Mover");
+    await ok("/gv/payments", gv, payBody(e.id, { amount: 2000 }));
+    await ok("/gv/payments", gv, transferBody(e.id, 1000));
+
+    const moved = await ok(
+      "/gv/enrollments/" + e.id,
+      gv,
+      { courseId: destino.id },
+      "PATCH",
+    );
+    expect(moved.courseId).toBe(destino.id);
+    expect(moved.agreedPrice).toBe("4500.00");
+
+    const enDestino = (
+      await ok("/gv/courses/" + destino.id, gv)
+    ).enrollments.find((r: any) => r.id === e.id);
+    expect(enDestino.payments).toHaveLength(2);
+    expect(enDestino).toMatchObject({ paid: "2000.00", unverified: "1000.00" });
+    const enOrigen = (await ok("/gv/courses/" + origen.id, gv)).enrollments;
+    expect(enOrigen.some((r: any) => r.id === e.id)).toBe(false);
+
+    // Lo cobrado (2000 + 1000 por verificar = 3000) no puede quedar por encima del total.
+    const bajo = await request(
+      "/gv/enrollments/" + e.id,
+      gv,
+      { agreedPrice: 2999.99 },
+      "PATCH",
+    );
+    expect(bajo.status).toBe(400);
+    expect(bajo.body.message).toMatch(/no puede ser menor que lo ya cobrado/);
+
+    expect(
+      await db.auditLog.count({
+        where: { entityId: e.id, action: "gv_enrollment_edit" },
+      }),
+    ).toBeGreaterThanOrEqual(1);
+  });
+});
