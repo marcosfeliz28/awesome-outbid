@@ -165,6 +165,7 @@ export default defineConfig({
       "tests/f2-01-anim-asistente.test.ts",
       "tests/f2-01-anim-toast.test.ts",
       "tests/f2-01-anim-portada.test.ts",
+      "tests/marca-nombre-constante.test.ts",
       "tests/f2-01-nx-skeleton.test.ts",
       "tests/f2-01-nx-card.test.ts",
       "tests/f2-01-nx-button.test.ts",
