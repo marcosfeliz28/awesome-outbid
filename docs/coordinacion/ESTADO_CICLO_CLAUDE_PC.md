@@ -758,3 +758,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad y b01-ventas-caja-ciega: lectura de la API falló por respuesta incompleta; se repite. lumina-motion-integracion en verde. aab91c9a con verify en rojo (tarea 0.1 pendiente de DeepSeek).
 - Órdenes nuevas que escriban código para Claude PC: ninguna.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (29-oct, revisión programada)
+- nexora-cloud en c0b83c0a y RESPUESTA blob 872f894e: sin órdenes nuevas para Claude PC desde la 42.
+- claude-pc/visual-f2-01 (ef063f6a, taller-anim aplicada): verify en curso (`in_progress`); windows-installer y render-images en verde. Sin LISTA hasta que los tres estén en verde.
+- CI en verde: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega, lumina-motion-integracion (estas últimas dos verificadas en reintento).
+- COLA_LOTE_LOCAL.md no existe. Descarga del 14B sin instalar.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
