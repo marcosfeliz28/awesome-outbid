@@ -1283,3 +1283,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Aviso: el worktree de esa rama tiene un directorio sin seguimiento `docs/diseno/borradores-local/forja2`, de la cola local. No lo toqué ni lo subo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo (29-oct 21:10Z): órdenes 66–67
+- nexora-cloud df878cea; RESPUESTA blob c64a057f (antes e43d47a2). Órdenes 66/67 informativas (CI cancela ejecuciones viejas: empujar por tanda, fusionar producto-nexora antes). LISTA añadida: lote-local-tanda2 (3 CI verdes). cola-b11, cola-b12 y b9-56-limites: verify aún en curso.
+- Forja 2: fusionado producto-nexora en forja2-grupo-1 y F2-04 agruparPorDia (prueba roja→5/5 verde, vitest local no disponible: Node 22, se usó shim). Un solo empuje, head 8066b75e; CI pendiente, sin LISTA.
