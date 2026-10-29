@@ -1423,3 +1423,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente de Forja 3: F3-01, F3-02, F3-04 (espera separador de miles) y F3-05.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 min (29-oct): orden 75 y cola N9–N16
+- Fetch: nexora-cloud aa33eff7. RESPUESTA_CLAUDE_PC_27OCT.md blob 09053fe0 (cambió desde e559232e). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Orden 75: Forja 3 grupo 1 (`claude-pc/forja3-grupo-1`) la termina la sesión fork. Claude PC se queda con la cola del modelo local (N9–N16), los listados por script del bloque 14 y el informe. Ramas de Forja 3 no son mías en este ciclo.
+- CI: pc23-anulacion-fix c1fe8c0c, a1-formula-utilidad 498df5ee, b01-ventas-caja-ciega 0500b03a, lumina-motion-integracion 287db57e, cola-b13 8d728e9b y cola-n a2dd21d3: verify, windows-installer y render-images en verde; LISTA ya presente. claude-pc/lote-local-tanda3 73b9ba5f: verify en curso, sin LISTA todavía.
+- Cola N9–N16 (`claude-pc/cola-n`, nuevo commit b0605125): N9 a N12 subidas con encabezado de revisión. N13 (meta descripciones) RECHAZADA: 8 de 9 superan 155 caracteres (160 a 163), una vuelve a afirmar «Facturación conforme a la DGII» (retirada) y usa «Nexora». No se sube. N14 en curso; N15 y N16 pendientes. Sin LISTA nueva.
+- ChatGPT (paso 5): la app se abre pero la ventana no aparece (pantalla vacía). No se leyeron «ChatGPT nube» ni «ChatGPT PC»; no se escribió en ningún chat. Bloqueo que sigue.
