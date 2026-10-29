@@ -141,6 +141,7 @@ export default defineConfig({
       "tests/f2-01-tokens.test.ts",
       "tests/f2-01-nx-brand.test.ts",
       "tests/f2-01-nx-plural.test.ts",
+      "tests/f2-01-nx-fecha.test.ts",
       "tests/f2-01-nx-money.test.ts",
       "tests/f2-01-nx-status-badge.test.ts",
       "tests/f2-01-nx-motion.test.ts",
