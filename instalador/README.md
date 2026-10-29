@@ -1,4 +1,4 @@
-# Instalador de Nexora POS para Windows
+# Instalador de Norexos para Windows
 
 Esta carpeta construye un instalador clásico NSIS de 64 bits. Se eligió NSIS en
 lugar de Tauri porque el producto que se instala es un servidor local completo:
@@ -44,7 +44,7 @@ comprobando SHA-256 y, donde corresponde, la firma Authenticode. Incluye los
 binarios oficiales completos de PostgreSQL 18 para Windows e instala NSIS con
 `winget` si hace falta. El resultado queda en
 `instalador/dist/Nexora-POS-Setup-<versión>.exe`. El nombre y la identidad
-visibles son Nexora POS / Grupo Macgen. La ruta interna heredada `FitStore POS`
+visibles son Norexos / Grupo Macgen. La ruta interna heredada `FitStore POS`
 se conserva para que las instalaciones existentes puedan actualizarse sin mover
 ni perder datos.
 

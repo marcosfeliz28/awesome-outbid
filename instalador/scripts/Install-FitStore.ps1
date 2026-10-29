@@ -264,14 +264,14 @@ function New-FitStoreShortcuts {
   $open.TargetPath = "$env:SystemRoot\explorer.exe"
   $open.Arguments = "https://localhost:4173"
   $open.IconLocation = (Join-Path $Paths.Install "assets\fitstore.ico")
-  $open.Description = "Abrir Nexora POS"
+  $open.Description = "Abrir Norexos"
   $open.Save()
   Copy-Item -LiteralPath (Join-Path $desktop "Nexora POS.lnk") -Destination (Join-Path $programs "Nexora POS.lnk") -Force
   $restore = $shell.CreateShortcut((Join-Path $programs "Restaurar un respaldo.lnk"))
   $restore.TargetPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
   $restore.Arguments = ("-STA -NoProfile -ExecutionPolicy Bypass -File `"{0}`" -InstallDir `"{1}`"" -f (Join-Path $Paths.Scripts "Restore-FitStore.ps1"), $Paths.Install)
   $restore.IconLocation = (Join-Path $Paths.Install "assets\fitstore.ico")
-  $restore.Description = "Restaurar una copia de Nexora POS"
+  $restore.Description = "Restaurar una copia de Norexos"
   $restore.Save()
   Remove-Item -LiteralPath (Join-Path $desktop "FitStore POS.lnk") -Force -ErrorAction SilentlyContinue
   Copy-Item -LiteralPath (Join-Path $Paths.Pki "FitStore-CA.cer") -Destination (Join-Path $desktop "Certificado FitStore para celulares.cer") -Force

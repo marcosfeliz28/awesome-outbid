@@ -36,13 +36,13 @@ Caption "Instalar ${PRODUCT_NAME}"
 OutFile "${OUTPUT_DIR}\Nexora-POS-Setup-${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\FitStore POS"
 InstallDirRegKey HKLM "${PRODUCT_KEY}" "InstallLocation"
-BrandingText "Nexora POS"
+BrandingText "Norexos"
 Icon "${PAYLOAD_DIR}\assets\fitstore.ico"
 UninstallIcon "${PAYLOAD_DIR}\assets\fitstore.ico"
 VIProductVersion "${PRODUCT_VERSION}"
-VIAddVersionKey /LANG=1034 "ProductName" "Nexora POS"
+VIAddVersionKey /LANG=1034 "ProductName" "Norexos"
 VIAddVersionKey /LANG=1034 "CompanyName" "Grupo Macgen"
-VIAddVersionKey /LANG=1034 "FileDescription" "Instalador de Nexora POS"
+VIAddVersionKey /LANG=1034 "FileDescription" "Instalador de Norexos"
 VIAddVersionKey /LANG=1034 "FileVersion" "${VERSION}"
 VIAddVersionKey /LANG=1034 "LegalCopyright" "Copyright Grupo Macgen"
 
@@ -77,7 +77,7 @@ Var InstallerSession
 !define MUI_UNICON "${PAYLOAD_DIR}\assets\fitstore.ico"
 !define MUI_FINISHPAGE_RUN "$WINDIR\explorer.exe"
 !define MUI_FINISHPAGE_RUN_PARAMETERS "https://localhost:4173"
-!define MUI_FINISHPAGE_RUN_TEXT "Abrir Nexora POS"
+!define MUI_FINISHPAGE_RUN_TEXT "Abrir Norexos"
 
 !insertmacro MUI_PAGE_WELCOME
 Page custom OwnerPageCreate OwnerPageLeave
@@ -96,11 +96,11 @@ Function .onInit
   Pop $0
   StrCpy $InstallerMutex $9
   ${If} $InstallerMutex == 0
-    MessageBox MB_ICONSTOP "Windows no pudo crear el bloqueo exclusivo del instalador de Nexora POS. No se modificó la aplicación."
+    MessageBox MB_ICONSTOP "Windows no pudo crear el bloqueo exclusivo del instalador de Norexos. No se modificó la aplicación."
     SetErrorLevel 3
     Abort
   ${ElseIf} $0 == 183
-    MessageBox MB_ICONSTOP "Ya hay otra instalación, actualización o desinstalación de Nexora POS en curso. Espera a que termine antes de volver a intentarlo."
+    MessageBox MB_ICONSTOP "Ya hay otra instalación, actualización o desinstalación de Norexos en curso. Espera a que termine antes de volver a intentarlo."
     SetErrorLevel 3
     Abort
   ${EndIf}
@@ -126,11 +126,11 @@ Function .onInit
     StrCpy $1 ""
   ${EndIf}
   ${IfNot} ${RunningX64}
-    MessageBox MB_ICONSTOP "Nexora POS requiere Windows de 64 bits."
+    MessageBox MB_ICONSTOP "Norexos requiere Windows de 64 bits."
     Abort
   ${EndIf}
   ${IfNot} ${AtLeastWin10}
-    MessageBox MB_ICONSTOP "Nexora POS requiere Windows 10 o Windows 11. Se recomienda Windows 11."
+    MessageBox MB_ICONSTOP "Norexos requiere Windows 10 o Windows 11. Se recomienda Windows 11."
     Abort
   ${EndIf}
   StrCpy $UpdateMode "nuevo"
@@ -319,7 +319,7 @@ Section "Nexora POS" SecMain
     ${ElseIf} $UpdateMode == "actualizar"
       MessageBox MB_ICONSTOP "La actualización no terminó y el rollback automático necesita revisión. No continúes usando la aplicación hasta revisar: $ProgramDataDir\FitStore POS\logs\instalador.log"
     ${Else}
-      MessageBox MB_ICONSTOP "La configuración de Nexora POS no terminó. Los datos existentes no se borraron. Revisa: $ProgramDataDir\FitStore POS\logs\instalador.log"
+      MessageBox MB_ICONSTOP "La configuración de Norexos no terminó. Los datos existentes no se borraron. Revisa: $ProgramDataDir\FitStore POS\logs\instalador.log"
     ${EndIf}
     SetErrorLevel 1
     Abort
