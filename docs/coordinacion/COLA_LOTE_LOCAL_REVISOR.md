@@ -14,3 +14,18 @@ Para pegar en `docs/coordinacion/COLA_LOTE_LOCAL.md` (rama `claude-pc/cola2-26oc
 | L8 | `docs/auditoria/*.md` | `docs/diseno/borradores-local/pendientes-auditoria.md` | Lista de hallazgos que aparecen como «pendiente» o «abierto» con archivo y línea de origen; nada de hallazgos nuevos. Claude PC comprueba 5 al azar contra el original. | deepseek-r1 |
 
 Si falta archivo de entrada, no existe la carpeta o el modelo no puede cumplir el criterio, la tarea se marca «no hecha» y se explica; no se rellena con suposiciones.
+
+---
+## Tanda 2 (29-oct-2026) — para qwen-optimizado
+Mismas reglas de arriba: solo lectura del repo, un archivo nuevo en `docs/diseno/borradores-local/` por tarea, rama `claude-pc/lote-local-<n>`, revisa Claude PC, encabezado «Borrador sin verificar, hecho por modelo local», sin ejecutar nada ni leer `.env*`/datos del negocio. Donde el criterio dice «coincide», Claude PC lo comprueba con una orden de solo lectura (`grep`, `wc`, `ls`).
+
+| # | Entrada (lee) | Salida (escribe) | Criterio de aceptación |
+|---|---|---|---|
+| M1 | `package.json` de la raíz y de cada carpeta en `apps/*` y `packages/*` | `docs/diseno/borradores-local/scripts-npm.md` | Por cada `package.json`, tabla «nombre del script → comando literal», copiada sin cambios; coincide exactamente con el archivo. |
+| M2 | Los mismos `package.json` (solo `dependencies` y `devDependencies`) | `docs/diseno/borradores-local/dependencias.md` | Tabla paquete, versión, dónde se declara; mismo número de filas que entradas en cada archivo; versiones idénticas. No añade dependencias ni sugiere actualizar. |
+| M3 | Nombres de archivo en `tests/` y `apps/*/tests` (solo `ls` y `wc -l`; **no abre el contenido**) | `docs/diseno/borradores-local/mapa-pruebas.md` | Una fila por archivo con ruta y número de líneas; coincide con `wc -l`. |
+| M4 | `packages/shared/src/index.ts` (solo líneas que empiezan por `export`) | `docs/diseno/borradores-local/exports-shared.md` | Lista de nombres exportados con su tipo (función, constante, tipo); coincide con `grep -E '^export'`. No explica reglas de dinero ni copia cuerpos de funciones. |
+| M5 | Todo el código en `apps/` y `packages/` (excluye `node_modules`, pruebas) | `docs/diseno/borradores-local/todo-fixme.md` | Cada `TODO`/`FIXME`/`XXX` con ruta, línea y texto literal; mismo conteo que `grep -rnE 'TODO|FIXME|XXX'`. Ningún hallazgo inventado. |
+| M6 | `apps/web/src/*.css` | `docs/diseno/borradores-local/mapa-css.md` | Una fila por archivo `.css` con tamaño en líneas y el componente `.tsx` al que parece corresponder (por nombre); lo dudoso dice «verificar». Mismo número de filas que archivos. |
+| M7 | `.github/workflows/*.yml` (solo lectura) | `docs/diseno/borradores-local/resumen-workflows.md` | Por workflow: nombre, cuándo se dispara, nombres de sus jobs y de sus pasos. **No lista nombres de secretos ni valores.** Coincide con los archivos. |
+| M8 | `docs/diseno/borradores-local/*.md` ya generados (L3, L4 y los de esta tanda) | `docs/diseno/borradores-local/INDICE.md` | Un índice con enlace, tamaño y una línea de qué contiene cada borrador; todos los enlaces existen (`ls`). No modifica los borradores. |
