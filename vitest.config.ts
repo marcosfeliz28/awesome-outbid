@@ -143,6 +143,7 @@ export default defineConfig({
       "tests/visual-marco.test.ts",
       "tests/f2-01-tokens.test.ts",
       "tests/f2-01-nx-dias-hasta.test.ts",
+      "tests/f2-01-nx-agrupar-por-dia.test.ts",
       "tests/f2-01-nx-telefono-mascara.test.ts",
       "tests/forja2-f2-01-moneda-rd.test.ts",
       "tests/f2-01-nx-iniciales.test.ts",
