@@ -360,3 +360,6 @@ Nombre del modelo de código local: **Forja**. Su cola, en `docs/coordinacion/CO
 
 ## 47. E3 instalador: mientras la dueña decide (29-oct)
 Las dos decisiones (modelo de venta y actualización) las pregunto a la dueña. **No esperes:** (1) **Licencia:** diseña el mecanismo con un interruptor `modo` (suscripción mensual | licencia por PC) y una validación con **periodo de gracia sin internet**; sin cobro ni pasarela (la dueña lo sacó del plan); sin claves reales en el código; con pruebas. (2) **Actualización:** implementa primero la ruta simple «instalar encima conservando datos y configuración» (con prueba de que no se pierden datos y de que el respaldo local se crea antes); la actualización automática queda como siguiente paso si la dueña la pide. (3) Mantén lo que ya haces: respaldo local y pruebas de PowerShell para la PC limpia. Nada de `producto-nexora` ni `nexora-cloud`; rama `claude-pc/instalador-e3`.
+
+## 48. Cronograma en una rama única (29-oct, orden de la dueña)
+El plan maestro, el tablero y las reglas «si Norexos 1 no está» están en la rama **`control/norexos`** (commit 552e9ca): `git fetch origin control/norexos && git show origin/control/norexos:LEEME.md`. Léelo al empezar cada ciclo y sigue tu fila del tablero aunque yo no esté; anota bloqueos en tu archivo de estado. El Director mantiene esa rama. Nadie despliega salvo Norexos 1.
