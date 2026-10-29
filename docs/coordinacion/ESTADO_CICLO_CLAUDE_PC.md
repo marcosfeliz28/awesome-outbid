@@ -990,3 +990,14 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente antes de enviar tareas al modelo: verificación de Norexos 4 y preaprobación de la dueña.
 - CI: pc23, a1, b01, lumina y cola-b7 en verde.
 - ChatGPT: sin cambios (fuera de función; no tocado, como indicó Marcos).
+
+## Ciclo (29-oct): órdenes de Norexos 1 — tareas 23 a 26 (bloque 4)
+- nexora-cloud 339e6491 (respuesta a Claude PC: 49 bloqueada por 23–26; 52 la hace el Taller; bloque 9 sin ejecutar hasta verificación y preaprobación). RESPUESTA eccaf01f.
+- Hechas en claude-pc/i18n-borrador (desde nexora-cloud, sin tocar producto ni nexora-cloud):
+  - 23 INVENTARIO_GV.md (grep, 72 textos, parcial: sin atributos) — 9222def6
+  - 24 INVENTARIO_POS.md (grep, 50 textos, POS.tsx no tocado) — 3868af42
+  - 25 es.json (script, 122 claves) — 492fa608
+  - 26 en.json (modelo en 2 partes, 122/122 claves, RD$ y NCF sin traducir) — ee22f267
+- Incidencia: el modelo falló dos veces con la tarea entera (tiempo de respuesta). Partida en GV y POS. Respondió con bloques ```json: se limpian al unir.
+- Pendiente: CI de claude-pc/i18n-borrador (docs), LISTA cuando esté en verde. 27 y 28 sin asignar en esta orden.
+- Bloque 9: sin ejecutar. Bucle y contexto listos (983fb1fc).
