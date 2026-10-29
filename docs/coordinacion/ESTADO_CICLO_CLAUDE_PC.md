@@ -907,3 +907,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente para la dueña: la orden 45 pide desactivar la suspensión de la laptop; la última desconexión fue a las 03:52 (RD).
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (29-oct): orden 45 (Forja) y primeras piezas
+- Fetch: nexora-cloud 2471d2b0. RESPUESTA_CLAUDE_PC_27OCT.md blob 4d48775e (orden 45: cola de código «Forja» en docs/coordinacion/COLA_FORJA.md, rama claude-pc/forja-noche desde producto-nexora). OBSIDIAN ausente.
+- Forja 1 (nx-brand): ya estaba en claude-pc/forja-noche (004f4b22); pruebas revisadas y pasan (3/3).
+- Forja 2 (nx-plural): hecha en claude-pc/forja-noche, commit b7543d3b. Borrador del 14B revisado y reescrito en estilo del repo; prueba fallaba antes (módulo inexistente) y pasa después (3/3). Sube a origin; LISTA cuando CI esté en verde.
+- Piezas 3-14: pendientes.
+- Nota de la orden 45: la laptop se desconectó a las 03:52 (computer_unreachable). Pedir a Marcos que desactive la suspensión.
+- CI de ramas anteriores: pc23, a1, b01, lumina y docs-noche en verde; sin LISTA nueva.
+- ChatGPT (paso 5): sin acceso de computer use; sin cambios.
