@@ -8,6 +8,7 @@ import { api, post, useStore } from "./api";
 import { QueryState, toast } from "./helpers";
 import { GvAppointments } from "./GvCitas";
 import { GvLeads } from "./GvInteresadas";
+import { cursosDestino } from "./gvCursos";
 import "./gv.css";
 
 type Payment = {
@@ -469,6 +470,11 @@ function EnrollmentForm({
 }) {
   const client = useQueryClient();
   const [operationId] = useState(() => crypto.randomUUID());
+  const courses = useQuery<Course[]>({
+    queryKey: ["gv-courses"],
+    queryFn: () => api("/gv/courses"),
+  });
+  const [cursoId, setCursoId] = useState(courseId);
   const [form, setForm] = useState({
     clientName: enrollment?.clientName ?? "",
     phone: enrollment?.phone ?? "",
@@ -501,6 +507,8 @@ function EnrollmentForm({
         ...rest,
         agreedPrice: Number(form.agreedPrice),
         attended: form.attended === "" ? null : form.attended === "true",
+        // Mover de curso conserva pagos y auditoría; el precio acordado no cambia.
+        ...(enrollment && cursoId !== courseId ? { courseId: cursoId } : {}),
         ...(refunding
           ? { refundAmount: Number(refundAmount), refundDate }
           : {}),
@@ -509,6 +517,7 @@ function EnrollmentForm({
         await send("/gv/enrollments/" + enrollment.id, data, "PATCH");
       else await post("/gv/enrollments", { ...data, courseId, operationId });
       await client.invalidateQueries({ queryKey: ["gv-course", courseId] });
+      await client.invalidateQueries({ queryKey: ["gv-course", cursoId] });
       await client.invalidateQueries({ queryKey: ["gv-courses"] });
       toast(enrollment ? "Inscripción actualizada." : "Inscripción guardada.");
       onClose();
@@ -526,6 +535,23 @@ function EnrollmentForm({
       wide
     >
       <form onSubmit={save} className="form-grid gv-form">
+        {enrollment && (
+          <label className="field full">
+            <span>Curso</span>
+            <select
+              value={cursoId}
+              onChange={(e) => setCursoId(e.target.value)}
+            >
+              {cursosDestino(courses.data ?? [], courseId).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {!c.active ? " (inactivo)" : ""}
+                  {c.lleno ? " (lleno)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="field full">
           <span>Clienta</span>
           <input
