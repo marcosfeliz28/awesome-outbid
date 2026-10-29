@@ -1354,3 +1354,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Bloque 13 (`claude-pc/cola-b13`, 8d728e9b): 77 PARCIAL; 78 y 83 completas; 79, 80, 81 y 82 PARCIAL; 84 NO ENCONTRADO (0 de 12; Management.tsx no tiene FAQ). Trabajo: 78, 79, 81, 83 y 84 por script; 80 con modelo (corregida a mano).
 - Sin LISTA: CI de 8d728e9b aún no verificado. Escribir LISTA cuando verify, windows-installer y render-images estén en verde.
 - Petición enviada a Norexos 1 (d21984) y a Norexos 4 (40a558) para la siguiente cola (hasta 8 tareas).
+
+## Consulta 30 min (29-oct): cola local vacía
+- Cola activa: COLA_LOCAL_ACTIVA_ESTADO.json en esta rama mostraba N1 a N8 en error (intento fallido por insumos ausentes en esta rama). Corregido a hecha: las ocho están hechas en `claude-pc/cola-n` (a2dd21d3). Log de cola: «Cola vacía».
+- RESPUESTA_CLAUDE_PC_27OCT.md blob 7a6234d0 (sin cambio desde la orden 71). No hay órdenes nuevas.
+- Petición de tareas reenviada a Norexos 1 (d21984): la anterior no tuvo respuesta en la cola.

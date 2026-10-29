@@ -8,5 +8,45 @@
     "estado": "hecha",
     "actualizado": "2026-10-29T14:12:28.024Z",
     "segundos": 137
+  },
+  "N1-erratas-faq-gv": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T21:54:03.809Z",
+    "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
+  },
+  "N2-erratas-manual-caja": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T21:54:03.809Z",
+    "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
+  },
+  "N3-erratas-faq-caja": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T21:54:03.809Z",
+    "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
+  },
+  "N4-erratas-landing": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T21:54:03.809Z",
+    "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
+  },
+  "N5-frases-tecnicas-manual": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T21:54:03.809Z",
+    "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
+  },
+  "N6-glosario-atajos-pos": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T21:54:03.809Z",
+    "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
+  },
+  "N7-preguntas-que-faltan-gv": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T21:54:03.809Z",
+    "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
+  },
+  "N8-consistencia-marca": {
+    "estado": "hecha",
+    "actualizado": "2026-10-29T21:54:03.809Z",
+    "nota": "hecha en claude-pc/cola-n (a2dd21d3); el error previo fue por insumos ausentes en esta rama"
   }
 }
