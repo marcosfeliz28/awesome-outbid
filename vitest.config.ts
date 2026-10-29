@@ -142,6 +142,7 @@ export default defineConfig({
       "tests/visual-tokens.test.ts",
       "tests/visual-marco.test.ts",
       "tests/f2-01-tokens.test.ts",
+      "tests/forja3-f3-07-mismo-dia.test.ts",
       "tests/forja3-f3-06-rango-dias.test.ts",
       "tests/forja3-f3-03-porcentaje.test.ts",
       "tests/f2-01-nx-dias-hasta.test.ts",
