@@ -835,7 +835,7 @@ describe("GV · cambiar curso de una inscripción", () => {
       "PATCH",
     );
     expect(moved.courseId).toBe(destino.id);
-    expect(moved.agreedPrice).toBe("4500.00");
+    expect(Number(moved.agreedPrice)).toBe(4500);
 
     const enDestino = (
       await ok("/gv/courses/" + destino.id, gv)
