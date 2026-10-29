@@ -1157,3 +1157,16 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI de claude/forja-grupos-12: en curso.
 - Corrección: claude-pc/b9-50-grupo-3 tiene como head 70f4084b (otra sesión subió el mismo grupo en paralelo, 5df3f012 a 70f4084b). Lo revisé: 20/20 pruebas de las 4 funciones, eslint y prettier limpios. Me quedo con esa versión. Mi copia duplicada (4d9066b3 y anteriores) está en la rama local claude-pc/b9-50-grupo-3-dup-local, sin subir.
 - Head para auditoría: 70f4084b. CI en curso.
+
+## Ciclo (29-oct, ciclo autónomo): órdenes 47 a 58
+- Fetch: nexora-cloud en 201fc951 (órdenes 47 a 58). RESPUESTA_CLAUDE_PC_27OCT.md blob 9b2db5ba. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 92f77795.
+- Resumen de órdenes para Claude PC:
+  - 47: E3 (instalador), sin esperar a la dueña. Licencia con interruptor `modo` (suscripción | licencia por PC), periodo de gracia sin internet, sin cobro ni claves reales. Actualización: primero «instalar encima conservando datos». Rama `claude-pc/instalador-e3`.
+  - 48: plan y tablero en `control/norexos`; léelo al empezar cada ciclo.
+  - 49–55: cola local (bloques 8 a 10) y grupos de funciones puras de Forja en `claude-pc/b9-50-grupo-N`, con 3–4 funciones por rama, cada una con prueba.
+  - 56: grupo 2 (33dc20dd): ajustes de `nx-tiempo-relativo` y `nx-breakpoint`. Ya están en 33dc20dd.
+  - 57: el verify rojo de grupo 2 es una prueba e2e ajena (G9, tiempos). Norexos 1 juntó grupos 1 y 2 en `claude/forja-grupos-12` (b5c2a576). No escribir LISTA para 33dc20dd.
+  - 58: grupo 3 (70f4084b): dos ajustes pedidos, en `nx-copia-segura` (lanzar con Date y Map) y `nx-etiqueta-cupo` (umbral como parámetro, por defecto 3). Estado: la rama `claude-pc/b9-50-grupo-3` tiene cambios sin confirmar en el worktree `b9-grupo-3`, que parecen ser estos ajustes en curso de otra sesión. No los dupliqué.
+- LISTA escrita: `claude-pc/forja-noche 0f727725` (las tres piezas de Forja con CI en verde).
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
