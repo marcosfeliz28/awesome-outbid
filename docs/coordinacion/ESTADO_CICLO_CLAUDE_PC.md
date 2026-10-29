@@ -916,3 +916,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Nota de la orden 45: la laptop se desconectó a las 03:52 (computer_unreachable). Pedir a Marcos que desactive la suspensión.
 - CI de ramas anteriores: pc23, a1, b01, lumina y docs-noche en verde; sin LISTA nueva.
 - ChatGPT (paso 5): sin acceso de computer use; sin cambios.
+
+## Ciclo (29-oct, ciclo autónomo): Forja
+- Fetch: nexora-cloud en a1f20427 (nuevo: «Plan maestro Norexos con cronograma y tablero de control»; y un cambio en mercancia.py de otra rama). RESPUESTA_CLAUDE_PC_27OCT.md blob 4d48775e (la orden 45 sigue siendo la última). OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en ef063f6a.
+- `claude-pc/forja-noche` (salida de Forja): pieza 1 nx-brand (004f4b22, mía) y pieza 2 nx-plural (b7543d3b, de la cola de Forja, revisada por mí). Revisión de nx-plural: singular solo para 1, plural para 0, 2, negativos y fracciones; cumple la tarea 2. Observación: la pieza 2 entró en un solo commit con su prueba; la orden pide prueba antes y después en commits separados. No se reescribe la historia (sin force).
+- CI de `claude-pc/forja-noche` (b7543d3b): windows-installer y render-images en verde; verify en curso. LISTA pendiente de los tres verdes.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: fuera de trabajo; no se abrió en este ciclo.
