@@ -29,3 +29,20 @@ Mismas reglas de arriba: solo lectura del repo, un archivo nuevo en `docs/diseno
 | M6 | `apps/web/src/*.css` | `docs/diseno/borradores-local/mapa-css.md` | Una fila por archivo `.css` con tamaño en líneas y el componente `.tsx` al que parece corresponder (por nombre); lo dudoso dice «verificar». Mismo número de filas que archivos. |
 | M7 | `.github/workflows/*.yml` (solo lectura) | `docs/diseno/borradores-local/resumen-workflows.md` | Por workflow: nombre, cuándo se dispara, nombres de sus jobs y de sus pasos. **No lista nombres de secretos ni valores.** Coincide con los archivos. |
 | M8 | `docs/diseno/borradores-local/*.md` ya generados (L3, L4 y los de esta tanda) | `docs/diseno/borradores-local/INDICE.md` | Un índice con enlace, tamaño y una línea de qué contiene cada borrador; todos los enlaces existen (`ls`). No modifica los borradores. |
+
+---
+## Tanda 3 (29-oct-2026) — para qwen-optimizado
+Mismas reglas de siempre: lectura del repo, un archivo nuevo en `docs/diseno/borradores-local/` por tarea (nunca `docs/operacion`, `docs/legal`, `docs/seguridad` ni `.env*`), rama `claude-pc/lote-local-tanda3`, encabezado «Borrador sin verificar», revisa Claude PC. **S1, S4, S5 y S6 son de revisión de seguridad:** se hacen como lectura del código y **nunca copian valores** (ni claves, ni URLs con credenciales, ni contenido de variables). Todo criterio se comprueba con `grep`, `ls` o `wc`.
+
+| # | Entrada (lee) | Salida (escribe) | Criterio de aceptación |
+|---|---|---|---|
+| S1 | `apps/` y `packages/` (código, no pruebas) | `docs/diseno/borradores-local/variables-leidas.md` | Solo **nombres** de variables de entorno que el código lee (`process.env.X`), cada una con archivo:línea de su primer uso. La lista coincide con `grep -rhoE 'process\.env\.[A-Z_0-9]+' \| sort -u`. No lista valores ni abre `.env*`. |
+| S2 | `apps/api/src/*.ts` | `docs/diseno/borradores-local/endpoints-api.md` | Una fila por ruta HTTP declarada (método + ruta + archivo:línea). El número de filas coincide con el `grep -c` de los decoradores o llamadas de rutas que se usó (se escribe cuál). Sin copiar cuerpos de funciones. |
+| S3 | `package.json` de cada paquete + el código | `docs/diseno/borradores-local/dependencias-sin-uso.md` | Paquetes declarados que no aparecen en ningún `import`/`require` (verificado con `grep -r`). Cada fila dice «posible, verificar». No sugiere eliminar nada. |
+| S4 | `apps/web/src` y `apps/api/src` | `docs/diseno/borradores-local/hosts-externos.md` | Lista de **dominios** que aparecen en URLs literales `http(s)://` del código (solo el dominio, nunca la ruta completa ni parámetros), con archivo:línea. Coincide con `grep -rhoE 'https?://[a-zA-Z0-9.-]+' \| sort -u`. |
+| S5 | `apps/` y `packages/` (código, no pruebas) | `docs/diseno/borradores-local/patrones-riesgosos.md` | Cada uso de `dangerouslySetInnerHTML`, `innerHTML`, `eval(`, `new Function` o `document.write` con archivo:línea. Mismo conteo que `grep -rnE` de esos patrones. No evalúa si es peligroso: solo lista. |
+| S6 | `apps/web/src` | `docs/diseno/borradores-local/almacenamiento-web.md` | Cada uso de `localStorage`, `sessionStorage` o `indexedDB` con archivo:línea y **solo el nombre de la clave** si es una cadena literal; nunca los valores. Mismo conteo que `grep -rnE`. |
+| S7 | `apps/` y `packages/` (código) | `docs/diseno/borradores-local/catch-vacios.md` | Cada bloque `catch` vacío o que solo ignora el error, con archivo:línea. Coincide con el conteo de `grep`; si una línea no se puede confirmar con `grep`, se marca «verificar». |
+| S8 | `apps/` y `packages/` (código) | `docs/diseno/borradores-local/archivos-grandes.md` | Archivos de más de 800 líneas con su número de líneas (`wc -l`), ordenados de mayor a menor. Mismo conjunto que `find ... \| xargs wc -l` filtrado a >800. |
+
+Un borrador que no cubra todo el alcance debe decir «PARCIAL» y cuántos archivos miró de cuántos.
