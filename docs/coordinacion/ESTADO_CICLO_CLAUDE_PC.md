@@ -1007,3 +1007,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - nexora-cloud incluye ahora el merge de claude-pc/cola-b7 (0a64a8a6, decisión de Norexos 1; no lo hice yo) y skills nuevas (ordenes-duena).
 - CI: pc23, a1, b01 y lumina en verde. claude-pc/i18n-borrador (ee22f267): CI en curso. LISTA cuando esté en verde.
 - ChatGPT: sin acceso ni cambios (Marcos pidió no gastar tokens ni autorizar nada en esa parte).
+
+## Ciclo (29-oct, 15 min) + cambio del modelo local
+- nexora-cloud c73b9a0f. RESPUESTA eccaf01f (sin cambio). OBSIDIAN ausente.
+- CI: pc23, a1, b01 y lumina en verde. claude-pc/i18n-borrador (ee22f267): windows-installer y render-images en verde; verify en curso. LISTA cuando termine.
+- Cola local: vacía. Pedido de tareas enviado a Norexos 1.
+- Modelo local: qwen-optimizado recreado con reglas en SYSTEM, num_ctx 8192, num_thread 8 (mismo modelo base). Modelfile anterior guardado en el Escritorio como Modelfile.v1-respaldo. Medición: salida ~5,8 tok/s (sin mejora); entrada en caché 2 045 tok/s (mejora clara en el prefijo de reglas).
+- ChatGPT: sin cambios (Marcos pidió no tocarlo).
