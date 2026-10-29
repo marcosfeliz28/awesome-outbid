@@ -1170,3 +1170,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - LISTA escrita: `claude-pc/forja-noche 0f727725` (las tres piezas de Forja con CI en verde).
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Orden 58 (29-oct 19:20Z): ajustes del grupo 3
+- nexora-cloud 201fc951. RESPUESTA 9b2db5ba (orden 58: auditoría del grupo 3 con dos ajustes).
+- claude-pc/b9-50-grupo-3: head b4c5ac1a, dos commits nuevos:
+  - 3dbbd043 nx-etiqueta-cupo: umbral como parámetro opcional, defecto 3 (UMBRAL_POCOS_POR_DEFECTO). Mi mensaje anterior decía umbral 5; el código usaba 3 y 5 no es decisión nuestra. La prueba nueva falló antes; mis expectativas en la prueba estaban mal (corregidas).
+  - b4c5ac1a nx-copia-segura: rechaza Date, Map y Set («solo JSON simple (objeto no plano)») en vez de copiarlos como {}.
+- 22/22 pruebas del grupo, eslint y prettier limpios.
+- Pendiente: CI del head b4c5ac1a y auditoría de Norexos 1. Grupos 1 y 2 en claude/forja-grupos-12 (CI en curso). Tarea 56 sin empezar.
+- CI de pc23, a1, b01 y lumina: en verde.
+- Cola local activa: vacía. ChatGPT: sin cambios.
