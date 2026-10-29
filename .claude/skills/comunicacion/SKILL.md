@@ -75,3 +75,6 @@ description: Cómo hablar con las otras sesiones de Norexos (Claude PC, Taller, 
 **No instalados todavía (necesitan la laptop y a la dueña presente)**
 - Skills de Matt Pocock adicionales y otros de `npx skills find`; certificado de firma de código (D7). Hasta entonces no los doy por instalados.
 - Cambios a `CLAUDE.md` o a ponytail: solo si la dueña lo pide.
+
+## Skills de Matt Pocock en el repositorio (29-oct, orden de la dueña: «pásaselos a todas las sesiones»)
+Copiadas a `.claude/skills/` para que toda sesión que lea el repo (nube y laptop) las tenga sin instalar nada: `tdd`, `diagnosing-bugs`, `domain-modeling`, `research`, `handoff`, `writing-for-agents`, `pr`, `codebase-design`. Fuente: `mattpocock/skills` (revisadas: solo texto; `diagnosing-bugs/scripts/hitl-loop.template.sh` es una plantilla interactiva, no se ejecuta sola). **Solo se usan cuando la tarea las pide.** No se copió `code-review` (choca con el de la plataforma) ni los que cambian configuración (`git-guardrails-claude-code`, `setup-pre-commit`): necesitan OK de la dueña. Orden de uso: fallo de CI o bug → `diagnosing-bugs`; función nueva → `tdd`; editar CLAUDE.md o un skill → `writing-for-agents`; cerrar una sesión → `handoff`.
