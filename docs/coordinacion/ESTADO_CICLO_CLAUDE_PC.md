@@ -1273,3 +1273,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - LISTA pendiente de CI: claude-pc/cola-b11 (cb4f2382), claude-pc/lote-local-tanda2 (2332bdb9), claude-pc/cola-b12 (3986a3db), claude-pc/b9-56-limites (bf989b05). Norexos 1 audita por muestreo estos documentos (orden 63).
 - Cola local: bloque 12 completo (8 de 8) y bloque 11 (7 de 7), tanda 2 (8 de 8).
 - ChatGPT: sin cambios.
+
+## Ciclo (29-oct): órdenes 65–66 (Forja 2)
+- Fetch: nexora-cloud en ad6a0a36. RESPUESTA_CLAUDE_PC_27OCT.md blob e43d47a2. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 9047f0d4 (`claude/forja-final` ya mezclada: grupo 3, nx-brand ampliado, nx-plural, nx-fecha).
+- Orden 65: la tarea 56 (límites) la hace la sesión fork en `claude-pc/b9-56-limites`. Claude PC NO la toca. Mi commit 223dfa53 queda como base; no añado más ahí.
+- Tarea de Claude PC: Forja 2 (`COLA_FORJA2.md`, 10 funciones de formato). Rama `claude-pc/forja2-grupo-1` (F2-01 a F2-04), desde origin/producto-nexora.
+- Hecho: F2-01 `formatearMonedaRD` (commit 0e37c1c7): prueba antes falla (módulo ausente); después 7/7 OK con Node 24. vitest y pnpm check pendientes del CI. Sin LISTA hasta los tres CI en verde.
+- Pendiente de grupo 1: F2-02 `enmascararTelefono`, F2-03 `diasHasta`, F2-04 `agruparPorDia`.
+- Aviso: el worktree de esa rama tiene un directorio sin seguimiento `docs/diseno/borradores-local/forja2`, de la cola local. No lo toqué ni lo subo.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
