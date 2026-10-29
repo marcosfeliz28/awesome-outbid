@@ -1068,3 +1068,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo quincenal (29-oct, 17:10Z)
 - nexora-cloud 056143df. RESPUESTA cambió: orden 51 (58, 59 y 61 con fuentes nuevas). Hecho en claude-pc/cola-b10 (630a437d): 58 inventario de ayuda (75 textos, producto-nexora d3acef4f), 59 en-ayuda.json (75 claves), 61 glosario (81 términos, PARCIAL: faltan GLOSARIO.md y glosario-siglas.md). OBSIDIAN ausente.
 - CI: pc23, a1, b01 y lumina en verde; cola-b8 con LISTA ya escrita; cola-b10 630a437d en curso. LISTA cuando termine.
+## Orden 51 (29-oct 17:10Z): tareas 58, 59 y 61 en claude-pc/cola-b10
+- nexora-cloud 056143df. RESPUESTA d0a119c5 (orden 51: 58 y 59 en producto-nexora; 61 con glosario-siglas.md + es.json; cola-b8 mezclada en nexora-cloud).
+- Hechas por otra sesión en claude-pc/cola-b10 (630a437d): INVENTARIO_AYUDA.md (75 textos desde producto-nexora), en-ayuda.json (75 claves, coinciden con el inventario), GLOSARIO_ES_EN.md (82 filas). Revisado por Claude PC: conteos y claves coinciden.
+- CI de claude-pc/cola-b10 (630a437d): render-images en verde; verify y windows-installer en curso. LISTA cuando terminen.
+- LISTA de cola-b8 (16829a65) ya escrita (a450a44e) y mezclada en nexora-cloud por Norexos 1.
+- Cola local: sin tareas nuevas; pedido enviado a Norexos 1 en esta consulta.
+- CI: pc23, a1 y b01 en verde; lumina en verde.
+- ChatGPT: sin cambios (Marcos pidió no tocarlo).
