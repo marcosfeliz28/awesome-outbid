@@ -893,3 +893,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Sin cambios.
 - Órdenes nuevas que escriban código para Claude PC: ninguna.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Decisión (29-oct): modelo de trabajo = qwen2.5-coder:14b
+- Marcos ordenó usar el 14B. Instalado (9,0 GB) y respondiendo.
+- Prueba corta: respuesta correcta y concisa en 45 s (prueba en carpeta temporal, sin commit).
+- Lote local: se usa OLLAMA_MODEL=qwen2.5-coder:14b por defecto. DeepSeek-R1 queda como respaldo para documentos. No se borra ningún modelo.
+- Próxima tarea del lote: 17 (candidatos a código muerto), con el listado de archivos que yo aporte, sin inventar.
