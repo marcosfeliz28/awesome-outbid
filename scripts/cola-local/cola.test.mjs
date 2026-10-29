@@ -49,3 +49,9 @@ test("registrar conserva los campos previos y añade los nuevos", () => {
   assert.equal(e.a.estado, "hecha");
   assert.equal(e.a.intentos, 1);
 });
+
+test("antepone el contexto fijo (educación del modelo) antes de la instrucción", () => {
+  const enc = construirEncargo({ instrucciones: "Haz X.", entradas: [] }, () => "", "Reglas fijas.");
+  assert.match(enc, /Reglas fijas./);
+  assert.ok(enc.indexOf("Reglas fijas.") < enc.indexOf("Haz X."));
+});

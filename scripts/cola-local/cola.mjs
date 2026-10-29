@@ -17,13 +17,13 @@ export function siguienteTarea(cola, estado) {
   }) ?? null;
 }
 
-export function construirEncargo(tarea, leer) {
+export function construirEncargo(tarea, leer, contexto = "") {
   const bloques = (tarea.entradas ?? []).map((ruta) => {
     const texto = leer(ruta);
     const recorte = texto.length > LIMITE_ENTRADA ? texto.slice(0, LIMITE_ENTRADA) + "\n[...recortado]" : texto;
     return `### Archivo: ${ruta}\n\`\`\`\n${recorte}\n\`\`\``;
   });
-  return [tarea.instrucciones, "", ...bloques].join("\n");
+  return [contexto, tarea.instrucciones, "", ...bloques].filter(Boolean).join("\n");
 }
 
 export function registrar(estado, id, cambios) {
@@ -41,6 +41,9 @@ async function main() {
   const una = args.includes("--una");
   const cola = JSON.parse(readFileSync(rutaCola, "utf8"));
   const leer = (ruta) => readFileSync(ruta, "utf8");
+  // Contexto fijo: la guía de educación que Norexos 1 escribió para el modelo (si existe).
+  const rutaContexto = "docs/coordinacion/EDUCACION_MODELO_LOCAL.md";
+  const contexto = existsSync(rutaContexto) ? readFileSync(rutaContexto, "utf8") : "";
   for (;;) {
     let estado = cargarEstado(rutaEstado);
     const tarea = siguienteTarea(cola, estado);
@@ -50,7 +53,7 @@ async function main() {
     mkdirSync(dirname(rutaEstado), { recursive: true });
     writeFileSync(rutaEstado, JSON.stringify(estado, null, 2), "utf8");
     try {
-      const { texto, segundos } = await ejecutar({ encargo: construirEncargo(tarea, leer), maxTokens: tarea.maxTokens ?? 2500, modelo: tarea.modelo });
+      const { texto, segundos } = await ejecutar({ encargo: construirEncargo(tarea, leer, contexto), maxTokens: tarea.maxTokens ?? 2500, modelo: tarea.modelo });
       mkdirSync(dirname(salida), { recursive: true });
       writeFileSync(salida, texto, "utf8");
       estado = registrar(estado, tarea.id, { estado: "hecha", segundos });
