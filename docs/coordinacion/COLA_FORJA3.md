@@ -5,8 +5,8 @@ Mismo método y reglas que `COLA_FORJA2.md`: `packages/ui/src/nx-<nombre>.ts` + 
 | F3-01 | `formatearFechaLarga(fecha, idioma)` | «29 de octubre de 2026» / «October 29, 2026», zona America/Santo_Domingo | cambio de día RD vs UTC, fecha inválida → «—» |
 | F3-02 | `formatearHora(fecha, idioma)` | «10:20 a. m.» / «10:20 AM», zona RD | medianoche, mediodía, inválida |
 | F3-03 | `formatearPorcentaje(n, decimales)` | «15 %» (es) / «15%» (en); decimales 0–4 | 0, negativos, NaN, decimales fuera de rango se ajustan |
-| F3-04 | `formatearCantidad(n)` | hasta 3 decimales sin ceros finales: «1,5» / «12» | 0, -0, 1e9, 0.0004 → «0», NaN |
-| F3-05 | `abreviarNumero(n)` | «1,2 mil», «3,4 M» (es) / «1.2K», «3.4M» (en) | 999, 1000, 999999, negativos, NaN |
+| F3-04 | `formatearCantidad(n)` | hasta 3 decimales sin ceros finales: «1.5» (punto decimal, coma de miles: convención de República Dominicana, igual que RD$ 1,234.50) / «12» | 0, -0, 1e9, 0.0004 → «0», NaN |
+| F3-05 | `abreviarNumero(n)` | «1.2 mil», «3.4 M» (es, punto decimal) / «1.2K», «3.4M» (en) | 999, 1000, 999999, negativos, NaN |
 | F3-06 | `rangoDeDias(inicio, fin)` | lista de días `aaaa-mm-dd` inclusive; tope de 366, si pasa → error claro | inicio > fin, mismo día, fechas inválidas |
 | F3-07 | `esMismoDia(a, b)` | mismo día calendario en zona RD | 23:30 RD vs 00:30 UTC siguiente, inválidas |
 | F3-08 | `compararNatural(a, b)` | orden natural en español: «item2» < «item10», sin distinguir acentos ni mayúsculas | vacíos, números largos, acentos |
