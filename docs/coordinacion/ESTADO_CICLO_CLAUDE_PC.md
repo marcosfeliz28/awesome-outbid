@@ -938,3 +938,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Instalar la skill de Matt Pocock (`wayfinder`, commit a496f55) requiere a la dueña presente; no se instala en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: fuera de trabajo; no se abrió en este ciclo.
+
+## Ciclo (29-oct): orden 46 (plan v2 y E3)
+- Fetch: nexora-cloud 8dbfc3ef. RESPUESTA_CLAUDE_PC_27OCT.md blob 95c141d2 (CAMBIÓ; orden 46). OBSIDIAN ausente.
+- Orden 46: la dueña habla solo con Norexos 1. E1 (cambio de nombre) pasa al Taller. Claude PC: E3 instalador y revisar ramas pedidas. Forja y Brazo se retoman cuando la laptop despierte. Instalar la skill wayfinder (Matt Pocock) con la dueña presente, de uno en uno.
+- E3 según diagnóstico del Taller (claude/taller-estado, docs/PROYECTO_ESTADO_29OCT.md): licencia y activación NO existen (falta decidir modelo: suscripción o licencia por PC); actualización automática NO existe (falta decidir si basta con reinstalar); respaldo local existe en el instalador; pruebas de PowerShell (~50) solo corren en una PC Windows limpia, no en esta laptop (contiene PostgreSQL real).
+- Bloqueo: E3 depende de dos decisiones de la dueña. Preguntas enviadas a Norexos 1.
+- Lote local L1 (claude-pc/lote-local-1, cd2475f7): CI en curso. Resto de L2-L8 pendiente.
+- CI sin cambios: pc23, a1, b01 y lumina en verde.
+- ChatGPT (paso 5): sin acceso de computer use; sin cambios.
