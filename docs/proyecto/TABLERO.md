@@ -22,5 +22,5 @@
 | T17 | Permiso pendiente en la sesión del Revisor | E0 | Dueña / Norexos 1 | bloqueado | La sesión Norexos 4 espera aprobar o rechazar un permiso. Sin eso, sus auditorías llegan solo por archivo |
 | T18 | Landing y dominio norexos.ai | E5 | Taller (textos) + dueña (dominio) | pendiente | 8–12 nov. Depende de T02 |
 | T19 | Lanzamiento controlado | E8 | Dueña + Norexos 1 | pendiente | 24-nov (mejor caso 18-nov). Checklist firmada |
-| T20 | Skill `mattpocock/skills@wayfinder` (propuesta) | E0 | Revisor | pendiente | No instalada. Norexos 5 no instala skills; la auditoría del Revisor sigue pendiente (T17) |
+| T20 | Skill `mattpocock/skills@wayfinder` (propuesta) | E0 | Norexos 1 | hecho | Instalada por Norexos 1 en su propia sesión, auditada por Norexos 1 (commit a496f55, solo texto). Reportado por Norexos 1; no es auditoría del Revisor. Norexos 5 no instala skills |
 | T21 | Licencia (suscripción o por PC) y actualización simple (reinstalar encima) | E3 | Norexos PC, rama `claude-pc/instalador-e3` | bloqueado | Espera decisión de la dueña sobre el modelo de venta y de actualización. Norexos 1 lo plantea a la dueña |
