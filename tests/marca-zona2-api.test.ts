@@ -8,7 +8,6 @@ import { expect, it } from "vitest";
 const RAIZ = "apps/api/src";
 const EXCEPCIONES = [
   'FOLDER_NAME = "Nexora POS respaldos"',
-  'default("Nexora")',
 ];
 
 function archivos(dir: string): string[] {
