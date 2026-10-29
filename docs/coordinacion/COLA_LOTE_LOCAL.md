@@ -135,3 +135,42 @@ Solo lectura del repo (usa `origin/producto-nexora` para el código del producto
 | 66 | Borrador en inglés de los textos de Management (de la tarea 57) | `docs/i18n/INVENTARIO_MANAGEMENT.md` + `docs/i18n/borrador/en.json` | `docs/i18n/borrador/en-management.json` | mismas claves que el inventario; RD$, NCF e ITBIS sin traducir |
 | 67 | Qué flujo cubre cada prueba de navegador | `tests/e2e/*.spec.ts` | `docs/auditoria/MAPA_E2E.md` | un renglón por spec: archivo, nº de pruebas, flujo; `ls tests/e2e | wc -l` coincide |
 | 68 | Lista de revisión manual de la caja (checklist para probar antes de una entrega) | `apps/web/src/POS.tsx` + `tests/e2e/*caja*` | `docs/auditoria/CHECKLIST_CAJA.md` | casillas numeradas, cada una con la pantalla y el resultado esperado |
+
+## Bloque 12 · Reposición de cola (29-oct 20:55 UTC, Norexos 1) — rama `claude-pc/cola-b12`
+Mismas reglas que los bloques 8, 10 y 11 (solo lectura; salida en `docs/`; sin `docs/operacion/`; encabezado «Borrador sin verificar»; fuente rama+commit; archivo:línea; «PARCIAL» / «NO ENCONTRADO»). Código del producto: `origin/producto-nexora`. Nuevas lecciones en `EDUCACION_MODELO_LOCAL.md`: léelas antes.
+| # | Tarea | Entrada | Salida | Aceptación |
+|---|---|---|---|---|
+| 69 | Revisión de `LANDING_EN_PLANES.md` contra el original | `docs/venta/LANDING_TEXTOS.md` y `LANDING_EN_PLANES.md` | `docs/venta/LANDING_EN_REVISION.md` | lista cada afirmación del inglés sin respaldo en el original (p. ej. «conforme a la DGII»: e-CF/DGII está FUERA de la versión 1); sin cambiar el original |
+| 70 | Inventario de textos de reportes y panel | los `.tsx` de `apps/web/src` cuyo nombre contenga Dashboard, Report o Executive | `docs/i18n/INVENTARIO_REPORTES.md` | texto, línea, clave propuesta; `grep -c` ≥ 30 o «PARCIAL» |
+| 71 | Inventario de textos de clientes y crédito | `.tsx` con Customer o Credit en el nombre | `docs/i18n/INVENTARIO_CLIENTES.md` | texto, línea, clave |
+| 72 | Inventario de textos de configuración y primeros pasos | `.tsx` con Setting, Config, Onboard o First en el nombre | `docs/i18n/INVENTARIO_CONFIG.md` | texto, línea, clave |
+| 73 | Textos de error de la API al usuario | `apps/api/src/*.ts` | `docs/i18n/ERRORES_API.md` | mensaje en español, archivo:línea, clave propuesta; nº de filas = nº de mensajes encontrados |
+| 74 | Rutas de la API sin prueba que las nombre | `docs/api/PERMISOS.md`, `tests/` | `docs/auditoria/RUTAS_SIN_PRUEBA.md` | ruta → «nombrada en tests / no nombrada»; conteo por módulo; sin inventar |
+| 75 | Mapa de componentes del paquete de interfaz | `packages/ui/src/` | `docs/diseno/MAPA_UI.md` | archivo, qué exporta, si tiene prueba (`tests/f2-01-*`); `ls packages/ui/src \| wc -l` coincide |
+| 76 | Guía de inicio rápido para una dueña nueva (5 pasos, borrador) | los textos del asistente «Primeros pasos» del producto | `docs/venta/INICIO_RAPIDO_BORRADOR.md` | 5 pasos numerados con pantalla y archivo:línea; sin prometer funciones inexistentes |
+
+## Bloque 13 · Reposición (29-oct 21:10 UTC, Norexos 1) — rama `claude-pc/cola-b13`
+Mismas reglas de siempre (solo lectura; salida en `docs/`; sin `docs/operacion/` ni valores de variables/claves; encabezado «Borrador sin verificar»; fuente rama+commit; archivo:línea; «PARCIAL» / «NO ENCONTRADO»). Código del producto: `origin/producto-nexora`. Lo del bloque 12 que dependía de coincidencias por nombre (p. ej. «tiene prueba: no») puede dar falsos negativos: di en el encabezado cómo lo calculaste.
+| # | Tarea | Entrada | Salida | Aceptación |
+|---|---|---|---|---|
+| 77 | Qué hace cada pantalla, en palabras simples | `docs/diseno/MAPA_PANTALLAS.md` + el `.tsx` de cada pantalla | `docs/venta/PANTALLAS_BORRADOR.md` | una frase por pantalla con archivo:línea; sin funciones inexistentes |
+| 78 | Términos fiscales y dónde aparecen | `apps/` y `packages/` | `docs/i18n/TERMINOS_FISCALES.md` | NCF, ITBIS, RNC, DGII, e-CF: nº de apariciones por archivo (`grep -c`) y 1 ejemplo con línea |
+| 79 | Mensajes de validación de formularios | `packages/shared/src` y `apps/api/src` (mensajes de zod/validación) | `docs/i18n/VALIDACIONES.md` | mensaje, archivo:línea, clave propuesta |
+| 80 | Textos de notificaciones salientes (Telegram, correo, avisos) | `apps/api/src` | `docs/i18n/NOTIFICACIONES.md` | texto, archivo:línea; marca cuáles dicen «Nexora» y cuáles «Norexos» |
+| 81 | Textos de recibos y PDF impresos | `apps/api/src` y `apps/web/src` (recibo, factura, PDF) | `docs/i18n/RECIBOS.md` | texto, archivo:línea, clave |
+| 82 | Variables de entorno (nombres, no valores) | `apps/api/src`, `render.yaml`, `.env.example` | `docs/operacion/VARIABLES_ENTORNO.md` | nombre, para qué sirve, obligatoria sí/no; **cero valores** (`grep -E "=[^ ]"` no debe mostrar secretos) |
+| 83 | Roles y permisos del producto | `apps/api/src` (definiciones de roles/permisos) | `docs/api/ROLES.md` | rol → permisos, archivo:línea; sin inventar roles |
+| 84 | Preguntas frecuentes de administración (12) | `apps/web/src/Management.tsx` | `docs/venta/FAQ_ADMIN_BORRADOR.md` | cada respuesta cita archivo:línea |
+
+## Bloque 14 · Tanda por SCRIPT (29-oct 21:50 UTC, Norexos 1) — rama `claude-pc/cola-b14`
+**Método: script (`grep`, `wc`, `ls`, `git ls-tree`), NO el modelo** (tu aviso es correcto: para listados el modelo da basura). El modelo local queda para tareas de redacción corta con entrada pequeña, y cada «sin errores» suyo cuenta como NO comprobado (N1–N4) hasta que la fork lo muestree. Fuente: `origin/producto-nexora` (di en el encabezado el SHA). Salidas en `docs/`, nunca en `docs/operacion`, `docs/legal`, `docs/seguridad`. Encabezado «Borrador sin verificar, hecho por script», con el comando exacto usado.
+| # | Tarea | Salida | Aceptación (verificable) |
+|---|---|---|---|
+| 85 | Tamaño del código por carpeta (archivos y líneas de `apps/web/src`, `apps/api/src`, `packages/*/src`, `tests`) | `docs/auditoria/TAMANO_CODIGO.md` | tabla carpeta / archivos / líneas; la suma de archivos coincide con `git ls-tree -r --name-only` filtrado |
+| 86 | Los 20 archivos fuente más largos | `docs/auditoria/ARCHIVOS_GRANDES.md` | 20 filas ordenadas por líneas (`wc -l`), con ruta |
+| 87 | Tipos de prueba: unitarias, `*-postgres`, e2e (`tests/e2e`), integración (`*-api`) | `docs/auditoria/TIPOS_DE_PRUEBA.md` | conteo por tipo; el total coincide con `ls tests/*.test.ts tests/e2e/*.spec.ts \| wc -l` |
+| 88 | Pendientes escritos dentro de los documentos (`TODO`, `FALTA`, `PENDIENTE`, `POR HACER`) | `docs/auditoria/PENDIENTES_EN_DOCS.md` | archivo:línea y frase, excluyendo `docs/operacion`; `grep -c` coincide con las filas |
+| 89 | Restos de «Nexora» en código del producto, conteo por archivo | `docs/marca/RESTOS_NEXORA_CONTEO.md` | archivo, conteo (`grep -c`), y clase (comentario / texto visible / identificador); total coincide con `grep -rn "Nexora" apps packages --include=*.ts --include=*.tsx \| wc -l` |
+| 90 | Funciones exportadas de `packages/shared/src` | `docs/api/FUNCIONES_SHARED.md` | una fila por `export`, con archivo:línea y firma literal copiada (sin interpretar) |
+| 91 | Texto con tildes rotas (mojibake «Ã», «â€») en el repo | `docs/auditoria/TILDES_ROTAS_CONTEO.md` | archivo:línea; si no hay, 'ninguna' y el comando usado |
+| 92 | Migraciones: tablas creadas vs `ENABLE ROW LEVEL SECURITY` | `docs/auditoria/RLS_POR_MIGRACION.md` | por migración: nº de `CREATE TABLE` y nº de `ENABLE ROW LEVEL SECURITY`; **es inventario, no conclusión de seguridad** (lo dice el encabezado); la lista de tablas sin coincidencia en la misma migración va aparte |
