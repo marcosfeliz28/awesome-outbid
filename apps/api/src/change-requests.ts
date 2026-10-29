@@ -43,6 +43,7 @@ export class ChangeRequestsController {
     return this.db.changeRequest.findMany({
       where: admin ? {} : { userId: actor.id },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
   }
 }
