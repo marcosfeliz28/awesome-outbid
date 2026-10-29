@@ -20,3 +20,4 @@ LISTA: claude-pc/visual-f2-01 ef063f6a (verify, windows-installer y render-image
 LISTA: claude-pc/docs-noche 8226b8de (verify, windows-installer y render-images en verde; docs/instalacion/INSTALACION_PC.md, tarea 15 de la cola local, borrador revisado: solo los 3 comandos reales de package.json y [FALTA INFORMACIÓN] donde no hay datos; no toca código ni producto)
 LISTA: claude-pc/cola-b7 bc061e2d (verify, windows-installer y render-images en verde; bloque 7 tareas 33, 35, 37, 38 y 40 por grep, borradores sin verificar; 34 y 39 no ejecutadas por reglas; 36 pendiente)
 LISTA: claude-pc/i18n-borrador ee22f267 (verify, windows-installer y render-images en verde en ee22f267; borrador i18n, sin mezclar ni desplegar)
+LISTA: claude-pc/cola-b8 16829a65 (verify, windows-installer y render-images en verde; bloque 8, tareas 41, 42, 43, 44, 45 y 48 por script con conteos verificados; 46 y 47 pasan al bloque 10; solo docs)
