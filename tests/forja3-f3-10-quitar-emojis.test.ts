@@ -13,3 +13,15 @@ describe("quitarEmojis (F3-10)", () => {
     expect(quitarEmojis("👨‍👩‍👧")).toBe("");
   });
 });
+
+describe("quitarEmojis: comportamiento conocido (orden 75)", () => {
+  it("©, ® y ™ también se quitan por ser pictográficos", () => {
+    expect(quitarEmojis("©®™")).toBe("");
+  });
+  it("las flechas como ↔ también se quitan", () => {
+    expect(quitarEmojis("↔")).toBe("");
+  });
+  it("la secuencia keycap 1️⃣ deja el U+20E3 suelto; no se cambia, queda documentado", () => {
+    expect(quitarEmojis("1\uFE0F\u20E3")).toBe("1\u20E3");
+  });
+});
