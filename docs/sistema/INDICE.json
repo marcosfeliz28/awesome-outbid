@@ -8,73 +8,181 @@
       "archivo": "README.md",
       "titulo": "Base del sistema: qué es y cómo se usa",
       "resumen": "Qué es el producto (Nexora POS hoy, Norexos como marca nueva) de Grupo MacGen, mapa de la base, reglas de dinero con cita, ramas (nexora-cloud tienda, producto-nexora producto) y quién despliega (solo Claude nube con 3 CI).",
-      "palabras": ["sistema", "reglas de dinero", "margen", "15 %", "ramas", "despliegue", "CI", "Norexos", "Nexora"]
+      "palabras": [
+        "sistema",
+        "reglas de dinero",
+        "margen",
+        "15 %",
+        "ramas",
+        "despliegue",
+        "CI",
+        "Norexos",
+        "Nexora"
+      ]
     },
     {
       "archivo": "PANTALLAS.md",
       "titulo": "Pantallas del menú",
       "resumen": "Las 18 pantallas del menú con etiqueta exacta, permiso, componente y flujo corto: Mercancía, Resumen, Punto de venta, Ventas, Caja, Compras, Reportes, GV, Configuración (usuarios) y más.",
-      "palabras": ["menú", "etiquetas", "permisos", "componentes", "Caja", "Reportes", "GV", "Configuración", "Usuarios"]
+      "palabras": [
+        "menú",
+        "etiquetas",
+        "permisos",
+        "componentes",
+        "Caja",
+        "Reportes",
+        "GV",
+        "Configuración",
+        "Usuarios"
+      ]
     },
     {
       "archivo": "FLUJO_CAJA_POS.md",
       "titulo": "Flujo de caja y punto de venta, paso a paso",
       "resumen": "Del abrir caja al cierre ciego: agregar con un clic en la tarjeta (no hay botón Agregar), escáner, descuentos, métodos de pago y qué pide cada uno, PIN de gerente, recibo, impresión, NC, anulación y cuadre.",
-      "palabras": ["abrir caja", "carrito", "descuento", "efectivo", "tarjeta", "transferencia", "crédito", "contraentrega", "dólares", "recibo", "nota de crédito", "anulación", "cuadre", "caja ciega"]
+      "palabras": [
+        "abrir caja",
+        "carrito",
+        "descuento",
+        "efectivo",
+        "tarjeta",
+        "transferencia",
+        "crédito",
+        "contraentrega",
+        "dólares",
+        "recibo",
+        "nota de crédito",
+        "anulación",
+        "cuadre",
+        "caja ciega"
+      ]
     },
     {
       "archivo": "FLUJO_COBROS_Y_TRANSFERENCIAS.md",
       "titulo": "Cobros: crédito, contraentrega, abonos y transferencias",
       "resumen": "Vender a crédito, cobrar créditos, abonos, verificar/rechazar/corregir transferencias, qué pasa con la caja cerrada y las correcciones admin (corregir método ya desplegado; des-verificar y mover pago de caja en claude/ajustes-cobros, aún no desplegado).",
-      "palabras": ["crédito", "contraentrega", "abono", "transferencia", "verificar", "conciliar", "caja cerrada", "ajustes-cobros", "unverify", "move-cash-session"]
+      "palabras": [
+        "crédito",
+        "contraentrega",
+        "abono",
+        "transferencia",
+        "verificar",
+        "conciliar",
+        "caja cerrada",
+        "ajustes-cobros",
+        "unverify",
+        "move-cash-session"
+      ]
     },
     {
       "archivo": "FLUJO_MERCANCIA.md",
       "titulo": "Flujo de mercancía",
       "resumen": "Entradas, salidas, traspasos Casa↔Tienda, ajustes, conteos, compras y facturas de proveedor, con la regla de verificación triple (3 veces; conteos 4) de la dueña y el programa mercancia.py.",
-      "palabras": ["entrada", "salida", "traspaso", "Casa", "Tienda", "ajuste", "conteo", "merma", "factura proveedor", "lote", "verificación triple"]
+      "palabras": [
+        "entrada",
+        "salida",
+        "traspaso",
+        "Casa",
+        "Tienda",
+        "ajuste",
+        "conteo",
+        "merma",
+        "factura proveedor",
+        "lote",
+        "verificación triple"
+      ]
     },
     {
       "archivo": "GV.md",
       "titulo": "GV Makeup Studio",
       "resumen": "Módulo GV: pestañas (Cursos, Citas, Interesadas, Por verificar, Reportes), columnas de inscripciones (PRECIO, PAGADO, PENDIENTE), conceptos y métodos de pago, citas, permisos gv:*.",
-      "palabras": ["GV", "cursos", "inscripciones", "citas", "PRECIO", "PAGADO", "PENDIENTE", "separo", "interesadas"]
+      "palabras": [
+        "GV",
+        "cursos",
+        "inscripciones",
+        "citas",
+        "PRECIO",
+        "PAGADO",
+        "PENDIENTE",
+        "separo",
+        "interesadas"
+      ]
     },
     {
       "archivo": "ROLES_Y_PERMISOS.md",
       "titulo": "Roles y permisos",
       "resumen": "Roles admin, manager, seller, warehouse y gv; qué significa cada permiso, qué ve y hace cada rol, qué es solo admin (*), PIN de gerente (cuándo se pide y quién lo da) y aprobación de equipos.",
-      "palabras": ["roles", "permisos", "PIN de gerente", "admin", "cajera", "gerente", "equipos", "sale:manage", "profit:read"]
+      "palabras": [
+        "roles",
+        "permisos",
+        "PIN de gerente",
+        "admin",
+        "cajera",
+        "gerente",
+        "equipos",
+        "sale:manage",
+        "profit:read"
+      ]
     },
     {
       "archivo": "DATOS_Y_MODELOS.md",
       "titulo": "Datos y modelos",
       "resumen": "Modelos de Prisma en lenguaje simple (Sale, Payment, CashSession, Product/Variant, Warehouse, GV…), estados (ok, pending_verification, rejected, pending), tipos de entrada (sale, installment) y movimientos de kardex.",
-      "palabras": ["Sale", "Payment", "CashSession", "Variant", "status", "entryType", "installment", "pending_verification", "kardex", "prisma"]
+      "palabras": [
+        "Sale",
+        "Payment",
+        "CashSession",
+        "Variant",
+        "status",
+        "entryType",
+        "installment",
+        "pending_verification",
+        "kardex",
+        "prisma"
+      ]
     },
     {
       "archivo": "GLOSARIO.md",
       "titulo": "Glosario del negocio y del sistema",
       "resumen": "Términos: caja ciega, cuadre, contraentrega, traspaso, ITBIS, NCF, FS-xxx, NC-xxx, verifón, vale de caja, merma, FEFO, GV, Casa, Génesis y las sesiones de trabajo.",
-      "palabras": ["caja ciega", "cuadre", "contraentrega", "traspaso", "ITBIS", "NCF", "FS", "GV", "vale de caja", "verifón"]
+      "palabras": [
+        "caja ciega",
+        "cuadre",
+        "contraentrega",
+        "traspaso",
+        "ITBIS",
+        "NCF",
+        "FS",
+        "GV",
+        "vale de caja",
+        "verifón"
+      ]
     },
     {
       "archivo": "RESPUESTAS_A_TALLER.md",
       "titulo": "Respuestas a las preguntas de Taller",
       "resumen": "Nueve respuestas con cita: abrir caja, agregar con un clic (sin botón Agregar), métodos de pago, banco/terminal, nota de crédito, recibo, sección Citas de GV, columnas de inscripciones y Primeros pasos/Plan y facturación (solo producto-nexora).",
-      "palabras": ["Taller", "preguntas", "abrir caja", "un clic", "nota de crédito", "Citas", "PRECIO PAGADO PENDIENTE", "Primeros pasos", "Plan y facturación"]
+      "palabras": [
+        "Taller",
+        "preguntas",
+        "abrir caja",
+        "un clic",
+        "nota de crédito",
+        "Citas",
+        "PRECIO PAGADO PENDIENTE",
+        "Primeros pasos",
+        "Plan y facturación"
+      ]
     },
     {
       "archivo": "CAMBIOS.md",
       "titulo": "Bitácora de cambios de la base",
       "resumen": "Una fila por cambio del sistema (fecha, quién, qué, archivos). Obligatoria en el mismo commit que cualquier cambio de pantalla, flujo, permiso o regla.",
-      "palabras": ["bitácora", "cambios", "actualizar"]
-    },
-    {
-      "archivo": "INDICE.json",
-      "titulo": "Índice de la base",
-      "resumen": "Este archivo: lista de documentos con título y resumen para búsqueda.",
-      "palabras": ["índice", "búsqueda"]
+      "palabras": [
+        "bitácora",
+        "cambios",
+        "actualizar"
+      ]
     }
   ]
 }
