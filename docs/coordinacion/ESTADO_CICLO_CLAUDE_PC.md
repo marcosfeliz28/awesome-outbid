@@ -1471,3 +1471,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Cola: Norexos 1 repartió N26–N33 (qwen-optimizado: N18–N30; qwen2.5-coder:14b: N31; qwen2.5-coder:7b: N32–N33). Pendiente de revisión.
 - Bloque 14 propio en `claude-pc/cola-b14-resto` (03430fc6): 90 (81 exports), 91 (0 tildes en texto), 92 (inventario RLS por migración). Con 87 y 88, quedan mis cinco tareas. Sin LISTA hasta que CI esté en verde.
 - ChatGPT (paso 5): no se leyó en este ciclo; la app sigue sin ventana visible.
+
+## Ciclo (29-oct): verify de Forja 3 en rojo
+- Fetch: nexora-cloud en 11d4ac47. RESPUESTA_CLAUDE_PC_27OCT.md blob 7157b7d4 (sin orden nueva). OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en d6adc554.
+- ALERTA: `claude-pc/forja3-grupo-1` (203aa519): verify en FAILURE; windows-installer y render-images en verde. Las anotaciones públicas no dicen qué prueba falla; el log completo requiere autenticación.
+- Diagnóstico en curso: instalo dependencias en el worktree `forja3-g1` (pnpm install --frozen-lockfile, en segundo plano) para correr mis cinco pruebas de Forja 3 con Vitest y encontrar la que falla. Hasta tener la causa no hago cambios.
+- Sin LISTA de esta rama (orden 75).
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
