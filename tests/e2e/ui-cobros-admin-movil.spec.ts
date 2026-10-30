@@ -16,8 +16,9 @@ test("Ventas en 390 px: sin desbordar y con las acciones de cobro solo para admi
   await page.getByLabel("Usuario").fill(OWNER.email);
   await page.getByLabel("Contraseña", { exact: true }).fill(OWNER.password);
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await page.getByRole("button", { name: "Ventas", exact: true }).first().click();
-  await expect(page.getByRole("heading", { name: /Ventas/ }).first()).toBeVisible();
+  // En 390 px el menú lateral va plegado: la pantalla se abre por su ruta (como en desglose-mes-movil).
+  await page.goto("/#sales");
+  await expect(page.getByText("Cada venta tiene una historia")).toBeVisible();
   const ancho = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(ancho).toBeLessThanOrEqual(390);
 
