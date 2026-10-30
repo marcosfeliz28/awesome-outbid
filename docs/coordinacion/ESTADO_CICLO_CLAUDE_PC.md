@@ -1809,3 +1809,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23, a1, b01 y lumina en verde, con LISTA ya escrita. Sin cambios.
 - N42–N49: las ocho salidas no tienen tarjetas; en el primer intento salió solo el cierre, y en el segundo «NO ENCONTRADO» en todas. Los trozos sí tienen reglas condicionales («Si no hay caja abierta…», «Si el fondo es menor…», «Si el código no existe…»), así que el fallo es del modelo con este formato, no de la fuente. No se suben.
 - Propuesta para Norexos 1: que las tarjetas las extraiga un script (líneas que empiezan por «Si» con su cita) y el modelo solo redacte la frase; o un formato más corto con una regla por tarea.
+
+## Ciclo quincenal nube (30-oct): orden 85 hecha en rama nueva
+- Fetch: nexora-cloud en 28de891e; RESPUESTA_CLAUDE_PC_27OCT.md cambió (blob e3e6951e → 56238ea4, orden 85). OBSIDIAN_LUMINA_PROGRESO.md ausente. CI de pc23, a1, b01 y lumina en verde. `claude-pc/reglas-si` (ec347663): `scripts/reglas-si.mjs` + prueba (roja sin el script, 4 verdes con él); 15 reglas con cita, 3 tareas R01–R03 en `reglas-tareas.json`. CI en curso, LISTA pendiente.
+- No hecho: en la nube no hay modelo local, así que las salidas `reglas-lote-NN.md` y su conteo quedan para la laptop (cargar `reglas-tareas.json` en la cola).
