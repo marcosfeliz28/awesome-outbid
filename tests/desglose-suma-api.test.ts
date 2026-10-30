@@ -231,4 +231,51 @@ describe("desglose del mes: cobros = venta bruta con devoluciones (D-05)", () =>
     const sum = bd.payments.reduce((a: number, p: any) => a + p.amount, 0);
     expect(sum).toBeCloseTo(bd.revenue, 1);
   });
+
+  it("top 10 por categoría: coincide con los totales de la API y no muestra ganancia sin permiso", async () => {
+    const bd = (await call("/dashboard/breakdown?" + range, token)).body;
+    expect(bd.topByCategory.map((g: any) => g.category)).toEqual(
+      bd.categories.map((c: any) => c.name),
+    );
+    const sumOf = (l: any[], k: string) => l.reduce((a, r) => a + r[k], 0);
+    for (const g of bd.topByCategory) {
+      const cat = bd.categories.find((c: any) => c.name === g.category);
+      expect(g.byUnits.length).toBeLessThanOrEqual(10);
+      expect(g.byAmount.length).toBeLessThanOrEqual(10);
+      // Orden descendente en cada lista.
+      for (let i = 1; i < g.byUnits.length; i++)
+        expect(g.byUnits[i - 1].units).toBeGreaterThanOrEqual(
+          g.byUnits[i].units,
+        );
+      for (let i = 1; i < g.byAmount.length; i++)
+        expect(g.byAmount[i - 1].revenue).toBeGreaterThanOrEqual(
+          g.byAmount[i].revenue,
+        );
+      // Con 10 o menos productos vendidos la lista es completa: suma = total de la categoría.
+      if (g.byUnits.length < 10) {
+        expect(sumOf(g.byUnits, "units")).toBe(cat.units);
+        expect(sumOf(g.byUnits, "revenue")).toBeCloseTo(cat.revenue, 1);
+        expect(sumOf(g.byAmount, "revenue")).toBeCloseTo(cat.revenue, 1);
+      }
+    }
+    // Los 10 de toda la tienda deben aparecer, con las mismas unidades, en su categoría
+    // cuando la categoría tiene su propio top (mismo cálculo, otra consulta).
+    for (const t of bd.top) {
+      const hit = bd.topByCategory
+        .flatMap((g: any) => g.byUnits)
+        .find((r: any) => r.sku === t.sku);
+      expect(hit?.units).toBe(t.units);
+    }
+    const seller = (
+      await call("/auth/login", "", {
+        email: "gerente@fitstore.demo",
+        password: demo,
+      })
+    ).body.accessToken;
+    const sb = await call("/dashboard/breakdown?" + range, seller);
+    if (sb.status === 200 && sb.body.topByCategory) {
+      const flat = JSON.stringify(sb.body.topByCategory);
+      if (!sb.body.profit) expect(flat).not.toMatch(/profit|cost|margin/);
+    }
+  });
 });

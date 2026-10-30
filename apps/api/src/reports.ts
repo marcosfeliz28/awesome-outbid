@@ -611,7 +611,7 @@ export class ReportsController {
       until = utc(range.lte);
     const line = Prisma.sql`i."lineTotal"*(1-i."returnedQty"/i.qty)`;
     const units = Prisma.sql`(i.qty-i."returnedQty")`;
-    const [categories, top, count, mix] = (await Promise.all([
+    const [categories, top, count, mix, ranked] = (await Promise.all([
       this.db
         .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
       this.db
@@ -624,6 +624,9 @@ export class ReportsController {
         ? this.db
             .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), pk AS (SELECT p."saleId", CASE WHEN p.method='transfer' AND p.status='pending_verification' THEN 'transfer_pending' ELSE p.method END AS method, CASE WHEN p.method='transfer' THEN COALESCE(NULLIF(BTRIM(p.bank),''),'Sin banco') WHEN p.method='card' THEN NULLIF(BTRIM(p.bank),'') END AS bank, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method NOT IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2, 3), cr AS (SELECT p."saleId", SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1), sp AS (SELECT "saleId", method, bank, amt FROM pk UNION ALL SELECT cr."saleId", 'credit', NULL::text, LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT cr."saleId", 'credit_paid', NULL::text, cr.amt-LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT s.id, 'unrecorded', NULL::text, GREATEST(s.total-COALESCE((SELECT SUM(amt) FROM pk WHERE pk."saleId"=s.id),0)-COALESCE((SELECT amt FROM cr WHERE cr."saleId"=s.id),0), 0) FROM "Sale" s WHERE s.id IN (SELECT "saleId" FROM cl)), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, sp.bank, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" WHERE sp.amt>0 GROUP BY cl.name, sp.method, sp.bank`
         : Promise.resolve(null),
+      // Top 10 de cada categoría (la lista de categorías sale de los datos), por unidades y por monto.
+      this.db
+        .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
     ])) as any[][];
     // Días del período hasta hoy: el promedio diario no se diluye con días
     // que todavía no llegan.
@@ -668,6 +671,15 @@ export class ReportsController {
           ...row(r),
         })),
         top: top.map((r) => ({ name: r.name, sku: r.sku, ...row(r) })),
+        topByCategory: categories.map((c) => {
+          const rows = ranked.filter((r) => r.category === c.name);
+          const list = (key: string) =>
+            rows
+              .filter((r) => Number(r[key]) <= 10)
+              .sort((a, b) => Number(a[key]) - Number(b[key]))
+              .map((r) => ({ name: r.name, sku: r.sku, ...row(r) }));
+          return { category: c.name, byUnits: list("ru"), byAmount: list("ra") };
+        }),
         // null: quien no ve el esperado de caja no ve la mezcla de pagos.
         payments: mix
           ? mix.map((r: any) => ({

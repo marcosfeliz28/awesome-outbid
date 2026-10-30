@@ -15,6 +15,7 @@ const params = () => {
     to: q.get("to") || t,
   };
 };
+type TopGroup = { category: string; byUnits: Line[]; byAmount: Line[] };
 type Line = {
   name: string;
   sku?: string;
@@ -36,7 +37,12 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
     enabled: !!from && !!to && from <= to,
     refetchInterval: 60000,
   });
+  const [topCategory, setTopCategory] = useState("");
+  const [topBy, setTopBy] = useState<"byUnits" | "byAmount">("byUnits");
   const data = query.data;
+  const topGroup =
+    data?.topByCategory?.find((g: TopGroup) => g.category === topCategory) ??
+    data?.topByCategory?.[0];
   const title = (() => {
     const m = Number(from.slice(5, 7));
     const whole = from.slice(0, 7) === to.slice(0, 7) && from.endsWith("-01");
@@ -191,6 +197,60 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                 rows={data.payments as MixRow[]}
                 categories={data.categories.map((c: Line) => c.name)}
               />
+            )}
+            {topGroup && (
+              <section className="panel" aria-labelledby="top-category-title">
+                <div className="panel-heading">
+                  <h2 id="top-category-title">Top 10 por categoría</h2>
+                  <select
+                    aria-label="Categoría del top 10"
+                    value={topGroup.category}
+                    onChange={(e) => setTopCategory(e.target.value)}
+                  >
+                    {data.topByCategory.map((g: TopGroup) => (
+                      <option key={g.category} value={g.category}>
+                        {g.category}
+                      </option>
+                    ))}
+                  </select>
+                  {(["byUnits", "byAmount"] as const).map((k) => (
+                    <Button
+                      key={k}
+                      variant={topBy === k ? "primary" : "secondary"}
+                      aria-pressed={topBy === k}
+                      onClick={() => setTopBy(k)}
+                    >
+                      {k === "byUnits" ? "Por unidades" : "Por monto"}
+                    </Button>
+                  ))}
+                </div>
+                <div className="table-scroll">
+                  <table className="month-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Producto</th>
+                        <th>Unidades</th>
+                        <th>Vendido</th>
+                        {showProfit && <th>Ganancia</th>}
+                        {showProfit && <th>Margen</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topGroup[topBy].map((t: Line, i: number) => (
+                        <tr key={t.sku ?? t.name}>
+                          <td>{i + 1}</td>
+                          <td>{t.name}</td>
+                          <td>{t.units.toLocaleString("es-DO")}</td>
+                          <td>{formatMoney(t.revenue)}</td>
+                          {showProfit && <td>{formatMoney(t.profit ?? 0)}</td>}
+                          {showProfit && <td>{t.margin ?? 0} %</td>}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             )}
             <section className="panel">
               <div className="panel-heading">
