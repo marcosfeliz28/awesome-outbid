@@ -8,6 +8,7 @@ export default defineConfig({
     // dejar una prueba esperando hasta su timeout aunque aislada tarde segundos.
     maxWorkers: 4,
     include: [
+      "tests/landing-i18n-pares.test.ts",
       "tests/landing-revelado-movimiento.test.ts",
       "tests/landing-texto-sin-ecf.test.ts",
       "tests/i18n-selector-portada.test.ts",
