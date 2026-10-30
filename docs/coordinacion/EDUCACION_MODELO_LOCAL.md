@@ -47,3 +47,6 @@ Script rechaza archivos prohibidos → `vitest` del archivo → `pnpm check` →
 - `split(" ")` falla con espacios repetidos: usa `split(/\s+/)` después de `trim()`.
 - En una tabla, una fila = una cita (texto + archivo:línea). Nunca pegar líneas de código fuente ni dejar una fila cortada: si la salida sale partida, se rehace por partes pequeñas (caso tarea 80, 29-oct).
 - Nombres de variables de entorno: salen del código (`process.env.X`), nunca de archivos `.env*`, y nunca con su valor.
+
+## Lección 30-oct (N42–N49): el modelo no arma «Si pasa X → haz Y» desde un trozo
+Con trozos de ~60 líneas el modelo devolvió solo el cierre o «NO ENCONTRADO» en todo, aunque las reglas existían. **No le pidas extraer estructura de un texto largo.** Un script extrae (líneas que empiezan por «Si», «Cuando», «No se puede», con su cita archivo:línea) y el modelo solo **redacta una frase por regla**, de a 5 reglas por tarea. Regla general: scripts para encontrar y contar; modelo para reescribir una cosa a la vez.
