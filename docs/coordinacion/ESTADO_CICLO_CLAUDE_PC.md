@@ -2123,3 +2123,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (30-oct 10:15 UTC)
 - Fetch: nexora-cloud 85e6192c; RESPUESTA_CLAUDE_PC_27OCT.md cambió (fcbc7d7a, órdenes 88 y 89 nuevas). CI en verde: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e, cola-n-nueva 59223e54.
 - Órdenes 88/89 (N54–N57 por esqueleto y tanda R1–R8) necesitan el modelo local de la laptop y scripts de ahí; no ejecutables en la nube, quedan pendientes. Sin LISTA nueva.
+
+## Ciclo nube (30-oct 13:15 UTC) — orden 90 nueva (nexora-cloud 03053f33)
+- Hecho en la nube con Postgres local (usuario no-root, node 24): suite sobre nexora-cloud y sobre claude/visual-f2-04 a82fcf06: solo fallan 3 pruebas de portabilidad.test.ts (pnpm/pg_dump del entorno, sin fallo de producto). T33 62720b17 fusionada con nexora-cloud sin conflictos, migraciones 202611010001/2 aditivas, AssistantQuery sin texto, 18/18 integración; 3 citas de docs/sistema corregidas en claude-pc/t33-rebase 3696d0cf. CI: windows-installer y render-images verdes, verify ROJO por e2e intermitente caja-borrador.spec.ts:200 (N2); sin LISTA.
+- Pendiente: pruebas intermitentes (orden 90 punto 2) y reintento del CI de t33; R1–R8 y N54–N57 siguen necesitando el modelo local. CI verde sin cambio: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e.
