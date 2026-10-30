@@ -492,3 +492,4 @@ Rama claude-pc/gv-tarjeta desde origin/nexora-cloud. Haz, con prueba que falle a
 3. NO decidir adónde cae el dinero de tarjeta de GV: lo pregunta Norexos 2 a la dueña (el voucher del 29-oct de 8,200 fue en terminal de GV, lote 001, dinero a Génesis). Deja la cuenta destino como dato opcional/configurable, sin valor por defecto inventado.
 4. Documenta en docs/sistema (GV.md, FLUJO_COBROS) con citas por ancla (pnpm docs:citas) y corre scripts/pre-empuje.mjs antes de empujar.
 Toca dinero de GV: NO se despliega sin mi revisión y la lectura de cajas; LISTA con SHA cuando los 3 CI estén en verde.
+Orden 93, ACLARACIÓN (17:30 UTC, respuesta de la dueña): el dinero de tarjeta de los pagos de GV se registra en el ÁREA GV / Grupo Génesis, sin elegir cuenta de banco («porque es el área de GV»). No dio nombre de terminal ni de cuenta: no inventes ninguno; usa «Terminal GV» como texto fijo si Settings.cardTerminals está vacío y guarda el área GV como destino del pago.
