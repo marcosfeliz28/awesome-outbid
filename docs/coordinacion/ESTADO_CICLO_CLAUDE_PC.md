@@ -1702,3 +1702,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Tildes: `claude-pc/tildes-urls` está en ef0c1b08 (no lo toco); la toma Norexos 1.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Noche (30-oct, ~23:55): orden 83 y N36 duplicada
+- Fetch: nexora-cloud en 7ebeaa08 (orden 83). RESPUESTA_CLAUDE_PC_27OCT.md blob 4c5fd08e. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Orden 83: N34–N41 ya están en nexora-cloud (merge de `claude-pc/cola-n-nueva`, 272c9d92). No se rehacen. Mi lanzamiento de N36 es un duplicado.
+- No pude parar el proceso de N36 (lo bloqueó el clasificador de permisos). Lo dejo corriendo sin commitear su salida. Decisión pendiente de Marcos: detenerlo.
+- Mi carril según la orden 83 no es el modelo local, sino revisar salidas. Pido a Norexos 1 la siguiente tarea («cola baja»).
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
