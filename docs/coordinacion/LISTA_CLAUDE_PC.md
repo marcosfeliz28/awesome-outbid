@@ -35,3 +35,4 @@ LISTA: claude-pc/cola-n-nueva 86b5b2bf (verify, windows-installer y render-image
 LISTA: claude-pc/cola-n-nueva d3179f56 (verify, windows-installer y render-images en verde; N25 faq-gv-corta, N33 meta-tabla, N18 roles-simples, N22 guion-video y N30 pantallas-ayuda del modelo local con revisión y encabezado de fuente; N23, N29 y N31 rechazadas tras dos intentos; N34–N41 de la misma rama; solo docs)
 LISTA: claude-pc/reglas-si-claude 7a67f238
 LISTA: claude-pc/reglas-si-claude 7a67f238 (verify, windows-installer y render-images en verde; scripts/reglas-si.mjs con prueba, 15 reglas y tres lotes de frases con citas verificadas por script; ya mezclada en nexora-cloud en 2bc05703)
+LISTA: claude-pc/reglas-si-claude 7a67f238 (verify, windows-installer y render-images en verde; extractor scripts/reglas-si.mjs con prueba que falla antes y pasa después, JSON de 15 reglas con citas, tres lotes de cinco frases Si…entonces verificadas por script; solo docs y scripts/tests)
