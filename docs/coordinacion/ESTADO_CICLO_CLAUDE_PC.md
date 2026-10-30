@@ -1506,3 +1506,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI de 600eae7f: en curso. Sin LISTA de esa rama (orden 75).
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 min (29-oct, noche): LISTA de cola-n y cola-b14-resto
+- Fetch: nexora-cloud en 7157b7d4 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio). OBSIDIAN_LUMINA_PROGRESO.md sigue ausente en nexora-cloud. COLA_LOTE_LOCAL.md en c3ecfbb0 (sin cambio).
+- Rama cola2-26oct avanzó a e808c8f4 por un commit ajeno (estado de Forja 3); se integró con fast-forward.
+- CI (API public check-runs): pc23-anulacion-fix (c1fe8c0c), a1-formula-utilidad (498df5ee), b01-ventas-caja-ciega (0500b03a), lumina-motion-integracion (287db57e): verify, windows-installer y render-images en verde.
+- CI nuevo: claude-pc/cola-n (2680132c) y claude-pc/cola-b14-resto (03430fc6): en verde los tres jobs. Se escribió su LISTA.
+- Órdenes nuevas de Nexora 1 en RESPUESTA_CLAUDE_PC_27OCT.md: ninguna.
+- ChatGPT (paso 5): ver línea siguiente.
