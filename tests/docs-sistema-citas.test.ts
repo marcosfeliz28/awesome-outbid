@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 const RAIZ = process.cwd();
 const DOCS = join(RAIZ, "docs", "sistema");
 const CITA =
-  /([A-Za-z0-9_.\/-]+\.(?:tsx?|mjs|cjs|ps1|md|json|nsi|sql|css|html|yml|yaml|txt|cs|rs)):(\d+)(?:-(\d+))?/g;
+  /([A-Za-z0-9_./-]+\.(?:tsx?|mjs|cjs|ps1|md|json|nsi|sql|css|html|yml|yaml|txt|cs|rs)):(\d+)(?:-(\d+))?/g;
 
 function archivos(dir: string, filtro: (n: string) => boolean): string[] {
   return readdirSync(dir).flatMap((n) => {
