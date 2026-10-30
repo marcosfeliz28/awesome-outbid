@@ -2036,3 +2036,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Fetch: nexora-cloud en 6524f318 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio). COLA_LOTE_LOCAL.md ausente. Pendientes N52–N57; no se envía petición.
 - Hecho: variante del esqueleto para tablas (extraerFilas, prueba que falla antes y pasa después): commit 04186285 en claude-pc/cola-n-nueva.
 - En curso: 18 filas de PANTALLAS 1–50 (N52) en 4 lotes con qwen-optimizado. Se revisan con script (18 filas = 18 filas del trozo).
+
+## N52 terminada (30-oct): pantallas 1–18 verificadas por script
+- Commit a2176db8 en claude-pc/cola-n-nueva: tabla de 18 filas (18 de 18 frases, sin DGII/e-CF/NCF/Nexora; etiquetas y citas por script).
+- Pendientes: N53 y N54 (PANTALLAS 51–151), N55–N56 (ROLES) y N57 (GV). Cada una con el método de tablas o de viñetas según el formato.
+- LISTA de a2176db8 pendiente de CI.
