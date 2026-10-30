@@ -1680,3 +1680,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - No pude escribir la línea de PENDIENTES_NOCHE_30OCT.md en nexora-cloud: mis límites no permiten escribir en nexora-cloud. Lo indiqué a Norexos 1.
 - CI: pc23, a1, b01 y lumina en verde, sin LISTA nueva. claude-pc/cola-n-nueva (86b5b2bf), claude-pc/bloque15 (79566ad8), claude-pc/tildes-refinar (ef66340e) con verify en progreso.
 - ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
+
+## Consulta 30 min (30-oct): cola no vacía; sin órdenes nuevas
+- Fetch: nexora-cloud en 900f6b0d para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde la orden 81). COLA_LOCAL_ACTIVA_NUEVA.json en 313bb86e.
+- Estado de la cola: COLA_LOCAL_ACTIVA_ESTADO.json y el log del runner viejo dicen «vacía» (N1–N17 hechas, N13 retirada, N14 rechazada). La cola activa es COLA_LOCAL_ACTIVA_NUEVA.json (N18–N41): no está vacía.
+- Salidas que aún faltan en claude-pc/cola-n-nueva: N18, N22, N23, N25, N29, N30, N31 y N33. Las demás tienen archivo (algunos de otra sesión). No se envió petición a Norexos 1 porque la cola no está vacía.
+- ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
