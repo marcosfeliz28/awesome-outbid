@@ -39,4 +39,19 @@ test("«Ver detalle del mes» abre el desglose del mes y no cambia a Mercancía"
   for (let i = 0; i < 12 && (await siguiente.isEnabled()); i++)
     await siguiente.click();
   await expect(siguiente).toBeDisabled();
+  // Top 10 por categoría a 390 px: ni la página ni la cabecera del panel desbordan.
+  const top = page.locator(".month-top-panel");
+  await expect(top).toBeVisible();
+  const widths = await top.evaluate((el) => ({
+    heading: [
+      el.querySelector(".panel-heading")!.scrollWidth,
+      el.querySelector(".panel-heading")!.clientWidth,
+    ],
+    page: [
+      document.documentElement.scrollWidth,
+      document.documentElement.clientWidth,
+    ],
+  }));
+  expect(widths.heading[0]).toBeLessThanOrEqual(widths.heading[1]);
+  expect(widths.page[0]).toBeLessThanOrEqual(widths.page[1]);
 });

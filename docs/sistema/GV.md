@@ -22,7 +22,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 | **Por verificar** | Transferencias de GV pendientes de verificar. | `gv:read` (verificar: `gv:verify`) |
 | **Reportes** | Ingresos y pendientes. | `gv:reports` |
 
-- Una persona cuyo único permiso es de GV (`gvOnly`, todos los permisos empiezan con `gv:`) no carga el catálogo ni registra terminal (`apps/web/src/realtime.tsx:147-153`, `apps/web/src/App.tsx:772`).
+- Una persona cuyo único permiso es de GV (`gvOnly`, todos los permisos empiezan con `gv:`) no carga el catálogo ni registra terminal (`apps/web/src/realtime.tsx:147-153`, `apps/web/src/App.tsx:776`).
 
 ## 3. Cursos
 
@@ -59,7 +59,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 - **Estados de un pago**: `Verificado` (insignia verde), `Por verificar` (amarilla) o `Rechazado` (roja) (`Gv.tsx:666-674`). **Efectivo y tarjeta quedan verificados al registrarse; la transferencia queda por verificar** hasta que gerencia/administración la verifique (`docs/coordinacion/MODULO-GV.md:74`; esquema `apps/api/prisma/schema.prisma` modelo `GvPayment`, campo `verified`).
 - **Reglas de dinero** (`apps/api/src/gv-money.ts:1-8`): lo pagado cuenta solo lo verificado; «por verificar» va aparte; **ningún cobro puede superar el total** (contando lo por verificar) y el total no baja de lo cobrado; cancelada o reembolsada no aceptan pagos.
 - **Anular un pago** (botón **«Anular»**, con motivo de mínimo 3 letras, quien tenga `gv:write`): deja de contar, queda en auditoría y se registra el correcto con un pago nuevo (`Gv.tsx:640-654`, `:677-686`; API `POST /gv/payments/:id/void`, `apps/api/src/gv.ts:395-445`). No se anula en una inscripción reembolsada (`gv.ts:422`).
-- **Verificar o rechazar** (pestaña **«Por verificar»**, botones **«Verificar»** / **«Rechazar»**, el rechazo pide motivo): solo `gv:verify` (administración y gerencia), nunca quien registró el pago salvo `*`, solo transferencias pendientes y una sola vez (`Gv.tsx:850-912`; API `POST /gv/payments/:id/review`, `apps/api/src/gv.ts:447-518`, mensajes `:472-492`). Lista: `GET /gv/transfers/pending` (`gv.ts:660`). Esta pantalla muestra «No hay transferencias por verificar.» si está vacía (`Gv.tsx:908`).
+- **Verificar o rechazar** (pestaña **«Por verificar»**, botones **«Verificar»** / **«Rechazar»**, el rechazo pide motivo): solo `gv:verify` (administración y gerencia), nunca quien registró el pago salvo `*`, solo transferencias pendientes y una sola vez (`Gv.tsx:852`; API `POST /gv/payments/:id/review`, `apps/api/src/gv.ts:447-518`, mensajes `:472-492`). Lista: `GET /gv/transfers/pending` (`gv.ts:660`). Esta pantalla muestra «No hay transferencias por verificar.» si está vacía (`Gv.tsx:908`).
 
 ## 6. Citas (pestaña «Citas»)
 

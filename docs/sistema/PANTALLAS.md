@@ -35,7 +35,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 - **Acerca de** (`apps/web/src/App.tsx:1033-1041`): versión, aviso de privacidad, licencias.
 - **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1043-1048`); no es de uso diario.
 - Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1202-1228`, atajo `:797`).
-- F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:811`).
+- F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:812`).
 
 **No existe** en este menú: «Primeros pasos» ni «Plan y facturación» (solo en `producto-nexora`, ver `RESPUESTAS_A_TALLER.md` pregunta 9). Tampoco existe un ítem llamado «Gestión» ni uno llamado «Usuarios»: la gestión de usuarios es la pestaña «Usuarios y permisos» dentro de Configuración (`apps/web/src/Management.tsx:4155`). NO ENCONTRADO como etiqueta de menú.
 
@@ -66,7 +66,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 
 - **Etiqueta:** «Solicitudes de anulación». **Permiso:** `sale:write`. **Componente:** `apps/web/src/VoidRequests.tsx:15`.
 - **Qué hace:** lista (filtro Pendientes/Todas/Aprobadas/Rechazadas/Canceladas, `:45-54`). La administración ve «Aprobar y anular» y «Rechazar» (`:123-136`); la cajera solo puede cancelar su propia solicitud (`:137-155`).
-- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (`apps/api/src/sales.ts:2058`).
+- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2064`, `POST void-requests/:id/approve`).
 
 ## Conciliar transferencias
 
@@ -160,6 +160,6 @@ No es un ítem de menú. Se administra en Configuración › «Usuarios y permis
 
 Permiso `reports:read`; no está en el menú, se abre desde el panel anual (`apps/web/src/MonthReport.tsx`). Datos: `GET /dashboard/breakdown` (`apps/api/src/reports.ts`, «dashboard/breakdown»).
 - **Formas de pago** (solo con permiso de esperado de caja): reparte la venta bruta de cada categoría según cómo se pagó cada factura. Renglones: efectivo, tarjeta, transferencia verificada, nota de crédito, y los que no son cobro: **Por cobrar (crédito y contraentrega)** = saldo pendiente `Sale.creditBalance`; **Transferencias por verificar** = pago `pending_verification`; **Sin cobro registrado** = lo que la factura vale y no tiene fila de pago; **Crédito ya cobrado** = parte del crédito que ya se abonó. Identidad: todos los renglones juntos = «Venta bruta» (con devoluciones restadas, D-05). Solo lectura: no cambia ventas, cobros ni caja.
-- **Cobros por banco** (paso 2): bajo el gráfico de formas de pago, lista «Transferencia · <banco>» (y «Tarjeta · <banco>» si el cobro trae banco), agrupada por `Payment.bank`; transferencia sin banco aparece como «Sin banco». Tarjeta crédito y débito van juntas en «Tarjeta» (el desglose agrupa por `method`, no por `cardType`). `GET /dashboard/breakdown` devuelve `payments[].bank`; la suma de todos los renglones sigue siendo la venta bruta. El CSV añade la columna «Banco». Prueba: `tests/desglose-suma-api.test.ts`.
+- **Cobros por banco** (paso 2): bajo el gráfico de formas de pago, lista «Transferencia · <banco>» (y «Tarjeta · <banco>» si el cobro trae banco), agrupada por `Payment.bank`; los cobros sin banco no salen en esta lista (`apps/web/src/PaymentMixPie.tsx:50`, solo entra `r.bank`). Tarjeta crédito y débito van juntas en «Tarjeta» (el desglose agrupa por `method`, no por `cardType`). `GET /dashboard/breakdown` devuelve `payments[].bank`; la suma de todos los renglones sigue siendo la venta bruta. El CSV añade la columna «Banco». Prueba: `tests/desglose-suma-api.test.ts`.
 - **Top 10 por categoría** (paso 3): sección con selector de categoría (la lista sale de las ventas del período, una categoría nueva aparece sola) y dos botones «Por unidades» / «Por monto». `GET /dashboard/breakdown` devuelve `topByCategory[{category, byUnits[], byAmount[]}]` (10 variantes por lista, nombre, código, unidades, vendido; las devoluciones se descuentan igual que en `revenue`). Ganancia y margen (venta − costo, sin restar ITBIS) solo con `profit:read`: lo recorta `safe()` (`apps/api/src/common.ts`). Pruebas: `tests/desglose-suma-api.test.ts`, `tests/top-categoria-permisos.test.ts`.
 - **Mes anterior / Mes siguiente** (paso 4): botones junto a «Desde/Hasta» en `MonthReport.tsx`; cambian `from`/`to` al mes completo anterior o siguiente (el mes en curso termina hoy; «Mes siguiente» se apaga en el mes en curso). Prueba: `tests/e2e/desglose-mes-movil.spec.ts`.

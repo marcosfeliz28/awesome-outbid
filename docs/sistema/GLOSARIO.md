@@ -2,7 +2,7 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su cita; los que son jerga de la dueña sin cita en el código se marcan «uso interno».
 
-**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:4414`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3277`).
+**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:3756`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3277`).
 
 **Aprobar con PIN / PIN de gerente** — Código de 6 dígitos de un usuario con `sale:manage` que autoriza una operación de riesgo (descuento grande, crédito grande, descuadre, vale…). No puede ser el de quien pide, salvo la dueña (`apps/api/src/security.ts:81-136`). Ver `ROLES_Y_PERMISOS.md` §5.
 
@@ -12,7 +12,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:250`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
 
-**Caja ciega / arqueo ciego / conteo ciego** — Mientras la caja está abierta, y al cerrar, la cajera **no ve** cuánto se espera que tenga; declara lo que contó y el sistema compara después. «Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados» (`apps/web/src/managementMessages.ts:37-44`). Solo ven los esperados `profit:read` o `sale:manage` (`apps/api/src/common.ts:70-72`). Además existe una bandera para ocultar importes de las ventas a quien no ve esperados, **apagada por defecto**: `NEXORA_VENTAS_CAJA_CIEGA` (`apps/api/src/sales.ts:151-152`).
+**Caja ciega / arqueo ciego / conteo ciego** — Mientras la caja está abierta, y al cerrar, la cajera **no ve** cuánto se espera que tenga; declara lo que contó y el sistema compara después. «Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados» (`apps/web/src/managementMessages.ts:37-44`). Solo ven los esperados `profit:read` o `sale:manage` (`apps/api/src/common.ts:70-72`). Además existe una bandera para ocultar importes de las ventas a quien no ve esperados, **apagada por defecto**: `NEXORA_VENTAS_CAJA_CIEGA` (`apps/api/src/sales.ts:139-152`).
 
 **Casa** — Almacén de la mercancía guardada fuera de la tienda (`kind=home`, no vendible). Solo se mueve con instrucción expresa de la dueña (`.claude/skills/mercancia/SKILL.md:33`; `apps/api/prisma/migrations/202610240401_warehouses/migration.sql:56`).
 
@@ -24,11 +24,11 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Consumidor final** — Cliente genérico para ventas sin datos; si existe en la lista, sale primero al elegir cliente (`apps/web/src/POS.tsx:360-377`). Las facturas deben identificar a una persona o empresa (`requireCustomer`, `apps/api/src/admin.ts:121-123`). También es el tipo B02.
 
-**Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2542-2548`, `:1798-1802`).
+**Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2770`, `:1798-1802`).
 
 **Costo promedio (`costAvg`)** — Costo de una variante, recalculado en cada entrada (`apps/api/prisma/schema.prisma:120-135`). Con él se calcula el margen.
 
-**Crédito** — Venta a cuenta del cliente: la mercancía sale ahora, se cobra después. Pantalla: «Créditos pendientes» dentro de Caja (`apps/web/src/Tienda.tsx:602`). Reglas de PIN: `packages/shared/src/index.ts:376-444`.
+**Crédito** — Venta a cuenta del cliente: la mercancía sale ahora, se cobra después. Pantalla: «Créditos pendientes» dentro de Caja (`apps/web/src/Tienda.tsx:602`). Reglas de PIN: `packages/shared/src/index.ts:446`.
 
 **Cuadre** — El resultado del cierre de caja: lo contado contra lo esperado por método (efectivo, tarjeta, transferencia, dólares), con diferencias; se imprime al cerrar (`apps/web/src/Management.tsx:2102-2112`; `apps/api/src/cash.ts:1112`). **Descuadre** = diferencia distinta de cero; exige justificación y el PIN de otra persona (`apps/api/src/cash.ts:1248-1300`).
 
@@ -66,7 +66,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Margen** — `(precio − costo) / precio × 100`, **sin restar ITBIS**, con el precio tal como se cobra. **Mínimo 15 %** («Margen bajo»). Ver `README.md` §4.
 
-**Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1049-1055`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:671-678`).
+**Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1044`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:671-678`).
 
 **NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3350`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3402`).
 
@@ -90,7 +90,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **RNC** — Registro Nacional del Contribuyente (identificación de empresa). Campo `legalId` de cliente, proveedor y del negocio (`apps/api/prisma/schema.prisma:292-300`).
 
-**Sesiones (equipo de trabajo)** — Uso interno: Norexos 1 (decide y despliega), Norexos 2 «Mercancía», Norexos 3 «Taller» (navegador, visual), Norexos 4 «Revisor», Norexos 5 «Director de proyecto», Claude PC (laptop/modelo local) (`.claude/skills/comunicacion/SKILL.md:7-24`; `docs/proyecto/PLAN_MAESTRO_NOREXOS.md:2`).
+**Sesiones (equipo de trabajo)** — Uso interno: Norexos 1 (decide y despliega), Norexos 2 «Mercancía», Norexos 3 «Taller» (navegador, visual), Norexos 4 «Revisor», Norexos 5 «Director de proyecto», Claude PC (laptop/modelo local) (`.claude/skills/comunicacion/SKILL.md:8`; `docs/proyecto/PLAN_MAESTRO_NOREXOS.md:2`).
 
 **SKU / código de barras** — Códigos únicos de cada variante; la caja busca por ambos sin distinguir mayúsculas (`apps/web/src/POS.tsx:714-731`; `apps/api/prisma/schema.prisma:120-130`).
 
