@@ -1,6 +1,6 @@
 **1 Propósito**
 
-Este documento describe los pasos para preparar, compilar y validar el instalador de Nexora POS para su uso en sistemas de PC Windows. Aborda las acciones básicas necesarias para generar el archivo de instalación.
+Este documento describe los pasos para preparar, compilar y validar el instalador de Norexos POS para su uso en sistemas de PC Windows. Aborda las acciones básicas necesarias para generar el archivo de instalación.
 
 **2 Pasos**
 
