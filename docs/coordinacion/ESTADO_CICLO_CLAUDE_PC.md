@@ -1908,3 +1908,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Aceptada: N50 glosario-cajera-1 (30 = 30), commit fb23ac74 en claude-pc/cola-n-nueva.
 - Rechazadas (fuera del repo): N51 (26 frente a 24), N52 pantallas-uso-1 (23 frente a 39), N53, N54, N55 (6 frente a 9), N56 y N57 gv-elementos-1 (47 frente a 36, con citas fuera del trozo).
 - Mensaje a Norexos 1 con el criterio y la lista (msg 032f46f6).
+
+## Ciclo (30-oct, 15 min, octava vuelta)
+- Fetch: nexora-cloud en 9b98add0. RESPUESTA_CLAUDE_PC_27OCT.md cambió: cde331eb → 6524f318 (orden 88: N50 aceptada, subir; N51 y resto con esqueleto por script y lotes de 5 filas). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI en verde: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e.
+- N50 subida: `claude-pc/cola-n50-57` (db1acedc), solo docs/diseno/borradores-local/glosario-cajera-1.md. CI pendiente; sin LISTA hasta tener los tres en verde.
+- N51 rehecha con el método nuevo (esqueleto por script y lotes de 5 filas). Pendiente: script `scripts/esqueleto-tabla.mjs` (todavía no escrito). Filas por lote: 0 medidas hasta ahora.
+- ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos; proyecto pausado por cuota hasta el 2 de noviembre.
