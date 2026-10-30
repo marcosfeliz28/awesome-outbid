@@ -25,6 +25,16 @@ type Line = {
   margin?: number;
 };
 
+// Mes completo a `delta` meses de `from`; el mes en curso termina hoy.
+const monthFrom = (from: string, delta: number) => {
+  const d = new Date(
+    Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1 + delta, 1),
+  );
+  const end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
+  const iso = (x: Date) => x.toISOString().slice(0, 10);
+  return { from: iso(d), to: iso(end) < today() ? iso(end) : today() };
+};
+
 export function MonthReport({ go }: { go: (page: string) => void }) {
   const user = useStore((s) => s.user)!;
   const showProfit = can(user.permissions, "profit:read");
@@ -43,6 +53,12 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
   const topGroup =
     data?.topByCategory?.find((g: TopGroup) => g.category === topCategory) ??
     data?.topByCategory?.[0];
+  const goMonth = (delta: number) => {
+    const m = monthFrom(from, delta);
+    setFrom(m.from);
+    setTo(m.to);
+  };
+  const nextDisabled = monthFrom(from, 1).from > today();
   const title = (() => {
     const m = Number(from.slice(5, 7));
     const whole = from.slice(0, 7) === to.slice(0, 7) && from.endsWith("-01");
@@ -119,6 +135,16 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
         </div>
       </div>
       <section className="panel month-range" aria-label="Fechas del reporte">
+        <Button variant="secondary" onClick={() => goMonth(-1)}>
+          ← Mes anterior
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => goMonth(1)}
+          disabled={nextDisabled}
+        >
+          Mes siguiente →
+        </Button>
         <label>
           Desde
           <input

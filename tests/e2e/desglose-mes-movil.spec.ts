@@ -26,4 +26,17 @@ test("«Ver detalle del mes» abre el desglose del mes y no cambia a Mercancía"
     .poll(() => page.evaluate(() => location.hash))
     .toMatch(/^#month-report\?from=/);
   await expect(page.locator(".year-pie")).toHaveCount(0);
+  // «Mes anterior» cambia el período al mes completo anterior; «Mes siguiente» vuelve y se apaga en el mes en curso.
+  const desde = page.getByLabel("Desde");
+  const antes = await desde.inputValue();
+  await page.getByRole("button", { name: /Mes anterior/ }).click();
+  await expect(desde).not.toHaveValue(antes);
+  await expect(desde).toHaveValue(/-01$/);
+  await page.getByRole("button", { name: /Mes siguiente/ }).click();
+  await expect(desde).toHaveValue(antes);
+  // Avanzando se llega al mes en curso y ahí «Mes siguiente» se apaga.
+  const siguiente = page.getByRole("button", { name: /Mes siguiente/ });
+  for (let i = 0; i < 12 && (await siguiente.isEnabled()); i++)
+    await siguiente.click();
+  await expect(siguiente).toBeDisabled();
 });
