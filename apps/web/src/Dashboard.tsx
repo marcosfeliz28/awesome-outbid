@@ -31,6 +31,7 @@ import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
 import { SetupChecklist } from "./Onboarding";
+import { KpiStrip } from "./KpiStrip";
 import {
   AskNexora,
   DailyBrief,
@@ -344,6 +345,7 @@ export function Dashboard({
             <p className="executive-period">
               Período de ventas: {from} → {to} · Santo Domingo
             </p>
+            <KpiStrip />
             <ExecutiveMetrics
               data={data || {}}
               showProfit={showProfit}
