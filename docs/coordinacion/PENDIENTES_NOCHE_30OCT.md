@@ -43,3 +43,8 @@ Dominio de la portada y casilla de soporte; qué es «la Lacto»; 4 decisiones E
 | Control del cronograma | Norexos 5 | control/norexos | no ejecuta tareas de código |
 | Pedidos de la dueña a revisar | Consultor (Norexos 6) | — | solo reparte; no construye |
 Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; si no tiene dueño, escribir «Tomo: …» en PENDIENTES.
+
+## Registro 30-oct 13:00 UTC (N1, por orden de la dueña: decidir, gastar menos, terminar)
+- Lote único mezclado en un solo push: desglose-e2e-estable (con citas de merchandise.ts), seguridad-bajo, ui-cobros-admin, seguridad-zod-limites, seguridad-20-auditoria; citas de docs/sistema movidas a sus líneas nuevas; vitest.config con todas las pruebas. Nada se despliega hasta que este CI termine verde.
+- Siguiente en orden: (1) CI verde del lote → lectura de cajas (Norexos 2) → desplegar solo web del desglose; (2) T33 (claude/ia-ventas-linea 62720b17, rojo solo por cuatro-cajas.spec.ts:185, intermitente ajeno a la IA) tras rebase sobre el lote; revisar que las 2 migraciones sean aditivas; (3) Fase 2 visual (producto-nexora) sin desplegar.
+- Reducción de gasto: Norexos 7 y 8 archivadas (terminadas); rutina del Director apagada; sesiones activas máximas = N1, Taller, Mercancía (N11), Claude PC. docs-citas-fix (Taller) y claude/ia-ventas-linea-obrero2 quedan obsoletas.
