@@ -147,6 +147,7 @@ export default defineConfig({
       "tests/visual-tokens.test.ts",
       "tests/visual-marco.test.ts",
       "tests/f2-01-tokens.test.ts",
+      "tests/f2-01-primitivos.test.tsx",
       "tests/forja3-f3-10-quitar-emojis.test.ts",
       "tests/forja3-f3-09-parec-email.test.ts",
       "tests/forja3-f3-08-comparar-natural.test.ts",

@@ -36,3 +36,35 @@
   --nx-dur-slow: 240ms;
   --nx-ease-out: cubic-bezier(.2,.8,.2,1);
 }
+
+/* capa 3b: componente de los primitivos Nx* (pares texto/fondo ≥ 4,5:1) */
+:root {
+  --nx-borde: #d1d5db;
+  --nx-superficie: #ffffff;
+  --nx-boton-sec-fondo: #ede9fe;
+  --nx-boton-sec-texto: #4c1d95;
+  --nx-exito-fondo: #d1fae5;
+  --nx-exito-texto: #065f46;
+  --nx-alerta-fondo: #fef3c7;
+  --nx-alerta-texto: #92400e;
+  --nx-error-fondo: #fee2e2;
+  --nx-error-texto: #991b1b;
+  --nx-neutro-fondo: #f3f4f6;
+  --nx-neutro-texto: #374151;
+  --nx-esqueleto: #e5e7eb;
+}
+:root[data-theme="dark"] {
+  --nx-borde: #374151;
+  --nx-superficie: #1c1c2b;
+  --nx-boton-sec-fondo: #2e2350;
+  --nx-boton-sec-texto: #ddd6fe;
+  --nx-exito-fondo: #064e3b;
+  --nx-exito-texto: #a7f3d0;
+  --nx-alerta-fondo: #78350f;
+  --nx-alerta-texto: #fde68a;
+  --nx-error-fondo: #7f1d1d;
+  --nx-error-texto: #fecaca;
+  --nx-neutro-fondo: #2a2a3a;
+  --nx-neutro-texto: #e5e7eb;
+  --nx-esqueleto: #2a2a3a;
+}

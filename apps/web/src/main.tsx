@@ -7,6 +7,8 @@ import { App } from "./App";
 import { startPwaUpdates } from "./pwaUpdate";
 import { keepCartDraft } from "./cartDraft";
 import "./styles.css";
+import "../../../packages/ui/src/tokens.css";
+import "../../../packages/ui/src/nx-primitivos.css";
 // M7: la versión nueva de la PWA no recarga con una venta en curso.
 startPwaUpdates();
 // 05-A3/M1: el carrito en curso sobrevive a F5 y a la recarga de una versión

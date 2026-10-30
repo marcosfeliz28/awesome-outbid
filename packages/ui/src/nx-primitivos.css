@@ -1,0 +1,40 @@
+.nx-button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; background: var(--nx-boton-fondo); color: var(--nx-boton-texto); transition: transform var(--nx-dur-fast) var(--nx-ease-out); }
+.nx-button:active { transform: scale(.98); }
+.nx-button:disabled { opacity: .55; cursor: not-allowed; }
+.nx-button--secondary { background: var(--nx-boton-sec-fondo); color: var(--nx-boton-sec-texto); }
+.nx-button--ghost { background: transparent; color: var(--nx-texto); border: 1px solid var(--nx-borde); }
+.nx-button--danger { background: var(--nx-error-texto); color: var(--nx-error-fondo); }
+.nx-button--pos-charge { background: var(--nx-exito-texto); color: var(--nx-exito-fondo); font-size: 1.1rem; }
+.nx-button:focus-visible, .nx-tabs [role="tab"]:focus-visible { outline: 3px solid var(--nx-info); outline-offset: 2px; }
+.nx-card { background: var(--nx-tarjeta-fondo); color: var(--nx-tarjeta-texto); border: 1px solid var(--nx-borde); border-radius: 14px; padding: 16px; }
+.nx-card--glass { background: color-mix(in srgb, var(--nx-superficie) 70%, transparent); backdrop-filter: blur(10px); }
+.nx-card--interactive:hover { transform: translateY(-2px); transition: transform var(--nx-dur-base) var(--nx-ease-out); }
+.nx-field { display: grid; gap: 4px; }
+.nx-field input { min-height: 44px; padding: 0 12px; border: 1px solid var(--nx-borde); border-radius: 10px; background: var(--nx-superficie); color: var(--nx-texto); font: inherit; }
+.nx-field input[aria-invalid="true"] { border-color: var(--nx-error-texto); }
+.nx-field__error { color: var(--nx-error-texto); }
+.nx-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+.nx-badge--exito { background: var(--nx-exito-fondo); color: var(--nx-exito-texto); }
+.nx-badge--alerta { background: var(--nx-alerta-fondo); color: var(--nx-alerta-texto); }
+.nx-badge--error { background: var(--nx-error-fondo); color: var(--nx-error-texto); }
+.nx-badge--neutro { background: var(--nx-neutro-fondo); color: var(--nx-neutro-texto); }
+.nx-empty { text-align: center; padding: 32px 16px; color: var(--nx-texto); }
+.nx-skeleton { display: block; background: var(--nx-esqueleto); border-radius: 8px; }
+.nx-skeleton--linea { height: 14px; }
+.nx-skeleton--bloque { height: 96px; }
+.nx-skeleton--circulo { width: 40px; height: 40px; border-radius: 50%; }
+.nx-toast { padding: 12px 16px; border-radius: 10px; font-weight: 600; }
+.nx-toast--exito { background: var(--nx-exito-fondo); color: var(--nx-exito-texto); }
+.nx-toast--aviso { background: var(--nx-alerta-fondo); color: var(--nx-alerta-texto); }
+.nx-toast--error { background: var(--nx-error-fondo); color: var(--nx-error-texto); }
+.nx-tabs [role="tablist"] { display: flex; gap: 4px; overflow-x: auto; }
+.nx-tabs [role="tab"] { min-height: 44px; padding: 0 16px; border: 0; background: transparent; color: var(--nx-texto); font: inherit; border-bottom: 3px solid transparent; cursor: pointer; }
+.nx-tabs [role="tab"][aria-selected="true"] { border-bottom-color: var(--nx-acento); font-weight: 700; }
+.nx-page-header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.nx-progress { height: 8px; border-radius: 999px; background: var(--nx-esqueleto); overflow: hidden; }
+.nx-progress > span { display: block; height: 100%; background: var(--nx-acento); }
+.nx-money { font-variant-numeric: tabular-nums; text-align: right; }
+.nx-app-shell { display: grid; gap: 16px; }
+.nx-skip { position: absolute; left: -9999px; }
+.nx-skip:focus { left: 8px; top: 8px; z-index: 100; background: var(--nx-superficie); padding: 8px; }
+@media (prefers-reduced-motion: reduce) { .nx-button, .nx-card { transition: none; } }
