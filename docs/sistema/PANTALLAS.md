@@ -149,3 +149,8 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 ## Usuarios
 
 No es un ítem de menú. Se administra en Configuración › «Usuarios y permisos» (ver arriba y `ROLES_Y_PERMISOS.md`). Cada persona puede además «Cambiar mi contraseña» y «Cerrar sesión» desde su cuenta, y cambiar de usuario con PIN (`apps/web/src/App.tsx:1161`, `:1171`, `:1184`).
+
+## Desglose del mes («Ver detalle del mes», `#month-report?from=&to=`)
+
+Permiso `reports:read`; no está en el menú, se abre desde el panel anual (`apps/web/src/MonthReport.tsx`). Datos: `GET /dashboard/breakdown` (`apps/api/src/reports.ts`, «dashboard/breakdown»).
+- **Formas de pago** (solo con permiso de esperado de caja): reparte la venta bruta de cada categoría según cómo se pagó cada factura. Renglones: efectivo, tarjeta, transferencia verificada, nota de crédito, y los que no son cobro: **Por cobrar (crédito y contraentrega)** = saldo pendiente `Sale.creditBalance`; **Transferencias por verificar** = pago `pending_verification`; **Sin cobro registrado** = lo que la factura vale y no tiene fila de pago; **Crédito ya cobrado** = parte del crédito que ya se abonó. Identidad: todos los renglones juntos = «Venta bruta» (con devoluciones restadas, D-05). Solo lectura: no cambia ventas, cobros ni caja.

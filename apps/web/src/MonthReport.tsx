@@ -5,8 +5,7 @@ import { can, formatMoney } from "@fitstore/shared";
 import { api, useStore } from "./api";
 import { QueryState, today } from "./helpers";
 import { monthNames, reportCsv } from "./year-report-utils";
-import { PaymentMixPie, type MixRow } from "./PaymentMixPie";
-import { METHOD_LABEL } from "./Prints";
+import { MIX_LABEL, PaymentMixPie, type MixRow } from "./PaymentMixPie";
 
 const params = () => {
   const q = new URLSearchParams(location.hash.split("?")[1] ?? "");
@@ -68,7 +67,7 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
             ["Forma de pago por categoría", "Forma de pago", "Monto"],
             ...data.payments.map((p: MixRow) => [
               p.category,
-              METHOD_LABEL[p.method] ?? p.method,
+              MIX_LABEL[p.method] ?? p.method,
               p.amount,
             ]),
           ]

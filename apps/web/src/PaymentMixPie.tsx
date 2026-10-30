@@ -4,12 +4,23 @@ import { formatMoney } from "@fitstore/shared";
 import { METHOD_LABEL } from "./Prints";
 
 export type MixRow = { category: string; method: string; amount: number };
+// Renglones de lo no cobrado (cuadran con la venta bruta del mes).
+export const MIX_LABEL: Record<string, string> = {
+  ...METHOD_LABEL,
+  credit: "Por cobrar (crédito y contraentrega)",
+  credit_paid: "Crédito ya cobrado",
+  transfer_pending: "Transferencias por verificar",
+  unrecorded: "Sin cobro registrado",
+};
 const COLORS: Record<string, string> = {
   cash: "#059669",
   transfer: "#2563eb",
   card: "#7c3aed",
   cod: "#ea580c",
   credit: "#ea580c",
+  credit_paid: "#0d9488",
+  transfer_pending: "#0ea5e9",
+  unrecorded: "#dc2626",
   credit_note: "#64748b",
 };
 
@@ -25,7 +36,7 @@ export function PaymentMixPie({
   const byMethod = new Map<string, number>();
   for (const r of rows)
     if (!category || r.category === category) {
-      const key = METHOD_LABEL[r.method] ?? r.method;
+      const key = MIX_LABEL[r.method] ?? r.method;
       byMethod.set(key, (byMethod.get(key) ?? 0) + Number(r.amount));
     }
   const total = [...byMethod.values()].reduce((a, b) => a + b, 0);
@@ -37,7 +48,7 @@ export function PaymentMixPie({
       share: total ? Math.round((amount / total) * 1000) / 10 : 0,
       color:
         COLORS[
-          Object.keys(METHOD_LABEL).find((k) => METHOD_LABEL[k] === name) ?? ""
+          Object.keys(MIX_LABEL).find((k) => MIX_LABEL[k] === name) ?? ""
         ] ?? "#94a3b8",
     }))
     .sort((a, b) => b.amount - a.amount);

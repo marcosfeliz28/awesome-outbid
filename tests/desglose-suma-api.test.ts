@@ -21,7 +21,15 @@ const db = new PrismaClient();
 const base = process.env.FITSTORE_API_URL || "http://127.0.0.1:3001/api";
 const ip = "198.18.96." + ((Date.now() % 250) + 1);
 const demo = process.env.SEED_DEMO_PASSWORD || "FitStore-Demo-2026!";
-const range = "from=2026-10-01&to=2026-10-31";
+const now = new Date().toLocaleDateString("en-CA", {
+  timeZone: "America/Santo_Domingo",
+});
+const range = `from=${now.slice(0, 8)}01&to=${now}`;
+const byMethod = (bd: any) => {
+  const m: Record<string, number> = {};
+  for (const p of bd.payments) m[p.method] = (m[p.method] ?? 0) + p.amount;
+  return m;
+};
 
 async function call(path: string, token: string, data?: unknown) {
   const r = await fetch(base + path, {
@@ -82,7 +90,7 @@ beforeAll(async () => {
   price = Number(product.variants[0].price);
 }, 120000);
 
-async function sale(method: "cash" | "transfer", qty = 2) {
+async function sale(method: "cash" | "transfer" | "credit", qty = 2) {
   const body: any = {
     offlineUuid: randomUUID(),
     capturedAt: new Date().toISOString(),
@@ -90,19 +98,22 @@ async function sale(method: "cash" | "transfer", qty = 2) {
     cashSessionId,
     items: [{ variantId, qty, discountPercent: 0 }],
     globalDiscount: 0,
+    ...(method === "credit" ? { managerPin: "234567" } : {}),
     payments: [
       method === "cash"
         ? { method: "cash", amount: price * qty }
-        : {
-            method: "transfer",
-            amount: price * qty,
-            bank: "Banco QA",
-            reference: "QA-DESG-" + randomUUID().slice(0, 8),
-          },
+        : method === "credit"
+          ? { method: "cod", amount: price * qty }
+          : {
+              method: "transfer",
+              amount: price * qty,
+              bank: "Banco QA",
+              reference: "QA-DESG-" + randomUUID().slice(0, 8),
+            },
     ],
   };
   const r = await call("/sales", token, body);
-  expect(r.status).toBe(201);
+  expect(r.status, JSON.stringify(r.body)).toBe(201);
   return r.body;
 }
 
@@ -155,5 +166,29 @@ describe("desglose del mes: cobros = venta bruta con devoluciones (D-05)", () =>
     const sm = (await call("/dashboard/summary?" + range, token)).body;
     const smSum = sm.payments.reduce((a: number, p: any) => a + p.amount, 0);
     expect(smSum).toBe(sm.revenue);
+  });
+
+  it("incluye lo no cobrado: crédito, transferencia sin verificar y sin cobro; la identidad cuadra", async () => {
+    const before = (await call("/dashboard/breakdown?" + range, token)).body;
+    const b0 = byMethod(before);
+    await sale("credit");
+    const tr = await sale("transfer"); // queda pending_verification
+    const cash = await sale("cash", 3);
+    await refund(cash, "cash");
+    // Venta sin fila de pago (importada): se quitan sus cobros en la base.
+    const orphan = await sale("cash", 1);
+    await db.payment.deleteMany({ where: { saleId: orphan.id } });
+    const bd = (await call("/dashboard/breakdown?" + range, token)).body;
+    const b1 = byMethod(bd);
+    const delta = (k: string) => (b1[k] ?? 0) - (b0[k] ?? 0);
+    expect(delta("credit")).toBeCloseTo(price * 2, 1);
+    expect(delta("transfer_pending")).toBeCloseTo(price * 2, 1);
+    expect(delta("unrecorded")).toBeCloseTo(price, 1);
+    expect(delta("cash")).toBeCloseTo(price * 2, 1); // 3 vendidas − 1 devuelta
+    // Identidad: todos los renglones juntos = venta bruta del mes (API de totales).
+    const sum = bd.payments.reduce((a: number, p: any) => a + p.amount, 0);
+    expect(sum).toBeCloseTo(bd.revenue, 1);
+    expect(bd.revenue - before.revenue).toBeCloseTo(price * 7, 1);
+    void tr;
   });
 });
