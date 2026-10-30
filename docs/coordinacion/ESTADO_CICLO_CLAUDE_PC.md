@@ -1854,3 +1854,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Fetch: nexora-cloud en 205d1006 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde la orden 86). COLA_LOCAL_ACTIVA_NUEVA.json con N18–N49; N42–N49 retiradas por la orden 85.
 - Cola: el estado viejo sigue en «vacía». Los tres lotes de reglas Si…entonces (claude-pc/reglas-si-claude, 7a67f238) ya están hechos. Sin tareas pendientes → mensaje enviado a Norexos 1 pidiendo hasta 8 tareas nuevas para qwen-optimizado.
 - Nota: la tarea de Nexora 1 con «Tomo: …» (orden 86) queda pendiente de respuesta.
+
+## Ciclo 15 y 30 min (30-oct): orden 87 — cola N50–N57 en curso
+- Fetch: nexora-cloud en cde331eb para RESPUESTA_CLAUDE_PC_27OCT.md (orden 87: cola N50–N57 en tablas, una fila por elemento, criterio por script). OBSIDIAN_LUMINA_PROGRESO.md ausente. COLA_LOTE_LOCAL.md en c3ecfbb0.
+- CI: pc23, a1, b01 y lumina en verde, con LISTA ya escrita. claude-pc/reglas-si-claude (7a67f238): verify en progreso.
+- Cola: N50–N57 lanzadas en segundo plano en claude-pc/cola-n-nueva (glosario-cajera-1/2, pantallas-uso-1/2/3, roles-resumen-1/2 y gv-elementos-1). Se revisan con script al terminar (filas = elementos del trozo; términos exactos con grep -F).
+- ChatGPT (paso 5): sin cambio; no se abrió en este ciclo.
