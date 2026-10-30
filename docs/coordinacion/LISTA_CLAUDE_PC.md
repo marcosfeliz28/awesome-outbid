@@ -33,3 +33,4 @@ LISTA: claude-pc/cola-n 2680132c (verify, windows-installer y render-images en v
 LISTA: claude-pc/cola-b14-resto 03430fc6 (verify, windows-installer y render-images en verde; bloque 14 propio: tareas 87, 88, 90, 91 y 92 por script; solo docs/auditoria y docs/api)
 LISTA: claude-pc/cola-n-nueva 86b5b2bf (verify, windows-installer y render-images en verde; N34, N35, N36, N37 PARCIAL, N38, N39 y N41 del modelo local con revisión y encabezado de fuente; N40 rechazada; informe en docs/diseno/borradores-local/INFORME_REVISION.md; solo docs)
 LISTA: claude-pc/cola-n-nueva d3179f56 (verify, windows-installer y render-images en verde; N25 faq-gv-corta, N33 meta-tabla, N18 roles-simples, N22 guion-video y N30 pantallas-ayuda del modelo local con revisión y encabezado de fuente; N23, N29 y N31 rechazadas tras dos intentos; N34–N41 de la misma rama; solo docs)
+LISTA: claude-pc/reglas-si-claude 7a67f238
