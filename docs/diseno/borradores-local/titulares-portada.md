@@ -7,7 +7,7 @@ Borrador sin verificar, hecho por modelo local. Español de República Dominican
 | Tu negocio, en movimiento. | 29 |
 | Vende más, cuadra fácil. | 21 |
 | Gestión completa en un solo lugar. | 30 |
-| Simplifica tu negocio con Nexora POS. | 33 |
+| Simplifica tu negocio con Norexos. | 33 |
 | Ventas rápidas, cierre seguro. | 27 |
 
 Qué hiciste: Propuse 5 titulares alternativos para la portada basados en el texto proporcionado.
