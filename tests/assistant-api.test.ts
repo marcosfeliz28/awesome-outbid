@@ -4,8 +4,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { ask, type AssistantDeps } from "../apps/api/src/assistant";
+import {
+  ask,
+  usageStore,
+  DAILY_LIMIT,
+  type AssistantDeps,
+} from "../apps/api/src/assistant";
 import { Database } from "../apps/api/src/common";
+import { businessDate } from "../packages/shared/src/index";
 import { ReportsController, mySales } from "../apps/api/src/reports";
 
 const requireApi = createRequire(
@@ -65,9 +71,7 @@ beforeAll(async () => {
   };
 });
 afterAll(async () => {
-  await db.assistantQuery.deleteMany({
-    where: { question: { startsWith: "[test-t33]" } },
-  });
+  await db.assistantUsage.deleteMany({ where: { userId: admin.id } });
   await db.$disconnect();
 });
 
@@ -253,14 +257,10 @@ describe("rutas /assistant", () => {
     const enabled = (await call("/assistant/status", tokens.admin)).body
       .enabled;
     if (!enabled) return; // sin llave el endpoint no existe (404); lo cubre la unitaria
-    await db.assistantQuery.createMany({
-      data: Array.from({ length: 30 }, () => ({
-        userId: admin.id,
-        branchId: admin.branchId,
-        question: "[test-t33] relleno",
-        model: "m",
-        status: "ok",
-      })),
+    await db.assistantUsage.upsert({
+      where: { userId_day: { userId: admin.id, day: businessDate() } },
+      create: { userId: admin.id, day: businessDate(), count: 30 },
+      update: { count: 30 },
     });
     const r = await call("/assistant/ask", tokens.admin, {
       question: "[test-t33] otra",
@@ -378,5 +378,110 @@ describe("permisos con datos reales", () => {
     const a = await run(admin, "cambiar_precio", { sku: "X", precio: 1 });
     expect(a.r.used[0].error).toBeTruthy();
     expect(await sum()).toBe(before);
+  });
+});
+
+// Orden de la dueña: sin memoria y sin guardar consultas; el tope es solo un contador.
+describe("sin texto guardado y tope por contador", () => {
+  const reports = new ReportsController(db);
+  const SECRETO = "[test-t33] pregunta-secreta-91827";
+  const RESPUESTA = "respuesta-secreta-55102";
+  const build = (who: any, seenParams: any[]): AssistantDeps => ({
+    client: {
+      create: async (p: any) => {
+        seenParams.push(p);
+        return {
+          content: [{ type: "text", text: RESPUESTA }],
+          stop_reason: "end_turn",
+          usage: { input_tokens: 100, output_tokens: 20 },
+        };
+      },
+    } as any,
+    breakdown: (a, f, t) => reports.dashboardBreakdown({ from: f, to: t }, a),
+    mine: (a, p) => mySales(db, a, p),
+    usage: usageStore(db),
+    now: () => NOW,
+  });
+  const todayRow = () =>
+    db.assistantUsage.findUnique({
+      where: { userId_day: { userId: admin.id, day: businessDate(NOW) } },
+    });
+  it("tras usarla, ninguna tabla contiene la pregunta ni la respuesta; cada pregunta va sola", async () => {
+    await db.assistantUsage.deleteMany({ where: { userId: admin.id } });
+    const seen: any[] = [];
+    await ask(admin, SECRETO, build(admin, seen));
+    await ask(admin, "otra cosa", build(admin, seen));
+    // sin historial: cada llamada lleva solo su pregunta (1 mensaje) y nada de la anterior
+    expect(seen).toHaveLength(2);
+    expect(seen[1].messages).toEqual([{ role: "user", content: "otra cosa" }]);
+    expect(JSON.stringify(seen[1])).not.toContain("secreta");
+    // contador: 2 preguntas, tokens sumados
+    const row = await todayRow();
+    expect(row?.count).toBe(2);
+    expect(row?.inputTokens).toBe(200);
+    expect(Object.keys(row!).sort()).toEqual([
+      "costUsd",
+      "count",
+      "day",
+      "inputTokens",
+      "outputTokens",
+      "updatedAt",
+      "userId",
+    ]);
+    // ningún texto en la base: ni en la tabla nueva ni en la heredada
+    const dump = JSON.stringify({
+      u: await db.assistantUsage.findMany(),
+      q: await db.assistantQuery.findMany(),
+    });
+    expect(dump).not.toContain("secreta");
+    expect(
+      await db.assistantQuery.count({ where: { question: { not: null } } }),
+    ).toBe(0);
+  });
+  it("el tope de 30 sigue funcionando con el contador (y no llama a la IA)", async () => {
+    await db.assistantUsage.deleteMany({ where: { userId: admin.id } });
+    const seen: any[] = [];
+    for (let i = 0; i < DAILY_LIMIT; i++)
+      expect(
+        (await ask(admin, "p" + i, build(admin, seen))).limited,
+      ).toBeFalsy();
+    const r = await ask(admin, "p31", build(admin, seen));
+    expect(r.limited).toBe(true);
+    expect(seen).toHaveLength(DAILY_LIMIT);
+    expect((await todayRow())?.count).toBe(DAILY_LIMIT + 1);
+  });
+  it("simultáneas: 35 a la vez nunca pasan de 30 respuestas", async () => {
+    await db.assistantUsage.deleteMany({ where: { userId: admin.id } });
+    const seen: any[] = [];
+    const rs = await Promise.all(
+      Array.from({ length: 35 }, (_, i) =>
+        ask(admin, "c" + i, build(admin, seen)),
+      ),
+    );
+    expect(rs.filter((r) => !r.limited)).toHaveLength(DAILY_LIMIT);
+    expect(seen).toHaveLength(DAILY_LIMIT);
+  });
+  it("la cajera solo ve lo suyo y su contador es aparte", async () => {
+    const seller = await db.user.findFirst({
+      where: { email: "vendedor@fitstore.demo" },
+      include: { role: true },
+    });
+    const cajera: any = {
+      id: seller!.id,
+      role: "seller",
+      permissions: ["sales:create"],
+      branchId: seller!.branchId ?? "main",
+    };
+    const seen: any[] = [];
+    await ask(cajera, "mis ventas de hoy", build(cajera, seen));
+    expect(seen[0].tools.map((t: any) => t.name)).toEqual(["mis_ventas"]);
+    expect(
+      (
+        await db.assistantUsage.findUnique({
+          where: { userId_day: { userId: cajera.id, day: businessDate(NOW) } },
+        })
+      )?.count,
+    ).toBe(1);
+    await db.assistantUsage.deleteMany({ where: { userId: cajera.id } });
   });
 });

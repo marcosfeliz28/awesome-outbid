@@ -103,7 +103,8 @@ Reglas: una persona solo puede tener **una caja abierta** (índice único parcia
 | `DriveBackup` | Respaldos a Google Drive. | `:1029` |
 | `RealtimeEvent` | Eventos para refrescar las pantallas abiertas. | `:864` |
 | `CashierSurvey` | Encuesta de la caja. | `:1199` |
-| `AssistantQuery` | Registro de cada pregunta a la IA de ventas: `userId`, `question` (≤500), `model`, `inputTokens`, `outputTokens`, `costUsd`, `status` (`ok`, `error`, `limit`). Sirve para el tope de 30 por día. Migración `202611010001_assistant_query` (solo `CREATE TABLE IF NOT EXISTS`). | `:1210` |
+| `AssistantUsage` | Contador diario de la IA de ventas por usuario (`userId`, `day` de negocio, `count`, `inputTokens`, `outputTokens`, `costUsd`; clave `userId`+`day`). Sirve para el tope de 30 por día y para sumar el gasto. **No guarda texto de preguntas ni de respuestas** (orden de la dueña, 30-oct). Migración `202611010002_assistant_usage` (aditiva). |
+| `AssistantQuery` | Heredada, ya no se escribe: su columna `question` pasó a ser opcional y el texto que hubiera se vació en la migración `202611010002` (la tabla no se borra). |
 
 ## 8. GV Makeup Studio
 

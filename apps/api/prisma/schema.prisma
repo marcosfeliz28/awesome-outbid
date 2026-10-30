@@ -1206,12 +1206,13 @@ model CashierSurvey {
   updatedAt DateTime @updatedAt
 }
 
-// T33: registro de cada pregunta a la IA de ventas (quién, cuándo, tokens, costo).
+// T33 (heredada, ya no se escribe): la IA de ventas NO guarda texto de preguntas ni respuestas.
+// Se conserva la tabla (no se borra nada); el texto viejo se vació en la migración 202611010002.
 model AssistantQuery {
   id           String   @id @default(uuid()) @db.Uuid
   userId       String   @db.Uuid
   branchId     String   @default("main")
-  question     String
+  question     String?
   model        String
   inputTokens  Int      @default(0)
   outputTokens Int      @default(0)
@@ -1220,4 +1221,17 @@ model AssistantQuery {
   createdAt    DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// T33: contador diario de la IA de ventas por usuario (tope de 30). Sin texto de consultas.
+model AssistantUsage {
+  userId       String   @db.Uuid
+  day          String // día de negocio AAAA-MM-DD (America/Santo_Domingo)
+  count        Int      @default(0)
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  costUsd      Decimal  @default(0) @db.Decimal(10, 6)
+  updatedAt    DateTime @default(now())
+
+  @@id([userId, day])
 }

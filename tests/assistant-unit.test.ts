@@ -157,9 +157,14 @@ describe("límites", () => {
     const r = await ask(admin, "hola", deps);
     expect(r.limited).toBeFalsy();
     expect(create).toHaveBeenCalled();
-    expect(deps.usage.reserve).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "u1" }),
-    );
+    // solo usuario y día: ni texto de la pregunta ni de la respuesta
+    expect(deps.usage.reserve).toHaveBeenCalledWith({
+      userId: "u1",
+      day: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    });
+    expect(
+      JSON.stringify(vi.mocked(deps.usage.settle).mock.calls),
+    ).not.toContain("hola");
     expect(deps.usage.settle).toHaveBeenCalledWith(
       "q1",
       expect.objectContaining({

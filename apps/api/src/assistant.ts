@@ -169,12 +169,11 @@ export type AssistantDeps = {
   mine: (actor: Actor, period: "today" | "week") => Promise<any>;
   usage: {
     // Reserva el lugar ANTES de llamar al modelo (el tope no se salta con
-    // peticiones simultáneas); `used` ya cuenta esta pregunta.
+    // peticiones simultáneas); `used` ya cuenta esta pregunta. Solo un
+    // contador por usuario y día: nunca texto de preguntas ni respuestas.
     reserve: (row: {
       userId: string;
-      branchId: string;
-      question: string;
-      model: string;
+      day: string;
     }) => Promise<{ id: string; used: number }>;
     settle: (
       id: string,
@@ -437,13 +436,10 @@ export async function ask(actor: Actor, question: string, deps: AssistantDeps) {
   const tools = toolsFor(actor);
   const now = deps.now?.() ?? new Date();
   const model = assistantModel();
-  const base = {
+  const { id: queryId, used } = await deps.usage.reserve({
     userId: actor.id,
-    branchId: actor.branchId,
-    question: question.slice(0, 500),
-    model,
-  };
-  const { id: queryId, used } = await deps.usage.reserve(base);
+    day: businessDate(now),
+  });
   if (used > DAILY_LIMIT) {
     await deps.usage.settle(queryId, {
       inputTokens: 0,
@@ -549,6 +545,32 @@ export async function ask(actor: Actor, question: string, deps: AssistantDeps) {
   };
 }
 
+// Contador diario por usuario (tabla AssistantUsage): ni preguntas ni respuestas se guardan.
+export const usageStore = (db: Database): AssistantDeps["usage"] => ({
+  reserve: async (r) => {
+    // Atómico: el contador sube de uno en uno y se queda en 31 como tope.
+    const [row] = await db.$queryRaw<{ count: number }[]>`
+        INSERT INTO "AssistantUsage" ("userId", "day", "count")
+        VALUES (${r.userId}::uuid, ${r.day}, 1)
+        ON CONFLICT ("userId", "day") DO UPDATE
+          SET "count" = LEAST("AssistantUsage"."count" + 1, ${DAILY_LIMIT + 1}),
+              "updatedAt" = now()
+        RETURNING "count"`;
+    return { id: `${r.userId}|${r.day}`, used: row.count };
+  },
+  settle: async (id, patch) => {
+    const [userId, day] = id.split("|");
+    await db.assistantUsage.update({
+      where: { userId_day: { userId, day } },
+      data: {
+        inputTokens: { increment: patch.inputTokens },
+        outputTokens: { increment: patch.outputTokens },
+        costUsd: { increment: patch.costUsd },
+      },
+    });
+  },
+});
+
 @Controller("assistant")
 export class AssistantController {
   private reports: ReportsController;
@@ -568,12 +590,7 @@ export class AssistantController {
   async status(@CurrentUser() actor: Actor) {
     const canUse = this.can(actor);
     const used =
-      canUse && assistantEnabled()
-        ? await this.countToday(
-            actor,
-            new Date(businessDate() + "T00:00:00-04:00"),
-          )
-        : 0;
+      canUse && assistantEnabled() ? await this.countToday(actor) : 0;
     return {
       enabled: assistantEnabled(),
       canUse,
@@ -581,14 +598,12 @@ export class AssistantController {
       remaining: Math.max(0, DAILY_LIMIT - used),
     };
   }
-  private countToday = (actor: Actor, since: Date) =>
-    this.db.assistantQuery.count({
-      where: {
-        userId: actor.id,
-        createdAt: { gte: since },
-        status: { in: ["pending", "ok", "error"] },
-      },
-    });
+  private countToday = async (actor: Actor) =>
+    (
+      await this.db.assistantUsage.findUnique({
+        where: { userId_day: { userId: actor.id, day: businessDate() } },
+      })
+    )?.count ?? 0;
   @Post("ask")
   @Permit("authenticated")
   async ask(@Body() body: unknown, @CurrentUser() actor: Actor) {
@@ -609,25 +624,7 @@ export class AssistantController {
       breakdown: (a, from, to) =>
         this.reports.dashboardBreakdown({ from, to }, a),
       mine: (a, p) => mySales(this.db, a, p),
-      usage: {
-        reserve: async (r) => {
-          const row = await this.db.assistantQuery.create({
-            data: { ...r, status: "pending" },
-          });
-          return {
-            id: row.id,
-            used: await this.countToday(
-              actor,
-              new Date(businessDate() + "T00:00:00-04:00"),
-            ),
-          };
-        },
-        settle: async (id, patch) =>
-          void (await this.db.assistantQuery.update({
-            where: { id },
-            data: patch,
-          })),
-      },
+      usage: usageStore(this.db),
     });
   }
 }
