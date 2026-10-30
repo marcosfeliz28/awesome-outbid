@@ -1915,3 +1915,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - N50 subida: `claude-pc/cola-n50-57` (db1acedc), solo docs/diseno/borradores-local/glosario-cajera-1.md. CI pendiente; sin LISTA hasta tener los tres en verde.
 - N51 rehecha con el método nuevo (esqueleto por script y lotes de 5 filas). Pendiente: script `scripts/esqueleto-tabla.mjs` (todavía no escrito). Filas por lote: 0 medidas hasta ahora.
 - ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos; proyecto pausado por cuota hasta el 2 de noviembre.
+
+## Ciclo (30-oct, 15 min, novena vuelta: orden 88)
+- Script `scripts/esqueleto-tabla.mjs` escrito con prueba (`tests/esqueleto-tabla.test.ts`, 3 pruebas: falló antes y pasa después) en `claude-pc/cola-n50-57` (2e080858). Esqueleto de GLOSARIO: 28 términos en líneas 1–60 y 24 en 61–107, igual que el conteo a mano.
+- Filas por lote de 5 para el modelo: 0 medidas (no he corrido el modelo con el esqueleto todavía).
+- CI de db1acedc y 2e080858: pendiente. Sin LISTA hasta que los tres estén en verde.
+- ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos; proyecto pausado por cuota hasta el 2 de noviembre.
