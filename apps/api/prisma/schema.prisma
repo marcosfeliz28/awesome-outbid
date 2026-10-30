@@ -1125,6 +1125,9 @@ model GvPayment {
   method       String
   bank         String?
   reference    String?
+  // Adónde cae el dinero de tarjeta: «gv» = área GV / Grupo Génesis, sin cuenta
+  // de banco. Nulo en efectivo y transferencia (esa usa `bank`).
+  destination  String?
   // Transferencia: pendiente hasta verificarla; efectivo y tarjeta, verificados.
   verified     Boolean       @default(false)
   verifiedBy   String?
