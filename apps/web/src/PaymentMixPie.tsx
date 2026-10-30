@@ -3,7 +3,12 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { formatMoney } from "@fitstore/shared";
 import { METHOD_LABEL } from "./Prints";
 
-export type MixRow = { category: string; method: string; amount: number };
+export type MixRow = {
+  category: string;
+  method: string;
+  bank?: string | null;
+  amount: number;
+};
 // Renglones de lo no cobrado (cuadran con la venta bruta del mes).
 export const MIX_LABEL: Record<string, string> = {
   ...METHOD_LABEL,
@@ -39,6 +44,14 @@ export function PaymentMixPie({
       const key = MIX_LABEL[r.method] ?? r.method;
       byMethod.set(key, (byMethod.get(key) ?? 0) + Number(r.amount));
     }
+  // Por banco: transferencias (y tarjetas con banco). Tarjeta crédito y débito van juntas.
+  const byBank = new Map<string, number>();
+  for (const r of rows)
+    if (r.bank && (!category || r.category === category)) {
+      const key = `${MIX_LABEL[r.method] ?? r.method} · ${r.bank}`;
+      byBank.set(key, (byBank.get(key) ?? 0) + Number(r.amount));
+    }
+  const banks = [...byBank.entries()].sort((a, b) => b[1] - a[1]);
   const total = [...byMethod.values()].reduce((a, b) => a + b, 0);
   const slices = [...byMethod.entries()]
     .filter(([, amount]) => amount > 0)
@@ -115,6 +128,18 @@ export function PaymentMixPie({
         </div>
       ) : (
         <p className="muted">Sin pagos en estas fechas.</p>
+      )}
+      {banks.length > 0 && (
+        <ul className="year-pie-list" aria-label="Cobros por banco">
+          {banks.map(([name, amount]) => (
+            <li key={name}>
+              <span>
+                <strong>{name}</strong>{" "}
+                {formatMoney(Math.round(amount * 100) / 100)}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

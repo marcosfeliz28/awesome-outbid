@@ -64,10 +64,11 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
       ...(data.payments
         ? [
             [],
-            ["Forma de pago por categoría", "Forma de pago", "Monto"],
+            ["Forma de pago por categoría", "Forma de pago", "Banco", "Monto"],
             ...data.payments.map((p: MixRow) => [
               p.category,
               MIX_LABEL[p.method] ?? p.method,
+              p.bank ?? "",
               p.amount,
             ]),
           ]
