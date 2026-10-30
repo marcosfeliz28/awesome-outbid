@@ -1594,3 +1594,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - Sin órdenes nuevas. N34 sigue en espera (entrada recortada a 6000 caracteres).
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo (30-oct, noche): cola N34-N41 revisada, modelo restaurado, reparto propuesto
+- Órdenes de Nexora 1: RESPUESTA_CLAUDE_PC_27OCT.md sin cambio (863ba804). OBSIDIAN_LUMINA_PROGRESO.md ausente. COLA_LOCAL_ACTIVA_NUEVA.json en 313bb86e.
+- Cola N34-N41 en claude-pc/cola-n-nueva: N34, N35, N36, N38, N39 y N41 commiteadas con encabezado de fuente (579e249e). N37 y N40 rechazadas. Rama nueva subida; CI pendiente; LISTA cuando verify, windows-installer y render-images estén en verde.
+- Modelo qwen-optimizado: se probó una versión revisada del SYSTEM (18/21) y se descartó porque incluyó DGII como función. Se restauró la versión anterior (20/21). Copias en el escritorio: Modelfile.anterior y Modelfile.v2.
+- Registro de sesiones: Norexos 1 (d21984) recibió la entrega y la propuesta de reparto. Norexos 4 (40a558, Revisor de seguridad) recibió la misma propuesta. Norexos 2 (Mercancía), 3 (Taller), 5 (Director) y 6 (Consultor) están listados, sin pedido directo de Claude PC en este ciclo. «Brazo» y «Forja» no aparecen como sesiones en la lista; queda por confirmar a quién se refieren.
+- Reparto propuesto: docs/coordinacion/REPARTO_LOCAL_PC.md (734036bc).
+- ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU del modelo local.
