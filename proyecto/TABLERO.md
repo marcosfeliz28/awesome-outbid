@@ -30,6 +30,10 @@
 | T24 | Reparto de la laptop: `docs/coordinacion/REPARTO_B9.md` y `DICTAMEN_PC.md` | E1–E4 | Norexos 4 (verifica) | en curso | Dictamen del Revisor publicado en `claude/revisor-plugins` 5a0a14ad (02:37 UTC). Pendiente que Norexos 1 lo acepte |
 | T25 | Skills de Matt Pocock en `.claude/skills/` (tdd, diagnosing-bugs, domain-modeling, research, handoff, writing-for-agents, pr, codebase-design) | E0 | Norexos 1 | hecho | Archivos reales en `nexora-cloud` 5aedea50 (0 enlaces rotos). Se usan solo si la tarea las pide. Norexos 5 solo lee, no instala |
 | T22 | Instalaciones de skills (órdenes 32 y 33) | E0 | Norexos 1 y Taller | en curso | Norexos 1, por orden directa de la dueña: `wayfinder` y `karpathy-guidelines` (commit 2c60614), solo texto, instaladas. Agent Skills (eb07f19, solo skills, sin hooks) y ECC (aislado, solo markdown, sin hooks, MCP ni scripts) delegadas al Taller con esas restricciones. Superpowers no se toca (ya existía). Pendiente: el Taller reporta cuando termine |
+| T28 | Obreros 7 y 8 (desglose del mes e IA de ventas), sesiones `session_01CjMpH5C7…` y `session_01CjMpH4UeCp…` | E2 | Norexos 1 | bloqueado | Las dos piden permiso de la dueña para enviar mensajes (claude-code-remote). Norexos 8 dice «E2E verde, docs y push pendientes» (06:53 UTC). Norexos 5 no aprueba permisos |
+| T33 | IA de ventas en la tienda (solo lectura, tope 30/día) | E2 | Norexos 9 (obrero IA, `session_01CjMpH4uXQ…`) | en curso | Sesión creada 08:09 UTC. Rama `claude/ia-ventas-linea` todavía no existe en el repo |
+| T32 | Desglose del mes (arreglo de «Ver detalle del mes») | E2 | Taller → Norexos 1 | hecho | Mezclado en `nexora-cloud` 1e25909f (07:56 UTC), con CI verde según el mensaje del commit (f9715f66) |
+
 
 ## Estado de sesiones (29-oct-2026, 20:34 UTC)
 Ociosa = sin actividad de sesión en 60 min. Ninguna cumple ese criterio hoy.
