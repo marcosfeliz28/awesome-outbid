@@ -10,6 +10,7 @@ export default defineConfig({
     include: [
       "tests/docs-sistema-indice.test.ts",
       "tests/docs-sistema-citas.test.ts",
+      "tests/reglas-si.test.ts",
       "tests/tildes-nuevas.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
