@@ -5,8 +5,7 @@ import { can, formatMoney } from "@fitstore/shared";
 import { api, useStore } from "./api";
 import { QueryState, today } from "./helpers";
 import { monthNames, reportCsv } from "./year-report-utils";
-import { PaymentMixPie, type MixRow } from "./PaymentMixPie";
-import { METHOD_LABEL } from "./Prints";
+import { MIX_LABEL, PaymentMixPie, type MixRow } from "./PaymentMixPie";
 
 const params = () => {
   const q = new URLSearchParams(location.hash.split("?")[1] ?? "");
@@ -16,6 +15,7 @@ const params = () => {
     to: q.get("to") || t,
   };
 };
+type TopGroup = { category: string; byUnits: Line[]; byAmount: Line[] };
 type Line = {
   name: string;
   sku?: string;
@@ -23,6 +23,16 @@ type Line = {
   units: number;
   profit?: number;
   margin?: number;
+};
+
+// Mes completo a `delta` meses de `from`; el mes en curso termina hoy.
+const monthFrom = (from: string, delta: number) => {
+  const d = new Date(
+    Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1 + delta, 1),
+  );
+  const end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
+  const iso = (x: Date) => x.toISOString().slice(0, 10);
+  return { from: iso(d), to: iso(end) < today() ? iso(end) : today() };
 };
 
 export function MonthReport({ go }: { go: (page: string) => void }) {
@@ -37,7 +47,18 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
     enabled: !!from && !!to && from <= to,
     refetchInterval: 60000,
   });
+  const [topCategory, setTopCategory] = useState("");
+  const [topBy, setTopBy] = useState<"byUnits" | "byAmount">("byUnits");
   const data = query.data;
+  const topGroup =
+    data?.topByCategory?.find((g: TopGroup) => g.category === topCategory) ??
+    data?.topByCategory?.[0];
+  const goMonth = (delta: number) => {
+    const m = monthFrom(from, delta);
+    setFrom(m.from);
+    setTo(m.to);
+  };
+  const nextDisabled = monthFrom(from, 1).from > today();
   const title = (() => {
     const m = Number(from.slice(5, 7));
     const whole = from.slice(0, 7) === to.slice(0, 7) && from.endsWith("-01");
@@ -65,10 +86,11 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
       ...(data.payments
         ? [
             [],
-            ["Forma de pago por categoría", "Forma de pago", "Monto"],
+            ["Forma de pago por categoría", "Forma de pago", "Banco", "Monto"],
             ...data.payments.map((p: MixRow) => [
               p.category,
-              METHOD_LABEL[p.method] ?? p.method,
+              MIX_LABEL[p.method] ?? p.method,
+              p.bank ?? "",
               p.amount,
             ]),
           ]
@@ -113,6 +135,16 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
         </div>
       </div>
       <section className="panel month-range" aria-label="Fechas del reporte">
+        <Button variant="secondary" onClick={() => goMonth(-1)}>
+          ← Mes anterior
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => goMonth(1)}
+          disabled={nextDisabled}
+        >
+          Mes siguiente →
+        </Button>
         <label>
           Desde
           <input
@@ -191,6 +223,60 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                 rows={data.payments as MixRow[]}
                 categories={data.categories.map((c: Line) => c.name)}
               />
+            )}
+            {topGroup && (
+              <section className="panel" aria-labelledby="top-category-title">
+                <div className="panel-heading">
+                  <h2 id="top-category-title">Top 10 por categoría</h2>
+                  <select
+                    aria-label="Categoría del top 10"
+                    value={topGroup.category}
+                    onChange={(e) => setTopCategory(e.target.value)}
+                  >
+                    {data.topByCategory.map((g: TopGroup) => (
+                      <option key={g.category} value={g.category}>
+                        {g.category}
+                      </option>
+                    ))}
+                  </select>
+                  {(["byUnits", "byAmount"] as const).map((k) => (
+                    <Button
+                      key={k}
+                      variant={topBy === k ? "primary" : "secondary"}
+                      aria-pressed={topBy === k}
+                      onClick={() => setTopBy(k)}
+                    >
+                      {k === "byUnits" ? "Por unidades" : "Por monto"}
+                    </Button>
+                  ))}
+                </div>
+                <div className="table-scroll">
+                  <table className="month-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Producto</th>
+                        <th>Unidades</th>
+                        <th>Vendido</th>
+                        {showProfit && <th>Ganancia</th>}
+                        {showProfit && <th>Margen</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topGroup[topBy].map((t: Line, i: number) => (
+                        <tr key={t.sku ?? t.name}>
+                          <td>{i + 1}</td>
+                          <td>{t.name}</td>
+                          <td>{t.units.toLocaleString("es-DO")}</td>
+                          <td>{formatMoney(t.revenue)}</td>
+                          {showProfit && <td>{formatMoney(t.profit ?? 0)}</td>}
+                          {showProfit && <td>{t.margin ?? 0} %</td>}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             )}
             <section className="panel">
               <div className="panel-heading">
