@@ -1498,3 +1498,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en curso: claude-pc/cola-n (2680132c) y claude-pc/cola-b14-resto (03430fc6): verify en progreso. Sin LISTA nueva hasta que cierren en verde.
 - ChatGPT (paso 5): sin cambio. Según el ciclo anterior, la cuota está pausada hasta el 2 de noviembre; no se abrió en este ciclo.
 - Modelo local: solo qwen2.5-coder:7b cargado en Ollama. Prueba de cinco modelos sin resultado.
+
+## Ciclo (29-oct): diagnóstico del verify rojo de Forja 3
+- Fetch: nexora-cloud en 65c7121c. RESPUESTA_CLAUDE_PC_27OCT.md blob 7157b7d4 (sin orden nueva). OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en d6adc554.
+- Causa localizada (no confirmada desde el log): el chequeo de formato (Prettier) marcaba 4 archivos de Forja 3. Corregido con `prettier --write` solo en esos archivos, commit 600eae7f en `claude-pc/forja3-grupo-1`.
+- Verificado localmente: las 6 pruebas de Forja 3 pasan (25 de 25) con Vitest; eslint pasa; tsc del paquete ui pasa. No corrí el e2e ni `pnpm check` completo.
+- CI de 600eae7f: en curso. Sin LISTA de esa rama (orden 75).
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
