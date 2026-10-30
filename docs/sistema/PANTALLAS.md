@@ -81,7 +81,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 ## Productos
 
 - **Etiqueta:** «Productos». **Permiso:** `catalog:read` (editar requiere `catalog:write`). **Componente:** `Catalog`, `apps/web/src/Management.tsx:235`. Título: «Tu catálogo, con personalidad» (`:291`).
-- **Qué hace:** catálogo con variantes, precios, códigos de barras y etiquetas; botones «Plantilla» y «Importar Excel» (`:311-340`, API `apps/api/src/catalog.ts:195`, `:587`). Productos y variantes: `apps/api/src/catalog.ts:377-495`.
+- **Qué hace:** catálogo con variantes, precios, códigos de barras y etiquetas; botones «Plantilla» y «Importar Excel» (`:311-340`, API `apps/api/src/catalog.ts:195`, `:587`). Productos y variantes: `apps/api/src/catalog.ts:378-496`.
 
 ## Inventario
 

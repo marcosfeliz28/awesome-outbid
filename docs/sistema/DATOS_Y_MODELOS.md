@@ -84,7 +84,7 @@ Reglas: una persona solo puede tener **una caja abierta** (índice único parcia
 | Modelo | Qué es | Línea |
 |---|---|---|
 | `Supplier` | Proveedor (nombre, RNC, plazo de pago, tiempo de entrega). | `:79` |
-| `PurchaseOrder`, `PurchaseItem` | Orden de compra. `status`: `ordered` → `partial` → `received` (`apps/api/src/inventory.ts:1304-1308`). | `:571`, `:593` |
+| `PurchaseOrder`, `PurchaseItem` | Orden de compra. `status`: `ordered` → `partial` → `received` (`apps/api/src/inventory.ts:1302-1306`). | `:571`, `:593` |
 | `GoodsReceipt` | **Recepción** de mercancía (de una orden o de una factura): flete, otros costos, `damagedCost`, `invoiceTotal`, `supplierInvoice`, `supplierNcf`. | `:611` |
 | `SupplierPayment` | Pago a un proveedor. | `:648` |
 | `InvoiceDraft`, `InvoiceAttachment` | Factura de proveedor subida y su revisión antes de confirmar. | `:903`, `:915` |

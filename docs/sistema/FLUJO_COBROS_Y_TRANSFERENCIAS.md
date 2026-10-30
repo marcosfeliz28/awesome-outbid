@@ -73,7 +73,7 @@ Dos caminos:
 5. Si el envío del mensajero explica la diferencia: «Usar RD$ X como envío» (`:321`) o «Editar envío».
 6. **«Rechazar»** una factura: «Motivo del rechazo» + «Confirmar rechazo» (`:359`).
 
-**B) Desde «Ventas»** abriendo la factura (ojo): por cada transferencia pendiente, botones **«Verificar»** (`apps/web/src/Management.tsx:3513`), **«Rechazar»** (`:3530`) y **«Corregir banco y referencia»** (`:3455`; bloque de transferencias en `:3445`).
+**B) Desde «Ventas»** abriendo la factura (ojo): por cada transferencia pendiente, botones **«Verificar»** (`apps/web/src/Management.tsx:3548`), **«Rechazar»** (`:3530`) y **«Corregir banco y referencia»** (`:3455`; bloque de transferencias en `:3445`).
 
 API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales.ts:2785`). Efecto:
 - `pending_verification` → `ok`; se resuelve la alerta.
@@ -90,7 +90,7 @@ API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales
 
 ### 4.4 Corregir banco y referencia
 
-- «Corregir banco y referencia» (`*`; pago `pending_verification` u `ok`): campos «Banco correcto», «Referencia correcta», «Motivo de la corrección» (`apps/web/src/Management.tsx:3605-3637`, etiqueta en `:3614`); no cambia importe ni estado y queda en la bitácora. API `POST /payments/:id/correct-transfer` (`apps/api/src/sales.ts:3038`). Si otra persona la corrigió antes: «Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.» (`apps/api/src/sales.ts:3080`).
+- «Corregir banco y referencia» (`*`; pago `pending_verification` u `ok`): campos «Banco correcto», «Referencia correcta», «Motivo de la corrección» (`apps/web/src/Management.tsx:3640-3672`, etiqueta en `:3614`); no cambia importe ni estado y queda en la bitácora. API `POST /payments/:id/correct-transfer` (`apps/api/src/sales.ts:3038`). Si otra persona la corrigió antes: «Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.» (`apps/api/src/sales.ts:3080`).
 
 ## 5. Cuando la caja ya cerró
 
