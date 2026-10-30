@@ -240,6 +240,86 @@
         "docs/sistema/GLOSARIO.md"
       ],
       "salida": "docs/diseno/borradores-local/glosario-en.md"
+    },
+    {
+      "id": "N42-caja-1",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 1 a 60 del archivo.",
+      "entradas": [
+        "docs/sistema/FLUJO_CAJA_POS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-caja-1.md"
+    },
+    {
+      "id": "N43-caja-2",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 61 a 120 del archivo.",
+      "entradas": [
+        "docs/sistema/FLUJO_CAJA_POS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-caja-2.md"
+    },
+    {
+      "id": "N44-caja-3",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 121 a 171 del archivo.",
+      "entradas": [
+        "docs/sistema/FLUJO_CAJA_POS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-caja-3.md"
+    },
+    {
+      "id": "N45-cobros-2",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 36 a 70 del archivo.",
+      "entradas": [
+        "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-cobros-2.md"
+    },
+    {
+      "id": "N46-cobros-3",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 71 a 105 del archivo.",
+      "entradas": [
+        "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-cobros-3.md"
+    },
+    {
+      "id": "N47-cobros-4",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 106 a 137 del archivo.",
+      "entradas": [
+        "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-cobros-4.md"
+    },
+    {
+      "id": "N48-mercancia-1",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 1 a 50 del archivo.",
+      "entradas": [
+        "docs/sistema/FLUJO_MERCANCIA.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-mercancia-1.md"
+    },
+    {
+      "id": "N49-mercancia-2",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 51 a 100 del archivo.",
+      "entradas": [
+        "docs/sistema/FLUJO_MERCANCIA.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-mercancia-2.md"
     }
   ]
 }
