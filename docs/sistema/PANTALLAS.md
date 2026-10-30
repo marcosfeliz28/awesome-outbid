@@ -26,6 +26,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 16 | **Alertas** | `alerts:write` | `Alerts` (`apps/web/src/Management.tsx:3013`) | 275 |
 | 17 | **Incentivos** | `sale:manage` | `IncentivesPage` (`apps/web/src/Incentives.tsx:287`) | 278 |
 | 18 | **GV Makeup Studio** | `gv:read` | `Gv` (`apps/web/src/Gv.tsx:111`) | 282 |
+| 19 | **Preguntar a Norexos** | solo si la API tiene `ANTHROPIC_API_KEY` y la persona puede usarla (`reports:read` o cajera) | `AssistantPage` (`apps/web/src/AssistantPanel.tsx:23`) | `apps/web/src/App.tsx:290` |
 
 Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 
@@ -129,6 +130,11 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 ## Incentivos
 
 - **Etiqueta:** «Incentivos». **Permiso:** `sale:manage`. **Componente:** `IncentivesPage`, `apps/web/src/Incentives.tsx:287`. Reporte mensual por cajera; la administración (`*`) cierra el mes (`:306-318`, API `apps/api/src/incentives.ts:852`). La cajera ve el suyo en «Mis incentivos» dentro de Caja (`apps/api/src/incentives.ts:754`). Reglas: `docs/INCENTIVOS.md`.
+
+## Preguntar a Norexos (IA de ventas, T33 · rama `claude/ia-ventas-linea`, aún no desplegado)
+
+- **Etiqueta:** «Preguntar a Norexos». Aparece en el menú solo si `GET /assistant/status` dice `enabled` (hay `ANTHROPIC_API_KEY`) y `canUse` (`apps/api/src/assistant.ts:565`; menú en `apps/web/src/App.tsx:290`). Componente `AssistantPage` (`apps/web/src/AssistantPanel.tsx:23`): caja de texto, respuesta con el rango usado y «Te quedan N preguntas hoy».
+- **Solo lectura.** La IA llama herramientas con parámetros (`resumen_ventas`, `top_productos`, `cobros`, `comparar_periodos`; la cajera solo `mis_ventas`) que reutilizan `dashboardBreakdown` y `mySales`, así que las cifras son las del desglose del mes (misma regla de devoluciones D-05). No escribe SQL ni cambia precios, existencias o ventas. Tope 30 preguntas por día y usuario (`DAILY_LIMIT`, `apps/api/src/assistant.ts:23`). Diseño: `docs/coordinacion/T33_DISENO.md`.
 
 ## GV Makeup Studio
 

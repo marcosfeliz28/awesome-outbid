@@ -35,6 +35,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 | `promotions:write` | «Promociones». | `App.tsx:265`; `admin.ts:1340-1386`; `apps/api/src/alerts.ts:904-905` |
 | `reports:read` | «Reportes», «Resumen», exportes. | `App.tsx:203`, `:271`; `apps/api/src/reports.ts:235`, `:684-692` |
 | `profit:read` | **Ver costos, márgenes y utilidades**; ver esperados de caja; reportes de margen e «Informe formal». Nunca aplica al rol `seller` aunque lo reciba (la vendedora nunca ve costos). | `apps/web/src/Management.tsx:1633`, `:2870`; `apps/api/src/common.ts:70-72`, `:366-370`; `apps/api/src/reports.ts:687-721`; `apps/api/src/formal-report.ts:49` |
+| IA de ventas («Preguntar a Norexos») | Con `reports:read`: ventas, top y cobros de la tienda (el banco/forma de cobro solo si ve el esperado de caja). Costo, ganancia y margen solo con `profit:read` y nunca para `seller`. La cajera (`seller`) usa solo `mis_ventas`: sus ventas de hoy/semana, sin costos, sin totales de la tienda y con caja ciega hasta cerrar. Sin `reports:read` y sin ser cajera → 403. Se decide en el servidor antes de llamar a la IA. | `apps/api/src/assistant.ts:157`, `apps/api/src/assistant.ts:430` |
 | `alerts:write` | «Alertas» y la campana. | `App.tsx:275`; `apps/api/src/alerts.ts:841`, `:876`, `:937` |
 | `gv:read` / `gv:write` / `gv:reports` / `gv:verify` | Módulo GV (ver `GV.md` §9). | `App.tsx:282`; `apps/api/src/gv.ts`, `gv-citas.ts` |
 | `*` | Todo, y varias rutas son **solo** de este permiso (ver §4). | 40 rutas con `@Permit("*")` |

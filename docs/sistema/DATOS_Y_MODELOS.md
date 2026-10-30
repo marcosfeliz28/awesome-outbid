@@ -103,6 +103,7 @@ Reglas: una persona solo puede tener **una caja abierta** (índice único parcia
 | `DriveBackup` | Respaldos a Google Drive. | `:1029` |
 | `RealtimeEvent` | Eventos para refrescar las pantallas abiertas. | `:864` |
 | `CashierSurvey` | Encuesta de la caja. | `:1199` |
+| `AssistantQuery` | Registro de cada pregunta a la IA de ventas: `userId`, `question` (≤500), `model`, `inputTokens`, `outputTokens`, `costUsd`, `status` (`ok`, `error`, `limit`). Sirve para el tope de 30 por día. Migración `202611010001_assistant_query` (solo `CREATE TABLE IF NOT EXISTS`). | `:1210` |
 
 ## 8. GV Makeup Studio
 

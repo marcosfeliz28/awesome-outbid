@@ -71,6 +71,9 @@ services:
         generateValue: true
       - key: ANTHROPIC_MODEL
         value: claude-opus-5-5
+      # IA de ventas (T33): modelo económico, distinto del de las facturas.
+      - key: ASSISTANT_MODEL
+        value: claude-haiku-5-5
 
 databases:
   - name: nexora-pos-db
