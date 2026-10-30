@@ -1692,3 +1692,13 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23, a1, b01 y lumina en verde. claude-pc/cola-n-nueva (86b5b2bf): verify, windows-installer y render-images en verde → LISTA escrita. claude-pc/tildes-urls (ef0c1b08): verify en progreso.
 - Tomo para la cola local: N18, N22, N23, N25, N29, N30, N31 y N33 (salidas pendientes en cola-n-nueva). Se anotan en PENDIENTES por Norexos 1.
 - ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
+
+## Noche (30-oct, ~23:40): orden 82 y N35 descartada
+- Fetch: nexora-cloud en e5873416 (orden 82). RESPUESTA_CLAUDE_PC_27OCT.md blob b79ed254. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Orden 82: Claude PC y la fork no escriben en nexora-cloud; Norexos 1 anota las tareas en PENDIENTES cuando recibe «Tomo: <tarea>». Mandé «Tomo: N36».
+- N35 (glosario simple): segundo intento también sin citas archivo:línea. Descartada; guardada en el directorio temporal de la sesión.
+- N34 y N35 descartadas. Siguiente: N36.
+- Bloque 15 (`claude-pc/bloque15`, 79566ad8): verify, windows-installer y render-images en verde. Según la orden 80 no se mezcla: sin LISTA.
+- Tildes: `claude-pc/tildes-urls` está en ef0c1b08 (no lo toco); la toma Norexos 1.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
