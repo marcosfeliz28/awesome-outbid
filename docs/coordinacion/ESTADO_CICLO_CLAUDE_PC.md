@@ -1727,3 +1727,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Consulta 30 min (30-oct): cola en marcha; sin órdenes nuevas
 - Fetch: nexora-cloud en 4c5fd08e para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde la orden 83).
 - Cola: COLA_LOCAL_ACTIVA_ESTADO.json (runner viejo) dice vacía; la cola activa es COLA_LOCAL_ACTIVA_NUEVA.json y tengo tomadas N18, N30, N25, N33, N22, N23, N29 y N31. N18 ya tiene salida (roles-simples, 615 caracteres, sin revisar). Las demás se están generando. No se envió petición a Norexos 1 porque hay tareas pendientes.
+
+## Cola pendiente (30-oct): revisión de las 8 salidas tomadas
+- Aceptadas y commiteadas en claude-pc/cola-n-nueva (f2cae557): N18 roles-simples (a94b0f1f), N33 meta-tabla con longitudes medidas por script 139/150/147 (ae309455), N25 faq-gv-corta (f2cae557).
+- Rechazadas (fuera del repo, no subidas): N22 guion-video (menciona «comprobantes» en escenas 2 y 3: riesgo fiscal), N23 correo-bienvenida (promete comprobantes NCF), N29 landing-jerga (salida sin sentido: tabla con «NO ENCONTRADO» en cada celda), N30 pantallas-ayuda (frases genéricas sin cita, dos «NO ENCONTRADO»), N31 glosario-gv (define «Génesis Ventures», que no está en la entrada). Pendientes de reintento una vez, según la regla.
+- LISTA: pendiente hasta que el CI de f2cae557 cierre en verde.
