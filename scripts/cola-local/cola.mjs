@@ -49,7 +49,7 @@ async function main() {
   // Contexto fijo: la guía de educación que Norexos 1 escribió para el modelo (si existe).
   // Contexto fijo: la guía de Norexos 1 y las reglas de Claude PC (en ese orden).
   const contexto = cargarContexto(
-    ["docs/coordinacion/EDUCACION_MODELO_LOCAL.md", "docs/coordinacion/INSTRUCCIONES_QWEN_CLAUDE_PC.md"],
+    ["docs/coordinacion/EDUCACION_MODELO_LOCAL.md", "docs/coordinacion/INSTRUCCIONES_QWEN_CLAUDE_PC.md", "docs/educacion/CONOCIMIENTO_NOREXOS.md"],
     leer,
     existsSync,
   );
