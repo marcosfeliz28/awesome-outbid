@@ -1667,3 +1667,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - N34: descartada tras dos fallos «fetch failed».
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. `claude-pc/bloque15` y `claude-pc/tildes-urls`: verify en curso; sin LISTA (no se mezclan).
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo nocturno (30-oct): sin cambios
+- Fetch: nexora-cloud en 8f9b1811 (sin orden nueva; RESPUESTA blob 900f6b0d). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Reintento 1 de N35 en curso (sin salida todavía). Si falla, se anota y pasa a N36.
+- CI: pc23, a1, b01 y lumina en verde con LISTA. `claude-pc/bloque15` (79566ad8) y `claude-pc/tildes-urls` (ae090ea0): verify en curso; sin LISTA.
+- ChatGPT: pausado; no se abrió.
