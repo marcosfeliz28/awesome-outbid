@@ -1,6 +1,6 @@
 # Rutas de la API y sus permisos
 
-Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del método (revisar).
+Generado por `scripts/rutas-permisos.mjs`. 189 rutas; 0 sin @Permit cerca del método (revisar).
 
 | ruta | método | permiso | archivo:línea |
 |---|---|---|---|
@@ -9,6 +9,8 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del m�
 | `/api/alerts` | GET | `alerts:write` | `apps/api/src/alerts.ts:841` |
 | `/api/alerts/:id` | PATCH | `alerts:write` | `apps/api/src/alerts.ts:876` |
 | `/api/alerts/evaluate` | POST | `alerts:write` | `apps/api/src/alerts.ts:937` |
+| `/api/assistant/ask` | POST | `authenticated` | `apps/api/src/assistant.ts:607` |
+| `/api/assistant/status` | GET | `authenticated` | `apps/api/src/assistant.ts:588` |
 | `/api/audit-log` | GET | `*` | `apps/api/src/admin.ts:1321` |
 | `/api/auth/change-password` | POST | `pública por diseño (@Public)` | `apps/api/src/auth.ts:512` |
 | `/api/auth/login` | POST | `pública por diseño (@Public)` | `apps/api/src/auth.ts:421` |
@@ -84,7 +86,7 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del m�
 | `/api/gv/payments/:id/void` | POST | `gv:write` | `apps/api/src/gv.ts:395` |
 | `/api/gv/reports` | GET | `gv:reports` | `apps/api/src/gv.ts:519` |
 | `/api/gv/transfers/pending` | GET | `gv:read` | `apps/api/src/gv.ts:660` |
-| `/api/health/live` | GET | `pública por diseño (@Public)` | `apps/api/src/app.ts:54` |
+| `/api/health/live` | GET | `pública por diseño (@Public)` | `apps/api/src/app.ts:55` |
 | `/api/incentives` | GET | `sale:manage` | `apps/api/src/incentives.ts:743` |
 | `/api/incentives/close` | POST | `*` | `apps/api/src/incentives.ts:852` |
 | `/api/incentives/export.xlsx` | GET | `sale:manage` | `apps/api/src/incentives.ts:926` |
@@ -107,12 +109,12 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del m�
 | `/api/inventory/transfers` | POST | `*` | `apps/api/src/warehouses.ts:112` |
 | `/api/inventory/warehouses` | GET | `catalog:read` | `apps/api/src/warehouses.ts:45` |
 | `/api/kits` | POST | `catalog:write` | `apps/api/src/catalog.ts:651` |
-| `/api/merchandise/attachments/:id` | GET | `inventory:write` | `apps/api/src/merchandise.ts:179` |
-| `/api/merchandise/import` | POST | `inventory:write` | `apps/api/src/merchandise.ts:194` |
-| `/api/merchandise/operations` | GET | `inventory:write` | `apps/api/src/merchandise.ts:330` |
-| `/api/merchandise/operations` | POST | `inventory:write` | `apps/api/src/merchandise.ts:341` |
-| `/api/merchandise/options` | GET | `inventory:write` | `apps/api/src/merchandise.ts:160` |
-| `/api/merchandise/profiles/:id` | GET | `inventory:write` | `apps/api/src/merchandise.ts:166` |
+| `/api/merchandise/attachments/:id` | GET | `inventory:write` | `apps/api/src/merchandise.ts:180` |
+| `/api/merchandise/import` | POST | `inventory:write` | `apps/api/src/merchandise.ts:195` |
+| `/api/merchandise/operations` | GET | `inventory:write` | `apps/api/src/merchandise.ts:332` |
+| `/api/merchandise/operations` | POST | `inventory:write` | `apps/api/src/merchandise.ts:343` |
+| `/api/merchandise/options` | GET | `inventory:write` | `apps/api/src/merchandise.ts:161` |
+| `/api/merchandise/profiles/:id` | GET | `inventory:write` | `apps/api/src/merchandise.ts:167` |
 | `/api/notifications/status` | GET | `*` | `apps/api/src/notifications.ts:1059` |
 | `/api/notifications/telegram/test` | POST | `*` | `apps/api/src/notifications.ts:1034` |
 | `/api/payments/:id/correct-transfer` | POST | `*` | `apps/api/src/sales.ts:3038` |
@@ -140,8 +142,8 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del m�
 | `/api/quotes` | GET | `sale:write` | `apps/api/src/admin.ts:739` |
 | `/api/quotes` | POST | `sale:write` | `apps/api/src/admin.ts:745` |
 | `/api/quotes/:id/convert` | POST | `sale:write` | `apps/api/src/admin.ts:802` |
-| `/api/reportes` | GET | `reports:read` | `apps/api/src/reports.ts:684` |
-| `/api/reports/:name` | GET | `reports:read` | `apps/api/src/reports.ts:692` |
+| `/api/reportes` | GET | `reports:read` | `apps/api/src/reports.ts:697` |
+| `/api/reports/:name` | GET | `reports:read` | `apps/api/src/reports.ts:705` |
 | `/api/reports/formal` | GET | `reports:read` | `apps/api/src/formal-report.ts:42` |
 | `/api/reports/income-by-day` | GET | `reports:read` | `apps/api/src/income-report.ts:292` |
 | `/api/returns` | POST | `sale:manage` | `apps/api/src/sales.ts:3223` |
@@ -160,7 +162,7 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del m�
 | `/api/sales/:id/seller` | POST | `*` | `apps/api/src/sales.ts:2147` |
 | `/api/sales/:id/void` | POST | `*` | `apps/api/src/sales.ts:2405` |
 | `/api/sales/:id/void-requests` | POST | `sale:write` | `apps/api/src/sales.ts:1868` |
-| `/api/sales/mine/:period` | GET | `sale:write` | `apps/api/src/reports.ts:1356` |
+| `/api/sales/mine/:period` | GET | `sale:write` | `apps/api/src/reports.ts:1369` |
 | `/api/sales/offline-resolution` | POST | `sale:write` | `apps/api/src/offline-sales.ts:40` |
 | `/api/sales/offline-review/discard` | POST | `sale:write` | `apps/api/src/offline-sale-review.ts:90` |
 | `/api/sales/sync` | POST | `sale:write` | `apps/api/src/sales.ts:1481` |
