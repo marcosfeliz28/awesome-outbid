@@ -158,8 +158,8 @@ describe("cifras de las herramientas = desglose del mes", () => {
         ),
         mine: (a, p) => mySales(db, a, p),
         usage: {
-          countToday: async () => 0,
-          record: async (r) => void records.push(r),
+          reserve: async () => ({ id: "q", used: 1 }),
+          settle: async (_id, r) => void records.push(r),
         },
         now: () => NOW,
       };
@@ -267,5 +267,116 @@ describe("rutas /assistant", () => {
     });
     expect(r.status).toBe(201);
     expect(r.body.limited).toBe(true);
+  });
+});
+
+// Revisión adversarial de permisos con el cálculo real (safe() incluido).
+describe("permisos con datos reales", () => {
+  const reports = new ReportsController(db);
+  const run = async (who: any, name: string, input: any) => {
+    const seen: any[] = [];
+    const create = async (p: any) =>
+      p.messages.length === 1
+        ? {
+            content: [{ type: "tool_use", id: "t", name, input }],
+            stop_reason: "tool_use",
+            usage: { input_tokens: 1, output_tokens: 1 },
+          }
+        : {
+            content: [{ type: "text", text: "ok" }],
+            stop_reason: "end_turn",
+            usage: { input_tokens: 1, output_tokens: 1 },
+          };
+    const deps: AssistantDeps = {
+      client: { create } as any,
+      breakdown: (a, f, t) => (
+        seen.push([f, t]),
+        reports.dashboardBreakdown({ from: f, to: t }, a)
+      ),
+      mine: (a, p) => mySales(db, a, p),
+      usage: {
+        reserve: async () => ({ id: "q", used: 1 }),
+        settle: async () => {},
+      },
+      now: () => NOW,
+    };
+    const r = await ask(who, "[test-t33] adversarial", deps);
+    return { r, seen };
+  };
+  const as = (role: string, permissions: string[]) => ({
+    ...admin,
+    role,
+    permissions,
+  });
+  const COSTS = /"(cost|profit|margin|unitCost)"/;
+
+  it("reports:read sin profit:read: hay ventas por línea y top, pero nunca costo, ganancia ni margen", async () => {
+    const who = as("custom", ["reports:read"]);
+    const a = await run(who, "resumen_ventas", {
+      periodo: "mes",
+      categoria: "Suplementos",
+    });
+    expect(a.r.used[0].error).toBeUndefined();
+    expect(typeof a.r.used[0].result.revenue).toBe("number");
+    expect(JSON.stringify(a.r.used)).not.toMatch(COSTS);
+    const t = await run(who, "top_productos", {
+      periodo: "mes",
+      categoria: "Fajas",
+    });
+    expect(t.r.used[0].error).toBeUndefined();
+    expect(JSON.stringify(t.r.used)).not.toMatch(COSTS);
+    const c = await run(who, "comparar_periodos", {
+      categoria: "Maquillaje",
+      a: { periodo: "mes" },
+      b: { periodo: "mes_pasado" },
+    });
+    expect(JSON.stringify(c.r.used)).not.toMatch(COSTS);
+  });
+  it("con profit:read sí ve margen", async () => {
+    const a = await run(
+      as("manager", ["reports:read", "profit:read"]),
+      "resumen_ventas",
+      { periodo: "mes", categoria: "Suplementos" },
+    );
+    expect(a.r.used[0].result).toHaveProperty("margin");
+  });
+  it("reports:read sin ver el esperado de caja: cobros no se entregan", async () => {
+    const a = await run(as("custom", ["reports:read"]), "cobros", {
+      periodo: "mes",
+    });
+    expect(a.r.used[0].error).toBeTruthy();
+    expect(a.r.used[0].result).toBeUndefined();
+  });
+  it("cajera con reports:read y profit:read: ni total de tienda ni costos", async () => {
+    const who = as("seller", ["sale:write", "reports:read", "profit:read"]);
+    for (const [name, input] of [
+      ["resumen_ventas", { periodo: "mes" }],
+      ["top_productos", { periodo: "mes" }],
+      ["cobros", { periodo: "mes" }],
+    ] as const) {
+      const a = await run(who, name, input);
+      expect(a.seen).toEqual([]);
+      expect(a.r.used[0].error).toBeTruthy();
+    }
+    const mine = await run(who, "mis_ventas", { periodo: "semana" });
+    expect(JSON.stringify(mine.r.used)).not.toMatch(COSTS);
+  });
+  it("sin reports:read ni ser cajera: 403 y no se llama a nada", async () => {
+    await expect(
+      run(as("warehouse", ["catalog:read"]), "resumen_ventas", {}),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+  it("pedirle cambiar un precio no cambia nada en la base", async () => {
+    const sum = async () =>
+      JSON.stringify(
+        await db.variant.findMany({
+          orderBy: { id: "asc" },
+          select: { id: true, price: true, stock: true },
+        }),
+      );
+    const before = await sum();
+    const a = await run(admin, "cambiar_precio", { sku: "X", precio: 1 });
+    expect(a.r.used[0].error).toBeTruthy();
+    expect(await sum()).toBe(before);
   });
 });

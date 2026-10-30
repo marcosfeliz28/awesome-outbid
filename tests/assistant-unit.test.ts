@@ -72,8 +72,8 @@ function setup(calls: any[], used = 0) {
       hiddenUntilClose: false,
     })),
     usage: {
-      countToday: vi.fn(async () => used),
-      record: vi.fn(async () => {}),
+      reserve: vi.fn(async () => ({ id: "q1", used: used + 1 })),
+      settle: vi.fn(async () => {}),
     },
     now: () => NOW,
   } as unknown as AssistantDeps & { client: { create: typeof create } };
@@ -157,9 +157,12 @@ describe("límites", () => {
     const r = await ask(admin, "hola", deps);
     expect(r.limited).toBeFalsy();
     expect(create).toHaveBeenCalled();
-    expect(deps.usage.record).toHaveBeenCalledWith(
+    expect(deps.usage.reserve).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "u1" }),
+    );
+    expect(deps.usage.settle).toHaveBeenCalledWith(
+      "q1",
       expect.objectContaining({
-        userId: "u1",
         status: "ok",
         inputTokens: 50,
         outputTokens: 10,

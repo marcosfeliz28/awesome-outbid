@@ -168,17 +168,23 @@ export type AssistantDeps = {
   breakdown: (actor: Actor, from: string, to: string) => Promise<any>;
   mine: (actor: Actor, period: "today" | "week") => Promise<any>;
   usage: {
-    countToday: (actor: Actor, since: Date) => Promise<number>;
-    record: (row: {
+    // Reserva el lugar ANTES de llamar al modelo (el tope no se salta con
+    // peticiones simultáneas); `used` ya cuenta esta pregunta.
+    reserve: (row: {
       userId: string;
       branchId: string;
       question: string;
       model: string;
-      inputTokens: number;
-      outputTokens: number;
-      costUsd: number;
-      status: "ok" | "error" | "limit";
-    }) => Promise<void>;
+    }) => Promise<{ id: string; used: number }>;
+    settle: (
+      id: string,
+      patch: {
+        inputTokens: number;
+        outputTokens: number;
+        costUsd: number;
+        status: "ok" | "error" | "limit";
+      },
+    ) => Promise<void>;
   };
   now?: () => Date;
 };
@@ -437,13 +443,9 @@ export async function ask(actor: Actor, question: string, deps: AssistantDeps) {
     question: question.slice(0, 500),
     model,
   };
-  const used = await deps.usage.countToday(
-    actor,
-    new Date(businessDate(now) + "T00:00:00-04:00"),
-  );
-  if (used >= DAILY_LIMIT) {
-    await deps.usage.record({
-      ...base,
+  const { id: queryId, used } = await deps.usage.reserve(base);
+  if (used > DAILY_LIMIT) {
+    await deps.usage.settle(queryId, {
       inputTokens: 0,
       outputTokens: 0,
       costUsd: 0,
@@ -469,8 +471,7 @@ export async function ask(actor: Actor, question: string, deps: AssistantDeps) {
     answer = "";
   const finish = (status: "ok" | "error") => {
     const p = PRICE(process.env);
-    return deps.usage.record({
-      ...base,
+    return deps.usage.settle(queryId, {
       inputTokens: tokensIn,
       outputTokens: tokensOut,
       costUsd: (tokensIn * p.in + tokensOut * p.out) / 1e6,
@@ -544,7 +545,7 @@ export async function ask(actor: Actor, question: string, deps: AssistantDeps) {
   return {
     answer: answer || "No tengo una respuesta para eso.",
     used: trace,
-    remaining: DAILY_LIMIT - used - 1,
+    remaining: DAILY_LIMIT - used,
   };
 }
 
@@ -585,7 +586,7 @@ export class AssistantController {
       where: {
         userId: actor.id,
         createdAt: { gte: since },
-        status: { in: ["ok", "error"] },
+        status: { in: ["pending", "ok", "error"] },
       },
     });
   @Post("ask")
@@ -609,9 +610,23 @@ export class AssistantController {
         this.reports.dashboardBreakdown({ from, to }, a),
       mine: (a, p) => mySales(this.db, a, p),
       usage: {
-        countToday: this.countToday,
-        record: async (r) =>
-          void (await this.db.assistantQuery.create({ data: r })),
+        reserve: async (r) => {
+          const row = await this.db.assistantQuery.create({
+            data: { ...r, status: "pending" },
+          });
+          return {
+            id: row.id,
+            used: await this.countToday(
+              actor,
+              new Date(businessDate() + "T00:00:00-04:00"),
+            ),
+          };
+        },
+        settle: async (id, patch) =>
+          void (await this.db.assistantQuery.update({
+            where: { id },
+            data: patch,
+          })),
       },
     });
   }
