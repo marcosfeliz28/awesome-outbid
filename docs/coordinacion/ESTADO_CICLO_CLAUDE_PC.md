@@ -2134,3 +2134,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 
 ## Ciclo nube (30-oct 15:10 UTC) — orden 92 nueva (nexora-cloud 7853a18f)
 - Orden 92 (Chrome DevTools MCP y Oh My Claude Code en la laptop) es instalación local: no ejecutable en la nube, queda pendiente para la laptop; sin LISTA nueva. CI sin cambio: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e, citas-robustas 535a4905 y plan-lanzamiento 3adeccac verdes; t33-rebase 3696d0cf verify sigue rojo (N2).
+
+## Ciclo nube (30-oct 17:10 UTC) — orden 93 nueva (nexora-cloud 00ba5d30)
+- Orden 93 (GV tarjeta sin banco) hecha en claude-pc/gv-tarjeta 7920ce18 (prueba de integración con Postgres local: falló antes, pasa después; suites GV 40/40; docs y citas al día); verify, windows-installer y render-images verdes, LISTA escrita. Un primer push (f5668b86) falló verify por 3 citas a líneas vacías; corregido. Cuenta destino de tarjeta no guardada (pendiente de la dueña); no desplegar sin revisión.
+- CI sin cambio: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e, citas-robustas 535a4905 y plan-lanzamiento 3adeccac verdes. Último hash visto de nexora-cloud: 00ba5d30.
