@@ -17,3 +17,11 @@ Propuesta para que Norexos 1 y Norexos 4 la confirmen en docs/coordinacion/COLA_
 ## Resultado de la prueba del 30-oct
 - Modelo con la versión anterior del SYSTEM: 20/21 en la prueba corta.
 - Versión revisada: 18/21; la frase de portada incluyó «DGII» como función. Se descartó.
+
+## Correcciones del Revisor adoptadas (30-oct)
+Dictamen: `claude/revisor-plugins` → `docs/coordinacion/REPARTO_LOCAL_REVISOR.md`. Confirmado con cinco correcciones:
+1. Lo mecánico (conteos, listados, mapas) lo hace un script (`grep`, `ls`, `wc`); el modelo solo redacta la prosa.
+2. Nada de lo que produce el modelo se da por verificado: lleva «Borrador sin verificar» y lo contrasto con un comando antes de subirlo.
+3. La prueba de calidad añade: que no aparezcan «DGII», «NCF» ni «e-CF» como funcionalidad, ni dinero ni credenciales.
+4. Nunca entran al modelo `docs/operacion`, `docs/legal`, `docs/seguridad`, `.env*`, `*.csv`, `*.xlsx`, `*.jsonl` ni tests con contraseñas literales.
+5. Salida solo en `docs/`; la rama la crea y empuja Claude PC.
