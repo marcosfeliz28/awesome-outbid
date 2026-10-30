@@ -161,3 +161,16 @@ Mismas reglas de siempre (solo lectura; salida en `docs/`; sin `docs/operacion/`
 | 82 | Variables de entorno (nombres, no valores) | `apps/api/src`, `render.yaml`, `.env.example` | `docs/operacion/VARIABLES_ENTORNO.md` | nombre, para qué sirve, obligatoria sí/no; **cero valores** (`grep -E "=[^ ]"` no debe mostrar secretos) |
 | 83 | Roles y permisos del producto | `apps/api/src` (definiciones de roles/permisos) | `docs/api/ROLES.md` | rol → permisos, archivo:línea; sin inventar roles |
 | 84 | Preguntas frecuentes de administración (12) | `apps/web/src/Management.tsx` | `docs/venta/FAQ_ADMIN_BORRADOR.md` | cada respuesta cita archivo:línea |
+
+## Bloque 14 · Tanda por SCRIPT (29-oct 21:50 UTC, Norexos 1) — rama `claude-pc/cola-b14`
+**Método: script (`grep`, `wc`, `ls`, `git ls-tree`), NO el modelo** (tu aviso es correcto: para listados el modelo da basura). El modelo local queda para tareas de redacción corta con entrada pequeña, y cada «sin errores» suyo cuenta como NO comprobado (N1–N4) hasta que la fork lo muestree. Fuente: `origin/producto-nexora` (di en el encabezado el SHA). Salidas en `docs/`, nunca en `docs/operacion`, `docs/legal`, `docs/seguridad`. Encabezado «Borrador sin verificar, hecho por script», con el comando exacto usado.
+| # | Tarea | Salida | Aceptación (verificable) |
+|---|---|---|---|
+| 85 | Tamaño del código por carpeta (archivos y líneas de `apps/web/src`, `apps/api/src`, `packages/*/src`, `tests`) | `docs/auditoria/TAMANO_CODIGO.md` | tabla carpeta / archivos / líneas; la suma de archivos coincide con `git ls-tree -r --name-only` filtrado |
+| 86 | Los 20 archivos fuente más largos | `docs/auditoria/ARCHIVOS_GRANDES.md` | 20 filas ordenadas por líneas (`wc -l`), con ruta |
+| 87 | Tipos de prueba: unitarias, `*-postgres`, e2e (`tests/e2e`), integración (`*-api`) | `docs/auditoria/TIPOS_DE_PRUEBA.md` | conteo por tipo; el total coincide con `ls tests/*.test.ts tests/e2e/*.spec.ts \| wc -l` |
+| 88 | Pendientes escritos dentro de los documentos (`TODO`, `FALTA`, `PENDIENTE`, `POR HACER`) | `docs/auditoria/PENDIENTES_EN_DOCS.md` | archivo:línea y frase, excluyendo `docs/operacion`; `grep -c` coincide con las filas |
+| 89 | Restos de «Nexora» en código del producto, conteo por archivo | `docs/marca/RESTOS_NEXORA_CONTEO.md` | archivo, conteo (`grep -c`), y clase (comentario / texto visible / identificador); total coincide con `grep -rn "Nexora" apps packages --include=*.ts --include=*.tsx \| wc -l` |
+| 90 | Funciones exportadas de `packages/shared/src` | `docs/api/FUNCIONES_SHARED.md` | una fila por `export`, con archivo:línea y firma literal copiada (sin interpretar) |
+| 91 | Texto con tildes rotas (mojibake «Ã», «â€») en el repo | `docs/auditoria/TILDES_ROTAS_CONTEO.md` | archivo:línea; si no hay, 'ninguna' y el comando usado |
+| 92 | Migraciones: tablas creadas vs `ENABLE ROW LEVEL SECURITY` | `docs/auditoria/RLS_POR_MIGRACION.md` | por migración: nº de `CREATE TABLE` y nº de `ENABLE ROW LEVEL SECURITY`; **es inventario, no conclusión de seguridad** (lo dice el encabezado); la lista de tablas sin coincidencia en la misma migración va aparte |

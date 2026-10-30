@@ -1,86 +1,165 @@
 {
-  "descripcion": "Cola activa nueva del modelo local (Norexos 1, 29-oct 21:35 UTC). Salidas solo en docs/diseno/borradores-local. Todo borrador sin verificar: lo revisa la sesión fork.",
+  "descripcion": "Cola activa del modelo local 3 (Norexos 1, 29-oct 22:50 UTC). Redacción corta con entrada pequeña; los conteos los mide un script de Claude PC; muestrea la fork.",
   "tareas": [
     {
-      "id": "N1-erratas-faq-gv",
+      "id": "N18-roles-simples",
       "modelo": "qwen-optimizado",
-      "maxTokens": 1800,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios, datos legales ni código. Si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Una fila = una cita; no pegues el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
+      "maxTokens": 1500,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nPara cada rol de la tabla de abajo escribe UNA frase sencilla que explique, para la dueña, qué puede hacer esa persona. Solo con los permisos que aparecen en el archivo. Tabla: rol, frase.",
       "entradas": [
-        "docs/venta/FAQ_GV_BORRADOR.md"
+        "docs/api/ROLES.md"
       ],
-      "salida": "docs/diseno/borradores-local/erratas-faq-gv.md"
+      "salida": "docs/diseno/borradores-local/roles-simples.md"
     },
     {
-      "id": "N2-erratas-manual-caja",
+      "id": "N19-pantalla-por-tarea",
       "modelo": "qwen-optimizado",
-      "maxTokens": 1800,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios, datos legales ni código. Si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Una fila = una cita; no pegues el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
+      "maxTokens": 1500,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nCon la lista de pantallas de abajo, arma una tabla de 'tarea del día -> pantalla' para: abrir caja, cobrar una venta, ver clientes, ver reportes, cerrar caja. Solo pantallas que aparezcan en el archivo; si una tarea no tiene pantalla clara escribe [FALTA DATO].",
+      "entradas": [
+        "docs/venta/PANTALLAS_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/pantalla-por-tarea.md"
+    },
+    {
+      "id": "N20-pantallas-en",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1500,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nTraduce al inglés la tabla de pantallas de abajo. Los nombres de las rutas y archivos no se traducen.",
+      "entradas": [
+        "docs/venta/PANTALLAS_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/pantallas-en.md"
+    },
+    {
+      "id": "N21-checklist-cierre",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1500,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nConvierte los pasos del manual de abajo que hablen de cierre de caja en una lista de casillas imprimible ([ ] paso) de máximo 10 pasos, con las mismas palabras del manual. Si el manual no habla del cierre, escribe [FALTA DATO].",
       "entradas": [
         "docs/venta/MANUAL_CAJA_BORRADOR.md"
       ],
-      "salida": "docs/diseno/borradores-local/erratas-manual-caja.md"
+      "salida": "docs/diseno/borradores-local/checklist-cierre.md"
     },
     {
-      "id": "N3-erratas-faq-caja",
+      "id": "N22-guion-video",
       "modelo": "qwen-optimizado",
       "maxTokens": 1800,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios, datos legales ni código. Si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Una fila = una cita; no pegues el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
-      "entradas": [
-        "docs/venta/FAQ_CAJA_BORRADOR.md"
-      ],
-      "salida": "docs/diseno/borradores-local/erratas-faq-caja.md"
-    },
-    {
-      "id": "N4-erratas-landing",
-      "modelo": "qwen-optimizado",
-      "maxTokens": 1800,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa el texto en español del archivo de abajo y lista las erratas de ortografía y gramática: una fila por errata con archivo, línea, texto original y corrección propuesta. No cambies cifras, nombres propios, datos legales ni código. Si una frase es dudosa, márcala con [VERIFICAR]. No reescribas el documento. Una fila = una cita; no pegues el documento. Si no hay erratas, escribe 'Sin erratas detectadas'.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nEscribe un guion de presentación en español para un video corto (60 segundos), en 6 escenas numeradas, usando SOLO lo que dice el texto de abajo. Cada escena: texto que se dice y qué se ve en pantalla. Sin e-CF, DGII, NCF ni garantías.",
       "entradas": [
         "docs/venta/LANDING_TEXTOS.md"
       ],
-      "salida": "docs/diseno/borradores-local/erratas-landing.md"
+      "salida": "docs/diseno/borradores-local/guion-video.md"
     },
     {
-      "id": "N5-frases-tecnicas-manual",
+      "id": "N23-correo-bienvenida",
       "modelo": "qwen-optimizado",
-      "maxTokens": 1800,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nLee el manual de caja de abajo. Una cajera sin estudios técnicos lo va a leer. Lista las frases o palabras demasiado técnicas (siglas sin explicar, términos de programación, nombres de archivos). Tabla: línea, frase original, propuesta más simple. Máximo 12 filas. No inventes pasos nuevos ni cambies el sentido.",
+      "maxTokens": 1000,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nEscribe un correo de bienvenida para una persona que acaba de crear su cuenta, usando solo lo que dice el texto de abajo. Asunto de una línea y cuerpo de máximo 8 líneas. Tono cercano, sin promesas.",
       "entradas": [
-        "docs/venta/MANUAL_CAJA_BORRADOR.md"
+        "docs/venta/LANDING_TEXTOS.md"
       ],
-      "salida": "docs/diseno/borradores-local/frases-tecnicas-manual.md"
+      "salida": "docs/diseno/borradores-local/correo-bienvenida.md"
     },
     {
-      "id": "N6-glosario-atajos-pos",
+      "id": "N24-terminos-fiscales-simples",
       "modelo": "qwen-optimizado",
-      "maxTokens": 1800,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nDel inventario de abajo, extrae una tabla de los términos propios de la caja (por ejemplo cuadre, contraentrega, crédito, apertura). Columnas: término, definición de una línea SOLO si el inventario la deja ver, línea del inventario. Si el término no está definido en el archivo, escribe 'no definido'. No inventes definiciones.",
+      "maxTokens": 1500,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nDe la tabla de términos fiscales de abajo, explica en una frase simple (para una cajera) qué es NCF, ITBIS y RNC, SOLO si el archivo lo permite ver; si no, [FALTA DATO]. No expliques e-CF ni DGII como funciones del producto.",
       "entradas": [
-        "docs/i18n/INVENTARIO_POS_ATAJOS.md"
+        "docs/i18n/TERMINOS_FISCALES.md"
       ],
-      "salida": "docs/diseno/borradores-local/glosario-caja.md"
+      "salida": "docs/diseno/borradores-local/terminos-fiscales-simples.md"
     },
     {
-      "id": "N7-preguntas-que-faltan-gv",
+      "id": "N25-faq-gv-corta",
       "modelo": "qwen-optimizado",
       "maxTokens": 1800,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nLee las preguntas frecuentes de GV de abajo. Propón 6 preguntas que una persona nueva del personal probablemente haría y que NO están cubiertas. Solo la pregunta, sin respuesta; cada una marcada [SIN RESPUESTA: falta fuente]. Tabla de una columna con la pregunta y otra con el tema (pagos, citas, cursos, bancos).",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nReescribe cada respuesta del archivo de abajo en máximo 2 frases cortas, conservando el número de pregunta y la cita. No cambies el sentido ni agregues datos.",
       "entradas": [
         "docs/venta/FAQ_GV_BORRADOR.md"
       ],
-      "salida": "docs/diseno/borradores-local/preguntas-faltan-gv.md"
+      "salida": "docs/diseno/borradores-local/faq-gv-corta.md"
     },
     {
-      "id": "N8-consistencia-marca",
+      "id": "N26-faq-admin-corta",
       "modelo": "qwen-optimizado",
       "maxTokens": 1800,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local.\nRevisa los dos textos de la portada de abajo (español e inglés). Lista toda aparición de 'Nexora', 'Norexos' y 'DGII'/'NCF': archivo, línea y la frase. Marca con [REVISAR] cada 'Nexora' que sea nombre de producto (debería decir Norexos) y cada mención de DGII/NCF (esas afirmaciones fiscales están fuera de la versión 1). No corrijas nada, solo lista.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nReescribe cada respuesta en máximo 2 frases cortas, conservando número de pregunta y cita.",
       "entradas": [
-        "docs/venta/LANDING_TEXTOS.md",
-        "docs/venta/LANDING_EN_PLANES.md"
+        "docs/venta/FAQ_ADMIN_BORRADOR.md"
       ],
-      "salida": "docs/diseno/borradores-local/consistencia-marca.md"
+      "salida": "docs/diseno/borradores-local/faq-admin-corta.md"
+    },
+    {
+      "id": "N27-faq-caja-corta",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1800,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nReescribe cada respuesta en máximo 2 frases cortas, conservando número de pregunta y cita.",
+      "entradas": [
+        "docs/venta/FAQ_CAJA_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/faq-caja-corta.md"
+    },
+    {
+      "id": "N28-manual-caja-resumen",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nHaz una guía de una página para la cajera: 10 pasos numerados, una frase por paso, solo con lo que dice el manual.",
+      "entradas": [
+        "docs/venta/MANUAL_CAJA_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/manual-caja-1pagina.md"
+    },
+    {
+      "id": "N29-landing-sin-tecnicismos",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nMarca en una tabla (frase | problema | alternativa simple) las frases con jerga técnica o promesas dudosas. No reescribas la landing completa.",
+      "entradas": [
+        "docs/venta/LANDING_TEXTOS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/landing-jerga.md"
+    },
+    {
+      "id": "N30-pantallas-ayuda",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nPara cada pantalla del borrador, escribe un texto de ayuda de 1 a 2 frases (qué hace y qué pasa después).",
+      "entradas": [
+        "docs/venta/PANTALLAS_BORRADOR.md"
+      ],
+      "salida": "docs/diseno/borradores-local/pantallas-ayuda.md"
+    },
+    {
+      "id": "N31-glosario-gv",
+      "modelo": "qwen2.5-coder:14b",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nHaz un glosario de términos de GV (término | definición de una frase) usando solo el documento.",
+      "entradas": [
+        "docs/coordinacion/MODULO-GV.md"
+      ],
+      "salida": "docs/diseno/borradores-local/glosario-gv.md"
+    },
+    {
+      "id": "N32-preguntas-gv-formato",
+      "modelo": "qwen2.5-coder:7b",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nConvierte la lista en una tabla (n | pregunta | quién debe responder). No cambies el texto de las preguntas.",
+      "entradas": [
+        "docs/diseno/borradores-local/preguntas-faltan-gv.md"
+      ],
+      "salida": "docs/diseno/borradores-local/preguntas-gv-tabla.md"
+    },
+    {
+      "id": "N33-meta-formato",
+      "modelo": "qwen2.5-coder:7b",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. No inventes funciones, cifras ni pasos que no estén en el texto de entrada; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos), promesas de seguridad o ganancias. NO escribas conteos de caracteres o palabras: los mide un script.\nConvierte las meta descripciones en tabla (página | texto). Copia el texto sin cambiarlo.",
+      "entradas": [
+        "docs/venta/META_DESCRIPCIONES.md"
+      ],
+      "salida": "docs/diseno/borradores-local/meta-tabla.md"
     }
   ]
 }
