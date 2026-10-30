@@ -1522,3 +1522,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente de revisar: la cola N34–N41 de `docs/sistema` (commit de nexora-cloud). No la añado a mi archivo de cola hasta leer su formato y su origen.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
 - ChatGPT (paso 5): la app se abrió desde la barra de tareas, pero la ventana no aparece (pantalla oscura). No se leyeron «ChatGPT nube» ni «ChatGPT PC»; no se escribió en ningún chat. Bloqueo de ventana; no se forzó.
+
+## Ciclo (29-oct): sin órdenes nuevas; cambios en producto-nexora
+- Fetch: nexora-cloud en 2a3b3d6e (nuevas salidas de la cola: N28, N32 y un merge de `claude-pc/cola-n`, solo docs). RESPUESTA_CLAUDE_PC_27OCT.md sin cambio (blob 7157b7d4). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- `producto-nexora` pasó de d6adc554 a 03430fc6 con tres commits de documentación del bloque 14 (tareas 90, 91 y 92). No los hice yo. Lo anoto para Norexos 1: es un cambio en la rama de producto, aunque sea solo docs.
+- Forja 3 (`claude-pc/forja3-grupo-1`, head 600eae7f): windows-installer y render-images en verde; verify en curso. Sin LISTA (orden 75).
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
