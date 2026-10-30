@@ -1849,3 +1849,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - `claude-pc/reglas-si-claude` (7a67f238): windows-installer y render-images en verde; verify en curso. Sin LISTA hasta que los tres estén en verde. Norexos 1 la mezcla cuando pase su CI.
 - Órdenes nuevas de código para claude-pc/*: ninguna.
 - ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos; proyecto pausado por cuota hasta el 2 de noviembre.
+
+## Consulta 30 min (30-oct): cola terminada; pedida cola nueva
+- Fetch: nexora-cloud en 205d1006 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde la orden 86). COLA_LOCAL_ACTIVA_NUEVA.json con N18–N49; N42–N49 retiradas por la orden 85.
+- Cola: el estado viejo sigue en «vacía». Los tres lotes de reglas Si…entonces (claude-pc/reglas-si-claude, 7a67f238) ya están hechos. Sin tareas pendientes → mensaje enviado a Norexos 1 pidiendo hasta 8 tareas nuevas para qwen-optimizado.
+- Nota: la tarea de Nexora 1 con «Tomo: …» (orden 86) queda pendiente de respuesta.
