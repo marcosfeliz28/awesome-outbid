@@ -729,12 +729,16 @@ function Shell() {
     return () => clearInterval(timer);
   }, [online, setOnline]);
   useEffect(() => {
+    // El hash puede traer parámetros (month-report?from=…&to=…): se compara solo la pantalla.
+    const pantalla = page.split("?")[0];
     if (
       user &&
-      !allowed.some((n) => n.id === page) &&
+      !allowed.some((n) => n.id === pantalla) &&
       // GV-02: Configuración sólo para quien la ve en el menú.
-      !(page === "settings" && can(user.permissions, "sale:manage")) &&
-      !(page === "styles" && SHOW_STYLE_GUIDE)
+      !(pantalla === "settings" && can(user.permissions, "sale:manage")) &&
+      // El desglose del mes se abre desde el panel anual; lo ve quien tiene reportes.
+      !(pantalla === "month-report" && can(user.permissions, "reports:read")) &&
+      !(pantalla === "styles" && SHOW_STYLE_GUIDE)
     )
       go(allowed[0]?.id || "products");
   }, [user, page]);
