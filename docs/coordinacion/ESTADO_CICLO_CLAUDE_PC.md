@@ -1686,3 +1686,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Estado de la cola: COLA_LOCAL_ACTIVA_ESTADO.json y el log del runner viejo dicen «vacía» (N1–N17 hechas, N13 retirada, N14 rechazada). La cola activa es COLA_LOCAL_ACTIVA_NUEVA.json (N18–N41): no está vacía.
 - Salidas que aún faltan en claude-pc/cola-n-nueva: N18, N22, N23, N25, N29, N30, N31 y N33. Las demás tienen archivo (algunos de otra sesión). No se envió petición a Norexos 1 porque la cola no está vacía.
 - ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
+
+## Ciclo 15 min (30-oct): orden 82 y LISTA de la cola N34–N41
+- Fetch: nexora-cloud en b79ed254 para RESPUESTA_CLAUDE_PC_27OCT.md (orden 82: Norexos 1 escribe PENDIENTES por nosotros; pido «Tomo: <tarea>»). OBSIDIAN_LUMINA_PROGRESO.md ausente. COLA_LOTE_LOCAL.md en c3ecfbb0.
+- CI: pc23, a1, b01 y lumina en verde. claude-pc/cola-n-nueva (86b5b2bf): verify, windows-installer y render-images en verde → LISTA escrita. claude-pc/tildes-urls (ef0c1b08): verify en progreso.
+- Tomo para la cola local: N18, N22, N23, N25, N29, N30, N31 y N33 (salidas pendientes en cola-n-nueva). Se anotan en PENDIENTES por Norexos 1.
+- ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
