@@ -5,6 +5,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+// @ts-expect-error script .mjs sin tipos
+import { reanclar } from "../scripts/citas-reanclar.mjs";
 
 const RAIZ = process.cwd();
 const DOCS = join(RAIZ, "docs", "sistema");
@@ -66,7 +68,13 @@ function citas() {
 }
 
 describe("citas de docs/sistema", () => {
+  // Antes de revisar, las citas cuyo código cambió de línea se mueven solas (scripts/citas-reanclar.mjs).
+  const reanclado = reanclar({ raiz: RAIZ });
   const todas = citas();
+
+  it("ninguna cita perdió la línea de su fragmento", () => {
+    expect(reanclado.perdidas).toEqual([]);
+  });
 
   it("hay citas que revisar", () => {
     expect(todas.length).toBeGreaterThan(100);
