@@ -1647,3 +1647,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Sobre la sección C (revisar salidas del modelo): queda con la rama `claude-pc/cola-n-nueva`. Lo hago cuando N35 termine.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 min (30-oct): orden 80 aplicada; tildes; N40 rechazada
+- Fetch: nexora-cloud en 9dfc8eea para RESPUESTA_CLAUDE_PC_27OCT.md. La orden 80 (duplicados) aplicada: N34–N41 se queda en claude-pc/cola-n-nueva y bloque 15 en claude/taller-bloque15 (no toco las ramas duplicadas). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- PENDIENTES (orden 80): tomé «tildes». Rama claude-pc/tildes-refinar (desde claude/taller-bloque15, 5b7fd6d2): ef66340e. Scripts/tildes-nuevas.mjs ignora URLs, código entre comillas, ?. y ??, y no se analiza a sí mismo. Prueba tests/tildes-nuevas.test.ts: falló antes, pasa después (4/4). Informe estable: 41 hallazgos en tres ejecuciones seguidas.
+- N40 del Revisor (claude-pc/cola-n34-n41): RECHAZADA. Las citas no coinciden con el código de producto: Merchandise.tsx:632 es «setImporting(false)» y Dashboard.tsx:176 es un porcentaje de margen. No la tomo.
+- CI (API public check-runs): pc23, a1, b01 y lumina en verde, sin LISTA nueva. claude-pc/cola-n-nueva (86b5b2bf) y claude-pc/bloque15 (79566ad8) con verify en progreso; claude-pc/tildes-refinar (ef66340e) sin CI aún.
+- ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
