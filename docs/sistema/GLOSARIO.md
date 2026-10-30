@@ -2,7 +2,7 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su cita; los que son jerga de la dueña sin cita en el código se marcan «uso interno».
 
-**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:4414`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3277`).
+**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:3756`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3277`).
 
 **Aprobar con PIN / PIN de gerente** — Código de 6 dígitos de un usuario con `sale:manage` que autoriza una operación de riesgo (descuento grande, crédito grande, descuadre, vale…). No puede ser el de quien pide, salvo la dueña (`apps/api/src/security.ts:81-136`). Ver `ROLES_Y_PERMISOS.md` §5.
 
@@ -12,7 +12,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:250`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
 
-**Caja ciega / arqueo ciego / conteo ciego** — Mientras la caja está abierta, y al cerrar, la cajera **no ve** cuánto se espera que tenga; declara lo que contó y el sistema compara después. «Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados» (`apps/web/src/managementMessages.ts:37-44`). Solo ven los esperados `profit:read` o `sale:manage` (`apps/api/src/common.ts:70-72`). Además existe una bandera para ocultar importes de las ventas a quien no ve esperados, **apagada por defecto**: `NEXORA_VENTAS_CAJA_CIEGA` (`apps/api/src/sales.ts:151-152`).
+**Caja ciega / arqueo ciego / conteo ciego** — Mientras la caja está abierta, y al cerrar, la cajera **no ve** cuánto se espera que tenga; declara lo que contó y el sistema compara después. «Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados» (`apps/web/src/managementMessages.ts:37-44`). Solo ven los esperados `profit:read` o `sale:manage` (`apps/api/src/common.ts:70-72`). Además existe una bandera para ocultar importes de las ventas a quien no ve esperados, **apagada por defecto**: `NEXORA_VENTAS_CAJA_CIEGA` (`apps/api/src/sales.ts:139-152`).
 
 **Casa** — Almacén de la mercancía guardada fuera de la tienda (`kind=home`, no vendible). Solo se mueve con instrucción expresa de la dueña (`.claude/skills/mercancia/SKILL.md:33`; `apps/api/prisma/migrations/202610240401_warehouses/migration.sql:56`).
 
@@ -24,7 +24,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Consumidor final** — Cliente genérico para ventas sin datos; si existe en la lista, sale primero al elegir cliente (`apps/web/src/POS.tsx:360-377`). Las facturas deben identificar a una persona o empresa (`requireCustomer`, `apps/api/src/admin.ts:121-123`). También es el tipo B02.
 
-**Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2542-2548`, `:1798-1802`).
+**Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2770`, `:1798-1802`).
 
 **Costo promedio (`costAvg`)** — Costo de una variante, recalculado en cada entrada (`apps/api/prisma/schema.prisma:120-135`). Con él se calcula el margen.
 

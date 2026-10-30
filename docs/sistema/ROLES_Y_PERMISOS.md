@@ -26,7 +26,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 | `catalog:write` | Crear/editar productos, variantes, importar Excel, kits. | `apps/api/src/catalog.ts:195`, `:237`, `:378`, `:408`, `:432`, `:496`, `:588`, `:652` |
 | `inventory:write` | Pantallas «Mercancía» e «Inventario»; ajustes y conteos. | `App.tsx:197`, `:240`; `apps/api/src/merchandise.ts:160-343`; `apps/api/src/inventory.ts:637`, `:1487-1496` |
 | `purchase:write` | «Compras», órdenes, recepciones, proveedores, pagos a proveedor. | `App.tsx:246`; `apps/api/src/inventory.ts:954-1041`; `apps/api/src/admin.ts:568-588` |
-| `sale:write` | Vender (Punto de venta), ver Ventas, pedir anulaciones, ventas en espera, cobrar créditos en efectivo. | `App.tsx:209-216`; `apps/api/src/sales.ts:1469`, `:4181-4183`; `apps/api/src/admin.ts:739-803` |
+| `sale:write` | Vender (Punto de venta), ver Ventas, pedir anulaciones, ventas en espera, cobrar créditos en efectivo. | `App.tsx:209-216`; `apps/api/src/sales.ts:1475`, `:4181-4183`; `apps/api/src/admin.ts:739-803` |
 | `sale:manage` | **Gerencia de ventas**: devoluciones, aprobar conteos, ver esperados de caja, ver datos completos de clientes, cobrar crédito con tarjeta/transferencia, ver lista de transferencias pendientes, tasas de incentivos, **ser quien aprueba con PIN**; ver «Configuración» e «Incentivos». | `App.tsx:278`, `:1024-1031`; `sales.ts:2997-2999`, `:2638-2640`, `:4190`; `inventory.ts:1550-1552`; `common.ts:70-72`, `:276-281`; `security.ts:116-117` |
 | `cash:write` | Pantalla «Caja»: abrir, mover, trasladar y cerrar. | `App.tsx:250`; `apps/api/src/cash.ts:837-1112` |
 | `expense:write` | «Gastos». | `App.tsx:253`; `apps/api/src/admin.ts:643-737` |
@@ -118,6 +118,6 @@ DUDOSO: el botón «Configuración» lo ve un gerente (`sale:manage`), pero guar
 ## 6. Equipos (terminales)
 
 - Un equipo nuevo de vendedor/almacén **espera aprobación** de un gerente: «Este equipo necesita aprobación. Puedes consultar, pero para vender o mover mercancía un gerente debe aprobarlo» (`apps/web/src/realtime.tsx:513-516`). Se aprueba con PIN en el mismo equipo o desde Configuración › **Equipos** (`apps/api/src/realtime.ts:257-264`; modelo `Terminal`, campo `approvedAt`).
-- Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1469`, `cash.ts:838`).
+- Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1475`, `cash.ts:838`).
 - La caja se asigna al equipo con nombre y número visibles en el cuadre (ej. «4012 · GPRO STORE RD») y cada cajero tiene un «No. de cajero» (ej. 1031) (`apps/web/src/Tienda.tsx:1293-1360`; `schema.prisma` `Terminal.registerNumber`, `User.cashierNumber`).
 - Una sesión se cierra por inactividad según «sessionTimeoutMinutes» (30 min por defecto) (`apps/api/src/auth.ts:358-360`; `apps/api/src/admin.ts:92`).

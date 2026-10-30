@@ -66,7 +66,7 @@ Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emit
   Fuente: `apps/api/src/sales.ts:1378-1384`, `:2263-2270`, `:4424-4429`.
 - **`entryType`** (de dónde viene el pago):
   - **`sale`** — pago hecho **al vender**.
-  - **`installment`** — **abono o cobro posterior** de un crédito/contraentrega (`sales.ts:4414`).
+  - **`installment`** — **abono o cobro posterior** de un crédito/contraentrega (`sales.ts:3756`).
   Un abono `pending_verification` no descuenta `Sale.creditBalance` hasta verificarse (`sales.ts:4430-4440`, `:2775-2790`).
 - Otros campos: `amount` (lo **aplicado** a la venta, ya sin cambio), `tendered` (lo **entregado** por el cliente), `change` (vuelto en pesos), `bank` (cuenta o terminal), `reference`, `cardBrand`/`cardLast4`/`approvalCode`/`cardType`, `feeAmount` (comisión de tarjeta: `cardFeePercent`, 2.5 % si no hay configuración, `sales.ts:1370-1376`), `proofUrl` (foto de evidencia), `receivedById` (quién recibió un cobro), `currency`/`amountUsd`/`usdRate` (dólares), `cashSessionId` (a qué caja pertenece), `creditNoteId`.
 
