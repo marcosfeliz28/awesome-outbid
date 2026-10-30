@@ -1755,3 +1755,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23, a1, b01 y lumina en verde. claude-pc/cola-n-nueva (f2cae557): verify en progreso.
 - Cola: se reintenta una vez cada tarea rechazada (N22, N23, N29, N30, N31), con instrucciones más simples y sin vallas. Corriendo en segundo plano; se revisan al terminar.
 - No se envió petición a Norexos 1 ni a Nexora 4: hay tareas en curso.
+
+## Consulta 30 min (30-oct): cola en curso, sin órdenes nuevas
+- Fetch: nexora-cloud en 4c5fd08e para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio).
+- Cola: el estado viejo sigue en «vacía», pero la cola activa tiene reintentos en curso. Listas: guion-video (1729 caracteres) y correo-bienvenida (888). Pendientes: landing-jerga, pantallas-ayuda y glosario-gv. No se envió petición porque hay tareas en curso.
