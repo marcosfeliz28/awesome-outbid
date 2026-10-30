@@ -1654,3 +1654,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - N40 del Revisor (claude-pc/cola-n34-n41): RECHAZADA. Las citas no coinciden con el código de producto: Merchandise.tsx:632 es «setImporting(false)» y Dashboard.tsx:176 es un porcentaje de margen. No la tomo.
 - CI (API public check-runs): pc23, a1, b01 y lumina en verde, sin LISTA nueva. claude-pc/cola-n-nueva (86b5b2bf) y claude-pc/bloque15 (79566ad8) con verify en progreso; claude-pc/tildes-refinar (ef66340e) sin CI aún.
 - ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
+
+## Ciclo quincenal (30-oct): orden 81, tildes
+- Fetch: nexora-cloud en 8f9b1811; RESPUESTA_CLAUDE_PC_27OCT.md blob 900f6b0d (orden 81: queda `claude-pc/tildes-urls`; la prueba de 4 casos pasa a esa rama). OBSIDIAN_LUMINA_PROGRESO.md ausente. Hecho: `claude-pc/tildes-urls-prueba` (50a6f5de, desde tildes-urls): `esSospechosa` exportada + tests/tildes-nuevas.test.ts; falló 4/4 antes, pasa 4/4 después. CI aún sin correr, sin LISTA. N35–N41 (Ollama) no se pueden en la nube.
+- CI: pc23, a1, b01 y lumina en verde (ya con LISTA); tildes-urls con verify en curso.
