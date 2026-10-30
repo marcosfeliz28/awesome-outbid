@@ -46,3 +46,20 @@ Mismas reglas de siempre: lectura del repo, un archivo nuevo en `docs/diseno/bor
 | S8 | `apps/` y `packages/` (código) | `docs/diseno/borradores-local/archivos-grandes.md` | Archivos de más de 800 líneas con su número de líneas (`wc -l`), ordenados de mayor a menor. Mismo conjunto que `find ... \| xargs wc -l` filtrado a >800. |
 
 Un borrador que no cubra todo el alcance debe decir «PARCIAL» y cuántos archivos miró de cuántos.
+
+---
+## Tanda 4 (30-oct-2026) — R1–R8, pequeñas, para Claude PC
+Reglas de siempre (`docs/seguridad/AUTORIZACION-PERMANENTE-COLA-LOCAL.md` y `docs/coordinacion/REPARTO_LOCAL_REVISOR.md`): lectura del repo, un archivo nuevo en `docs/diseno/borradores-local/` o `docs/auditoria/` (nunca `docs/operacion`, `docs/legal`, `docs/seguridad`, `.env*`), sin dinero, credenciales ni datos de clientes, encabezado «Borrador sin verificar», «PARCIAL» si no cubre todo, y Claude PC revisa antes de subir. «Script» = lo hace `grep`/`ls`/`wc` y el modelo solo escribe la prosa.
+
+| # | Entrada (lee) | Salida (escribe) | Hace | Criterio de aceptación |
+|---|---|---|---|---|
+| R1 | `docs/sistema/*.md` (los 11 archivos) | `docs/diseno/borradores-local/resumenes-sistema.md` | Modelo: resumen de cada archivo en 3 líneas, con la ruta | Una sección por archivo (`ls docs/sistema/*.md \| wc -l` = número de secciones); ninguna cifra que no esté en el original |
+| R2 | Tabla del menú de `docs/sistema/PANTALLAS.md` | `docs/auditoria/PERMISOS_POR_PANTALLA.md` | Script: permiso → pantallas que lo exigen | Una fila por permiso distinto de la tabla; el total de pantallas suma 18 |
+| R3 | Tabla «Qué significa cada permiso» de `docs/sistema/ROLES_Y_PERMISOS.md` | `docs/diseno/borradores-local/permisos-simples.md` | Modelo: permiso \| qué permite, en una frase | Una fila por permiso de la tabla (`grep -c '^| \`'` de la entrada); sin añadir permisos |
+| R4 | `docs/sistema/DATOS_Y_MODELOS.md` | `docs/auditoria/MODELOS_Y_ESTADOS.md` | Script: modelo \| estados citados | Una fila por modelo de la tabla de la entrada; los estados salen copiados, no resumidos |
+| R5 | `docs/sistema/RESPUESTAS_A_TALLER.md` | `docs/diseno/borradores-local/preguntas-taller.md` | Script: solo las preguntas, numeradas, con la cita de su respuesta | Mismo número de preguntas que encabezados de la entrada; cada fila con `archivo:línea` |
+| R6 | `docs/coordinacion/*.md` (solo la primera línea `# …` y el nombre) | `docs/auditoria/INDICE_COORDINACION.md` | Script: archivo \| título | Una fila por archivo (`ls docs/coordinacion/*.md \| wc -l`); título copiado literal; ningún archivo se abre más allá de su primera línea de título |
+| R7 | `apps/web/src/*.tsx` (solo `wc -l` y nombre) | `docs/auditoria/TAMANO_COMPONENTES.md` | Script: componente \| líneas, ordenado de mayor a menor | Coincide con `wc -l` fila por fila; marca los de más de 1 000 líneas |
+| R8 | Mensajes en español entre comillas de `throw new … ("…")` en `apps/api/src/*.ts` | `docs/auditoria/MENSAJES_DE_ERROR_API.md` | Script: archivo:línea \| mensaje literal | El conteo coincide con el `grep` usado (se escribe cuál); sin copiar valores de variables ni datos de usuarios |
+
+Orden sugerido: R2, R4, R5, R6, R7, R8 (por script), luego R1 y R3 (con modelo).
