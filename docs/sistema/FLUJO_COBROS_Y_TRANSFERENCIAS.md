@@ -134,3 +134,9 @@ API solamente; **no hay pantalla** para estas dos acciones en `apps/web` (búsqu
 | Ver la lista de transferencias pendientes | `sale:manage` | `apps/api/src/sales.ts:2674` |
 | Corregir método de pago (7 días; también cobros) | `*` | `apps/api/src/sales.ts:2198` |
 | Subir/cambiar la foto de evidencia | quien registró el cobro o `sale:manage` | `apps/api/src/sales.ts`, rutas `payments/:id/proof` (`:3782`, `:3822`) |
+
+## GV: pago con tarjeta (sin cuenta bancaria)
+
+- Los pagos de GV no pasan por la caja. Con **Tarjeta** el formulario no pide banco: muestra **Terminal** y una **Referencia** obligatoria (aprobación, lote o voucher); el pago queda verificado al registrarse (`apps/api/src/gv-money.ts:106-120`, `apps/api/src/gv-money.ts:238-250`). La transferencia sigue exigiendo banco y referencia.
+- La cuenta de destino del dinero de tarjeta de GV no se asume ni se guarda: la define la dueña (pendiente).
+

@@ -41,7 +41,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 - **Transferencia:** sí. Campo **«Cuenta donde cayó»**, una **lista desplegable** («Elige la cuenta…») con las cuentas que la administración cargó en Configuración › «Cuentas de banco para transferencias (una por línea)». Si esa lista está vacía, se escribe el banco a mano. Además **«Referencia»** (obligatoria) (`apps/web/src/POS.tsx:2776-2816`; lista en `:2023`; campo de Configuración `apps/web/src/Management.tsx:4046-4054`). En la base el valor se guarda en `Payment.bank` (`apps/api/prisma/schema.prisma` modelo `Payment`) y el servidor exige banco y referencia (`apps/api/src/sales.ts:996-997`).
 - **Tarjeta:** pide **«Últimos 4 dígitos»**, **«Número de aprobación»**, **«Marca»** (Visa/Mastercard/Amex) y **«Tipo de tarjeta»** (Crédito/Débito); y, si Configuración tiene lista de «Terminales de tarjeta», un campo **«Terminal»** obligatorio («Elige el terminal…») (`apps/web/src/POS.tsx:2705-2775`, lista `:2024`). El terminal elegido se guarda también en `bank` (`:1970-1971`).
-- **Los nombres de los bancos y terminales** (lo que ve la cajera en la lista) **no están en el código**: son datos de Configuración. NO ENCONTRADO en el código; hay que mirar Configuración › Negocio y reglas › Editar configuración, o `GET /settings` entrando con `entrar.py`. (En GV se agrupan en «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis»: `apps/web/src/Gv.tsx:797-810`.)
+- **Los nombres de los bancos y terminales** (lo que ve la cajera en la lista) **no están en el código**: son datos de Configuración. NO ENCONTRADO en el código; hay que mirar Configuración › Negocio y reglas › Editar configuración, o `GET /settings` entrando con `entrar.py`. (En GV se agrupan en «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis»: `apps/web/src/Gv.tsx:801-814`.)
 
 ---
 
@@ -67,7 +67,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 ## 7. ¿Cómo se llama la sección de citas en el menú de GV?
 
 - En el menú lateral solo hay **un** ítem: **«GV Makeup Studio»** (`apps/web/src/App.tsx:282`). Dentro de esa pantalla (título «Cursos y cobros») hay pestañas: **«Cursos»**, **«Citas»**, **«Interesadas»**, **«Por verificar»** y **«Reportes»** (`apps/web/src/Gv.tsx:122`, `:129-174`).
-- La sección de citas se llama **«Citas»** (`apps/web/src/Gv.tsx:147`). Al abrirla, el botón es **«Nueva cita»** y los estados son Agendada, Realizada, Cancelada, Reembolsada (`apps/web/src/GvCitas.tsx:121-131`, `:54-59`).
+- La sección de citas se llama **«Citas»** (`apps/web/src/Gv.tsx:147`). Al abrirla, el botón es **«Nueva cita»** y los estados son Agendada, Realizada, Cancelada, Reembolsada (`apps/web/src/GvCitas.tsx:109-119`, `:54-59`).
 
 ---
 
@@ -75,8 +75,8 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 **Sí, las tres.** Columnas de la tabla de inscripciones de un curso, en orden: `CLIENTA`, `TELÉFONO`, **`PRECIO`**, **`PAGADO`**, **`PENDIENTE`**, `ESTADO`, `ASISTIÓ`, `SET` y una columna de acciones («Pago», «Editar») (`apps/web/src/Gv.tsx:385-393`; datos `:404-411`).
 
-- PRECIO = precio acordado de esa inscripción. PAGADO = solo lo **verificado** (si hay transferencias sin verificar se agrega «(RD$ X por verificar)»). PENDIENTE = precio − pagado, nunca negativo (`apps/api/src/gv-money.ts:138-160`).
-- Las **citas** no son tabla: son tarjetas con «Total … · Pagado … · Pendiente …» (`apps/web/src/GvCitas.tsx:148-155`).
+- PRECIO = precio acordado de esa inscripción. PAGADO = solo lo **verificado** (si hay transferencias sin verificar se agrega «(RD$ X por verificar)»). PENDIENTE = precio − pagado, nunca negativo (`apps/api/src/gv-money.ts:156-178`).
+- Las **citas** no son tabla: son tarjetas con «Total … · Pagado … · Pendiente …» (`apps/web/src/GvCitas.tsx:153-160`).
 
 ---
 
