@@ -1,0 +1,27 @@
+[
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 18,
+    "texto": "2. Si no hay caja abierta se ve el título «Una caja que siempre cuadra» y el botón **«Abrir caja»** (`apps/web/src/Management.tsx:1670-1677`), o en el centro **«Abrir mi caja»** con el texto «Tu día empieza con una caja abierta» (`:1740-1744`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 20,
+    "texto": "4. Si el fondo es **menor** que lo sugerido aparece **«Nota si el fondo es menor que el sugerido»** y es obligatoria; no pide PIN (`apps/web/src/Management.tsx:2029-2039`; `apps/api/src/cash.ts:868-885`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 23,
+    "texto": "7. Si la caja quedó abierta en **otro equipo**: «Tu caja está abierta en «…». Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.» con el botón **«Trasladar caja aquí»** y la ventana «Trasladar caja a este equipo» (botón **«Trasladar caja»**; pide PIN de gerente según el caso) (`apps/web/src/realtime.tsx:629-668`; API `apps/api/src/cash.ts:1061-1111`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 41,
+    "texto": "- Si el producto tiene **una sola variante**, entra directo (`:425-430`). Si tiene varias, abre la ventana con el nombre del producto y «Elige la combinación para esta venta.» (`:1284-1314`) y se pulsa la variante (talla, color, sabor)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 107,
+    "texto": "- Si el precio o una promoción cambió en otro equipo: «Los precios cambiaron: …. El total ya está actualizado: revisa los pagos y finaliza otra vez.» (`POS.tsx:2276-2277`, `:2303-2327`)."
+  }
+]

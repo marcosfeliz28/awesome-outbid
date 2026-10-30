@@ -1,0 +1,35 @@
+{
+  "descripcion": "Orden 85: una tarea por cada 5 reglas de reglas-si.json. Generado por scripts/reglas-si.mjs.",
+  "tareas": [
+    {
+      "id": "R01-reglas-si",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana. No añadas datos que no estén en la regla. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos). NO escribas conteos: los mide un script.\nReescribe cada regla de la entrada (JSON: archivo, linea, texto) como una frase «Si … entonces …» de máximo 25 palabras, sin añadir datos. Conserva la cita `archivo:línea` al final de cada frase. Una frase por regla, en una lista.",
+      "entradas": [
+        "docs/diseno/borradores-local/reglas-lote-01-entrada.json"
+      ],
+      "salida": "docs/diseno/borradores-local/reglas-lote-01.md"
+    },
+    {
+      "id": "R02-reglas-si",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana. No añadas datos que no estén en la regla. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos). NO escribas conteos: los mide un script.\nReescribe cada regla de la entrada (JSON: archivo, linea, texto) como una frase «Si … entonces …» de máximo 25 palabras, sin añadir datos. Conserva la cita `archivo:línea` al final de cada frase. Una frase por regla, en una lista.",
+      "entradas": [
+        "docs/diseno/borradores-local/reglas-lote-02-entrada.json"
+      ],
+      "salida": "docs/diseno/borradores-local/reglas-lote-02.md"
+    },
+    {
+      "id": "R03-reglas-si",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana. No añadas datos que no estén en la regla. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto se llama Norexos). NO escribas conteos: los mide un script.\nReescribe cada regla de la entrada (JSON: archivo, linea, texto) como una frase «Si … entonces …» de máximo 25 palabras, sin añadir datos. Conserva la cita `archivo:línea` al final de cada frase. Una frase por regla, en una lista.",
+      "entradas": [
+        "docs/diseno/borradores-local/reglas-lote-03-entrada.json"
+      ],
+      "salida": "docs/diseno/borradores-local/reglas-lote-03.md"
+    }
+  ]
+}

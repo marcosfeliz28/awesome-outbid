@@ -1,0 +1,27 @@
+[
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 89,
+    "texto": "- Solo se rechaza una `pending_verification` (`sales.ts:2911`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_MERCANCIA.md",
+    "linea": 25,
+    "texto": "- Si el código no existe, se ofrece **«Crear producto rápido»**: Nombre, Categoría, Código de barras, Precio de venta… (`:1444-1500`). Un código repetido en dos productos no elige ninguno en silencio (`:99-109`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_MERCANCIA.md",
+    "linea": 58,
+    "texto": "2. Solo `*` (administración) ve **«Traspasar mercancía»**: «El movimiento resta del origen y suma al destino en una sola operación.» Se elige el producto, se pulsa **«Traspasar»** y se llena la ventana **«Traspasar · producto»**: **Desde**, **Hasta**, **Cantidad** (3 decimales), «Lote (si aplica)», **Motivo** (mín. 3 letras) (`:113-205`)."
+  },
+  {
+    "archivo": "docs/sistema/ROLES_Y_PERMISOS.md",
+    "linea": 63,
+    "texto": "- Solo cobra créditos **en efectivo** (`apps/api/src/sales.ts:4190-4195`). Pide anulaciones; no las ejecuta."
+  },
+  {
+    "archivo": "docs/sistema/ROLES_Y_PERMISOS.md",
+    "linea": 70,
+    "texto": "- Solo «GV Makeup Studio» (cursos, citas, interesadas, por verificar sin poder verificar, reportes). Sin acceso a configuración, usuarios, costos, inventario ni datos de MacGen. No carga el catálogo de la caja (`apps/web/src/realtime.tsx:147-153`)."
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 155,
+    "texto": "- Si tarjeta, efectivo o dólares **no cuadran** y quien cierra es cajera (o gerente cerrando SU caja, salvo `*`): no cierra sin el **PIN de otra persona con permiso** y una **justificación del descuadre** (mín. 10 letras). El mensaje no dice cuánto falta ni sobra (`cash.ts:1248-1300`). Mensajes: «El total de tarjeta no coincide con el sistema…», «La caja no cuadra con el sistema. Vuelve a contar…» (`:1268-1274`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 42,
+    "texto": "- No se puede cobrar más que el saldo: «El cobro supera el saldo pendiente.» (`sales.ts:4353-4366`). Se puede cobrar una parte y el resto después; el crédito se cierra cuando el saldo llega a cero (`apps/web/src/Tienda.tsx:1218-1219`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 73,
+    "texto": "5. Si el envío del mensajero explica la diferencia: «Usar RD$ X como envío» o «Editar envío» (`:300-336`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 80,
+    "texto": "- Si era un abono: baja el saldo, cierra el crédito si llega a cero y acredita incentivos (`:2775-2790`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 81,
+    "texto": "- Si la caja ya cerró: **recalcula el cuadre** y deja auditoría `verified_after_close` (`:2792-2806`)."
+  }
+]
