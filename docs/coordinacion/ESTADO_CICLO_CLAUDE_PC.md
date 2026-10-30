@@ -1732,3 +1732,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Aceptadas y commiteadas en claude-pc/cola-n-nueva (f2cae557): N18 roles-simples (a94b0f1f), N33 meta-tabla con longitudes medidas por script 139/150/147 (ae309455), N25 faq-gv-corta (f2cae557).
 - Rechazadas (fuera del repo, no subidas): N22 guion-video (menciona «comprobantes» en escenas 2 y 3: riesgo fiscal), N23 correo-bienvenida (promete comprobantes NCF), N29 landing-jerga (salida sin sentido: tabla con «NO ENCONTRADO» en cada celda), N30 pantallas-ayuda (frases genéricas sin cita, dos «NO ENCONTRADO»), N31 glosario-gv (define «Génesis Ventures», que no está en la entrada). Pendientes de reintento una vez, según la regla.
 - LISTA: pendiente hasta que el CI de f2cae557 cierre en verde.
+
+## Ciclo (31-oct, madrugada): sin cambios
+- Fetch: nexora-cloud sin cambios (c0cb25d5). RESPUESTA_CLAUDE_PC_27OCT.md blob 4c5fd08e. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- Sin tarea nueva. La ejecución duplicada de N36 sigue corriendo; decide Marcos si la paras.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
