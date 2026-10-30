@@ -1673,3 +1673,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Reintento 1 de N35 en curso (sin salida todavía). Si falla, se anota y pasa a N36.
 - CI: pc23, a1, b01 y lumina en verde con LISTA. `claude-pc/bloque15` (79566ad8) y `claude-pc/tildes-urls` (ae090ea0): verify en curso; sin LISTA.
 - ChatGPT: pausado; no se abrió.
+
+## Ciclo 15 y 30 min (30-oct, madrugada): orden 81 aplicada (tildes); CI pendiente
+- Fetch: nexora-cloud en 900f6b0d para RESPUESTA_CLAUDE_PC_27OCT.md (orden 81). OBSIDIAN_LUMINA_PROGRESO.md ausente. COLA_LOTE_LOCAL.md en c3ecfbb0 (sin cambio).
+- Orden 81: queda claude-pc/tildes-urls (fork, ae090ea0). Añadí la prueba de cuatro casos en un commit (ef0c1b08, ff sobre ae090ea0): pasa 4/4 con el script de esa rama; no falla antes porque el script ya cumple; es cobertura. claude-pc/tildes-refinar (ef66340e) no se mezcla.
+- No pude escribir la línea de PENDIENTES_NOCHE_30OCT.md en nexora-cloud: mis límites no permiten escribir en nexora-cloud. Lo indiqué a Norexos 1.
+- CI: pc23, a1, b01 y lumina en verde, sin LISTA nueva. claude-pc/cola-n-nueva (86b5b2bf), claude-pc/bloque15 (79566ad8), claude-pc/tildes-refinar (ef66340e) con verify en progreso.
+- ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
