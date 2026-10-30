@@ -27,3 +27,16 @@ Bloqueos: ninguno.
 - Pruebas adversariales nuevas (`tests/assistant-api.test.ts`, "permisos con datos reales"): sin profit:read no hay costo/ganancia/margen; con profit:read sí; cobros bloqueados sin ver el esperado de caja; cajera con `reports:read`+`profit:read` solo `mis_ventas`; sin permisos 403; pedir cambiar un precio no altera `Variant`.
 - Se borró `tests/asistente-ventas-api.test.ts` (probaba la API de la versión de N8, ya reemplazada).
 - `pnpm check`: solo fallan las 14 suites `*-postgres` (initdb no corre como root aquí). Resto verde.
+
+## Costo por pregunta (pedido de N1, 30-oct)
+- Modelo por defecto `claude-haiku-5-5` (`ASSISTANT_MODEL`); `render.yaml` ya lo fija igual, sin override en producción. `max_tokens` 600, timeout 20 s, máx. 4 rondas, 30 preguntas/día/usuario.
+- Tamaño real medido (API local, administrador, texto exacto enviado: instrucciones + herramientas + pregunta + resultado; tokens ≈ caracteres ÷ 3, estimación prudente):
+  - Ronda 1 (instrucciones + 4 herramientas + pregunta): 3 879 caracteres ≈ 1 300 tokens.
+  - Ronda 2 (+ resultado de la herramienta): 4 270 (resumen), 4 445 (cobros), 4 573 (comparar), 5 567 (top 10) ≈ 1 400–1 900 tokens.
+  - Salida: ~100 (llamada a la herramienta) + ~150 (respuesta de ≤5 líneas) ≈ 250 tokens.
+- La IA ya recibe solo agregados (totales, hasta 10 filas del top, bancos), nunca filas de ventas; no hace falta reducir más.
+- Costo con precios por defecto 1 / 5 USD por millón de tokens (entrada / salida; **sin verificar** contra la tarifa real, ajustables con `ASSISTANT_PRICE_*`):
+  - Pregunta típica: ~2 900–3 200 tokens de entrada + 250 de salida ≈ **US$0.004–0.005**.
+  - 300 preguntas ≈ **US$1.2–1.5**.
+  - Peor caso (4 rondas, 600 tokens de salida cada una): ≈ US$0.02 por pregunta, US$6 por 300.
+- Cada pregunta guarda tokens y costo en `AssistantQuery`, así que el gasto real se puede sumar con una consulta.
