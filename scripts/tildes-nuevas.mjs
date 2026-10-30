@@ -1,7 +1,7 @@
 // Busca en docs/ y apps/web/src textos en español con «?» en medio de palabras (tildes rotas).
 // Solo informe: no cambia nada. Salida: docs/auditoria/TILDES_NUEVAS.md
 import { readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -29,6 +29,7 @@ if (process.argv[1]?.endsWith("tildes-nuevas.mjs")) {
   const hallazgos = [];
   for (const base of ["docs", "apps/web/src"]) {
     for (const ruta of archivos(join(raiz, base))) {
+      if (relative(raiz, ruta).split(sep).join("/") === "docs/auditoria/TILDES_NUEVAS.md") continue; // el propio informe no se analiza
       readFileSync(ruta, "utf8").split("\n").forEach((l, i) => {
         if (esSospechosa(l)) hallazgos.push(`${relative(raiz, ruta)}:${i + 1}: ${l.trim().slice(0, 140)}`);
       });
