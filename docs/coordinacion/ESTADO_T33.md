@@ -40,3 +40,7 @@ Bloqueos: ninguno.
   - 300 preguntas ≈ **US$1.2–1.5**.
   - Peor caso (4 rondas, 600 tokens de salida cada una): ≈ US$0.02 por pregunta, US$6 por 300.
 - Cada pregunta guarda tokens y costo en `AssistantQuery`, así que el gasto real se puede sumar con una consulta.
+
+## Estado final (30-oct)
+- Código final de T33: `0f1a751`, CI de GitHub **verde** (run 41034156111). Commits posteriores de esta rama solo tocan este documento.
+- Sigue pendiente (no depende de CI): probar con la llave real de Anthropic y confirmar id del modelo y tarifa.
