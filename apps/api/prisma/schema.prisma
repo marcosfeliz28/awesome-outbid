@@ -1205,3 +1205,17 @@ model CashierSurvey {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// IA de ventas (solo lectura): una fila por pregunta; sirve de tope diario y de registro.
+model AssistantQuery {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String
+  day       String
+  question  String
+  tools     String[] @default([])
+  tokens    Int      @default(0)
+  ok        Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, day])
+}

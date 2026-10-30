@@ -13,6 +13,7 @@ Convenciones: dinero en `Decimal(14,2)` (centavos exactos, nunca decimales flota
 | `Terminal` | Equipo (computadora) registrado. | `name`, `approvedAt` (aprobado o no), `revokedAt`, `registerNumber`/`registerName` (caja que sale en el cuadre, ej. «4012») | `:843` |
 | `AuthSession`, `RefreshToken`, `AuthAttempt` | Sesiones y límites de intentos. | | `:834`, `:50`, `:822` |
 | `AuditLog` | **Bitácora**: quién hizo qué, con `before` y `after`. Casi toda acción de dinero escribe aquí. | `action`, `entity`, `entityId`, `userId`, `terminalId` | `:792` |
+| `AssistantQuery` | **IA de ventas** (solo lectura): una fila por pregunta; es el registro y el tope de 30 por día por usuario. Migración `202610310003_assistant_query`. Aún no desplegado (rama `claude/ia-ventas-linea`). | `userId`, `day`, `question`, `tools`, `tokens`, `ok` | `apps/api/prisma/schema.prisma` |
 | `Settings` | **Configuración** de la sucursal en un solo JSON (`data`). Ahí viven: nombre del negocio, tasa del dólar `usdRate`, `transferAccounts` (cuentas de banco), `cardTerminals`, `sellerDiscountLimit`, `lowMargin`, `creditApprovalThreshold`, `receivableShiftLimit`, `cashDifferenceLimit`, `autoPrintReceipt`, `allowOfflineSales`, `allowCreditSales`, `ncfMode`, `taxIncluded`, `receiptWidth`… | definido en `apps/api/src/admin.ts:77-143` | `:811` |
 | `Counter` | Contadores de numeración: ventas `FS-`, devoluciones `NC-`, órdenes de compra. | `key`, `value` | `:817` |
 

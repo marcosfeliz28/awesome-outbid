@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AssistantBox } from "./AssistantBox";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AreaChart,
@@ -219,6 +220,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           )}
         </div>
       </div>
+      <AssistantBox />
       {can(user.permissions, "*") && !!voidRequests.data?.length && (
         <section
           className="void-request-dashboard"

@@ -21,6 +21,7 @@ import { CourierController } from "./courier";
 import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
+import { AssistantController } from "./assistant";
 import { CashierSurveyController } from "./cashier-survey";
 import { IncomeReportController } from "./income-report";
 import { FormalReportController } from "./formal-report";
@@ -85,6 +86,7 @@ export function createAppModule(secret: string) {
       IncomeReportController,
       FormalReportController,
       ReportsController,
+      AssistantController,
       CashierSurveyController,
       AlertsController,
       OfflineSalesController,
@@ -97,6 +99,8 @@ export function createAppModule(secret: string) {
     ],
     providers: [
       Database,
+      // El asistente reutiliza el cálculo del desglose.
+      ReportsController,
       AlertEngine,
       NotificationWorker,
       CreditReminderService,
