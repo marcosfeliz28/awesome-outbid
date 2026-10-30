@@ -3,9 +3,9 @@ Orden de la dueña: todo lo planeado se hace de principio a fin; si algo falla s
 
 | # | Tarea | Quién | Estado | Siguiente paso |
 |---|---|---|---|---|
-| 1 | Herramientas de cobros (FS-328, FS-288, FS-304) | Norexos 2 | EN CURSO | Aplicar con 3 verificaciones + confirmación de la dueña; bitácora |
+| 1 | Herramientas de cobros (FS-328, FS-288, FS-304) | Norexos 2 | LISTA (30-oct 02:38 UTC) | Aplicados y en bitácora. Queda la nota 14 |
 | 2 | T32 bug «Ver detalle del mes» (63128b91, rama claude/desglose-mes) | Taller | LISTA para CI | Esperar los 3 CI; auditar; mezclar en nexora-cloud; desplegar (autorizado) |
-| 3 | T32 desglose por cobro/banco/línea + top 10 unidades y monto + mes anterior/siguiente | Taller | EN CURSO | Pruebas de suma con devoluciones (D-05); luego implementar |
+| 3 | T32 (pruebas de suma con devoluciones verdes, 8a259ea5; falta banco, línea/top 10 y mes anterior/siguiente) desglose por cobro/banco/línea + top 10 unidades y monto + mes anterior/siguiente | Taller | EN CURSO | Pruebas de suma con devoluciones (D-05); luego implementar |
 | 4 | T33 IA de ventas en la tienda (solo lectura, tope 30/día, cajera solo lo suyo) | Taller | HACER (tras 3) | Rama claude/ia-ventas-linea desde nexora-cloud |
 | 5 | Docs verificados de Taller (rama claude/taller-docs-verificados cf66ae14) | Taller/N1 | HACER | Verificar CI; mezclar en nexora-cloud |
 | 6 | Landing inglés completa (rama claude/taller-landing-en 5a3f5fe5) | Taller/N1 | HACER | CI verde; mezclar en producto-nexora |
@@ -15,6 +15,7 @@ Orden de la dueña: todo lo planeado se hace de principio a fin; si algo falla s
 | 10 | Pedidos del Consultor (Norexos 6) | Consultor | EN CURSO | Repartir cada PEDIDO nuevo a Taller/Claude PC |
 | 11 | Revisión diaria (reportes.py) | N1 | BLOQUEADA(faltan NEXORA_CLAUDE_USER/PASSWORD en el entorno) | La dueña debe configurarlas |
 | 12 | Cambio de nombre Norexos en código (E1) | por asignar | HACER | Esperar decisiones de E3 de la dueña |
+| 14 | Cuadre de Wendy tras FS-328: transferencia esperada 9,700 vs contada 2,200 (−7,500) y caja temporal de Claude con +2,600 tarjeta contada sin esperado | dueña | Espera conteo/decisión suya | No tocar lo contado sin conteo nuevo de la dueña (CLAUDE.md). Posible mejora: reporte con marca «ajustado» |
 | 13 | Verificar si alguna sesión alcanza a Claude PC | N2/N5/Taller | HACER | Pregunta enviada |
 
 ## Decisiones de la dueña pendientes (no frenan el trabajo)
