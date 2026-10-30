@@ -35,6 +35,5 @@ El borrador original no se editó.
 - 20 de 22 filas respaldadas en nexora-cloud (etiqueta, permiso y componente), incluida la fila de `gv`, que faltaba en el borrador.
 - `onboarding` y `billing` no existen en nexora-cloud. Sí existían en el borrador (que cita `producto-nexora`).
 
-## Por confirmar con la dueña
-- **¿Qué rama es la que se publica para «Primeros pasos» y «Plan y facturación»?** Esas dos pantallas están en el borrador (producto-nexora) y no en nexora-cloud.
-  - Pregunta: ¿Las pantallas «Primeros pasos» y «Plan y facturación» deben aparecer en la versión que se publica? Si sí, ¿de qué rama las tomamos?
+## Resuelto (ver `docs/sistema/RESPUESTAS_A_TALLER.md`, pregunta 9)
+- «Primeros pasos» y «Plan y facturación» **solo existen en `producto-nexora`**. En `nexora-cloud` no están en el menú ni en `pages`. Las dos filas quedan **SIN RESPALDO en nexora-cloud**; no se publican en la tienda.

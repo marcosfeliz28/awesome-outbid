@@ -1,29 +1,22 @@
-# Manual corto para la cajera (solo pasos respaldados)
+# Manual corto para la cajera (verificado)
 
-Fuente: `apps/web/src/POS.tsx` de `origin/nexora-cloud` (SHA 9626b19f). Cada paso cita la línea que lo respalda.
+Fuente: `apps/web/src/POS.tsx`, `apps/web/src/Management.tsx`, `apps/web/src/App.tsx` y `apps/api/src/admin.ts` de `origin/nexora-cloud`. Respuestas con cita en `docs/sistema/RESPUESTAS_A_TALLER.md`.
 
-1. **Elegir cliente:** presiona **F4** (POS.tsx:1048).
-2. **Escanea o busca un artículo:** usa el lector de código de barras o búscalo; el modal «Escanear código de barras» usa la cámara (POS.tsx:1177, POS.tsx:2993).
-3. **Ver subtotal:** revisa el **Subtotal** (POS.tsx:1183).
-4. **Aplicar descuento global:** escribe el **Descuento global** si aplica (POS.tsx:1187).
-5. **Ver total a cobrar:** revisa **Total a cobrar** (POS.tsx:1215).
-6. **Cobrar:** pulsa **Cobrar** o **F12** (POS.tsx:1232, POS.tsx:1233).
-7. **Confirmar la venta:** aparece **«Venta registrada»** (POS.tsx:2360).
-8. **Solicitar NCF:** elige **«Solicitud de NCF»** (POS.tsx:2583).
-9. **Elegir el tipo de NCF:** **B01 · Crédito fiscal** o **B02 · Consumidor final** (POS.tsx:2589 y POS.tsx:2590).
+1. **Entrar:** usuario y contraseña, botón «Entrar a mi tienda» (`App.tsx:468`, `:512`). La cajera llega sola a **Punto de venta** (`App.tsx:733-740`).
+2. **Abrir la caja:** menú **Caja** › **«Abrir caja»** › escribir **«Efectivo inicial»** › confirmar (`Management.tsx:1673-1677`, `:2015-2055`). Sin caja abierta, el POS no deja cobrar: «Abre tu caja antes de cobrar.» (`POS.tsx:523`).
+3. **Elegir cliente:** presiona **F4** (`POS.tsx:1048`, `:567`).
+4. **Agregar artículos:** un clic en la **tarjeta del producto** (no hay botón «Agregar») (`POS.tsx:1543`). También el buscador (F2), el lector de código y la cámara (`POS.tsx:904-919`, `:2993`).
+5. **Cantidad:** botones **+** y **−** de la línea del carrito (`POS.tsx:1086-1106`).
+6. **Descuento global:** campo **«Descuento global»** (`POS.tsx:1187`).
+7. **Ver subtotal y total:** **«Subtotal»** (`POS.tsx:1183`) y **«Total a cobrar»** (`POS.tsx:1215`).
+8. **Cobrar:** botón **«Cobrar»** o **F12** (`POS.tsx:1232`, `:1233`). Se abre **«Todo listo para cobrar»** (`POS.tsx:1224-1234`).
+9. **Elegir método de pago:** **Efectivo**, **Dólares (US$)**, **Tarjeta**, **Transferencia**, **Nota de crédito**, **Contraentrega**, **Crédito** (`POS.tsx:2536-2548`). Después **«Agregar pago»** y, para terminar, **«Finalizar venta»** (`POS.tsx:2817-2824`, `:2927-2941`).
+10. **Transferencia:** en **«Cuenta donde cayó»** elegir la cuenta de la lista y escribir la **«Referencia»** (`POS.tsx:2776-2816`). Tarjeta: **«Últimos 4 dígitos»**, **«Número de aprobación»**, **«Marca»** y **«Tipo de tarjeta»** (`POS.tsx:2705-2775`).
+11. **Confirmar la venta:** aparece **«¡Una venta más, una meta más cerca!»** con el número FS-… y el aviso «Venta registrada» (`POS.tsx:2336-2379`).
+12. **Solicitar NCF:** elegir **«Solicitud de NCF»** (`POS.tsx:2583`); tipo **B01 · Crédito fiscal** o **B02 · Consumidor final** (`POS.tsx:2589-2590`).
+13. **Nota de crédito:** se crea al devolver una venta; **no se imprime sola**. Para imprimirla: **Ventas** › abrir la venta › **«Imprimir nota NC-…»** (`Management.tsx:3390-3404`). Sale un PDF A4 con el «Código para presentar en caja» (`apps/api/src/sales.ts:3469-3522`).
+14. **Imprimir el recibo:** en la ventana de la venta, **«Imprimir recibo»** (`POS.tsx:2381-2384`). Hay también **«Recibo PDF»**, **«WhatsApp»**, **«Correo»** y **«Nueva venta»** (`POS.tsx:2385-2430`).
 
-## Por confirmar con la dueña
-Estos pasos no tienen respaldo en el código o están incompletos. No se publican hasta tener la respuesta.
-
-- **Paso 1 (abrir el POS):** no hay texto de apertura en el archivo.
-  - Pregunta: ¿Cómo abre la cajera el POS al empezar (qué pantalla o botón usa)?
-- **Paso 4 (agregar al carrito):** no hay botón «Agregar»; solo escanear o buscar (POS.tsx:546 es un comentario).
-  - Pregunta: ¿Cómo agrega la cajera un artículo al carrito: escaneando, buscando o con un botón? ¿Existe un botón «Agregar»?
-- **Paso 9 (método de pago):** hay «Efectivo» (POS.tsx:2537) y los tipos de tarjeta (POS.tsx:2770–2771), pero no un texto «Elegir método de pago».
-  - Pregunta: ¿Cuáles son los métodos de pago que elige la cajera y en qué pantalla aparecen?
-- **Paso 10 (banco):** la cuenta aparece como «Cuenta donde cayó» (POS.tsx:2779), no como «banco».
-  - Pregunta: ¿La cajera elige la cuenta donde cayó el dinero en transferencia o tarjeta? ¿Ese es el nombre que debe ver?
-- **Paso 14 (imprimir la nota de crédito):** solo hay el aviso «Nota de crédito disponible» (POS.tsx:2636). «Imprimir recibo» (POS.tsx:2383) es del recibo de venta.
-  - Pregunta: ¿La nota de crédito se imprime? ¿Cómo y dónde?
-- **Paso 15 (finalizar y generar el comprobante):** hay «Venta registrada» (POS.tsx:2360) e «Imprimir recibo» (POS.tsx:2383); «genera el comprobante» no está escrito.
-  - Pregunta: Al finalizar, ¿el sistema genera o imprime el comprobante solo? ¿Cuál es el paso exacto que hace la cajera?
+## Nota sobre la impresión automática
+- Si en Configuración está activa **«Imprimir el recibo automáticamente al cobrar»** (`Management.tsx:4031-4032`), el recibo sale solo. De fábrica está **apagada** (`apps/api/src/admin.ts:123`).
+- No se sabe si la tienda la tiene activada hoy: se revisa en **Configuración**. Este manual no lo afirma.

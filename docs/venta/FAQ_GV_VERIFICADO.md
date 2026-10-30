@@ -39,8 +39,6 @@ La cita está en **GvCitas.tsx**, no en Gv.tsx. Campos del formulario: Clienta (
 ### ¿Qué campos se muestran en el resumen de ocupación y pendientes por curso?
 La columna CURSO (Gv.tsx:987) y la sección «Pendientes por clienta» (Gv.tsx:1015).
 
-## Por confirmar con la dueña
-- **Nombre de la sección de citas en el menú.** El código la llama «Citas» en GvCitas.tsx, pero no encontré en esta revisión la etiqueta exacta del menú.
-  - Pregunta: ¿Cómo se llama la sección de citas en el menú de GV?
-- **Campos de la tabla de inscripciones.** El borrador original omitía PRECIO, PAGADO y PENDIENTE; esta versión sí los incluye, con su línea.
-  - Pregunta: ¿Quieres que la FAQ incluya PRECIO, PAGADO y PENDIENTE, o solo los campos que se ven en la pantalla principal?
+## Resueltas (ver `docs/sistema/RESPUESTAS_A_TALLER.md`, preguntas 7 y 8)
+- **Nombre de la sección de citas:** «Citas», una pestaña dentro de «GV Makeup Studio» (`Gv.tsx:147`). El botón es «Nueva cita».
+- **Tabla de inscripciones:** sí muestra PRECIO, PAGADO y PENDIENTE (`Gv.tsx:385-393`), como indica la FAQ de arriba.

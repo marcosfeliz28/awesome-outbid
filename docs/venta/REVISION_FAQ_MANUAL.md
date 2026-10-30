@@ -21,7 +21,7 @@ Ningún borrador se editó. Quien los verifica decide qué se publica.
 - **Nota:** el borrador dice que dio 15 y se quedaron 12; confirmar cuáles se descartaron y por qué.
 
 ## FAQ de GV (`FAQ_GV_BORRADOR.md`)
-- **Estado:** 14 preguntas con cita a `Gv.tsx`. Sin leer el código, según el propio borrador.
+- **Estado:** 12 preguntas con cita a `Gv.tsx` y `GvCitas.tsx`. Sin leer el código, según el propio borrador.
 - **Hallazgo de archivo:** la pregunta «qué información se muestra para cada cita» cita `Gv.tsx:279-408`. Las citas viven en `GvCitas.tsx` (en el repo). Esa cita casi seguro está mal de archivo.
 - **Corrección propuesta:** verificar las citas en `Gv.tsx` y `GvCitas.tsx`. Corregir la de citas al archivo correcto o quitarla.
 
