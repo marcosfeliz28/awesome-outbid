@@ -1551,3 +1551,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - Forja 3 (`claude-pc/forja3-grupo-1`, 600eae7f): verde; sin LISTA (orden 75).
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo (30-oct): N34 ejecutada, salida inútil
+- Fetch: nexora-cloud en e47a557d; RESPUESTA_CLAUDE_PC_27OCT.md blob 863ba804 (sin orden nueva). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- N34 (guía de cajera de una página): el runner la marcó como hecha en 255 s, pero la salida (229 bytes) solo dice «PARCIAL»: el modelo no pudo leer `docs/sistema/FLUJO_CAJA_POS.md` porque el runner recorta cada entrada a 6000 caracteres. Por eso NO la commiteo: no tiene contenido útil.
+- Causa: `LIMITE_ENTRADA = 6000` en `cola.mjs`. El archivo de entrada es más largo. Pido a Norexos 1 partir esa entrada en trozos de ≤6000 caracteres o indicar qué sección usar.
+- Salida en `docs/diseno/borradores-local/guia-cajera-1pagina.md` de la carpeta `cola-n34` (sin rastrear). Queda sin commit.
+- Siguiente en la cola: N35 (glosario simple). La cola no se para por N34; la marco como pendiente de revisión.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
