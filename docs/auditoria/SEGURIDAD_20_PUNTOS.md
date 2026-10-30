@@ -39,7 +39,18 @@ Gravedad: **alta** (detiene la mezcla), **media**, **baja**.
 | 19 | Auditoría completa | **OK** | Este informe, fechado. Los hallazgos entran a `docs/coordinacion/PENDIENTES_NOCHE_30OCT.md` por Norexos 1 (esta tarea es solo lectura y no lo modificó). |
 | 20 | Sin errores | **OK** | Cada fila lleva comando o archivo:línea. Lo no comprobado está marcado. Ningún hallazgo se corrigió aquí, así que no hay prueba nueva que añadir. |
 
-## Hallazgo alto: dependencias (punto 13)
+## Hallazgo alto: dependencias (punto 13). Estado tras `claude/deps-seguridad`
+
+Se corrigieron body-parser, multer y qs con `pnpm.overrides` en `pnpm-workspace.yaml` (commit `27346886`, rama `claude/deps-seguridad`): body-parser 2.4.0, multer 2.5.0 y qs 6.17.1. `pnpm audit --prod` baja a **un solo aviso: zod 3.25.76** (GHSA-mrhx-c7xc-m3w5, parche en 4.6.6). Se deja como tarea aparte (abajo). El detalle original se conserva en la tabla siguiente.
+
+### Tarea aparte: zod 4.x (no urgente)
+
+- **Qué:** actualizar zod de 3.25.76 a 4.6.6 o más. Declarado en `apps/api/package.json:35` y `packages/shared/package.json:12`.
+- **Por qué no ahora:** zod 4 cambia la API de esquemas; hay que revisar los `parse(...)` de la API y de `packages/shared`.
+- **Mitigación mientras tanto:** el cuerpo JSON ya tiene tope de 100 kb (`apps/api/src/main.ts:45`) y 4 MB solo para la importación de GV (`main.ts:44`), que limitan el tamaño de cualquier colección que llegue a zod. Pendiente: añadir límite de longitud a los arrays de los esquemas expuestos a la red (los que aceptan listas en el cuerpo), para que una colección grande se rechace antes de validarse.
+- **Quién decide el despliegue:** Norexos 1 (toca la API; no se despliega sin CI verde y lectura de cajas).
+
+### Detalle original (30-oct, antes del parche)
 
 `pnpm audit --prod` (JSON), base `c9975b02`:
 
