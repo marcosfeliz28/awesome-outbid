@@ -230,6 +230,10 @@ test("N2: un carrito abandonado no evita el bloqueo por inactividad y se conserv
     page.getByRole("button", { name: "Entrar a mi tienda" }),
   ).toBeVisible();
 
+  // El bloqueo devuelve el borrador a IndexedDB después de cerrar la sesión:
+  // recargar antes de que termine lo perdía (flaky). Se espera el estado real.
+  await draftSaved(page);
+
   // El carrito no se borró: al volver a entrar, ahí está.
   await login(page);
   await goTo(page, "pos");
