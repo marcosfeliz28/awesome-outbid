@@ -1464,3 +1464,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Sin cambios.
 - Forja 3 y LISTA: sin cambios; la combina Norexos 1.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 min (29-oct): cola N26–N33 y bloque 14 propio
+- Fetch: nexora-cloud 9626b19f. RESPUESTA_CLAUDE_PC_27OCT.md blob 7157b7d4 (sin cambio desde la orden 77). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, ya con LISTA. Sin LISTA nueva.
+- Cola: Norexos 1 repartió N26–N33 (qwen-optimizado: N18–N30; qwen2.5-coder:14b: N31; qwen2.5-coder:7b: N32–N33). Pendiente de revisión.
+- Bloque 14 propio en `claude-pc/cola-b14-resto` (03430fc6): 90 (81 exports), 91 (0 tildes en texto), 92 (inventario RLS por migración). Con 87 y 88, quedan mis cinco tareas. Sin LISTA hasta que CI esté en verde.
+- ChatGPT (paso 5): no se leyó en este ciclo; la app sigue sin ventana visible.
