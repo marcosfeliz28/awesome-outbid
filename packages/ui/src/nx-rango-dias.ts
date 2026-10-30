@@ -6,7 +6,11 @@ function aFecha(texto: string): Date {
   if (!FORMATO.test(texto)) throw new Error("rangoDeDias: fecha inválida");
   const [a, m, d] = texto.split("-").map(Number);
   const fecha = new Date(Date.UTC(a, m - 1, d));
-  if (fecha.getUTCFullYear() !== a || fecha.getUTCMonth() !== m - 1 || fecha.getUTCDate() !== d)
+  if (
+    fecha.getUTCFullYear() !== a ||
+    fecha.getUTCMonth() !== m - 1 ||
+    fecha.getUTCDate() !== d
+  )
     throw new Error("rangoDeDias: fecha inválida");
   return fecha;
 }
