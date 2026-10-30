@@ -2131,3 +2131,6 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (30-oct 14:10 UTC) — orden 91 nueva (nexora-cloud fcf8e2e7)
 - Hechas B (citas-reanclar, 535a4905) y C (pre-empuje) en claude-pc/citas-robustas y G (plan de lanzamiento, 3adeccac) en claude-pc/plan-lanzamiento; las dos con 3 CI en verde y LISTA escrita. CI sin cambio: pc23, a1, b01, lumina verdes; t33-rebase 3696d0cf verify sigue rojo (N2).
 - Pendientes: A (pruebas intermitentes, requieren e2e), D (seguridad-20 con Postgres), E (zod4), F (R1–R8, N54–N57: modelo local) y H; sin Node 24 en esta sesión, solo se pudo probar con vitest suelto.
+
+## Ciclo nube (30-oct 15:10 UTC) — orden 92 nueva (nexora-cloud 7853a18f)
+- Orden 92 (Chrome DevTools MCP y Oh My Claude Code en la laptop) es instalación local: no ejecutable en la nube, queda pendiente para la laptop; sin LISTA nueva. CI sin cambio: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e, citas-robustas 535a4905 y plan-lanzamiento 3adeccac verdes; t33-rebase 3696d0cf verify sigue rojo (N2).
