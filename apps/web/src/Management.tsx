@@ -944,6 +944,14 @@ export function Inventory() {
             >
               Conteos físicos
             </button>
+            <button
+              type="button"
+              className={mode === "warehouses" ? "active" : ""}
+              aria-pressed={mode === "warehouses"}
+              onClick={() => setMode("warehouses")}
+            >
+              Almacenes y traspasos
+            </button>
           </div>
           <Filter
             value={search}
@@ -1046,6 +1054,8 @@ export function Inventory() {
                 },
               ]}
             />
+          ) : mode === "warehouses" ? (
+            <WarehousesPanel rows={rows} warehouseId={warehouseView} />
           ) : (
             <QueryState query={counts}>
               <DataTable
@@ -1098,7 +1108,6 @@ export function Inventory() {
           )}
         </QueryState>
       </div>
-      <WarehousesPanel rows={rows} warehouseId={warehouseView} />
       {adjust && (
         <FormModal
           title={"Ajustar · " + adjust.product.name}

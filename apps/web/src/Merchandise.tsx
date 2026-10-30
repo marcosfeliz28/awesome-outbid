@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MERCHANDISE_STEPS, merchandiseStep } from "./merchandiseSteps";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
@@ -683,6 +684,25 @@ export function Merchandise({
           </button>
         </div>
       </header>
+
+      <ol className="goods-steps" aria-label="Pasos del movimiento">
+        {MERCHANDISE_STEPS.map((name, i) => {
+          const step = merchandiseStep({
+            lines: items.length,
+            hasDraft: !!draft,
+            done: !!result,
+          });
+          return (
+            <li
+              key={name}
+              aria-current={step === i + 1 ? "step" : undefined}
+              className={step > i + 1 ? "done" : ""}
+            >
+              <span>{i + 1}</span> {name}
+            </li>
+          );
+        })}
+      </ol>
 
       {result && (
         <div className="goods-done" role="status">

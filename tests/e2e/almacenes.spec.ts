@@ -107,6 +107,7 @@ test("Casa se contabiliza por separado y el traspaso habilita stock en Tienda", 
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
   await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
+  await page.getByRole("button", { name: "Almacenes y traspasos" }).click();
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel("Almacén", { exact: true }).selectOption(home.id);
   await expect(
@@ -135,6 +136,7 @@ test("el traspaso desde Casa propone Tienda como destino en móvil", async ({
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
   await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
+  await page.getByRole("button", { name: "Almacenes y traspasos" }).click();
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel("Almacén", { exact: true }).selectOption(home.id);
   await page.getByLabel("Producto", { exact: true }).selectOption({ index: 1 });
@@ -192,7 +194,7 @@ test("el conteo precarga la existencia del almacén seleccionado", async ({
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
   await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
-  await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Stock actual" })).toBeVisible();
   await page.getByLabel("Buscar producto o código").fill("COUNT-WH-V-" + suffix);
   await page.getByRole("row", { name: new RegExp("Conteo por almacén " + suffix) })
     .getByRole("button", { name: "Contar" })
@@ -291,6 +293,7 @@ test("el traspaso Casa→Tienda conserva la identidad del lote en móvil", async
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
   await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
+  await page.getByRole("button", { name: "Almacenes y traspasos" }).click();
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel("Almacén", { exact: true }).selectOption(home.id);
   await page
@@ -363,6 +366,7 @@ test("la vista previa de Casa detalla el antes y el después del Excel", async (
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
   await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
+  await page.getByRole("button", { name: "Almacenes y traspasos" }).click();
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel(`Excel de ${homeName}`, { exact: true }).setInputFiles({
     name: "levantamiento-casa.xlsx",
