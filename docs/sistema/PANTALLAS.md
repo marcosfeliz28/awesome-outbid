@@ -35,7 +35,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 - **Acerca de** (`apps/web/src/App.tsx:1033-1041`): versión, aviso de privacidad, licencias.
 - **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1043-1048`); no es de uso diario.
 - Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1202-1228`, atajo `:797`).
-- F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:812`).
+- F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:832`).
 
 **No existe** en este menú: «Primeros pasos» ni «Plan y facturación» (solo en `producto-nexora`, ver `RESPUESTAS_A_TALLER.md` pregunta 9). Tampoco existe un ítem llamado «Gestión» ni uno llamado «Usuarios»: la gestión de usuarios es la pestaña «Usuarios y permisos» dentro de Configuración (`apps/web/src/Management.tsx:4155`). NO ENCONTRADO como etiqueta de menú.
 

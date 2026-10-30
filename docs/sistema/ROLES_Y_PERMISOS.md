@@ -24,7 +24,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 |---|---|---|
 | `catalog:read` | Ver productos, categorías, stock, kardex, ajustes (`GET /settings`). | «Productos» (`App.tsx:234`), `apps/api/src/catalog.ts:231-346`, `apps/api/src/inventory.ts:581` |
 | `catalog:write` | Crear/editar productos, variantes, importar Excel, kits. | `apps/api/src/catalog.ts:195`, `:237`, `:378`, `:408`, `:432`, `:496`, `:588`, `:652` |
-| `inventory:write` | Pantallas «Mercancía» e «Inventario»; ajustes y conteos. | `App.tsx:197`, `:240`; `apps/api/src/merchandise.ts:160-343`; `apps/api/src/inventory.ts:637`, `:1487-1496` |
+| `inventory:write` | Pantallas «Mercancía» e «Inventario»; ajustes y conteos. | `App.tsx:204`, `:247`; `apps/api/src/merchandise.ts:160-343`; `apps/api/src/inventory.ts:637`, `:1487-1496` |
 | `purchase:write` | «Compras», órdenes, recepciones, proveedores, pagos a proveedor. | `App.tsx:246`; `apps/api/src/inventory.ts:954-1041`; `apps/api/src/admin.ts:568-588` |
 | `sale:write` | Vender (Punto de venta), ver Ventas, pedir anulaciones, ventas en espera, cobrar créditos en efectivo. | `App.tsx:209-216`; `apps/api/src/sales.ts:1475`, `:4181-4183`; `apps/api/src/admin.ts:739-803` |
 | `sale:manage` | **Gerencia de ventas**: devoluciones, aprobar conteos, ver esperados de caja, ver datos completos de clientes, cobrar crédito con tarjeta/transferencia, ver lista de transferencias pendientes, tasas de incentivos, **ser quien aprueba con PIN**; ver «Configuración» e «Incentivos». | `App.tsx:278`, `:1024-1031`; `sales.ts:3223`, `:2638-2640`, `:4423`; `inventory.ts:1550-1552`; `common.ts:70-72`, `:276-281`; `security.ts:116-117` |
