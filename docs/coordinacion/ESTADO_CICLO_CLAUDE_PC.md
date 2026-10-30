@@ -1536,3 +1536,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Tarea 15 (guía de instalación): la rama claude-pc/docs-noche ya tenía 8226b8de con «Nexora POS» (la regla de marca lo prohíbe). Commit 2aa2b80e cambia a «Norexos POS»; prueba `grep -q Nexora`: falla antes, pasa después. CI del commit nuevo: pendiente. LISTA solo cuando esté en verde.
 - Tareas 16 a 92 del lote: pendientes (la cola no está vacía, así que no se pidió cola nueva).
 - ChatGPT (paso 5): la app se abrió desde la barra de tareas, la ventana no aparece. Bloqueo de ventana; no se forzó. No se leyeron chats ni se escribió en ninguno.
+
+## Ciclo (30-oct): orden 78 (cola N34–N41 primero)
+- Fetch: nexora-cloud en 54fee989. Orden 78 nueva: cola N34–N41 (entradas en `docs/sistema`), después N26–N33 pendientes. Rechazadas: N24, N27, N29, N30, N31 y N33. RESPUESTA_CLAUDE_PC_27OCT.md blob 863ba804. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en 7ad456c3.
+- Cola: sincronizada en `COLA_LOCAL_ACTIVA.json` (commit 5d4f6a00). N34–N41 van primero. Sin ejecución nueva en este ciclo; empiezo por N34 leyendo `docs/sistema/README.md`. Aviso «cola baja» cuando queden 3.
+- Forja 3 (`claude-pc/forja3-grupo-1`, head 600eae7f): verify, windows-installer y render-images en verde. Sin LISTA suelta (orden 75). Informado a Norexos 1.
+- CI: pc23-anulacion-fix, a1-formula-utilidad y b01-ventas-caja-ciega en verde, con LISTA. lumina-motion-integracion en verde.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
