@@ -160,6 +160,86 @@
         "docs/venta/META_DESCRIPCIONES.md"
       ],
       "salida": "docs/diseno/borradores-local/meta-tabla.md"
+    },
+    {
+      "id": "N34-guia-cajera-1pagina",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en la entrada; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, promesas de seguridad o ganancias. Conserva las citas archivo:línea de la entrada. NO escribas conteos de caracteres o palabras: los mide un script.\nGuía de una página para la cajera: pasos numerados, una frase por paso, con la etiqueta exacta del botón. Aceptación: cada paso conserva una cita de la entrada (grep -c ':[0-9]' >= número de pasos).",
+      "entradas": [
+        "docs/sistema/FLUJO_CAJA_POS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/guia-cajera-1pagina.md"
+    },
+    {
+      "id": "N35-glosario-simple",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en la entrada; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, promesas de seguridad o ganancias. Conserva las citas archivo:línea de la entrada. NO escribas conteos de caracteres o palabras: los mide un script.\nTabla término | definición de máximo 15 palabras, en el mismo orden de la entrada. Aceptación: una fila por término de la entrada.",
+      "entradas": [
+        "docs/sistema/GLOSARIO.md"
+      ],
+      "salida": "docs/diseno/borradores-local/glosario-simple.md"
+    },
+    {
+      "id": "N36-faq-roles",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en la entrada; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, promesas de seguridad o ganancias. Conserva las citas archivo:línea de la entrada. NO escribas conteos de caracteres o palabras: los mide un script.\nPreguntas y respuestas de 2 frases: qué puede hacer cada rol y qué es solo admin. Aceptación: cada respuesta con cita.",
+      "entradas": [
+        "docs/sistema/ROLES_Y_PERMISOS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/faq-roles.md"
+    },
+    {
+      "id": "N37-tarjetas-cobros",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en la entrada; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, promesas de seguridad o ganancias. Conserva las citas archivo:línea de la entrada. NO escribas conteos de caracteres o palabras: los mide un script.\nTarjetas «Si pasa X, haz Y» sobre crédito, contraentrega, abonos y transferencias por verificar. Aceptación: cada tarjeta con cita; lo marcado aún no desplegado debe decirlo.",
+      "entradas": [
+        "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/tarjetas-cobros.md"
+    },
+    {
+      "id": "N38-gv-secretaria",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en la entrada; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, promesas de seguridad o ganancias. Conserva las citas archivo:línea de la entrada. NO escribas conteos de caracteres o palabras: los mide un script.\nResumen para quien atiende GV: inscripciones, pagos y citas, en pasos cortos. Aceptación: cada paso con cita.",
+      "entradas": [
+        "docs/sistema/GV.md"
+      ],
+      "salida": "docs/diseno/borradores-local/gv-secretaria.md"
+    },
+    {
+      "id": "N39-lista-mercancia",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en la entrada; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, promesas de seguridad o ganancias. Conserva las citas archivo:línea de la entrada. NO escribas conteos de caracteres o palabras: los mide un script.\nLista de comprobación de 8 a 12 casillas para entradas, salidas, traspasos y ajustes, incluyendo la regla de las 3 verificaciones. Aceptación: cada casilla con cita o con la regla escrita en la entrada.",
+      "entradas": [
+        "docs/sistema/FLUJO_MERCANCIA.md"
+      ],
+      "salida": "docs/diseno/borradores-local/lista-mercancia.md"
+    },
+    {
+      "id": "N40-ayuda-pantallas",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 2200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en la entrada; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, promesas de seguridad o ganancias. Conserva las citas archivo:línea de la entrada. NO escribas conteos de caracteres o palabras: los mide un script.\nPara cada pantalla del menú, una ayuda de 1 a 2 frases (qué hace y qué pasa después). Aceptación: una entrada por pantalla de la tabla.",
+      "entradas": [
+        "docs/sistema/PANTALLAS.md"
+      ],
+      "salida": "docs/diseno/borradores-local/ayuda-pantallas-corta.md"
+    },
+    {
+      "id": "N41-glosario-en",
+      "modelo": "qwen2.5-coder:14b",
+      "maxTokens": 2500,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en la entrada; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, promesas de seguridad o ganancias. Conserva las citas archivo:línea de la entrada. NO escribas conteos de caracteres o palabras: los mide un script.\nTraduce al inglés la tabla término | definición (columnas: ES | EN term | EN definition). No traduzcas nombres de botones. Aceptación: una fila por término.",
+      "entradas": [
+        "docs/sistema/GLOSARIO.md"
+      ],
+      "salida": "docs/diseno/borradores-local/glosario-en.md"
     }
   ]
 }
