@@ -1487,3 +1487,14 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Subidas a `claude-pc/cola-n` (2680132c): N19, N20, N26, N28 y N32, con encabezado de revisión.
 - Rechazadas (no se suben): N24 y N27 (sin contenido real), N29 (repite «Nexora POS» y DGII/NCF), N30 (sin contenido real), N31 (introduce términos no comprobados), N33 (conteos del modelo; los mide un script).
 - ChatGPT (paso 5): la app se abre pero la ventana no aparece. No se leyeron «ChatGPT nube» ni «ChatGPT PC»; no se escribió en ningún chat. Bloqueo que sigue.
+
+## Ciclo (29-oct, 15 y 30 min): cola nueva en nexora-cloud, sin tareas ejecutadas
+- Fetch: nexora-cloud en 7157b7d4 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio). OBSIDIAN_LUMINA_PROGRESO.md sigue ausente en nexora-cloud.
+- Cola nueva: `docs/coordinacion/COLA_LOTE_LOCAL.md` (blob c3ecfbb0) ya existe en nexora-cloud. Contiene bloques 2 a 14 (tareas 9 a 92).
+- Tareas 1 a 14 (incluye bloque 2, 9 a 14): las hizo el Taller (Norexos 3) en producto-nexora (ef063f6a); se saltan.
+- Bloque 9 (tareas 49 a 56): NO ejecutar hasta el dictamen de Claude PC (`docs/coordinacion/DICTAMEN_PC.md`, todavía no escrito).
+- Pendiente de ejecutar: bloques 3 a 8 y 10 a 14 (desde la tarea 15). No se ejecutaron en este ciclo: cada salida del modelo local requiere revisión manual antes de commit.
+- CI (API public check-runs): pc23-anulacion-fix (c1fe8c0c), a1-formula-utilidad (498df5ee), b01-ventas-caja-ciega (0500b03a), lumina-motion-integracion (287db57e): verify, windows-installer y render-images en verde. cola-b13 (8d728e9b): en verde.
+- CI en curso: claude-pc/cola-n (2680132c) y claude-pc/cola-b14-resto (03430fc6): verify en progreso. Sin LISTA nueva hasta que cierren en verde.
+- ChatGPT (paso 5): sin cambio. Según el ciclo anterior, la cuota está pausada hasta el 2 de noviembre; no se abrió en este ciclo.
+- Modelo local: solo qwen2.5-coder:7b cargado en Ollama. Prueba de cinco modelos sin resultado.
