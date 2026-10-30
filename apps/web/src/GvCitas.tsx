@@ -65,6 +65,21 @@ const CONCEPTS: Record<string, string> = {
   tercero: "Tercer pago",
   otro: "Otro",
 };
+// Con tarjeta no se elige banco: se registra la terminal (la de Configuración
+// si existe; si no, un único valor fijo).
+export const GV_TERMINAL = "Terminal GV";
+export const paymentBank = (
+  method: string,
+  bank: string,
+  terminals: string[] = [],
+) =>
+  method === "tarjeta"
+    ? terminals.length
+      ? bank
+      : GV_TERMINAL
+    : method === "transferencia"
+      ? bank
+      : "";
 const METHODS: Record<string, string> = {
   efectivo: "Efectivo",
   transferencia: "Transferencia",
@@ -489,6 +504,10 @@ function AppointmentPaymentForm({
     bank: "",
     reference: "",
   });
+  const terminals = useQuery({
+    queryKey: ["gv-banks"],
+    queryFn: () => api<{ terminals: string[] }>("/gv/banks"),
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = (key: string, value: unknown) =>
@@ -500,6 +519,7 @@ function AppointmentPaymentForm({
     try {
       await post(`/gv/appointments/${a.id}/payments`, {
         ...form,
+        bank: paymentBank(form.method, form.bank, terminals.data?.terminals),
         amount: Number(form.amount),
         operationId,
       });
@@ -552,12 +572,12 @@ function AppointmentPaymentForm({
             <Options map={METHODS} />
           </select>
         </label>
-        {form.method !== "efectivo" && (
+        {form.method === "transferencia" && (
           <>
             <label className="field">
               <span>Banco</span>
               <input
-                required={form.method === "transferencia"}
+                required
                 value={form.bank}
                 onChange={(e) => set("bank", e.target.value)}
               />
@@ -565,7 +585,36 @@ function AppointmentPaymentForm({
             <label className="field">
               <span>Referencia</span>
               <input
-                required={form.method === "transferencia"}
+                required
+                value={form.reference}
+                onChange={(e) => set("reference", e.target.value)}
+              />
+            </label>
+          </>
+        )}
+        {form.method === "tarjeta" && (
+          <>
+            <label className="field">
+              <span>Terminal</span>
+              {(terminals.data?.terminals.length ?? 0) > 0 ? (
+                <select
+                  required
+                  value={form.bank}
+                  onChange={(e) => set("bank", e.target.value)}
+                >
+                  <option value="">Elige la terminal…</option>
+                  {terminals.data?.terminals.map((t: string) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+              ) : (
+                <input readOnly value={GV_TERMINAL} />
+              )}
+            </label>
+            <label className="field">
+              <span>Referencia (aprobación, lote o voucher)</span>
+              <input
+                required
                 value={form.reference}
                 onChange={(e) => set("reference", e.target.value)}
               />

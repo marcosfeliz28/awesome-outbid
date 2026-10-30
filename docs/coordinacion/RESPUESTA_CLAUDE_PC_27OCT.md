@@ -464,3 +464,37 @@ Regla: gasta lo mínimo (modelo Haiku, scripts primero, agentes pequeños en par
 4. FASE 2 VISUAL (producto-nexora, rama claude/visual-f2-04 a82fcf06, obrero Norexos 10, cierra hoy): corre `pnpm test` con Postgres local (en la nube falla por root) y reporta qué falla de verdad.
 5. DESPUÉS: tanda 4 del Revisor R1–R8 (orden 89) y N54–N57.
 Controles mínimos (solo estos): (a) antes de empujar, `git grep -n '^<<<<<<<'` y la prueba tests/docs-sistema-citas.test.ts; (b) una sola rama por tema; (c) antes de tomar algo, mirar «Dueño único por pieza» en PENDIENTES_NOCHE_30OCT.md y escribir «Tomo: …».
+
+## Orden 91 (N1, 30-oct 13:55 UTC) — CARGA GRANDE PARA CLAUDE PC (orden de la dueña: menos IA en la nube, más trabajo local barato)
+Cómo trabajar: tú coordinas y repartes a tus agentes locales; usa el modelo MÁS BARATO disponible (Haiku o el local) en TODOS ellos y el máximo de agentes en paralelo; scripts primero, el modelo solo redacta/decide en lotes de 5; si algún agente no está en el más barato, cámbialo. Ramas claude-pc/* (una por pieza); NO empujes a nexora-cloud ni despliegues; al terminar cada pieza escribe LISTA con SHA en docs/coordinacion/LISTA_CLAUDE_PC.md. Antes de empujar: `git grep -n '^<<<<<<<'` y tests/docs-sistema-citas.test.ts. Antes de tomar algo, mira «Dueño único por pieza» y escribe «Tomo: …». Prioridad en este orden:
+A. (orden 90, sigue vigente) Mantenimiento del CI, 3 pruebas intermitentes, T33 y Fase 2 visual.
+B. CITAS ROBUSTAS (causa de los rojos de hoy): scripts/citas-reanclar.mjs que, para cada cita archivo:línea de docs/sistema, guarde un fragmento de texto de esa línea y la mueva sola a la línea nueva cuando el código cambie; correrlo en la prueba y en un comando `pnpm docs:citas`. Con prueba. Así ningún merge rompe citas.
+C. SCRIPT PRE-EMPUJE: scripts/pre-empuje.mjs (marcadores de conflicto, citas, prettier/eslint de lo cambiado, typecheck) y documentarlo en base-sistema. Con prueba.
+D. SEGURIDAD-20, puntos NO COMPROBADOS (solo lectura, informe en docs/auditoria/SEGURIDAD_20_PUNTOS.md rama claude-pc/seguridad-pendientes): 5 y 6 (cada endpoint probado con usuario sin permiso, con Postgres local), 9 (auditoría por endpoint), 14 (depcheck), 15 (dist construido, archivos expuestos), 18 (buscar llaves en las demás ramas remotas sin imprimir valores).
+E. ZOD 4: rama claude-pc/zod4 con la migración completa según docs/auditoria/ZOD4_ESTUDIO.md (3 z.record con un argumento, re-export de @fitstore/shared, zod/v4 en invoice.ts), suite completa verde con Postgres local. No mezclar sin mi revisión.
+F. TANDA 4 del Revisor R1–R8 (orden 89) y N54–N57.
+G. PLAN DE LANZAMIENTO de la plataforma que se vende (borrador en docs/venta/PLAN_LANZAMIENTO.md): checklist de dominio norexos.ai (landing ya hecha, falta DNS y verificación), soporte, precios/planes como OPCIONES (no decidir), requisitos legales básicos, qué falta del producto. Marcar cada ítem con quién decide.
+H. Si te sobra capacidad: revisa los .md de docs/sistema contra el código (una cita por vez, por script) y reporta contradicciones.
+Reporta una sola vez por pieza terminada; no escribas informes largos.
+
+## Orden 92 (N1, 30-oct 14:15 UTC) — Dejar disponibles 2 herramientas en la laptop (orden de la dueña: «que estén disponibles»)
+Contexto: reel con 4 «enchufes». Decisión en .claude/skills/herramientas-evaluadas/SKILL.md. Disponible ≠ en uso: no usarlas sin orden de la dueña.
+1. Chrome DevTools MCP (oficial de Google, paquete `chrome-devtools-mcp`): instálalo como servidor MCP de usuario en la laptop (`claude mcp add` con su paquete npm oficial, versión fijada y probada). Úsalo solo para depurar pantallas a 390 px, consola y rendimiento, en lectura. Prueba: abre http://localhost de la app local y captura consola.
+2. Oh My Claude Code (repo de terceros, orquestación multiagente): instálalo SOLO si lo haces desde el repositorio original verificado (autor, estrellas, última actualización, revisa los hooks y scripts que ejecuta antes de instalar), y déjalo DESACTIVADO por defecto. Si algún hook toca archivos fuera de tu carpeta de trabajo o hace llamadas de red no explicadas, NO lo instales y repórtalo. No lo actives sin orden.
+3. Supabase y Vercel son conectores de claude.ai: los conecta la dueña; tú no haces nada.
+Escribe LISTA con lo que quedó instalado, la versión y cómo se activa/desactiva cada una.
+
+## Orden 93 (N1, 30-oct 17:10 UTC) — GV: pago con tarjeta sin cuenta bancaria (pedido de la dueña vía Norexos 2)
+Problema: en GV, modal «Pago de …» (apps/web/src/Gv.tsx), con Método = Tarjeta el campo Banco solo muestra las 6 cuentas de banco (Génesis/Macgen) y Clary no sabe qué elegir. La API (apps/api/src/gv-money.ts, assertGvBank, ~líneas 82 y 227) exige banco de la lista aunque sea tarjeta. Settings.cardTerminals está vacío [].
+Rama claude-pc/gv-tarjeta desde origin/nexora-cloud. Haz, con prueba que falle antes y pase después (integración con Postgres local, tests/gv-modulo-api.test.ts):
+1. API: con método tarjeta, NO exigir banco; exigir en su lugar referencia (número de aprobación/lote/voucher); la tarjeta ya se guarda verificada (mantener). Transferencia/depósito siguen exigiendo banco. No cambiar montos, estados de otros métodos ni totales.
+2. Web: con Tarjeta ocultar Banco y mostrar «Terminal» (texto/lista desde Settings.cardTerminals si existe; si está vacío, un único valor fijo «Terminal GV») + referencia/lote/aprobación obligatoria.
+3. NO decidir adónde cae el dinero de tarjeta de GV: lo pregunta Norexos 2 a la dueña (el voucher del 29-oct de 8,200 fue en terminal de GV, lote 001, dinero a Génesis). Deja la cuenta destino como dato opcional/configurable, sin valor por defecto inventado.
+4. Documenta en docs/sistema (GV.md, FLUJO_COBROS) con citas por ancla (pnpm docs:citas) y corre scripts/pre-empuje.mjs antes de empujar.
+Toca dinero de GV: NO se despliega sin mi revisión y la lectura de cajas; LISTA con SHA cuando los 3 CI estén en verde.
+Orden 93, ACLARACIÓN (17:30 UTC, respuesta de la dueña): el dinero de tarjeta de los pagos de GV se registra en el ÁREA GV / Grupo Génesis, sin elegir cuenta de banco («porque es el área de GV»). No dio nombre de terminal ni de cuenta: no inventes ninguno; usa «Terminal GV» como texto fijo si Settings.cardTerminals está vacío y guarda el área GV como destino del pago.
+
+## Orden 94 (N1, 30-oct 21:15 UTC) — T33 y pruebas intermitentes (sigue la orden 90 A)
+1. T33 IA de ventas: tu rama claude-pc/t33-rebase 3696d0cf salió ROJA en verify solo por tests/e2e/caja-borrador.spec.ts:200 («N2: un carrito abandonado no evita el bloqueo por inactividad y se conserva al volver»), prueba de inactividad intermitente, no de la IA (el resto de e2e y pnpm check pasaron). La rama está 19 commits atrás de origin/nexora-cloud (2f99081d, 3 CI verdes). Haz: (a) rebase/merge sobre nexora-cloud 2f99081d; (b) arregla esa prueba como G9 (esperar el estado real, sin quitar comprobaciones); (c) comprueba que migraciones 202611010001/2 sean aditivas y que NO se guarde texto de consultas; (d) LISTA con SHA cuando los 3 CI estén verdes. No se despliega hoy: la reviso yo después del despliegue de la noche.
+2. Pruebas intermitentes pendientes (una rama por prueba): cuatro-cajas.spec.ts:185, privacidad-sesion.spec.ts:155 (G9), desglose-mes-movil.spec.ts:11, caja-borrador.spec.ts:200.
+3. Sigue la orden 93 (tarjeta GV, ya mezclada) y 92 (Chrome DevTools/Oh My Claude Code en la laptop).

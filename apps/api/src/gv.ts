@@ -423,6 +423,7 @@ export class GvController {
       const row = await tx.gvPayment.update({
         where: { id: before.id },
         data: {
+          verified: false, // la base no admite verificado y anulado a la vez
           rejectedAt: new Date(),
           rejectedBy: actor.id,
           rejectReason: "Anulado: " + reason,

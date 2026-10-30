@@ -112,7 +112,7 @@ Reglas: una persona solo puede tener **una caja abierta** (índice único parcia
 |---|---|---|
 | `GvCourse` | Curso: `type` (automaquillaje, brazilian, personalizado, otro), `date`, `price`, `capacity`, `active`. | `:1061` |
 | `GvEnrollment` | Inscripción: `clientName`, `phone`, `instagram`, `agreedPrice`, `status` (`activa`, `no_asistio`, `personalizado`, `cancelada`, `reembolsada`), `attended`, `boughtBrushSet`, `refundAmount`/`refundDate`. | `:1081` |
-| `GvPayment` | Pago de GV (de una inscripción **o** de una cita): `concept` (separo, completo, restante, segundo, tercero, otro), `method` (efectivo, transferencia, tarjeta), `bank`, `reference`, `verified`/`verifiedBy`, `rejectedAt`/`rejectReason`. **Efectivo y tarjeta nacen verificados; transferencia nace por verificar.** El pendiente **no se guarda: se calcula** (total − pagado verificado) (`apps/api/src/gv-money.ts:138-160`). | `:1109` |
+| `GvPayment` | Pago de GV (de una inscripción **o** de una cita): `concept` (separo, completo, restante, segundo, tercero, otro), `method` (efectivo, transferencia, tarjeta), `bank`, `reference`, `verified`/`verifiedBy`, `rejectedAt`/`rejectReason`. **Efectivo y tarjeta nacen verificados; transferencia nace por verificar.** El pendiente **no se guarda: se calcula** (total − pagado verificado) (`apps/api/src/gv-money.ts:158-180`). | `:1109` |
 | `GvAppointment` | Cita de maquillaje: `service`, `artists[]`, `afterHours`, `total`, `tip`, `status` (`agendada`, `realizada`, `cancelada`, `reembolsada`), datos de boda (`weddingQuote`, `venue`, `people`). | `:1149` |
 | `GvLead` | Interesada (prospecto): `interest`, `action`, `status` (`por_contactar`, `contactada`, `inscrita`, `descartada`). | `:1180` |
 
