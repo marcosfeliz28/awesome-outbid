@@ -31,3 +31,5 @@ description: Lecciones operativas de Norexos 1 (cómo hacer las cosas rápido y 
 - Este entorno NO tiene NEXORA_CLAUDE_USER/PASSWORD: la revisión diaria (reportes.py) no puede correr hasta que se configuren en el entorno.
 
 ## Pendiente por aprender (agrega abajo, con fecha)
+- 30-oct 02:38 UTC: Norexos 2 NO puede programar avisos propios; hay que pedirle «¿cuántas cajas abiertas?» por send_message justo antes de cada despliegue nocturno (vale 2 h). Última lectura: 0 cajas abiertas a las 02:38 UTC.
+- Ninguna sesión de la nube llega a Claude PC (Norexos 2 lo confirmó): solo por archivos en origin/nexora-cloud.
