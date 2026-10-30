@@ -18,9 +18,25 @@ test("«Ver detalle del mes» abre el desglose del mes y no cambia a Mercancía"
   const panel = page.locator(".year-pie");
   await expect(panel).toBeVisible();
   await panel.scrollIntoViewIfNeeded();
-  await page.locator(".recharts-pie-sector").first().click({ force: true });
+  // Recharts anima el gráfico y rehace los sectores: el elemento puede desprenderse del DOM
+  // en pleno clic. Se espera a que el primer sector deje de moverse y el clic se reintenta
+  // (sin volver a pulsar si el botón ya salió, para no desmarcar el mes).
+  const sector = page.locator(".recharts-pie-sector").first();
   const detalle = page.getByRole("button", { name: "Ver detalle del mes" });
-  await expect(detalle).toBeVisible();
+  let last = "";
+  await expect
+    .poll(async () => {
+      const now = JSON.stringify(await sector.boundingBox());
+      const quiet = now === last;
+      last = now;
+      return quiet;
+    })
+    .toBe(true);
+  await expect(async () => {
+    if (!(await detalle.isVisible()))
+      await sector.click({ force: true, timeout: 2000 });
+    await expect(detalle).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 15000 });
   await detalle.click();
   await expect
     .poll(() => page.evaluate(() => location.hash))

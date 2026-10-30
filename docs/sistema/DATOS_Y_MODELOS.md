@@ -32,7 +32,7 @@ Convenciones: dinero en `Decimal(14,2)` (centavos exactos, nunca decimales flota
 | `InventoryCount` | Conteo físico (`items` JSON). | `status`: `pending` → `applied` | `:661` |
 | `Promotion` | Oferta automática que aplica la caja (no cambia el precio). | `type`: `percent`, `amount`, `special_price`, `nxm`, `second_half`; `scope` (variante, producto, categoría o marca), `startsAt`/`endsAt`, `isClearance` | `:750` |
 
-**Tipos de movimiento de kardex** (`InventoryMovement.type`) que escribe el código: `sale` (venta; `apps/api/src/sales.ts:1186`), `void` (anulación; `sales.ts:2523`), `return` y `return_waste` (devolución al stock o a merma; `sales.ts:3238`, `:3250`), `purchase` (recepción de compra; `apps/api/src/inventory.ts:1284`), `count` (conteo aplicado; `inventory.ts:450`, `:1648`), `adjustment`/`waste`/`supplier_return` (ajustes manuales; `inventory.ts:816`, tipos en `Management.tsx:1044`), `transfer_out` y `transfer_in` (`apps/api/src/warehouses.ts:326-358`). Las entradas y salidas de la pantalla «Mercancía» las guarda `apps/api/src/merchandise.ts:341` con el motivo elegido. DUDOSO: no se enumeró cada literal de `type`; confirmar con `grep -rn "stockChange(" apps/api/src` antes de citar uno nuevo.
+**Tipos de movimiento de kardex** (`InventoryMovement.type`) que escribe el código: `sale` (venta; `apps/api/src/sales.ts:1186`), `void` (anulación; `sales.ts:2523`), `return` y `return_waste` (devolución al stock o a merma; `sales.ts:3238`, `:3250`), `purchase` (recepción de compra; `apps/api/src/inventory.ts:1284`), `count` (conteo aplicado; `inventory.ts:450`, `:1648`), `adjustment`/`waste`/`supplier_return` (ajustes manuales; `inventory.ts:816`, tipos en `Management.tsx:1044`), `transfer_out` y `transfer_in` (`apps/api/src/warehouses.ts:326-358`). Las entradas y salidas de la pantalla «Mercancía» las guarda `apps/api/src/merchandise.ts:343` con el motivo elegido. DUDOSO: no se enumeró cada literal de `type`; confirmar con `grep -rn "stockChange(" apps/api/src` antes de citar uno nuevo.
 
 ## 3. Clientes y ventas
 
@@ -84,7 +84,7 @@ Reglas: una persona solo puede tener **una caja abierta** (índice único parcia
 | Modelo | Qué es | Línea |
 |---|---|---|
 | `Supplier` | Proveedor (nombre, RNC, plazo de pago, tiempo de entrega). | `:79` |
-| `PurchaseOrder`, `PurchaseItem` | Orden de compra. `status`: `ordered` → `partial` → `received` (`apps/api/src/inventory.ts:1304-1308`). | `:571`, `:593` |
+| `PurchaseOrder`, `PurchaseItem` | Orden de compra. `status`: `ordered` → `partial` → `received` (`apps/api/src/inventory.ts:1302-1306`). | `:571`, `:593` |
 | `GoodsReceipt` | **Recepción** de mercancía (de una orden o de una factura): flete, otros costos, `damagedCost`, `invoiceTotal`, `supplierInvoice`, `supplierNcf`. | `:611` |
 | `SupplierPayment` | Pago a un proveedor. | `:648` |
 | `InvoiceDraft`, `InvoiceAttachment` | Factura de proveedor subida y su revisión antes de confirmar. | `:903`, `:915` |

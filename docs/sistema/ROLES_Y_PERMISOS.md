@@ -16,7 +16,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 | `warehouse` | Almacén | `catalog:read`, `inventory:write`, `purchase:write` |
 | `gv` | Empleada de GV (p. ej. Clary) | `gv:read`, `gv:write`, `gv:reports` |
 
-- **DUDOSO / pendiente de comprobar en vivo:** la dueña puede editar los permisos de cada rol desde Configuración › «Usuarios y permisos» › «Permisos por rol» (`apps/web/src/Management.tsx:4299-4310`, `:4468-4492`; API `PUT /roles/:id`, `apps/api/src/admin.ts:1299-1320`). Los permisos reales de producción pueden ser distintos de la tabla de fábrica; para saberlo hay que mirar esa pantalla (no se leyó la base). El rol `admin` no puede perder el `*` (`admin.ts:1311`).
+- **DUDOSO / pendiente de comprobar en vivo:** la dueña puede editar los permisos de cada rol desde Configuración › «Usuarios y permisos» › «Permisos por rol» (`apps/web/src/Management.tsx:4391-4402`, `:4468-4492`; API `PUT /roles/:id`, `apps/api/src/admin.ts:1299-1320`). Los permisos reales de producción pueden ser distintos de la tabla de fábrica; para saberlo hay que mirar esa pantalla (no se leyó la base). El rol `admin` no puede perder el `*` (`admin.ts:1311`).
 
 ## 2. Qué significa cada permiso (y dónde se usa)
 
@@ -32,7 +32,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 | `expense:write` | «Gastos». | `App.tsx:253`; `apps/api/src/admin.ts:643-737` |
 | `customers:write` | «Clientes»: crear/editar. | `App.tsx:259`; `apps/api/src/admin.ts:250-295` |
 | `customers:erase` | Anonimizar clientes y ver sus datos completos. | `admin.ts:351-352`; `common.ts:280-281` |
-| `promotions:write` | «Promociones». | `App.tsx:265`; `admin.ts:1340-1386`; `apps/api/src/alerts.ts:904-905` |
+| `promotions:write` | «Promociones». | `App.tsx:265`; `admin.ts:1340-1386`; `apps/api/src/alerts.ts:915-916` |
 | `reports:read` | «Reportes», «Resumen», exportes. | `App.tsx:203`, `:271`; `apps/api/src/reports.ts:235`, `:684-692` |
 | `profit:read` | **Ver costos, márgenes y utilidades**; ver esperados de caja; reportes de margen e «Informe formal». Nunca aplica al rol `seller` aunque lo reciba (la vendedora nunca ve costos). | `apps/web/src/Management.tsx:1633`, `:2870`; `apps/api/src/common.ts:70-72`, `:366-370`; `apps/api/src/reports.ts:687-721`; `apps/api/src/formal-report.ts:49` |
 | IA de ventas («Preguntar a Norexos») | Con `reports:read`: ventas, top y cobros de la tienda (el banco/forma de cobro solo si ve el esperado de caja). Costo, ganancia y margen solo con `profit:read` y nunca para `seller`. La cajera (`seller`) usa solo `mis_ventas`: sus ventas de hoy/semana, sin costos, sin totales de la tienda y con caja ciega hasta cerrar. Sin `reports:read` y sin ser cajera → 403. Se decide en el servidor antes de llamar a la IA. | `apps/api/src/assistant.ts:157`, `apps/api/src/assistant.ts:430` |
@@ -57,7 +57,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 - No puede (solo `*`): anular una venta, verificar transferencias de ventas, abonos, traspasos, guardar la configuración, crear usuarios (ver §4).
 
 ### Cajero/a (`seller`)
-- Ve: Punto de venta, Ventas, Solicitudes de anulación (para cancelar las suyas), Caja, Productos (solo lectura), Clientes. No ve Mercancía (bloqueada también en la API, `merchandise.ts:154-156`), ni Reportes, ni costos (`common.ts:368`).
+- Ve: Punto de venta, Ventas, Solicitudes de anulación (para cancelar las suyas), Caja, Productos (solo lectura), Clientes. No ve Mercancía (bloqueada también en la API, `merchandise.ts:155-157`), ni Reportes, ni costos (`common.ts:368`).
 - **Contraseña de 6 números** y obligación de cambiarla al entrar (`apps/api/src/password-policy.ts:11-13`; `Management.tsx:4409-4412`). Cualquier otro rol usa contraseña fuerte (12 o más caracteres con mayúscula, minúscula, número y símbolo, `password-policy.ts:66-72`).
 - Caja ciega: no ve los montos esperados de su caja (`common.ts:70-72`, `apps/web/src/managementMessages.ts:41-44`).
 - Necesita el **PIN de gerente** para: descuentos sobre el límite, crédito/contraentrega sobre los topes, nota de crédito sin código, salidas de efectivo sobre RD$ 1,000 del turno, cerrar con descuadre, vale de caja, trasladar la caja a otro equipo, descartar una venta sin conexión en conflicto, y registrar efectivo que «ya tiene la dueña» (ver §5).

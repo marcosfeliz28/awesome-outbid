@@ -60,7 +60,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 - **Etiqueta:** «Ventas». **Permiso:** `sale:write`. **Componente:** `SalesHistory`, `apps/web/src/Management.tsx:3135`. Título: «Cada venta tiene una historia» (`:3164`).
 - **Columnas:** Venta n.º, Cliente, Fecha, Estado (Completada/Anulada), Total, Saldo pendiente, Pagos, Acciones (`:3188-3237`). Busca por número o por fecha (`:3169-3182`).
 - **Acciones por fila:** ver (ojo), PDF del recibo (`:3247-3257`), «Registrar abono» (solo `*`, `:3277`), «Solicitar anulación» (la vendedora que hizo la venta, no `*`, `:3293`), «Devolver» (`sale:manage`, `:3317`), «Anular» (solo `*`, `:3332`).
-- Dentro del detalle: «Verificar», «Rechazar», «Corregir banco y referencia» de transferencias (solo `*`) y «Imprimir nota NC-xxxxxx» (`:3402`). Panel «Corregir factura» (vendedora, al por mayor, método de pago; solo `*`, hasta 7 días) en `apps/web/src/SaleEditPanel.tsx:80-190`.
+- Dentro del detalle: «Verificar», «Rechazar», «Corregir banco y referencia» de transferencias (solo `*`), y en cada cobro: «Des-verificar transferencia» (solo `*`, transferencia de venta ya verificada; `POST payments/:id/unverify`, pide motivo) y «Mover cobro a otra caja» (solo `*`, con el motivo y la caja destino; `POST payments/:id/move-cash-session`) y «Imprimir nota NC-xxxxxx» (`:3402`). Panel «Corregir factura» (vendedora, al por mayor, método de pago; solo `*`, hasta 7 días) en `apps/web/src/SaleEditPanel.tsx:80-190`.
 
 ## Solicitudes de anulación
 
@@ -82,7 +82,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 ## Productos
 
 - **Etiqueta:** «Productos». **Permiso:** `catalog:read` (editar requiere `catalog:write`). **Componente:** `Catalog`, `apps/web/src/Management.tsx:235`. Título: «Tu catálogo, con personalidad» (`:291`).
-- **Qué hace:** catálogo con variantes, precios, códigos de barras y etiquetas; botones «Plantilla» y «Importar Excel» (`:311-340`, API `apps/api/src/catalog.ts:195`, `:587`). Productos y variantes: `apps/api/src/catalog.ts:377-495`.
+- **Qué hace:** catálogo con variantes, precios, códigos de barras y etiquetas; botones «Plantilla» y «Importar Excel» (`:311-340`, API `apps/api/src/catalog.ts:195`, `:587`). Productos y variantes: `apps/api/src/catalog.ts:378-496`.
 
 ## Inventario
 
@@ -92,7 +92,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 
 ## Mercancía
 
-- **Etiqueta:** «Mercancía». **Permiso:** `inventory:write` (la vendedora/`seller` está bloqueada aunque tenga el permiso, `apps/api/src/merchandise.ts:154-156`). **Componente:** `apps/web/src/Merchandise.tsx:279`.
+- **Etiqueta:** «Mercancía». **Permiso:** `inventory:write` (la vendedora/`seller` está bloqueada aunque tenga el permiso, `apps/api/src/merchandise.ts:155-157`). **Componente:** `apps/web/src/Merchandise.tsx:279`.
 - **Qué hace:** registrar **ENTRADA** y **SALIDA** de mercancía con revisión antes de confirmar (`:632-657`); importar la factura del proveedor (`:822-846`), escanear/buscar productos, «Confirmar entrada» / «Confirmar salida» (`:1297-1310`), «Historial de recepciones», «Entradas recientes» con «Etiquetas», y «Pendientes de este equipo» (cola sin conexión) (`:1311-1400`).
 - Detalle: `FLUJO_MERCANCIA.md`.
 

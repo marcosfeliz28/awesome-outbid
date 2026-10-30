@@ -189,6 +189,19 @@ const productSchema = z.object({
   variants: z.array(variantSchema).min(1).max(500),
 });
 
+// Cuerpo de POST /categories. Los atributos tienen tope de 30, igual que los valores
+// de atributos de variante (apps/api/src/catalog.ts, `attributes`).
+export const categoryBody = z.object({
+  name: z.string().min(2),
+  requiresLot: z.boolean().default(false),
+  requiresExpiry: z.boolean().default(false),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .default("#7C3AED"),
+  attributes: z.array(z.string()).max(30).default([]),
+});
+
 @Controller()
 export class CatalogController {
   constructor(@Inject(Database) private db: Database) {}
@@ -236,19 +249,7 @@ export class CatalogController {
   @Post("categories")
   @Permit("catalog:write")
   async category(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    const data = parse(
-      z.object({
-        name: z.string().min(2),
-        requiresLot: z.boolean().default(false),
-        requiresExpiry: z.boolean().default(false),
-        color: z
-          .string()
-          .regex(/^#[0-9a-fA-F]{6}$/)
-          .default("#7C3AED"),
-        attributes: z.array(z.string()).default([]),
-      }),
-      body,
-    );
+    const data = parse(categoryBody, body);
     // I-01: el vencimiento se guarda en el lote; sin lote se vendería sin fecha.
     if (data.requiresExpiry) data.requiresLot = true;
     const row = await this.db.category.create({

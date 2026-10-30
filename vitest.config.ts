@@ -10,6 +10,9 @@ export default defineConfig({
     include: [
       "tests/docs-sistema-indice.test.ts",
       "tests/ai-daily-limit.test.ts",
+      "tests/cors-origin.test.ts",
+      "tests/sql-sin-unsafe.test.ts",
+      "tests/zod-limites.test.ts",
       "tests/docs-sistema-citas.test.ts",
       "tests/reglas-si.test.ts",
       "tests/tildes-nuevas.test.ts",
