@@ -56,7 +56,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 - No puede (solo `*`): anular una venta, verificar transferencias de ventas, abonos, traspasos, guardar la configuración, crear usuarios (ver §4).
 
 ### Cajero/a (`seller`)
-- Ve: Punto de venta, Ventas, Solicitudes de anulación (para cancelar las suyas), Caja, Productos (solo lectura), Clientes. No ve Mercancía (bloqueada también en la API, `merchandise.ts:154-156`), ni Reportes, ni costos (`common.ts:368`).
+- Ve: Punto de venta, Ventas, Solicitudes de anulación (para cancelar las suyas), Caja, Productos (solo lectura), Clientes. No ve Mercancía (bloqueada también en la API, `merchandise.ts:155-157`), ni Reportes, ni costos (`common.ts:368`).
 - **Contraseña de 6 números** y obligación de cambiarla al entrar (`apps/api/src/password-policy.ts:11-13`; `Management.tsx:4409-4412`). Cualquier otro rol usa contraseña fuerte (12 o más caracteres con mayúscula, minúscula, número y símbolo, `password-policy.ts:66-72`).
 - Caja ciega: no ve los montos esperados de su caja (`common.ts:70-72`, `apps/web/src/managementMessages.ts:41-44`).
 - Necesita el **PIN de gerente** para: descuentos sobre el límite, crédito/contraentrega sobre los topes, nota de crédito sin código, salidas de efectivo sobre RD$ 1,000 del turno, cerrar con descuadre, vale de caja, trasladar la caja a otro equipo, descartar una venta sin conexión en conflicto, y registrar efectivo que «ya tiene la dueña» (ver §5).
