@@ -1579,3 +1579,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde. Sin LISTA nueva.
 - Cola N34-N41 (claude-pc/cola-n-nueva, sin subir): N34, N35, N36, N38 y N39 con salida; N37 rechazada; N40 y N41 en curso.
 - ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU del modelo local.
+
+## Educación nocturna del modelo local (30-oct)
+- Pedido de la dueña: que el modelo local aprenda lo que sabemos, en un documento guardado en la PC, con acceso permanente.
+- Hecho: `docs/educacion/CONOCIMIENTO_NOREXOS.md` (3199 caracteres): roles, ramas, verificación, reglas de dinero, seguridad e índice de skills.
+- Acceso: el runner lo antepone como contexto fijo a cada tarea (`scripts/cola-local/cola.mjs`, junto con `EDUCACION_MODELO_LOCAL.md`). Pruebas del runner: 10 de 10. Commits eb8fb1f3 y a7f933b0.
+- Límite: el aprendizaje ocurre cuando el runner corre; no es automático en la noche. Hay que lanzar `node scripts/cola-local/cola.mjs` con Ollama encendido.
+- Limitación pendiente: la entrada de cada tarea se recorta a 6000 caracteres; N34 sigue sin salida útil.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
