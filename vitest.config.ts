@@ -9,7 +9,12 @@ export default defineConfig({
     maxWorkers: 4,
     include: [
       "tests/docs-sistema-indice.test.ts",
+<<<<<<< HEAD
       "tests/ai-daily-limit.test.ts",
+=======
+      "tests/cors-origin.test.ts",
+      "tests/sql-sin-unsafe.test.ts",
+>>>>>>> origin/claude/seguridad-bajo
       "tests/docs-sistema-citas.test.ts",
       "tests/reglas-si.test.ts",
       "tests/tildes-nuevas.test.ts",
