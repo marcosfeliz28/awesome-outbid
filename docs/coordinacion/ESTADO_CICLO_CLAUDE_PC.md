@@ -2138,3 +2138,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (30-oct 17:10 UTC) — orden 93 nueva (nexora-cloud 00ba5d30)
 - Orden 93 (GV tarjeta sin banco) hecha en claude-pc/gv-tarjeta 7920ce18 (prueba de integración con Postgres local: falló antes, pasa después; suites GV 40/40; docs y citas al día); verify, windows-installer y render-images verdes, LISTA escrita. Un primer push (f5668b86) falló verify por 3 citas a líneas vacías; corregido. Cuenta destino de tarjeta no guardada (pendiente de la dueña); no desplegar sin revisión.
 - CI sin cambio: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e, citas-robustas 535a4905 y plan-lanzamiento 3adeccac verdes. Último hash visto de nexora-cloud: 00ba5d30.
+
+## Ciclo nube (30-oct 18:50 UTC) — aclaración a la orden 93 (nexora-cloud 6f3f58d8)
+- Aclaración hecha en claude-pc/gv-tarjeta 8b3b46d7 (tarjeta GV → área GV, columna `destination` aditiva, «Terminal GV» fijo; prueba falló antes y pasa, GV 16/16, typecheck ok); 3 CI en verde, LISTA escrita. pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a y lumina 287db57e siguen verdes. Pre-empuje solo marca prettier en DATOS_Y_MODELOS.md (ya así antes); no desplegar sin revisión.
+- Último hash visto de nexora-cloud: 6f3f58d8.
