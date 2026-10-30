@@ -137,6 +137,6 @@ API solamente; **no hay pantalla** para estas dos acciones en `apps/web` (búsqu
 
 ## GV: pago con tarjeta (sin cuenta bancaria)
 
-- Los pagos de GV no pasan por la caja. Con **Tarjeta** el formulario no pide banco: muestra **Terminal** y una **Referencia** obligatoria (aprobación, lote o voucher); el pago queda verificado al registrarse (`apps/api/src/gv-money.ts:106-120`, `apps/api/src/gv-money.ts:238-250`). La transferencia sigue exigiendo banco y referencia.
+- Los pagos de GV no pasan por la caja. Con **Tarjeta** el formulario no pide banco: muestra **Terminal** y una **Referencia** obligatoria (aprobación, lote o voucher); el pago queda verificado al registrarse (`apps/api/src/gv-money.ts:110-126`, `apps/api/src/gv-money.ts:244-251`). La transferencia sigue exigiendo banco y referencia.
 - La cuenta de destino del dinero de tarjeta de GV no se asume ni se guarda: la define la dueña (pendiente).
 
