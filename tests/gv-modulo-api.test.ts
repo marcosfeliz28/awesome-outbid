@@ -209,6 +209,21 @@ describe("GV · banco de lista y anular pago", () => {
   });
 });
 
+describe("GV · anular un pago ya verificado", () => {
+  it("lo anula sin chocar con la regla verificado/rechazado", async () => {
+    const course = (await newCourse(gv)).body;
+    courseIds.push(course.id);
+    const e = await enroll(course.id, 4500, "QA Verificado");
+    const paid = await ok("/gv/payments", gv, transferBody(e.id, 2000));
+    await ok(`/gv/payments/${paid.id}/review`, admin, { verified: true });
+    const voided = await ok("/gv/payments/" + paid.id + "/void", gv, {
+      reason: "Cambio al 15 de noviembre",
+    });
+    expect(voided.rejectedAt).toBeTruthy();
+    expect(voided.verified).toBe(false);
+  });
+});
+
 describe("GV · cursos, inscripciones y pagos", () => {
   it("valida el curso; pagado cuenta sólo lo verificado y el pendiente es exacto", async () => {
     expect((await newCourse(gv, { type: "boda" })).status).toBe(400);
