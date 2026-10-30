@@ -37,3 +37,15 @@ Lo que el modelo debe saber antes de cada tarea. Si algo no aparece aquí, busca
 - Nunca claves, contraseñas, datos bancarios ni datos de clientes en archivos o chats.
 - No leer `docs/operacion/`, `docs/legal/`, `docs/seguridad/` ni `.env*`.
 - No instalar plugins sin el veredicto del Revisor.
+
+## Skills disponibles (cuándo usar cada una)
+- `tdd`: al escribir una función nueva. Primero la prueba roja, luego el código.
+- `diagnosing-bugs`: cuando un CI falla. Reproducir, aislar, corregir con prueba.
+- `handoff`: al cerrar una sesión o pasar trabajo. Dejar estado, rama y pendientes.
+- `research`: investigar un tema antes de decidir. Citar fuentes con fecha.
+- `writing-for-agents`: escribir instrucciones claras para otro agente o modelo.
+- `pr`: preparar un cambio para revisión (qué cambia, cómo se probó, qué no se probó).
+- `codebase-design`: decidir dónde va un cambio en el repo sin romper capas.
+- `domain-modeling`: modelar conceptos del negocio con nombres consistentes.
+- `claude-pc-instrucciones`: reglas permanentes de Claude PC (ciclos, LISTA, límites).
+Fuente de los skills de Matt Pocock: `.claude/skills/` en nexora-cloud. Solo texto.
