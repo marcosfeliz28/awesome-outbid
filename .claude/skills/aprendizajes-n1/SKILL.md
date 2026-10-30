@@ -33,3 +33,5 @@ description: Lecciones operativas de Norexos 1 (cómo hacer las cosas rápido y 
 ## Pendiente por aprender (agrega abajo, con fecha)
 - 30-oct 02:38 UTC: Norexos 2 NO puede programar avisos propios; hay que pedirle «¿cuántas cajas abiertas?» por send_message justo antes de cada despliegue nocturno (vale 2 h). Última lectura: 0 cajas abiertas a las 02:38 UTC.
 - Ninguna sesión de la nube llega a Claude PC (Norexos 2 lo confirmó): solo por archivos en origin/nexora-cloud.
+- 30-oct: CI `verify` = `pnpm check` (typecheck, lint, pruebas UNITARIAS sin API) y luego scripts/verify.mjs (API + integración + e2e). Una prueba que llama a la API (puerto 3001) debe registrarse en vitest.integration.config.ts, NO en vitest.config.ts; si no, pnpm check falla con ECONNREFUSED 127.0.0.1:3001.
+- Diagnóstico barato de un CI rojo: list_workflow_jobs (id del job verify) → get_job_logs (sin return_content) da logs_url firmada → curl a /tmp y grep de 'FAIL|Error|ECONN' con python. Evita traer logs enteros al contexto.
