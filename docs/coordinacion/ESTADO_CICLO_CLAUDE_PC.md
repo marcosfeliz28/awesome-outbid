@@ -2031,3 +2031,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Órdenes nuevas para claude-pc/*: ninguna.
 - Carpeta cola2-entrega: sigue con conflictos (UU) de otra sesión; no tocada.
 - ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos; proyecto pausado por cuota hasta el 2 de noviembre.
+
+## Consulta 30 min (30-oct): N52 en curso con método de tablas
+- Fetch: nexora-cloud en 6524f318 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio). COLA_LOTE_LOCAL.md ausente. Pendientes N52–N57; no se envía petición.
+- Hecho: variante del esqueleto para tablas (extraerFilas, prueba que falla antes y pasa después): commit 04186285 en claude-pc/cola-n-nueva.
+- En curso: 18 filas de PANTALLAS 1–50 (N52) en 4 lotes con qwen-optimizado. Se revisan con script (18 filas = 18 filas del trozo).
