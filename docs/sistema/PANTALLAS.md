@@ -91,7 +91,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 
 ## Mercancía
 
-- **Etiqueta:** «Mercancía». **Permiso:** `inventory:write` (la vendedora/`seller` está bloqueada aunque tenga el permiso, `apps/api/src/merchandise.ts:154-156`). **Componente:** `apps/web/src/Merchandise.tsx:279`.
+- **Etiqueta:** «Mercancía». **Permiso:** `inventory:write` (la vendedora/`seller` está bloqueada aunque tenga el permiso, `apps/api/src/merchandise.ts:155-156`). **Componente:** `apps/web/src/Merchandise.tsx:279`.
 - **Qué hace:** registrar **ENTRADA** y **SALIDA** de mercancía con revisión antes de confirmar (`:632-657`); importar la factura del proveedor (`:822-846`), escanear/buscar productos, «Confirmar entrada» / «Confirmar salida» (`:1297-1310`), «Historial de recepciones», «Entradas recientes» con «Etiquetas», y «Pendientes de este equipo» (cola sin conexión) (`:1311-1400`).
 - Detalle: `FLUJO_MERCANCIA.md`.
 
