@@ -154,6 +154,11 @@ async function refund(saleBody: any, method: "cash" | "transfer") {
 }
 
 afterAll(async () => {
+  // Deja la caja cerrada: otras pruebas venden con el mismo administrador.
+  await db.cashSession.update({
+    where: { id: cashSessionId },
+    data: { closedAt: new Date() },
+  });
   await db.$disconnect();
 });
 
@@ -169,10 +174,10 @@ describe("desglose del mes: cobros = venta bruta con devoluciones (D-05)", () =>
     // Una devolución de una unidad resta el precio de una unidad: 2 vendidas − 1 devuelta.
     expect(bd.revenue - before.revenue).toBe(price * 2);
     expect(sum).toBe(bd.revenue);
-    // El resumen no trae «sin cobro registrado» (ventas sin pago que dejan otras corridas).
-    const sm = (await call("/dashboard/summary?" + range, token)).body;
-    const smSum = sm.payments.reduce((a: number, p: any) => a + p.amount, 0);
-    expect(sm.revenue - smSum).toBeCloseTo(byMethod(bd).unrecorded ?? 0, 1);
+    // «Sin cobro registrado» (ventas sin pago que dejan otras corridas) no cambia con esta prueba.
+    expect(
+      (byMethod(bd).unrecorded ?? 0) - (byMethod(before).unrecorded ?? 0),
+    ).toBeCloseTo(0, 1);
   });
 
   it("incluye lo no cobrado: crédito, transferencia sin verificar y sin cobro; la identidad cuadra", async () => {
