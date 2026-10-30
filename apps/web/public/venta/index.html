@@ -541,8 +541,8 @@
         <div class="header-actions">
           <a class="header-link" href="mailto:soporte@nexorapos.net" data-es="Ayuda" data-en="Help">Ayuda</a>
           <div class="lang-switch" role="group" aria-label="Idioma">
-            <button type="button" class="lang-button" data-idioma="es" aria-pressed="true">ES</button>
-            <button type="button" class="lang-button" data-idioma="en" aria-pressed="false">EN</button>
+            <button type="button" class="lang-button" data-idioma="es" aria-label="Español" aria-pressed="true">ES</button>
+            <button type="button" class="lang-button" data-idioma="en" aria-label="English" aria-pressed="false">EN</button>
           </div>
         </div>
       </div>
@@ -599,6 +599,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Probar gratis el plan Autoservicio"
+                data-aria-es="Probar gratis el plan Autoservicio" data-aria-en="Try the Autoservicio plan for free"
                 data-es="Quiero probarlo gratis" data-en="Try it free"
                 >Quiero probarlo gratis</a
               >
@@ -619,6 +620,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Probar gratis el plan Básico"
+                data-aria-es="Probar gratis el plan Básico" data-aria-en="Try the Básico plan for free"
                 data-es="Quiero probarlo gratis" data-en="Try it free"
                 >Quiero probarlo gratis</a
               >
@@ -639,6 +641,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Probar gratis el plan Pro"
+                data-aria-es="Probar gratis el plan Pro" data-aria-en="Try the Pro plan for free"
                 data-es="Quiero probarlo gratis" data-en="Try it free"
                 >Quiero probarlo gratis</a
               >
@@ -659,6 +662,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Probar gratis el plan Premium"
+                data-aria-es="Probar gratis el plan Premium" data-aria-en="Try the Premium plan for free"
                 data-es="Quiero probarlo gratis" data-en="Try it free"
                 >Quiero probarlo gratis</a
               >
@@ -753,6 +757,9 @@
           document.documentElement.lang = idioma;
           textos.forEach(function (el) {
             el.textContent = el.getAttribute("data-" + idioma);
+          });
+          document.querySelectorAll("[data-aria-es][data-aria-en]").forEach(function (el) {
+            el.setAttribute("aria-label", el.getAttribute("data-aria-" + idioma));
           });
           document.querySelectorAll("[data-idioma]").forEach(function (b) {
             b.setAttribute("aria-pressed", String(b.getAttribute("data-idioma") === idioma));
