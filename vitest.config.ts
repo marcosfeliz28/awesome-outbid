@@ -9,6 +9,8 @@ export default defineConfig({
     maxWorkers: 4,
     include: [
       "tests/docs-sistema-indice.test.ts",
+      "tests/cors-origin.test.ts",
+      "tests/sql-sin-unsafe.test.ts",
       "tests/docs-sistema-citas.test.ts",
       "tests/reglas-si.test.ts",
       "tests/tildes-nuevas.test.ts",

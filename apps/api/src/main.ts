@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import { json as jsonBodyParser } from "express";
 import { createAppModule } from "./app";
 import { validateSecret } from "./security";
+import { corsOrigin } from "./cors-origin";
 import { trustedProxies } from "./rate-limit";
 import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
@@ -45,7 +46,7 @@ async function bootstrap() {
   app.use(jsonBodyParser({ limit: "100kb" }));
   app.use(cookieParser());
   app.enableCors({
-    origin: webOrigin || "http://localhost:5173",
+    origin: corsOrigin(webOrigin, process.env.NODE_ENV),
     credentials: true,
     // Paginación de GET /alerts y /credit-notes (cursor de la página siguiente).
     exposedHeaders: ["X-Next-Cursor"],

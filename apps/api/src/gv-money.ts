@@ -183,10 +183,8 @@ export async function lockGvOwner(
   branchId: string,
 ) {
   const o = OWNER[kind];
-  await tx.$queryRawUnsafe(
-    `SELECT id FROM ${o.table} WHERE id = $1::uuid AND "branchId" = $2 FOR UPDATE`,
-    id,
-    branchId,
+  await tx.$queryRaw(
+    Prisma.sql`SELECT id FROM ${Prisma.raw(o.table)} WHERE id = ${id}::uuid AND "branchId" = ${branchId} FOR UPDATE`,
   );
   const row = await tx[o.model].findFirst({
     where: { id, branchId },
@@ -351,10 +349,8 @@ export async function planGvImportPayments(
     if (!ownerKeys.length) continue;
     // Bloqueadas hasta el final de la importación: nadie cobra en ellas entre
     // la validación y la escritura.
-    await db.$queryRawUnsafe(
-      `SELECT id FROM ${OWNER[kind].table} WHERE "branchId" = $1 AND "externalId" = ANY($2::text[]) FOR UPDATE`,
-      branchId,
-      ownerKeys,
+    await db.$queryRaw(
+      Prisma.sql`SELECT id FROM ${Prisma.raw(OWNER[kind].table)} WHERE "branchId" = ${branchId} AND "externalId" = ANY(${ownerKeys}::text[]) FOR UPDATE`,
     );
     for (const row of await db[OWNER[kind].model].findMany({
       where: { branchId, externalId: { in: ownerKeys } },
