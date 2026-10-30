@@ -6358,6 +6358,13 @@ td strong {
   flex-direction: column;
   gap: 4px;
 }
+/* Top 10 por categoría a 390 px: la cabecera baja de línea y la tabla se desplaza. */
+.month-top-panel .panel-heading {
+  flex-wrap: wrap;
+}
+.month-top-panel .table-scroll {
+  overflow-x: auto;
+}
 .month-table {
   width: 100%;
   border-collapse: collapse;

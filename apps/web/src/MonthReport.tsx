@@ -225,7 +225,10 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
               />
             )}
             {topGroup && (
-              <section className="panel" aria-labelledby="top-category-title">
+              <section
+                className="panel month-top-panel"
+                aria-labelledby="top-category-title"
+              >
                 <div className="panel-heading">
                   <h2 id="top-category-title">Top 10 por categoría</h2>
                   <select
