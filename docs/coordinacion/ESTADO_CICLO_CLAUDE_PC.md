@@ -1620,3 +1620,19 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI de las ramas nuevas: en curso; sin LISTA hasta los tres en verde.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Noche (30-oct): bloque 15 completo (tareas 93–100)
+- Rama `claude-pc/bloque15` (desde nexora-cloud ddca5e40), HEAD 79566ad8. Un commit por tarea, sin force:
+  - 93 citas de docs/sistema: 637 citas, 0 rotas. Prueba + registro en vitest.
+  - 94 índice de docs/sistema: el índice listaba `INDICE.json` (no es .md); corregido. Igual: true.
+  - 95 menú frente a PANTALLAS.md: 18 y 18, sin diferencias.
+  - 96 conteo de «Nexora POS», «Nexora» y «Norexos»: 137 archivos; 158 / 569 / 228.
+  - 97 rutas y permisos: 187 rutas; 158 sin @Permit cercano. PARCIAL: no ve permisos a nivel de clase; lo dice el encabezado.
+  - 98 mapa de pruebas: 121 archivos; 6 sin describe.
+  - 99 tildes: 416 archivos; 43 hallazgos. Muchos «?» son de URLs (falsos positivos).
+  - 100 términos prohibidos: 28 archivos; 28 hallazgos (para revisión).
+- CI de 79566ad8: en cola al cerrar. Sin LISTA hasta los tres en verde.
+- N34: primer reintento falló con «fetch failed» (Ollama); segundo reintento lanzado. Si falla otra vez, se anota y se pasa a N35.
+- Pendiente del relevo: sección C (revisar salidas del modelo) y D («cola baja» cuando queden 3 en la cola).
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
