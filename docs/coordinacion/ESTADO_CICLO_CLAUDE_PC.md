@@ -1479,3 +1479,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Sin LISTA de esta rama (orden 75).
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 min (29-oct): N18–N33 ejecutadas y revisadas
+- Fetch: nexora-cloud 11d4ac47. RESPUESTA_CLAUDE_PC_27OCT.md blob 7157b7d4 (sin cambio desde la orden 77). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. Sin LISTA nueva.
+- Cola: el ejecutor corrió N19, N20, N24 y N26 a N33 (N18, N21 a N23 y N25 ya estaban). Pendiente: revisión de N24 y N27 a N33 (rechazadas abajo).
+- Subidas a `claude-pc/cola-n` (2680132c): N19, N20, N26, N28 y N32, con encabezado de revisión.
+- Rechazadas (no se suben): N24 y N27 (sin contenido real), N29 (repite «Nexora POS» y DGII/NCF), N30 (sin contenido real), N31 (introduce términos no comprobados), N33 (conteos del modelo; los mide un script).
+- ChatGPT (paso 5): la app se abre pero la ventana no aparece. No se leyeron «ChatGPT nube» ni «ChatGPT PC»; no se escribió en ningún chat. Bloqueo que sigue.
