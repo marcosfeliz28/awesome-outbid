@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 const RAIZ = process.cwd();
 const DOCS = join(RAIZ, "docs", "sistema");
+const SOLO_CIERRE = /^[\s{}()[\];,]*$/;
 const CITA =
   /([A-Za-z0-9_./-]+\.(?:tsx?|mjs|cjs|ps1|md|json|nsi|sql|css|html|yml|yaml|txt|cs|rs)):(\d+)(?:-(\d+))?/g;
 
@@ -85,5 +86,23 @@ describe("citas de docs/sistema", () => {
         );
     }
     expect(rotas).toEqual([]);
+  });
+
+  // Una cita a una línea vacía o de solo llaves (`}`, `);`, `})`) casi siempre quedó
+  // desplazada tras un cambio de código. Si todos los archivos candidatos tienen esa
+  // línea en blanco o de cierre, la cita falla.
+  it("ninguna cita apunta a una línea vacía o de solo llaves", () => {
+    const vacias: string[] = [];
+    for (const c of todas) {
+      const candidatos = resolver(c.archivo);
+      if (candidatos.length === 0) continue;
+      const todasVacias = candidatos.every((ruta) => {
+        const linea = readFileSync(ruta, "utf8").split("\n")[c.desde - 1] ?? "";
+        return SOLO_CIERRE.test(linea);
+      });
+      if (todasVacias)
+        vacias.push(`${c.doc}: ${c.archivo}:${c.desde} (línea vacía o de solo llaves)`);
+    }
+    expect(vacias).toEqual([]);
   });
 });

@@ -58,7 +58,7 @@ Dentro de **Inventario**, panel **«Almacenes y traspasos»** (`apps/web/src/War
 2. Solo `*` (administración) ve **«Traspasar mercancía»**: «El movimiento resta del origen y suma al destino en una sola operación.» Se elige el producto, se pulsa **«Traspasar»** y se llena la ventana **«Traspasar · producto»**: **Desde**, **Hasta**, **Cantidad** (3 decimales), «Lote (si aplica)», **Motivo** (mín. 3 letras) (`:113-205`).
 3. API `POST /inventory/transfers`, permiso `*`, equipo registrado, idempotente por `operationId` (`apps/api/src/warehouses.ts:112-300`). Valida: dos almacenes distintos, sin renglones repetidos, existencia suficiente en el origen («No hay suficiente existencia en … para …») y lote obligatorio en productos con lote/vencimiento («Selecciona el lote de la mercancía que quieres mover.») (`:117-120`, `:195-206`, `:276-282`). Escribe dos movimientos de kardex `transfer_out` y `transfer_in` (`:310-360`).
 4. **«Historial de traspasos»**: Fecha, Desde, Hasta, Producto, Cantidad, Motivo (`WarehousesPanel.tsx:272-300`; API `GET /inventory/transfers`, `warehouses.ts:94`).
-5. **«Levantamiento inicial de Casa»**: sube un Excel con columnas **ID, EXISTENCIA, COSTO y PRECIODETALLE**; primero vista previa («Existencia actual en Casa» / «Existencia después de cargar») y luego aplicar. Los productos nuevos se crean con 0 en Tienda; los de lote se cuentan por lote (`WarehousesPanel.tsx:30-60`, `:208-270`; API `inventory-import/casa/preview` y `/apply`, `apps/api/src/inventory-import.ts:314`, `:346`, permiso `inventory:import`, que solo tiene `*`).
+5. **«Levantamiento inicial de Casa»**: sube un Excel con columnas **ID, EXISTENCIA, COSTO y PRECIODETALLE**; primero vista previa («Existencia actual en Casa» / «Existencia después de cargar») y luego aplicar. Los productos nuevos se crean con 0 en Tienda; los de lote se cuentan por lote (`apps/api/src/inventory-import.ts:236-257`, `WarehousesPanel.tsx:208-270`; API `inventory-import/casa/preview` y `/apply`, `apps/api/src/inventory-import.ts:314`, `:346`, permiso `inventory:import`, que solo tiene `*`).
 6. Un traspaso de Casa a Tienda es el único camino normal para que mercancía de Casa se pueda vender.
 
 ## 5. Compras y facturas de proveedor
@@ -70,7 +70,7 @@ Pantalla **Compras** (`purchase:write`), `apps/web/src/Management.tsx:1158`:
 - **Recepciones** (pestaña): historial con detalle y exportación (`Purchases.tsx:454-640`; API `GET /goods-receipts`, `inventory.ts:1337`, `:1441`; exportar `goods-receipts/export` requiere `reports:read`, `:1360`).
 - **Proveedores**: crear proveedor (nombre, RNC, teléfono, correo, plazo de pago, entrega) y **registrar un pago al proveedor** (monto, método, referencia) (`Management.tsx:1185`, `:1348-1370`; API `apps/api/src/admin.ts:568-600`). Las cuentas por pagar salen en el reporte «Compras y cuentas por pagar» (`Management.tsx:2729`).
 - La **factura del proveedor** (foto/PDF/Excel) que se sube en Mercancía queda adjunta a la recepción y no se puede borrar (`apps/api/prisma/schema.prisma` modelo `GoodsReceipt`, campo `attachmentId`; modelos `InvoiceDraft` e `InvoiceAttachment`). Hay un tope diario de facturas sin confirmar: «Tienes muchas facturas sin confirmar hoy. Confirma o espera.» (`merchandise.ts:236`).
-- No confundir: **«FS-0000123» es el número de una VENTA de la tienda** (factura al cliente), no una factura de proveedor (`apps/api/src/sales.ts:1114`). La factura del proveedor se identifica por su propio número (`supplierInvoice`) y NCF (`supplierNcf`).
+- No confundir: **«FS-0000123» es el número de una VENTA de la tienda** (factura al cliente), no una factura de proveedor (`apps/api/src/sales.ts:1120`). La factura del proveedor se identifica por su propio número (`supplierInvoice`) y NCF (`supplierNcf`).
 
 ## 6. Procedimiento fijo de la dueña (verificación triple)
 
@@ -84,7 +84,7 @@ Fuente: `.claude/skills/mercancia/SKILL.md`, `CLAUDE.md` punto 6. Resumen:
 6. **Conteos**: comparar con 4 métodos (existencia, suma de movimientos, saldo anterior menos ventas, recálculo por renglón) y entregar la tabla antes de ajustar.
 7. **Guardar** la bitácora `docs/operacion/bitacora-mercancia.jsonl` (una línea por cambio con la frase exacta de la dueña) y subirla a la rama de producción.
 - Programa: `docs/coordinacion/claude-nube/mercancia.py` (entra con `entrar.py`; credenciales del entorno, nunca impresas). La bitácora tiene campos `id`, `cuando`, `cuando_rd`, `quien`, `orden`, `tipo`, `detalle` (`docs/operacion/bitacora-mercancia.jsonl:1`).
-- Reglas fijas: Casa solo con instrucción expresa; no tocar lo que la dueña contó o modificó ayer u hoy sin un conteo nuevo suyo; nunca imprimir credenciales (`.claude/skills/mercancia/SKILL.md:32-35`).
+- Reglas fijas: Casa solo con instrucción expresa; no tocar lo que la dueña contó o modificó ayer u hoy sin un conteo nuevo suyo; nunca imprimir credenciales (`.claude/skills/mercancia/SKILL.md:33`).
 - Antes de dar cualquier cifra, lista, estado de factura o cuadre a la dueña: skill `informe-triple` (leer el dato 3 veces por caminos distintos y decir qué no se comprobó).
 
 ## 7. Quién puede qué (mercancía)

@@ -28,7 +28,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Costo promedio (`costAvg`)** — Costo de una variante, recalculado en cada entrada (`apps/api/prisma/schema.prisma:120-135`). Con él se calcula el margen.
 
-**Crédito** — Venta a cuenta del cliente: la mercancía sale ahora, se cobra después. Pantalla: «Créditos pendientes» dentro de Caja (`apps/web/src/Tienda.tsx:602`). Reglas de PIN: `packages/shared/src/index.ts:376-444`.
+**Crédito** — Venta a cuenta del cliente: la mercancía sale ahora, se cobra después. Pantalla: «Créditos pendientes» dentro de Caja (`apps/web/src/Tienda.tsx:602`). Reglas de PIN: `packages/shared/src/index.ts:446`.
 
 **Cuadre** — El resultado del cierre de caja: lo contado contra lo esperado por método (efectivo, tarjeta, transferencia, dólares), con diferencias; se imprime al cerrar (`apps/web/src/Management.tsx:2102-2112`; `apps/api/src/cash.ts:1112`). **Descuadre** = diferencia distinta de cero; exige justificación y el PIN de otra persona (`apps/api/src/cash.ts:1248-1300`).
 
@@ -66,7 +66,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Margen** — `(precio − costo) / precio × 100`, **sin restar ITBIS**, con el precio tal como se cobra. **Mínimo 15 %** («Margen bajo»). Ver `README.md` §4.
 
-**Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1049-1055`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:671-678`).
+**Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1044`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:671-678`).
 
 **NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3350`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3402`).
 
@@ -90,7 +90,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **RNC** — Registro Nacional del Contribuyente (identificación de empresa). Campo `legalId` de cliente, proveedor y del negocio (`apps/api/prisma/schema.prisma:292-300`).
 
-**Sesiones (equipo de trabajo)** — Uso interno: Norexos 1 (decide y despliega), Norexos 2 «Mercancía», Norexos 3 «Taller» (navegador, visual), Norexos 4 «Revisor», Norexos 5 «Director de proyecto», Claude PC (laptop/modelo local) (`.claude/skills/comunicacion/SKILL.md:7-24`; `docs/proyecto/PLAN_MAESTRO_NOREXOS.md:2`).
+**Sesiones (equipo de trabajo)** — Uso interno: Norexos 1 (decide y despliega), Norexos 2 «Mercancía», Norexos 3 «Taller» (navegador, visual), Norexos 4 «Revisor», Norexos 5 «Director de proyecto», Claude PC (laptop/modelo local) (`.claude/skills/comunicacion/SKILL.md:8`; `docs/proyecto/PLAN_MAESTRO_NOREXOS.md:2`).
 
 **SKU / código de barras** — Códigos únicos de cada variante; la caja busca por ambos sin distinguir mayúsculas (`apps/web/src/POS.tsx:714-731`; `apps/api/prisma/schema.prisma:120-130`).
 
