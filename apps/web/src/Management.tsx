@@ -3141,8 +3141,16 @@ export function SalesHistory() {
     [installment, setInstallment] = useState<any>(null),
     [rejecting, setRejecting] = useState<any>(null),
     [correctingTransfer, setCorrectingTransfer] = useState<any>(null),
+    [unverifying, setUnverifying] = useState<any>(null),
+    [moving, setMoving] = useState<any>(null),
     [search, setSearch] = useState(""),
     [saleDate, setSaleDate] = useState("");
+  // Cajas para elegir destino al mover un cobro: solo se pide con el diálogo abierto.
+  const cashSessionsForMove = useQuery<any[]>({
+    queryKey: ["cash-sessions-move"],
+    queryFn: () => api("/cash-sessions"),
+    enabled: !!moving,
+  });
   const params = new URLSearchParams();
   if (search.trim()) params.set("q", search.trim());
   if (saleDate) params.set("date", saleDate);
@@ -3455,6 +3463,33 @@ export function SalesHistory() {
                         Corregir banco y referencia
                       </button>
                     )}
+                  {p.method === "transfer" &&
+                    p.status === "ok" &&
+                    p.entryType === "sale" &&
+                    can(user.permissions, "*") && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setSelected(null);
+                          setUnverifying(p);
+                        }}
+                      >
+                        Des-verificar transferencia
+                      </button>
+                    )}
+                  {p.cashSessionId &&
+                    p.status !== "rejected" &&
+                    can(user.permissions, "*") && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setSelected(null);
+                          setMoving(p);
+                        }}
+                      >
+                        Mover cobro a otra caja
+                      </button>
+                    )}
                   {p.entryType === "installment" &&
                     can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
@@ -3632,6 +3667,63 @@ export function SalesHistory() {
                 expectedReference: correctingTransfer.reference ?? null,
               },
             );
+            await client.invalidateQueries();
+          }}
+        />
+      )}
+      {unverifying && (
+        <FormModal
+          title="Des-verificar transferencia"
+          notice="La transferencia vuelve a «por verificar» y deja de contar como cobrada. Queda en la bitácora."
+          fields={[
+            {
+              key: "reason",
+              label: "Motivo",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          onClose={() => setUnverifying(null)}
+          onSubmit={async (data) => {
+            await post("/payments/" + unverifying.id + "/unverify", {
+              reason: data.reason,
+            });
+            setUnverifying(null);
+            await client.invalidateQueries();
+          }}
+        />
+      )}
+      {moving && (
+        <FormModal
+          title="Mover cobro a otra caja"
+          notice="El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
+          fields={[
+            {
+              key: "cashSessionId",
+              label: "Caja destino",
+              type: "select",
+              required: true,
+              options: (cashSessionsForMove.data || [])
+                .filter((s: any) => s.id !== moving.cashSessionId)
+                .map((s: any) => ({
+                  label: `${s.registerName ?? "Caja"} · ${s.closedAt ? "cerrada" : "abierta"} · ${new Date(s.openedAt).toLocaleString("es-DO")}`,
+                  value: s.id,
+                })),
+            },
+            {
+              key: "reason",
+              label: "Motivo",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          onClose={() => setMoving(null)}
+          onSubmit={async (data) => {
+            await post("/payments/" + moving.id + "/move-cash-session", {
+              cashSessionId: data.cashSessionId,
+              reason: data.reason,
+            });
+            setMoving(null);
             await client.invalidateQueries();
           }}
         />

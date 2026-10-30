@@ -59,7 +59,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 - **Etiqueta:** «Ventas». **Permiso:** `sale:write`. **Componente:** `SalesHistory`, `apps/web/src/Management.tsx:3135`. Título: «Cada venta tiene una historia» (`:3164`).
 - **Columnas:** Venta n.º, Cliente, Fecha, Estado (Completada/Anulada), Total, Saldo pendiente, Pagos, Acciones (`:3188-3237`). Busca por número o por fecha (`:3169-3182`).
 - **Acciones por fila:** ver (ojo), PDF del recibo (`:3247-3257`), «Registrar abono» (solo `*`, `:3277`), «Solicitar anulación» (la vendedora que hizo la venta, no `*`, `:3293`), «Devolver» (`sale:manage`, `:3317`), «Anular» (solo `*`, `:3332`).
-- Dentro del detalle: «Verificar», «Rechazar», «Corregir banco y referencia» de transferencias (solo `*`) y «Imprimir nota NC-xxxxxx» (`:3402`). Panel «Corregir factura» (vendedora, al por mayor, método de pago; solo `*`, hasta 7 días) en `apps/web/src/SaleEditPanel.tsx:80-190`.
+- Dentro del detalle: «Verificar», «Rechazar», «Corregir banco y referencia» de transferencias (solo `*`), y en cada cobro: «Des-verificar transferencia» (solo `*`, transferencia de venta ya verificada; `POST payments/:id/unverify`, pide motivo) y «Mover cobro a otra caja» (solo `*`, con el motivo y la caja destino; `POST payments/:id/move-cash-session`) y «Imprimir nota NC-xxxxxx» (`:3402`). Panel «Corregir factura» (vendedora, al por mayor, método de pago; solo `*`, hasta 7 días) en `apps/web/src/SaleEditPanel.tsx:80-190`.
 
 ## Solicitudes de anulación
 
