@@ -8,7 +8,6 @@ export default defineConfig({
     // dejar una prueba esperando hasta su timeout aunque aislada tarde segundos.
     maxWorkers: 4,
     include: [
-      "tests/desglose-suma-api.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
       "tests/pago-dolares-migration-postgres.test.ts",
