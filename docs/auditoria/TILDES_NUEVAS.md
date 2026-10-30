@@ -1,0 +1,45 @@
+# Tildes rotas o «?» dentro de palabras (solo informe)
+
+Generado por `scripts/tildes-nuevas.mjs`. 41 líneas. Cada una hay que revisar a mano: puede ser código legítimo.
+
+- docs/DECISIONES.md:50: - **Pantalla «Créditos pendientes»** (Caja, sólo administración; `GET /cod/pending?state=pending|closed|all`): cliente, venta, vendedora, fe
+- docs/INCENTIVOS.md:56: - Endpoints: `GET /incentives?month=AAAA-MM` (`sale:manage`), `GET /incentives/me` (`sale:write`, sólo lo propio; por defecto el mes abierto
+- docs/INSTRUCCIONES_ARQUITECTURA.md:373: POST /products/import  GET /products/search?q=&barcode=
+- docs/PRUEBA_RESTAURACION.md:58: export DATABASE_URL='postgresql://nexora@127.0.0.1:5733/nx_a?options=-c%20TimeZone%3DUTC'
+- docs/coordinacion/INSTRUCTIVO_ENVIO_MENSAJERO.md:28: - `GET /courier/pending?from&to`: ventas con `courierFee > 0` y `courierPaidAt` nulo, con factura, cliente, fecha, mensajero y envío; más el
+- docs/coordinacion/MEMORIA_NEXORA_1_27OCT.md:42: `docs/coordinacion/claude-nube/entrar.py` (lee NEXORA_CLAUDE_USER/NEXORA_CLAUDE_PASSWORD del entorno o su archivo local). Reportes: `reporte
+- docs/coordinacion/MODULO-GV.md:81: - `GET /api/gv/transfers/pending`, `GET /api/gv/reports?from=AAAA-MM-DD&to=AAAA-MM-DD` (ingresos verificados, reembolsos y neto; pendientes 
+- docs/coordinacion/ORDEN_FASE2_IA_SOPORTE_CHATGPT_NUBE.md:31: | 4 | `detalle_factura(numero o cliente)` | `GET sales?q&date` | `sale:write` |
+- docs/coordinacion/RESULTADOS_CHATGPT.md:51: | FIN-01 · Alta | `apps/api/src/reports.ts:1536-1554,1626-1652`; rechazo en `apps/api/src/sales.ts:2373-2419` | Crear una venta completada d
+- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:45: | Productos (con variantes, existencia, precio, costo) | `GET /products?limit=200&page=N` → `items`                                         
+- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:47: | Historial de una variante                            | `GET /inventory/movements?variantId=…&limit=50`                                    
+- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:53: | Ventas del día                                       | `GET /sales?date=AAAA-MM-DD&limit=200`                                             
+- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:55: | Cajas                                                | `GET /cash-sessions?limit=40`, `GET /cash-sessions/:id/cuadre`, `GET /cash-sessions
+- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:58: | Bitácora                                             | `GET /audit-log?limit=300`                                                         
+- docs/coordinacion/auditoria-2026-10-10/01-dinero.md:39: | D-09 | BAJO | (sigue abierto) El cierre ciego revela si el conteo es exacto, y `GET /sales?date=` permite reconstruir el esperado. | — |
+- docs/coordinacion/auditoria-2026-10-10/01-dinero.md:349: **Escenario:** `GET /dashboard/summary?from=2026-10-09&to=2026-10-09` daba 20,250. Se anula FS-0000857 (venta del 09, RD$ 600) el día 10 y e
+- docs/coordinacion/auditoria-2026-10-10/01-dinero.md:374: - **D-09 [VERIFICADO]:** `cash.ts:105-118` sigue igual. Cerrar con 499 sin nota da `400 «agrega una nota»`; con 500 da `201`. `GET /sales?da
+- docs/coordinacion/auditoria-2026-10-10/04-infraestructura.md:240: - Logs de la web del 2026-10-08 02:27:50: 4 peticiones simultáneas a `GET /api/alerts?status=new` terminaron en «upstream timed out (110)», 
+- docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia-v2.md:164: export DATABASE_URL="postgresql://postgres@127.0.0.1:55616/aud?options=-c%20TimeZone%3DUTC" SEED_DEMO_PASSWORD='…'
+- docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia.md:344: export DATABASE_URL="postgresql://postgres@127.0.0.1:55606/aud?options=-c%20TimeZone%3DUTC"
+- docs/coordinacion/claude-nube/LEEME_CLAUDE_NUBE.md:8: 4. Verifica con un dato real (p. ej. `GET /sales?limit=50`, `GET /products?limit=200&page=1`).
+- docs/diseno/MAPA_PANTALLAS.md:8: | `/void-requests?status=pending` | apps/web/src/QuickQuestions.tsx:458 |
+- docs/operacion/MEMORIA_NEXORA1.md:7: - Solo Claude (nube, «Nexora 1») despliega en Render, con los 3 CI en verde (`verify`, `windows-installer`, `render-images`). La tienda (`ne
+- apps/web/src/App.tsx:627: queryFn: () => api<any[]>("/alerts?status=new"),
+- apps/web/src/CreditAccounts.tsx:55: `/credit-accounts?search=${encodeURIComponent(search)}&sort=${sort}&page=${page}&view=${view}`,
+- apps/web/src/Dashboard.tsx:52: queryFn: () => api("/dashboard/summary?from=" + date + "&to=" + date),
+- apps/web/src/Dashboard.tsx:124: queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to),
+- apps/web/src/Dashboard.tsx:131: queryFn: () => api("/void-requests?status=pending"),
+- apps/web/src/Dashboard.tsx:206: "/reports/sales?format=xlsx&from=" + from + "&to=" + to,
+- apps/web/src/Incentives.tsx:296: queryFn: () => api<Report>("/incentives?month=" + month),
+- apps/web/src/Incentives.tsx:345: "/incentives/export.xlsx?month=" + month,
+- apps/web/src/Incentives.tsx:419: `/incentives/receipt.pdf?month=${month}&userId=${r.userId}`,
+- apps/web/src/Management.tsx:763: queryFn: () => api("/inventory/movements?variantId=" + variantId),
+- apps/web/src/Management.tsx:3017: queryFn: () => api("/alerts?status=" + status),
+- apps/web/src/MonthReport.tsx:36: queryFn: () => api<any>("/dashboard/breakdown?from=" + from + "&to=" + to),
+- apps/web/src/QuickQuestions.tsx:458: path="/void-requests?status=pending"
+- apps/web/src/Tienda.tsx:592: queryFn: () => api<any[]>("/cod/pending?state=" + state),
+- apps/web/src/VoidRequests.tsx:26: queryFn: () => api("/void-requests?status=" + status),
+- apps/web/src/YearPie.tsx:41: queryFn: () => api<any>("/dashboard/year?year=" + year),
+- apps/web/src/YearPie.tsx:52: go(`month-report?from=${range.from}&to=${range.to}`);
+- apps/web/src/api.ts:414: "/products?limit=" + limit + "&page=" + page,
