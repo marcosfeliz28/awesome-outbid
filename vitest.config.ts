@@ -9,6 +9,7 @@ export default defineConfig({
     maxWorkers: 4,
     include: [
       "tests/esqueleto-tabla.test.ts",
+      "tests/esqueleto-filas.test.ts",
       "tests/courier-utils.test.ts",
       "tests/courier-migration-postgres.test.ts",
       "tests/pago-dolares-migration-postgres.test.ts",
