@@ -1658,3 +1658,12 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo quincenal (30-oct): orden 81, tildes
 - Fetch: nexora-cloud en 8f9b1811; RESPUESTA_CLAUDE_PC_27OCT.md blob 900f6b0d (orden 81: queda `claude-pc/tildes-urls`; la prueba de 4 casos pasa a esa rama). OBSIDIAN_LUMINA_PROGRESO.md ausente. Hecho: `claude-pc/tildes-urls-prueba` (50a6f5de, desde tildes-urls): `esSospechosa` exportada + tests/tildes-nuevas.test.ts; falló 4/4 antes, pasa 4/4 después. CI aún sin correr, sin LISTA. N35–N41 (Ollama) no se pueden en la nube.
 - CI: pc23, a1, b01 y lumina en verde (ya con LISTA); tildes-urls con verify en curso.
+
+## Noche (30-oct, ~23:30): orden 81 y revisión de N35
+- Fetch: nexora-cloud en 8f9b1811 (orden 81). RESPUESTA_CLAUDE_PC_27OCT.md blob 900f6b0d. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Orden 81: tildes queda en UNA rama (`claude-pc/tildes-urls`). Nota: esa rama la creé yo en esta sesión; la orden la atribuye a la sesión fork. Lo dejo dicho a Norexos 1. Reparto de la noche: Claude PC = modelo local (N35–N41) y revisión de salidas; fork = Forja 3 y tildes.
+- Revisión de N35 (glosario simple): 24 filas, 23 términos encontrados en la entrada (cobertura completa), definiciones ≤15 palabras, ningún término prohibido como promesa. Pero NO tiene las citas archivo:línea que pide la instrucción. RECHAZADA. Guardada aparte como `glosario-simple-rechazada-1.md`.
+- Reintento 1 de N35 lanzado. Si falla otra vez, se anota y se pasa a N36.
+- N34: descartada tras dos fallos «fetch failed».
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA. `claude-pc/bloque15` y `claude-pc/tildes-urls`: verify en curso; sin LISTA (no se mezclan).
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
