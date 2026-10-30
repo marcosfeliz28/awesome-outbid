@@ -26,8 +26,8 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 | `catalog:write` | Crear/editar productos, variantes, importar Excel, kits. | `apps/api/src/catalog.ts:195`, `:237`, `:378`, `:408`, `:432`, `:496`, `:588`, `:652` |
 | `inventory:write` | Pantallas «Mercancía» e «Inventario»; ajustes y conteos. | `App.tsx:197`, `:240`; `apps/api/src/merchandise.ts:160-343`; `apps/api/src/inventory.ts:637`, `:1487-1496` |
 | `purchase:write` | «Compras», órdenes, recepciones, proveedores, pagos a proveedor. | `App.tsx:246`; `apps/api/src/inventory.ts:954-1041`; `apps/api/src/admin.ts:568-588` |
-| `sale:write` | Vender (Punto de venta), ver Ventas, pedir anulaciones, ventas en espera, cobrar créditos en efectivo. | `App.tsx:209-216`; `apps/api/src/sales.ts:1469`, `:4181-4183`; `apps/api/src/admin.ts:739-803` |
-| `sale:manage` | **Gerencia de ventas**: devoluciones, aprobar conteos, ver esperados de caja, ver datos completos de clientes, cobrar crédito con tarjeta/transferencia, ver lista de transferencias pendientes, tasas de incentivos, **ser quien aprueba con PIN**; ver «Configuración» e «Incentivos». | `App.tsx:278`, `:1024-1031`; `sales.ts:2997-2999`, `:2638-2640`, `:4190`; `inventory.ts:1550-1552`; `common.ts:70-72`, `:276-281`; `security.ts:116-117` |
+| `sale:write` | Vender (Punto de venta), ver Ventas, pedir anulaciones, ventas en espera, cobrar créditos en efectivo. | `App.tsx:209-216`; `apps/api/src/sales.ts:1475`, `:4181-4183`; `apps/api/src/admin.ts:739-803` |
+| `sale:manage` | **Gerencia de ventas**: devoluciones, aprobar conteos, ver esperados de caja, ver datos completos de clientes, cobrar crédito con tarjeta/transferencia, ver lista de transferencias pendientes, tasas de incentivos, **ser quien aprueba con PIN**; ver «Configuración» e «Incentivos». | `App.tsx:278`, `:1024-1031`; `sales.ts:3223`, `:2638-2640`, `:4423`; `inventory.ts:1550-1552`; `common.ts:70-72`, `:276-281`; `security.ts:116-117` |
 | `cash:write` | Pantalla «Caja»: abrir, mover, trasladar y cerrar. | `App.tsx:250`; `apps/api/src/cash.ts:837-1112` |
 | `expense:write` | «Gastos». | `App.tsx:253`; `apps/api/src/admin.ts:643-737` |
 | `customers:write` | «Clientes»: crear/editar. | `App.tsx:259`; `apps/api/src/admin.ts:250-295` |
@@ -56,7 +56,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 - No puede (solo `*`): anular una venta, verificar transferencias de ventas, abonos, traspasos, guardar la configuración, crear usuarios (ver §4).
 
 ### Cajero/a (`seller`)
-- Ve: Punto de venta, Ventas, Solicitudes de anulación (para cancelar las suyas), Caja, Productos (solo lectura), Clientes. No ve Mercancía (bloqueada también en la API, `merchandise.ts:154-156`), ni Reportes, ni costos (`common.ts:366-370`).
+- Ve: Punto de venta, Ventas, Solicitudes de anulación (para cancelar las suyas), Caja, Productos (solo lectura), Clientes. No ve Mercancía (bloqueada también en la API, `merchandise.ts:154-156`), ni Reportes, ni costos (`common.ts:368`).
 - **Contraseña de 6 números** y obligación de cambiarla al entrar (`apps/api/src/password-policy.ts:11-13`; `Management.tsx:4409-4412`). Cualquier otro rol usa contraseña fuerte (12 o más caracteres con mayúscula, minúscula, número y símbolo, `password-policy.ts:66-72`).
 - Caja ciega: no ve los montos esperados de su caja (`common.ts:70-72`, `apps/web/src/managementMessages.ts:41-44`).
 - Necesita el **PIN de gerente** para: descuentos sobre el límite, crédito/contraentrega sobre los topes, nota de crédito sin código, salidas de efectivo sobre RD$ 1,000 del turno, cerrar con descuadre, vale de caja, trasladar la caja a otro equipo, descartar una venta sin conexión en conflicto, y registrar efectivo que «ya tiene la dueña» (ver §5).
@@ -79,7 +79,7 @@ Lista de lo que la API exige `@Permit("*")` (verificado en el código; no se enu
 | Aprobar / rechazar solicitud de anulación | `POST /void-requests/:id/approve|reject` | `sales.ts:2001-2060` |
 | Verificar / rechazar transferencia de venta | `POST /payments/:id/verify|reject` | `sales.ts:2749-2751`, `:2885-2888` |
 | Corregir banco y referencia | `POST /payments/:id/correct-transfer` | `sales.ts:2812-2815` |
-| Corregir método de pago (7 días) | `POST /sales/:id/payments/:paymentId/correct-method` | `sales.ts:2192-2195` |
+| Corregir método de pago (7 días) | `POST /sales/:id/payments/:paymentId/correct-method` | `sales.ts:2198` |
 | Cambiar vendedora / marcar «al por mayor» | `POST /sales/:id/seller`, `/mark-wholesale` | `sales.ts:2092-2145` |
 | Registrar abono / cobro de mensajero / cobro por persona / estado de cuenta | `/sales/:id/installments`, `/cod-collections`, `/credit-accounts…` | `sales.ts:3527-3556`, `:3633-3857` |
 | «Conciliar transferencias» y «Envíos del mensajero» (pantallas) | menú | `App.tsx:222-232` |
@@ -95,7 +95,7 @@ DUDOSO: el botón «Configuración» lo ve un gerente (`sale:manage`), pero guar
 
 ## 5. PIN de gerente: cuándo se pide y quién puede darlo
 
-- **Qué es:** un PIN de **6 dígitos** por usuario (los de 4-5 dígitos antiguos aún sirven y quedan marcados en la bitácora para cambiarlos) (`apps/api/src/admin.ts:205-212`; `Management.tsx:4424-4426`). Se crea al crear el usuario y se cambia en «Editar usuario · …» (`Management.tsx:4436-4448`).
+- **Qué es:** un PIN de **6 dígitos** por usuario (los de 4-5 dígitos antiguos aún sirven y quedan marcados en la bitácora para cambiarlos) (`apps/api/src/admin.ts:206`; `Management.tsx:4424-4426`). Se crea al crear el usuario y se cambia en «Editar usuario · …» (`Management.tsx:4436-4448`).
 - **Quién puede aprobar:** cualquier usuario activo de la sucursal con `sale:manage` (o `*`), **que no sea quien pide** (salvo la dueña `*`). Mensaje: «El PIN debe ser de otra persona con permiso; no puedes aprobar tu propia operación.» (`apps/api/src/security.ts:81-82`, `:92-136`).
 - **Límite de intentos:** 10 fallos por hora por solicitante; 30 por hora para los PIN cortos de la sucursal (`apps/api/src/security.ts:51-56`).
 - **Cuándo lo pide el sistema:**
@@ -118,6 +118,6 @@ DUDOSO: el botón «Configuración» lo ve un gerente (`sale:manage`), pero guar
 ## 6. Equipos (terminales)
 
 - Un equipo nuevo de vendedor/almacén **espera aprobación** de un gerente: «Este equipo necesita aprobación. Puedes consultar, pero para vender o mover mercancía un gerente debe aprobarlo» (`apps/web/src/realtime.tsx:513-516`). Se aprueba con PIN en el mismo equipo o desde Configuración › **Equipos** (`apps/api/src/realtime.ts:257-264`; modelo `Terminal`, campo `approvedAt`).
-- Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1469`, `cash.ts:838`).
+- Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1475`, `cash.ts:838`).
 - La caja se asigna al equipo con nombre y número visibles en el cuadre (ej. «4012 · GPRO STORE RD») y cada cajero tiene un «No. de cajero» (ej. 1031) (`apps/web/src/Tienda.tsx:1293-1360`; `schema.prisma` `Terminal.registerNumber`, `User.cashierNumber`).
 - Una sesión se cierra por inactividad según «sessionTimeoutMinutes» (30 min por defecto) (`apps/api/src/auth.ts:358-360`; `apps/api/src/admin.ts:92`).
