@@ -1514,3 +1514,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI nuevo: claude-pc/cola-n (2680132c) y claude-pc/cola-b14-resto (03430fc6): en verde los tres jobs. Se escribió su LISTA.
 - Órdenes nuevas de Nexora 1 en RESPUESTA_CLAUDE_PC_27OCT.md: ninguna.
 - ChatGPT (paso 5): ver línea siguiente.
+
+## Ciclo (29-oct): sin órdenes nuevas
+- Fetch: nexora-cloud en 1290359f (commit «Cola local N34-N41 desde docs/sistema»; RESPUESTA_CLAUDE_PC_27OCT.md sin cambio, blob 7157b7d4). OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en d6adc554.
+- Forja 3 (`claude-pc/forja3-grupo-1`, head 600eae7f, corrección de formato): windows-installer y render-images en verde; verify en curso.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- Pendiente de revisar: la cola N34–N41 de `docs/sistema` (commit de nexora-cloud). No la añado a mi archivo de cola hasta leer su formato y su origen.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
