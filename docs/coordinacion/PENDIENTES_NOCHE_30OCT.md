@@ -26,3 +26,5 @@ Dominio de la portada y casilla de soporte; qué es «la Lacto»; 4 decisiones E
 
 ## Registro
 - 30-oct 02:32 UTC: API y web de la tienda desplegados (e47a557d) con herramientas de cobros.
+
+- 30-oct 09:17 UTC: desglose del mes DESPLEGADO en la tienda (API 09:12, web 09:17, commit 1e25909f; 3 CI verdes; 0 cajas abiertas leídas por Norexos 2 a las 07:58). T33 IA de ventas: Norexos 9 sobre la base de Norexos 8 (claude/ia-ventas-linea-obrero2). Pendiente de CI y mezcla: claude/desglose-css, claude/docs-sistema-actualizar, claude/docs-venta-acciones. Auditoría de seguridad T39 (claude/seguridad-20) en curso por Taller.
