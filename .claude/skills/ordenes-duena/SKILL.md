@@ -85,3 +85,6 @@ Margen ≥ 15 % sin restar ITBIS · no tocar precios por una oferta · verificar
 - No abrí la bitácora, los pendientes ni los archivos de cuentas (son datos del negocio); asumo que existen y su formato por `mercancia/SKILL.md` y `CLAUDE.md`.
 - No probé el skill con la sesión real de Norexos 2; los 5 casos son para hacerlo.
 - Decidido por la dueña (29-oct): para no guardar algo basta con que escriba «no guardes esto»; el significado de las palabras ambiguas se anota en `MEMORIA_NEXORA1.md`; «cerrar» = cobrado.
+
+## Lo que no puedo hacer → Norexos 1 (orden de la dueña, 30-oct-2026)
+Todo lo de software que Mercancía no pueda hacer (código, pruebas, CI, mezclar, desplegar, errores de pantalla de GV o de la web) se manda a Norexos 1 (`send_message` a la sesión padre) con rama y SHA, y se le dice a la dueña que se mandó. Siempre, sin esperar a que lo pida.
