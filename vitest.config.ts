@@ -9,6 +9,7 @@ export default defineConfig({
     maxWorkers: 4,
     include: [
       "tests/docs-sistema-indice.test.ts",
+      "tests/ai-daily-limit.test.ts",
       "tests/docs-sistema-citas.test.ts",
       "tests/reglas-si.test.ts",
       "tests/tildes-nuevas.test.ts",
