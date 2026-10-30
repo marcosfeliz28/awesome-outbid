@@ -1,12 +1,23 @@
-// Genera el esqueleto de una tabla de glosario: un término por línea «**Término** — ...» del trozo, con su primera cita archivo:línea.
+// Genera el esqueleto de una tabla: una fila por término o elemento del trozo, con su primera cita archivo:línea.
 // Uso: node scripts/esqueleto-tabla.mjs <fuente.md> <linea-inicio> <linea-fin>   (imprime JSON)
 import { readFileSync } from "node:fs";
 
+// Glosarios: líneas «**Término** — …».
 export function extraerTerminos(texto) {
   return texto.split("\n").flatMap((linea) => {
     const m = /^\*\*(.+?)\*\* — /.exec(linea);
     if (!m) return [];
     const cita = /(apps\/[^\s`()]+:\d[\d-]*|docs\/[^\s`()]+:\d[\d-]*)/.exec(linea);
+    return [{ termino: m[1], cita: cita ? cita[1] : null }];
+  });
+}
+
+// Tablas de pantallas: filas «| n | **Etiqueta** | … |», con la primera cita apps/…:línea de la fila.
+export function extraerFilas(texto) {
+  return texto.split("\n").flatMap((linea) => {
+    const m = /^\| \d+ \| \*\*(.+?)\*\* \|/.exec(linea);
+    if (!m) return [];
+    const cita = /(apps\/[^\s`()]+:\d[\d-]*)/.exec(linea);
     return [{ termino: m[1], cita: cita ? cita[1] : null }];
   });
 }
