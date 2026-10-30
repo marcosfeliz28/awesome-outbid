@@ -1,45 +1,110 @@
 # Tildes rotas o «?» dentro de palabras (solo informe)
 
-Generado por `scripts/tildes-nuevas.mjs`. 41 líneas. Cada una hay que revisar a mano: puede ser código legítimo.
+Generado por `scripts/tildes-nuevas.mjs`. 106 líneas. Cada una hay que revisar a mano: puede ser código legítimo.
 
-- docs/DECISIONES.md:50: - **Pantalla «Créditos pendientes»** (Caja, sólo administración; `GET /cod/pending?state=pending|closed|all`): cliente, venta, vendedora, fe
-- docs/INCENTIVOS.md:56: - Endpoints: `GET /incentives?month=AAAA-MM` (`sale:manage`), `GET /incentives/me` (`sale:write`, sólo lo propio; por defecto el mes abierto
-- docs/INSTRUCCIONES_ARQUITECTURA.md:373: POST /products/import  GET /products/search?q=&barcode=
-- docs/PRUEBA_RESTAURACION.md:58: export DATABASE_URL='postgresql://nexora@127.0.0.1:5733/nx_a?options=-c%20TimeZone%3DUTC'
-- docs/coordinacion/INSTRUCTIVO_ENVIO_MENSAJERO.md:28: - `GET /courier/pending?from&to`: ventas con `courierFee > 0` y `courierPaidAt` nulo, con factura, cliente, fecha, mensajero y envío; más el
-- docs/coordinacion/MEMORIA_NEXORA_1_27OCT.md:42: `docs/coordinacion/claude-nube/entrar.py` (lee NEXORA_CLAUDE_USER/NEXORA_CLAUDE_PASSWORD del entorno o su archivo local). Reportes: `reporte
-- docs/coordinacion/MODULO-GV.md:81: - `GET /api/gv/transfers/pending`, `GET /api/gv/reports?from=AAAA-MM-DD&to=AAAA-MM-DD` (ingresos verificados, reembolsos y neto; pendientes 
-- docs/coordinacion/ORDEN_FASE2_IA_SOPORTE_CHATGPT_NUBE.md:31: | 4 | `detalle_factura(numero o cliente)` | `GET sales?q&date` | `sale:write` |
-- docs/coordinacion/RESULTADOS_CHATGPT.md:51: | FIN-01 · Alta | `apps/api/src/reports.ts:1536-1554,1626-1652`; rechazo en `apps/api/src/sales.ts:2373-2419` | Crear una venta completada d
-- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:45: | Productos (con variantes, existencia, precio, costo) | `GET /products?limit=200&page=N` → `items`                                         
-- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:47: | Historial de una variante                            | `GET /inventory/movements?variantId=…&limit=50`                                    
-- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:53: | Ventas del día                                       | `GET /sales?date=AAAA-MM-DD&limit=200`                                             
-- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:55: | Cajas                                                | `GET /cash-sessions?limit=40`, `GET /cash-sessions/:id/cuadre`, `GET /cash-sessions
-- docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:58: | Bitácora                                             | `GET /audit-log?limit=300`                                                         
-- docs/coordinacion/auditoria-2026-10-10/01-dinero.md:39: | D-09 | BAJO | (sigue abierto) El cierre ciego revela si el conteo es exacto, y `GET /sales?date=` permite reconstruir el esperado. | — |
-- docs/coordinacion/auditoria-2026-10-10/01-dinero.md:349: **Escenario:** `GET /dashboard/summary?from=2026-10-09&to=2026-10-09` daba 20,250. Se anula FS-0000857 (venta del 09, RD$ 600) el día 10 y e
-- docs/coordinacion/auditoria-2026-10-10/01-dinero.md:374: - **D-09 [VERIFICADO]:** `cash.ts:105-118` sigue igual. Cerrar con 499 sin nota da `400 «agrega una nota»`; con 500 da `201`. `GET /sales?da
-- docs/coordinacion/auditoria-2026-10-10/04-infraestructura.md:240: - Logs de la web del 2026-10-08 02:27:50: 4 peticiones simultáneas a `GET /api/alerts?status=new` terminaron en «upstream timed out (110)», 
-- docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia-v2.md:164: export DATABASE_URL="postgresql://postgres@127.0.0.1:55616/aud?options=-c%20TimeZone%3DUTC" SEED_DEMO_PASSWORD='…'
-- docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia.md:344: export DATABASE_URL="postgresql://postgres@127.0.0.1:55606/aud?options=-c%20TimeZone%3DUTC"
-- docs/coordinacion/claude-nube/LEEME_CLAUDE_NUBE.md:8: 4. Verifica con un dato real (p. ej. `GET /sales?limit=50`, `GET /products?limit=200&page=1`).
-- docs/diseno/MAPA_PANTALLAS.md:8: | `/void-requests?status=pending` | apps/web/src/QuickQuestions.tsx:458 |
-- docs/operacion/MEMORIA_NEXORA1.md:7: - Solo Claude (nube, «Nexora 1») despliega en Render, con los 3 CI en verde (`verify`, `windows-installer`, `render-images`). La tienda (`ne
-- apps/web/src/App.tsx:627: queryFn: () => api<any[]>("/alerts?status=new"),
-- apps/web/src/CreditAccounts.tsx:55: `/credit-accounts?search=${encodeURIComponent(search)}&sort=${sort}&page=${page}&view=${view}`,
-- apps/web/src/Dashboard.tsx:52: queryFn: () => api("/dashboard/summary?from=" + date + "&to=" + date),
-- apps/web/src/Dashboard.tsx:124: queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to),
-- apps/web/src/Dashboard.tsx:131: queryFn: () => api("/void-requests?status=pending"),
-- apps/web/src/Dashboard.tsx:206: "/reports/sales?format=xlsx&from=" + from + "&to=" + to,
-- apps/web/src/Incentives.tsx:296: queryFn: () => api<Report>("/incentives?month=" + month),
-- apps/web/src/Incentives.tsx:345: "/incentives/export.xlsx?month=" + month,
-- apps/web/src/Incentives.tsx:419: `/incentives/receipt.pdf?month=${month}&userId=${r.userId}`,
-- apps/web/src/Management.tsx:763: queryFn: () => api("/inventory/movements?variantId=" + variantId),
-- apps/web/src/Management.tsx:3017: queryFn: () => api("/alerts?status=" + status),
-- apps/web/src/MonthReport.tsx:36: queryFn: () => api<any>("/dashboard/breakdown?from=" + from + "&to=" + to),
-- apps/web/src/QuickQuestions.tsx:458: path="/void-requests?status=pending"
-- apps/web/src/Tienda.tsx:592: queryFn: () => api<any[]>("/cod/pending?state=" + state),
-- apps/web/src/VoidRequests.tsx:26: queryFn: () => api("/void-requests?status=" + status),
-- apps/web/src/YearPie.tsx:41: queryFn: () => api<any>("/dashboard/year?year=" + year),
-- apps/web/src/YearPie.tsx:52: go(`month-report?from=${range.from}&to=${range.to}`);
-- apps/web/src/api.ts:414: "/products?limit=" + limit + "&page=" + page,
+- docs\\auditoria\\ACCIONES_REVISION.md:39: | `docs/DECISIONES.md:50` | - **Pantalla «Créditos pendientes»** (Caja, sólo administración; `GET /cod/pending?state=pending/clo… | (sin cam
+- docs\\auditoria\\ACCIONES_REVISION.md:41: | `docs/INSTRUCCIONES_ARQUITECTURA.md:373` | POST /products/import  GET /products/search?q=&barcode= | (sin cambio: URL o código) | ninguna 
+- docs\\auditoria\\ACCIONES_REVISION.md:42: | `docs/PRUEBA_RESTAURACION.md:58` | export DATABASE_URL='postgresql://nexora@127.0.0.1:5733/nx_a?options=-c%20TimeZone%3DUTC' | (sin cambio
+- docs\\auditoria\\ACCIONES_REVISION.md:49: | `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:47` | / Historial de una variante                            / `GET /inventory/movements?varia
+- docs\\auditoria\\ACCIONES_REVISION.md:57: | `docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia-v2.md:164` | export DATABASE_URL="postgresql://postgres@127.0.0.1:55616/aud?
+- docs\\auditoria\\ACCIONES_REVISION.md:58: | `docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia.md:344` | export DATABASE_URL="postgresql://postgres@127.0.0.1:55606/aud?opt
+- docs\\auditoria\\ACCIONES_REVISION.md:62: | `apps/web/src/App.tsx:627` | queryFn: () => api<any[]>("/alerts?status=new"), | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:64: | `apps/web/src/Dashboard.tsx:52` | queryFn: () => api("/dashboard/summary?from=" + date + "&to=" + date), | (sin cambio: URL o código) | ni
+- docs\\auditoria\\ACCIONES_REVISION.md:65: | `apps/web/src/Dashboard.tsx:124` | queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to), | (sin cambio: URL o código) | nin
+- docs\\auditoria\\ACCIONES_REVISION.md:66: | `apps/web/src/Dashboard.tsx:131` | queryFn: () => api("/void-requests?status=pending"), | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:67: | `apps/web/src/Dashboard.tsx:206` | "/reports/sales?format=xlsx&from=" + from + "&to=" + to, | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:68: | `apps/web/src/Incentives.tsx:296` | queryFn: () => api<Report>("/incentives?month=" + month), | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:69: | `apps/web/src/Incentives.tsx:345` | "/incentives/export.xlsx?month=" + month, | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:71: | `apps/web/src/Management.tsx:763` | queryFn: () => api("/inventory/movements?variantId=" + variantId), | (sin cambio: URL o código) | ning
+- docs\\auditoria\\ACCIONES_REVISION.md:72: | `apps/web/src/Management.tsx:3017` | queryFn: () => api("/alerts?status=" + status), | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:73: | `apps/web/src/MonthReport.tsx:36` | queryFn: () => api<any>("/dashboard/breakdown?from=" + from + "&to=" + to), | (sin cambio: URL o códig
+- docs\\auditoria\\ACCIONES_REVISION.md:74: | `apps/web/src/QuickQuestions.tsx:458` | path="/void-requests?status=pending" | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:75: | `apps/web/src/Tienda.tsx:592` | queryFn: () => api<any[]>("/cod/pending?state=" + state), | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:76: | `apps/web/src/VoidRequests.tsx:26` | queryFn: () => api("/void-requests?status=" + status), | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:77: | `apps/web/src/YearPie.tsx:41` | queryFn: () => api<any>("/dashboard/year?year=" + year), | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\ACCIONES_REVISION.md:79: | `apps/web/src/api.ts:414` | "/products?limit=" + limit + "&page=" + page, | (sin cambio: URL o código) | ninguna |
+- docs\\auditoria\\TILDES_NUEVAS.md:5: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:39: | `docs/DECISIONES.md:50` | - **Pantalla «Créditos pendientes»** (Caja, sólo administración; `GE
+- docs\\auditoria\\TILDES_NUEVAS.md:7: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:41: | `docs/INSTRUCCIONES_ARQUITECTURA.md:373` | POST /products/import  GET /products/search?q=&barc
+- docs\\auditoria\\TILDES_NUEVAS.md:8: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:42: | `docs/PRUEBA_RESTAURACION.md:58` | export DATABASE_URL='postgresql://nexora@127.0.0.1:5733/nx_
+- docs\\auditoria\\TILDES_NUEVAS.md:12: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:48: | `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:45` | / Productos (con variantes, existencia, prec
+- docs\\auditoria\\TILDES_NUEVAS.md:13: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:49: | `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:47` | / Historial de una variante                 
+- docs\\auditoria\\TILDES_NUEVAS.md:14: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:50: | `docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:53` | / Ventas del día                            
+- docs\\auditoria\\TILDES_NUEVAS.md:21: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:58: | `docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia.md:344` | export DATABASE_URL="p
+- docs\\auditoria\\TILDES_NUEVAS.md:22: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:59: | `docs/coordinacion/claude-nube/LEEME_CLAUDE_NUBE.md:8` | 4. Verifica con un dato real (p. ej. 
+- docs\\auditoria\\TILDES_NUEVAS.md:24: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:62: | `apps/web/src/App.tsx:627` | queryFn: () => api<any[]>("/alerts?status=new"), | (sin cambio: U
+- docs\\auditoria\\TILDES_NUEVAS.md:26: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:64: | `apps/web/src/Dashboard.tsx:52` | queryFn: () => api("/dashboard/summary?from=" + date + "&to=
+- docs\\auditoria\\TILDES_NUEVAS.md:27: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:65: | `apps/web/src/Dashboard.tsx:124` | queryFn: () => api("/dashboard/summary?from=" + from + "&to
+- docs\\auditoria\\TILDES_NUEVAS.md:28: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:66: | `apps/web/src/Dashboard.tsx:131` | queryFn: () => api("/void-requests?status=pending"), | (sin
+- docs\\auditoria\\TILDES_NUEVAS.md:29: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:67: | `apps/web/src/Dashboard.tsx:206` | "/reports/sales?format=xlsx&from=" + from + "&to=" + to, | 
+- docs\\auditoria\\TILDES_NUEVAS.md:30: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:68: | `apps/web/src/Incentives.tsx:296` | queryFn: () => api<Report>("/incentives?month=" + month), 
+- docs\\auditoria\\TILDES_NUEVAS.md:31: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:69: | `apps/web/src/Incentives.tsx:345` | "/incentives/export.xlsx?month=" + month, | (sin cambio: U
+- docs\\auditoria\\TILDES_NUEVAS.md:33: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:71: | `apps/web/src/Management.tsx:763` | queryFn: () => api("/inventory/movements?variantId=" + var
+- docs\\auditoria\\TILDES_NUEVAS.md:34: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:72: | `apps/web/src/Management.tsx:3017` | queryFn: () => api("/alerts?status=" + status), | (sin ca
+- docs\\auditoria\\TILDES_NUEVAS.md:35: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:73: | `apps/web/src/MonthReport.tsx:36` | queryFn: () => api<any>("/dashboard/breakdown?from=" + fro
+- docs\\auditoria\\TILDES_NUEVAS.md:36: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:74: | `apps/web/src/QuickQuestions.tsx:458` | path="/void-requests?status=pending" | (sin cambio: UR
+- docs\\auditoria\\TILDES_NUEVAS.md:37: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:75: | `apps/web/src/Tienda.tsx:592` | queryFn: () => api<any[]>("/cod/pending?state=" + state), | (s
+- docs\\auditoria\\TILDES_NUEVAS.md:38: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:76: | `apps/web/src/VoidRequests.tsx:26` | queryFn: () => api("/void-requests?status=" + status), | 
+- docs\\auditoria\\TILDES_NUEVAS.md:39: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:77: | `apps/web/src/YearPie.tsx:41` | queryFn: () => api<any>("/dashboard/year?year=" + year), | (si
+- docs\\auditoria\\TILDES_NUEVAS.md:41: - docs\\\\auditoria\\\\ACCIONES_REVISION.md:79: | `apps/web/src/api.ts:414` | "/products?limit=" + limit + "&page=" + page, | (sin cambio: URL o
+- docs\\auditoria\\TILDES_NUEVAS.md:44: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:7: - docs/INSTRUCCIONES_ARQUITECTURA.md:373: POST /products/import  GET /products/search?q=&barcode=
+- docs\\auditoria\\TILDES_NUEVAS.md:45: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:8: - docs/PRUEBA_RESTAURACION.md:58: export DATABASE_URL='postgresql://nexora@127.0.0.1:5733/nx_a?option
+- docs\\auditoria\\TILDES_NUEVAS.md:50: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:15: - docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:47: | Historial de una variante                        
+- docs\\auditoria\\TILDES_NUEVAS.md:51: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:16: - docs/coordinacion/TRASPASO_CHATGPT_NUBE.md:53: | Ventas del día                                   
+- docs\\auditoria\\TILDES_NUEVAS.md:58: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:23: - docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia-v2.md:164: export DATABASE_URL="postg
+- docs\\auditoria\\TILDES_NUEVAS.md:59: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:24: - docs/coordinacion/auditoria-2026-10-10/06-datos-concurrencia.md:344: export DATABASE_URL="postgres
+- docs\\auditoria\\TILDES_NUEVAS.md:60: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:25: - docs/coordinacion/claude-nube/LEEME_CLAUDE_NUBE.md:8: 4. Verifica con un dato real (p. ej. `GET /s
+- docs\\auditoria\\TILDES_NUEVAS.md:62: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:28: - apps/web/src/App.tsx:627: queryFn: () => api<any[]>("/alerts?status=new"),
+- docs\\auditoria\\TILDES_NUEVAS.md:64: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:30: - apps/web/src/Dashboard.tsx:52: queryFn: () => api("/dashboard/summary?from=" + date + "&to=" + dat
+- docs\\auditoria\\TILDES_NUEVAS.md:65: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:31: - apps/web/src/Dashboard.tsx:124: queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to
+- docs\\auditoria\\TILDES_NUEVAS.md:66: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:32: - apps/web/src/Dashboard.tsx:131: queryFn: () => api("/void-requests?status=pending"),
+- docs\\auditoria\\TILDES_NUEVAS.md:67: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:33: - apps/web/src/Dashboard.tsx:206: "/reports/sales?format=xlsx&from=" + from + "&to=" + to,
+- docs\\auditoria\\TILDES_NUEVAS.md:68: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:34: - apps/web/src/Incentives.tsx:296: queryFn: () => api<Report>("/incentives?month=" + month),
+- docs\\auditoria\\TILDES_NUEVAS.md:69: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:35: - apps/web/src/Incentives.tsx:345: "/incentives/export.xlsx?month=" + month,
+- docs\\auditoria\\TILDES_NUEVAS.md:71: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:37: - apps/web/src/Management.tsx:763: queryFn: () => api("/inventory/movements?variantId=" + variantId)
+- docs\\auditoria\\TILDES_NUEVAS.md:72: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:38: - apps/web/src/Management.tsx:3017: queryFn: () => api("/alerts?status=" + status),
+- docs\\auditoria\\TILDES_NUEVAS.md:73: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:39: - apps/web/src/MonthReport.tsx:36: queryFn: () => api<any>("/dashboard/breakdown?from=" + from + "&t
+- docs\\auditoria\\TILDES_NUEVAS.md:74: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:40: - apps/web/src/QuickQuestions.tsx:458: path="/void-requests?status=pending"
+- docs\\auditoria\\TILDES_NUEVAS.md:75: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:41: - apps/web/src/Tienda.tsx:592: queryFn: () => api<any[]>("/cod/pending?state=" + state),
+- docs\\auditoria\\TILDES_NUEVAS.md:76: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:42: - apps/web/src/VoidRequests.tsx:26: queryFn: () => api("/void-requests?status=" + status),
+- docs\\auditoria\\TILDES_NUEVAS.md:77: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:43: - apps/web/src/YearPie.tsx:41: queryFn: () => api<any>("/dashboard/year?year=" + year),
+- docs\\auditoria\\TILDES_NUEVAS.md:79: - docs\\\\auditoria\\\\TILDES_NUEVAS.md:45: - apps/web/src/api.ts:414: "/products?limit=" + limit + "&page=" + page,
+- docs\\auditoria\\TILDES_NUEVAS.md:82: - docs\\\\coordinacion\\\\auditoria-2026-10-10\\\\01-dinero.md:374: - **D-09 [VERIFICADO]:** `cash.ts:105-118` sigue igual. Cerrar con 499 sin not
+- docs\\auditoria\\TILDES_NUEVAS.md:84: - docs\\\\coordinacion\\\\auditoria-2026-10-10\\\\06-datos-concurrencia-v2.md:164: export DATABASE_URL="postgresql://postgres@127.0.0.1:55616/aud?
+- docs\\auditoria\\TILDES_NUEVAS.md:85: - docs\\\\coordinacion\\\\auditoria-2026-10-10\\\\06-datos-concurrencia.md:344: export DATABASE_URL="postgresql://postgres@127.0.0.1:55606/aud?opt
+- docs\\auditoria\\TILDES_NUEVAS.md:100: - docs\\\\INSTRUCCIONES_ARQUITECTURA.md:373: POST /products/import  GET /products/search?q=&barcode=
+- docs\\auditoria\\TILDES_NUEVAS.md:102: - docs\\\\PRUEBA_RESTAURACION.md:58: export DATABASE_URL='postgresql://nexora@127.0.0.1:5733/nx_a?options=-c%20TimeZone%3DUTC'
+- docs\\auditoria\\TILDES_NUEVAS.md:103: - apps\\\\web\\\\src\\\\api.ts:414: "/products?limit=" + limit + "&page=" + page,
+- docs\\auditoria\\TILDES_NUEVAS.md:104: - apps\\\\web\\\\src\\\\App.tsx:627: queryFn: () => api<any[]>("/alerts?status=new"),
+- docs\\auditoria\\TILDES_NUEVAS.md:106: - apps\\\\web\\\\src\\\\Dashboard.tsx:52: queryFn: () => api("/dashboard/summary?from=" + date + "&to=" + date),
+- docs\\auditoria\\TILDES_NUEVAS.md:107: - apps\\\\web\\\\src\\\\Dashboard.tsx:124: queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to),
+- docs\\auditoria\\TILDES_NUEVAS.md:108: - apps\\\\web\\\\src\\\\Dashboard.tsx:131: queryFn: () => api("/void-requests?status=pending"),
+- docs\\auditoria\\TILDES_NUEVAS.md:109: - apps\\\\web\\\\src\\\\Dashboard.tsx:206: "/reports/sales?format=xlsx&from=" + from + "&to=" + to,
+- docs\\auditoria\\TILDES_NUEVAS.md:110: - apps\\\\web\\\\src\\\\Incentives.tsx:296: queryFn: () => api<Report>("/incentives?month=" + month),
+- docs\\auditoria\\TILDES_NUEVAS.md:111: - apps\\\\web\\\\src\\\\Incentives.tsx:345: "/incentives/export.xlsx?month=" + month,
+- docs\\auditoria\\TILDES_NUEVAS.md:113: - apps\\\\web\\\\src\\\\Management.tsx:763: queryFn: () => api("/inventory/movements?variantId=" + variantId),
+- docs\\auditoria\\TILDES_NUEVAS.md:114: - apps\\\\web\\\\src\\\\Management.tsx:3017: queryFn: () => api("/alerts?status=" + status),
+- docs\\auditoria\\TILDES_NUEVAS.md:115: - apps\\\\web\\\\src\\\\MonthReport.tsx:36: queryFn: () => api<any>("/dashboard/breakdown?from=" + from + "&to=" + to),
+- docs\\auditoria\\TILDES_NUEVAS.md:116: - apps\\\\web\\\\src\\\\QuickQuestions.tsx:458: path="/void-requests?status=pending"
+- docs\\auditoria\\TILDES_NUEVAS.md:117: - apps\\\\web\\\\src\\\\Tienda.tsx:592: queryFn: () => api<any[]>("/cod/pending?state=" + state),
+- docs\\auditoria\\TILDES_NUEVAS.md:118: - apps\\\\web\\\\src\\\\VoidRequests.tsx:26: queryFn: () => api("/void-requests?status=" + status),
+- docs\\auditoria\\TILDES_NUEVAS.md:119: - apps\\\\web\\\\src\\\\YearPie.tsx:41: queryFn: () => api<any>("/dashboard/year?year=" + year),
+- docs\\coordinacion\\auditoria-2026-10-10\\06-datos-concurrencia-v2.md:164: export DATABASE_URL="postgresql://postgres@127.0.0.1:55616/aud?options=-c%20TimeZone%3DUTC" SEED_DEMO_PASSWORD='…'
+- docs\\coordinacion\\auditoria-2026-10-10\\06-datos-concurrencia.md:344: export DATABASE_URL="postgresql://postgres@127.0.0.1:55606/aud?options=-c%20TimeZone%3DUTC"
+- docs\\INSTRUCCIONES_ARQUITECTURA.md:373: POST /products/import  GET /products/search?q=&barcode=
+- docs\\operacion\\MEMORIA_NEXORA1.md:7: - Solo Claude (nube, «Nexora 1») despliega en Render, con los 3 CI en verde (`verify`, `windows-installer`, `render-images`). La tienda (`ne
+- docs\\PRUEBA_RESTAURACION.md:58: export DATABASE_URL='postgresql://nexora@127.0.0.1:5733/nx_a?options=-c%20TimeZone%3DUTC'
+- apps\\web\\src\\api.ts:414: "/products?limit=" + limit + "&page=" + page,
+- apps\\web\\src\\App.tsx:627: queryFn: () => api<any[]>("/alerts?status=new"),
+- apps\\web\\src\\Dashboard.tsx:52: queryFn: () => api("/dashboard/summary?from=" + date + "&to=" + date),
+- apps\\web\\src\\Dashboard.tsx:124: queryFn: () => api("/dashboard/summary?from=" + from + "&to=" + to),
+- apps\\web\\src\\Dashboard.tsx:131: queryFn: () => api("/void-requests?status=pending"),
+- apps\\web\\src\\Dashboard.tsx:206: "/reports/sales?format=xlsx&from=" + from + "&to=" + to,
+- apps\\web\\src\\Incentives.tsx:296: queryFn: () => api<Report>("/incentives?month=" + month),
+- apps\\web\\src\\Incentives.tsx:345: "/incentives/export.xlsx?month=" + month,
+- apps\\web\\src\\Management.tsx:763: queryFn: () => api("/inventory/movements?variantId=" + variantId),
+- apps\\web\\src\\Management.tsx:3017: queryFn: () => api("/alerts?status=" + status),
+- apps\\web\\src\\MonthReport.tsx:36: queryFn: () => api<any>("/dashboard/breakdown?from=" + from + "&to=" + to),
+- apps\\web\\src\\QuickQuestions.tsx:458: path="/void-requests?status=pending"
+- apps\\web\\src\\Tienda.tsx:592: queryFn: () => api<any[]>("/cod/pending?state=" + state),
+- apps\\web\\src\\VoidRequests.tsx:26: queryFn: () => api("/void-requests?status=" + status),
+- apps\\web\\src\\YearPie.tsx:41: queryFn: () => api<any>("/dashboard/year?year=" + year),
