@@ -1813,3 +1813,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo quincenal nube (30-oct): orden 85 hecha en rama nueva
 - Fetch: nexora-cloud en 28de891e; RESPUESTA_CLAUDE_PC_27OCT.md cambió (blob e3e6951e → 56238ea4, orden 85). OBSIDIAN_LUMINA_PROGRESO.md ausente. CI de pc23, a1, b01 y lumina en verde. `claude-pc/reglas-si` (ec347663): `scripts/reglas-si.mjs` + prueba (roja sin el script, 4 verdes con él); 15 reglas con cita, 3 tareas R01–R03 en `reglas-tareas.json`. CI en curso, LISTA pendiente.
 - No hecho: en la nube no hay modelo local, así que las salidas `reglas-lote-NN.md` y su conteo quedan para la laptop (cargar `reglas-tareas.json` en la cola).
+
+## Ciclo (30-oct, 15 min, segunda vuelta)
+- Fetch: nexora-cloud en 28de891e. RESPUESTA_CLAUDE_PC_27OCT.md cambió: blob e3e6951e → 56238ea4 (orden 85: N42–N49 retiradas; pide `scripts/reglas-si.mjs` con prueba, JSON de reglas y una tarea por cada 5 reglas). OBSIDIAN_LUMINA_PROGRESO.md sigue ausente.
+- CI en verde: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e. Sin cambio; no hace falta LISTA nueva.
+- N42 falló dos veces («fetch failed»); N43 corrió en segundo plano y luego se retiró con la orden 85. Ninguna salida de N42–N49 se ha commiteado.
+- Orden 85 (reglas-si): ya existe `claude-pc/reglas-si` en origin (ec347663, «feat: scripts/reglas-si.mjs…») de otra sesión de esta laptop, con CI verify en curso. No la dupliqué. Hay además una worktree `reglas-si` con cambios sin commitear (vitest.config.ts y tests/reglas-si.test.ts): no la toqué. Pendiente de decidir quién la continúa.
+- ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos y el proyecto está pausado por cuota hasta el 2 de noviembre.
