@@ -9,13 +9,13 @@
 
 **Tu negocio, en movimiento.**
 
-Nexora POS reúne la caja, el inventario, los clientes y las facturas en un solo
+Norexos reúne la caja, el inventario, los clientes y los comprobantes en un solo
 lugar, para que vendas más y cuadres sin dolor de cabeza.
 
 ## Subtítulo
 
-Punto de venta, cierre de caja ciego, inventario, créditos y facturación (NCF/
-e-CF) pensados para la tienda dominicana. Empieza hoy; sin instalar nada.
+Punto de venta, cierre de caja ciego, inventario y créditos pensados para la
+tienda dominicana. Empieza hoy; sin instalar nada.
 
 ## 6 beneficios
 
@@ -29,24 +29,24 @@ e-CF) pensados para la tienda dominicana. Empieza hoy; sin instalar nada.
 4. **Créditos y contraentrega bajo control.** Deja pendiente lo que el cliente
    debe y cobra los abonos cuando lleguen, con aprobación de gerencia cuando
    toca.
-5. **Facturación conforme a la DGII.** Emite tus comprobantes (NCF B01/B02/B14/
-   B15 y e-CF) y reportes 606/607/608. *(verificar con contador).*
+5. **Comprobantes NCF.** Emite comprobantes con las secuencias NCF que tú
+   declaras; la numeración la controla tu contador. *(verificar con contador).*
 6. **Funciona con o sin internet.** La caja sigue vendiendo sin conexión y
    sincroniza al volver; tu negocio no se detiene.
 
 ## Comparativa honesta
 
-| | Nexora POS | POS globales (Square/Lightspeed) | Solo facturación (Facturama/Quipu) |
+| | Norexos | POS globales (Square/Lightspeed) | Solo facturación (Facturama/Quipu) |
 |---|---|---|---|
 | Caja + inventario + clientes | Sí | Sí (sin NCF RD) | No |
-| Facturación NCF/e-CF (DGII) | Sí | No | No (otro país) |
+| Comprobantes NCF (secuencias declaradas) | Sí | No | No (otro país) |
 | Cierre de caja ciego | Sí | Parcial | No |
 | Precio en RD$ y soporte local | Sí | No | No |
 | Offline | Sí | Parcial | No |
 
 > Honesto: si solo necesitas facturar en otro país o una tienda online grande,
 > hay otras opciones. Si necesitas el día a día de una tienda dominicana en un
-> solo sistema, Nexora es para ti.
+> solo sistema, Norexos es para ti.
 
 ## Preguntas frecuentes (FAQ)
 
@@ -54,12 +54,12 @@ e-CF) pensados para la tienda dominicana. Empieza hoy; sin instalar nada.
    internet puedes instalarlo en tu PC.
 2. **¿Sirve para una sola tienda?** Sí, y escala a varias sucursales y bodegas.
 3. **¿Puedo cobrar a crédito?** Sí, con aprobación de gerencia sobre el umbral.
-4. **¿Emite facturas con NCF?** Sí, los comprobantes de la DGII. *(verificar con
+4. **¿Emite comprobantes NCF?** Sí, con las secuencias que tú declaras. *(verificar con
    contador).*
 5. **¿Qué pasa si se va la luz o internet?** La caja sigue vendiendo sin conexión
    y sincroniza al volver.
-6. **¿Mis datos están seguros?** Control de acceso por rol y respaldo cifrado.
-   *(verificar con abogado).*
+6. **¿Mis datos están seguros?** Acceso por rol y copias de respaldo. *(verificar con
+   abogado).*
 
 ## Llamadas a la acción
 
