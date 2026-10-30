@@ -88,7 +88,7 @@ Lista de lo que la API exige `@Permit("*")` (verificado en el código; no se enu
 | Usuarios, restablecer contraseña, roles | `/users`, `/roles` | `admin.ts:1024-1320` |
 | Bitácora y reglas de alertas | `/audit-log`, `/alert-rules` | `admin.ts:1321`; `alerts.ts:909-912` |
 | Cerrar el mes de incentivos / ajustar tasas | `/incentives/close`, `/incentives/rates` | `apps/api/src/incentives.ts:801`, `:852` |
-| Importación de GV | `POST /gv/import` | `apps/api/src/gv.ts:692` |
+| Importación de GV | `POST /gv/import` | `apps/api/src/gv.ts:693` |
 | Respaldo a Drive (tarjeta) | Configuración | `apps/api/src/drive-backup.ts` |
 
 DUDOSO: el botón «Configuración» lo ve un gerente (`sale:manage`), pero guardar cambios exige `*`; no se probó qué pestañas muestran datos a un gerente que no es `*`.
