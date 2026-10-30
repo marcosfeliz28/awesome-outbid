@@ -483,3 +483,12 @@ Contexto: reel con 4 «enchufes». Decisión en .claude/skills/herramientas-eval
 2. Oh My Claude Code (repo de terceros, orquestación multiagente): instálalo SOLO si lo haces desde el repositorio original verificado (autor, estrellas, última actualización, revisa los hooks y scripts que ejecuta antes de instalar), y déjalo DESACTIVADO por defecto. Si algún hook toca archivos fuera de tu carpeta de trabajo o hace llamadas de red no explicadas, NO lo instales y repórtalo. No lo actives sin orden.
 3. Supabase y Vercel son conectores de claude.ai: los conecta la dueña; tú no haces nada.
 Escribe LISTA con lo que quedó instalado, la versión y cómo se activa/desactiva cada una.
+
+## Orden 93 (N1, 30-oct 17:10 UTC) — GV: pago con tarjeta sin cuenta bancaria (pedido de la dueña vía Norexos 2)
+Problema: en GV, modal «Pago de …» (apps/web/src/Gv.tsx), con Método = Tarjeta el campo Banco solo muestra las 6 cuentas de banco (Génesis/Macgen) y Clary no sabe qué elegir. La API (apps/api/src/gv-money.ts, assertGvBank, ~líneas 82 y 227) exige banco de la lista aunque sea tarjeta. Settings.cardTerminals está vacío [].
+Rama claude-pc/gv-tarjeta desde origin/nexora-cloud. Haz, con prueba que falle antes y pase después (integración con Postgres local, tests/gv-modulo-api.test.ts):
+1. API: con método tarjeta, NO exigir banco; exigir en su lugar referencia (número de aprobación/lote/voucher); la tarjeta ya se guarda verificada (mantener). Transferencia/depósito siguen exigiendo banco. No cambiar montos, estados de otros métodos ni totales.
+2. Web: con Tarjeta ocultar Banco y mostrar «Terminal» (texto/lista desde Settings.cardTerminals si existe; si está vacío, un único valor fijo «Terminal GV») + referencia/lote/aprobación obligatoria.
+3. NO decidir adónde cae el dinero de tarjeta de GV: lo pregunta Norexos 2 a la dueña (el voucher del 29-oct de 8,200 fue en terminal de GV, lote 001, dinero a Génesis). Deja la cuenta destino como dato opcional/configurable, sin valor por defecto inventado.
+4. Documenta en docs/sistema (GV.md, FLUJO_COBROS) con citas por ancla (pnpm docs:citas) y corre scripts/pre-empuje.mjs antes de empujar.
+Toca dinero de GV: NO se despliega sin mi revisión y la lectura de cajas; LISTA con SHA cuando los 3 CI estén en verde.
