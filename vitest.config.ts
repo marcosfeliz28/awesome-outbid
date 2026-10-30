@@ -91,6 +91,7 @@ export default defineConfig({
       "tests/configuracion-pruebas.test.ts",
       "tests/gv-unit.test.ts",
       "tests/gv-auditoria-migration-postgres.test.ts",
+      "tests/docs-sistema-citas.test.ts",
     ],
   },
 });
