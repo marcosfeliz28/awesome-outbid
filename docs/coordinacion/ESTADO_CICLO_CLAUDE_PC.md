@@ -2127,3 +2127,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (30-oct 13:15 UTC) — orden 90 nueva (nexora-cloud 03053f33)
 - Hecho en la nube con Postgres local (usuario no-root, node 24): suite sobre nexora-cloud y sobre claude/visual-f2-04 a82fcf06: solo fallan 3 pruebas de portabilidad.test.ts (pnpm/pg_dump del entorno, sin fallo de producto). T33 62720b17 fusionada con nexora-cloud sin conflictos, migraciones 202611010001/2 aditivas, AssistantQuery sin texto, 18/18 integración; 3 citas de docs/sistema corregidas en claude-pc/t33-rebase 3696d0cf. CI: windows-installer y render-images verdes, verify ROJO por e2e intermitente caja-borrador.spec.ts:200 (N2); sin LISTA.
 - Pendiente: pruebas intermitentes (orden 90 punto 2) y reintento del CI de t33; R1–R8 y N54–N57 siguen necesitando el modelo local. CI verde sin cambio: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e.
+
+## Ciclo nube (30-oct 14:10 UTC) — orden 91 nueva (nexora-cloud fcf8e2e7)
+- Hechas B (citas-reanclar, 535a4905) y C (pre-empuje) en claude-pc/citas-robustas y G (plan de lanzamiento, 3adeccac) en claude-pc/plan-lanzamiento; las dos con 3 CI en verde y LISTA escrita. CI sin cambio: pc23, a1, b01, lumina verdes; t33-rebase 3696d0cf verify sigue rojo (N2).
+- Pendientes: A (pruebas intermitentes, requieren e2e), D (seguridad-20 con Postgres), E (zod4), F (R1–R8, N54–N57: modelo local) y H; sin Node 24 en esta sesión, solo se pudo probar con vitest suelto.
