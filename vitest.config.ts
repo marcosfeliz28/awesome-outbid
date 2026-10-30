@@ -15,6 +15,7 @@ export default defineConfig({
       "tests/zod-limites.test.ts",
       "tests/docs-sistema-citas.test.ts",
       "tests/reglas-si.test.ts",
+      "tests/citas-reanclar.test.ts",
       "tests/tildes-nuevas.test.ts",
       "tests/esqueleto-tabla.test.ts",
       "tests/esqueleto-filas.test.ts",
