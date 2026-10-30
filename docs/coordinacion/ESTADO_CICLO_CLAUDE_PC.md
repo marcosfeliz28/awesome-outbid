@@ -1608,3 +1608,15 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, sin LISTA nueva.
 - claude-pc/cola-n-nueva (579e249e): verify, windows-installer y render-images aún en progreso. LISTA cuando cierren en verde.
 - ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
+
+## Noche (30-oct): relevo de Norexos 5, orden 79
+- Leídos `NOCHE_CLAUDE_PC_30OCT.md` y `COLA_LOCAL_ACTIVA_NUEVA.json` en nexora-cloud. Orden: cola N34–N41 primero, después bloque 15.
+- N34 (reintento 2): entrada partida en 5 trozos ≤5500 caracteres (`docs/sistema/trozos/`, en el worktree `cola-n34`, sin commitear). Estado de N34 reiniciado. El runner está generando la salida (qwen-optimizado cargado en GPU); cuando termine, reviso la salida antes de commitear.
+- Bloque 15 (`claude-pc/bloque15`, desde nexora-cloud ddca5e40), un commit por tarea:
+  - 93 `tests/docs-sistema-citas.test.ts`: 637 citas archivo:línea, 0 rotas (dfa18610 + registro d94a3830).
+  - 94 `tests/docs-sistema-indice.test.ts`: el índice listaba `INDICE.json` (no es .md). Corregido quitando esa entrada: igual true (864b4709 + f39fa1c2).
+  - 95 a 100: pendientes.
+- Pendiente de decisión: ninguna nueva para Norexos 1 en este ciclo.
+- CI de las ramas nuevas: en curso; sin LISTA hasta los tres en verde.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
