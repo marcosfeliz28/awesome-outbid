@@ -1636,3 +1636,14 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Pendiente del relevo: sección C (revisar salidas del modelo) y D («cola baja» cuando queden 3 en la cola).
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Noche (30-oct, ~23:20): orden 80 (duplicados resueltos)
+- Fetch: nexora-cloud en 45c6dfad (orden 80). RESPUESTA_CLAUDE_PC_27OCT.md blob 9dfc8eea. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Duplicados aclarados por Norexos 1:
+  - N34–N41: mi rama es `claude-pc/cola-n-nueva` (ya tiene la LISTA 579e249e). N34 falló dos veces con «fetch failed» en Ollama: descartada por ahora y anotada. Sigue N35 (corriendo ahora).
+  - 93–100: la de Taller es `claude/taller-bloque15` (5b7fd6d2). Mi `claude-pc/bloque15` (HEAD 79566ad8) no se mezcla; queda como referencia.
+- Tildes (bloque «tildes» que Norexos 1 me asigna): `claude-pc/tildes-urls` (ae090ea0), desde nexora-cloud. El script ya no busca «?» en código ni en URLs entre comillas invertidas: de 43 hallazgos pasó a 6, todos listados. Reclamo esta tarea en PENDIENTES_NOCHE (columna «Quién»: Claude PC) a través de esta línea, porque no escribo en nexora-cloud.
+- CI de bloque15 79566ad8: verify en curso; windows-installer y render-images en verde. No es la rama que se mezcla, así que no hay LISTA.
+- Sobre la sección C (revisar salidas del modelo): queda con la rama `claude-pc/cola-n-nueva`. Lo hago cuando N35 termine.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
