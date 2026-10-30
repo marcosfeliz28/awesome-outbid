@@ -1521,3 +1521,4 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - Pendiente de revisar: la cola N34–N41 de `docs/sistema` (commit de nexora-cloud). No la añado a mi archivo de cola hasta leer su formato y su origen.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+- ChatGPT (paso 5): la app se abrió desde la barra de tareas, pero la ventana no aparece (pantalla oscura). No se leyeron «ChatGPT nube» ni «ChatGPT PC»; no se escribió en ningún chat. Bloqueo de ventana; no se forzó.
