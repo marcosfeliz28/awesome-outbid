@@ -1927,3 +1927,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Hecho: scripts/esqueleto-tabla.mjs con su prueba (commit 7a54cede en claude-pc/cola-n-nueva; prueba falla antes, pasa después).
 - En curso: 28 términos de GLOSARIO 1–60 y 24 de 61–107 en lotes de cinco (11 lotes) con qwen-optimizado. Salidas en borrador, fuera del repo, para ensamblar con el esqueleto y verificar 5/5.
 - N50 (fb23ac74): pendiente de CI verify para LISTA.
+
+## Consulta 30 min (30-oct): lotes de glosario en curso; sin órdenes nuevas
+- Fetch: nexora-cloud en 6524f318 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde la orden 88).
+- Cola: el estado viejo dice «vacía», pero las tareas de la orden 88 (once lotes de glosario) siguen en curso: dos de once listos. No se envía petición.
+- CI: N50 (fb23ac74) con verify en progreso; windows-installer y render-images en verde. Sin LISTA todavía.
