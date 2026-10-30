@@ -1902,3 +1902,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23, a1, b01 y lumina en verde, con LISTA ya escrita. Sin cambios.
 - Cola N50–N57: siete de ocho salidas generadas (glosario-cajera-1 y -2, pantallas-uso-1, -2 y -3, roles-resumen-1 y -2). Falta gv-elementos-1. Sin verificar todavía (conteo por script pendiente).
 - ChatGPT (paso 5): sin cambio; no se abrió en este ciclo.
+
+## N50–N57 revisadas (30-oct): una aceptada, siete rechazadas por el conteo
+- Criterio propio (pendiente de confirmar por Norexos 1): filas de tabla = líneas no vacías del trozo.
+- Aceptada: N50 glosario-cajera-1 (30 = 30), commit fb23ac74 en claude-pc/cola-n-nueva.
+- Rechazadas (fuera del repo): N51 (26 frente a 24), N52 pantallas-uso-1 (23 frente a 39), N53, N54, N55 (6 frente a 9), N56 y N57 gv-elementos-1 (47 frente a 36, con citas fuera del trozo).
+- Mensaje a Norexos 1 con el criterio y la lista (msg 032f46f6).
