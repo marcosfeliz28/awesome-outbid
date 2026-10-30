@@ -44,3 +44,4 @@ LISTA: claude-pc/citas-robustas 535a4905 (verify, windows-installer y render-ima
 LISTA: claude-pc/plan-lanzamiento 3adeccac (verify, windows-installer y render-images en verde; pieza G de la orden 91: borrador docs/venta/PLAN_LANZAMIENTO.md con quién decide cada ítem, precios como opciones; solo docs)
 LISTA: claude-pc/gv-tarjeta 7920ce1874265b2278d59522dfe16ca0dab98789 (orden 93: GV tarjeta sin banco, terminal + referencia obligatoria; NO desplegar sin revisión de la dueña y lectura de cajas)
 LISTA: claude-pc/gv-tarjeta 8b3b46d7 (orden 93, aclaración: tarjeta GV al área GV, destination=gv, «Terminal GV» fijo; verify, windows-installer y render-images en verde; toca dinero de GV: no desplegar sin revisión de Nexora 1)
+LISTA: claude-pc/t33-rebase 182e2278 (orden 94.1: caja-borrador intermitente N2 arreglada; verify, windows-installer y render-images en verde; no desplegar sin revisión)
