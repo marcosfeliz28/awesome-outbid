@@ -18,7 +18,7 @@ Orden de la dueña: todo lo planeado se hace de principio a fin; si algo falla s
 | 14 | Cuadre de Wendy tras FS-328: transferencia esperada 9,700 vs contada 2,200 (−7,500) y caja temporal de Claude con +2,600 tarjeta contada sin esperado | dueña | Espera conteo/decisión suya | No tocar lo contado sin conteo nuevo de la dueña (CLAUDE.md). Posible mejora: reporte con marca «ajustado» |
 | 15 | Tildes: refinar scripts/tildes-nuevas.mjs (ignorar URLs/código) | Claude PC (fork) | EN CURSO: rama claude-pc/tildes-urls ef0c1b08 (43→6 hallazgos + prueba de 4 casos 4/4; CI pendiente) | Mezclar tras CI; si choca con claude/taller-bloque15 (mismo script), conservar la versión de tildes-urls y re-generar el informe |
 | 16 | Bloque 15 canónico = claude/taller-bloque15; claude-pc/bloque15 y claude-pc/bloque15-norexos4 solo referencia | Taller | CI en curso (5b7fd6d2) | Mezclar en nexora-cloud con CI verde |
-| 17 | Desglose del mes: CI rojo por prueba de integración mal registrada | Taller | EN CURSO | Moverla a vitest.integration.config.ts |
+| 17 | Desglose del mes (renglones no cobrados, banco, top 10, mes ant./sig.) + T33 IA de ventas | Norexos 7 (session_01CjMpH5C7JcGB28H1vGM9qp) | EN CURSO desde 06:14 UTC | Taller (Norexos 3) quedó BLOQUEADO desde 05:38 esperando permiso de «Send Message»; no puedo interrumpirlo (el clasificador lo negó). Cuando la dueña despierte: aprobar o descartar ese permiso en la sesión de Taller |
 | 13 | Verificar si alguna sesión alcanza a Claude PC | N2/N5/Taller | HACER | Pregunta enviada |
 
 ## Decisiones de la dueña pendientes (no frenan el trabajo)
