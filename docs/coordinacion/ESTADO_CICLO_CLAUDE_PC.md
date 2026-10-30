@@ -1450,3 +1450,10 @@ Límite: no se escribió en ningún chat en este ciclo.
   - N15 preguntas de caja (21f2a2a3) y N16 resumen de portada en inglés (b477d107): subidas con encabezado de revisión; citas N15 no comprobadas una a una (PARCIAL).
   - N17 titulares <50 (954169799604): dos titulares, medidos con wc -m (18 y 22). Los otros tres del listado del modelo se quitan.
 - ChatGPT (paso 5): la app se abre, pantalla vacía sin ventana. No se leyeron «ChatGPT nube» ni «ChatGPT PC»; no se escribió en ningún chat. Bloqueo que sigue.
+
+## Ciclo (29-oct): orden 77 (cola N18–N25)
+- Fetch: nexora-cloud en 10bfbb5f. Orden 77 nueva: cola repuesta con N18–N25 en `COLA_LOCAL_ACTIVA_NUEVA.json`; N14 rechazada. RESPUESTA_CLAUDE_PC_27OCT.md blob 7157b7d4. OBSIDIAN_LUMINA_PROGRESO.md ausente. producto-nexora en d6adc554.
+- Cola local: quité N14 y añadí N18 a N25 a `COLA_LOCAL_ACTIVA.json` (commit b26254f7). Quedan 25 tareas en el archivo. Sin ejecución nueva en este ciclo.
+- Forja 3 (`claude-pc/forja3-grupo-1`, head 203aa519): windows-installer y render-images en verde; verify en curso. Sin LISTA (orden 75: la combina Norexos 1).
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
