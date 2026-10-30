@@ -464,3 +464,15 @@ Regla: gasta lo mínimo (modelo Haiku, scripts primero, agentes pequeños en par
 4. FASE 2 VISUAL (producto-nexora, rama claude/visual-f2-04 a82fcf06, obrero Norexos 10, cierra hoy): corre `pnpm test` con Postgres local (en la nube falla por root) y reporta qué falla de verdad.
 5. DESPUÉS: tanda 4 del Revisor R1–R8 (orden 89) y N54–N57.
 Controles mínimos (solo estos): (a) antes de empujar, `git grep -n '^<<<<<<<'` y la prueba tests/docs-sistema-citas.test.ts; (b) una sola rama por tema; (c) antes de tomar algo, mirar «Dueño único por pieza» en PENDIENTES_NOCHE_30OCT.md y escribir «Tomo: …».
+
+## Orden 91 (N1, 30-oct 13:55 UTC) — CARGA GRANDE PARA CLAUDE PC (orden de la dueña: menos IA en la nube, más trabajo local barato)
+Cómo trabajar: tú coordinas y repartes a tus agentes locales; usa el modelo MÁS BARATO disponible (Haiku o el local) en TODOS ellos y el máximo de agentes en paralelo; scripts primero, el modelo solo redacta/decide en lotes de 5; si algún agente no está en el más barato, cámbialo. Ramas claude-pc/* (una por pieza); NO empujes a nexora-cloud ni despliegues; al terminar cada pieza escribe LISTA con SHA en docs/coordinacion/LISTA_CLAUDE_PC.md. Antes de empujar: `git grep -n '^<<<<<<<'` y tests/docs-sistema-citas.test.ts. Antes de tomar algo, mira «Dueño único por pieza» y escribe «Tomo: …». Prioridad en este orden:
+A. (orden 90, sigue vigente) Mantenimiento del CI, 3 pruebas intermitentes, T33 y Fase 2 visual.
+B. CITAS ROBUSTAS (causa de los rojos de hoy): scripts/citas-reanclar.mjs que, para cada cita archivo:línea de docs/sistema, guarde un fragmento de texto de esa línea y la mueva sola a la línea nueva cuando el código cambie; correrlo en la prueba y en un comando `pnpm docs:citas`. Con prueba. Así ningún merge rompe citas.
+C. SCRIPT PRE-EMPUJE: scripts/pre-empuje.mjs (marcadores de conflicto, citas, prettier/eslint de lo cambiado, typecheck) y documentarlo en base-sistema. Con prueba.
+D. SEGURIDAD-20, puntos NO COMPROBADOS (solo lectura, informe en docs/auditoria/SEGURIDAD_20_PUNTOS.md rama claude-pc/seguridad-pendientes): 5 y 6 (cada endpoint probado con usuario sin permiso, con Postgres local), 9 (auditoría por endpoint), 14 (depcheck), 15 (dist construido, archivos expuestos), 18 (buscar llaves en las demás ramas remotas sin imprimir valores).
+E. ZOD 4: rama claude-pc/zod4 con la migración completa según docs/auditoria/ZOD4_ESTUDIO.md (3 z.record con un argumento, re-export de @fitstore/shared, zod/v4 en invoice.ts), suite completa verde con Postgres local. No mezclar sin mi revisión.
+F. TANDA 4 del Revisor R1–R8 (orden 89) y N54–N57.
+G. PLAN DE LANZAMIENTO de la plataforma que se vende (borrador en docs/venta/PLAN_LANZAMIENTO.md): checklist de dominio norexos.ai (landing ya hecha, falta DNS y verificación), soporte, precios/planes como OPCIONES (no decidir), requisitos legales básicos, qué falta del producto. Marcar cada ítem con quién decide.
+H. Si te sobra capacidad: revisa los .md de docs/sistema contra el código (una cita por vez, por script) y reporta contradicciones.
+Reporta una sola vez por pieza terminada; no escribas informes largos.
