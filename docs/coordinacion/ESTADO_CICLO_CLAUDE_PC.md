@@ -1803,3 +1803,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI en verde (verify, windows-installer, render-images): pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a, lumina 287db57e. Sin cambio desde su LISTA.
 - Órdenes de código para claude-pc/*: ninguna nueva. Orden 84 es de cola del modelo: tomo N42–N49 en rama `claude-pc/cola-n42-49` (desde nexora-cloud dd9c02dd).
 - ChatGPT (paso 5): no abierto. Leer la app requiere permiso de control de aplicación de Marcos y el proyecto está pausado por cuota hasta el 2 de noviembre.
+
+## Cola N42–N49 (30-oct): rechazadas tras dos intentos
+- Fetch: nexora-cloud en e3e6951e para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI: pc23, a1, b01 y lumina en verde, con LISTA ya escrita. Sin cambios.
+- N42–N49: las ocho salidas no tienen tarjetas; en el primer intento salió solo el cierre, y en el segundo «NO ENCONTRADO» en todas. Los trozos sí tienen reglas condicionales («Si no hay caja abierta…», «Si el fondo es menor…», «Si el código no existe…»), así que el fallo es del modelo con este formato, no de la fuente. No se suben.
+- Propuesta para Norexos 1: que las tarjetas las extraiga un script (líneas que empiezan por «Si» con su cita) y el modelo solo redacte la frase; o un formato más corto con una regla por tarea.
