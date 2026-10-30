@@ -1792,3 +1792,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Fetch: nexora-cloud en 4c5fd08e para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde el último visto). OBSIDIAN_LUMINA_PROGRESO.md ausente.
 - CI: pc23-anulacion-fix (c1fe8c0c), a1-formula-utilidad (498df5ee), b01-ventas-caja-ciega (0500b03a) y lumina-motion-integracion (287db57e) en verde, con LISTA ya escrita. No hace falta nada más.
 - Órdenes nuevas: ninguna.
+
+## Consulta 30 min (30-oct): orden 84 y cola N42–N49 en curso
+- Fetch: nexora-cloud en e3e6951e para RESPUESTA_CLAUDE_PC_27OCT.md (orden 84: cola nueva N42–N49, tarjetas «Si pasa X → haz Y» con trozos por líneas). COLA_LOCAL_ACTIVA_NUEVA.json en 8bebf5a9. COLA_LOTE_LOCAL.md en c3ecfbb0 (sin cambio).
+- Cola: COLA_LOCAL_ACTIVA_ESTADO.json (runner viejo) sigue en «vacía»; la cola activa tiene N42–N49 pendientes. Lanzadas en segundo plano en claude-pc/cola-n-nueva, en orden: tarjetas-caja-1, caja-2, caja-3, cobros-2, cobros-3, cobros-4, mercancia-1 y mercancia-2. Se revisan al terminar. No se envió petición porque hay tareas.
+- Mi LISTA de d3179f56 ya mezclada (orden 84). Órdenes nuevas: solo la 84.
