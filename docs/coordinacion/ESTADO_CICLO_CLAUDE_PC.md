@@ -1820,3 +1820,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 - N42 falló dos veces («fetch failed»); N43 corrió en segundo plano y luego se retiró con la orden 85. Ninguna salida de N42–N49 se ha commiteado.
 - Orden 85 (reglas-si): ya existe `claude-pc/reglas-si` en origin (ec347663, «feat: scripts/reglas-si.mjs…») de otra sesión de esta laptop, con CI verify en curso. No la dupliqué. Hay además una worktree `reglas-si` con cambios sin commitear (vitest.config.ts y tests/reglas-si.test.ts): no la toqué. Pendiente de decidir quién la continúa.
 - ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos y el proyecto está pausado por cuota hasta el 2 de noviembre.
+
+## Consulta 30 min (30-oct): orden 85 en marcha; no se pide cola
+- Fetch: nexora-cloud en 56238ea4 para RESPUESTA_CLAUDE_PC_27OCT.md (orden 85: N42–N49 retiradas; extraer reglas «Si/Cuando/Solo/No se puede» con script y generar lotes de cinco reglas). COLA_LOTE_LOCAL.md en c3ecfbb0 (sin cambio).
+- Cola: el estado viejo sigue en «vacía»; N42–N49 están retiradas por la orden 85. Las tareas nuevas las genero yo desde reglas-si.json, así que no se envía petición a Norexos 1 (el trabajo ya está asignado).
+- En curso: worktree claude-pc/reglas-si desde origin/nexora-cloud (checkout en marcha). Prueba escrita antes del script.
