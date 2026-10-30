@@ -1,6 +1,6 @@
 # Rutas de la API y sus permisos
 
-Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 9 sin @Permit cerca del método (revisar).
+Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del método (revisar).
 
 | ruta | método | permiso | archivo:línea |
 |---|---|---|---|
@@ -10,14 +10,14 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 9 sin @Permit cerca del m�
 | `/api/alerts/:id` | PATCH | `alerts:write` | `apps/api/src/alerts.ts:876` |
 | `/api/alerts/evaluate` | POST | `alerts:write` | `apps/api/src/alerts.ts:937` |
 | `/api/audit-log` | GET | `*` | `apps/api/src/admin.ts:1321` |
-| `/api/auth/change-password` | POST | `(sin @Permit)` | `apps/api/src/auth.ts:512` |
-| `/api/auth/login` | POST | `(sin @Permit)` | `apps/api/src/auth.ts:421` |
+| `/api/auth/change-password` | POST | `pública por diseño (@Public)` | `apps/api/src/auth.ts:512` |
+| `/api/auth/login` | POST | `pública por diseño (@Public)` | `apps/api/src/auth.ts:421` |
 | `/api/auth/logout` | POST | `authenticated` | `apps/api/src/auth.ts:792` |
 | `/api/auth/me` | GET | `authenticated` | `apps/api/src/auth.ts:814` |
 | `/api/auth/password` | POST | `authenticated` | `apps/api/src/auth.ts:645` |
 | `/api/auth/pin` | POST | `authenticated` | `apps/api/src/auth.ts:824` |
-| `/api/auth/refresh` | POST | `(sin @Permit)` | `apps/api/src/auth.ts:755` |
-| `/api/backups/google/callback` | GET | `(sin @Permit)` | `apps/api/src/drive-backup.ts:1482` |
+| `/api/auth/refresh` | POST | `pública por diseño (@Public)` | `apps/api/src/auth.ts:755` |
+| `/api/backups/google/callback` | GET | `pública por diseño (@Public)` | `apps/api/src/drive-backup.ts:1482` |
 | `/api/backups/google/connect` | GET | `*` | `apps/api/src/drive-backup.ts:1465` |
 | `/api/backups/google/disconnect` | POST | `*` | `apps/api/src/drive-backup.ts:1474` |
 | `/api/backups/run` | POST | `*` | `apps/api/src/drive-backup.ts:1447` |
@@ -84,7 +84,7 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 9 sin @Permit cerca del m�
 | `/api/gv/payments/:id/void` | POST | `gv:write` | `apps/api/src/gv.ts:395` |
 | `/api/gv/reports` | GET | `gv:reports` | `apps/api/src/gv.ts:519` |
 | `/api/gv/transfers/pending` | GET | `gv:read` | `apps/api/src/gv.ts:660` |
-| `/api/health/live` | GET | `(sin @Permit)` | `apps/api/src/app.ts:54` |
+| `/api/health/live` | GET | `pública por diseño (@Public)` | `apps/api/src/app.ts:54` |
 | `/api/incentives` | GET | `sale:manage` | `apps/api/src/incentives.ts:743` |
 | `/api/incentives/close` | POST | `*` | `apps/api/src/incentives.ts:852` |
 | `/api/incentives/export.xlsx` | GET | `sale:manage` | `apps/api/src/incentives.ts:926` |
@@ -92,10 +92,10 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 9 sin @Permit cerca del m�
 | `/api/incentives/rates` | GET | `sale:manage` | `apps/api/src/incentives.ts:777` |
 | `/api/incentives/rates` | PUT | `*` | `apps/api/src/incentives.ts:800` |
 | `/api/incentives/receipt.pdf` | GET | `sale:manage` | `apps/api/src/incentives.ts:1021` |
-| `/api/inventory-import/apply` | POST | `(sin @Permit)` | `apps/api/src/inventory-import.ts:559` |
-| `/api/inventory-import/casa/apply` | POST | `(sin @Permit)` | `apps/api/src/inventory-import.ts:346` |
-| `/api/inventory-import/casa/preview` | POST | `(sin @Permit)` | `apps/api/src/inventory-import.ts:314` |
-| `/api/inventory-import/preview` | POST | `(sin @Permit)` | `apps/api/src/inventory-import.ts:497` |
+| `/api/inventory-import/apply` | POST | `INVENTORY_IMPORT_PERMISSION` | `apps/api/src/inventory-import.ts:559` |
+| `/api/inventory-import/casa/apply` | POST | `INVENTORY_IMPORT_PERMISSION` | `apps/api/src/inventory-import.ts:346` |
+| `/api/inventory-import/casa/preview` | POST | `INVENTORY_IMPORT_PERMISSION` | `apps/api/src/inventory-import.ts:314` |
+| `/api/inventory-import/preview` | POST | `INVENTORY_IMPORT_PERMISSION` | `apps/api/src/inventory-import.ts:497` |
 | `/api/inventory/adjustments` | POST | `inventory:write` | `apps/api/src/inventory.ts:637` |
 | `/api/inventory/counts` | GET | `inventory:write` | `apps/api/src/inventory.ts:1487` |
 | `/api/inventory/counts` | POST | `inventory:write` | `apps/api/src/inventory.ts:1495` |
