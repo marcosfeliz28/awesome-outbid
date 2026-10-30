@@ -1723,3 +1723,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23, a1, b01 y lumina en verde, sin LISTA nueva. claude-pc/tildes-urls (ef0c1b08): verify en progreso (lo mezcla Norexos 1 con CI verde).
 - Cola local: lanzadas en segundo plano en claude-pc/cola-n-nueva las 8 tareas que tomé: N18, N30, N25, N33, N22, N23, N29 y N31. Salidas a docs/diseno/borradores-local/. Las revisaré una por una y las subiré en un commit por tarea cuando estén revisadas.
 - ChatGPT (paso 5): no se abrió en este ciclo para no competir con la cola por la RAM y la GPU.
+
+## Consulta 30 min (30-oct): cola en marcha; sin órdenes nuevas
+- Fetch: nexora-cloud en 4c5fd08e para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde la orden 83).
+- Cola: COLA_LOCAL_ACTIVA_ESTADO.json (runner viejo) dice vacía; la cola activa es COLA_LOCAL_ACTIVA_NUEVA.json y tengo tomadas N18, N30, N25, N33, N22, N23, N29 y N31. N18 ya tiene salida (roles-simples, 615 caracteres, sin revisar). Las demás se están generando. No se envió petición a Norexos 1 porque hay tareas pendientes.
