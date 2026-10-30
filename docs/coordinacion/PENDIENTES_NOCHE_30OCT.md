@@ -26,3 +26,20 @@ Dominio de la portada y casilla de soporte; qué es «la Lacto»; 4 decisiones E
 
 ## Registro
 - 30-oct 02:32 UTC: API y web de la tienda desplegados (e47a557d) con herramientas de cobros.
+
+- 30-oct 09:17 UTC: desglose del mes DESPLEGADO en la tienda (API 09:12, web 09:17, commit 1e25909f; 3 CI verdes; 0 cajas abiertas leídas por Norexos 2 a las 07:58). T33 IA de ventas: Norexos 9 sobre la base de Norexos 8 (claude/ia-ventas-linea-obrero2). Pendiente de CI y mezcla: claude/desglose-css, claude/docs-sistema-actualizar, claude/docs-venta-acciones. Auditoría de seguridad T39 (claude/seguridad-20) en curso por Taller.
+
+## Dueño único por pieza (N1, 30-oct 09:50 UTC) — nadie toca lo que es de otro
+| Pieza | Dueño | Rama canónica | Otros |
+|---|---|---|---|
+| T33 IA de ventas | Norexos 9 | claude/ia-ventas-linea (ya fusiona la de Norexos 8) | claude/ia-ventas-linea-obrero2 CERRADA: Norexos 7 y 8 no la tocan |
+| Desglose CSS 390 px | Norexos 8 (terminado) | claude/desglose-css | desglose-mes y desglose-notas: solo referencia |
+| Fase 2 visual (producto) | Norexos 10 | claude/visual-f2-NN | nadie más |
+| T39 auditoría 20 puntos | Taller | claude/seguridad-20 | solo lee; no cambia código |
+| Dependencias vulnerables (body-parser, multer, qs) | Taller | claude/deps-seguridad | zod 4: tarea aparte, sin dueño todavía |
+| Docs de sistema y venta (T37, T38) | Taller | docs-sistema-actualizar, docs-venta-acciones | — |
+| Mercancía, cobros, cajas | Norexos 2 | — | solo él lee/aplica |
+| Cola local, tanda 4 R1–R8, N54–N57 | Claude PC | claude-pc/cola-n-nueva | el fork solo Forja 3/4 |
+| Control del cronograma | Norexos 5 | control/norexos | no ejecuta tareas de código |
+| Pedidos de la dueña a revisar | Consultor (Norexos 6) | — | solo reparte; no construye |
+Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; si no tiene dueño, escribir «Tomo: …» en PENDIENTES.

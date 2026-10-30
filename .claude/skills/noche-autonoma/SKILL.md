@@ -16,6 +16,9 @@ Puedes DESPLEGAR en la tienda en vivo (API primero, luego web; trigger_deploy; w
 Todo lo demás (producto-nexora: no se despliega nada del producto sin la dueña salvo la landing estática si hay CI verde) sigue las reglas de CLAUDE.md.
 Tope de la IA de ventas: 30 preguntas/día por usuario (dueña dijo «como tú me indicas»).
 
+## Seguridad (orden de la dueña, 30-oct)
+Al auditar cualquier diff antes de mezclar usa el skill `seguridad-20` (20 puntos) y anota qué puntos revisaste. Hallazgo alto = no se mezcla ni se despliega.
+
 ## Reglas de falla
 - Falla algo: diagnostica (systematic-debugging), arregla o delega el arreglo; si en 2 intentos no sale, DETÉN esa tarea, anótala en `docs/coordinacion/PENDIENTES_NOCHE_30OCT.md` con el error exacto y pasa a otra. Cada hora vuelve a las pendientes.
 - Nunca dejes una sesión sin trabajo (CLAUDE.md regla 7). Si una sesión pide trabajo, déjalo en el mismo ciclo.
