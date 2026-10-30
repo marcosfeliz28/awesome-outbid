@@ -1543,3 +1543,11 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Forja 3 (`claude-pc/forja3-grupo-1`, head 600eae7f): verify, windows-installer y render-images en verde. Sin LISTA suelta (orden 75). Informado a Norexos 1.
 - CI: pc23-anulacion-fix, a1-formula-utilidad y b01-ventas-caja-ciega en verde, con LISTA. lumina-motion-integracion en verde.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo (30-oct): ejecución de N34 (orden 78)
+- Fetch: nexora-cloud en e47a557d. RESPUESTA_CLAUDE_PC_27OCT.md blob 863ba804 (sin orden nueva). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Intento 1 de N34 desde `cola2-entrega`: falló (no hay `docs/sistema` en esa rama). Intento 2 en `claude-pc/cola-n34` (worktree nuevo, desde nexora-cloud): falló porque el runner no estaba en esa rama. Intento 3: runner copiado sin commitear a `cola-n34` con `--cola` absoluto; en marcha al cerrar el ciclo. Pendiente: validar la salida antes de commitear.
+- Los scripts `scripts/cola-local` y `scripts/ollama-local` no están en nexora-cloud; viven en mi rama de trabajo. Lo anoto: el runner no tiene versión en origen.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
+- Forja 3 (`claude-pc/forja3-grupo-1`, 600eae7f): verde; sin LISTA (orden 75).
+- ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
