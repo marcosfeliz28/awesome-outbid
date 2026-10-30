@@ -12,6 +12,7 @@ export default defineConfig({
       "tests/docs-sistema-citas.test.ts",
       "tests/tildes-nuevas.test.ts",
       "tests/courier-utils.test.ts",
+      "tests/esqueleto-tabla.test.ts",
       "tests/courier-migration-postgres.test.ts",
       "tests/pago-dolares-migration-postgres.test.ts",
       "tests/customer-display.test.ts",
