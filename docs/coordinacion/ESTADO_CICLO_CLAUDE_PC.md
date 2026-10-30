@@ -1759,3 +1759,8 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Consulta 30 min (30-oct): cola en curso, sin órdenes nuevas
 - Fetch: nexora-cloud en 4c5fd08e para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio).
 - Cola: el estado viejo sigue en «vacía», pero la cola activa tiene reintentos en curso. Listas: guion-video (1729 caracteres) y correo-bienvenida (888). Pendientes: landing-jerga, pantallas-ayuda y glosario-gv. No se envió petición porque hay tareas en curso.
+
+## Reintentos revisados (30-oct)
+- Aceptadas (claude-pc/cola-n-nueva, d3179f56): N22 guion-video (ba9fbfee, sin NCF/e-CF/DGII) y N30 pantallas-ayuda (d3179f56, solo etiquetas con [FALTA DATO]).
+- Rechazadas: N23 correo-bienvenida (promete NCF), N29 landing-jerga (mantiene la promesa NCF), N31 glosario-gv (términos «Sesión de mercancía» y «Cuentas» que no están en MODULO-GV.md). No se suben.
+- CI de d3179f56: pendiente. LISTA cuando verify, windows-installer y render-images estén en verde.
