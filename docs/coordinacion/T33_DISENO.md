@@ -8,7 +8,7 @@ Rama `claude/ia-ventas-linea` (Norexos 9). Solo lectura. No se despliega desde a
 4. **Permisos en el servidor, antes de la IA**: sin `reports:read` y sin ser cajera → 403. Gerente/dueña (`reports:read`) → herramientas de tienda. Costo, ganancia y margen solo con `profit:read` (campos quitados por `safe()` + se quitan las herramientas que los piden).
 5. **Cajera (`seller`)**: solo `mis_ventas` (reutiliza `mySales`: sus ventas, hoy/semana, sin costos, caja ciega hasta cerrar), sin totales de tienda, sin datos de clientes.
 6. **Solo lectura**: no hay herramienta que escriba; el prompt manda decir «no puedo cambiar nada» si piden cambiar precio/stock/venta.
-7. **Límites**: 30 preguntas/día/usuario (día de negocio America/Santo_Domingo, contado en la tabla); al llegar al tope avisa y NO llama a la IA. `max_tokens` 800, timeout 30 s, máx. 4 vueltas de herramientas.
+7. **Límites**: 30 preguntas/día/usuario (día de negocio America/Santo_Domingo, contado en la tabla); al llegar al tope avisa y NO llama a la IA. `max_tokens` 600, timeout 20 s, máx. 4 vueltas de herramientas.
 8. **Modelo**: `ASSISTANT_MODEL` (por defecto `claude-haiku-5-5`, distinto de `ANTHROPIC_MODEL` de facturas). Cliente inyectable para pruebas (mock).
 9. **Tabla nueva** `AssistantQuery` (migración `202611010001_assistant_query`, solo `CREATE TABLE IF NOT EXISTS`): id, userId, branchId, question (≤500), model, inputTokens, outputTokens, costUsd, status (`ok|error|limit`), createdAt. Índice (userId, createdAt).
 10. **UI**: entrada «Preguntar a Norexos» en el menú solo si status.enabled y el usuario puede usarlo; panel simple con caja de texto y respuesta; sin tocar estilos globales.

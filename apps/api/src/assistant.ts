@@ -21,8 +21,8 @@ import { ReportsController, mySales } from "./reports";
 // «Preguntar a Norexos» (T33): la IA solo llama funciones de lectura con
 // parámetros; las cifras salen de dashboardBreakdown / mySales, no del modelo.
 export const DAILY_LIMIT = 30;
-const MAX_TOKENS = 800;
-const TIMEOUT_MS = 30_000;
+const MAX_TOKENS = 600;
+const TIMEOUT_MS = 20_000;
 const MAX_ROUNDS = 4;
 const DEFAULT_MODEL = "claude-haiku-5-5"; // económico; no es el de las facturas
 const PRICE = (env: NodeJS.ProcessEnv) => ({
