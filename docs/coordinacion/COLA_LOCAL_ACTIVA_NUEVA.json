@@ -242,84 +242,84 @@
       "salida": "docs/diseno/borradores-local/glosario-en.md"
     },
     {
-      "id": "N42-caja-1",
+      "id": "N50-glosario-cajera",
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 1 a 60 del archivo.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; si falta un dato escribe NO ENCONTRADO. No inventes. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto es Norexos), promesas de seguridad o ganancias. NO cuentes caracteres ni palabras: los mide un script. Una fila por cada elemento del trozo, en el mismo orden, sin agrupar ni omitir. Salida: tabla Markdown con columnas indicadas; no uses bloques de código.\nColumnas: Término (copiado exacto) | Qué significa para la cajera (máximo 15 palabras). Trozo: SOLO las líneas 1 a 60 del archivo.",
       "entradas": [
-        "docs/sistema/FLUJO_CAJA_POS.md"
+        "docs/sistema/GLOSARIO.md"
       ],
-      "salida": "docs/diseno/borradores-local/tarjetas-caja-1.md"
+      "salida": "docs/diseno/borradores-local/glosario-cajera-1.md"
     },
     {
-      "id": "N43-caja-2",
+      "id": "N51-glosario-cajera-2",
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 61 a 120 del archivo.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; si falta un dato escribe NO ENCONTRADO. No inventes. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto es Norexos), promesas de seguridad o ganancias. NO cuentes caracteres ni palabras: los mide un script. Una fila por cada elemento del trozo, en el mismo orden, sin agrupar ni omitir. Salida: tabla Markdown con columnas indicadas; no uses bloques de código.\nColumnas: Término (copiado exacto) | Qué significa para la cajera (máximo 15 palabras). Trozo: SOLO las líneas 61 a 107 del archivo.",
       "entradas": [
-        "docs/sistema/FLUJO_CAJA_POS.md"
+        "docs/sistema/GLOSARIO.md"
       ],
-      "salida": "docs/diseno/borradores-local/tarjetas-caja-2.md"
+      "salida": "docs/diseno/borradores-local/glosario-cajera-2.md"
     },
     {
-      "id": "N44-caja-3",
+      "id": "N52-pantallas-1",
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 121 a 171 del archivo.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; si falta un dato escribe NO ENCONTRADO. No inventes. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto es Norexos), promesas de seguridad o ganancias. NO cuentes caracteres ni palabras: los mide un script. Una fila por cada elemento del trozo, en el mismo orden, sin agrupar ni omitir. Salida: tabla Markdown con columnas indicadas; no uses bloques de código.\nColumnas: Pantalla (etiqueta exacta) | Para qué sirve (una frase) | Cita (archivo:línea del trozo). Trozo: SOLO las líneas 1 a 50 del archivo.",
       "entradas": [
-        "docs/sistema/FLUJO_CAJA_POS.md"
+        "docs/sistema/PANTALLAS.md"
       ],
-      "salida": "docs/diseno/borradores-local/tarjetas-caja-3.md"
+      "salida": "docs/diseno/borradores-local/pantallas-uso-1.md"
     },
     {
-      "id": "N45-cobros-2",
+      "id": "N53-pantallas-2",
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 36 a 70 del archivo.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; si falta un dato escribe NO ENCONTRADO. No inventes. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto es Norexos), promesas de seguridad o ganancias. NO cuentes caracteres ni palabras: los mide un script. Una fila por cada elemento del trozo, en el mismo orden, sin agrupar ni omitir. Salida: tabla Markdown con columnas indicadas; no uses bloques de código.\nColumnas: Pantalla (etiqueta exacta) | Para qué sirve (una frase) | Cita (archivo:línea del trozo). Trozo: SOLO las líneas 51 a 100 del archivo.",
       "entradas": [
-        "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md"
+        "docs/sistema/PANTALLAS.md"
       ],
-      "salida": "docs/diseno/borradores-local/tarjetas-cobros-2.md"
+      "salida": "docs/diseno/borradores-local/pantallas-uso-2.md"
     },
     {
-      "id": "N46-cobros-3",
+      "id": "N54-pantallas-3",
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 71 a 105 del archivo.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; si falta un dato escribe NO ENCONTRADO. No inventes. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto es Norexos), promesas de seguridad o ganancias. NO cuentes caracteres ni palabras: los mide un script. Una fila por cada elemento del trozo, en el mismo orden, sin agrupar ni omitir. Salida: tabla Markdown con columnas indicadas; no uses bloques de código.\nColumnas: Pantalla (etiqueta exacta) | Para qué sirve (una frase) | Cita (archivo:línea del trozo). Trozo: SOLO las líneas 101 a 151 del archivo.",
       "entradas": [
-        "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md"
+        "docs/sistema/PANTALLAS.md"
       ],
-      "salida": "docs/diseno/borradores-local/tarjetas-cobros-3.md"
+      "salida": "docs/diseno/borradores-local/pantallas-uso-3.md"
     },
     {
-      "id": "N47-cobros-4",
+      "id": "N55-roles-1",
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 106 a 137 del archivo.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; si falta un dato escribe NO ENCONTRADO. No inventes. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto es Norexos), promesas de seguridad o ganancias. NO cuentes caracteres ni palabras: los mide un script. Una fila por cada elemento del trozo, en el mismo orden, sin agrupar ni omitir. Salida: tabla Markdown con columnas indicadas; no uses bloques de código.\nColumnas: Rol | Qué puede hacer (una frase) | Qué NO puede hacer (una frase, o NO ENCONTRADO). Trozo: SOLO las líneas 1 a 60 del archivo.",
       "entradas": [
-        "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md"
+        "docs/sistema/ROLES_Y_PERMISOS.md"
       ],
-      "salida": "docs/diseno/borradores-local/tarjetas-cobros-4.md"
+      "salida": "docs/diseno/borradores-local/roles-resumen-1.md"
     },
     {
-      "id": "N48-mercancia-1",
+      "id": "N56-roles-2",
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 1 a 50 del archivo.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; si falta un dato escribe NO ENCONTRADO. No inventes. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto es Norexos), promesas de seguridad o ganancias. NO cuentes caracteres ni palabras: los mide un script. Una fila por cada elemento del trozo, en el mismo orden, sin agrupar ni omitir. Salida: tabla Markdown con columnas indicadas; no uses bloques de código.\nColumnas: Rol | Qué puede hacer (una frase) | Qué NO puede hacer (una frase, o NO ENCONTRADO). Trozo: SOLO las líneas 61 a 123 del archivo.",
       "entradas": [
-        "docs/sistema/FLUJO_MERCANCIA.md"
+        "docs/sistema/ROLES_Y_PERMISOS.md"
       ],
-      "salida": "docs/diseno/borradores-local/tarjetas-mercancia-1.md"
+      "salida": "docs/diseno/borradores-local/roles-resumen-2.md"
     },
     {
-      "id": "N49-mercancia-2",
+      "id": "N57-gv-1",
       "modelo": "qwen-optimizado",
       "maxTokens": 2000,
-      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; lo que no esté escribe NO ENCONTRADO. No inventes funciones, cifras ni pasos. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora POS' (el producto es Norexos), promesas de seguridad o ganancias. Conserva las citas archivo:línea. Formato: tarjetas «Si pasa X → haz Y» (cita al final de cada tarjeta). NO escribas conteos de caracteres o palabras: los mide un script. Aceptación: cada tarjeta con al menos una cita ':NNN' (grep -c ':[0-9]' >= número de tarjetas).\nTrozo: lee SOLO las líneas 51 a 100 del archivo.",
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto. Usa SOLO lo que está en el trozo indicado; si falta un dato escribe NO ENCONTRADO. No inventes. Prohibido: e-CF, DGII, NCF como promesa, 'Nexora' (el producto es Norexos), promesas de seguridad o ganancias. NO cuentes caracteres ni palabras: los mide un script. Una fila por cada elemento del trozo, en el mismo orden, sin agrupar ni omitir. Salida: tabla Markdown con columnas indicadas; no uses bloques de código.\nColumnas: Elemento de GV (copiado exacto) | Qué hace (una frase) | Cita. Trozo: SOLO las líneas 1 a 50 del archivo.",
       "entradas": [
-        "docs/sistema/FLUJO_MERCANCIA.md"
+        "docs/sistema/GV.md"
       ],
-      "salida": "docs/diseno/borradores-local/tarjetas-mercancia-2.md"
+      "salida": "docs/diseno/borradores-local/gv-elementos-1.md"
     }
   ]
 }
