@@ -1749,3 +1749,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - Sin tarea nueva. La ejecución duplicada de N36 sigue corriendo; decide Marcos si la paras.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Consulta 30 min (30-oct): sin órdenes nuevas; reintento de 5 rechazadas
+- Fetch: nexora-cloud en 4c5fd08e para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio). COLA_LOTE_LOCAL.md en c3ecfbb0. OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- CI: pc23, a1, b01 y lumina en verde. claude-pc/cola-n-nueva (f2cae557): verify en progreso.
+- Cola: se reintenta una vez cada tarea rechazada (N22, N23, N29, N30, N31), con instrucciones más simples y sin vallas. Corriendo en segundo plano; se revisan al terminar.
+- No se envió petición a Norexos 1 ni a Nexora 4: hay tareas en curso.
