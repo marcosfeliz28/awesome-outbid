@@ -476,3 +476,10 @@ F. TANDA 4 del Revisor R1–R8 (orden 89) y N54–N57.
 G. PLAN DE LANZAMIENTO de la plataforma que se vende (borrador en docs/venta/PLAN_LANZAMIENTO.md): checklist de dominio norexos.ai (landing ya hecha, falta DNS y verificación), soporte, precios/planes como OPCIONES (no decidir), requisitos legales básicos, qué falta del producto. Marcar cada ítem con quién decide.
 H. Si te sobra capacidad: revisa los .md de docs/sistema contra el código (una cita por vez, por script) y reporta contradicciones.
 Reporta una sola vez por pieza terminada; no escribas informes largos.
+
+## Orden 92 (N1, 30-oct 14:15 UTC) — Dejar disponibles 2 herramientas en la laptop (orden de la dueña: «que estén disponibles»)
+Contexto: reel con 4 «enchufes». Decisión en .claude/skills/herramientas-evaluadas/SKILL.md. Disponible ≠ en uso: no usarlas sin orden de la dueña.
+1. Chrome DevTools MCP (oficial de Google, paquete `chrome-devtools-mcp`): instálalo como servidor MCP de usuario en la laptop (`claude mcp add` con su paquete npm oficial, versión fijada y probada). Úsalo solo para depurar pantallas a 390 px, consola y rendimiento, en lectura. Prueba: abre http://localhost de la app local y captura consola.
+2. Oh My Claude Code (repo de terceros, orquestación multiagente): instálalo SOLO si lo haces desde el repositorio original verificado (autor, estrellas, última actualización, revisa los hooks y scripts que ejecuta antes de instalar), y déjalo DESACTIVADO por defecto. Si algún hook toca archivos fuera de tu carpeta de trabajo o hace llamadas de red no explicadas, NO lo instales y repórtalo. No lo actives sin orden.
+3. Supabase y Vercel son conectores de claude.ai: los conecta la dueña; tú no haces nada.
+Escribe LISTA con lo que quedó instalado, la versión y cómo se activa/desactiva cada una.
