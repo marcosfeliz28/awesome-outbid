@@ -2142,3 +2142,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (30-oct 18:50 UTC) — aclaración a la orden 93 (nexora-cloud 6f3f58d8)
 - Aclaración hecha en claude-pc/gv-tarjeta 8b3b46d7 (tarjeta GV → área GV, columna `destination` aditiva, «Terminal GV» fijo; prueba falló antes y pasa, GV 16/16, typecheck ok); 3 CI en verde, LISTA escrita. pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a y lumina 287db57e siguen verdes. Pre-empuje solo marca prettier en DATOS_Y_MODELOS.md (ya así antes); no desplegar sin revisión.
 - Último hash visto de nexora-cloud: 6f3f58d8.
+
+## Ciclo nube (30-oct 21:40 UTC) — orden 94 nueva (nexora-cloud b193c25c)
+- Orden 94.1 hecha en claude-pc/t33-rebase 182e2278 (fusionada con nexora-cloud 2f99081d sin conflictos; migraciones 202611010001/2 aditivas, sin guardar texto de consultas): caja-borrador N2 reproducido (falló 1 de 8), arreglado esperando el borrador real tras el bloqueo, 25/25 verdes con Node 24 y Postgres local. CI de 182e2278 en cola al cerrar: sin LISTA todavía. Pendientes: otras 3 pruebas intermitentes (cuatro-cajas:185, privacidad-sesion:155, desglose-mes-movil:11), una rama por prueba. No desplegar.
+- CI sin cambio: pc23, a1, b01, lumina verdes. Último hash visto de nexora-cloud: b193c25c.
