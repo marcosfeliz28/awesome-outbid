@@ -105,6 +105,8 @@ export const transferDetails = (
       message: "es obligatoria en una transferencia",
     });
 };
+export const GV_TERMINAL = "Terminal GV";
+export const GV_CARD_DESTINATION = "gv";
 // Tarjeta: sin banco; la referencia (aprobación, lote o voucher) identifica el
 // cobro en la conciliación.
 export const cardDetails = (
@@ -243,11 +245,13 @@ export async function createGvPayment(
     bad(`${o.label} está ${owner.status}: no acepta pagos.`);
   if (data.method === "transferencia")
     assertGvBank(await gvBankOptions(tx, actor.branchId), data.bank);
-  else if (data.method === "tarjeta" && data.bank) {
-    // El «banco» de una tarjeta es la terminal: con lista, de la lista.
+  else if (data.method === "tarjeta") {
+    // El «banco» de una tarjeta es la terminal: con lista, de la lista; sin
+    // lista y sin terminal, el texto fijo «Terminal GV».
     const { terminals } = await gvBankOptions(tx, actor.branchId);
-    if (terminals.length && !terminals.includes(data.bank))
+    if (data.bank && terminals.length && !terminals.includes(data.bank))
       bad("Elige la terminal de la lista.");
+    data = { ...data, bank: data.bank || GV_TERMINAL };
   }
   const room = d(owner[o.total]).minus(committed(owner.payments));
   if (d(data.amount).gt(room))
@@ -256,9 +260,12 @@ export async function createGvPayment(
     );
   // La transferencia queda por verificar; efectivo y tarjeta, verificados.
   const verified = data.method !== "transferencia";
+  // El dinero de tarjeta se registra en el área GV, sin elegir cuenta de banco.
+  const destination = data.method === "tarjeta" ? GV_CARD_DESTINATION : null;
   const row = await tx.gvPayment.create({
     data: {
       ...data,
+      destination,
       date: dateOnly(data.date),
       operationId,
       [o.field]: ownerId,

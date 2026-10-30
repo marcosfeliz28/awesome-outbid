@@ -233,6 +233,7 @@ describe("GV · pago con tarjeta sin cuenta bancaria", () => {
     expect(paid.method).toBe("tarjeta");
     expect(paid.verified).toBe(true);
     expect(paid.bank).toBe("Terminal GV");
+    expect(paid.destination).toBe("gv");
     const sinBanco = await ok(
       "/gv/payments",
       gv,
@@ -242,7 +243,10 @@ describe("GV · pago con tarjeta sin cuenta bancaria", () => {
         reference: "LOTE001-APR8842",
       }),
     );
-    expect(sinBanco.bank).toBeNull();
+    // Sin terminal en Configuración: «Terminal GV» fijo; el destino es el
+    // área GV, nunca una cuenta de banco (aclaración de la orden 93).
+    expect(sinBanco.bank).toBe("Terminal GV");
+    expect(sinBanco.destination).toBe("gv");
     expect(sinBanco.verified).toBe(true);
     const transferSinBanco = await request(
       "/gv/payments",
@@ -250,6 +254,12 @@ describe("GV · pago con tarjeta sin cuenta bancaria", () => {
       payBody(e.id, { amount: 100, method: "transferencia", reference: "T-1" }),
     );
     expect(transferSinBanco.status).toBe(400);
+    const efectivo = await ok(
+      "/gv/payments",
+      gv,
+      payBody(e.id, { amount: 100, method: "efectivo" }),
+    );
+    expect(efectivo.destination).toBeNull();
   });
 });
 

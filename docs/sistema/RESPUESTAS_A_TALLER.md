@@ -75,7 +75,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 **Sí, las tres.** Columnas de la tabla de inscripciones de un curso, en orden: `CLIENTA`, `TELÉFONO`, **`PRECIO`**, **`PAGADO`**, **`PENDIENTE`**, `ESTADO`, `ASISTIÓ`, `SET` y una columna de acciones («Pago», «Editar») (`apps/web/src/Gv.tsx:385-393`; datos `:404-411`).
 
-- PRECIO = precio acordado de esa inscripción. PAGADO = solo lo **verificado** (si hay transferencias sin verificar se agrega «(RD$ X por verificar)»). PENDIENTE = precio − pagado, nunca negativo (`apps/api/src/gv-money.ts:156-178`).
+- PRECIO = precio acordado de esa inscripción. PAGADO = solo lo **verificado** (si hay transferencias sin verificar se agrega «(RD$ X por verificar)»). PENDIENTE = precio − pagado, nunca negativo (`apps/api/src/gv-money.ts:158-180`).
 - Las **citas** no son tabla: son tarjetas con «Total … · Pagado … · Pendiente …» (`apps/web/src/GvCitas.tsx:153-160`).
 
 ---
