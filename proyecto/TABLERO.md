@@ -4,7 +4,7 @@
 | ID | Tarea | Etapa | Responsable | Estado | Bloqueo / siguiente paso |
 |---|---|---|---|---|---|
 | T01 | Decisiones D1, D2, D5, D6, D7 (vía Norexos 1) | E0 | Dueña | pendiente | Plazo 30-oct. D5 resuelto (tickets después del cambio de nombre) |
-| T02 | Registrar norexos.ai y norexos.com | E0 | Dueña | pendiente | Con verificación en dos pasos. Necesario para la landing (E5) |
+| T02 | Dominio: norexos.ai (elegido por la dueña, 30-oct) | E0 | Dueña | en curso | La dueña indica que el dominio ya está a su nombre; falta confirmar el registro y la verificación en dos pasos. norexos.com queda fuera (no se registra por ahora). Necesario para la landing (E5) |
 | T03 | Abogado de marca | — | — | fuera de v1 | Retirado del alcance v1 (29-oct). Norexos 1 lo plantea a la dueña |
 | T04 | GV «Cambiar fecha/curso» | E0 | Taller → Norexos 1 | en curso | Rama `claude/taller-gv` 280f2e0f; falta D1, 3 CI y «cajas cerradas» |
 | T05 | Diagnóstico completo + qué falta para vender | E0 | Taller | en curso | Documento en `claude/taller-estado` 796d573c |
@@ -20,7 +20,7 @@
 | T15 | Piloto cerrado | E7 | Dueña | pendiente | 15–21 nov. Elegir 1–2 clientes (D6) |
 | T16 | Sesión de Norexos 1 (despliegue) | E0 | Norexos 1 | hecho | Norexos 1 confirma que su cuota se renovó hoy a las 7:00 (RD); no vence. Riesgo retirado |
 | T17 | Permiso pendiente en la sesión del Revisor (Norexos 4) | E0 | Dueña | bloqueado | Ya no bloquea instalaciones. Sí bloquea la verificación de `docs/coordinacion/REPARTO_B9.md` y `DICTAMEN_PC.md` (T24). Espera permiso de la dueña |
-| T18 | Landing y dominio norexos.ai | E5 | Taller (textos, en curso) + dueña (dominio) | en curso | Textos de la landing asignados al Taller (sin e-CF, DGII ni «Nexora POS»; traducción EN; animaciones). Traducción EN mezclada en `producto-nexora` 50563e46 (02:48 UTC). Depende de T02 (dominio, dueña), 8–12 nov |
+| T18 | Landing y dominio norexos.ai | E5 | Taller (textos, en curso) + dueña (dominio) | en curso | Textos de la landing asignados al Taller (sin e-CF, DGII ni «Nexora POS»; traducción EN; animaciones). Traducción EN mezclada en `producto-nexora` 50563e46 (02:48 UTC). Depende de T02 (dominio norexos.ai ya elegido por la dueña; falta confirmar registro), 8–12 nov |
 | T26 | Herramientas admin de corrección de cobros en cajas cerradas (`claude/ajustes-cobros` 54d8ca1c, 00:09 UTC): corregir método de un cobro, des-verificar transferencia, mover pago de caja | E1 | Norexos 1 | bloqueado | Dinero. Falta CI verde y OK expreso de la dueña para tocar la tienda. Norexos 5 no la aprueba |
 | T27 | Relevo nocturno a Claude PC, fork y Revisor (`NOCHE_CLAUDE_PC_30OCT.md`, `COLA_LOCAL_ACTIVA_NUEVA.json`) | E1–E4 | Norexos 5 (intento) | en curso | Los tres rechazaron mensajes de sesiones en la nube. La dueña pegó el relevo en Claude PC. Desde 04:00 UTC Claude PC muestra actividad (`claude-pc/cola-n-nueva` f2cae557). No confirmo que lea el relevo; Norexos 5 no pidió la autorización de confianza |
 | T19 | Lanzamiento controlado | E8 | Dueña + Norexos 1 | pendiente | 24-nov (mejor caso 18-nov). Checklist firmada |
