@@ -1921,3 +1921,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Filas por lote de 5 para el modelo: 0 medidas (no he corrido el modelo con el esqueleto todavía).
 - CI de db1acedc y 2e080858: pendiente. Sin LISTA hasta que los tres estén en verde.
 - ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos; proyecto pausado por cuota hasta el 2 de noviembre.
+
+## Orden 88 (30-oct): método por esqueleto para glosarios
+- Fetch: nexora-cloud en 6524f318 para RESPUESTA_CLAUDE_PC_27OCT.md (orden 88: N50 aceptada; N51 y resto con el método nuevo). OBSIDIAN_LUMINA_PROGRESO.md ausente.
+- Hecho: scripts/esqueleto-tabla.mjs con su prueba (commit 7a54cede en claude-pc/cola-n-nueva; prueba falla antes, pasa después).
+- En curso: 28 términos de GLOSARIO 1–60 y 24 de 61–107 en lotes de cinco (11 lotes) con qwen-optimizado. Salidas en borrador, fuera del repo, para ensamblar con el esqueleto y verificar 5/5.
+- N50 (fb23ac74): pendiente de CI verify para LISTA.
