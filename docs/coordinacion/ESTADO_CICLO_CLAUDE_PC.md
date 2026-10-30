@@ -1560,3 +1560,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Siguiente en la cola: N35 (glosario simple). La cola no se para por N34; la marco como pendiente de revisión.
 - CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde, con LISTA.
 - ChatGPT: pausado por cuota hasta el 2 de noviembre; no se abrió.
+
+## Ciclo 15 y 30 min (30-oct): cola N34-N41 en curso
+- Fetch: nexora-cloud en 863ba804 para RESPUESTA_CLAUDE_PC_27OCT.md (orden 78, ya aplicada en claude-pc/cola-n-nueva). OBSIDIAN_LUMINA_PROGRESO.md ausente. COLA_LOTE_LOCAL.md en c3ecfbb0 (sin cambio). COLA_LOCAL_ACTIVA_NUEVA.json en 313bb86e.
+- CI: pc23-anulacion-fix, a1-formula-utilidad, b01-ventas-caja-ciega y lumina-motion-integracion en verde. Sin LISTA nueva.
+- Cola N34-N41 (claude-pc/cola-n-nueva, sin subir): N34 y N35 y N36 revisadas (citas verificadas contra el documento completo); N37 rechazada (salida sin contenido, 297 caracteres); N38 a N41 en curso.
+- ChatGPT (paso 5): sin cambio en este ciclo; no se abrió para no interferir con la ejecución de la cola en Ollama.
