@@ -1932,3 +1932,10 @@ Límite: no se escribió en ningún chat en este ciclo.
 - Fetch: nexora-cloud en 6524f318 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde la orden 88).
 - Cola: el estado viejo dice «vacía», pero las tareas de la orden 88 (once lotes de glosario) siguen en curso: dos de once listos. No se envía petición.
 - CI: N50 (fb23ac74) con verify en progreso; windows-installer y render-images en verde. Sin LISTA todavía.
+
+## Orden 88: glosarios por esqueleto, resultado
+- Filas por lote: 5 frases por lote con el modelo; el script une esqueleto y frases y verifica.
+- GLOSARIO 1–60: 28 de 28 filas con frase; ninguna frase menciona DGII, e-CF, NCF ni Nexora (bace3282 en claude-pc/cola-n-nueva).
+- GLOSARIO 61–107: 24 filas; 21 con frase limpia y 3 marcadas [REVISAR A MANO] porque el término es de marca o fiscal (NCF / e-CF, Norexos / Nexora POS, Nexora-cloud / producto-nexora). Commit de la tabla en la misma rama.
+- Método: el modelo cumple con 5 filas por tarea; el esqueleto y la verificación por script hacen el trabajo mecánico.
+- N50 (fb23ac74): verify en progreso.
