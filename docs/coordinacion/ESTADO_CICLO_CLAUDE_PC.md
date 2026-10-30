@@ -1965,3 +1965,9 @@ Límite: no se escribió en ningún chat en este ciclo.
 - LISTA escrita para 2e080858 (N50 + esqueleto por script con prueba). Pendiente de Norexos 1 la mezcla.
 - Órdenes nuevas para claude-pc/*: ninguna.
 - ChatGPT (paso 5): no abierto. Requiere permiso de control de aplicación de Marcos; proyecto pausado por cuota hasta el 2 de noviembre.
+
+## Consulta 30 min (30-oct): cola con N52–N57 pendientes; sin órdenes nuevas
+- Fetch: nexora-cloud en 6524f318 para RESPUESTA_CLAUDE_PC_27OCT.md (sin cambio desde la orden 88). COLA_LOTE_LOCAL.md ausente (c3ecfbb0 sin cambio). COLA_LOCAL_ACTIVA_NUEVA.json cambió (70588346): tiene N18–N41 y N50–N57; sin tareas nuevas.
+- Pendientes: N52–N57 (PANTALLAS, ROLES y GV) con el método de la orden 88. PANTALLAS.md es una tabla con etiquetas en negrita y cita `archivo:línea`, así que hace falta una variante del esqueleto para tablas; no se ha ejecutado todavía. Próximo paso: esa variante, con prueba antes del script.
+- Como hay tareas pendientes, no se envía petición a Norexos 1 ni a Nexora 4.
+- Git: la rama local coincide con origin/claude-pc/cola2-26oct. No se ha hecho pull para evitar mezclar con producto-nexora.
