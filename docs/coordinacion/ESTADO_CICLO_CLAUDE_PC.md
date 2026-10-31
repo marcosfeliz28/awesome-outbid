@@ -2183,3 +2183,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (31-oct 17:15 UTC) — orden 102 (nexora-cloud 7f6b9df6)
 - Orden 102 (F2-04 NO entra; seguir la cola): pieza 1 hecha en claude-pc/anim-entrada 29818b43 (animación y pista en la pantalla de Entrada, prueba falló 6/7 antes y pasa), 3 CI en verde y LISTA escrita. Node 24 sí se obtiene con `npm i node@24 --prefix /tmp/n24` y pnpm 11.19 con npx: hay entorno local (typecheck/lint/build); las suites con Postgres no corren aquí. Sin captura/clip. CI sin cambio: pc23, a1, b01 y lumina verdes.
 - Siguiente: pieza 2 (Tablero). Último hash visto de nexora-cloud: 7f6b9df6.
+
+## Ciclo nube (31-oct 21:10 UTC) — orden 103 (nexora-cloud 1810a79a)
+- Orden 103 (incentivo GV fijo por inscripción) ya tiene claude-pc/gv-incentivos 21496264 hecha por otra sesión (Automaquillaje 50, Perfeccionamiento 500, cálculo al leer, GET /gv/incentives); no la dupliqué. Su verify seguía en curso (windows-installer y render-images verdes), LISTA pendiente. Faltan: tipo «Maquilladora profesional» (RD$ 1,000) como DUDA, cierre mensual con recibo y tarifas configurables; anotar CONFIRMAR CON LA DUEÑA: cuándo se devenga.
+- CI sin cambio: pc23, a1, b01, lumina y anim-entrada verdes. Último hash visto de nexora-cloud: 1810a79a.
