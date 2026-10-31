@@ -562,3 +562,9 @@ Rama `claude-pc/gv-incentivos`, pruebas primero (falla antes, pasa después), so
 3. Devengo: propuesta de N2 (NO confirmada por la dueña): solo con inscripción pagada completa y transferencias verificadas. Impleméntalo detrás de una constante clara y fácil de cambiar, y anota en LISTA «CONFIRMAR CON LA DUEÑA: cuándo se devenga». Anular un pago verificado quita el devengo.
 4. Permisos: el incentivo lo ve quien ya ve incentivos; la vendedora no ve costos. Actualiza docs/sistema (GV.md, citas con `pnpm docs:citas`).
 NO desplegar: Nexora 1 audita (dinero), pide cajas y despliega. Duda de dinero = `DUDA:` en LISTA, no inventes.
+
+### Orden 103 · decisiones de la dueña (31-oct 21:15 UTC), reemplazan el punto 3 (devengo)
+- Cada curso del catálogo (`docs/operacion/GV_CATALOGO_CURSOS.md`) es un ítem propio (nombre, precio, moneda, incentivo); no son una sola lista.
+- Incentivo del mes = incentivo fijo × (pagado en el mes ÷ precio del curso); lo no pagado se arrastra y se devenga cuando se pague; al completar el pago queda 100 %. Pagos anulados restan. Solo pagos verificados.
+- US$: porcentaje en la moneda del curso; sin tasa registrada en el pago = `DUDA:` y no se devenga.
+- Brazilian touch: 0 incentivo para quien registra (lo lleva Yaisa).
