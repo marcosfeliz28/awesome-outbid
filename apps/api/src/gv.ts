@@ -44,6 +44,7 @@ import {
   planGvImportPayments,
   gvBankOptions,
 } from "./gv-money";
+import { GV_INCENTIVO_POR_TIPO, gvIncentiveFor } from "./gv-incentives";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -655,6 +656,91 @@ export class GvController {
           ...gvTotals(a.total, a.payments, a),
         })),
       ].filter((e) => d(e.pending).gt(0)),
+    };
+  }
+
+  // Incentivo fijo por inscripción (orden 103), a nombre de quien la registró.
+  // Sin costos: sólo monto, mes y nombre.
+  @Get("incentives")
+  @Permit("sale:manage")
+  async incentives(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { period } = parse(
+      z.object({
+        period: z
+          .string()
+          .regex(/^\d{4}-\d{2}$/)
+          .optional(),
+      }),
+      query,
+    );
+    const enrollments = await this.db.gvEnrollment.findMany({
+      where: {
+        branchId: actor.branchId,
+        course: { type: { in: Object.keys(GV_INCENTIVO_POR_TIPO) } },
+      },
+      include: {
+        course: { select: { name: true, type: true } },
+        payments: {
+          select: {
+            amount: true,
+            date: true,
+            verified: true,
+            rejectedAt: true,
+          },
+        },
+      },
+    });
+    const calc = enrollments.flatMap((e) => {
+      const r = gvIncentiveFor({
+        courseType: e.course.type,
+        status: e.status,
+        agreedPrice: e.agreedPrice,
+        payments: e.payments,
+      });
+      if (!r || (period && r.period !== period)) return [];
+      return [
+        {
+          enrollmentId: e.id,
+          clientName: e.clientName,
+          course: e.course.name,
+          period: r.period,
+          amount: r.amount,
+          registeredBy: e.createdBy,
+        },
+      ];
+    });
+    const name = await gvUserNames(
+      this.db,
+      calc.map((r) => r.registeredBy),
+    );
+    const rows = calc.map((r) => ({
+      ...r,
+      registeredByName: name(r.registeredBy),
+    }));
+    const porPersona = new Map<
+      string,
+      { name: string; total: Prisma.Decimal; count: number }
+    >();
+    for (const r of rows) {
+      const key = r.registeredByName ?? "Sin nombre";
+      const acc = porPersona.get(key) ?? { name: key, total: d(0), count: 0 };
+      porPersona.set(key, {
+        name: key,
+        total: acc.total.plus(r.amount),
+        count: acc.count + 1,
+      });
+    }
+    return {
+      period: period ?? null,
+      rows,
+      byPerson: [...porPersona.values()].map((p) => ({
+        name: p.name,
+        total: p.total.toFixed(2),
+        count: p.count,
+      })),
     };
   }
 
