@@ -4594,7 +4594,7 @@ export function StyleGuide() {
   return (
     <>
       <Heading
-        title="La energía de Nexora"
+        title="La energía de Norexos"
         caption="Un sistema visual para que cada interacción se sienta familiar."
       />
       <div className="panel style-guide">
@@ -4669,7 +4669,7 @@ export function StyleGuide() {
       <Modal
         open={modal}
         onClose={() => setModal(false)}
-        title="Diálogo Nexora"
+        title="Diálogo Norexos"
       >
         <p>Navega con Tab. Esc cierra. El foco regresa al control de origen.</p>
         <Button onClick={() => setModal(false)}>Entendido</Button>

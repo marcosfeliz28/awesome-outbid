@@ -18,7 +18,7 @@ test("G14: Acerca de muestra versión, «Documento no fiscal» y las licencias d
 }) => {
   await login(page);
   await page.getByRole("button", { name: "Acerca de", exact: true }).click();
-  const about = page.getByRole("dialog", { name: "Acerca de Nexora POS" });
+  const about = page.getByRole("dialog", { name: "Acerca de Norexos" });
   await expect(about).toContainText(/Versión \d+\.\d+\.\d+/);
   await expect(about).toContainText("Documento no fiscal.");
   const link = about.getByRole("link", {
@@ -44,7 +44,7 @@ test("G14: en celular se llega a Acerca de desde el menú sin romper la navegaci
   await login(page);
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("button", { name: "Acerca de", exact: true }).click();
-  const about = page.getByRole("dialog", { name: "Acerca de Nexora POS" });
+  const about = page.getByRole("dialog", { name: "Acerca de Norexos" });
   await expect(about).toBeVisible();
   await expect(page.locator("aside.sidebar")).toHaveAttribute("inert", "");
   await about.getByRole("button", { name: "Cerrar" }).click();
