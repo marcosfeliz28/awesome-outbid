@@ -1,9 +1,7 @@
-import { formatMoney } from "@fitstore/shared";
+import { can, formatMoney } from "@fitstore/shared";
 
 export type DayData = {
   revenue?: number;
-  costTotal?: number;
-  margin?: number;
   invoices?: number;
   alerts?: { type?: string }[];
 };
@@ -11,19 +9,21 @@ export type Kpi = { key: string; label: string; value: string; note: string };
 
 const STOCK_ALERTS = ["low_stock", "out_of_stock"];
 
-// Solo lectura de lo que ya devuelven /dashboard/summary y /cash-sessions.
-// La utilidad usa el margen que calcula la API: (venta − costo) / venta, sin restar ITBIS.
+// La franja consulta /dashboard/summary, que exige reports:read: sin ese permiso no se muestra.
+export function kpiStripVisible(permissions: string[]): boolean {
+  return can(permissions, "reports:read");
+}
+
+// Solo presentación de lo que ya devuelven /dashboard/summary y /cash-sessions.
+// No calcula utilidad, margen ni costo: ese dato no se muestra en la franja.
 export function buildKpis({
   day,
   sessions,
-  showProfit,
 }: {
   day?: DayData;
   sessions?: { closedAt?: string | null }[];
-  showProfit: boolean;
 }): Kpi[] {
   const revenue = Number(day?.revenue ?? 0);
-  const cost = Number(day?.costTotal ?? 0);
   const kpis: Kpi[] = [
     {
       key: "ventas",
@@ -32,13 +32,6 @@ export function buildKpis({
       note: `${day?.invoices ?? 0} facturas`,
     },
   ];
-  if (showProfit)
-    kpis.push({
-      key: "utilidad",
-      label: "Utilidad de hoy",
-      value: formatMoney(Math.round((revenue - cost) * 100) / 100),
-      note: `${day?.margin ?? 0}% de margen`,
-    });
   if (sessions) {
     const open = sessions.filter((s) => !s.closedAt).length;
     kpis.push({

@@ -31,7 +31,6 @@ export function KpiStrip() {
   const kpis = buildKpis({
     day: day.data,
     sessions: sessions.data,
-    showProfit: can(user.permissions, "profit:read"),
   });
   return (
     <section aria-label="Resumen de hoy" className="kpi-strip">
