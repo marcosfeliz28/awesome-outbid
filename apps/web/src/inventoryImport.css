@@ -2,11 +2,11 @@
 .inv-import {
   display: grid;
   gap: 14px;
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .inv-import h3 {
   margin: 0 0 6px;
-  font-size: 16px;
+  font-size: var(--fs-16);
 }
 .inv-lead {
   margin: 0;
@@ -35,7 +35,7 @@
 }
 .inv-options p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .inv-error {
   color: var(--danger-text);
@@ -70,15 +70,15 @@
   background: var(--surface-soft);
 }
 .inv-summary dt {
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 .inv-summary dd {
   margin: 2px 0 0;
-  font-size: 20px;
+  font-size: var(--fs-20);
   font-weight: 700;
 }
 .inv-summary small {
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: 400;
 }
 .inv-scroll {
@@ -87,7 +87,7 @@
 .inv-scroll table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 .inv-scroll caption {
   text-align: left;

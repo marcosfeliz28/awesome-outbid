@@ -17,6 +17,7 @@ export default defineConfig({
       "tests/reglas-si.test.ts",
       "tests/citas-reanclar.test.ts",
       "tests/pre-empuje.test.ts",
+      "tests/tipografia-legible.test.ts",
       "tests/tildes-nuevas.test.ts",
       "tests/esqueleto-tabla.test.ts",
       "tests/esqueleto-filas.test.ts",

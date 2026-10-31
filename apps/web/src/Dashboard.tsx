@@ -415,7 +415,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                     tickFormatter={(v) => String(v).slice(8)}
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    tick={{ fill: "#94a3b8", fontSize: 14 }}
                     minTickGap={20}
                   />
                   <YAxis
@@ -424,7 +424,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                     }
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    tick={{ fill: "#94a3b8", fontSize: 14 }}
                     width={42}
                   />
                   <Tooltip
