@@ -2187,3 +2187,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (31-oct 21:10 UTC) — orden 103 (nexora-cloud 1810a79a)
 - Orden 103 (incentivo GV fijo por inscripción) ya tiene claude-pc/gv-incentivos 21496264 hecha por otra sesión (Automaquillaje 50, Perfeccionamiento 500, cálculo al leer, GET /gv/incentives); no la dupliqué. Su verify seguía en curso (windows-installer y render-images verdes), LISTA pendiente. Faltan: tipo «Maquilladora profesional» (RD$ 1,000) como DUDA, cierre mensual con recibo y tarifas configurables; anotar CONFIRMAR CON LA DUEÑA: cuándo se devenga.
 - CI sin cambio: pc23, a1, b01, lumina y anim-entrada verdes. Último hash visto de nexora-cloud: 1810a79a.
+
+## Ciclo nube (31-oct 22:15 UTC) — orden 103 revisada (nexora-cloud 8c38837e)
+- Cambió RESPUESTA (decisiones de la dueña: incentivo por porcentaje pagado, 10 cursos, US$ sin tasa = DUDA); ya está en claude-pc/gv-incentivos bfd08440 (22:05, tests/gv-incentivos-unit.test.ts), no la dupliqué. Su verify y windows-installer seguían en curso: LISTA pendiente al verlos en verde. CI sin cambio: pc23, a1, b01 y lumina verdes.
+- Último hash visto de nexora-cloud: 8c38837e. No desplegar.
