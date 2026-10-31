@@ -467,6 +467,9 @@ function Login() {
               value={login}
               onChange={(e) => setLogin(e.target.value)}
             />
+            <small className="login-hint">
+              Tu usuario te lo da quien administra la tienda.
+            </small>
           </label>
           <label className="field">
             <span>{changeRequired ? "Contraseña temporal" : "Contraseña"}</span>

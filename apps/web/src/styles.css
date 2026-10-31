@@ -2753,6 +2753,7 @@ td strong {
   perspective: 900px;
 }
 .login-art > *:not(.login-scene) {
+  animation: login-enter var(--nx-dur-slow) var(--nx-ease-out) both;
   z-index: 2;
   position: relative;
 }
@@ -2815,6 +2816,7 @@ td strong {
   border: 1px solid #ffffff1c;
 }
 .login-stats svg {
+  transition: transform var(--nx-dur-fast) var(--nx-ease-out);
   width: 17px;
   color: var(--login-cyan);
   filter: drop-shadow(0 0 6px var(--login-cyan));
@@ -2988,9 +2990,33 @@ td strong {
 }
 @media (prefers-reduced-motion: reduce) {
   .scene-cube,
-  .scene-orbit {
+  .scene-orbit,
+  .login-art > *:not(.login-scene),
+  .login-form-panel form,
+  .login-form-panel form > p.form-error {
     animation: none;
   }
+  .login-stats svg {
+    transition: none;
+  }
+  .login-stats > span:hover svg,
+  .login-stats > span:focus-within svg {
+    transform: none;
+  }
+}
+@keyframes login-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.login-stats > span:hover svg,
+.login-stats > span:focus-within svg {
+  transform: translateY(-2px) scale(1.12);
 }
 .login-form-panel {
   width: 50%;
@@ -3002,6 +3028,7 @@ td strong {
   z-index: 2;
 }
 .login-form-panel form {
+  animation: login-enter var(--nx-dur-slow) var(--nx-ease-out) 80ms both;
   width: 390px;
   max-width: 100%;
   padding: 38px 34px;
@@ -3034,6 +3061,13 @@ td strong {
   background: #e11d4826;
   border-color: #fb718566;
   margin: 12px 0;
+  animation: login-enter var(--nx-dur-base) var(--nx-ease-out) both;
+}
+.login-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--fs-min);
+  color: #b9bde0;
 }
 .login-form-panel .field {
   margin-bottom: 20px;
