@@ -6392,3 +6392,57 @@ td strong {
 .kpi-strip .kpi-strip-card h2 { margin: 0; font-size: .85rem; font-weight: 600; opacity: .85; }
 .kpi-strip .kpi-strip-card strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
 .kpi-strip .kpi-strip-card small { opacity: .85; }
+
+
+/* F2-03: POS · miniatura sobre superficie translúcida, "+" táctil y jerarquía de Cobrar */
+.product-image {
+  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+}
+.product-image img {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
+}
+.add-product {
+  width: 44px;
+  height: 44px;
+  bottom: 8px;
+  right: 8px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  border-color: transparent;
+  transition: transform var(--nx-dur-fast, 120ms) ease-out;
+}
+.product-card:hover:not(:disabled) .add-product {
+  transform: scale(1.06);
+}
+.product-card:active:not(:disabled) .add-product {
+  transform: scale(0.94);
+}
+.charge-button {
+  min-height: 60px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(4, 120, 87, 0.35);
+}
+.charge-button kbd {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-color: #ffffff80;
+  background: #ffffff30;
+  color: #fff;
+}
+.charge-button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .add-product {
+    transition: none;
+  }
+}
+:root[data-theme="dark"] .add-product {
+  color: #0b0b12;
+}
