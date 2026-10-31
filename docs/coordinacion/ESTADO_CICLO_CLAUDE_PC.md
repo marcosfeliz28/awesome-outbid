@@ -2150,3 +2150,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (30-oct 22:10 UTC) — sin órdenes nuevas (nexora-cloud b193c25c)
 - Sin cambios en RESPUESTA_CLAUDE_PC_27OCT.md ni OBSIDIAN_LUMINA_PROGRESO.md. CI de t33-rebase 182e2278 quedó en verde (3/3): LISTA escrita. pc23, a1, b01 y lumina siguen verdes.
 - Pendientes sin cambio: otras 3 pruebas intermitentes (cuatro-cajas:185, privacidad-sesion:155, desglose-mes-movil:11) y las que requieren modelo local. Último hash visto de nexora-cloud: b193c25c.
+
+## Ciclo nube (31-oct 01:10 UTC) — orden 95 (nexora-cloud f656cefa)
+- Orden 95 (precios, contrato, dominio) ya la habían ejecutado otras sesiones: A precios-mercado c20e3b24 y C dominio-landing 8f292035 con LISTA previa; B contrato-saas 29f21964 quedó en verde (3/3) en este ciclo y se escribió su LISTA. Un duplicado local de A se descartó sin empujar. CI sin cambio: pc23, a1, b01, lumina, t33-rebase y gv-tarjeta verdes.
+- Último hash visto de nexora-cloud: f656cefa. Pendientes: 3 pruebas intermitentes (cuatro-cajas:185, privacidad-sesion:155, desglose-mes-movil:11); las leyes del contrato las debe confirmar un abogado.
