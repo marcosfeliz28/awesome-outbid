@@ -2162,3 +2162,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (31-oct 06:40 UTC) — órdenes 96, 97 y 98 (nexora-cloud d10183b8)
 - Orden 96/97 (renombre a «Norexos», rediseño y letra legible): rediseno-tienda 8ad2c3c3 (hecha por otra sesión) y letra-legible a8551d74 (la contiene y añade letra base 16 px, mínimo 14 px, más contraste, carrito 1366×768 con 3 líneas, ruta de la barra oculta en celular) con 3 CI en verde y LISTA; fallos encontrados y corregidos: total del carrito 33 px (U1), fuentes a 320/390 px y A5 de caja. Aún sin capturas antes/después de la letra mayor. No desplegar sin revisión; plan de reversa f656cefa.
 - Orden 98 (animación y didáctica fuera de compra) no iniciada: la orden dice empezar tras el despliegue de la mañana. CI sin cambio: pc23, a1, b01 y lumina verdes. Último hash visto de nexora-cloud: d10183b8.
+
+## Ciclo nube (31-oct 07:00 UTC) — orden 99 (nexora-cloud 79d714cf)
+- rediseno-tienda 9501d596 (hecha por otra sesión) tenía verify en rojo: al pasar a tokens se perdió la ruta de la barra solo con la pantalla en celular (fuentes.spec 373/402, 5 fallos). Corregido en claude-pc/rediseno-barra-ruta dd61dd52 (parte de 9501d596, restaura el span y las 2 reglas CSS); 3 CI en verde y LISTA escrita. Sin repetir la prueba en local (sin dependencias ni Postgres en este contenedor). Falta R5/R6 de la auditoría (formatDOP sin uso, import CSS de main.tsx): no tocados.
+- CI sin cambio: pc23, a1, b01, lumina y letra-legible a8551d74 verdes. Último hash visto de nexora-cloud: 79d714cf.
