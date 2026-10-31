@@ -14,15 +14,15 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 - Ítem del menú: **«GV Makeup Studio»**, permiso `gv:read` (`apps/web/src/App.tsx:282`). Título dentro de la pantalla: **«Cursos y cobros»**, antetítulo «GV MAKEUP STUDIO» (`apps/web/src/Gv.tsx:121-122`).
 - **Pestañas internas** (`apps/web/src/Gv.tsx:129-174`):
 
-| Pestaña (etiqueta exacta) | Qué es | Permiso para verla |
-|---|---|---|
-| **Cursos** | Lista de cursos y, al abrir uno, sus inscripciones. | `gv:read` |
-| **Citas** | Citas de maquillaje (servicios). **Este es el nombre de la sección de citas** (`Gv.tsx:147`); el componente se llama `GvAppointments` (`apps/web/src/GvCitas.tsx:125`). | `gv:read` |
-| **Interesadas** | Prospectos (`apps/web/src/GvInteresadas.tsx`). | `gv:read` |
-| **Por verificar** | Transferencias de GV pendientes de verificar. | `gv:read` (verificar: `gv:verify`) |
-| **Reportes** | Ingresos y pendientes. | `gv:reports` |
+| Pestaña (etiqueta exacta) | Qué es                                                                                                                                                                  | Permiso para verla                 |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| **Cursos**                | Lista de cursos y, al abrir uno, sus inscripciones.                                                                                                                     | `gv:read`                          |
+| **Citas**                 | Citas de maquillaje (servicios). **Este es el nombre de la sección de citas** (`Gv.tsx:147`); el componente se llama `GvAppointments` (`apps/web/src/GvCitas.tsx:125`). | `gv:read`                          |
+| **Interesadas**           | Prospectos (`apps/web/src/GvInteresadas.tsx`).                                                                                                                          | `gv:read`                          |
+| **Por verificar**         | Transferencias de GV pendientes de verificar.                                                                                                                           | `gv:read` (verificar: `gv:verify`) |
+| **Reportes**              | Ingresos y pendientes.                                                                                                                                                  | `gv:reports`                       |
 
-- Una persona cuyo único permiso es de GV (`gvOnly`, todos los permisos empiezan con `gv:`) no carga el catálogo ni registra terminal (`apps/web/src/realtime.tsx:147-153`, `apps/web/src/App.tsx:774`).
+- Una persona cuyo único permiso es de GV (`gvOnly`, todos los permisos empiezan con `gv:`) no carga el catálogo ni registra terminal (`apps/web/src/realtime.tsx:147-153`, `apps/web/src/App.tsx:777`).
 
 ## 3. Cursos
 
@@ -80,13 +80,13 @@ Filtros **Desde** / **Hasta** (`Gv.tsx:983-991`). Secciones (`:970-1037`): **Ing
 
 ## 9. Quién puede qué en GV
 
-| Permiso | Qué permite | Quién lo tiene |
-|---|---|---|
-| `gv:read` | Ver cursos, citas, interesadas, transferencias por verificar, bancos. | Rol `gv`, `manager`, `admin` (`*`) |
-| `gv:write` | Crear/editar cursos, inscripciones, citas, interesadas; registrar y anular pagos. | Rol `gv`, `manager`, `admin` |
-| `gv:reports` | Pestaña «Reportes». | Rol `gv`, `manager`, `admin` |
-| `gv:verify` | Verificar o rechazar transferencias. | `manager`, `admin`; **no** el rol `gv` |
-| `*` | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:693`). | `admin` |
+| Permiso      | Qué permite                                                                       | Quién lo tiene                         |
+| ------------ | --------------------------------------------------------------------------------- | -------------------------------------- |
+| `gv:read`    | Ver cursos, citas, interesadas, transferencias por verificar, bancos.             | Rol `gv`, `manager`, `admin` (`*`)     |
+| `gv:write`   | Crear/editar cursos, inscripciones, citas, interesadas; registrar y anular pagos. | Rol `gv`, `manager`, `admin`           |
+| `gv:reports` | Pestaña «Reportes».                                                               | Rol `gv`, `manager`, `admin`           |
+| `gv:verify`  | Verificar o rechazar transferencias.                                              | `manager`, `admin`; **no** el rol `gv` |
+| `*`          | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:693`).                 | `admin`                                |
 
 Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `gv` (p. ej. la empleada Clary) no tiene acceso a configuración, usuarios, costos, inventario ni datos de MacGen (`docs/coordinacion/MODULO-GV.md:43-44`).
 
