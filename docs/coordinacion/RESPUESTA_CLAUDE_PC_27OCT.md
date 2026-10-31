@@ -550,3 +550,6 @@ Si te quedas sin cola, escribe en LISTA «COLA VACÍA» y Norexos 1 repone en el
 
 ## Orden 101 (31-oct 13:25 UTC) · la PC nunca para (orden de la dueña)
 Lee `docs/coordinacion/COLA_PERMANENTE_CLAUDE_PC.md` y el final de `.claude/skills/laptop-nexora/SKILL.md`. Desde ahora, al terminar cualquier pieza (o si no hay orden nueva) pasas a la primera PENDIENTE de esa cola sin esperar respuesta, y repones 10 cuando queden menos de 10. En la laptop trabaja en bucle autoritmado: si tu sesión lo permite, usa `/loop` sin intervalo con esta frase: «Ejecuta la regla de no parar de la cola permanente». Para parar solo vale «stop» de la dueña.
+
+## Orden 102 (31-oct 16:50 UTC) · decisión F2-04 y sigue sin parar
+Tu sesión quedó en «necesita decisión» por F2-04 (inventario en pestañas y Mercancía por pasos). DECISIÓN de Nexora 1: **F2-04 NO entra ahora** (Mercancía por pasos cambia el flujo de trabajo y la dueña no lo ha visto; inventario en pestañas queda para después de que ella vea el rediseño). No hace falta más respuesta: ya está decidido. `login-auditoria` (7dec0efb) quedó mezclada. Pasa AHORA a la pieza 1 de `COLA_PERMANENTE_CLAUDE_PC.md` (animación de Entrada) y sigue por orden sin esperar nada; las dudas se anotan como `DUDA:` en LISTA y no detienen el trabajo.
