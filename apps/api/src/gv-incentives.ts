@@ -1,92 +1,21 @@
 // Incentivo por inscripción GV (orden 103, decisiones de la dueña vía N1).
 // Lo gana quien registra la inscripción, según el curso del catálogo de Génesis
-// (docs/operacion/GV_CATALOGO_CURSOS.md). Se calcula al leer, no se guarda:
-// incentivo del curso × porcentaje pagado en verificado, devengado en el mes
-// del pago. Anular un pago o reembolsar resta su parte en ese mes.
+// (GV_CATALOGO en gv-money.ts). Se calcula al leer, no se guarda:
+// incentivo del curso × porcentaje pagado (verificado, en la moneda del curso),
+// devengado en el mes del pago. Un reembolso resta su parte en su mes.
 import { d } from "@fitstore/shared";
+import { GV_CATALOGO, valorEnMoneda } from "./gv-money";
 
-export type CursoGv = {
-  nombre: string;
-  precio: number;
-  moneda: "RD$" | "US$";
-  // Monto fijo en RD$ por alumna, sin importar la moneda del precio.
-  incentivo: number;
-};
-
-// DUDA: la asignación del incentivo por curso es lectura de N1 del catálogo.
-// DUDA: «Maquilladora profesional» (1 y 2) y «Perfeccionamiento» (9 y 10) no
-// tienen tipo propio en la base: el curso se empata por nombre exacto.
-// shortcut: catálogo en código, no en base; cambiarlo exige un despliegue.
-export const GV_CATALOGO: CursoGv[] = [
-  {
-    nombre: "Curso de maquilladora profesional personalizado",
-    precio: 70000,
-    moneda: "RD$",
-    incentivo: 1000,
-  },
-  {
-    nombre: "Curso maquilladora profesional personalizado",
-    precio: 55000,
-    moneda: "RD$",
-    incentivo: 1000,
-  },
-  {
-    nombre: "Curso de automaquillaje básico grupal",
-    precio: 4500,
-    moneda: "RD$",
-    incentivo: 50,
-  },
-  {
-    nombre: "Curso de automaquillaje básico personalizado",
-    precio: 200,
-    moneda: "US$",
-    incentivo: 50,
-  },
-  {
-    nombre: "Curso de automaquillaje básico personalizado avanzado",
-    precio: 270,
-    moneda: "US$",
-    incentivo: 50,
-  },
-  {
-    nombre: "Curso automaquillaje básico modalidad 2 clases",
-    precio: 350,
-    moneda: "US$",
-    incentivo: 50,
-  },
-  {
-    nombre: "Curso de automaquillaje básico personalizado 3 clases",
-    precio: 450,
-    moneda: "US$",
-    incentivo: 50,
-  },
-  // Brazilian touch: lo lleva Yaisa aparte; quien registra no gana nada.
-  {
-    nombre: "Perfeccionamiento para maquilladores grupal Brazilian touch",
-    precio: 18000,
-    moneda: "RD$",
-    incentivo: 0,
-  },
-  {
-    nombre:
-      "Perfeccionamiento para maquilladores VIP personalizado: piel blindada + ojos social con delineado o novias",
-    precio: 18000,
-    moneda: "RD$",
-    incentivo: 500,
-  },
-  {
-    nombre: "Perfeccionamiento para maquilladores: piel glow + ojos social",
-    precio: 15000,
-    moneda: "RD$",
-    incentivo: 500,
-  },
-];
+export { GV_CATALOGO } from "./gv-money";
 
 type Pago = {
   amount: unknown;
   date: Date;
   verified: boolean;
   rejectedAt?: Date | null;
+  currency?: string | null;
+  amountDop?: unknown;
+  rate?: unknown;
 };
 type Inscripcion = {
   courseName: string;
@@ -102,16 +31,22 @@ const mesAnterior = (p: string) => {
   return new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7);
 };
 
-// Lo que va devengado hasta el final del mes M (acumulado redondeado a
-// centavos). El devengo de un mes es la diferencia con el mes anterior, así el
-// total nunca pasa del 100 % ni queda por debajo de lo pagado neto.
-function acumulado(curso: CursoGv, e: Inscripcion, M: string) {
+// Lo que va devengado hasta el final del mes M (redondeado a centavos). El
+// devengo de un mes es la diferencia con el anterior: el total nunca pasa del
+// 100 % ni queda por debajo de lo pagado neto.
+function acumulado(
+  curso: (typeof GV_CATALOGO)[number],
+  e: Inscripcion,
+  M: string,
+) {
   const precio = d(e.agreedPrice as any);
   let neto = d(0);
   for (const p of e.payments) {
     if (!p.verified || mes(p.date) > M) continue;
     if (p.rejectedAt && mes(p.rejectedAt) <= M) continue;
-    neto = neto.plus(d(p.amount as any));
+    // DUDA: un pago que no se puede convertir a la moneda del curso no devenga.
+    const valor = valorEnMoneda(p as any, curso.moneda);
+    if (valor) neto = neto.plus(valor);
   }
   if (e.refundAmount && e.refundDate && mes(e.refundDate) <= M)
     neto = neto.minus(d(e.refundAmount as any));
@@ -127,8 +62,6 @@ export function gvDevengoMes(
 ): { amount: string; period: string } | null {
   const curso = GV_CATALOGO.find((c) => c.nombre === e.courseName);
   if (!curso || curso.incentivo === 0) return null;
-  // DUDA: los pagos no registran moneda; sin ella no se devenga en US$.
-  if (curso.moneda !== "RD$") return null;
   if (d(e.agreedPrice as any).lte(0)) return null;
   const diff = acumulado(curso, e, period).minus(
     acumulado(curso, e, mesAnterior(period)),

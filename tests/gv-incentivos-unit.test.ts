@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { GV_CATALOGO, gvDevengoMes } from "../apps/api/src/gv-incentives";
+import {
+  gvPaymentInput,
+  gvTotals,
+  valorEnMoneda,
+} from "../apps/api/src/gv-money";
 
 // Orden 103 (decisiones de la dueña vía N1): incentivo fijo del curso ×
 // porcentaje pagado del precio, devengado en el mes en que se paga. Solo pagos
@@ -12,6 +17,13 @@ const pago = (amount: string, date: string, extra = {}) => ({
   rejectedAt: null,
   ...extra,
 });
+const pagoUsd = (amount: string, rate: number, date: string, extra = {}) =>
+  pago(amount, date, {
+    currency: "USD",
+    rate: String(rate),
+    amountDop: String((Number(amount) * rate).toFixed(2)),
+    ...extra,
+  });
 const alumna = (
   courseName: string,
   agreedPrice: string,
@@ -135,9 +147,25 @@ describe("GV · devengo por porcentaje pagado", () => {
 });
 
 describe("GV · casos que no devengan", () => {
-  it("curso en dólares: no devenga hasta que los pagos registren su moneda (DUDA)", () => {
+  it("curso en dólares con pago en pesos sin tasa: no devenga (DUDA)", () => {
     const e = alumna(USD, "200", [pago("200", "2026-10-03")]);
     expect(gvDevengoMes(e, "2026-10")).toBeNull();
+  });
+
+  it("curso en dólares pagado en US$: devenga con el monto en dólares", () => {
+    const e = alumna(USD, "200", [pagoUsd("100", 60, "2026-10-03")]);
+    expect(gvDevengoMes(e, "2026-10")).toEqual({
+      amount: "25.00",
+      period: "2026-10",
+    });
+  });
+
+  it("curso en RD$ pagado en US$: usa el equivalente en pesos con la tasa", () => {
+    const e = alumna(AUTO, "4500", [pagoUsd("75", 60, "2026-10-03")]);
+    expect(gvDevengoMes(e, "2026-10")).toEqual({
+      amount: "50.00",
+      period: "2026-10",
+    });
   });
 
   it("Brazilian touch: incentivo 0 para quien registra", () => {
@@ -156,5 +184,67 @@ describe("GV · casos que no devengan", () => {
       amount: "500.00",
       period: "2026-10",
     });
+  });
+});
+
+describe("GV · moneda del pago (decisiones de la dueña, 31-oct)", () => {
+  it("valor del pago en la moneda del curso", () => {
+    // RD$ curso: pesos (equivalente); US$ curso: dólares; pesos sin tasa en US$: no cuenta.
+    expect(
+      valorEnMoneda(
+        { amount: "75", currency: "USD", amountDop: "4500" },
+        "RD$",
+      )?.toFixed(2),
+    ).toBe("4500.00");
+    expect(
+      valorEnMoneda(
+        { amount: "100", currency: "USD", amountDop: "6000" },
+        "US$",
+      )?.toFixed(2),
+    ).toBe("100.00");
+    expect(
+      valorEnMoneda({ amount: "4500", currency: "DOP" }, "RD$")?.toFixed(2),
+    ).toBe("4500.00");
+    expect(
+      valorEnMoneda({ amount: "4500", currency: "DOP" }, "US$"),
+    ).toBeNull();
+  });
+
+  it("pagado (totales) de una inscripción en RD$ con pago en US$ suma el equivalente en pesos", () => {
+    const t = gvTotals(
+      "4500",
+      [{ amount: "75", verified: true, currency: "USD", amountDop: "4500" }],
+      {},
+      "RD$",
+    );
+    expect(t.paid).toBe("4500.00");
+    expect(t.pending).toBe("0.00");
+  });
+
+  it("USD exige tasa; DOP no la necesita", () => {
+    const usdSinTasa = gvPaymentInput({}).safeParse({
+      date: "2026-10-03",
+      amount: 100,
+      concept: "separo",
+      method: "efectivo",
+      currency: "USD",
+    });
+    expect(usdSinTasa.success).toBe(false);
+    const usdConTasa = gvPaymentInput({}).safeParse({
+      date: "2026-10-03",
+      amount: 100,
+      concept: "separo",
+      method: "efectivo",
+      currency: "USD",
+      rate: 60,
+    });
+    expect(usdConTasa.success).toBe(true);
+    const dop = gvPaymentInput({}).safeParse({
+      date: "2026-10-03",
+      amount: 4500,
+      concept: "separo",
+      method: "efectivo",
+    });
+    expect(dop.success).toBe(true);
   });
 });

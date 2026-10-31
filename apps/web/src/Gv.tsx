@@ -710,6 +710,9 @@ function PaymentForm({
     method: "transferencia",
     bank: "",
     reference: "",
+    // Moneda del pago: pesos por defecto; en US$ la tasa es obligatoria.
+    currency: "DOP",
+    rate: "",
   });
   const banks = useQuery({
     queryKey: ["gv-banks"],
@@ -731,6 +734,7 @@ function PaymentForm({
         ...form,
         bank: paymentBank(form.method, form.bank, banks.data?.terminals),
         amount: Number(form.amount),
+        rate: form.currency === "USD" ? Number(form.rate) : undefined,
         enrollmentId: enrollment.id,
         operationId,
       });
@@ -761,7 +765,7 @@ function PaymentForm({
           />
         </label>
         <label className="field">
-          <span>Monto (RD$)</span>
+          <span>Monto ({form.currency === "USD" ? "US$" : "RD$"})</span>
           <input
             inputMode="decimal"
             required
@@ -787,6 +791,27 @@ function PaymentForm({
             <Options map={METHODS} />
           </select>
         </label>
+        <label className="field">
+          <span>Moneda</span>
+          <select
+            value={form.currency}
+            onChange={(e) => set("currency", e.target.value)}
+          >
+            <option value="DOP">Pesos (RD$)</option>
+            <option value="USD">Dólares (US$)</option>
+          </select>
+        </label>
+        {form.currency === "USD" && (
+          <label className="field">
+            <span>Tasa (RD$ por US$)</span>
+            <input
+              inputMode="decimal"
+              required
+              value={form.rate}
+              onChange={(e) => set("rate", e.target.value)}
+            />
+          </label>
+        )}
         {form.method === "transferencia" && (
           <>
             <label className="field">

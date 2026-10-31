@@ -43,6 +43,8 @@ import {
   lockGvOwner,
   planGvImportPayments,
   gvBankOptions,
+  monedaDeCurso,
+  valorPesos,
 } from "./gv-money";
 import { GV_CATALOGO, gvDevengoMes } from "./gv-incentives";
 
@@ -161,8 +163,16 @@ export class GvController {
             attended: true,
             boughtBrushSet: true,
             refundAmount: true,
+            course: { select: { name: true } },
             payments: {
-              select: { amount: true, verified: true, rejectedAt: true },
+              select: {
+                amount: true,
+                verified: true,
+                rejectedAt: true,
+                currency: true,
+                amountDop: true,
+                rate: true,
+              },
             },
           },
         },
@@ -171,7 +181,7 @@ export class GvController {
     });
     return rows.map(({ enrollments, ...course }) => {
       const totals = enrollments.map((e) =>
-        gvTotals(e.agreedPrice, e.payments, e),
+        gvTotals(e.agreedPrice, e.payments, e, monedaDeCurso(e.course.name)),
       );
       const sum = (key: "paid" | "pending" | "unverified" | "refunded") =>
         totals.reduce((s, t) => s.plus(t[key]), d(0)).toFixed(2);
@@ -276,7 +286,7 @@ export class GvController {
         refundAmount: e.refundAmount?.toFixed(2) ?? null,
         refundDate: e.refundDate ? dayText(e.refundDate) : null,
         createdByName: name(e.createdBy),
-        ...gvTotals(e.agreedPrice, payments, e),
+        ...gvTotals(e.agreedPrice, payments, e, monedaDeCurso(course.name)),
         payments: payments.map((p) => paymentView(p, name)),
       })),
     };
@@ -546,6 +556,8 @@ export class GvController {
       select: {
         date: true,
         amount: true,
+        currency: true,
+        amountDop: true,
         method: true,
         bank: true,
         verified: true,
@@ -562,7 +574,7 @@ export class GvController {
       for (const p of verified) {
         const k = key(p);
         const row = map.get(k) ?? { total: d(0), count: 0 };
-        row.total = row.total.plus(p.amount);
+        row.total = row.total.plus(valorPesos(p));
         row.count++;
         map.set(k, row);
       }
@@ -574,10 +586,10 @@ export class GvController {
         }))
         .sort((a, b) => a.key.localeCompare(b.key));
     };
-    const total = verified.reduce((s, p) => s.plus(p.amount), d(0));
+    const total = verified.reduce((s, p) => s.plus(valorPesos(p)), d(0));
     const unverified = payments
       .filter((p) => !p.verified)
-      .reduce((s, p) => s.plus(p.amount), d(0));
+      .reduce((s, p) => s.plus(valorPesos(p)), d(0));
     const refundWhere = {
       branchId: actor.branchId,
       refundAmount: { not: null },
@@ -598,7 +610,16 @@ export class GvController {
     );
     const courses = await this.courses(actor);
     const select = {
-      payments: { select: { amount: true, verified: true, rejectedAt: true } },
+      payments: {
+        select: {
+          amount: true,
+          verified: true,
+          rejectedAt: true,
+          currency: true,
+          amountDop: true,
+          rate: true,
+        },
+      },
     };
     const [openEnrollments, openAppointments] = await Promise.all([
       this.db.gvEnrollment.findMany({
@@ -644,7 +665,12 @@ export class GvController {
           phone: e.phone,
           course: e.course.name,
           courseDate: dayText(e.course.date),
-          ...gvTotals(e.agreedPrice, e.payments, e),
+          ...gvTotals(
+            e.agreedPrice,
+            e.payments,
+            e,
+            monedaDeCurso(e.course.name),
+          ),
         })),
         ...openAppointments.map((a) => ({
           id: a.id,
@@ -684,6 +710,9 @@ export class GvController {
             date: true,
             verified: true,
             rejectedAt: true,
+            currency: true,
+            amountDop: true,
+            rate: true,
           },
         },
       },
