@@ -538,3 +538,12 @@ La rama `claude-pc/rediseno-tienda` está parada desde las 23:48 (sin LISTA). La
 3. Nombre Norexos (sin POS) en pestaña y pantallas visibles: ya hecho en gran parte; completa lo que falte con el inventario de la orden 96.
 4. pre-empuje + 3 CI verdes (verify, windows-installer, render-images) en el SHA exacto; LISTA con el SHA. No mezcles tú en nexora-cloud: lo hace Norexos 1.
 Si un punto no queda verde a las 08:30 UTC, entrega solo los verdes y di cuáles faltan. Las animaciones (orden 98) NO van antes de la mañana.
+
+## Orden 100 (31-oct 13:00 UTC) · el rediseño ya está EN VIVO: arranca la cola completa, sin horas muertas
+La web con tu rediseño (ae63fb6d) está en producción desde las 12:10 UTC. Orden 98 queda ACTIVADA desde ya. Trabaja en este orden, una LISTA por pieza (3 CI verdes en el SHA exacto, pre-empuje), sin esperar respuesta entre piezas:
+1. Animación y lo didáctico, una rama por pantalla `claude-pc/anim-<pantalla>` (reglas de la orden 98: nada en POS/carrito/cobro/F2/F4/F8/F12/teclado/impresión/caja ciega): entrada → tablero → reportes/desglose → GV → inventario → configuración.
+2. Hallazgos bajos de `docs/auditoria/AUDITORIA_USUARIO_31OCT.md`: 14 px en el login (subir a 16), foco visible en campos del login, y explica o silencia el 400 de /api/auth/refresh sin sesión (solo si es del cliente).
+3. Migración a zod 4 (`claude-pc/zod4`; hay estudio en `claude/zod4-estudio`).
+4. Pruebas intermitentes pendientes de la orden 94.
+5. Repite la auditoría de usuario con DevTools en la laptop (skill `auditoria-usuario`) sobre las pantallas con sesión si tienes credenciales; si no, no inventes: marca NO COMPROBADO.
+Si te quedas sin cola, escribe en LISTA «COLA VACÍA» y Norexos 1 repone en el siguiente ciclo (máximo 1 h).
