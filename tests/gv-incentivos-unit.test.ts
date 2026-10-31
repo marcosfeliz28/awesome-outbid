@@ -20,7 +20,30 @@ describe("GV · incentivo fijo por inscripción (orden 103)", () => {
     expect(GV_INCENTIVO_POR_TIPO).toEqual({
       automaquillaje: 50,
       personalizado: 500,
+      maquilladora_profesional: 1000,
     });
+  });
+
+  it("maquilladora profesional: RD$ 1,000 si existiera el tipo (aún no hay tipo en la base)", () => {
+    expect(
+      gvIncentiveFor({
+        courseType: "maquilladora_profesional",
+        status: "activa",
+        agreedPrice: "55000",
+        payments: [pago("55000", "2026-11-04")],
+      }),
+    ).toEqual({ amount: "1000.00", period: "2026-11" });
+  });
+
+  it("brazilian touch (curso 8 del catálogo) no da incentivo a quien registra", () => {
+    expect(
+      gvIncentiveFor({
+        courseType: "brazilian",
+        status: "activa",
+        agreedPrice: "18000",
+        payments: [pago("18000", "2026-11-04")],
+      }),
+    ).toBeNull();
   });
 
   it("automaquillaje pagado completo y verificado: RD$ 50 en el mes del pago que completó", () => {
@@ -98,7 +121,7 @@ describe("GV · incentivo fijo por inscripción (orden 103)", () => {
   });
 
   it("tipos sin tarifa (brazilian, otro, maquilladora) no inventan monto", () => {
-    for (const courseType of ["brazilian", "otro", "maquilladora_profesional"])
+    for (const courseType of ["brazilian", "otro"])
       expect(
         gvIncentiveFor({
           courseType,

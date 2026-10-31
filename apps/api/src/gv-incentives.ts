@@ -5,12 +5,18 @@
 import { d } from "@fitstore/shared";
 import { GV_CLOSED } from "./gv-money";
 
+// Monto fijo en RD$ por alumna, sin importar la moneda del precio del curso.
 // shortcut: tarifas en código, no en base; cambiarlas exige un despliegue.
-// DUDA: «Perfeccionamiento» hoy es el tipo personalizado; confirmar con la dueña.
-// DUDA: «Maquilladora profesional» no existe como tipo de curso; sin tarifa hasta decidir.
+// DUDA: asignación por curso según la lectura de N1 del catálogo de Génesis
+// (cursos 3–7 automaquillaje; 9 y 10 perfeccionamiento; 1 y 2 maquilladora).
+// DUDA: «personalizado» es también el nombre de cursos de automaquillaje
+// (4, 5, 7); y la maquilladora (1 y 2) aún no tiene tipo: hoy registrada como
+// «personalizado» cobraría RD$ 500 en vez de RD$ 1,000.
+// Brazilian touch (curso 8) NO da incentivo: tipo `brazilian`, sin tarifa.
 export const GV_INCENTIVO_POR_TIPO: Record<string, number> = {
   automaquillaje: 50,
   personalizado: 500,
+  maquilladora_profesional: 1000,
 };
 
 type PagoGv = {

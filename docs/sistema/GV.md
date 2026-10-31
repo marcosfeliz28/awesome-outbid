@@ -97,7 +97,8 @@ Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `
 
 ## 11. Incentivo por inscripción (orden 103)
 
-- Quien **registra la inscripción** de una alumna gana un monto fijo: **Automaquillaje RD$ 50** y **Perfeccionamiento RD$ 500** (tipo `personalizado`). Otros tipos no tienen incentivo. Cálculo en `apps/api/src/gv-incentives.ts:11` (`GV_INCENTIVO_POR_TIPO`, tarifas en código) y `apps/api/src/gv-incentives.ts:23` (`gvIncentiveFor`).
+- Quien **registra la inscripción** de una alumna gana un monto fijo: **Automaquillaje RD$ 50** y **Perfeccionamiento RD$ 500** (tipo `personalizado`). Otros tipos no tienen incentivo. Cálculo en `apps/api/src/gv-incentives.ts:16` (`GV_INCENTIVO_POR_TIPO`, tarifas en código) y `apps/api/src/gv-incentives.ts:29` (`gvIncentiveFor`).
 - Devengo (propuesta de N2, **no confirmada por la dueña**): sólo con la inscripción pagada completa con pagos verificados; el mes es el del pago que la completó. Anular un pago verificado lo quita. Cancelada o reembolsada: no devenga.
 - Se calcula al leer, no se guarda. Lo ve quien tiene `sale:manage` (la misma vista de incentivos). API `GET /gv/incentives?period=AAAA-MM` (`apps/api/src/gv.ts:664`): filas por inscripción y total por persona, sin costos.
-- Pendiente: que el cierre mensual guarde una instantánea como las ventas de caja; y configurar las tarifas desde la base de datos.
+- Catálogo (Génesis, 31-oct-2026): Brazilian touch (curso 8) no da incentivo a quien registra (lo lleva Yaisa aparte). Maquilladora profesional (RD$ 1,000) tiene tabla pero **aún no hay tipo de curso**: registrada como «personalizado» cobraría RD$ 500. El incentivo es RD$ fijo aunque el curso esté en US$; no se convierte ni se cambia ningún precio.
+- Pendiente: decidir el tipo de curso para maquilladora profesional y perfeccionamiento; que el cierre mensual guarde una instantánea como las ventas de caja; y configurar las tarifas desde la base de datos.
