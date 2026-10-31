@@ -81,6 +81,7 @@ export default defineConfig({
       "tests/promotion-ticket.test.ts",
       "tests/incentives-calc.test.ts",
       "tests/afirmaciones.test.ts",
+      "tests/f2-01-primitivos.test.tsx",
       "tests/licencias.test.ts",
       "tests/auth-guard.test.ts",
       "tests/db-errores.test.ts",
