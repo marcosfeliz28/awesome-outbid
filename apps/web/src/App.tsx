@@ -158,8 +158,8 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
         </p>
         <p className="about-fiscal">
           <strong>Documento no fiscal.</strong> Los recibos, notas y reportes de
-          Norexos son documentos internos y no sustituyen un comprobante
-          fiscal (NCF/e-CF).
+          Norexos son documentos internos y no sustituyen un comprobante fiscal
+          (NCF/e-CF).
         </p>
         <h3>Privacidad</h3>
         <p className="about-privacy">
@@ -341,9 +341,7 @@ function Login() {
           <div className="brand-icon">
             n<span>•</span>
           </div>
-          <span>
-            Norexos
-          </span>
+          <span>Norexos</span>
         </div>
         <div>
           <span className="eyebrow light">GRUPO MACGEN · GV MAKEUP STUDIO</span>
@@ -985,9 +983,7 @@ function Shell() {
           <div className="brand-icon">
             n<span>•</span>
           </div>
-          <span>
-            Norexos
-          </span>
+          <span>Norexos</span>
         </a>
         <div className="store-switch">
           <div className="store-avatar">
@@ -1065,7 +1061,9 @@ function Shell() {
               <Menu />
             </button>
             <span className="breadcrumb">
-              Mi tienda <span>/</span>
+              <span className="breadcrumb-root">
+                Mi tienda <span>/</span>
+              </span>
               <strong>
                 {current?.label ||
                   (page === "styles" ? "Guía de estilos" : "Configuración")}
