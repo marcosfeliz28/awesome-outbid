@@ -547,3 +547,6 @@ La web con tu rediseño (ae63fb6d) está en producción desde las 12:10 UTC. Ord
 4. Pruebas intermitentes pendientes de la orden 94.
 5. Repite la auditoría de usuario con DevTools en la laptop (skill `auditoria-usuario`) sobre las pantallas con sesión si tienes credenciales; si no, no inventes: marca NO COMPROBADO.
 Si te quedas sin cola, escribe en LISTA «COLA VACÍA» y Norexos 1 repone en el siguiente ciclo (máximo 1 h).
+
+## Orden 101 (31-oct 13:25 UTC) · la PC nunca para (orden de la dueña)
+Lee `docs/coordinacion/COLA_PERMANENTE_CLAUDE_PC.md` y el final de `.claude/skills/laptop-nexora/SKILL.md`. Desde ahora, al terminar cualquier pieza (o si no hay orden nueva) pasas a la primera PENDIENTE de esa cola sin esperar respuesta, y repones 10 cuando queden menos de 10. En la laptop trabaja en bucle autoritmado: si tu sesión lo permite, usa `/loop` sin intervalo con esta frase: «Ejecuta la regla de no parar de la cola permanente». Para parar solo vale «stop» de la dueña.
