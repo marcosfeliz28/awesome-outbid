@@ -30,6 +30,7 @@ import { formatMoney, can, weekStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
+import { KpiStrip } from "./KpiStrip";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -301,6 +302,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         </Modal>
       )}
       <QueryState query={query}>
+        <KpiStrip />
         <div className="welcome-banner">
           <div>
             <span className="banner-chip">
