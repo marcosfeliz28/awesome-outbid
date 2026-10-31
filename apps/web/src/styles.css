@@ -6547,3 +6547,22 @@ td strong {
     height: 34px;
   }
 }
+
+/* Orden 99: con la letra mayor, en celulares angostos la ruta muestra solo la pantalla actual. */
+.breadcrumb .breadcrumb-parent {
+  margin: 0;
+  color: inherit;
+}
+@media (max-width: 480px) {
+  .breadcrumb .breadcrumb-parent {
+    display: none;
+  }
+}
+
+/* Orden 99: las tarjetas del tablero no ensanchan la página en celulares de 320 px con la letra mayor. */
+.kpi-card {
+  min-width: 0;
+}
+.kpi-top {
+  flex-wrap: wrap;
+}

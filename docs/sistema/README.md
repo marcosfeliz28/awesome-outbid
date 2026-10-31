@@ -4,8 +4,8 @@ Levantamiento hecho el 30-oct-2026 sobre la rama `cola-n26` (igual a `origin/nex
 
 ## 1. Qué es
 
-- Es un punto de venta (POS) con inventario, caja, compras, reportes y un módulo de cursos y citas (GV). Lo usa **Grupo MacGen** (suplementos, fajas, tenis y ropa deportiva, accesorios de gym, maquillaje) y su empresa hermana **GV Makeup Studio** (cursos, servicios, productos). Fuente: `apps/web/src/App.tsx:284-312` (caras del cubo de entrada) y `apps/web/src/App.tsx:349` («GRUPO MACGEN · GV MAKEUP STUDIO»).
-- **Nombre del producto.** **Norexos** es la marca nueva del producto; el cambio de nombre en el código es la etapa E1 del plan maestro (rama `marca/cambio-nombre`, 30-oct a 5-nov) (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:11`, `:11`). **Hoy, en esta rama, el nombre visible sigue siendo «Nexora POS»**: pie de página `apps/web/src/App.tsx:1199`, ventana «Acerca de Nexora POS» `apps/web/src/App.tsx:154`, recibo `apps/web/src/POS.tsx:2341`. La palabra «Norexos» NO ENCONTRADO en `apps/web/src` ni `apps/api/src`. Al documentar pantallas se usa el texto que sale hoy («Nexora POS»).
+- Es un punto de venta (POS) con inventario, caja, compras, reportes y un módulo de cursos y citas (GV). Lo usa **Grupo MacGen** (suplementos, fajas, tenis y ropa deportiva, accesorios de gym, maquillaje) y su empresa hermana **GV Makeup Studio** (cursos, servicios, productos). Fuente: `apps/web/src/App.tsx:284-312` (caras del cubo de entrada) y `apps/web/src/App.tsx:347` («GRUPO MACGEN · GV MAKEUP STUDIO»).
+- **Nombre del producto.** **Norexos** es la marca nueva del producto; el cambio de nombre en el código es la etapa E1 del plan maestro (rama `marca/cambio-nombre`, 30-oct a 5-nov) (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:11`, `:11`). **Hoy, en esta rama, el nombre visible sigue siendo «Nexora POS»**: pie de página `apps/web/src/App.tsx:1197`, ventana «Acerca de Nexora POS» `apps/web/src/App.tsx:154`, recibo `apps/web/src/POS.tsx:2341`. La palabra «Norexos» NO ENCONTRADO en `apps/web/src` ni `apps/api/src`. Al documentar pantallas se usa el texto que sale hoy («Nexora POS»).
 - Moneda RD$, zona horaria `America/Santo_Domingo` (`packages/shared/src/index.ts:803`), ITBIS 18 % por defecto (`apps/api/prisma/schema.prisma:104`, campo `taxRate`).
 - Los recibos son **documento no fiscal**: «DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL» (`apps/web/src/Prints.tsx:509-510`). El sistema no emite NCF/e-CF (`apps/web/src/Prints.tsx:508`); solo «prepara la solicitud» si se activa en Configuración (`apps/web/src/Management.tsx:4224-4232`).
 - Stack: web React (`apps/web`), API NestJS (`apps/api`), PostgreSQL con Prisma (`apps/api/prisma/schema.prisma`), paquete compartido con reglas de dinero (`packages/shared/src/index.ts`).
@@ -65,6 +65,6 @@ DUDOSO (no inventar): el mínimo de 15 % no bloquea la venta ni el cambio de pre
 ## 6. Cosas que conviene saber antes de preguntar
 
 - Para entrar al sistema como Claude: `docs/coordinacion/claude-nube/entrar.py` (lee las credenciales del entorno; nunca se imprimen).
-- El menú que ve cada persona depende de sus permisos (`apps/web/src/App.tsx:653-655`). Ver `ROLES_Y_PERMISOS.md`.
+- El menú que ve cada persona depende de sus permisos (`apps/web/src/App.tsx:651-653`). Ver `ROLES_Y_PERMISOS.md`.
 - Un equipo nuevo debe ser aprobado por un gerente antes de vender o mover mercancía (`apps/web/src/realtime.tsx:513-516`).
 - Atajos de teclado en la caja: F2 buscar, F4 cliente, F8 en espera, F12 cobrar, Ctrl+K cambiar pantalla (`apps/web/src/App.tsx:1236-1260`).
