@@ -2175,3 +2175,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (31-oct 13:30 UTC) — orden 100 (nexora-cloud cd587933)
 - Orden 100 nueva. Punto 2 hecho en claude-pc/login-auditoria 12d41b9e (letra del login a 16 px, foco visible de 3 px, prueba tests/login-legible.test.ts; el 400 de /api/auth/refresh sin cookie lo responde el servidor, no el cliente: no tocado); CI recién lanzado, LISTA pendiente al verlo en verde. Sin Node 24 ni dependencias aquí: la prueba se comprobó con un script equivalente (falló 6, pasa 0 fallos).
 - Pendientes de la orden 100: puntos 1 (animación por pantalla), 3 (zod 4), 4 (intermitentes) y 5 (auditoría con sesión: NO COMPROBADO, sin credenciales). CI sin cambio: pc23, a1, b01 y lumina verdes. Último hash visto de nexora-cloud: cd587933.
+
+## Ciclo nube (31-oct 14:10 UTC) — orden 101 (nexora-cloud ae6d2613)
+- Orden 101 (la PC nunca para, cola permanente de 40 piezas) leída. login-auditoria tenía verify en rojo porque tests/login-legible.test.ts no estaba en vitest.config.ts; registrada en 7dec0efb, 3 CI en verde y LISTA escrita (pieza 7 hecha). CI sin cambio: pc23, a1, b01, lumina y rediseno-tienda 54ddeb80 verdes.
+- Pendiente: piezas 1–6 (animación por pantalla), 9, 10 y 34; este contenedor no tiene Node 24 ni dependencias, así que las piezas con e2e/captura quedan para la laptop. Último hash visto de nexora-cloud: ae6d2613.
