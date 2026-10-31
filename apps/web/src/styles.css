@@ -2788,7 +2788,7 @@ td strong {
 }
 .login-art p {
   color: #c7cbe8;
-  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
+  font-size: var(--fs-base);
   max-width: 340px;
   line-height: 1.8;
 }
@@ -2807,7 +2807,7 @@ td strong {
   display: flex;
   align-items: center;
   gap: 14px;
-  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
+  font-size: var(--fs-base);
   color: #fff;
   padding: 10px 14px;
   border-radius: 12px;
@@ -3025,7 +3025,7 @@ td strong {
   color: #fff;
 }
 .login-form-panel form > p {
-  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
+  font-size: var(--fs-base);
   margin: 0 0 30px;
   color: #b9bde0;
 }
@@ -3037,7 +3037,7 @@ td strong {
 }
 .login-form-panel .field {
   margin-bottom: 20px;
-  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
+  font-size: var(--fs-base);
   color: #dfe2ff;
 }
 .login-form-panel .field input {
@@ -3054,9 +3054,17 @@ td strong {
   color: #a9afd6;
 }
 .login-form-panel .field input:focus {
-  outline: none;
   border-color: var(--login-cyan);
   box-shadow: 0 0 0 3px #22d3ee33;
+}
+.login-form-panel .field input:focus-visible {
+  outline: 3px solid var(--login-cyan);
+  outline-offset: 2px;
+}
+.login-form-panel .button:focus-visible,
+.login-form-panel .show-password:focus-visible {
+  outline: 3px solid var(--login-cyan);
+  outline-offset: 2px;
 }
 .login-form-panel .password-change-fields {
   color: #e6e8ff;
