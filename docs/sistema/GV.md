@@ -60,7 +60,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 - **Estados de un pago**: `Verificado` (insignia verde), `Por verificar` (amarilla) o `Rechazado` (roja) (`Gv.tsx:666-674`). **Efectivo y tarjeta quedan verificados al registrarse; la transferencia queda por verificar** hasta que gerencia/administración la verifique (`docs/coordinacion/MODULO-GV.md:74`; esquema `apps/api/prisma/schema.prisma` modelo `GvPayment`, campo `verified`).
 - **Reglas de dinero** (`apps/api/src/gv-money.ts:1-8`): lo pagado cuenta solo lo verificado; «por verificar» va aparte; **ningún cobro puede superar el total** (contando lo por verificar) y el total no baja de lo cobrado; cancelada o reembolsada no aceptan pagos.
 - **Anular un pago** (botón **«Anular»**, con motivo de mínimo 3 letras, quien tenga `gv:write`): deja de contar, queda en auditoría y se registra el correcto con un pago nuevo (`Gv.tsx:640-654`, `:677-686`; API `POST /gv/payments/:id/void`, `apps/api/src/gv.ts:396-447`). No se anula en una inscripción reembolsada (`gv.ts:423`).
-- **Verificar o rechazar** (pestaña **«Por verificar»**, botones **«Verificar»** / **«Rechazar»**, el rechazo pide motivo): solo `gv:verify` (administración y gerencia), nunca quien registró el pago salvo `*`, solo transferencias pendientes y una sola vez (`Gv.tsx:885`; API `POST /gv/payments/:id/review`, `apps/api/src/gv.ts:449-520`, mensajes `:472-492`). Lista: `GET /gv/transfers/pending` (`gv.ts:747`). Esta pantalla muestra «No hay transferencias por verificar.» si está vacía (`Gv.tsx:941`).
+- **Verificar o rechazar** (pestaña **«Por verificar»**, botones **«Verificar»** / **«Rechazar»**, el rechazo pide motivo): solo `gv:verify` (administración y gerencia), nunca quien registró el pago salvo `*`, solo transferencias pendientes y una sola vez (`Gv.tsx:885`; API `POST /gv/payments/:id/review`, `apps/api/src/gv.ts:449-520`, mensajes `:472-492`). Lista: `GET /gv/transfers/pending` (`gv.ts:746`). Esta pantalla muestra «No hay transferencias por verificar.» si está vacía (`Gv.tsx:941`).
 
 ## 6. Citas (pestaña «Citas»)
 
@@ -86,7 +86,7 @@ Filtros **Desde** / **Hasta** (`Gv.tsx:983-991`). Secciones (`:970-1037`): **Ing
 | `gv:write`   | Crear/editar cursos, inscripciones, citas, interesadas; registrar y anular pagos. | Rol `gv`, `manager`, `admin`           |
 | `gv:reports` | Pestaña «Reportes».                                                               | Rol `gv`, `manager`, `admin`           |
 | `gv:verify`  | Verificar o rechazar transferencias.                                              | `manager`, `admin`; **no** el rol `gv` |
-| `*`          | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:779`).                 | `admin`                                |
+| `*`          | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:778`).                 | `admin`                                |
 
 Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `gv` (p. ej. la empleada Clary) no tiene acceso a configuración, usuarios, costos, inventario ni datos de MacGen (`docs/coordinacion/MODULO-GV.md:43-44`).
 
@@ -97,8 +97,10 @@ Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `
 
 ## 11. Incentivo por inscripción (orden 103)
 
-- Quien **registra la inscripción** de una alumna gana un monto fijo: **Automaquillaje RD$ 50** y **Perfeccionamiento RD$ 500** (tipo `personalizado`). Otros tipos no tienen incentivo. Cálculo en `apps/api/src/gv-incentives.ts:16` (`GV_INCENTIVO_POR_TIPO`, tarifas en código) y `apps/api/src/gv-incentives.ts:29` (`gvIncentiveFor`).
-- Devengo (propuesta de N2, **no confirmada por la dueña**): sólo con la inscripción pagada completa con pagos verificados; el mes es el del pago que la completó. Anular un pago verificado lo quita. Cancelada o reembolsada: no devenga.
-- Se calcula al leer, no se guarda. Lo ve quien tiene `sale:manage` (la misma vista de incentivos). API `GET /gv/incentives?period=AAAA-MM` (`apps/api/src/gv.ts:664`): filas por inscripción y total por persona, sin costos.
-- Catálogo (Génesis, 31-oct-2026): Brazilian touch (curso 8) no da incentivo a quien registra (lo lleva Yaisa aparte). Maquilladora profesional (RD$ 1,000) tiene tabla pero **aún no hay tipo de curso**: registrada como «personalizado» cobraría RD$ 500. El incentivo es RD$ fijo aunque el curso esté en US$; no se convierte ni se cambia ningún precio.
-- Pendiente: decidir el tipo de curso para maquilladora profesional y perfeccionamiento; que el cierre mensual guarde una instantánea como las ventas de caja; y configurar las tarifas desde la base de datos.
+- Quien **registra la inscripción** gana el incentivo fijo de su curso, según el catálogo de Génesis (`docs/operacion/GV_CATALOGO_CURSOS.md`): maquilladora profesional RD$ 1,000; automaquillaje RD$ 50; perfeccionamiento RD$ 500; **Brazilian touch RD$ 0** (lo lleva Yaisa aparte). Catálogo en `apps/api/src/gv-incentives.ts` (`GV_CATALOGO`); el curso se empata por nombre exacto.
+- **Devengo por porcentaje pagado** (decisión de la dueña): incentivo del mes = incentivo del curso × (pagado verificado en ese mes ÷ precio acordado). El resto se devenga cuando se paguen los abonos siguientes; al completarse queda 100 %, ni más ni menos. Un pago anulado o un reembolso resta su parte en su mes. Función `gvDevengoMes` en `apps/api/src/gv-incentives.ts`.
+- **Cursos en US$:** no devengan. Los pagos no registran moneda ni tasa; **DUDA**: cómo registrar la moneda del pago para poder calcular el porcentaje.
+- Se calcula al leer, no se guarda. Lo ve quien tiene `sale:manage`. API `GET /gv/incentives?period=AAAA-MM` (`apps/api/src/gv.ts`): filas por inscripción y total por persona, sin costos.
+- **DUDA:** las inscripciones canceladas no tienen regla explícita; hoy el devengo sigue a sus pagos verificados.
+- **DUDA:** «maquilladora profesional» (1 y 2) y «perfeccionamiento» (9 y 10) no tienen tipo de curso propio; el empate es por nombre. Si la alumna se registra con un nombre distinto, no devenga.
+- Pendiente: cierre mensual con instantánea como las ventas de caja; tarifas configurables en la base de datos.

@@ -44,7 +44,7 @@ import {
   planGvImportPayments,
   gvBankOptions,
 } from "./gv-money";
-import { GV_INCENTIVO_POR_TIPO, gvIncentiveFor } from "./gv-incentives";
+import { GV_CATALOGO, gvDevengoMes } from "./gv-incentives";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -668,21 +668,16 @@ export class GvController {
     @CurrentUser() actor: Actor,
   ) {
     const { period } = parse(
-      z.object({
-        period: z
-          .string()
-          .regex(/^\d{4}-\d{2}$/)
-          .optional(),
-      }),
+      z.object({ period: z.string().regex(/^\d{4}-\d{2}$/) }),
       query,
     );
     const enrollments = await this.db.gvEnrollment.findMany({
       where: {
         branchId: actor.branchId,
-        course: { type: { in: Object.keys(GV_INCENTIVO_POR_TIPO) } },
+        course: { name: { in: GV_CATALOGO.map((c) => c.nombre) } },
       },
       include: {
-        course: { select: { name: true, type: true } },
+        course: { select: { name: true } },
         payments: {
           select: {
             amount: true,
@@ -694,13 +689,17 @@ export class GvController {
       },
     });
     const calc = enrollments.flatMap((e) => {
-      const r = gvIncentiveFor({
-        courseType: e.course.type,
-        status: e.status,
-        agreedPrice: e.agreedPrice,
-        payments: e.payments,
-      });
-      if (!r || (period && r.period !== period)) return [];
+      const r = gvDevengoMes(
+        {
+          courseName: e.course.name,
+          agreedPrice: e.agreedPrice,
+          refundAmount: e.refundAmount,
+          refundDate: e.refundDate,
+          payments: e.payments,
+        },
+        period,
+      );
+      if (!r) return [];
       return [
         {
           enrollmentId: e.id,
@@ -734,7 +733,7 @@ export class GvController {
       });
     }
     return {
-      period: period ?? null,
+      period,
       rows,
       byPerson: [...porPersona.values()].map((p) => ({
         name: p.name,
