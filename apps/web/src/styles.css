@@ -6608,3 +6608,59 @@ td strong {
 .kpi-top {
   flex-wrap: wrap;
 }
+
+/* Orden 98 · pieza 2: animación del tablero (KPIs, franja y alertas). Solo transform y opacity,
+   tokens --nx-dur-*; prefers-reduced-motion lo apaga todo. */
+@keyframes tablero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tablero-kpis > .kpi-card,
+.kpi-strip > .kpi-strip-card,
+.dashboard-alerts > .dashboard-alert {
+  animation: tablero-enter var(--nx-dur-slow) var(--nx-ease-out) backwards;
+}
+.tablero-kpis > .kpi-card:nth-child(2),
+.kpi-strip > .kpi-strip-card:nth-child(2),
+.dashboard-alerts > .dashboard-alert:nth-child(2) {
+  animation-delay: 60ms;
+}
+.tablero-kpis > .kpi-card:nth-child(3),
+.kpi-strip > .kpi-strip-card:nth-child(3),
+.dashboard-alerts > .dashboard-alert:nth-child(3) {
+  animation-delay: 120ms;
+}
+.tablero-kpis > .kpi-card:nth-child(4),
+.kpi-strip > .kpi-strip-card:nth-child(4),
+.dashboard-alerts > .dashboard-alert:nth-child(4) {
+  animation-delay: 180ms;
+}
+.tablero-kpis > .kpi-card,
+.kpi-strip > .kpi-strip-card {
+  transition: transform var(--nx-dur-fast) var(--nx-ease-out);
+}
+.tablero-kpis > .kpi-card:hover,
+.kpi-strip > .kpi-strip-card:hover {
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tablero-kpis > .kpi-card,
+  .kpi-strip > .kpi-strip-card,
+  .dashboard-alerts > .dashboard-alert {
+    animation: none;
+  }
+  .tablero-kpis > .kpi-card,
+  .kpi-strip > .kpi-strip-card {
+    transition: none;
+  }
+  .tablero-kpis > .kpi-card:hover,
+  .kpi-strip > .kpi-strip-card:hover {
+    transform: none;
+  }
+}

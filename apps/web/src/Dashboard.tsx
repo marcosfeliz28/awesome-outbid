@@ -346,7 +346,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         </div>
         <YearPie go={go} />
         <DayCard />
-        <div className="kpi-grid">
+        <div className="kpi-grid tablero-kpis">
           {metric.map((m) => (
             <article className="kpi-card" key={m.label}>
               <div className="kpi-top">
