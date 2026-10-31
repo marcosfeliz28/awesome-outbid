@@ -704,6 +704,10 @@ kbd {
   margin: 0 10px;
   color: #8a93a6;
 }
+.breadcrumb .breadcrumb-root {
+  margin: 0;
+  color: inherit;
+}
 .breadcrumb strong {
   color: var(--text);
   font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
@@ -3383,6 +3387,10 @@ td strong {
   }
   .topbar-left .breadcrumb {
     font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
+  }
+  /* Con la letra legible la ruta no cabe en celular: queda solo la pantalla. */
+  .breadcrumb .breadcrumb-root {
+    display: none;
   }
   .topbar-separator {
     display: none;
