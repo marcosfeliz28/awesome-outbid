@@ -28,3 +28,5 @@ Con costo de IA hasta US$4.5 por usuario y hosting por definir, todos los planes
 
 ## Qué decide la dueña
 Plan elegido (A/B/C), moneda, tipo de cambio, descuentos, si se cobra la instalación y los módulos extra.
+
+Estudio de mercado y costo de hosting (orden 95 parte A, 31-oct-2026): ver docs/venta/ESTUDIO_PRECIOS_MERCADO.md.
