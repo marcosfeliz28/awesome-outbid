@@ -66,7 +66,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Margen** — `(precio − costo) / precio × 100`, **sin restar ITBIS**, con el precio tal como se cobra. **Mínimo 15 %** («Margen bajo»). Ver `README.md` §4.
 
-**Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1044`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:671-678`).
+**Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1044`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:673-680`).
 
 **NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3350`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3402`).
 

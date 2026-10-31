@@ -9,7 +9,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | # | Etiqueta | Permiso | Componente | Línea en `App.tsx` |
 |---|---|---|---|---|
 | 1 | **Mercancía** | `inventory:write` | `Merchandise` (`apps/web/src/Merchandise.tsx:279`) | 197 |
-| 2 | **Resumen** | `reports:read` | `Dashboard` (`apps/web/src/Dashboard.tsx:105`) | 203 |
+| 2 | **Resumen** | `reports:read` | `Dashboard` (`apps/web/src/Dashboard.tsx:106`) | 203 |
 | 3 | **Punto de venta** | `sale:write` | `POS` (`apps/web/src/POS.tsx:193`) | 209 |
 | 4 | **Ventas** | `sale:write` | `SalesHistory` (`apps/web/src/Management.tsx:3135`) | 213 |
 | 5 | **Solicitudes de anulación** | `sale:write` | `VoidRequests` (`apps/web/src/VoidRequests.tsx:15`) | 216 |
@@ -119,7 +119,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1019-1049`):
 
 ## Resumen
 
-- **Etiqueta:** «Resumen». **Permiso:** `reports:read`. **Componente:** `apps/web/src/Dashboard.tsx:105`. Encabezado «EL PULSO DE TU NEGOCIO» (`:176`).
+- **Etiqueta:** «Resumen». **Permiso:** `reports:read`. **Componente:** `apps/web/src/Dashboard.tsx:106`. Encabezado «EL PULSO DE TU NEGOCIO» (`:176`).
 - **Qué hace:** periodo («Este mes», «Últimos 7 días», «Otro día…», `:188-191`), ventas del periodo, «Así van tus ventas», «Un poco de atención», «Los favoritos de tu tienda», «Cada categoría cuenta», «Comparativo anual», «Horas pico» (`:378-640`), gastos, comisiones bancarias, mermas y «Ganancia neta» (solo con `profit:read`, `:663-681`). A la administración le avisa de solicitudes de anulación pendientes y deja aprobarlas desde aquí (`:233-282`).
 
 ## Alertas
