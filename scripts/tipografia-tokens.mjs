@@ -1,6 +1,6 @@
 // Orden 97 (letra legible): pasa cada `font-size: Npx` fuera de @media print a
 // `var(--fs-N)` y escribe los tokens --fs-N en el bloque :root de styles.css.
-// Escala: 13→15, 14→16, 15→17, 16→18, mayores ×1.1; todo lo menor de 13 sube a 14.
+// Escala: 13→15, 14→16, 15→17, 16→18, 17–23 ×1.1; desde 24 sin cambio; todo lo menor de 13 sube a 14.
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -8,7 +8,7 @@ const SRC = join(import.meta.dirname, "..", "apps", "web", "src");
 const escala = (n) => {
   if (n < 13) return 14;
   if (n <= 16) return n + 2;
-  return Math.round(n * 1.1);
+  return n >= 24 ? n : Math.round(n * 1.1);
 };
 
 function reescribir(texto, usados) {
