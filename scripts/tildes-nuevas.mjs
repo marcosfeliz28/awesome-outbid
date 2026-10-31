@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { fileURLToPath } from "node:url";
 // Tarea 99: busca en docs/ y apps/web/src textos con tildes rotas (caracteres
 // de reemplazo, mojibake) o un `?` en medio de una palabra en español
 // («descripci?n»). Solo informa; no cambia nada.
@@ -6,7 +7,7 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const i = process.argv.indexOf("--out");
 const out =
   i > 0 ? process.argv[i + 1] : join(root, "docs/auditoria/TILDES_NUEVAS.md");

@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,7 +8,7 @@ import { afterAll, describe, expect, it } from "vitest";
 // Bloque 15 (scripts de informe, solo lectura): cada script corre sin tocar el
 // repositorio (escribe en una carpeta temporal con --out) y su informe tiene la
 // forma esperada. Las comprobaciones estrictas son invariantes que hoy se cumplen.
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const tmp = mkdtempSync(join(tmpdir(), "bloque15-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 

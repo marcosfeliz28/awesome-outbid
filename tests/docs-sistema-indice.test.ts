@@ -1,10 +1,14 @@
+import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 // Base del sistema (docs/sistema): el índice debe ser JSON válido y listar
 // exactamente los .md de la carpeta (INDICE.json puede listarse a sí mismo).
-const docs = join(new URL("..", import.meta.url).pathname, "docs/sistema");
+const docs = join(
+  fileURLToPath(new URL("..", import.meta.url)),
+  "docs/sistema",
+);
 const indice = JSON.parse(readFileSync(join(docs, "INDICE.json"), "utf8")) as {
   archivos: { archivo: string; titulo: string; resumen: string }[];
 };

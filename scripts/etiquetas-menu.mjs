@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+import { fileURLToPath } from "node:url";
 // Tarea 95: compara las etiquetas del menú (lista `navigation` de App.tsx) con la
 // tabla de docs/sistema/PANTALLAS.md. Solo lectura; escribe un informe.
 //   node scripts/etiquetas-menu.mjs [--out ruta.md]
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const i = process.argv.indexOf("--out");
 const out =
   i > 0

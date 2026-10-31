@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+import { fileURLToPath } from "node:url";
 // Tarea 97: lista las rutas de la API (@Get/@Post/@Put/@Patch/@Delete en
 // apps/api/src) con su @Permit o @Public. Solo lectura; escribe un informe.
 //   node scripts/rutas-y-permisos.mjs [--out ruta.md]
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const i = process.argv.indexOf("--out");
 const out =
   i > 0

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { fileURLToPath } from "node:url";
 // Tarea 96: cuenta por archivo las apariciones de «Nexora POS», «Nexora» y
 // «Norexos» en apps/web/src y docs/. Solo cuenta; no cambia nada. Es insumo de
 // la etapa E1 del cambio de nombre. «Nexora» incluye a «Nexora POS».
@@ -6,7 +7,7 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const i = process.argv.indexOf("--out");
 const out =
   i > 0

@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -6,7 +7,7 @@ import { describe, expect, it } from "vitest";
 // debe apuntar a un archivo que existe y a una línea que existe. Una cita
 // sin carpeta (`sales.ts:1469`) se resuelve por nombre de archivo en el repo.
 // Solo comprueba que la línea exista, no que el texto citado sea el correcto.
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const docs = join(root, "docs/sistema");
 
 function walk(dir: string, out: string[] = []): string[] {

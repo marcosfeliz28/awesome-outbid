@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+import { fileURLToPath } from "node:url";
 // Tarea 98: lista las pruebas de tests/*.test.ts con su primer `describe`.
 // Solo lectura; escribe un informe.
 //   node scripts/mapa-de-pruebas.mjs [--out ruta.md]
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const i = process.argv.indexOf("--out");
 const out =
   i > 0 ? process.argv[i + 1] : join(root, "docs/auditoria/MAPA_DE_PRUEBAS.md");

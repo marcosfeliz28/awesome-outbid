@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { fileURLToPath } from "node:url";
 // Tarea 100: verifica en docs/venta/*.md y docs/diseno/borradores-local/*.md que
 // «e-CF», «DGII» y «Nexora POS» no aparezcan como promesa. Una aparición en una
 // línea que la niega o la presenta como nombre anterior se lista aparte. Solo
@@ -7,7 +8,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = fileURLToPath(new URL("..", import.meta.url));
 const i = process.argv.indexOf("--out");
 const out =
   i > 0
