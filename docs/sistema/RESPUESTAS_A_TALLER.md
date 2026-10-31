@@ -8,7 +8,7 @@ Rama `cola-n26` (= `nexora-cloud`, la tienda en vivo). Cada respuesta lleva su c
 
 Son **dos pasos en dos pantallas**:
 
-1. **Entrar**: usuario y contraseña, botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:468`, `:512`). Una cajera (`seller`) no tiene permiso de «Resumen» ni de «Mercancía», así que el sistema la lleva sola a **«Punto de venta»**, la primera pantalla del menú que sí puede ver (`apps/web/src/App.tsx:733-740`; permisos de `seller` en `packages/shared/src/index.ts:782`).
+1. **Entrar**: usuario y contraseña, botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:466`, `:512`). Una cajera (`seller`) no tiene permiso de «Resumen» ni de «Mercancía», así que el sistema la lleva sola a **«Punto de venta»**, la primera pantalla del menú que sí puede ver (`apps/web/src/App.tsx:731-738`; permisos de `seller` en `packages/shared/src/index.ts:782`).
 2. **Abrir la caja**: menú lateral › **Caja** › botón **«Abrir caja»** (o «Abrir mi caja» en el centro) › en la ventana **«Abrir mi caja»** escribe **«Efectivo inicial»** (el sistema sugiere lo que ella misma dejó al cerrar la última vez) › confirma (`apps/web/src/Management.tsx:1673-1677`, `:1738-1745`, `:2015-2055`). Si el fondo es menor que lo sugerido debe escribir **«Nota si el fondo es menor que el sugerido»** (`:2029-2039`).
 3. Desde el Punto de venta, si no hay caja abierta, aparece el enlace **«Abre tu caja para comenzar»** que lleva a Caja (`apps/web/src/POS.tsx:1218-1221`), y el estado dice «Caja sin abrir» → «Caja abierta» (`:1024-1028`). Intentar cobrar sin caja: «Abre tu caja antes de cobrar.» (`:523`).
 

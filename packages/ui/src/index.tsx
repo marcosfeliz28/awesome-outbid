@@ -86,3 +86,4 @@ export function Modal({
     </Dialog.Root>
   );
 }
+export * from "./nx-primitivos";

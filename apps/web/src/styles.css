@@ -61,7 +61,7 @@
   --surface: #fff;
   --surface-soft: #f9fafc;
   --text: #1b2134;
-  --muted: #64748b;
+  --muted: #54627a;
   --border: #eaeaf2;
   --primary: #7c3aed;
   --primary-soft: #f2ecfe;
@@ -80,7 +80,7 @@
   color-scheme: light;
   font-family: "Inter", sans-serif;
   font-synthesis: none;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   font-weight: 450;
   color: var(--text);
   background: var(--bg);
@@ -90,7 +90,7 @@
   --surface: #151b2b;
   --surface-soft: #1b2235;
   --text: #e2e8f0;
-  --muted: #9ba6ba;
+  --muted: #aab4c6;
   --border: #293247;
   --primary: #a78bfa;
   --primary-soft: #2c2246;
@@ -112,6 +112,18 @@
 }
 body {
   margin: 0;
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+}
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+th,
+label,
+small,
+.badge {
+  font-weight: var(--fw-label);
 }
 button,
 a,
@@ -156,16 +168,16 @@ h3 {
   margin: 0;
 }
 h1 {
-  font-size: 29px;
+  font-size: max(var(--fs-min), calc(29px * var(--fs-scale)));
   line-height: 1.4;
 }
 h2 {
-  font-size: 16px;
+  font-size: max(var(--fs-min), calc(16px * var(--fs-scale)));
   line-height: 1.5;
   letter-spacing: -0.025em;
 }
 h3 {
-  font-size: 14px;
+  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   letter-spacing: -0.02em;
 }
 p {
@@ -175,7 +187,7 @@ p {
 }
 small {
   display: block;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   line-height: 1.6;
   color: var(--muted);
 }
@@ -256,7 +268,7 @@ a:focus-visible {
 }
 .about h3 {
   margin: 4px 0 6px;
-  font-size: 14px;
+  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
 }
 /* 03-A1: aviso corto de privacidad al registrar un cliente. */
 .privacy-notice {
@@ -266,7 +278,7 @@ a:focus-visible {
   background: var(--surface-soft);
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   line-height: 1.45;
 }
 .privacy-notice a {
@@ -292,7 +304,7 @@ a:focus-visible {
   overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   line-height: 1.45;
   padding: 12px;
   border-radius: 9px;
@@ -305,7 +317,7 @@ label:has(> input[type="file"].sr-only:focus-visible) {
 }
 kbd {
   font-family: inherit;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   background: var(--surface-soft);
   border: 1px solid var(--border);
   padding: 3px 5px;
@@ -319,7 +331,7 @@ kbd {
   justify-content: center;
   min-height: 44px;
   border-radius: 9px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   font-weight: 600;
   padding: 11px 16px;
   border: 1px solid transparent;
@@ -366,7 +378,7 @@ kbd {
   align-items: center;
   gap: 5px;
   padding: 5px 9px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 600;
   border-radius: 6px;
   white-space: nowrap;
@@ -425,7 +437,7 @@ kbd {
   color: var(--positive-text) !important;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   font-weight: 750;
   letter-spacing: 1.6px;
   color: var(--muted);
@@ -457,7 +469,7 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   font-weight: 600;
   color: var(--primary) !important;
   min-height: 36px;
@@ -504,7 +516,7 @@ kbd {
   padding: 0 8px;
   margin-bottom: 32px;
   font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 24px;
+  font-size: max(var(--fs-min), calc(24px * var(--fs-scale)));
   font-weight: 800;
   letter-spacing: -1.4px;
 }
@@ -514,7 +526,7 @@ kbd {
   border-radius: 11px;
   background: #7c3aed;
   color: #fff;
-  font-size: 33px;
+  font-size: max(var(--fs-min), calc(33px * var(--fs-scale)));
   line-height: 35px;
   text-align: center;
   font-style: italic;
@@ -525,14 +537,14 @@ kbd {
 }
 .brand-icon span {
   color: #f9a8d4;
-  font-size: 22px;
+  font-size: max(var(--fs-min), calc(22px * var(--fs-scale)));
   position: absolute;
   bottom: 1px;
   right: 5px;
 }
 .brand-pos {
   font-family: "Inter", sans-serif;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   letter-spacing: 0.9px;
   background: var(--primary-soft);
   color: var(--primary);
@@ -551,10 +563,10 @@ kbd {
   margin-bottom: 26px;
 }
 .store-switch strong {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
 }
 .store-switch small {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 .store-switch > svg {
   color: var(--muted);
@@ -571,7 +583,7 @@ kbd {
   justify-content: center;
 }
 .nav-caption {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   color: var(--muted);
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -590,7 +602,7 @@ kbd {
   min-height: 42px;
   width: 100%;
   border-radius: 8px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   font-weight: 500;
   text-align: left;
   color: var(--muted) !important;
@@ -625,21 +637,21 @@ kbd {
   margin-bottom: 18px;
 }
 .help-symbol {
-  font-size: 24px;
+  font-size: max(var(--fs-min), calc(24px * var(--fs-scale)));
   color: var(--primary);
   margin-bottom: 9px;
 }
 .help-card strong {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .help-card p {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   line-height: 1.7;
   margin: 7px 0 10px;
   color: var(--muted-on-soft);
 }
 .help-card button {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 600;
   color: var(--primary);
   display: flex;
@@ -681,7 +693,7 @@ kbd {
   flex-shrink: 0;
 }
 .breadcrumb {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: var(--muted);
   white-space: nowrap;
   min-width: 0;
@@ -694,7 +706,7 @@ kbd {
 }
 .breadcrumb strong {
   color: var(--text);
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 550;
 }
 .global-search {
@@ -706,12 +718,12 @@ kbd {
   border-radius: 7px;
   padding: 8px 10px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   min-height: 36px;
 }
 .global-search kbd {
   margin-left: 10px;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   padding: 2px 4px;
   background: var(--surface);
 }
@@ -719,7 +731,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: var(--positive-text);
   white-space: nowrap;
 }
@@ -761,15 +773,15 @@ kbd {
   border-radius: 50%;
   color: #7c3aed;
   background: #ede4fc;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 650;
 }
 .account strong {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   display: block;
 }
 .account small {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 .account > svg {
   margin-left: 7px;
@@ -790,7 +802,7 @@ kbd {
   align-items: center;
   gap: 9px;
   min-height: 44px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   padding: 10px !important;
   width: 100%;
   text-align: left;
@@ -814,10 +826,10 @@ kbd {
   margin-bottom: 24px;
 }
 .page-heading h1 {
-  font-size: 27px;
+  font-size: max(var(--fs-min), calc(27px * var(--fs-scale)));
 }
 .page-heading p {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   margin: 7px 0 0;
   line-height: 1.5;
 }
@@ -828,18 +840,18 @@ kbd {
   flex-wrap: wrap;
 }
 .heading-actions select {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   min-height: 40px;
   border-radius: 8px;
 }
 .heading-actions .button {
   min-height: 40px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   padding: 10px 13px;
 }
 .wave {
   color: #e7a531;
-  font-size: 24px;
+  font-size: max(var(--fs-min), calc(24px * var(--fs-scale)));
   vertical-align: middle;
   margin-left: 5px;
 }
@@ -848,7 +860,7 @@ kbd {
   justify-content: space-between;
   gap: 15px;
   padding: 14px 32px 20px;
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: var(--muted);
 }
 .panel {
@@ -867,16 +879,16 @@ kbd {
   padding: 22px 22px 18px;
 }
 .panel-heading h2 {
-  font-size: 14px;
+  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
 }
 .panel-heading p {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   margin: 5px 0 0;
   line-height: 1.6;
 }
 .panel-heading .button {
   min-height: 36px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
 }
 .panel-link {
   padding: 15px 22px !important;
@@ -885,7 +897,7 @@ kbd {
   align-items: center;
   justify-content: space-between;
   color: var(--primary) !important;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 600;
   border-top: 1px solid var(--border) !important;
 }
@@ -902,7 +914,7 @@ kbd {
   overflow: hidden;
 }
 .welcome-banner h2 {
-  font-size: 23px;
+  font-size: max(var(--fs-min), calc(23px * var(--fs-scale)));
   line-height: 1.4;
   color: #32214f;
   margin-top: 9px;
@@ -912,7 +924,7 @@ kbd {
   color: #7c3aed;
 }
 .welcome-banner p {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: #6b5b7d;
   margin: 7px 0 10px;
 }
@@ -920,12 +932,12 @@ kbd {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 650;
   color: #7c3aed;
 }
 .banner-chip {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   color: #7c6794;
   font-weight: 500;
 }
@@ -965,7 +977,7 @@ kbd {
   border-radius: 0 4px 10px 0;
 }
 .bag-shape > span {
-  font-size: 72px;
+  font-size: max(var(--fs-min), calc(72px * var(--fs-scale)));
   font-family: "Plus Jakarta Sans", sans-serif;
   font-weight: 800;
   font-style: italic;
@@ -976,7 +988,7 @@ kbd {
 }
 .bag-shape > span span {
   color: #fbbddd;
-  font-size: 40px;
+  font-size: max(var(--fs-min), calc(40px * var(--fs-scale)));
   position: absolute;
   left: 27px;
   top: 40px;
@@ -1008,20 +1020,20 @@ kbd {
   color: #8b5cf6;
 }
 .floating-tag span {
-  font-size: 7px;
+  font-size: max(var(--fs-min), calc(7px * var(--fs-scale)));
   /* G12: contraste AA sobre blanco (antes #b1a8bd, 2.28:1). */
   color: #6b5b7d;
 }
 .floating-tag strong {
   display: block;
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: #695182;
   margin-top: 4px;
 }
 .banner-spark {
   position: absolute;
   color: #a885e0;
-  font-size: 27px;
+  font-size: max(var(--fs-min), calc(27px * var(--fs-scale)));
 }
 .banner-spark.one {
   right: 28px;
@@ -1031,7 +1043,7 @@ kbd {
   left: 56px;
   bottom: -2px;
   color: #eda8c6;
-  font-size: 34px;
+  font-size: max(var(--fs-min), calc(34px * var(--fs-scale)));
 }
 .floating-ticket {
   position: absolute;
@@ -1087,7 +1099,8 @@ kbd {
   gap: 16px;
   margin-bottom: 22px;
 }
-.kpi-card {
+.kpi-card,
+.kpi-strip .kpi-strip-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 11px;
@@ -1098,7 +1111,7 @@ kbd {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: var(--muted);
   gap: 8px;
 }
@@ -1114,7 +1127,7 @@ kbd {
   stroke-width: 1.7;
 }
 .kpi-card > strong {
-  font-size: 25px;
+  font-size: max(var(--fs-min), calc(25px * var(--fs-scale)));
   font-weight: 750;
   letter-spacing: -1px;
   display: block;
@@ -1125,13 +1138,13 @@ kbd {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   color: var(--muted);
 }
 .trend {
   display: inline-flex;
   align-items: center;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   font-weight: 650;
   gap: 1px;
 }
@@ -1164,7 +1177,7 @@ kbd {
   justify-content: space-between;
   align-items: center;
   padding: 13px 22px;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   color: var(--muted);
 }
 .chart-bottom button {
@@ -1179,7 +1192,7 @@ kbd {
   height: 4px;
 }
 .alert-counter {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 650;
   background: var(--alert-counter-bg);
   color: var(--warning-text);
@@ -1217,13 +1230,13 @@ kbd {
   flex-shrink: 0;
 }
 .dashboard-alert strong {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 600;
   line-height: 1.5;
   display: block;
 }
 .dashboard-alert p {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   line-height: 1.6;
   margin: 4px 0 0;
 }
@@ -1235,7 +1248,7 @@ kbd {
 .empty-small {
   padding: 30px 0;
   text-align: center;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .dashboard-bottom-grid {
   display: grid;
@@ -1253,7 +1266,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   margin-bottom: 8px;
 }
 .category-row span {
@@ -1267,7 +1280,7 @@ kbd {
   border-radius: 50%;
 }
 .category-row strong {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: var(--muted);
   font-weight: 550;
 }
@@ -1294,7 +1307,7 @@ kbd {
   color: var(--primary);
 }
 .insight-note p {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   line-height: 1.7;
   margin: 0;
 }
@@ -1317,13 +1330,13 @@ kbd {
   border: 0;
 }
 .financial-strip span {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: var(--muted);
   display: block;
   margin-bottom: 7px;
 }
 .financial-strip strong {
-  font-size: 15px;
+  font-size: max(var(--fs-min), calc(15px * var(--fs-scale)));
   letter-spacing: -0.5px;
   font-variant-numeric: tabular-nums;
 }
@@ -1335,12 +1348,12 @@ table {
   border-collapse: collapse;
   width: 100%;
   text-align: left;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 th {
   padding: 13px 20px;
   background: var(--surface-soft);
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   letter-spacing: 0.7px;
   color: var(--muted);
   font-weight: 550;
@@ -1361,15 +1374,15 @@ tbody tr:hover {
   background: var(--surface-soft);
 }
 td small {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   line-height: 1.6;
   margin-top: 4px;
 }
 td .badge {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 td strong {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 600;
 }
 .rank-product {
@@ -1385,7 +1398,7 @@ td strong {
   height: 27px;
   width: 27px;
   border-radius: 7px;
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: var(--muted);
   background: var(--surface-soft);
 }
@@ -1415,12 +1428,12 @@ td strong {
   border: 0;
   box-shadow: none;
   width: 100%;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   min-height: 39px;
 }
 .table-toolbar select {
   min-height: 39px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .table-actions {
   display: flex;
@@ -1451,7 +1464,7 @@ td strong {
   align-items: center;
   justify-content: flex-end;
   padding: 12px 20px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   border-top: 1px solid var(--border);
 }
 .pagination > span {
@@ -1460,7 +1473,7 @@ td strong {
 }
 .pagination .button {
   min-height: 34px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
 }
 .tabs {
   display: flex;
@@ -1474,7 +1487,7 @@ td strong {
   padding: 10px 12px !important;
   min-height: 42px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   white-space: nowrap;
   color: var(--muted);
 }
@@ -1552,7 +1565,7 @@ td strong {
   margin-bottom: 18px;
 }
 .modal-heading h2 {
-  font-size: 17px;
+  font-size: max(var(--fs-min), calc(17px * var(--fs-scale)));
 }
 .modal-heading .icon-button {
   height: 34px;
@@ -1563,13 +1576,13 @@ td strong {
   flex-direction: column;
   gap: 7px;
   margin-bottom: 15px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .field > span {
   font-weight: 550;
 }
 .field small {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
 }
 .field input,
 .field select,
@@ -1593,7 +1606,7 @@ td strong {
   border: 1px solid #ffd9dd;
   padding: 12px;
   border-radius: 8px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   line-height: 1.6;
   margin: 12px 0;
 }
@@ -1613,7 +1626,7 @@ td strong {
   border: 1px solid var(--border);
   border-radius: 22px;
   background: var(--surface-soft);
-  font-size: 32px;
+  font-size: max(var(--fs-min), calc(32px * var(--fs-scale)));
   color: #ba9bea;
   display: flex;
   align-items: center;
@@ -1621,7 +1634,7 @@ td strong {
   margin: 0 auto 20px;
 }
 .empty p {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   max-width: 250px;
   margin: 8px auto 20px;
 }
@@ -1632,7 +1645,7 @@ td strong {
   min-height: 160px;
   gap: 10px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .error-panel {
   min-height: 160px;
@@ -1647,7 +1660,7 @@ td strong {
   color: var(--danger-text);
 }
 .error-panel p {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .toast {
   position: fixed;
@@ -1665,7 +1678,7 @@ td strong {
   padding: 16px 20px;
   box-shadow: 0 12px 35px #0003;
   z-index: 200;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .toast.error {
   background: #54242f;
@@ -1708,7 +1721,7 @@ td strong {
   overflow: auto;
 }
 .customer-list button small {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
 }
 .shortcut-list {
   display: grid;
@@ -1718,7 +1731,7 @@ td strong {
 .shortcut-list span {
   display: flex;
   gap: 10px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .shortcut-list kbd {
   min-width: 80px;
@@ -1740,7 +1753,7 @@ td strong {
   margin-bottom: 22px;
 }
 .pos-catalog .page-heading h1 {
-  font-size: 25px;
+  font-size: max(var(--fs-min), calc(25px * var(--fs-scale)));
 }
 .title-dot {
   display: inline-block;
@@ -1767,7 +1780,7 @@ td strong {
   width: 100%;
   background: none;
   padding: 17px 0;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .pos-search > svg:last-child {
   border-left: 1px solid var(--border);
@@ -1789,7 +1802,7 @@ td strong {
   border-radius: 7px;
   padding: 9px 12px !important;
   white-space: nowrap;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   background: var(--surface) !important;
   color: var(--muted);
   display: flex;
@@ -1810,7 +1823,7 @@ td strong {
 .catalog-caption {
   display: flex;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: var(--muted);
   margin-bottom: 18px;
 }
@@ -1850,7 +1863,7 @@ td strong {
   position: absolute;
   top: 10px;
   left: 10px;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 .add-product {
   position: absolute;
@@ -1872,13 +1885,13 @@ td strong {
 }
 .product-category {
   color: var(--muted);
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.6px;
 }
 .product-info h3 {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   line-height: 1.35;
   margin: 7px 0 4px;
   /* Nombre completo, sin recorte: el sabor, tono o talla va al final y debe verse. */
@@ -1886,7 +1899,7 @@ td strong {
   overflow-wrap: anywhere;
 }
 .product-info p {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   margin: 0 0 13px;
 }
 .product-bottom {
@@ -1896,12 +1909,12 @@ td strong {
   gap: 8px;
 }
 .product-bottom strong {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   font-weight: 700;
   letter-spacing: -0.3px;
 }
 .product-bottom span {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   color: var(--muted);
 }
 .cart-panel {
@@ -1924,16 +1937,16 @@ td strong {
   border-bottom: 1px solid var(--border);
 }
 .cart-heading h2 {
-  font-size: 16px;
+  font-size: max(var(--fs-min), calc(16px * var(--fs-scale)));
 }
 .cart-heading > div > span {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: var(--muted);
   display: block;
   margin-top: 5px;
 }
 .cart-heading .badge {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
 }
 .customer-selector {
   display: flex;
@@ -1947,10 +1960,10 @@ td strong {
   text-align: left;
 }
 .customer-selector strong {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
 }
 .customer-selector small {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   margin-top: 2px;
 }
 .customer-selector > svg {
@@ -1993,12 +2006,12 @@ td strong {
   min-width: 0;
 }
 .cart-item-detail strong {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   line-height: 1.5;
   display: block;
 }
 .cart-item-detail small {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   margin-top: 3px;
 }
 .cart-item-controls {
@@ -2014,7 +2027,7 @@ td strong {
   border-radius: 6px;
   height: 26px;
   background: var(--surface);
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
 }
 .quantity-control button {
   height: 26px;
@@ -2032,7 +2045,7 @@ td strong {
 .line-discount {
   display: flex;
   align-items: center;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   color: var(--muted);
 }
 .line-discount input {
@@ -2043,7 +2056,7 @@ td strong {
   min-height: 25px;
   width: 30px;
   text-align: right;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 .cart-line-total {
   display: flex;
@@ -2056,14 +2069,14 @@ td strong {
   padding: 0;
 }
 .cart-line-total strong {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   white-space: nowrap;
 }
 .cart-items .empty {
   padding: 50px 15px;
 }
 .cart-items .empty h3 {
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
 }
 .cart-summary {
   padding: 20px;
@@ -2075,11 +2088,11 @@ td strong {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: var(--muted);
 }
 .cart-summary > div strong {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 550;
   color: var(--text);
 }
@@ -2087,17 +2100,17 @@ td strong {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
 }
 .discount-input input {
   min-height: 22px;
   width: 34px;
   padding: 1px 3px;
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   border-radius: 5px;
 }
 .discount-input small {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   margin-left: 3px;
 }
 .cart-summary > .cart-total {
@@ -2107,19 +2120,19 @@ td strong {
   margin-bottom: 19px !important;
 }
 .cart-summary > .cart-total span {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   color: var(--text);
   font-weight: 550;
 }
 .cart-summary > .cart-total strong {
-  font-size: 23px;
+  font-size: max(var(--fs-min), calc(23px * var(--fs-scale)));
   font-weight: 750;
   letter-spacing: -0.8px;
 }
 .charge-button {
   height: 49px;
   width: 100%;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   background: var(--success-strong);
 }
 .charge-button span {
@@ -2130,7 +2143,7 @@ td strong {
   border-color: #ffffff30;
   background: #ffffff18;
   color: #fff;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 .cart-bottom-actions {
   display: flex;
@@ -2143,17 +2156,17 @@ td strong {
   gap: 5px;
   align-items: center;
   color: var(--muted);
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   min-height: 44px;
 }
 .cart-security {
   text-align: center;
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   margin-top: 9px;
   color: var(--muted);
 }
 .open-cash-link {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: var(--primary);
   display: flex;
   align-items: center;
@@ -2180,10 +2193,10 @@ td strong {
   background: var(--primary-soft) !important;
 }
 .variant-option strong {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .variant-option > span:not(.badge) {
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
 }
 .variant-option .badge {
   align-self: flex-start;
@@ -2208,11 +2221,11 @@ td strong {
   margin: 10px 0 25px;
 }
 .payment-total > span {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   color: var(--muted);
 }
 .payment-total h2 {
-  font-size: 36px;
+  font-size: max(var(--fs-min), calc(36px * var(--fs-scale)));
   color: var(--primary);
   margin: 10px 0;
   font-variant-numeric: tabular-nums;
@@ -2234,7 +2247,7 @@ td strong {
   border: 1px solid var(--border) !important;
   border-radius: 10px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   min-height: 80px;
 }
 .payment-methods button.active {
@@ -2254,7 +2267,7 @@ td strong {
   flex: 1;
   border: 1px solid var(--border) !important;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
 }
 .payment-list {
   margin-top: 16px;
@@ -2265,13 +2278,13 @@ td strong {
   gap: 12px;
   padding: 11px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .payment-list strong {
   margin-left: auto;
 }
 .payment-list small {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
 }
 .payment-list button {
   color: var(--muted);
@@ -2291,11 +2304,11 @@ td strong {
   gap: 8px;
 }
 .payment-balance span {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: var(--muted);
 }
 .payment-balance strong {
-  font-size: 20px;
+  font-size: max(var(--fs-min), calc(20px * var(--fs-scale)));
   font-variant-numeric: tabular-nums;
 }
 .sale-success {
@@ -2314,7 +2327,7 @@ td strong {
   margin: 0 auto 20px;
 }
 .sale-success h2 {
-  font-size: 30px;
+  font-size: max(var(--fs-min), calc(30px * var(--fs-scale)));
 }
 .receipt-actions {
   display: grid;
@@ -2346,7 +2359,7 @@ td strong {
   padding: 15px;
 }
 .product-detail h2 {
-  font-size: 23px;
+  font-size: max(var(--fs-min), calc(23px * var(--fs-scale)));
   margin: 12px 0;
 }
 .barcode-labels {
@@ -2368,14 +2381,14 @@ td strong {
   color: #111;
 }
 .barcode-label strong {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .barcode-label span {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   letter-spacing: 1px;
 }
 .barcode-label b {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   margin-top: 4px;
 }
 .purchase-lines > div {
@@ -2398,17 +2411,17 @@ td strong {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .budget-card h2 {
-  font-size: 23px;
+  font-size: max(var(--fs-min), calc(23px * var(--fs-scale)));
   margin: 15px 0 7px;
 }
 .budget-card .progress-track {
   margin: 18px 0 12px;
 }
 .budget-card > .badge {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 .cash-overview {
   display: grid;
@@ -2427,22 +2440,22 @@ td strong {
   color: #fff;
 }
 .cash-main h2 {
-  font-size: 20px;
+  font-size: max(var(--fs-min), calc(20px * var(--fs-scale)));
   margin-top: 16px;
 }
 .cash-main p {
   color: #ffffff;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .cash-main > strong {
-  font-size: 35px;
+  font-size: max(var(--fs-min), calc(35px * var(--fs-scale)));
   font-weight: 750;
   display: block;
   margin: 25px 0 8px;
   letter-spacing: -1px;
 }
 .cash-main > span:last-child {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   color: #ffffff;
 }
 .cash-methods {
@@ -2453,7 +2466,7 @@ td strong {
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
   padding: 19px 0;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .cash-methods > div:last-child {
   border: 0;
@@ -2485,13 +2498,13 @@ td strong {
   justify-content: center;
 }
 .clearance-intro h2 {
-  font-size: 17px;
+  font-size: max(var(--fs-min), calc(17px * var(--fs-scale)));
 }
 .clearance-intro p {
   color: var(--muted-on-soft);
 }
 .clearance-intro p {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   margin: 5px 0;
 }
 .clearance-intro > .badge {
@@ -2517,14 +2530,14 @@ td strong {
   border-radius: 9px;
 }
 .clearance-top h3 {
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   margin: 10px 0 4px;
 }
 .clearance-top small {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 .clearance-top .badge {
-  font-size: 8px;
+  font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
 }
 .clearance-metrics {
   display: grid;
@@ -2536,16 +2549,16 @@ td strong {
   border-bottom: 1px solid var(--border);
 }
 .clearance-metrics span {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   color: var(--muted);
   display: block;
   margin-bottom: 7px;
 }
 .clearance-metrics strong {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .clearance-card .button {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   justify-content: flex-start;
 }
 .clearance-card .button svg:last-child {
@@ -2565,7 +2578,7 @@ td strong {
   align-items: center;
   gap: 10px;
   padding: 11px 10px !important;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: var(--muted);
   width: 100%;
   text-align: left;
@@ -2580,7 +2593,7 @@ td strong {
   margin-left: auto;
 }
 .report-menu .report-group-title {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   font-weight: 700;
   color: var(--text);
   text-transform: uppercase;
@@ -2588,7 +2601,7 @@ td strong {
 }
 .report-group-count {
   margin-left: 6px;
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: var(--muted);
   font-weight: 600;
 }
@@ -2616,10 +2629,10 @@ td strong {
   flex: 1;
 }
 .alert-row strong {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .alert-row p {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   margin: 5px 0;
 }
 .settings-summary {
@@ -2630,11 +2643,11 @@ td strong {
   padding: 30px;
 }
 .settings-summary h2 {
-  font-size: 24px;
+  font-size: max(var(--fs-min), calc(24px * var(--fs-scale)));
   margin: 16px 0 10px;
 }
 .settings-summary p {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .settings-rules {
   display: grid;
@@ -2649,11 +2662,11 @@ td strong {
   gap: 12px;
 }
 .settings-rules span {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   color: var(--muted);
 }
 .settings-rules strong {
-  font-size: 19px;
+  font-size: max(var(--fs-min), calc(19px * var(--fs-scale)));
 }
 .roles-list {
   padding: 0 20px 20px;
@@ -2678,7 +2691,7 @@ td strong {
 }
 .style-guide h2 {
   margin: 30px 0 20px;
-  font-size: 20px;
+  font-size: max(var(--fs-min), calc(20px * var(--fs-scale)));
 }
 .style-guide h2:first-child {
   margin-top: 0;
@@ -2696,10 +2709,10 @@ td strong {
 }
 .swatch-grid strong {
   display: block;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .swatch-grid small {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   margin-top: 5px;
 }
 .style-row {
@@ -2747,7 +2760,7 @@ td strong {
   color: #fff;
   padding: 0;
   margin: 0;
-  font-size: 28px;
+  font-size: max(var(--fs-min), calc(28px * var(--fs-scale)));
 }
 .login-art .brand-icon {
   background: linear-gradient(135deg, var(--login-glow), var(--login-cyan));
@@ -2763,7 +2776,7 @@ td strong {
   letter-spacing: 3px;
 }
 .login-art h1 {
-  font-size: 48px;
+  font-size: max(var(--fs-min), calc(48px * var(--fs-scale)));
   letter-spacing: -2px;
   line-height: 1.2;
   margin: 20px 0;
@@ -2775,7 +2788,7 @@ td strong {
 }
 .login-art p {
   color: #c7cbe8;
-  font-size: 14px;
+  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   max-width: 340px;
   line-height: 1.8;
 }
@@ -2794,7 +2807,7 @@ td strong {
   display: flex;
   align-items: center;
   gap: 14px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   color: #fff;
   padding: 10px 14px;
   border-radius: 12px;
@@ -2874,12 +2887,12 @@ td strong {
   filter: drop-shadow(0 0 10px #f472b6);
 }
 .scene-cube .face strong {
-  font-size: 18px;
+  font-size: max(var(--fs-min), calc(18px * var(--fs-scale)));
   letter-spacing: -0.3px;
   text-shadow: 0 0 14px #ffffff66;
 }
 .scene-cube .face small {
-  font-size: 10.5px;
+  font-size: max(var(--fs-min), calc(10.5px * var(--fs-scale)));
   line-height: 1.4;
   color: #e3e6ff;
 }
@@ -3007,12 +3020,12 @@ td strong {
   letter-spacing: 3px;
 }
 .login-form-panel h2 {
-  font-size: 25px;
+  font-size: max(var(--fs-min), calc(25px * var(--fs-scale)));
   margin: 16px 0 10px;
   color: #fff;
 }
 .login-form-panel form > p {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   margin: 0 0 30px;
   color: #b9bde0;
 }
@@ -3024,7 +3037,7 @@ td strong {
 }
 .login-form-panel .field {
   margin-bottom: 20px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   color: #dfe2ff;
 }
 .login-form-panel .field input {
@@ -3038,7 +3051,7 @@ td strong {
     box-shadow 0.2s;
 }
 .login-form-panel .field input::placeholder {
-  color: #7c82ad;
+  color: #a9afd6;
 }
 .login-form-panel .field input:focus {
   outline: none;
@@ -3080,12 +3093,12 @@ td strong {
   border-radius: 12px;
 }
 .demo-note p {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   line-height: 1.8;
   margin: 10px 0;
 }
 .demo-note small {
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
 }
 @media (min-width: 1600px) {
   .main-content {
@@ -3125,7 +3138,7 @@ td strong {
     padding: 17px;
   }
   .kpi-card > strong {
-    font-size: 21px;
+    font-size: max(var(--fs-min), calc(21px * var(--fs-scale)));
   }
   .dashboard-main-grid,
   .dashboard-bottom-grid {
@@ -3152,7 +3165,7 @@ td strong {
     padding: 16px;
   }
   .budget-card h2 {
-    font-size: 19px;
+    font-size: max(var(--fs-min), calc(19px * var(--fs-scale)));
   }
   .budget-grid {
     gap: 12px;
@@ -3167,7 +3180,7 @@ td strong {
     padding: 10px;
   }
   .connection span {
-    font-size: 8px;
+    font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   }
   .topbar-right {
     gap: 7px;
@@ -3192,7 +3205,7 @@ td strong {
     justify-content: flex-end;
   }
   .page-heading h1 {
-    font-size: 24px;
+    font-size: max(var(--fs-min), calc(24px * var(--fs-scale)));
   }
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -3208,7 +3221,7 @@ td strong {
     padding: 16px 0 !important;
   }
   .welcome-banner h2 {
-    font-size: 21px;
+    font-size: max(var(--fs-min), calc(21px * var(--fs-scale)));
   }
   .banner-illustration {
     width: 260px;
@@ -3242,7 +3255,7 @@ td strong {
     padding-left: 20px;
   }
   .pos-catalog .page-heading h1 {
-    font-size: 22px;
+    font-size: max(var(--fs-min), calc(22px * var(--fs-scale)));
   }
   .product-grid {
     gap: 10px;
@@ -3258,10 +3271,10 @@ td strong {
     align-items: flex-start;
   }
   .pos-catalog .eyebrow {
-    font-size: 7px;
+    font-size: max(var(--fs-min), calc(7px * var(--fs-scale)));
   }
   .pos-catalog .page-heading p {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .pos-catalog .heading-actions {
     gap: 3px;
@@ -3277,7 +3290,7 @@ td strong {
     padding: 20px 17px;
   }
   .cart-summary > .cart-total strong {
-    font-size: 20px;
+    font-size: max(var(--fs-min), calc(20px * var(--fs-scale)));
   }
   .reports-layout {
     grid-template-columns: 175px minmax(0, 1fr);
@@ -3286,7 +3299,7 @@ td strong {
     padding: 8px;
   }
   .report-menu button {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
     gap: 6px;
     padding: 10px 6px !important;
   }
@@ -3315,7 +3328,7 @@ td strong {
     padding: 40px;
   }
   .login-art h1 {
-    font-size: 37px;
+    font-size: max(var(--fs-min), calc(37px * var(--fs-scale)));
   }
   .login-form-panel {
     padding: 35px;
@@ -3369,7 +3382,7 @@ td strong {
     gap: 6px;
   }
   .topbar-left .breadcrumb {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .topbar-separator {
     display: none;
@@ -3391,13 +3404,13 @@ td strong {
     margin-bottom: 20px;
   }
   .page-heading h1 {
-    font-size: 23px;
+    font-size: max(var(--fs-min), calc(23px * var(--fs-scale)));
   }
   .page-heading .eyebrow {
-    font-size: 8px;
+    font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   }
   .page-heading p {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .heading-actions {
     max-width: 210px;
@@ -3405,13 +3418,13 @@ td strong {
   }
   .heading-actions .button {
     min-height: 37px;
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
     padding: 9px;
   }
   .app-footer {
     padding: 14px 18px;
     flex-direction: column;
-    font-size: 8px;
+    font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
     gap: 6px;
   }
   .welcome-banner {
@@ -3419,11 +3432,11 @@ td strong {
     padding: 21px;
   }
   .welcome-banner h2 {
-    font-size: 22px;
+    font-size: max(var(--fs-min), calc(22px * var(--fs-scale)));
   }
   .welcome-banner p {
     max-width: 235px;
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .banner-illustration {
     width: 220px;
@@ -3460,11 +3473,11 @@ td strong {
     gap: 8px;
   }
   .pos-catalog .heading-actions .button {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
     gap: 7px;
   }
   .pos-search input {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
     min-width: 0;
   }
   .pos-search kbd,
@@ -3475,28 +3488,28 @@ td strong {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .product-info h3 {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .product-info p {
-    font-size: 8px;
+    font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   }
   .product-category {
-    font-size: 7px;
+    font-size: max(var(--fs-min), calc(7px * var(--fs-scale)));
   }
   .product-image {
     height: 110px;
   }
   .product-bottom strong {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .clearance-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   .clearance-intro p {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .clearance-intro h2 {
-    font-size: 14px;
+    font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   }
   .cash-overview {
     grid-template-columns: 1fr 1fr;
@@ -3505,13 +3518,13 @@ td strong {
     padding: 22px;
   }
   .cash-main > strong {
-    font-size: 27px;
+    font-size: max(var(--fs-min), calc(27px * var(--fs-scale)));
   }
   .cash-methods {
     padding: 18px;
   }
   .cash-methods > div {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .reports-layout {
     grid-template-columns: 1fr;
@@ -3521,7 +3534,7 @@ td strong {
     padding: 10px;
   }
   .report-menu button {
-    font-size: 12px;
+    font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
     padding: 10px !important;
   }
   .alerts-list {
@@ -3536,7 +3549,7 @@ td strong {
     justify-content: flex-end;
   }
   .alert-row strong {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .login-art {
     display: none;
@@ -3547,7 +3560,7 @@ td strong {
     padding: 30px;
   }
   .login-form-panel h2 {
-    font-size: 25px;
+    font-size: max(var(--fs-min), calc(25px * var(--fs-scale)));
   }
   .settings-summary {
     padding: 23px;
@@ -3569,7 +3582,7 @@ td strong {
   }
   .heading-actions .button {
     min-height: 40px;
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .main-content {
     padding: 23px 16px;
@@ -3579,12 +3592,12 @@ td strong {
     padding: 20px;
   }
   .welcome-banner h2 {
-    font-size: 20px;
+    font-size: max(var(--fs-min), calc(20px * var(--fs-scale)));
   }
   .welcome-banner p {
     max-width: 180px;
     line-height: 1.6;
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .banner-illustration {
     width: 150px;
@@ -3617,7 +3630,7 @@ td strong {
     padding: 15px;
   }
   .kpi-top {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
     gap: 5px;
   }
   .metric-icon {
@@ -3629,11 +3642,11 @@ td strong {
     width: 16px;
   }
   .kpi-card > strong {
-    font-size: 20px;
+    font-size: max(var(--fs-min), calc(20px * var(--fs-scale)));
     margin: 12px 0;
   }
   .kpi-note {
-    font-size: 7px;
+    font-size: max(var(--fs-min), calc(7px * var(--fs-scale)));
     gap: 5px;
     flex-wrap: wrap;
     min-height: 19px;
@@ -3647,13 +3660,13 @@ td strong {
     padding: 20px 17px 17px;
   }
   .panel-heading h2 {
-    font-size: 13px;
+    font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   }
   .panel-heading p {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .panel-heading > .text-link {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .table-wrap th,
   .table-wrap td {
@@ -3663,10 +3676,10 @@ td strong {
     padding: 18px;
   }
   .financial-strip strong {
-    font-size: 14px;
+    font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   }
   .financial-strip span {
-    font-size: 8px;
+    font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   }
   .pos-content {
     padding: 23px 16px;
@@ -3691,16 +3704,16 @@ td strong {
     min-height: 36px;
   }
   .pos-catalog .eyebrow {
-    font-size: 7px;
+    font-size: max(var(--fs-min), calc(7px * var(--fs-scale)));
   }
   .pos-catalog .page-heading h1 {
-    font-size: 23px;
+    font-size: max(var(--fs-min), calc(23px * var(--fs-scale)));
   }
   .pos-catalog .page-heading p {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .pos-search input {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .pos-search {
     padding: 0 13px;
@@ -3719,23 +3732,23 @@ td strong {
     padding: 14px;
   }
   .product-info h3 {
-    font-size: 12px;
+    font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   }
   .product-category {
-    font-size: 8px;
+    font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   }
   .product-info p {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .product-bottom {
     flex-direction: row;
     align-items: center;
   }
   .product-bottom strong {
-    font-size: 12px;
+    font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   }
   .product-bottom span {
-    font-size: 7px;
+    font-size: max(var(--fs-min), calc(7px * var(--fs-scale)));
   }
   .cart-panel {
     position: relative;
@@ -3751,13 +3764,13 @@ td strong {
     max-height: 350px;
   }
   .cart-item-detail strong {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .cart-item-detail small {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .cart-summary > .cart-total strong {
-    font-size: 26px;
+    font-size: max(var(--fs-min), calc(26px * var(--fs-scale)));
   }
   .cart-item-controls {
     gap: 12px;
@@ -3772,7 +3785,7 @@ td strong {
   .line-discount input {
     min-height: 30px;
     width: 40px;
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .cart-heading {
     padding: 20px;
@@ -3781,29 +3794,29 @@ td strong {
     padding: 20px;
   }
   .cart-bottom-actions button {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
     min-height: 44px;
   }
   .cart-security {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .catalog-caption {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .budget-grid {
     gap: 12px;
   }
   .budget-card h2 {
-    font-size: 18px;
+    font-size: max(var(--fs-min), calc(18px * var(--fs-scale)));
   }
   .budget-card small {
-    font-size: 9px;
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
   }
   .cash-overview {
     grid-template-columns: 1fr;
   }
   .cash-main > strong {
-    font-size: 32px;
+    font-size: max(var(--fs-min), calc(32px * var(--fs-scale)));
   }
   .clearance-grid {
     grid-template-columns: 1fr;
@@ -3822,10 +3835,10 @@ td strong {
     flex-shrink: 0;
   }
   .clearance-intro h2 {
-    font-size: 14px;
+    font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   }
   .clearance-intro p {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .clearance-card {
     padding: 20px;
@@ -3837,7 +3850,7 @@ td strong {
     width: 70px;
   }
   .clearance-top h3 {
-    font-size: 14px;
+    font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   }
   .clearance-metrics {
     gap: 20px;
@@ -3863,13 +3876,13 @@ td strong {
     max-width: calc(100vw - 24px);
   }
   .modal-heading h2 {
-    font-size: 16px;
+    font-size: max(var(--fs-min), calc(16px * var(--fs-scale)));
   }
   .payment-total h2 {
-    font-size: 31px;
+    font-size: max(var(--fs-min), calc(31px * var(--fs-scale)));
   }
   .payment-methods button {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
     padding: 12px !important;
     min-height: 75px;
   }
@@ -3928,20 +3941,20 @@ td strong {
     flex-basis: 70%;
   }
   .receipt-actions .button {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .account-menu {
     right: 15px;
   }
   .chart-bottom {
     padding: 13px 17px;
-    font-size: 7px;
+    font-size: max(var(--fs-min), calc(7px * var(--fs-scale)));
   }
   .category-row {
     padding: 9px 17px;
   }
   .toast {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
     bottom: 18px;
     padding: 14px 16px;
     width: max-content;
@@ -4026,10 +4039,10 @@ td strong {
     color: #000;
   }
   .receipt-only h2 {
-    font-size: 16px;
+    font-size: max(var(--fs-min), calc(16px * var(--fs-scale)));
   }
   .receipt-only p {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
     color: #000;
     line-height: 1.5;
   }
@@ -4124,7 +4137,7 @@ td strong {
   align-items: center;
   justify-content: center;
   min-height: 30px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   border-radius: 5px;
 }
 
@@ -4151,7 +4164,7 @@ td strong {
 .goods-header p {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .goods-mode {
   display: inline-grid;
@@ -4170,7 +4183,7 @@ td strong {
   min-height: 44px;
   padding: 0 18px;
   border-radius: 9px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   font-weight: 650;
   color: var(--muted);
   letter-spacing: 0.02em;
@@ -4195,7 +4208,7 @@ td strong {
   margin-bottom: 16px;
 }
 .goods-card h2 {
-  font-size: 14px;
+  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   margin: 0 0 12px;
 }
 .merchandise .field {
@@ -4221,11 +4234,11 @@ td strong {
 }
 .goods-import strong {
   display: block;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
 }
 .goods-import small {
   color: var(--muted-on-soft);
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .goods-scan {
   display: grid;
@@ -4290,14 +4303,14 @@ td strong {
 .goods-results strong,
 .goods-line-head h3 {
   display: block;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   margin: 0;
 }
 .goods-results small,
 .goods-line-head small {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   margin-top: 3px;
 }
 .goods-results button:hover small,
@@ -4318,12 +4331,12 @@ td strong {
 }
 .goods-review h2 {
   margin: 0 0 4px;
-  font-size: 15px;
+  font-size: max(var(--fs-min), calc(15px * var(--fs-scale)));
 }
 .goods-review p {
   margin: 0 0 10px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .goods-review-stats {
   display: flex;
@@ -4340,7 +4353,7 @@ td strong {
   border-radius: 12px;
   padding: 22px;
   margin-bottom: 16px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .goods-empty p {
   margin: 0;
@@ -4369,7 +4382,7 @@ td strong {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   color: var(--muted);
   margin: 0 0 10px;
 }
@@ -4413,7 +4426,7 @@ td strong {
   background: #fffbeb;
 }
 .goods-cost-note {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   color: var(--muted);
   margin: -4px 0 10px;
 }
@@ -4429,11 +4442,11 @@ td strong {
   margin-bottom: 12px;
 }
 .goods-sum span {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   color: var(--muted);
 }
 .goods-sum strong {
-  font-size: 18px;
+  font-size: max(var(--fs-min), calc(18px * var(--fs-scale)));
 }
 .goods-check {
   display: flex;
@@ -4450,7 +4463,7 @@ td strong {
   margin: 8px 0 20px;
 }
 .goods-actions-summary {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   color: var(--muted);
 }
 .goods-confirm {
@@ -4475,10 +4488,10 @@ td strong {
 }
 .goods-done strong {
   display: block;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
 }
 .goods-done span {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .goods-history {
   list-style: none;
@@ -4498,11 +4511,11 @@ td strong {
 }
 .goods-history strong {
   display: block;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
 }
 .goods-history small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .goods-row-actions {
   display: flex;
@@ -4510,7 +4523,7 @@ td strong {
 }
 .link-button {
   color: var(--primary);
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   font-weight: 600;
   margin: -4px 0 10px;
   padding: 0;
@@ -4582,7 +4595,7 @@ td strong {
   }
   .goods-actions-summary {
     text-align: center;
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .goods-confirm {
     width: 100%;
@@ -4607,12 +4620,12 @@ td strong {
 }
 .equipment-here h2 {
   margin: 0 0 6px;
-  font-size: 14px;
+  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
 }
 .equipment-here p {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   line-height: 1.6;
 }
 .equipment-rename {
@@ -4668,7 +4681,7 @@ td strong {
 }
 .equipment-info strong {
   display: block;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
 }
 .equipment-info em {
   font-style: normal;
@@ -4678,7 +4691,7 @@ td strong {
 .equipment-info small {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   margin-top: 3px;
 }
 .equipment-actions {
@@ -4698,11 +4711,11 @@ td strong {
   margin: 0 0 18px;
 }
 .device-gate strong {
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
 }
 .device-gate p {
   margin: 4px 0 10px;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   line-height: 1.5;
 }
 .device-gate.revoked {
@@ -4763,12 +4776,12 @@ td strong {
 }
 .cash-elsewhere strong {
   display: block;
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   color: #6b3a06;
 }
 .cash-elsewhere p {
   margin: 3px 0 0;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   line-height: 1.5;
 }
 .cash-elsewhere.compact {
@@ -4790,7 +4803,7 @@ td strong {
 }
 .modal-intro {
   color: var(--muted);
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   line-height: 1.6;
   margin: 0 0 14px;
 }
@@ -4860,7 +4873,7 @@ td strong {
 }
 .print-big {
   min-height: 52px;
-  font-size: 17px;
+  font-size: max(var(--fs-min), calc(17px * var(--fs-scale)));
   font-weight: 700;
 }
 /* Celular (390 px): el pie del cierre de caja apila los botones a todo el
@@ -4906,7 +4919,7 @@ td strong {
 }
 .print-preview.w58 {
   width: 58mm;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 /* Segundo papel en la misma impresión (productos vendidos tras el cuadre):
  * una línea de corte y espacio, sin salto de página, para que el rollo
@@ -4925,18 +4938,18 @@ td strong {
   margin-bottom: 6px;
 }
 .tp-header h2 {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   margin: 2px 0;
   font-weight: 700;
 }
 .tp-header .tp-branch {
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 400;
 }
 .tp-header h3,
 .thermal-print h3,
 .print-preview h3 {
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   margin: 6px 0 4px;
   text-transform: uppercase;
 }
@@ -4948,7 +4961,7 @@ td strong {
 }
 .thermal-print h4,
 .print-preview h4 {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   margin: 8px 0 3px;
   border-bottom: 1px dashed #000;
 }
@@ -5075,7 +5088,7 @@ td strong {
   .thermal-print.w58 {
     page: thermal58;
     width: 58mm;
-    font-size: 11.5px;
+    font-size: max(var(--fs-min), calc(11.5px * var(--fs-scale)));
   }
   /* Térmica: el trazo fino de Courier New salía casi gris; todo en negrita,
    * con borde de 0.35 px, para que se lea claro en la impresora de recibos. */
@@ -5101,7 +5114,7 @@ td strong {
 /* Cierre de caja por denominaciones. */
 .close-cash h3 {
   margin: 10px 0 6px;
-  font-size: 15px;
+  font-size: max(var(--fs-min), calc(15px * var(--fs-scale)));
 }
 .close-expected {
   margin: 0 0 6px;
@@ -5127,11 +5140,11 @@ td strong {
   width: 100%;
   min-width: 0;
   text-align: center;
-  font-size: 17px;
+  font-size: max(var(--fs-min), calc(17px * var(--fs-scale)));
 }
 .count-total {
   text-align: right;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   color: var(--muted);
   white-space: nowrap;
 }
@@ -5144,10 +5157,10 @@ td strong {
   margin: 10px 0;
   border-radius: 10px;
   background: var(--surface-soft);
-  font-size: 16px;
+  font-size: max(var(--fs-min), calc(16px * var(--fs-scale)));
 }
 .count-left strong {
-  font-size: 20px;
+  font-size: max(var(--fs-min), calc(20px * var(--fs-scale)));
 }
 .cash-history-actions {
   display: flex;
@@ -5163,7 +5176,7 @@ td strong {
   margin-bottom: 12px;
 }
 .cod-hint {
-  font-size: 14px;
+  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   color: var(--muted);
 }
 .cod-list {
@@ -5184,7 +5197,7 @@ td strong {
   color: var(--muted);
 }
 .cod-amount {
-  font-size: 17px;
+  font-size: max(var(--fs-min), calc(17px * var(--fs-scale)));
 }
 .cod-age {
   display: flex;
@@ -5198,7 +5211,7 @@ td strong {
   background: var(--surface-soft);
 }
 .cod-age strong {
-  font-size: 16px;
+  font-size: max(var(--fs-min), calc(16px * var(--fs-scale)));
 }
 .cod-panel h2 {
   display: flex;
@@ -5211,7 +5224,7 @@ td strong {
   padding: 0;
   display: grid;
   gap: 4px;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   color: var(--muted);
 }
 .cod-collections li {
@@ -5261,11 +5274,11 @@ td strong {
 }
 .telegram-card h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: max(var(--fs-min), calc(15px * var(--fs-scale)));
 }
 .telegram-card p,
 .telegram-card ol {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   margin: 8px 0 12px;
 }
 .telegram-card ol {
@@ -5273,7 +5286,7 @@ td strong {
 }
 .store-settings h3 {
   margin: 18px 0 8px;
-  font-size: 15px;
+  font-size: max(var(--fs-min), calc(15px * var(--fs-scale)));
 }
 .store-logo {
   display: flex;
@@ -5354,7 +5367,7 @@ td strong {
   flex: 0 0 auto;
   margin: 0;
   font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 20px;
+  font-size: max(var(--fs-min), calc(20px * var(--fs-scale)));
   white-space: nowrap;
 }
 .pos-topbar .pos-search {
@@ -5366,7 +5379,7 @@ td strong {
 .pos-topbar .pos-search input {
   min-width: 0;
   padding: 10px 0;
-  font-size: 16px;
+  font-size: max(var(--fs-min), calc(16px * var(--fs-scale)));
 }
 .pos-topbar .pos-search kbd {
   flex: 0 0 auto;
@@ -5375,7 +5388,7 @@ td strong {
   padding: 3px 7px;
   background: var(--bg);
   color: var(--muted);
-  font-size: 9px;
+  font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
 }
 .pos-topbar .heading-actions {
   display: flex;
@@ -5385,7 +5398,7 @@ td strong {
 }
 .pos-topbar .heading-actions .button {
   min-height: 44px;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .pos-search > svg:last-child {
   display: none;
@@ -5460,10 +5473,10 @@ td strong {
 }
 .cart-empty-state strong {
   color: var(--text);
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
 }
 .cart-empty-state span {
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
 }
 .pending-sale-actions {
   display: grid;
@@ -5477,11 +5490,11 @@ td strong {
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  font-size: 10px;
+  font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
 }
 .cart-summary > .cart-total strong {
   font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 30px;
+  font-size: max(var(--fs-min), calc(28px * var(--fs-scale)));
   font-weight: 800;
   letter-spacing: -0.8px;
 }
@@ -5508,7 +5521,7 @@ td strong {
     gap: 10px;
   }
   .pos-topbar h1 {
-    font-size: 18px;
+    font-size: max(var(--fs-min), calc(18px * var(--fs-scale)));
   }
   .pos-topbar {
     flex-wrap: wrap;
@@ -5571,7 +5584,7 @@ td strong {
     margin-bottom: 12px;
   }
   .pos-topbar h1 {
-    font-size: 18px;
+    font-size: max(var(--fs-min), calc(18px * var(--fs-scale)));
   }
   .pos-topbar .heading-actions {
     flex-direction: row;
@@ -5717,7 +5730,7 @@ td strong {
     margin-bottom: 8px !important;
   }
   .cart-summary > .cart-total strong {
-    font-size: 28px;
+    font-size: max(var(--fs-min), calc(28px * var(--fs-scale)));
   }
   .charge-button {
     min-height: 48px;
@@ -5764,7 +5777,7 @@ td strong {
     border-radius: 12px;
     background: var(--surface);
     color: var(--text);
-    font-size: 16px;
+    font-size: max(var(--fs-min), calc(16px * var(--fs-scale)));
     font-weight: 750;
     box-shadow: 0 8px 24px #0003;
   }
@@ -5784,19 +5797,19 @@ td strong {
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   line-height: 1.4;
   max-width: 42ch;
 }
 .discard-lines {
   margin: 0 0 8px;
   padding-left: 18px;
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
 }
 .form-hint {
   margin: 0 0 10px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   line-height: 1.45;
 }
 .close-pending-warning,
@@ -5807,7 +5820,7 @@ td strong {
   border: 1px solid var(--border);
   background: var(--surface-soft);
   color: var(--warning-text);
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   font-weight: 600;
   line-height: 1.45;
 }
@@ -5859,7 +5872,7 @@ td strong {
 }
 /* 05-B11: «Mostrar contraseña» en el inicio de sesión. */
 .show-password {
-  font-size: 13px;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   margin: 0;
   min-height: 32px;
   justify-self: start;
@@ -5915,20 +5928,32 @@ td strong {
     min-width: 0;
   }
   .pos-topbar h1 {
-    font-size: clamp(17px, 1.5vw, 21px);
+    font-size: max(
+      var(--fs-min),
+      calc(clamp(17px, 1.5vw, 21px) * var(--fs-scale))
+    );
   }
   .pos-topbar .pos-search {
     flex: 1 1 180px;
     min-width: 0;
   }
   .pos-topbar .heading-actions .button {
-    font-size: clamp(12px, 0.95vw, 14px);
+    font-size: max(
+      var(--fs-min),
+      calc(clamp(12px, 0.95vw, 14px) * var(--fs-scale))
+    );
   }
   .category-tabs button {
-    font-size: clamp(11px, 0.9vw, 13px);
+    font-size: max(
+      var(--fs-min),
+      calc(clamp(11px, 0.9vw, 13px) * var(--fs-scale))
+    );
   }
   .catalog-caption {
-    font-size: clamp(11px, 0.85vw, 12px);
+    font-size: max(
+      var(--fs-min),
+      calc(clamp(11px, 0.85vw, 12px) * var(--fs-scale))
+    );
     margin-bottom: 12px;
   }
   .product-grid {
@@ -5944,7 +5969,7 @@ td strong {
     padding: 8px;
   }
   .product-image > .badge {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
     top: 6px;
     left: 6px;
   }
@@ -5952,14 +5977,17 @@ td strong {
     padding: 8px 10px 10px;
   }
   .product-category {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .product-info h3 {
-    font-size: clamp(12px, 0.95vw, 14px);
+    font-size: max(
+      var(--fs-min),
+      calc(clamp(12px, 0.95vw, 14px) * var(--fs-scale))
+    );
     margin: 4px 0 2px;
   }
   .product-info p {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
     margin: 0 0 6px;
   }
   .product-bottom {
@@ -5967,61 +5995,70 @@ td strong {
     gap: 0 8px;
   }
   .product-bottom strong {
-    font-size: clamp(13px, 1vw, 15px);
+    font-size: max(
+      var(--fs-min),
+      calc(clamp(13px, 1vw, 15px) * var(--fs-scale))
+    );
     white-space: nowrap;
   }
   .product-bottom span {
-    font-size: 10px;
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   }
   .cart-heading h2 {
-    font-size: clamp(16px, 1.3vw, 18px);
+    font-size: max(
+      var(--fs-min),
+      calc(clamp(16px, 1.3vw, 18px) * var(--fs-scale))
+    );
   }
   .cart-heading > div > span,
   .cart-heading .badge {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .customer-selector strong {
-    font-size: 12px;
+    font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   }
   .customer-selector small {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .cart-item-detail strong,
   .cart-line-total strong {
-    font-size: 12px;
+    font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   }
   .cart-item-detail small,
   .quantity-control,
   .line-discount,
   .line-discount input {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .cart-summary > div:not(.cart-bottom-actions),
   .cart-summary > div strong,
   .discount-input,
   .discount-input input {
-    font-size: 12px;
+    font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   }
   .discount-input input {
     width: 3.6em;
     min-height: 28px;
   }
   .discount-input small {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
   .cart-summary > .cart-total span {
-    font-size: 13px;
+    font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   }
   .cart-summary > .cart-total strong {
-    font-size: clamp(26px, 2.2vw, 32px);
+    font-size: max(
+      var(--fs-min),
+      calc(clamp(26px, 2.2vw, 32px) * var(--fs-scale))
+    );
   }
   .charge-button {
-    font-size: 15px;
+    font-size: max(var(--fs-min), calc(15px * var(--fs-scale)));
   }
   .cart-bottom-actions button,
   .cart-security,
   .open-cash-link {
-    font-size: 11px;
+    font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   }
 }
 /* Poca altura (monitores 16:9 con escala 125–150 %): el cobro sin desplazarse. */
@@ -6050,7 +6087,7 @@ td strong {
     padding-top: 4px;
   }
   .cart-summary > .cart-total strong {
-    font-size: 28px;
+    font-size: max(var(--fs-min), calc(28px * var(--fs-scale)));
   }
   .charge-button {
     min-height: 46px;
@@ -6072,7 +6109,7 @@ td strong {
 .credit-confirm p,
 .finish-hint {
   margin: 0;
-  font-size: 14px;
+  font-size: max(var(--fs-min), calc(14px * var(--fs-scale)));
   color: var(--muted);
 }
 .credit-confirm {
@@ -6166,7 +6203,7 @@ td strong {
   color: #fff7ed;
 }
 .void-request-dashboard small {
-  font-size: 0.75rem;
+  font-size: max(var(--fs-min), calc(9.75px * var(--fs-scale)));
 }
 .void-request-dashboard {
   display: grid;
@@ -6209,11 +6246,11 @@ td strong {
   gap: 0.5rem;
 }
 .void-request-card h2 {
-  font-size: 1.15rem;
+  font-size: max(var(--fs-min), calc(14.95px * var(--fs-scale)));
   margin: 0;
 }
 .void-request-card h3 {
-  font-size: 1rem;
+  font-size: max(var(--fs-min), calc(13px * var(--fs-scale)));
   margin: 0.8rem 0 0.25rem;
 }
 .void-request-card ul {
@@ -6263,12 +6300,12 @@ td strong {
   font-weight: 700;
   color: var(--day-accent);
   text-transform: uppercase;
-  font-size: 0.8rem;
+  font-size: max(var(--fs-min), calc(10.4px * var(--fs-scale)));
   letter-spacing: 0.04em;
 }
 .day-figures .day-profit b {
   color: var(--day-accent);
-  font-size: 1.05rem;
+  font-size: max(var(--fs-min), calc(13.65px * var(--fs-scale)));
 }
 .day-other .day-figures {
   padding: 0;
@@ -6276,7 +6313,7 @@ td strong {
   background: none;
 }
 .day-figures strong {
-  font-size: 1.5rem;
+  font-size: max(var(--fs-min), calc(19.5px * var(--fs-scale)));
 }
 .day-figures small {
   color: var(--muted, #64748b);
@@ -6285,7 +6322,7 @@ td strong {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.85rem;
+  font-size: max(var(--fs-min), calc(11.05px * var(--fs-scale)));
 }
 
 .year-pie-body {
@@ -6345,7 +6382,7 @@ td strong {
 }
 .year-pie-note {
   margin: 8px 0 0;
-  font-size: 0.85rem;
+  font-size: max(var(--fs-min), calc(11.05px * var(--fs-scale)));
 }
 .month-range {
   display: flex;
@@ -6384,4 +6421,148 @@ td strong {
 }
 [data-theme="dark"] .day-other {
   --day-bg: #3a2a07;
+}
+
+/* F2-02: franja de 4 KPIs del tablero */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.kpi-strip .kpi-strip-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  display: grid;
+  gap: 4px;
+}
+.kpi-strip .kpi-strip-card h2 {
+  margin: 0;
+  font-size: max(var(--fs-min), calc(11.05px * var(--fs-scale)));
+  font-weight: 600;
+}
+.kpi-strip .kpi-strip-card strong {
+  font-size: max(var(--fs-min), calc(19.5px * var(--fs-scale)));
+  font-variant-numeric: tabular-nums;
+}
+.kpi-strip .kpi-strip-card small {
+  color: var(--muted);
+}
+
+/* F2-03: POS · miniatura sobre superficie translúcida, "+" táctil y jerarquía de Cobrar */
+.product-image {
+  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+}
+.product-image img {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
+}
+.add-product {
+  width: 44px;
+  height: 44px;
+  bottom: 8px;
+  right: 8px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  border-color: transparent;
+  transition: transform var(--nx-dur-fast, 120ms) ease-out;
+}
+.product-card:hover:not(:disabled) .add-product {
+  transform: scale(1.06);
+}
+.product-card:active:not(:disabled) .add-product {
+  transform: scale(0.94);
+}
+.charge-button {
+  min-height: 60px;
+  font-size: max(var(--fs-min), calc(14.95px * var(--fs-scale)));
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(4, 120, 87, 0.35);
+}
+.charge-button kbd {
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
+  padding: 2px 8px;
+  border-color: #ffffff80;
+  background: #ffffff30;
+  color: #fff;
+}
+.charge-button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .add-product {
+    transition: none;
+  }
+}
+:root[data-theme="dark"] .add-product {
+  color: #0b0b12;
+}
+
+/* Orden 99: con la letra mayor, en laptops de poca altura (1366×768, 1280×720) se recorta el
+   espaciado del carrito, nunca la letra, para que se vean al menos 3 líneas y «Cobrar». */
+@media (min-width: 901px) and (max-height: 800px) {
+  .cart-heading {
+    padding: 12px 18px;
+  }
+  .cart-heading > div > span {
+    margin-top: 0;
+  }
+  .cart-summary {
+    padding: 10px 18px;
+  }
+  .cart-summary > div:not(.cart-bottom-actions) {
+    margin-bottom: 4px;
+  }
+  .charge-button {
+    min-height: 48px;
+  }
+  .cart-item {
+    padding: 0;
+    row-gap: 0;
+  }
+  .cart-item-controls {
+    margin-top: 0;
+  }
+  .customer-selector {
+    padding-block: 6px;
+  }
+}
+/* Con ratón (no táctil) los botones secundarios del carrito pueden medir menos de 44 px. */
+@media (min-width: 901px) and (max-height: 800px) and (pointer: fine) {
+  .cart-bottom-actions button,
+  .cart-panel .line-discount input,
+  .cart-panel .discount-input input {
+    min-height: 34px;
+  }
+  .cart-panel .quantity-control,
+  .cart-panel .quantity-control button {
+    min-height: 34px;
+    height: 34px;
+  }
+}
+
+/* Orden 99: con la letra mayor, en celulares angostos la ruta muestra solo la pantalla actual. */
+.breadcrumb .breadcrumb-parent {
+  margin: 0;
+  color: inherit;
+}
+@media (max-width: 480px) {
+  .breadcrumb .breadcrumb-parent {
+    display: none;
+  }
+}
+
+/* Orden 99: las tarjetas del tablero no ensanchan la página en celulares de 320 px con la letra mayor. */
+.kpi-card {
+  min-width: 0;
+}
+.kpi-top {
+  flex-wrap: wrap;
 }
