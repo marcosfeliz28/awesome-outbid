@@ -34,7 +34,7 @@
   --nx-dur-fast: 120ms;
   --nx-dur-base: 180ms;
   --nx-dur-slow: 240ms;
-  --nx-ease-out: cubic-bezier(.2,.8,.2,1);
+  --nx-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* capa 3b: componente de los primitivos Nx* (pares texto/fondo ≥ 4,5:1) */
@@ -67,4 +67,14 @@
   --nx-neutro-fondo: #2a2a3a;
   --nx-neutro-texto: #e5e7eb;
   --nx-esqueleto: #2a2a3a;
+}
+
+/* Tipografía (órdenes 97 y 99): un solo sitio para el tamaño y la legibilidad de la letra.
+   Base 16 px; ningún texto por debajo de 14 px; el resto escala ×1.12 (≈ +12 %). */
+:root {
+  --fs-base: 16px;
+  --fs-min: 14px;
+  --fs-scale: 1.12;
+  --lh-base: 1.5;
+  --fw-label: 600;
 }

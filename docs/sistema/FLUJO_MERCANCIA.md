@@ -37,7 +37,7 @@ Permiso `inventory:write`; el rol `seller` queda bloqueado (`apps/api/src/mercha
 3. Cargar productos igual que en la entrada. Si hay lotes se elige **«Lote de salida»** (solo lotes con existencia) (`:1185-1215`; API: «Selecciona el lote de salida.» `merchandise.ts:684`). En una salida no se crean productos (`merchandise.ts:375`).
 4. **«Confirmar salida»** (`:1297-1310`), pregunta «¿Confirmar salida de N unidad(es) por …?» (`:498-505`).
 5. Una orden solo permite entradas; una factura solo permite entradas (`merchandise.ts:435`, `:478`).
-- El **tipo** importa para el reporte de ganancias: una merma real no se registra como «conteo». Tipos de la bitácora de la dueña: `conteo`, `entrada`, `salida`, `regalo`, `ajuste` (`.claude/skills/mercancia/SKILL.md:27-29`). Mermas, ajustes y devoluciones a proveedor se restan a costo en el Resumen; las «Correcciones del conteo de inventario» **no restan** (`apps/web/src/Dashboard.tsx:673-680`).
+- El **tipo** importa para el reporte de ganancias: una merma real no se registra como «conteo». Tipos de la bitácora de la dueña: `conteo`, `entrada`, `salida`, `regalo`, `ajuste` (`.claude/skills/mercancia/SKILL.md:27-29`). Mermas, ajustes y devoluciones a proveedor se restan a costo en el Resumen; las «Correcciones del conteo de inventario» **no restan** (`apps/web/src/Dashboard.tsx:674-681`).
 
 ## 3. Pantalla «Inventario»: stock, ajustes y conteos
 
