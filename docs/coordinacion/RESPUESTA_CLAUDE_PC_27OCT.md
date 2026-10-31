@@ -553,3 +553,12 @@ Lee `docs/coordinacion/COLA_PERMANENTE_CLAUDE_PC.md` y el final de `.claude/skil
 
 ## Orden 102 (31-oct 16:50 UTC) · decisión F2-04 y sigue sin parar
 Tu sesión quedó en «necesita decisión» por F2-04 (inventario en pestañas y Mercancía por pasos). DECISIÓN de Nexora 1: **F2-04 NO entra ahora** (Mercancía por pasos cambia el flujo de trabajo y la dueña no lo ha visto; inventario en pestañas queda para después de que ella vea el rediseño). No hace falta más respuesta: ya está decidido. `login-auditoria` (7dec0efb) quedó mezclada. Pasa AHORA a la pieza 1 de `COLA_PERMANENTE_CLAUDE_PC.md` (animación de Entrada) y sigue por orden sin esperar nada; las dudas se anotan como `DUDA:` en LISTA y no detienen el trabajo.
+
+## Orden 103 (31-oct 20:50 UTC) · incentivos GV por alumna (pedido de la dueña vía Norexos 2) · PRIORIDAD ALTA, dinero
+Pedido: quien registra la inscripción de una alumna de GV (hoy Clary, usuario GV) gana un incentivo FIJO por alumna: **Automaquillaje RD$ 50, Perfeccionamiento RD$ 500, Maquilladora profesional RD$ 1,000**. Hoy `apps/api/src/incentives.ts` solo paga por categoría de producto en ventas de caja; GvCourse/GvEnrollment no entran.
+Rama `claude-pc/gv-incentivos`, pruebas primero (falla antes, pasa después), solo código aditivo, sin tocar cálculos existentes de incentivos de caja ni pagos GV:
+1. Tarifa fija por tipo de curso GV, configurable (tabla/ajuste aditivo con migración aditiva `IF NOT EXISTS`; valores iniciales SOLO los tres dichos; cualquier otro tipo = sin incentivo, no inventes valores). «Perfeccionamiento» hoy es un curso personalizado y «Maquilladora profesional» no existe como tipo: propón la forma mínima (tipo nuevo o categoría) y márcalo como `DUDA:` para la dueña, sin bloquear.
+2. Calcular el incentivo por inscripción atribuido a quien la registró, mes a mes, con el mismo cierre/recibo que los de caja.
+3. Devengo: propuesta de N2 (NO confirmada por la dueña): solo con inscripción pagada completa y transferencias verificadas. Impleméntalo detrás de una constante clara y fácil de cambiar, y anota en LISTA «CONFIRMAR CON LA DUEÑA: cuándo se devenga». Anular un pago verificado quita el devengo.
+4. Permisos: el incentivo lo ve quien ya ve incentivos; la vendedora no ve costos. Actualiza docs/sistema (GV.md, citas con `pnpm docs:citas`).
+NO desplegar: Nexora 1 audita (dinero), pide cajas y despliega. Duda de dinero = `DUDA:` en LISTA, no inventes.
