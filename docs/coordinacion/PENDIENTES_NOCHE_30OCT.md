@@ -53,3 +53,7 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 - DESPLEGADO en la tienda (commit f656cefa, 3 CI verdes; 0 cajas abiertas leídas por Norexos 2 a las 00:39 UTC; sí de la dueña para API y web): API en vivo 00:45:35 UTC, web en vivo 00:54:07 UTC. /api/health ok, web 200; único error en logs: corte esperado de /api/events al reiniciar la API. Incluye: GV anular pago verificado, GV tarjeta sin banco (GvPayment.destination aditiva), deps de seguridad (body-parser, multer, qs), SQL con Prisma.sql y CORS, topes zod, tope 30/día lecturas IA de facturas, botones admin de cobros, desglose 390 px, reanclado de citas.
 - Primer cobro tras el despliegue: FS-66 Ginette (19,800, transferencia Popular) por Norexos 2 a las 00:51 UTC con la API nueva.
 - NO desplegado aún: T33 IA de ventas (claude-pc/t33-rebase 182e2278, auditada: migraciones aditivas, sin texto de consultas); espera ver la dueña. Pendientes de Claude PC: órdenes 94 (pruebas intermitentes) y 95 (precios, contrato, dominio).
+
+## 31-oct 12:40 UTC · Web con rediseño EN VIVO (ae63fb6d, desplegada 12:10; 0 cajas a las 10:41)
+- Auditoría pública (Agente C, Haiku): sin hallazgos altos. Pendientes bajos: 400 en /api/auth/refresh sin sesión (¿esperado?), 14 px en el login, foco visible de campos. Con sesión: NO COMPROBADO hasta que estén NEXORA_CLAUDE_USER/PASSWORD en el entorno (la dueña).
+- Skill nuevo: auditoria-usuario. Agentes A, B, C archivados. Pendiente: orden 98 (animaciones), zod4, T33, dominio/precios (dueña).
