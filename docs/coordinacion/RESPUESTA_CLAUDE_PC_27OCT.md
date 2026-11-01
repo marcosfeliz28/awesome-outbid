@@ -568,3 +568,13 @@ NO desplegar: Nexora 1 audita (dinero), pide cajas y despliega. Duda de dinero =
 - Incentivo del mes = incentivo fijo × (pagado en el mes ÷ precio del curso); lo no pagado se arrastra y se devenga cuando se pague; al completar el pago queda 100 %. Pagos anulados restan. Solo pagos verificados.
 - US$: porcentaje en la moneda del curso; sin tasa registrada en el pago = `DUDA:` y no se devenga.
 - Brazilian touch: 0 incentivo para quien registra (lo lleva Yaisa).
+
+## Orden 104 (1-nov 05:40 UTC) · triaje de la auditoría DeepSeek filtrada (docs/coordinacion/HALLAZGOS_PARA_NOREXOS1_1NOV.md en claude-pc/anim-reportes)
+Decisión de Nexora 1 (la dueña pidió decidir y construir ya, delegando):
+- **Lote DINERO (agente nube, rama `claude-pc/fix-dinero`)**: H-01 (servidor rechaza USD con método ≠ efectivo, prueba que falle antes), H-08 (suma de incentivos con Decimal, `paidFraction` acotada 0–1), H-04 (acotar descuento por línea a 100 % en reprecio offline y en `lineTotals`, con prueba). Sin tocar nada más de dinero.
+- **Lote SEGURIDAD MENOR (agente nube, rama `claude-pc/fix-seg-menor`)**: H-03 (escapar nombre del aprobador en el correo con `cleanText`), H-05 (bajar `maxmem`/límites de scrypt al descifrar respaldos), H-15 (tiempo máximo y tope de reintentos en `download()`), H-16 (limpiar el setInterval en `pwaUpdate.ts`), H-17 (`step="0.01"` solo en campos numéricos), H-07 (constantes con nombre, sin variables de entorno), H-02 (límite general de peticiones autenticadas, propuesta mínima). Un commit por hallazgo, prueba primero.
+- **GV (agente de incentivos, rama `claude-pc/gv-incentivos`, después de su pieza actual)**: H-13 (el formulario de pago GV arranca en la moneda del curso), Q-04 (prueba de importación de pagos en US$), H-10 (alerta cuando falte la tasa).
+- **Laptop / cola permanente**: H-11, H-14, H-18, H-09 como piezas nuevas de `COLA_PERMANENTE_CLAUDE_PC.md`; las animaciones 5 (Inventario) y 6 (Configuración) siguen.
+- **Decididos por Nexora 1, sin cambio**: `/health/ready` queda público (S-06 intencional); `claude-opus-5-5` se mantiene; H-06 (categoría única) y H-12 (límite PDF) se dejan como están; H-19 queda como pregunta a la dueña.
+- **Pregunta pendiente a la dueña**: Q-05, moneda de los reembolsos de cursos en US$.
+Todo con pre-empuje y 3 CI verdes; Nexora 1 audita, mezcla y despliega.
