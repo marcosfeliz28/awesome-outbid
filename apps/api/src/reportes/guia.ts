@@ -1087,7 +1087,7 @@ const DINERO_INGRESO_COLUMNAS: Record<string, Explicacion> = {
 const FORMAL_TODOS_NOTA =
   " Las cajas de prueba (QA-, TEST-, PRUEBA-) no cuentan.";
 
-export const GUIA_INFORMES: Record<string, Guia> = {
+const INFORMES_MACGEN: Record<string, Guia> = {
   "ingresos-por-dia": {
     queEs:
       "El informe de ingresos día por día: cuánto se vendió, por qué forma de pago entró el dinero y cuánto se devolvió.",
@@ -1226,4 +1226,223 @@ export const GUIA_INFORMES: Record<string, Guia> = {
       ),
     },
   },
+};
+
+// Informes de las otras versiones: GV (cursos y cobros), Tienda en línea (impresos
+// de la caja y del día) y el cierre de caja. Textos sin enlaces externos.
+const INFORMES_VERSIONES: Record<string, Guia> = {
+  "informe-anual": {
+    queEs:
+      "El resumen del año: cuánto se vendió cada mes, en una gráfica de pastel. Al tocar un mes se ve su detalle.",
+    paraQueSirve:
+      "Para comparar meses y ver en qué época del año se vende más.",
+    comoSeLee:
+      "Bruta es lo vendido de cada mes, con las devoluciones ya descontadas. Neta es la bruta menos el costo de la mercancía, sin restar el ITBIS ni los gastos; solo la ve quien tiene permiso de ganancia. Las devoluciones se restan en el mes en que se devolvieron." +
+      POR_CONFIRMAR_DEVOLUCION,
+    columnas: {
+      "Ventas por mes": c(
+        "Ventas por mes",
+        "Gráfica del año: cada pedazo es un mes, con su venta.",
+      ),
+      Bruta: c(
+        "Bruta",
+        "Lo vendido del mes, menos las devoluciones. El nombre dice bruta, pero ya descuenta devoluciones (por confirmar cómo debe llamarse).",
+      ),
+      Neta: c(
+        "Neta",
+        "Bruta menos costo de la mercancía, sin restar ITBIS ni gastos. Solo con permiso de ganancia.",
+      ),
+      Ventas: c("Ventas", "Cuántas facturas se hicieron en el mes."),
+    },
+  },
+  "cierre-caja": {
+    queEs:
+      "El cuadre de una caja: cuánto debía haber en efectivo, tarjeta y transferencia, cuánto se contó, y la diferencia.",
+    paraQueSirve:
+      "Para cerrar la caja y ver si cuadra o si falta o sobra dinero.",
+    comoSeLee:
+      "Una diferencia negativa es faltante y una positiva es sobrante. La diferencia en efectivo es lo contado, más los vales, menos las ventas en efectivo y el fondo inicial. Si hay un descuadre, aparecen quién lo aprobó y el motivo. Rentabilidad resta el ITBIS y el costo: no coincide con la regla de margen de la dueña (ITBIS no se resta); por confirmar.",
+    columnas: {
+      "Crédito RD$": c(
+        "Crédito en pesos",
+        "Ventas a crédito de la caja, en pesos.",
+      ),
+      "Efectivo RD$": c(
+        "Efectivo en pesos",
+        "Efectivo contado en la caja, en pesos.",
+      ),
+      Tarjetas: c("Tarjetas", "Lo cobrado con tarjeta en la caja."),
+      Transferencia: c(
+        "Transferencia",
+        "Lo cobrado por transferencia en la caja.",
+      ),
+      "Vale de caja": c(
+        "Vales de caja",
+        "Vales de caja registrados en la caja (por confirmar cómo afectan el efectivo).",
+      ),
+      "Dólares US$": c("Dólares", "Dólares contados en la caja."),
+      "Euro €": c("Euros", "Euros contados en la caja."),
+      "Cantidad ticket": c(
+        "Tickets",
+        "Cuántos tickets se hicieron en la caja.",
+      ),
+      "Ticket nulo": c(
+        "Tickets anulados",
+        "Cuántos tickets se anularon en la caja.",
+      ),
+      "Total en venta efectivo": c(
+        "Ventas en efectivo",
+        "Lo vendido en efectivo en la caja.",
+      ),
+      "Recibos CxC": c(
+        "Cobros de crédito",
+        "Abonos de crédito cobrados en la caja.",
+      ),
+      "Diferencias RD$": c(
+        "Diferencia en pesos",
+        "Lo que falta (−) o sobra (+) en efectivo, en pesos.",
+      ),
+      "Diferencias US$": c(
+        "Diferencia en dólares",
+        "Diferencia en dólares, solo en cierres con pago en dólares.",
+      ),
+      "Diferencias €": c("Diferencia en euros", "Diferencia en euros."),
+      "Total Desc.": c(
+        "Descuentos",
+        "Suma de los descuentos de las ventas de la caja.",
+      ),
+      Total: c(
+        "Total vendido",
+        "Suma del total de las ventas completadas de la caja.",
+      ),
+      Rentabilidad: c(
+        "Rentabilidad",
+        "Ventas menos ITBIS y costo, menos devoluciones de la caja. Solo con permiso de ganancia. Por confirmar, porque la regla de margen no resta el ITBIS.",
+      ),
+      "Fondo Caja inicial": c(
+        "Fondo inicial",
+        "Dinero con el que se abrió la caja.",
+      ),
+    },
+  },
+  "tienda-venta-diaria-usuario": {
+    queEs:
+      "El impreso de la venta diaria de una cajera: cada producto vendido, cuánto, y el total.",
+    paraQueSirve: "Para imprimir al cerrar y ver qué se vendió en el turno.",
+    comoSeLee:
+      "Cada fila es un producto. Precio es lo cobrado antes del descuento. Desc es el descuento. ITBIS es el impuesto incluido en el precio.",
+    columnas: {
+      Descripción: c(
+        "Producto",
+        "Nombre del producto. La última fila dice TOTAL.",
+      ),
+      SKU: c("Código", "El código interno del producto (SKU)."),
+      Cant: c("Cantidad", "Piezas vendidas."),
+      ITBIS: c("ITBIS", "Impuesto incluido en lo vendido de ese producto."),
+      Desc: c("Descuento", "Descuento dado sobre ese producto."),
+      Precio: c("Precio", "Lo vendido de ese producto antes del descuento."),
+    },
+  },
+  "tienda-venta-por-forma-pago": {
+    queEs:
+      "El impreso de las ventas de un turno, separadas por forma de pago: efectivo, tarjeta, transferencia y crédito.",
+    paraQueSirve:
+      "Para ver qué facturas se cobraron cómo, y cuánto quedó pendiente de cobrar.",
+    comoSeLee:
+      "Una venta combinada aparece en cada forma de pago con la parte que le corresponde. En crédito, Pendiente significa que la factura todavía debe dinero y Cobrada que ya se pagó.",
+    columnas: {
+      COD: c("Número de factura", "Número de la factura."),
+      Descripción: c(
+        "Concepto",
+        "La forma de pago, la factura, o el subtotal del grupo.",
+      ),
+      Cant: c("Piezas", "Piezas de la factura."),
+      T_Venta: c("Monto", "Lo cobrado por esa forma de pago en la factura."),
+      "Sub-Total por Pago": c(
+        "Subtotal por forma de pago",
+        "Total de piezas y de monto de esa forma de pago.",
+      ),
+      "Sub-Total por Fact.": c(
+        "Subtotal por factura",
+        "Número de facturas, piezas y monto total del período.",
+      ),
+    },
+  },
+  "tienda-ventas-categoria-forma-pago": {
+    queEs:
+      "Las ventas por categoría y forma de pago, con el porcentaje de cada forma de pago.",
+    paraQueSirve:
+      "Para ver cómo se cobra cada categoría, por ejemplo cuánto de ropa se paga con tarjeta.",
+    comoSeLee:
+      "Lo vendido de cada categoría en cada factura se reparte según cómo se pagó la factura. TODAS suma todas las categorías. Las devoluciones se restan en la fecha de la venta original.",
+    columnas: {
+      Categoría: c(
+        "Categoría",
+        "La categoría del producto, o TODAS para el total.",
+      ),
+      "Forma de pago": c(
+        "Forma de pago",
+        "Efectivo, tarjeta, transferencia, crédito o contraentrega, y nota de crédito.",
+      ),
+      Monto: c("Monto", "Lo cobrado de esa categoría con esa forma de pago."),
+      "%": c(
+        "% de la categoría",
+        "Qué parte de la categoría se cobró con esa forma de pago.",
+      ),
+    },
+  },
+  "gv-reportes": {
+    queEs:
+      "Los reportes del módulo GV (cursos, citas y cobros): ingresos verificados por día, método, banco y empleada; ocupación y pendientes por curso; y pendientes por clienta.",
+    paraQueSirve:
+      "Para cuadrar los cobros de cursos y citas y saber qué clientas deben todavía dinero.",
+    comoSeLee:
+      "Verificado es lo que ya confirmó el banco o la caja. Reembolsos son los devueltos a clientas. Neto es verificado menos reembolsos. Por verificar son pagos registrados que todavía no se confirman. Pendiente es lo que falta por pagar de cada inscripción o cita; si está cancelada o reembolsada, es cero.",
+    columnas: {
+      Verificado: c("Verificado", "Cobros ya confirmados, en pesos."),
+      Reembolsos: c("Reembolsos", "Dinero devuelto a clientas en el período."),
+      Neto: c("Neto", "Verificado menos reembolsos."),
+      "Por verificar": c(
+        "Por verificar",
+        "Pagos registrados que todavía no se confirman.",
+      ),
+      "Por día": c("Por día", "Cuánto entró cada día y cuántos pagos fueron."),
+      "Por método": c(
+        "Por método",
+        "Cuánto entró por cada forma de pago y cuántos pagos fueron.",
+      ),
+      "Por banco": c(
+        "Por banco",
+        "Cuánto entró por cada banco o terminal, y cuántos pagos fueron. Sin banco si no se anotó.",
+      ),
+      "Por empleada": c(
+        "Por empleada",
+        "Cuánto cobró cada empleada y cuántos pagos registró. Gerencia cuando no hay nombre de quien lo registró.",
+      ),
+      CURSO: c("Curso", "Nombre y fecha del curso."),
+      INSCRITAS: c(
+        "Inscritas",
+        "Inscritas que ocupan lugar, de la capacidad del curso.",
+      ),
+      ASISTIERON: c("Asistieron", "Cuántas inscritas marcaron asistencia."),
+      SETS: c(
+        "Sets de brochas",
+        "Cuántas inscritas compraron el set de brochas.",
+      ),
+      PAGADO: c("Pagado", "Lo verificado de las inscripciones del curso."),
+      PENDIENTE: c(
+        "Pendiente",
+        "Lo que falta por pagar de las inscripciones del curso.",
+      ),
+      "Pendientes por clienta": c(
+        "Pendientes por clienta",
+        "Clienta, curso o cita, y lo que todavía debe. Sale el teléfono de la clienta.",
+      ),
+    },
+  },
+};
+
+export const GUIA_INFORMES: Record<string, Guia> = {
+  ...INFORMES_MACGEN,
+  ...INFORMES_VERSIONES,
 };

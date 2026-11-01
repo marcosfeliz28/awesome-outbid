@@ -100,9 +100,15 @@ describe("guía de reportes", () => {
 
   it("los informes formales tienen guía y cada columna o sección explicada", () => {
     expect(Object.keys(GUIA_INFORMES).sort()).toEqual([
+      "cierre-caja",
+      "gv-reportes",
+      "informe-anual",
       "informe-formal",
       "informe-mensual",
       "ingresos-por-dia",
+      "tienda-venta-diaria-usuario",
+      "tienda-venta-por-forma-pago",
+      "tienda-ventas-categoria-forma-pago",
     ]);
     for (const [nombre, guia] of Object.entries(GUIA_INFORMES)) {
       expect(hayTexto(guia.queEs), nombre).toBe(true);
