@@ -27,3 +27,4 @@ Orden de la dueña: usar a TODOS a la vez, sin pisarse. Cada quien tiene sus arc
 
 ## Mapa del sistema (obligatorio para todos)
 Antes de leer archivos a ciegas o de afirmar «esto toca X», consulta el mapa: `docs/sistema/mapa/LEEME.md` (graphify; instrucciones de uso allí). Es inferido en parte: cita siempre la fuente (archivo:línea) y no decidas dinero solo con el mapa.
+Instructivo paso a paso para cada tipo de sesión: `docs/sistema/mapa/INSTRUCTIVO_SESIONES.md`.
