@@ -127,6 +127,7 @@ async function periodReturns(
       sale: {
         select: {
           sellerId: true,
+          createdAt: true,
           payments: { select: { method: true, entryType: true } },
           items: {
             select: {
@@ -208,8 +209,9 @@ async function returnedBreakdown(
     colors = new Map<string, string>(),
     methods = new Map<string, any>(),
     sellers = new Map<string, any>();
-  await forEachPeriodReturn(db, actor, range, undefined, (r) => {
-    addTo(days, businessDate(r.createdAt), r.total);
+  // Criterio único (1-nov): devoluciones por fecha de la venta original, como el total.
+  await forEachPeriodReturn(db, actor, range, {}, (r) => {
+    addTo(days, businessDate(r.sale.createdAt), r.total);
     for (const { category, amount } of returnedByCategory(r)) {
       addTo(categories, category.name, amount);
       if (!colors.has(category.name)) colors.set(category.name, category.color);
@@ -272,6 +274,7 @@ export class ReportsController {
     const [
       sales,
       returns,
+      restockedCost,
       expenses,
       previous,
       variants,
@@ -298,6 +301,11 @@ export class ReportsController {
         where: { branchId: actor.branchId, sale: { createdAt: range } },
         _sum: { total: true, taxTotal: true, costTotal: true },
       }),
+      // Regla de costo única con /reports/profit: una devolución resta costo solo
+      // por lo que reingresa (partes con restock); sin reingreso el costo se conserva.
+      this.db.$queryRaw<
+        any[]
+      >`SELECT COALESCE(SUM(CASE WHEN jsonb_typeof(r.items::jsonb)='array' AND jsonb_array_length(r.items::jsonb)>0 THEN (SELECT COALESCE(SUM((e->>'cost')::numeric) FILTER (WHERE (e->>'restock')::boolean),0) FROM jsonb_array_elements(r.items::jsonb) e) ELSE r."costTotal" END),0) AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`,
       this.db.expense.aggregate({
         where: { branchId: actor.branchId, voided: false, date: range },
         _sum: { amount: true },
@@ -460,7 +468,7 @@ export class ReportsController {
       ),
       net = money(d(revenue).minus(tax)),
       cost = money(
-        d(sales._sum.costTotal ?? 0).minus(returns._sum.costTotal ?? 0),
+        d(sales._sum.costTotal ?? 0).minus(restockedCost[0]?.cost ?? 0),
       ),
       expense = Number(expenses._sum.amount ?? 0),
       inventoryLoss = money(inventoryLossRows?.[0]?.loss ?? 0),

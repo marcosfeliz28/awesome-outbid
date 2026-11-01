@@ -187,6 +187,27 @@ async function withSettings<T>(
 }
 const alert = (key: string) => db.alert.findUnique({ where: { key } });
 const today = () => businessDate();
+// Lectura estable del mes: otras suites escriben ventas de hoy mientras se lee, así
+// que se repite (desglose, año, desglose) hasta que el desglose no cambie entre dos
+// lecturas. La aserción de cuadre exacto no cambia.
+async function stableMonth(from: string, to: string) {
+  for (let i = 0; i < 6; i++) {
+    const bd1 = await ok(
+      "/dashboard/breakdown?from=" + from + "&to=" + to,
+      admin,
+    );
+    const year = await ok("/dashboard/year", admin);
+    const bd = await ok(
+      "/dashboard/breakdown?from=" + from + "&to=" + to,
+      admin,
+    );
+    if (bd1.revenue === bd.revenue && bd1.profit === bd.profit)
+      return { bd, year };
+  }
+  throw new Error(
+    "El desglose del mes cambió en cada lectura: escrituras concurrentes sin fin.",
+  );
+}
 
 beforeAll(async () => {
   admin = (
@@ -888,17 +909,15 @@ describe("Auditoría 01 · dinero", () => {
     await sell(c, v, 2, [{ method: "cash", amount: 1400 }]);
     const range = "?from=" + today() + "&to=" + today();
     const breakdown = await ok("/dashboard/breakdown" + range, admin);
-    const year = await ok("/dashboard/year", admin);
+    const stable = await stableMonth(today().slice(0, 7) + "-01", today());
+    const year = stable.year;
     expect(year.months).toHaveLength(12);
     expect(
       year.months.reduce((a: number, m: any) => a + m.revenue, 0),
     ).toBeCloseTo(year.revenue, 2);
     const month = year.months[Number(today().slice(5, 7)) - 1];
     // Cuadre exacto con el desglose del mes hasta hoy (mismas ventas y devoluciones).
-    const monthToDate = await ok(
-      "/dashboard/breakdown?from=" + today().slice(0, 7) + "-01&to=" + today(),
-      admin,
-    );
+    const monthToDate = stable.bd;
     expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
     expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
     expect(breakdown.units).toBeGreaterThanOrEqual(2);
@@ -933,11 +952,12 @@ describe("Auditoría 01 · dinero", () => {
         items: [],
       },
     });
-    const monthToDate = await ok(
-      "/dashboard/breakdown?from=" + today().slice(0, 7) + "-01&to=" + today(),
-      admin,
+    const stableLegacy = await stableMonth(
+      today().slice(0, 7) + "-01",
+      today(),
     );
-    const year = await ok("/dashboard/year", admin);
+    const monthToDate = stableLegacy.bd;
+    const year = stableLegacy.year;
     const month = year.months[Number(today().slice(5, 7)) - 1];
     expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
     expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
@@ -997,11 +1017,9 @@ describe("Auditoría 01 · dinero", () => {
           ],
         },
       });
-      const year = await ok("/dashboard/year", admin);
-      const cur = await ok(
-        "/dashboard/breakdown?from=" + monthStart + "&to=" + today(),
-        admin,
-      );
+      const stablePrior = await stableMonth(monthStart, today());
+      const year = stablePrior.year;
+      const cur = stablePrior.bd;
       const prev = await ok(
         "/dashboard/breakdown?from=" + prevStart + "&to=" + prevDay,
         admin,
