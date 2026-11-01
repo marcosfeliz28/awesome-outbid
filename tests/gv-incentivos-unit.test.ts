@@ -221,6 +221,25 @@ describe("GV · moneda del pago (decisiones de la dueña, 31-oct)", () => {
     expect(t.pending).toBe("0.00");
   });
 
+  it("H-01 en GV: US$ sólo en efectivo (transferencia o tarjeta se rechazan)", () => {
+    const base = {
+      date: "2026-10-03",
+      amount: 100,
+      concept: "separo",
+      currency: "USD",
+      rate: 60,
+      bank: "Banco Popular",
+      reference: "REF-1",
+    };
+    for (const method of ["transferencia", "tarjeta"]) {
+      const r = gvPaymentInput({}).safeParse({ ...base, method });
+      expect(r.success).toBe(false);
+      expect(JSON.stringify(r.error?.issues)).toMatch(/efectivo/);
+    }
+    const ok = gvPaymentInput({}).safeParse({ ...base, method: "efectivo" });
+    expect(ok.success).toBe(true);
+  });
+
   it("USD exige tasa; DOP no la necesita", () => {
     const usdSinTasa = gvPaymentInput({}).safeParse({
       date: "2026-10-03",

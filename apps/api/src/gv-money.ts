@@ -213,11 +213,25 @@ export const usdRate = (
       message: "es obligatoria en US$ (pesos por dólar)",
     });
 };
+// H-01 (sólo efectivo en US$), igual que en las ventas: sin esto un pago en
+// dólares por transferencia o tarjeta entraba a GV.
+export const usdCashOnly = (
+  p: { currency?: string; method: string },
+  ctx: z.RefinementCtx,
+) => {
+  if (p.currency === "USD" && p.method !== "efectivo")
+    ctx.addIssue({
+      code: "custom",
+      path: ["method"],
+      message: "El pago en US$ es sólo en efectivo.",
+    });
+};
 export const gvPaymentInput = <T extends z.ZodRawShape>(extra: T) =>
   z.object({ ...gvPaymentFields, ...extra }).superRefine((v, ctx) => {
     transferDetails(v as GvPaymentData, ctx);
     cardDetails(v as GvPaymentData, ctx);
     usdRate(v as GvPaymentData, ctx);
+    usdCashOnly(v as GvPaymentData, ctx);
   });
 export type GvPaymentData = {
   date: string;
@@ -490,7 +504,8 @@ export const gvImportPayment = z
     ...gvPaymentFields,
     verified: z.boolean().optional(),
   })
-  .superRefine(transferDetails);
+  .superRefine(transferDetails)
+  .superRefine(usdCashOnly);
 export type GvImportPayment = z.infer<typeof gvImportPayment>;
 type ImportOwner = {
   kind: GvOwnerKind;
