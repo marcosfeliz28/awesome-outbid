@@ -89,17 +89,25 @@ export function rateFor(
   const row = configured.find((r) => r.categoryId === category.id);
   return row ? money(row.amount as any) : defaultIncentiveRate(category.name);
 }
+/**
+ * cantidad × tarifa (× 0.5 si mayorista) sin redondear. Redondear una sola vez
+ * al final (con la fracción pagada o la devolución): redondear aquí y otra vez
+ * después acumula error de centavos.
+ */
+export const incentiveExact = (
+  qty: number | string,
+  rate: number | string,
+  wholesale: boolean,
+): ReturnType<typeof d> =>
+  d(qty)
+    .times(rate)
+    .times(wholesale ? WHOLESALE_FACTOR : 1);
 /** cantidad × tarifa (× 0.5 si mayorista), redondeado a centavos. */
 export const incentiveAmount = (
   qty: number | string,
   rate: number | string,
   wholesale: boolean,
-) =>
-  money(
-    d(qty)
-      .times(rate)
-      .times(wholesale ? WHOLESALE_FACTOR : 1),
-  );
+) => money(incentiveExact(qty, rate, wholesale));
 /**
  * Reverso de una devolución parcial, con redondeo acumulado: devolver de a
  * una unidad suma exactamente lo ganado por la línea. Devuelve un número ≤ 0.
@@ -324,7 +332,7 @@ export async function recordSaleIncentives(
       rateAtSale: rate,
       wholesale: sale.wholesale,
       amount: money(
-        d(incentiveAmount(String(item.qty), rate, sale.wholesale)).times(
+        incentiveExact(String(item.qty), rate, sale.wholesale).times(
           paidFraction,
         ),
       ),
@@ -505,12 +513,10 @@ export async function syncCreditIncentives(
     const origin = base.get(line.id);
     if (!origin) continue;
     const lineEntries = entries.filter((e) => e.saleItemId === line.id);
-    const full = d(
-      incentiveAmount(
-        String(origin.qty),
-        String(origin.rateAtSale),
-        origin.wholesale,
-      ),
+    const full = incentiveExact(
+      String(origin.qty),
+      String(origin.rateAtSale),
+      origin.wholesale,
     );
     const remaining =
       kind === "void"
@@ -588,12 +594,10 @@ export async function pendingCreditIncentive(
       const mine = entries.filter((e) => e.saleItemId === line.id);
       const origin = mine.find((e) => e.kind === "sale");
       if (!origin) continue;
-      const full = d(
-        incentiveAmount(
-          String(origin.qty),
-          String(origin.rateAtSale),
-          origin.wholesale,
-        ),
+      const full = incentiveExact(
+        String(origin.qty),
+        String(origin.rateAtSale),
+        origin.wholesale,
       );
       const left = full
         .minus(returnedAt(full, line.qty, line.returnedQty))

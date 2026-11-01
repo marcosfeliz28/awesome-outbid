@@ -7,6 +7,7 @@ import { repricePendingSale } from "../apps/web/src/pendingSales";
 import {
   pendingCreditIncentive,
   recordSaleIncentives,
+  syncCreditIncentives,
 } from "../apps/api/src/incentives";
 
 describe("H-01: un pago en US$ sólo puede ser en efectivo", () => {
@@ -114,6 +115,72 @@ describe("H-08: incentivo de ventas a crédito con fracción pagada entre 0 y 1"
     const out = await pendingCreditIncentive(db, "b1");
     // s1: 0.30 − 0.10 = 0.20; s2: 0.004 − 0 = 0.004 → 0.00 (centavos).
     expect(out.get("u1")).toBe(0.2);
+  });
+});
+
+describe("LOW: incentivo a crédito se redondea una sola vez", () => {
+  const base = (qty: number, wholesale: boolean) => ({
+    id: "s1",
+    number: 1,
+    sellerId: "u1",
+    branchId: "b1",
+    createdAt: new Date("2026-10-15T15:00:00Z"),
+    wholesale,
+    total: "100",
+    creditBalance: "50",
+    incentiveOnCollection: true,
+    items: [
+      {
+        id: "l1",
+        qty,
+        variant: { product: { category: { id: "c1", name: "Suplementos" } } },
+      },
+    ],
+  });
+  const rateRow = (rate: string) => [{ categoryId: "c1", amount: rate }];
+  const fakeTx = (sale: any, rate: string, entries: any[] = []) => {
+    const created: any[] = [];
+    return {
+      created,
+      $queryRaw: async () => [{ locked: "" }],
+      sale: {
+        findUniqueOrThrow: async () => sale,
+        findUnique: async () => ({
+          total: sale.total,
+          creditBalance: "0",
+          incentiveOnCollection: true,
+          items: sale.items.map((i: any) => ({
+            id: i.id,
+            qty: i.qty,
+            returnedQty: 0,
+          })),
+        }),
+      },
+      saleReturn: { aggregate: async () => ({ _sum: { total: null } }) },
+      auditLog: { create: async () => ({}) },
+      incentiveRate: { findMany: async () => rateRow(rate) },
+      incentivePeriodClose: { findMany: async () => [] },
+      incentiveEntry: {
+        findMany: async () => [...entries, ...created],
+        createMany: async ({ data }: any) => created.push(...data),
+      },
+    };
+  };
+  const actor = { id: "u1", branchId: "b1" } as any;
+
+  it("mayorista, tarifa 0.05, qty 1, 50 % al vender: 0.05 × 0.5 × 0.5 = 0.0125 → 0.01 (una vez)", async () => {
+    // Antes: 0.05 × 0.5 = 0.025 → 0.03 y luego × 0.5 = 0.015 → 0.02.
+    const tx = fakeTx(base(1, true), "0.05");
+    await recordSaleIncentives(tx, actor, "s1");
+    expect(tx.created.map((e) => Number(e.amount))).toEqual([0.01]);
+  });
+
+  it("rate 0.015, qty 1, 50 % al vender y luego cobro completo: total = 0.015 redondeado una vez (0.02)", async () => {
+    const tx = fakeTx(base(1, false), "0.015");
+    await recordSaleIncentives(tx, actor, "s1");
+    await syncCreditIncentives(tx, actor, "s1", "collection", "pay-1");
+    const total = tx.created.reduce((s, e) => s + Number(e.amount), 0);
+    expect(total.toFixed(2)).toBe("0.02");
   });
 });
 
