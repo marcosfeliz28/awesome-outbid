@@ -216,6 +216,14 @@ Todas están entre 426 y 967 commits detrás del `nexora-cloud` de referencia o 
 2. ChatGPT PC: F2-01 y F2-03 ya están hechos por otra vía. Quedan la revalidación de F1-02…F1-05 y F3-01; `pc16` queda reportado, no mezclado.
 3. Antes de código: confirmar que ninguna tarea haya sido tomada en el tablero vigente y trabajar desde `origin/nexora-cloud` en una rama nueva por tarea.
 
+### Actualización de coordinación — 2026-11-01
+
+- **Actualización:** incorporé `origin/nexora-cloud` `d80eec2c` mediante el merge `85e0fd81` en esta rama de informe; no hubo conflictos, despliegues ni acceso a Render, producción, base de la tienda o credenciales.
+- **Mapa consultado antes de evaluar código:** `docs/sistema/mapa/LEEME.md` y su grafo identifican `apps/web/src/App.tsx` y `apps/web/src/styles.css` como los puntos de entrada de las transiciones; después se verificaron directamente las fuentes. El producto ya tiene animación localizada del tablero y la exclusión de `prefers-reduced-motion`, pero no se inicia aquí una modificación global.
+- **Bloqueo de tarea nueva (F3-01):** no es seguro declararla libre. Existe `chatgpt-pc/obsidian-lumina-f3` en `2f998788`, fuera de `nexora-cloud`, con un diff de cientos de archivos ajenos a la tarea; también existen ramas de Claude PC `claude-pc/lumina-f3-*` y `claude-pc/obsidian-lumina-f3`. Rehacer la transición sin una asignación que aclare cuál de esas líneas prevalece duplicaría trabajo y podría pisar `App.tsx`/`styles.css`.
+- **CI comprobado:** en la ejecución `41306631645`, `windows-installer` y `render-images` concluyeron correctamente. `verify` falló solamente en `tests/dinero-auditoria.test.ts:898:27`: `expected 89439.5 to be greater than or equal to 90056.5` (604/605 pruebas); el reparto vigente asigna el CI rojo a Claude nube (`fix-ci-mes`), por lo que no se modifica dinero ni esa prueba.
+- **Siguiente decisión necesaria:** Norexos 1 debe asignar una pantalla/alcance F3 que no esté tomado, o confirmar que la variante nueva de F3-01 sustituye explícitamente las ramas citadas. Hasta entonces no inicio código ni capturas para evitar una tarea duplicada.
+
 ### Matriz de la cola del 27-oct contrastada con la orden constructora del 1-nov
 
 | Función / rama de la cola | Estado contra `nexora-cloud` actual | Decisión de esta auditoría |
