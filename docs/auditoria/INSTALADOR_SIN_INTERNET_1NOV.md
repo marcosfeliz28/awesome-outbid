@@ -5,7 +5,7 @@ Orden: `docs/coordinacion/ORDEN_INSTALADOR_SIN_INTERNET_1NOV.md`, parte 1.
 
 **Límite de esta auditoría:** se hizo leyendo el código y el CI. No hay Windows aquí, así que nada de esto está probado en una PC instalada. Las referencias son `archivo:línea` del repositorio en esta rama.
 
-Nota de método: el mapa `graphify` no se pudo usar (la instalación de `graphifyy` no terminó en el entorno), así que todas las búsquedas fueron directas con `grep` sobre el código.
+Nota de método: las búsquedas principales fueron directas con `grep` sobre el código. Al final se revisó también el mapa `graphify` (`graphify query`): no cambió ninguna conclusión; el único resultado de red (`apps/web/src/QuickQuestions.tsx`) solo llama a la API interna.
 
 ## Resumen
 
