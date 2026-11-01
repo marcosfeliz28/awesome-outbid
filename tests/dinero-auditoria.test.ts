@@ -951,16 +951,18 @@ describe("Auditoría 01 · dinero", () => {
     ).toBeCloseTo(monthToDate.revenue, 2);
   });
 
-  it("devolución de una venta del mes anterior: el desglose la muestra como fila propia y el mes cuadra con el año", async () => {
+  it("devolución de una venta del mes anterior: se atribuye al mes de la venta y el año cuadra exacto con el desglose de cada mes", async () => {
     const c = await person("seller", "prior", 0);
     const v = await product(400, 150, 10);
     const sale = await sell(c, v, 1, [{ method: "cash", amount: 400 }]);
     const originalDate = sale.createdAt ? new Date(sale.createdAt) : new Date();
-    // Venta del último día del mes anterior: queda fuera del período del desglose.
+    // Venta del último día del mes anterior; la devolución se hace hoy.
     const monthStart = today().slice(0, 7) + "-01";
     const lastDay = new Date(
       Date.parse(monthStart + "T12:00:00-04:00") - 86400000,
     );
+    const prevDay = businessDate(lastDay);
+    const prevStart = prevDay.slice(0, 7) + "-01";
     let ret: any = null;
     try {
       await db.sale.update({
@@ -995,22 +997,28 @@ describe("Auditoría 01 · dinero", () => {
           ],
         },
       });
-      const monthToDate = await ok(
+      const year = await ok("/dashboard/year", admin);
+      const cur = await ok(
         "/dashboard/breakdown?from=" + monthStart + "&to=" + today(),
         admin,
       );
-      const year = await ok("/dashboard/year", admin);
-      const month = year.months[Number(today().slice(5, 7)) - 1];
-      expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
-      expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
-      const row = monthToDate.categories.find(
-        (r: any) => r.name === "Devoluciones de ventas anteriores",
+      const prev = await ok(
+        "/dashboard/breakdown?from=" + prevStart + "&to=" + prevDay,
+        admin,
       );
-      expect(row).toBeDefined();
-      expect(row.revenue).toBeLessThanOrEqual(-400);
+      const curMonth = year.months[Number(today().slice(5, 7)) - 1];
+      const prevMonth = year.months[Number(prevDay.slice(5, 7)) - 1];
+      // Con un solo criterio (fecha de la venta) el año y el desglose cuadran exacto en ambos meses.
+      expect(curMonth.revenue).toBeCloseTo(cur.revenue, 2);
+      expect(curMonth.profit).toBeCloseTo(cur.profit, 2);
+      expect(prevMonth.revenue).toBeCloseTo(prev.revenue, 2);
+      expect(prevMonth.profit).toBeCloseTo(prev.profit, 2);
+      // Ya no hay fila «de ventas anteriores»: la devolución no cae en el mes de devolución.
       expect(
-        monthToDate.categories.reduce((a: number, r: any) => a + r.revenue, 0),
-      ).toBeCloseTo(monthToDate.revenue, 2);
+        cur.categories.find(
+          (r: any) => r.name === "Devoluciones de ventas anteriores",
+        ),
+      ).toBeUndefined();
     } finally {
       // Limpieza: otras suites usan la misma base el mismo día.
       if (ret) await db.saleReturn.delete({ where: { id: ret.id } });
