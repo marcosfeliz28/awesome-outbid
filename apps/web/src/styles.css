@@ -6664,3 +6664,74 @@ td strong {
     transform: none;
   }
 }
+
+/* Orden 98 · pieza 3: animación de reportes y desglose del mes (tarjetas, periodo, top 10 y filas).
+   Solo transform y opacity, tokens --nx-dur-*; prefers-reduced-motion lo apaga todo. */
+@keyframes reporte-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.kpi-grid:not(.tablero-kpis) > .kpi-card,
+.month-range,
+.month-top-panel {
+  animation: reporte-enter var(--nx-dur-slow) var(--nx-ease-out) backwards;
+}
+.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(2) {
+  animation-delay: 60ms;
+}
+.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(3) {
+  animation-delay: 120ms;
+}
+.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(4) {
+  animation-delay: 180ms;
+}
+.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(5) {
+  animation-delay: 240ms;
+}
+.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(6) {
+  animation-delay: 300ms;
+}
+.month-table tbody tr {
+  animation: reporte-enter var(--nx-dur-base) var(--nx-ease-out) backwards;
+}
+.month-table tbody tr:nth-child(2) {
+  animation-delay: 24ms;
+}
+.month-table tbody tr:nth-child(3) {
+  animation-delay: 48ms;
+}
+.month-table tbody tr:nth-child(4) {
+  animation-delay: 72ms;
+}
+.month-table tbody tr:nth-child(5) {
+  animation-delay: 96ms;
+}
+.month-table tbody tr:nth-child(6) {
+  animation-delay: 120ms;
+}
+.kpi-grid:not(.tablero-kpis) > .kpi-card {
+  transition: transform var(--nx-dur-fast) var(--nx-ease-out);
+}
+.kpi-grid:not(.tablero-kpis) > .kpi-card:hover {
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kpi-grid:not(.tablero-kpis) > .kpi-card,
+  .month-range,
+  .month-top-panel,
+  .month-table tbody tr {
+    animation: none;
+  }
+  .kpi-grid:not(.tablero-kpis) > .kpi-card {
+    transition: none;
+  }
+  .kpi-grid:not(.tablero-kpis) > .kpi-card:hover {
+    transform: none;
+  }
+}
