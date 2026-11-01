@@ -68,3 +68,8 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 - 4f994d7b AÚN FALLA en CI: `tests/dinero-auditoria.test.ts:902` y `:942`, diferencia de 118 (89439.5 vs 89557.5). Hay una segunda causa en la suite completa. Pendiente de devolver al agente (session_01CjMpH6i9MQ46RPz1qbGhSG): reproducir la suite de dinero completa en orden CI y hallar los 118 con SQL. El canal send_message de N1 estuvo caído a las 10:45.
 - Producción: N2 no ve devoluciones en 381 ventas (8–31 oct); la BD de Render bloquea consultas externas (allowlist vacía), la dueña decide si abrirla.
 - Bloqueadas por este CI (no mezclar hasta que pase): gv-incentivos c227d6b (por pago), anim-reportes, fix-dinero, fix-seg-menor, pq-23-parches, pq-23-28, pq-25-indices, pq-39, pq-37, pq-11, zod4.
+
+## 1-nov (dueña, antes de dormir): decisiones
+- Reembolsos GV en pesos (orden 106). GV con caja propia, opción B (orden 106; falta asignar agente: send_message de N1 caído a las 10:45 UTC).
+- La dueña reactivará el Relevo de Claude PC con el repo como fuente y pondrá NEXORA_CLAUDE_USER/PASSWORD en el entorno (pidió instrucciones).
+- Pendiente: H-19 (pagos a proveedores con caja registrada) sin respuesta; agente a6682e08 arreglando el CI rojo de dinero en mi entorno.
