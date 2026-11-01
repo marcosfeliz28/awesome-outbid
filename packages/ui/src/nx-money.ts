@@ -1,5 +1,6 @@
 // Formato de importes en pesos dominicanos: «RD$ 1,234.50».
 // No oculta importes: la caja ciega la aplica el servidor (B-01), no este componente.
+// sin uso en tienda, se conserva por contrato F2-01
 export function formatDOP(valor: number): string {
   if (!Number.isFinite(valor)) throw new Error("Importe no finito");
   const partes = Math.abs(valor).toFixed(2).split(".");

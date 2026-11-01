@@ -218,6 +218,7 @@ export function NxProgress({
   );
 }
 
+// sin uso en tienda, se conserva por contrato F2-01
 /** Solo da formato: la caja ciega la aplica el servidor, y aquí `null` se muestra como «—». */
 export function NxMoney({ valor }: { valor: number | null | undefined }) {
   return (
