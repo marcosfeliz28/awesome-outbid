@@ -1,12 +1,15 @@
 // Lote seguridad menor (1-nov-2026, hallazgos H-03, H-05, H-15, H-16, H-17, H-07, H-02).
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   BackupFormatError,
   decodeHeader,
   encodeHeader,
   SCRYPT,
 } from "../apps/api/src/drive-backup-core";
+
+// El almacén de la app se crea al cargar api.ts y lee localStorage (no hay DOM).
+let download: (typeof import("../apps/web/src/api"))["download"];
 
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -44,13 +47,46 @@ describe("H-15 · download() tiene tiempo máximo y tope de reintentos", () => {
   const src = read("apps/web/src/api.ts");
   const fn = src.slice(src.indexOf("export async function download("));
 
-  it("la petición tiene tiempo máximo", () => {
-    expect(fn.slice(0, 400)).toMatch(
-      /signal: AbortSignal\.timeout\(DOWNLOAD_TIMEOUT_MS\)/,
-    );
+  beforeAll(async () => {
+    vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
+    ({ download } = await import("../apps/web/src/api"));
   });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+  it("solo los encabezados tienen tiempo máximo: un cuerpo lento no se corta", async () => {
+    vi.stubGlobal("fetch", async () => ({
+      ok: true,
+      status: 200,
+      // El cuerpo tarda más que el tope de encabezados.
+      blob: () =>
+        new Promise((done) => setTimeout(() => done(new Blob(["x"])), 150)),
+    }));
+    vi.stubGlobal("document", { createElement: () => ({ click: () => {} }) });
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test");
+    await expect(
+      download("/reportes/x.csv", "x.csv", true, 50),
+    ).resolves.toBeUndefined();
+  });
+  it("si los encabezados no llegan a tiempo, la descarga aborta", async () => {
+    vi.stubGlobal(
+      "fetch",
+      (_url: string, init: RequestInit) =>
+        new Promise((_, reject) =>
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          ),
+        ),
+    );
+    await expect(
+      download("/reportes/x.csv", "x.csv", true, 50),
+    ).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  }, 5000);
   it("tras refrescar la sesión, un 401 que persiste no vuelve a reintentar", () => {
-    expect(fn).toContain("return download(path, filename, false);");
+    expect(fn).toContain("return download(path, filename, false, timeoutMs);");
   });
 });
 
