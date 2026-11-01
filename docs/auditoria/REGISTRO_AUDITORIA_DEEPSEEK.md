@@ -119,3 +119,10 @@ Muestra comprobada: F3-P01, F3-P02, F3-P03, F3-P04, F4-P01, F4-P02, F4-P03, F5-P
 | F5-P01 (`reportes/clientes.ts`, `customerSearch.ts`) | Saldo actual en reporte histórico; `pickOnEnter` | **No comprobado** en detalle. |
 
 Conclusión sobre el resumen de DeepSeek: sobrestima la gravedad de los hallazgos de GV («crítico») sin comprobar la moneda de `refundAmount` ni el comportamiento de `valorEnMoneda`. Hasta que se compruebe, no son críticos.
+
+## Flujo acordado con la dueña (1 nov 2026)
+
+- Claude anota y verifica todo lo que entrega DeepSeek. Claude es el filtro.
+- Al final de las fases, todo el registro se envía a **Norexos 1**, que reaudita y decide. Ninguna corrección de dinero se aplica antes de esa decisión.
+- Siguiente entrega: **F4-P01 a F4-P04 juntos**, en un solo documento con instrucciones y notas (`ENCARGO-DEEPSEEK-F4-COMPLETO.txt`, scratchpad).
+- Los hallazgos de GV marcados como «críticos» en el informe anterior quedan **no comprobados** hasta verificar la moneda de los datos.
