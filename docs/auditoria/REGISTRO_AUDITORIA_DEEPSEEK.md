@@ -99,3 +99,23 @@ Muestra comprobada en el código: P02-1, P06-1, P07-2, P08-2, P10-1, P12-1, P13-
 | P15-1 (`Purchases.tsx:361`) | «Step acotado a 0,001» | **No comprobado.** El fragmento citado no muestra el `step`. |
 
 Repetidos sin cambios respecto a lo ya registrado: P03 (`formal-report.ts:364`, `incentives.ts:602`, `incentives.ts:311`) y P04 (`incentives.ts:1029`, `income-report.ts:471`, `income-report.ts:262`).
+
+## Fases 3, 4 y 5 · informe de DeepSeek («10 pasadas»), verificado por Claude
+
+Muestra comprobada: F3-P01, F3-P02, F3-P03, F3-P04, F4-P01, F4-P02, F4-P03, F5-P01. Las citas son reales en la mayoría.
+
+| Paquete | Hallazgo | Veredicto |
+|---|---|---|
+| F3-P04-1 (`merchandise.ts:264-266`) | «Crítico»: modelo inválido heredado | **Rechazado, de nuevo.** Es el mismo falso positivo del modelo. Se usa `DEFAULT_INVOICE_MODEL`, que existe en el SDK. |
+| F3-P02-1 (`inventory-import.ts:379-386`) | Categorías mezcladas entre sucursales por `upsert` por nombre (**alto**) | **Confirmado, medio, requiere decisión humana.** `Category.name` es `@unique` global (`schema.prisma:62`), así que una categoría es compartida entre sucursales por diseño. El riesgo es de modelo de datos, no de la importación. La corrección no es un cambio chico. |
+| F3-P01-1 (`catalog.ts:459-465`) | Dos altas simultáneas pueden repetir SKU | **Confirmado parcialmente, bajo.** El código sí calcula con `count`, pero `assertCodesFree` revisa dentro de la misma transacción. El riesgo es un error de conflicto, no un SKU duplicado. |
+| F3-P03-1 (`inventory.ts:386`) | Fecha `'2026-10-16'` fija en el SQL | **Confirmado, bajo.** Mismo caso que la fecha de rotación DGII. |
+| F3-P05-1 (`Merchandise.tsx:1146`) | Umbral de margen 15 fijo | **No revisado.** El umbral sí tiene sentido de negocio; no es fallo. |
+| F3-P07-1 (`WarehousesPanel.tsx:181`) | `transfer.lots` puede no venir | **No comprobado.** Depende del padre; bajo. |
+| F4-P01-1 y 2 (`gv-money.ts:565-569`) | «Crítico»: validación de importación ignora pagos en US$ | **No comprobado, medio.** `sum` usa `valorEnMoneda(p, "RD$")` por defecto. Falta comprobar si `valorEnMoneda` devuelve `null` para pagos en US$ sin `amountDop` (si lo hace, el hallazgo es real). **Requiere revisión humana**: dinero GV. |
+| F4-P02-1 y 2 (`gv.ts:598-610`, `642`) | «Crítico»: reembolsos mezclan monedas en el reporte neto | **No comprobado, medio.** Se suma `refundAmount` sin conversión, pero `total` sí usa `valorPesos`. Si `refundAmount` se guarda en RD$, no hay error. Falta confirmarlo en el esquema. **Requiere revisión humana.** |
+| F4-P03-1 (`Gv.tsx:17` del fragmento, `currency: "DOP"`) | El formulario de pago arranca en RD$ aunque el curso sea en US$ | **Confirmado, bajo.** Es un defecto de la interfaz GV. Ojo: `Gv.tsx` lo trabaja otro agente; no lo toco. |
+| F4-P04-1 (`GvCitas.tsx:575-592`) | Banco como texto libre en citas | **No comprobado** en detalle. |
+| F5-P01 (`reportes/clientes.ts`, `customerSearch.ts`) | Saldo actual en reporte histórico; `pickOnEnter` | **No comprobado** en detalle. |
+
+Conclusión sobre el resumen de DeepSeek: sobrestima la gravedad de los hallazgos de GV («crítico») sin comprobar la moneda de `refundAmount` ni el comportamiento de `valorEnMoneda`. Hasta que se compruebe, no son críticos.
