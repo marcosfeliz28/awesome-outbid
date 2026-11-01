@@ -55,3 +55,17 @@ describe("H-17 · step=0.01 solo en campos numéricos", () => {
     expect(src).toContain('step={f.step || (f.type === "number" ? "0.01" : undefined)}');
   });
 });
+
+describe("H-07 · fechas de corte como constantes con nombre", () => {
+  it("la rotación DGII usa una constante, no un literal", () => {
+    const src = read("apps/api/src/formal-report.ts");
+    expect(src).toMatch(/const DGII_ROTATION_FROM = "2026-10-27";/);
+    expect(src).toContain("period.to >= DGII_ROTATION_FROM");
+    expect(src.split('"2026-10-27"').length - 1).toBe(1);
+  });
+  it("la corrección de conteos usa una constante, no un literal", () => {
+    const src = read("apps/api/src/inventory.ts");
+    expect(src).toMatch(/const COUNT_CORRECTION_BEFORE = "2026-10-16";/);
+    expect(src).toContain("m.\"createdAt\" < '${COUNT_CORRECTION_BEFORE}'");
+  });
+});

@@ -17,6 +17,8 @@ import { incomeOptions, incomeSummary } from "./income-report";
 import { formalPeriod, reportMargin, isTestRegister } from "./formal-period";
 
 type FormalInput = { period?: string; date?: string; format?: string };
+// Desde este período la rotación de inventario va en el reporte formal (DGII, 27-oct-2026).
+const DGII_ROTATION_FROM = "2026-10-27";
 const testStarts = ["qa-", "qa_", "test-", "test_", "prueba-", "prueba_"];
 const testSessionWhere: Prisma.CashSessionWhereInput = {
   OR: testStarts.map((prefix) => ({
@@ -361,7 +363,7 @@ export class FormalReportController {
     });
     const rotationStart = new Date(opt.end.getTime() - 60 * 86400000);
     const rotationRows =
-      period.to >= "2026-10-27"
+      period.to >= DGII_ROTATION_FROM
         ? await this.db.$queryRaw<
             {
               sku: string;
