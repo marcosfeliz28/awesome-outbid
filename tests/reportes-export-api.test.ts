@@ -94,6 +94,13 @@ beforeAll(async () => {
     pin: "765432",
     roleId,
   });
+  // Un usuario nuevo nace con contraseña temporal (mustChangePassword): la
+  // guarda de sesión responde 401 hasta cambiarla. Esta prueba no cambia la
+  // clave; la marca se quita directamente en la base de pruebas.
+  await db.user.updateMany({
+    where: { email: EMAIL },
+    data: { mustChangePassword: false },
+  });
   sinGanancia = await login(EMAIL, CLAVE);
 });
 
@@ -141,6 +148,12 @@ describe("exportar reportes a PDF y Excel (API y PostgreSQL)", () => {
   });
 
   it("403: quien no tiene profit:read no exporta costo ni margen", async () => {
+    // Con reports:read la sesión funciona: un reporte sin costo sale 200.
+    const ok = await call(
+      `/reports/ticket-promedio/export?format=xlsx&${rango}`,
+      sinGanancia,
+    );
+    expect(ok.status).toBe(200);
     const r = await call(
       `/reports/margen-por-producto/export?format=pdf&${rango}`,
       sinGanancia,
