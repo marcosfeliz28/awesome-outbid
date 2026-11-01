@@ -6670,6 +6670,10 @@ td strong {
    .reporte-animado. Ninguna pantalla la lleva todavía; MonthReport (venta y
    ganancia) queda fuera a propósito. Solo transform y opacity, tokens --nx-dur-*;
    prefers-reduced-motion lo apaga todo. */
+:root {
+  --nx-stagger-tarjeta: 60ms;
+  --nx-stagger-fila: 24ms;
+}
 @keyframes reporte-enter {
   from {
     opacity: 0;
@@ -6685,37 +6689,37 @@ td strong {
   animation: reporte-enter var(--nx-dur-slow) var(--nx-ease-out) backwards;
 }
 .reporte-animado .kpi-grid > .kpi-card:nth-child(2) {
-  animation-delay: 60ms;
+  animation-delay: calc(var(--nx-stagger-tarjeta) * 1);
 }
 .reporte-animado .kpi-grid > .kpi-card:nth-child(3) {
-  animation-delay: 120ms;
+  animation-delay: calc(var(--nx-stagger-tarjeta) * 2);
 }
 .reporte-animado .kpi-grid > .kpi-card:nth-child(4) {
-  animation-delay: 180ms;
+  animation-delay: calc(var(--nx-stagger-tarjeta) * 3);
 }
 .reporte-animado .kpi-grid > .kpi-card:nth-child(5) {
-  animation-delay: 240ms;
+  animation-delay: calc(var(--nx-stagger-tarjeta) * 4);
 }
 .reporte-animado .kpi-grid > .kpi-card:nth-child(6) {
-  animation-delay: 300ms;
+  animation-delay: calc(var(--nx-stagger-tarjeta) * 5);
 }
 .reporte-animado tbody tr {
   animation: reporte-enter var(--nx-dur-base) var(--nx-ease-out) backwards;
 }
 .reporte-animado tbody tr:nth-child(2) {
-  animation-delay: 24ms;
+  animation-delay: calc(var(--nx-stagger-fila) * 1);
 }
 .reporte-animado tbody tr:nth-child(3) {
-  animation-delay: 48ms;
+  animation-delay: calc(var(--nx-stagger-fila) * 2);
 }
 .reporte-animado tbody tr:nth-child(4) {
-  animation-delay: 72ms;
+  animation-delay: calc(var(--nx-stagger-fila) * 3);
 }
 .reporte-animado tbody tr:nth-child(5) {
-  animation-delay: 96ms;
+  animation-delay: calc(var(--nx-stagger-fila) * 4);
 }
 .reporte-animado tbody tr:nth-child(6) {
-  animation-delay: 120ms;
+  animation-delay: calc(var(--nx-stagger-fila) * 5);
 }
 .reporte-animado .kpi-grid > .kpi-card {
   transition: transform var(--nx-dur-fast) var(--nx-ease-out);

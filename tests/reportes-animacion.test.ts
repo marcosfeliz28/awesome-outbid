@@ -76,6 +76,20 @@ describe("Reportes y desglose · animación", () => {
     );
   });
 
+  it("el escalonado sale de tokens --nx-stagger-* y no de milisegundos sueltos", () => {
+    expect(bloque).toMatch(
+      /:root \{\s*--nx-stagger-tarjeta: 60ms;\s*--nx-stagger-fila: 24ms;\s*\}/,
+    );
+    expect(bloque).not.toMatch(/animation-delay:[^;]*\b\d+ms\b/);
+    expect(bloque).not.toMatch(/animation-delay:\s*\d/);
+    expect(bloque).toMatch(
+      /\.reporte-animado \.kpi-grid > \.kpi-card:nth-child\(6\) \{\s*animation-delay: calc\(var\(--nx-stagger-tarjeta\) \* 5\);/,
+    );
+    expect(bloque).toMatch(
+      /\.reporte-animado tbody tr:nth-child\(6\) \{\s*animation-delay: calc\(var\(--nx-stagger-fila\) \* 5\);/,
+    );
+  });
+
   it("las tarjetas suben 2 px al pasar el cursor, con transición corta", () => {
     expect(bloque).toMatch(
       /\.reporte-animado \.kpi-grid > \.kpi-card:hover \{\s*transform: translateY\(-2px\);/,
