@@ -167,7 +167,7 @@ async function assertCategoriesInBranch(
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
-  attributes: z.record(z.string()).default({}),
+  attributes: z.record(z.string(), z.string()).default({}),
   price: amount,
   costAvg: amount,
   wholesalePrice: amount.optional(),
@@ -438,7 +438,10 @@ export class CatalogController {
   ) {
     const data = parse(
       z.object({
-        attributes: z.record(z.array(z.string().min(1)).min(1).max(30)),
+        attributes: z.record(
+          z.string(),
+          z.array(z.string().min(1)).min(1).max(30),
+        ),
         price: amount,
         costAvg: amount,
       }),

@@ -547,14 +547,14 @@ export const safeDiscount = (price: number, cost: number, minMargin = 15) =>
         ),
       );
 export const saleSchema = z.object({
-  offlineUuid: z.string().uuid(),
+  offlineUuid: z.guid(),
   capturedAt: z.string().datetime().optional(),
-  customerId: z.string().uuid().nullable().optional(),
-  cashSessionId: z.string().uuid(),
+  customerId: z.guid().nullable().optional(),
+  cashSessionId: z.guid(),
   items: z
     .array(
       z.object({
-        variantId: z.string().uuid(),
+        variantId: z.guid(),
         qty: stockQty(10000),
         discountPercent: z.number().min(0).max(100).default(0),
         // El descuento por monto no se guarda: se vuelve porcentaje y la línea
@@ -603,7 +603,7 @@ export const saleSchema = z.object({
             "credit",
             "cod",
           ]),
-          creditNoteId: z.string().uuid().optional(),
+          creditNoteId: z.guid().optional(),
           creditNoteCode: z
             .string()
             .trim()

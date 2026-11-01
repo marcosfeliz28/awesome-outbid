@@ -1487,7 +1487,7 @@ export class SalesController {
     // la caja ya entregó (R9-dinero-5-pos).
     const input = parse(
       z.object({
-        sales: z.array(z.object({ offlineUuid: uuid }).passthrough()).max(100),
+        sales: z.array(z.looseObject({ offlineUuid: uuid })).max(100),
       }),
       body,
     );
@@ -1645,7 +1645,7 @@ export class SalesController {
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:
                   typeof attempted.cashSessionId === "string" &&
-                  z.string().uuid().safeParse(attempted.cashSessionId)
+                  z.guid().safeParse(attempted.cashSessionId)
                     .success &&
                   (await tx.cashSession.findFirst({
                     where: {

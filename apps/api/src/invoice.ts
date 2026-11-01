@@ -6,7 +6,7 @@ import { Readable } from "node:stream";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import ExcelJS from "exceljs";
-import * as z4 from "zod/v4";
+import * as z4 from "zod";
 import { amount, bad, cost, parse, positive } from "./common";
 import { assertSafeXlsx, assertSheetCells, cellCodeText } from "./xlsx-guard";
 

@@ -167,20 +167,22 @@ const FIELD_NAMES: Record<string, string> = {
   attributes: "atributos",
   mapping: "columnas",
 };
-export function fieldLabel(path: (string | number)[]) {
+export function fieldLabel(path: PropertyKey[]) {
   const parts: string[] = [];
   for (const p of path) {
     if (typeof p === "number") {
       if (parts.length) parts[parts.length - 1] += " " + (p + 1);
       else parts.push("elemento " + (p + 1));
-    } else parts.push(FIELD_NAMES[p] ?? p);
+    } else parts.push(FIELD_NAMES[String(p)] ?? String(p));
   }
   return parts.join(" · ") || "datos";
 }
-z.setErrorMap((issue, ctx) => {
+// zod 4: `received` ya no existe (se usa `input`); `type` pasa a `origin`;
+// invalid_string/invalid_enum_value pasan a invalid_format/invalid_value.
+z.setErrorMap((issue) => {
   switch (issue.code) {
     case "invalid_type":
-      if (issue.received === "undefined" || issue.received === "null")
+      if (issue.input === undefined || issue.input === null)
         return { message: "es obligatorio" };
       return {
         message:
@@ -193,9 +195,9 @@ z.setErrorMap((issue, ctx) => {
     case "too_small":
       return {
         message:
-          issue.type === "string"
+          issue.origin === "string"
             ? `debe tener al menos ${issue.minimum} caracteres`
-            : issue.type === "array"
+            : issue.origin === "array"
               ? `debe tener al menos ${issue.minimum} elemento(s)`
               : issue.inclusive
                 ? `debe ser mayor o igual a ${issue.minimum}`
@@ -204,20 +206,19 @@ z.setErrorMap((issue, ctx) => {
     case "too_big":
       return {
         message:
-          issue.type === "string"
+          issue.origin === "string"
             ? `admite como máximo ${issue.maximum} caracteres`
-            : issue.type === "array"
+            : issue.origin === "array"
               ? `admite como máximo ${issue.maximum} elementos`
               : `debe ser como máximo ${issue.maximum}`,
       };
-    case "invalid_string":
+    case "invalid_format":
       return { message: "tiene un formato inválido" };
-    case "invalid_enum_value":
+    case "invalid_value":
       return { message: "no es una opción válida" };
-    case "invalid_date":
-      return { message: "no es una fecha válida" };
     default:
-      return { message: ctx.defaultError };
+      // undefined: zod usa su mensaje por defecto (antes ctx.defaultError).
+      return undefined;
   }
 });
 // Reconoce el error de validación por su forma y no sólo por instanceof: así
@@ -234,10 +235,9 @@ export const parse = <T extends z.ZodTypeAny>(
 // PostgreSQL acepta un UUID en mayúsculas y lo guarda en minúsculas: se
 // normaliza al validar para que toda comparación con ids de la base (por
 // ejemplo, «¿es mi propia cuenta?») vea el mismo texto.
-export const uuid = z
-  .string()
-  .uuid()
-  .transform((value) => value.toLowerCase());
+// z.guid y no z.uuid: zod 4 exige variante RFC y rechazaría los ids de
+// almacén que genera md5 en la migración 202610240401.
+export const uuid = z.guid().transform((value) => value.toLowerCase());
 // Importes de dinero: como máximo 2 decimales, porque terminan en Decimal(14,2)
 // y un tercer decimal hacía que orden y recepción no cuadraran (R9-A04).
 export const amount = moneyAmount(100000000, true);

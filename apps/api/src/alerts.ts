@@ -831,7 +831,7 @@ export const alertRulesBody = z.object({
     z.object({
       type: z.string(),
       active: z.boolean(),
-      threshold: z.record(z.number()),
+      threshold: z.record(z.string(), z.number()),
     }),
   ).max(100),
 });

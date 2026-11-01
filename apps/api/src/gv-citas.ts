@@ -171,7 +171,7 @@ export async function planGvCitasImport(
   errors: string[],
 ) {
   const valid = <T>(
-    schema: z.ZodType<T, any, any>,
+    schema: z.ZodType<T, unknown>,
     rows: unknown[],
     name: string,
   ) =>

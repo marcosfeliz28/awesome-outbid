@@ -82,7 +82,7 @@ const credentialAttemptIdentity = (user: any, normalized: string) =>
 // Un valor mal formado no impide entrar: se trata como equipo no aprobado.
 const terminalCredentials = z.unknown().optional();
 const terminalShape = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   secret: z.string().min(16).max(200),
 });
 // Iguales para cuentas existentes e inexistentes: no delatan cuentas. Cada
@@ -830,7 +830,7 @@ export class AuthController implements OnModuleInit {
   ) {
     const data = parse(
       z.object({
-        userId: z.string().uuid(),
+        userId: z.guid(),
         pin: z.string().regex(/^\d{4,6}$/),
       }),
       body,
