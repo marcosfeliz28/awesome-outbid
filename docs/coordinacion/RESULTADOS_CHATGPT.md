@@ -1,11 +1,11 @@
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
-## 2026-11-01 · ChatGPT NUBE · `chatgpt-nube/f1-01-bundle-1nov` · F1-01 en espera de CI
+## 2026-11-01 · ChatGPT NUBE · `chatgpt-nube/f1-01-bundle-1nov` · F1-01 BLOQUEADA por CI global
 
 - **Qué hice:** separé con `React.lazy` Caja, Mercancía y las pantallas de Gestión (catálogo, inventario, compras, gastos, caja, clientes, promociones, reportes, alertas, configuración, historial y guía). Un `Suspense` conserva una carga visible mientras llega la pantalla. Vite separa gráficas en `charts`, exportación de documentos en `document-export` y React en `react-vendor`.
 - **Regresión:** el nuevo `pnpm --dir apps/web check:bundle` falló con un artefacto aislado de 1,91 MiB (`Bundle: hay JavaScript que supera el límite de 1,90 MiB`) y pasó con uno de 1 KiB. En la compilación real, pasó: `Bundle: entrada 0.15 MiB; mayor archivo document-export-CmFGNHEP.js 0.58 MiB.` El script también impide que la entrada supere 1,15 MiB.
 - **Autoauditoría y pruebas:** comprobé formato y ESLint de los archivos tocados, `git diff --check`, y `pnpm check` completo: 103 archivos de prueba pasaron, 1 omitido; 800 pruebas pasaron, 10 omitidas documentadas; typecheck, lint y builds web/API verdes. No cambié caja, pagos, permisos, API ni datos. La suite actualiza citas de documentación según líneas de código; esos archivos derivados quedaron fuera de esta entrega.
-- **CI:** pendiente en el SHA de esta rama. No se declara `LISTA` ni se solicita mezcla hasta ver `verify`, `windows-installer` y `render-images` verdes en el último commit.
+- **CI:** para `b5a2923c`, ejecución [41318663218](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/41318663218): `render-images` y `windows-installer` terminaron **success**; `verify` terminó **failure**. La API pública no expone el texto del log de ese trabajo, así que no se atribuye una causa sin evidencia. Las ramas NUBE anteriores (`qa-medios`, `ci-fecha` y el estado de Lumina) presentan el mismo patrón de `verify` rojo mientras los otros dos trabajos están verdes. No se declara `LISTA` ni se solicita mezcla hasta que `verify` sea verde en el último SHA.
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
