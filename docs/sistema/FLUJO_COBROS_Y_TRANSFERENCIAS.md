@@ -66,6 +66,7 @@ Una venta con cobros válidos registrados no se puede anular, ni corregir su mé
 Dos caminos:
 
 **A) Pantalla «Conciliar transferencias»** (`apps/web/src/TransferReconciliation.tsx:28`; lista de pendientes `GET /payments/pending-transfers`, permiso `sale:manage`, `apps/api/src/sales.ts:2674`):
+
 1. Opcional: filtrar «Fecha del pago (opcional)» (`apps/web/src/TransferReconciliation.tsx:192`) o «Todas las fechas»; «Exportar lista a CSV» (`:216`).
 2. Marcar las facturas que aparecen juntas en el depósito del banco; el sistema suma el «Total esperado seleccionado».
 3. Escribir **«Total del banco (RD$)»** (`:396`); muestra **«Diferencia»** (`:413`): «Cuadrado · RD$ 0.00» (`:419`) o la diferencia.
@@ -76,6 +77,7 @@ Dos caminos:
 **B) Desde «Ventas»** abriendo la factura (ojo): por cada transferencia pendiente, botones **«Verificar»** (`apps/web/src/Management.tsx:3548`), **«Rechazar»** (`:3530`) y **«Corregir banco y referencia»** (`:3455`; bloque de transferencias en `:3445`).
 
 API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales.ts:2785`). Efecto:
+
 - `pending_verification` → `ok`; se resuelve la alerta.
 - Si era un abono: baja el saldo, cierra el crédito si llega a cero y acredita incentivos.
 - Si la caja ya cerró: **recalcula el cuadre** y deja auditoría `verified_after_close` (`apps/api/src/sales.ts:2831`; `apps/api/src/cash.ts:229`, `refreshClosedCash`).
@@ -96,13 +98,13 @@ API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales
 
 Qué pasa y quién lo hace:
 
-| Situación | Qué ocurre | Cita |
-|---|---|---|
-| Se verifica una transferencia después del cierre | Se recalcula esperado y diferencias del cierre; auditoría `verified_after_close`. | `apps/api/src/sales.ts:2831`; `apps/api/src/cash.ts:229` (`refreshClosedCash`) |
-| Se rechaza una transferencia de venta después del cierre | Igual: recalcula y `rejected_after_close`. | `apps/api/src/sales.ts:3207` |
-| Se sincroniza una venta hecha sin conexión a una caja cerrada | Queda en conflicto: «La caja de esta venta ya cerró: gerencia debe revisarla y registrarla con una justificación.» | `apps/api/src/sales.ts:875`; revisión en `apps/api/src/offline-sale-review.ts` |
-| Se cambia algo en una caja cerrada (método corregido, venta offline, anulación) | `closedCashChanged` crea la alerta **«Caja cerrada de X cambiada por Y»** con justificación y diferencia nueva; si hay tarjeta y el cierre no tiene lote, otra alerta «falta lote». | `apps/api/src/cash.ts:264-310`; llamada en `apps/api/src/sales.ts:1426` |
-| Se anula una venta cuya caja cerró y hubo efectivo | El reembolso sale de la caja **abierta** de quien anula; si no tiene: «La caja de esta venta ya cerró. Abre tu caja para entregar el reembolso en efectivo y vuelve a anular.» | `apps/api/src/sales.ts:2476` |
+| Situación                                                                       | Qué ocurre                                                                                                                                                                          | Cita                                                                           |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Se verifica una transferencia después del cierre                                | Se recalcula esperado y diferencias del cierre; auditoría `verified_after_close`.                                                                                                   | `apps/api/src/sales.ts:2831`; `apps/api/src/cash.ts:229` (`refreshClosedCash`) |
+| Se rechaza una transferencia de venta después del cierre                        | Igual: recalcula y `rejected_after_close`.                                                                                                                                          | `apps/api/src/sales.ts:3207`                                                   |
+| Se sincroniza una venta hecha sin conexión a una caja cerrada                   | Queda en conflicto: «La caja de esta venta ya cerró: gerencia debe revisarla y registrarla con una justificación.»                                                                  | `apps/api/src/sales.ts:875`; revisión en `apps/api/src/offline-sale-review.ts` |
+| Se cambia algo en una caja cerrada (método corregido, venta offline, anulación) | `closedCashChanged` crea la alerta **«Caja cerrada de X cambiada por Y»** con justificación y diferencia nueva; si hay tarjeta y el cierre no tiene lote, otra alerta «falta lote». | `apps/api/src/cash.ts:264-310`; llamada en `apps/api/src/sales.ts:1426`        |
+| Se anula una venta cuya caja cerró y hubo efectivo                              | El reembolso sale de la caja **abierta** de quien anula; si no tiene: «La caja de esta venta ya cerró. Abre tu caja para entregar el reembolso en efectivo y vuelve a anular.»      | `apps/api/src/sales.ts:2476`                                                   |
 
 ## 6. Correcciones de administración (solo `*`)
 
@@ -122,21 +124,20 @@ API solamente; **no hay pantalla** para estas dos acciones en `apps/web` (búsqu
 
 ## 7. Resumen de quién puede qué en cobros
 
-| Acción | Permiso | Cita |
-|---|---|---|
-| Vender a crédito/contraentrega | `sale:write` (PIN de gerente según reglas) | `apps/api/src/sales.ts:1475` (`@Post("sales")`) |
-| Cobrar un crédito en efectivo | `sale:write` | `apps/api/src/sales.ts:4407` (manejador), `:4423` |
-| Cobrar un crédito en tarjeta/transferencia | `sale:manage` | `apps/api/src/sales.ts:4423` |
-| Abono desde «Ventas» / cobro de mensajero | `*` | `apps/api/src/sales.ts:3756`, `:3768` |
-| Estado de cuenta por persona | `*` | `apps/api/src/sales.ts:3859`, `:4018` |
-| Verificar / rechazar / corregir banco y referencia | `*` | `apps/api/src/sales.ts:2785`, `:3111`, `:3038` |
-| Des-verificar / mover un cobro de caja (sin pantalla) | `*` | `apps/api/src/sales.ts:2849`, `:2942` |
-| Ver la lista de transferencias pendientes | `sale:manage` | `apps/api/src/sales.ts:2674` |
-| Corregir método de pago (7 días; también cobros) | `*` | `apps/api/src/sales.ts:2198` |
-| Subir/cambiar la foto de evidencia | quien registró el cobro o `sale:manage` | `apps/api/src/sales.ts`, rutas `payments/:id/proof` (`:3782`, `:3822`) |
+| Acción                                                | Permiso                                    | Cita                                                                   |
+| ----------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------- |
+| Vender a crédito/contraentrega                        | `sale:write` (PIN de gerente según reglas) | `apps/api/src/sales.ts:1475` (`@Post("sales")`)                        |
+| Cobrar un crédito en efectivo                         | `sale:write`                               | `apps/api/src/sales.ts:4407` (manejador), `:4423`                      |
+| Cobrar un crédito en tarjeta/transferencia            | `sale:manage`                              | `apps/api/src/sales.ts:4423`                                           |
+| Abono desde «Ventas» / cobro de mensajero             | `*`                                        | `apps/api/src/sales.ts:3756`, `:3768`                                  |
+| Estado de cuenta por persona                          | `*`                                        | `apps/api/src/sales.ts:3859`, `:4018`                                  |
+| Verificar / rechazar / corregir banco y referencia    | `*`                                        | `apps/api/src/sales.ts:2785`, `:3111`, `:3038`                         |
+| Des-verificar / mover un cobro de caja (sin pantalla) | `*`                                        | `apps/api/src/sales.ts:2849`, `:2942`                                  |
+| Ver la lista de transferencias pendientes             | `sale:manage`                              | `apps/api/src/sales.ts:2674`                                           |
+| Corregir método de pago (7 días; también cobros)      | `*`                                        | `apps/api/src/sales.ts:2198`                                           |
+| Subir/cambiar la foto de evidencia                    | quien registró el cobro o `sale:manage`    | `apps/api/src/sales.ts`, rutas `payments/:id/proof` (`:3782`, `:3822`) |
 
 ## GV: pago con tarjeta (sin cuenta bancaria)
 
-- Los pagos de GV no pasan por la caja. Con **Tarjeta** el formulario no pide banco: muestra **Terminal** y una **Referencia** obligatoria (aprobación, lote o voucher); el pago queda verificado al registrarse (`apps/api/src/gv-money.ts:110-126`, `apps/api/src/gv-money.ts:244-251`). La transferencia sigue exigiendo banco y referencia.
+- Los pagos de GV no pasan por la caja. Con **Tarjeta** el formulario no pide banco: muestra **Terminal** y una **Referencia** obligatoria (aprobación, lote o voucher); el pago queda verificado al registrarse (`apps/api/src/gv-money.ts:192-208`, `apps/api/src/gv-money.ts:379-386`). La transferencia sigue exigiendo banco y referencia.
 - El dinero de tarjeta de GV se registra en el área GV / Grupo Génesis, sin elegir cuenta de banco (respuesta de la dueña): el pago guarda `destination = "gv"`; no hay cuenta ni terminal inventadas.
-

@@ -43,7 +43,10 @@ import {
   lockGvOwner,
   planGvImportPayments,
   gvBankOptions,
+  monedaDeCurso,
+  valorPesos,
 } from "./gv-money";
+import { GV_CATALOGO, gvDevengoMes } from "./gv-incentives";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -160,8 +163,16 @@ export class GvController {
             attended: true,
             boughtBrushSet: true,
             refundAmount: true,
+            course: { select: { name: true } },
             payments: {
-              select: { amount: true, verified: true, rejectedAt: true },
+              select: {
+                amount: true,
+                verified: true,
+                rejectedAt: true,
+                currency: true,
+                amountDop: true,
+                rate: true,
+              },
             },
           },
         },
@@ -170,7 +181,7 @@ export class GvController {
     });
     return rows.map(({ enrollments, ...course }) => {
       const totals = enrollments.map((e) =>
-        gvTotals(e.agreedPrice, e.payments, e),
+        gvTotals(e.agreedPrice, e.payments, e, monedaDeCurso(e.course.name)),
       );
       const sum = (key: "paid" | "pending" | "unverified" | "refunded") =>
         totals.reduce((s, t) => s.plus(t[key]), d(0)).toFixed(2);
@@ -275,7 +286,7 @@ export class GvController {
         refundAmount: e.refundAmount?.toFixed(2) ?? null,
         refundDate: e.refundDate ? dayText(e.refundDate) : null,
         createdByName: name(e.createdBy),
-        ...gvTotals(e.agreedPrice, payments, e),
+        ...gvTotals(e.agreedPrice, payments, e, monedaDeCurso(course.name)),
         payments: payments.map((p) => paymentView(p, name)),
       })),
     };
@@ -545,6 +556,8 @@ export class GvController {
       select: {
         date: true,
         amount: true,
+        currency: true,
+        amountDop: true,
         method: true,
         bank: true,
         verified: true,
@@ -561,7 +574,7 @@ export class GvController {
       for (const p of verified) {
         const k = key(p);
         const row = map.get(k) ?? { total: d(0), count: 0 };
-        row.total = row.total.plus(p.amount);
+        row.total = row.total.plus(valorPesos(p));
         row.count++;
         map.set(k, row);
       }
@@ -573,10 +586,10 @@ export class GvController {
         }))
         .sort((a, b) => a.key.localeCompare(b.key));
     };
-    const total = verified.reduce((s, p) => s.plus(p.amount), d(0));
+    const total = verified.reduce((s, p) => s.plus(valorPesos(p)), d(0));
     const unverified = payments
       .filter((p) => !p.verified)
-      .reduce((s, p) => s.plus(p.amount), d(0));
+      .reduce((s, p) => s.plus(valorPesos(p)), d(0));
     const refundWhere = {
       branchId: actor.branchId,
       refundAmount: { not: null },
@@ -597,7 +610,16 @@ export class GvController {
     );
     const courses = await this.courses(actor);
     const select = {
-      payments: { select: { amount: true, verified: true, rejectedAt: true } },
+      payments: {
+        select: {
+          amount: true,
+          verified: true,
+          rejectedAt: true,
+          currency: true,
+          amountDop: true,
+          rate: true,
+        },
+      },
     };
     const [openEnrollments, openAppointments] = await Promise.all([
       this.db.gvEnrollment.findMany({
@@ -643,7 +665,12 @@ export class GvController {
           phone: e.phone,
           course: e.course.name,
           courseDate: dayText(e.course.date),
-          ...gvTotals(e.agreedPrice, e.payments, e),
+          ...gvTotals(
+            e.agreedPrice,
+            e.payments,
+            e,
+            monedaDeCurso(e.course.name),
+          ),
         })),
         ...openAppointments.map((a) => ({
           id: a.id,
@@ -655,6 +682,93 @@ export class GvController {
           ...gvTotals(a.total, a.payments, a),
         })),
       ].filter((e) => d(e.pending).gt(0)),
+    };
+  }
+
+  // Incentivo fijo por inscripción (orden 103), a nombre de quien la registró.
+  // Sin costos: sólo monto, mes y nombre.
+  @Get("incentives")
+  @Permit("sale:manage")
+  async incentives(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    const { period } = parse(
+      z.object({ period: z.string().regex(/^\d{4}-\d{2}$/) }),
+      query,
+    );
+    const enrollments = await this.db.gvEnrollment.findMany({
+      where: {
+        branchId: actor.branchId,
+        course: { name: { in: GV_CATALOGO.map((c) => c.nombre) } },
+      },
+      include: {
+        course: { select: { name: true } },
+        payments: {
+          select: {
+            amount: true,
+            date: true,
+            verified: true,
+            rejectedAt: true,
+            currency: true,
+            amountDop: true,
+            rate: true,
+          },
+        },
+      },
+    });
+    const calc = enrollments.flatMap((e) => {
+      const r = gvDevengoMes(
+        {
+          courseName: e.course.name,
+          agreedPrice: e.agreedPrice,
+          refundAmount: e.refundAmount,
+          refundDate: e.refundDate,
+          payments: e.payments,
+        },
+        period,
+      );
+      if (!r) return [];
+      return [
+        {
+          enrollmentId: e.id,
+          clientName: e.clientName,
+          course: e.course.name,
+          period: r.period,
+          amount: r.amount,
+          registeredBy: e.createdBy,
+        },
+      ];
+    });
+    const name = await gvUserNames(
+      this.db,
+      calc.map((r) => r.registeredBy),
+    );
+    const rows = calc.map((r) => ({
+      ...r,
+      registeredByName: name(r.registeredBy),
+    }));
+    const porPersona = new Map<
+      string,
+      { name: string; total: Prisma.Decimal; count: number }
+    >();
+    for (const r of rows) {
+      const key = r.registeredByName ?? "Sin nombre";
+      const acc = porPersona.get(key) ?? { name: key, total: d(0), count: 0 };
+      porPersona.set(key, {
+        name: key,
+        total: acc.total.plus(r.amount),
+        count: acc.count + 1,
+      });
+    }
+    return {
+      period,
+      rows,
+      byPerson: [...porPersona.values()].map((p) => ({
+        name: p.name,
+        total: p.total.toFixed(2),
+        count: p.count,
+      })),
     };
   }
 

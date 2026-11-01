@@ -52,7 +52,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Fondo / «Efectivo inicial»** — Dinero con el que se abre la caja (`apps/web/src/Management.tsx:2022`).
 
-**Génesis / Macgen** — Nombres de las dos empresas/grupos de cuentas bancarias. En GV, las cuentas se agrupan «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis» (`apps/api/src/gv-money.ts:62-74`). Los cobros de GV caen en cuentas de Génesis (`docs/coordinacion/MODULO-GV.md:3`).
+**Génesis / Macgen** — Nombres de las dos empresas/grupos de cuentas bancarias. En GV, las cuentas se agrupan «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis» (`apps/api/src/gv-money.ts:144-156`). Los cobros de GV caen en cuentas de Génesis (`docs/coordinacion/MODULO-GV.md:3`).
 
 **Grupo MacGen** — La empresa dueña de la tienda: suplementos, fajas, tenis y ropa deportiva, accesorios de gym y maquillaje (`apps/web/src/App.tsx:284-312`, `:349`).
 
