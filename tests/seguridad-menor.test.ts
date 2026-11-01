@@ -7,6 +7,8 @@ import {
   encodeHeader,
   SCRYPT,
 } from "../apps/api/src/drive-backup-core";
+// @ts-expect-error -- script .mjs sin tipos
+import { parseHeader } from "../scripts/decrypt-backup.mjs";
 
 // El almacén de la app se crea al cargar api.ts y lee localStorage (no hay DOM).
 let download: (typeof import("../apps/web/src/api"))["download"];
@@ -40,6 +42,35 @@ describe("H-05 · el descifrado de respaldos no pide gigabytes de memoria", () =
     expect(() => decodeWith({ log2N: 15, r: 16, p: 4 })).toThrow(
       BackupFormatError,
     );
+  });
+  it("el descifrador de scripts/decrypt-backup.mjs tiene los mismos límites", () => {
+    const ok = (fn: () => unknown) => {
+      try {
+        fn();
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const boundary: [{ log2N: number; r: number; p: number }, boolean][] = [
+      [{ log2N: 16, r: 8, p: 2 }, true],
+      [{ log2N: 14, r: 1, p: 1 }, true],
+      [{ log2N: 17, r: 8, p: 2 }, false],
+      [{ log2N: 16, r: 9, p: 2 }, false],
+      [{ log2N: 16, r: 8, p: 3 }, false],
+      [{ log2N: 13, r: 8, p: 1 }, false],
+    ];
+    for (const [params, accepted] of boundary) {
+      const header = encodeHeader({ ...base, params });
+      expect(
+        ok(() => decodeHeader(header)),
+        JSON.stringify(params),
+      ).toBe(accepted);
+      expect(
+        ok(() => parseHeader(header)),
+        JSON.stringify(params),
+      ).toBe(accepted);
+    }
   });
 });
 
