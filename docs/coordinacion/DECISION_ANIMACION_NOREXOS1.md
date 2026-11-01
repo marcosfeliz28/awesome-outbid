@@ -1,6 +1,6 @@
 # Decisión de animación y didáctica para Norexos 1
 
-Fecha: 1-nov-2026. Base: propuesta de Claude nube, DeepSeek y Gemini (los dos últimos según el texto pegado por la dueña; el autor exacto de cada uno quedó por confirmar).
+Fecha: 1-nov-2026. Base: propuesta de Claude nube, DeepSeek y Gemini. Autores confirmados por la dueña: la respuesta sin encabezado (ranking de 10 ideas, con ideas nuevas tipo «tab-indicator», «tooltip», «skeleton») es de DeepSeek; la que tiene encabezado «Gemini (Auditor Externo…)» (con P0/P1/P2, rama por pantalla y textos de didáctica) es de Gemini.
 
 ## Reglas que no se negocian
 
@@ -38,5 +38,4 @@ Orden de la cola de `docs/coordinacion/COLA_PERMANENTE_CLAUDE_PC.md`:
 
 ## Pendiente de confirmar
 
-- Qué texto fue de DeepSeek y cuál de Gemini (el documento de Gemini tiene encabezado propio y el otro no).
 - Si `Management.tsx` y `Merchandise.tsx` tienen las pestañas y pasos descritos (no verificado).
