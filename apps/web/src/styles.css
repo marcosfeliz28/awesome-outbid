@@ -61,6 +61,7 @@
   --surface: #fff;
   --surface-soft: #f9fafc;
   --text: #1b2134;
+  --ink: #1b2134;
   --muted: #54627a;
   --border: #eaeaf2;
   --primary: #7c3aed;
@@ -90,6 +91,7 @@
   --surface: #151b2b;
   --surface-soft: #1b2235;
   --text: #e2e8f0;
+  --ink: #e2e8f0;
   --muted: #aab4c6;
   --border: #293247;
   --primary: #a78bfa;

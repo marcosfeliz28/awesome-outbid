@@ -381,6 +381,12 @@ describe("G10 · contrato de contraste WCAG AA", () => {
   const light = variables(":root");
   const dark = { ...light, ...variables(':root[data-theme="dark"]') };
 
+  it("el tooltip anual usa tinta definida y contrastada en ambos temas", () => {
+    expect(css).toMatch(/\.year-pie-tip\s*\{[^}]*color:\s*var\(--ink,/s);
+    meets("tooltip anual claro", light["--ink"], light["--surface"], 4.5);
+    meets("tooltip anual oscuro", dark["--ink"], dark["--surface"], 4.5);
+  });
+
   it.each([
     ["claro", light],
     ["oscuro", dark],
