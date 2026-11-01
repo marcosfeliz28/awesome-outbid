@@ -83,3 +83,9 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 ## 1-nov 13:55 UTC · Más hallazgos del agente de guías (reportes viejos de Management)
 1. **Costo visible con permiso equivocado (seguridad, orden 110):** `kardex`, `stock bajo` (low-stock) y `sin movimiento` (no-movement) muestran costo a quien tiene `reports:read`; la regla del sistema pide `profit:read`. Se corrige sin cambiar cifras (ocultar costo sin `profit:read`), con prueba.
 2. **ITBIS en la ganancia (decisión de la dueña, junto con la «Rentabilidad» del cuadre):** `estado de resultados`, `ABC` y `utilidad por producto` restan el ITBIS en la ganancia; la regla es sin restar. No se cambia sin su respuesta.
+
+## 1-nov 14:45 UTC · Revisión N1 (CI rojo, opción A)
+- `claude-pc/fix-ci-mes` 62d78b65 (opción A: devoluciones por fecha de la venta original; diff auditado, correcto): verify AÚN ROJO — dinero-auditoria:861 (dif 118), :903/:943/:1013 (dif 60), api.test:2243 (profit vs dashboard, dif 100). El agente tiene orden (13:55) de aplicar el mismo criterio a /reports/profit y demás informes, un solo push. Regla de costo de devolución sin reingreso: sin cambios (decidido).
+- ChatGPT nube (ci-fecha-1nov, 13:25): segunda opinión coincide con unificar por fecha de venta; no hay aprobación de CI para mezclar nada.
+- Otras ramas en juego (reportes-export a7e47a16, reportes-guia 270a22de, instalador-sin-internet 2035206, recuento-decisiones f68cc9f0, fix-costo-permiso d5f4d455): windows-installer y render-images verdes, verify rojo por la base roja. No se mezcla nada hasta el CI verde.
+- NO desplegado. Producción sigue en 2e87d8b7. Al desplegar la opción A hay que mostrar a la dueña la tabla antes→después (prometido).
