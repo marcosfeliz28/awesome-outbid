@@ -21,6 +21,7 @@ const GRID = "#B8C4C9";
 const BAND = "#EEF3F4";
 const ZEBRA = "#F5F8F9";
 const RH = 16; // alto de fila de tabla
+const HH = 24; // alto de encabezado (hasta dos líneas)
 const PALETA = [ACC, "#7A9AA3", "#C9D6DA", "#3D3D3D", "#9E9E9E", "#E3E8EA"];
 
 export function renderPdf(
@@ -148,7 +149,7 @@ function dibujar(doc: PDFKit.PDFDocument, m: Modelo) {
     .fontSize(11)
     .text(cuerpo, ML + 10, y + 8, { width: CW - 20 });
   y += hq + 10;
-  parrafo(`Para qué sirve: ${m.paraQueSirve}`, 10);
+  parrafo(m.paraQueSirve, 10);
 
   if (m.cifras.length) {
     titulo("Cifras clave");
@@ -266,23 +267,22 @@ function seccion(
 
   const anchos = anchosDe(sec.columnas);
   const cabecera = () => {
-    asegura(RH + 20);
+    asegura(HH + 20);
     let x = ML;
-    doc.rect(ML, getY(), CW, RH).fill("#D9E1E5");
+    doc.rect(ML, getY(), CW, HH).fill("#D9E1E5");
     sec.columnas.forEach((c, i) => {
       doc
         .fillColor(INK)
         .font("Helvetica-Bold")
         .fontSize(7.5)
-        .text(c.etiqueta, x + 3, getY() + 4, {
+        .text(c.etiqueta, x + 3, getY() + 3, {
           width: anchos[i] - 6,
-          height: RH - 4,
-          ellipsis: true,
+          height: HH - 4,
           align: c.formato === "texto" ? "left" : "right",
         });
       x += anchos[i];
     });
-    setY(getY() + RH);
+    setY(getY() + HH);
   };
   const fila = (
     valores: string[],
@@ -379,7 +379,8 @@ function grafico(
   if (g.tipo === "pastel") return pastel(doc, g, x, y0 + 22, w) + 22;
 
   const top = y0 + 26;
-  const bottom = y0 + ALTO - 45;
+  const rotar = g.tipo === "barras" && g.puntos.length > 6;
+  const bottom = y0 + ALTO - (rotar ? 85 : 45);
   const left = x + 60;
   const right = x + w - 8;
   const max = Math.max(...g.puntos.map((p) => p.valor), 0);
@@ -447,12 +448,20 @@ function grafico(
   }
 
   // Etiquetas del eje horizontal: una de cada varias si hay muchas.
-  const cada = Math.ceil(n / 12);
-  const largo = Math.max(4, Math.floor((slot * cada) / 3.6));
+  const cada = rotar ? 1 : Math.ceil(n / 12);
+  const largo = rotar ? 16 : Math.max(4, Math.floor((slot * cada) / 3.6));
   g.puntos.forEach((p, i) => {
     if (i % cada) return;
     const t =
       p.nombre.length > largo ? p.nombre.slice(0, largo - 1) + "…" : p.nombre;
+    if (rotar) {
+      doc.save();
+      doc.translate(left + i * slot + slot / 2, bottom + 6);
+      doc.rotate(45);
+      doc.font("Helvetica").fontSize(6.5).fillColor(INK).text(t, 0, 0, { lineBreak: false });
+      doc.restore();
+      return;
+    }
     doc
       .font("Helvetica")
       .fontSize(6.5)
@@ -467,7 +476,7 @@ function grafico(
     .font("Helvetica")
     .fontSize(7.5)
     .fillColor(INK)
-    .text(g.etiqueta, left, bottom + 18, {
+    .text(g.etiqueta, left, bottom + (rotar ? 58 : 18), {
       width: right - left,
       align: "center",
       lineBreak: false,
