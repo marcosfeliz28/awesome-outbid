@@ -32,6 +32,7 @@ export function startPwaUpdates() {
   // precaché ya no tiene sus archivos.
   let reloading = false;
   let reloadWanted = false;
+  let reloadTimer: ReturnType<typeof setInterval> | undefined;
   const hadController = !!navigator.serviceWorker?.controller;
   let waiting = false;
   let applying = false;
@@ -72,6 +73,7 @@ export function startPwaUpdates() {
       Date.now() - lastInput < PWA_UPDATE_FORM_MS
     )
       return;
+    clearInterval(reloadTimer);
     reloading = true;
     window.location.reload();
   };
@@ -81,7 +83,7 @@ export function startPwaUpdates() {
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       reloadWanted = true;
       reloadIfFree();
-      setInterval(reloadIfFree, 15_000);
+      reloadTimer ??= setInterval(reloadIfFree, 15_000);
     });
 
   const render = () => {

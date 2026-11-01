@@ -39,3 +39,11 @@ describe("H-15 · download() tiene tiempo máximo y tope de reintentos", () => {
     expect(fn).toContain("return download(path, filename, false);");
   });
 });
+
+describe("H-16 · el intervalo de recarga se guarda y se limpia", () => {
+  const src = read("apps/web/src/pwaUpdate.ts");
+  it("un solo intervalo, guardado, y se limpia antes de recargar", () => {
+    expect(src).toContain("reloadTimer ??= setInterval(reloadIfFree, 15_000);");
+    expect(src).toMatch(/clearInterval\(reloadTimer\);\s*reloading = true;/);
+  });
+});
