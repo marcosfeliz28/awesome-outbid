@@ -1,5 +1,12 @@
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
+## 2026-11-01 · ChatGPT NUBE · `chatgpt-nube/lumina-estado-1nov` · BLOQUEADA
+
+- **Pieza revisada:** CI de `chatgpt-nube/lumina-adentro-b`, commit `2df2c75257e306a026d44ae47289e3cabe7586e1` (27-oct).
+- **Evidencia:** los trabajos de ese SHA son `windows-installer` **success**, `render-images` **success** y `verify` **failure**. Su ancestro común con `origin/nexora-cloud` `3743a296` es `97d73f03` (25-oct); la rama está 241 commits por detrás y `nexora-cloud` 532 por delante. Al intentar integrar únicamente para actualizarla aparecieron conflictos en migraciones, esquema Prisma, API, App/Management/POS, estilos, pruebas y configuración de Vitest. Se canceló esa integración incompleta; no se resolvieron conflictos ajenos ni se alteró código de producto.
+- **Decisión de autoauditoría:** no es seguro "hacer verde" ese CI mezclando o descartando cambios masivos de una rama anterior. La pieza necesita que Norexos 1 indique si debe rehacerse sobre la base actual o declare obsoleta la rama Lumina. No hay cambio funcional ni de producción en esta entrega.
+- **Qué falta:** asignar un propietario/base vigente para Lumina. Hasta entonces no se puede declarar `LISTA` ni pedir mezcla. Sigo con la siguiente pieza de la cola que no esté bloqueada.
+
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
 ## 2026-10-15 · ChatGPT PC · `nexora-chatgpt-pc` · validación envío del mensajero
