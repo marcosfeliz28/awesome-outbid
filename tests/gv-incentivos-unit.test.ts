@@ -332,3 +332,20 @@ describe("GV · catálogo como opciones del formulario de curso (N1, 1-nov)", ()
     expect(opciones.every((o) => !("incentivo" in o))).toBe(true);
   });
 });
+
+describe("GV · incentivo: pago anulado no consume el tope (revisión, A)", () => {
+  it("A cobra 4,500 y lo anula; B cobra 4,500 después: B recibe el incentivo completo y A neto 0 en octubre", () => {
+    const e = alumna(AUTO, "4500", [
+      pago("4500", "2026-10-03", {
+        createdBy: "A",
+        rejectedAt: new Date("2026-10-10T12:00:00Z"),
+      }),
+      pago("4500", "2026-10-10", { createdBy: "B" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "50.00", kind: "pago" },
+      { personId: "A", amount: "-50.00", kind: "anulado" },
+      { personId: "B", amount: "50.00", kind: "pago" },
+    ]);
+  });
+});

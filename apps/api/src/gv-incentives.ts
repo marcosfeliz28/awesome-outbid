@@ -56,14 +56,15 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
   let cum = d(0);
   let aceptadoNeto = d(0);
   for (const { p, valor } of ordenados) {
-    // Tope 100 %: el pago que excede el precio se recorta.
+    // Tope 100 % sobre pagos vigentes: el que excede el precio se recorta.
     const restante = precio.minus(cum);
     const aceptado = restante.lte(0)
       ? d(0)
       : (valor as any).gt(restante)
         ? restante
         : (valor as any);
-    cum = cum.plus(aceptado);
+    // Un pago anulado no consume el tope: sólo los vigentes suman al acumulado.
+    if (!p.rejectedAt) cum = cum.plus(aceptado);
     const credito = d(curso.incentivo)
       .times(aceptado)
       .div(precio)
