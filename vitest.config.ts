@@ -46,6 +46,7 @@ export default defineConfig({
       "tests/merchandise-template.test.ts",
       "tests/xlsx-bomb.test.ts",
       "tests/reportes-export.test.ts",
+      "tests/gv-reportes-export.test.ts",
       "tests/import-codes.test.ts",
       "tests/realtime.test.ts",
       "tests/inventario.test.ts",
