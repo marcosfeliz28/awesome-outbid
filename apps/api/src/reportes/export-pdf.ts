@@ -458,7 +458,11 @@ function grafico(
       doc.save();
       doc.translate(left + i * slot + slot / 2, bottom + 6);
       doc.rotate(45);
-      doc.font("Helvetica").fontSize(6.5).fillColor(INK).text(t, 0, 0, { lineBreak: false });
+      doc
+        .font("Helvetica")
+        .fontSize(6.5)
+        .fillColor(INK)
+        .text(t, 0, 0, { lineBreak: false });
       doc.restore();
       return;
     }
