@@ -623,13 +623,6 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
 
 function Shell() {
   const { user, online, theme, toggleTheme, setOnline } = useStore();
-  const alertBell = useQuery({
-    queryKey: ["alert-bell"],
-    queryFn: () => api<any[]>("/alerts?status=new"),
-    enabled: !!user && online && can(user.permissions, "alerts:write"),
-  });
-  const alertCount =
-    alertBell.data?.filter((a) => a.status === "new").length ?? 0;
   const [ready, setReady] = useState(false),
     [page, setPage] = useState(location.hash.slice(1) || "dashboard"),
     [menu, setMenu] = useState(false),
@@ -654,6 +647,29 @@ function Shell() {
   const allowed = navigation.filter(
     (n) => user && can(user.permissions, n.permission),
   );
+  // Una ruta escrita a mano no puede montar su pantalla ni disparar sus
+  // consultas: se resuelve antes de renderizar las páginas y se redirige en
+  // el efecto de abajo. Los parámetros sólo aplican a la pantalla permitida.
+  const route = page.split("?")[0];
+  const routeAllowed =
+    allowed.some((item) => item.id === route) ||
+    (route === "settings" && !!user && can(user.permissions, "sale:manage")) ||
+    (route === "month-report" &&
+      !!user &&
+      can(user.permissions, "reports:read")) ||
+    (route === "styles" && SHOW_STYLE_GUIDE);
+  const safePage = routeAllowed ? route : allowed[0]?.id || "products";
+  const alertBell = useQuery({
+    queryKey: ["alert-bell"],
+    queryFn: () => api<any[]>("/alerts?status=new"),
+    enabled:
+      !!user &&
+      routeAllowed &&
+      online &&
+      can(user.permissions, "alerts:write"),
+  });
+  const alertCount =
+    alertBell.data?.filter((a) => a.status === "new").length ?? 0;
   useRealtime();
   const go = (id: string) => {
     location.hash = id;
@@ -730,19 +746,8 @@ function Shell() {
     return () => clearInterval(timer);
   }, [online, setOnline]);
   useEffect(() => {
-    // El hash puede traer parámetros (month-report?from=…&to=…): se compara solo la pantalla.
-    const pantalla = page.split("?")[0];
-    if (
-      user &&
-      !allowed.some((n) => n.id === pantalla) &&
-      // GV-02: Configuración sólo para quien la ve en el menú.
-      !(pantalla === "settings" && can(user.permissions, "sale:manage")) &&
-      // El desglose del mes se abre desde el panel anual; lo ve quien tiene reportes.
-      !(pantalla === "month-report" && can(user.permissions, "reports:read")) &&
-      !(page === "styles" && SHOW_STYLE_GUIDE)
-    )
-      go(allowed[0]?.id || "products");
-  }, [user, page]);
+    if (user && !routeAllowed) go(safePage);
+  }, [user, page, routeAllowed, safePage]);
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -923,7 +928,7 @@ function Shell() {
   }, [user?.id]);
   if (!ready) return <Loading />;
   if (!user) return <Login />;
-  const current = navigation.find((n) => n.id === page);
+  const current = navigation.find((n) => n.id === safePage);
   const initials = user.name
     .split(" ")
     .map((n) => n[0])
@@ -953,7 +958,7 @@ function Shell() {
     gv: <Gv />,
   };
   return (
-    <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
+    <div className={`app-shell ${safePage === "pos" ? "pos-shell" : ""}`}>
       {menu && (
         <button
           className="sidebar-backdrop"
@@ -966,8 +971,8 @@ function Shell() {
       )}
       {can(user.permissions, "inventory:write") &&
         user.role !== "seller" &&
-        page !== "merchandise" &&
-        page !== "pos" && (
+        safePage !== "merchandise" &&
+        safePage !== "pos" && (
           <nav className="goods-mobile-bar">
             <Button onClick={() => go("merchandise")}>
               <Truck size={24} /> Mercancía
@@ -1003,12 +1008,13 @@ function Shell() {
           {allowed.map((n) => (
             <button
               key={n.id}
-              className={`nav-item ${page === n.id ? "active" : ""}`}
+              className={`nav-item ${safePage === n.id ? "active" : ""}`}
+              aria-current={safePage === n.id ? "page" : undefined}
               onClick={() => go(n.id)}
             >
               <n.icon size={19} />
               <span>{n.label}</span>
-              {page === n.id && <span className="nav-dot" />}
+              {safePage === n.id && <span className="nav-dot" />}
             </button>
           ))}
         </nav>
@@ -1026,7 +1032,8 @@ function Shell() {
           </div>
           {can(user.permissions, "sale:manage") && (
             <button
-              className={`nav-item ${page === "settings" ? "active" : ""}`}
+              className={`nav-item ${safePage === "settings" ? "active" : ""}`}
+              aria-current={safePage === "settings" ? "page" : undefined}
               onClick={() => go("settings")}
             >
               <Settings size={19} />
@@ -1069,7 +1076,9 @@ function Shell() {
               </span>
               <strong>
                 {current?.label ||
-                  (page === "styles" ? "Guía de estilos" : "Configuración")}
+                  (safePage === "styles"
+                    ? "Guía de estilos"
+                    : "Configuración")}
               </strong>
             </span>
           </div>
@@ -1192,9 +1201,11 @@ function Shell() {
             )}
           </div>
         </header>
-        <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
+        <main
+          className={`main-content ${safePage === "pos" ? "pos-content" : ""}`}
+        >
           <DeviceGate />
-          {pages[page.split("?")[0]] || <Dashboard go={go} />}
+          {pages[safePage] || <Dashboard go={go} />}
         </main>
         <footer className="app-footer">
           <span>Norexos · Tu negocio, en movimiento.</span>

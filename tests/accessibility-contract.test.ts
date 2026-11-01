@@ -24,12 +24,20 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(app).toContain(
       "...(SHOW_STYLE_GUIDE ? { styles: <StyleGuide /> } : {})",
     );
-    expect(app).toContain('(page === "styles" && SHOW_STYLE_GUIDE)');
+    expect(app).toContain('(route === "styles" && SHOW_STYLE_GUIDE)');
   });
   it("la ayuda explica tareas reales sin prometer ventas offline siempre", () => {
     expect(app).toContain("Ayuda para trabajar");
     expect(app).toContain("Si tu tienda permite ventas sin internet");
     expect(app).toContain("Ir al punto de venta");
+  });
+  it("una ruta sin permiso no monta su pantalla ni consulta alertas antes de redirigir", () => {
+    expect(app).toContain('const route = page.split("?")[0];');
+    expect(app).toContain("const routeAllowed =");
+    expect(app).toContain("const safePage = routeAllowed ? route");
+    expect(app).toContain("routeAllowed &&");
+    expect(app).toContain("if (user && !routeAllowed) go(safePage);");
+    expect(app).toContain("{pages[safePage] || <Dashboard go={go} />}");
   });
 });
 describe("Cambiar mi contraseña (voluntario)", () => {
