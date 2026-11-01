@@ -47,3 +47,11 @@ describe("H-16 · el intervalo de recarga se guarda y se limpia", () => {
     expect(src).toMatch(/clearInterval\(reloadTimer\);\s*reloading = true;/);
   });
 });
+
+describe("H-17 · step=0.01 solo en campos numéricos", () => {
+  const src = read("apps/web/src/helpers.tsx");
+  it("los campos de texto no reciben step", () => {
+    expect(src).not.toContain('step={f.step || "0.01"}');
+    expect(src).toContain('step={f.step || (f.type === "number" ? "0.01" : undefined)}');
+  });
+});
