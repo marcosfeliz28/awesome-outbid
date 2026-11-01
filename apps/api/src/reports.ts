@@ -36,9 +36,20 @@ import {
   safe,
   denied,
   canViewCashExpected,
+  audit,
 } from "./common";
 import { alertForActor, OWNER_ONLY_ALERT_TYPES } from "./alerts";
 import { REPORTES } from "./reportes";
+import {
+  GUIA_MINIMA,
+  comprobarLimite,
+  construirModelo,
+  esFormato,
+  nombreArchivo,
+  puedeVerReporte,
+} from "./reportes/export";
+import { renderPdf } from "./reportes/export-pdf";
+import { renderXlsx } from "./reportes/export-xlsx";
 
 export function dateRange(query: Record<string, string>) {
   const from = query.from
@@ -678,7 +689,11 @@ export class ReportsController {
               .filter((r) => Number(r[key]) <= 10)
               .sort((a, b) => Number(a[key]) - Number(b[key]))
               .map((r) => ({ name: r.name, sku: r.sku, ...row(r) }));
-          return { category: c.name, byUnits: list("ru"), byAmount: list("ra") };
+          return {
+            category: c.name,
+            byUnits: list("ru"),
+            byAmount: list("ra"),
+          };
         }),
         // null: quien no ve el esperado de caja no ve la mezcla de pagos.
         payments: mix
@@ -692,6 +707,64 @@ export class ReportsController {
       },
       actor,
     );
+  }
+  // Exportación a PDF o Excel: las mismas filas que la pantalla (def.run), con
+  // los mismos permisos, límite de filas y auditoría de quién exportó qué.
+  @Get("reports/:name/export")
+  @Permit("reports:read")
+  async reportExport(
+    @Param("name") name: string,
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    const def = Object.hasOwn(REPORTES, name) ? REPORTES[name] : null;
+    if (!def || !Object.hasOwn(GUIA_MINIMA, name))
+      bad("Este reporte todavía no se puede exportar.");
+    if (!esFormato(query.format)) bad("Formato no válido: usa pdf o xlsx.");
+    if (!puedeVerReporte(def, actor.permissions)) denied();
+    const range = dateRange(query);
+    const settings = ((
+      await this.db.settings.findUnique({ where: { id: actor.branchId } })
+    )?.data ?? {}) as any;
+    const rows = await def.run(this.db, actor, range, query);
+    comprobarLimite(rows.length);
+    const modelo = construirModelo({
+      nombre: name,
+      guia: GUIA_MINIMA[name],
+      titulo: def.title,
+      filas: rows,
+      negocio: settings.name ?? "",
+      desde: range.gte,
+      hasta: range.lte,
+      generadoPor: actor.name,
+      emitido: new Date().toLocaleString("es-DO", {
+        timeZone: BUSINESS_TIME_ZONE,
+        dateStyle: "long",
+        timeStyle: "short",
+      }),
+    });
+    const archivo =
+      query.format === "xlsx"
+        ? await renderXlsx(modelo)
+        : await renderPdf(modelo);
+    await audit(this.db, actor, "report.export", "Report", name, undefined, {
+      format: query.format,
+      from: query.from ?? null,
+      to: query.to ?? null,
+      rows: rows.length,
+    });
+    res.setHeader(
+      "Content-Type",
+      query.format === "xlsx"
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "application/pdf",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${nombreArchivo(name, query.from, query.to, query.format)}"`,
+    );
+    res.end(archivo);
   }
   // Lista de los 40 reportes que esta persona puede abrir.
   @Get("reportes")
@@ -1369,11 +1442,7 @@ export class ReportsController {
   @Get("sales/mine/:period")
   @Permit("sale:write")
   mine(@Param("period") period: string, @CurrentUser() actor: Actor) {
-    return mySales(
-      this.db,
-      actor,
-      parse(z.enum(["today", "week"]), period),
-    );
+    return mySales(this.db, actor, parse(z.enum(["today", "week"]), period));
   }
 }
 
@@ -1440,7 +1509,11 @@ export async function mySales(
     credit_note: d(0),
   };
   const key = (method: string, rejected = false) =>
-    rejected || method === "cod" ? "credit" : method in methods ? method : "credit_note";
+    rejected || method === "cod"
+      ? "credit"
+      : method in methods
+        ? method
+        : "credit_note";
   const shown = (sessionId: string | null) =>
     !sessionId || !hidden.includes(sessionId);
   let hiddenUntilClose = false;
@@ -1473,7 +1546,9 @@ export async function mySales(
   // Caja ciega: con caja propia abierta (o cobros en una abierta) ningún
   // importe, ni suelto ni sumable, para que no se deduzca el efectivo esperado.
   if (ownOpen || hiddenUntilClose) {
-    const [{ units }] = await db.$queryRaw<{ units: unknown }[]>`SELECT COALESCE(SUM(i.qty-i."returnedQty"),0) AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
+    const [{ units }] = await db.$queryRaw<
+      { units: unknown }[]
+    >`SELECT COALESCE(SUM(i.qty-i."returnedQty"),0) AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
     return {
       day,
       from,
@@ -1492,14 +1567,21 @@ export async function mySales(
     total: money(d(sales._sum.total ?? 0).minus(returned)),
     methods: Object.fromEntries(
       Object.entries(methods).map(([k, v]) => [k, money(v)]),
-    ) as Record<"cash" | "card" | "transfer" | "credit" | "credit_note", number>,
+    ) as Record<
+      "cash" | "card" | "transfer" | "credit" | "credit_note",
+      number
+    >,
     hiddenUntilClose: false as const,
     pendingTransfers: {
       count: pending._count,
       amount: money(pending._sum.amount ?? 0),
     },
     lastSale: last
-      ? { number: last.number, total: money(last.total), createdAt: last.createdAt }
+      ? {
+          number: last.number,
+          total: money(last.total),
+          createdAt: last.createdAt,
+        }
       : null,
     topProduct: top[0]
       ? { name: top[0].name, units: d(top[0].units as any).toNumber() }
