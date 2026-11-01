@@ -64,3 +64,20 @@ Ninguna de las propuestas de corrección se aplica sin revisión humana: tocan i
 | 3 | `paidFraction` no se acota entre 0 y 1 (`incentives.ts:309-311`) | **Confirmado, bajo** | La fórmula no tiene límites. Si `creditBalance` supera el total por un dato corrupto, el incentivo sale negativo o mayor que el total. Acotarlo oculta el dato malo: conviene también registrar el caso. **Requiere revisión humana.** |
 
 Pendiente: DeepSeek marcó «Aprobado con observaciones» sin detallar los demás controles del paquete. No los he verificado.
+
+## Fase 2 · paquetes F2-P04 (`incentives.ts`, `income-report.ts`, `income-day.ts`) y F2-P05 (`invoice.ts`), verificados por Claude
+
+| # | Hallazgo de DeepSeek | Veredicto | Motivo |
+|---|---|---|---|
+| P04-1 | `userId` sin mensaje de negocio claro (`incentives.ts:1029`) | **Confirmado, bajo** | Solo es mensaje de error, no afecta dinero. Corrección pequeña y segura. |
+| P04-2 | PDF limitado a 10,000 movimientos mientras CSV y XLSX llegan a 50,000 (`income-report.ts:471` y `356`) | **Confirmado, bajo** | Inconsistencia real. Puede ser deliberada (tamaño del PDF). Decisión de la dueña. |
+| P04-3 | `Number(m.amount)` en la suma de movimientos (`income-report.ts:261-264`) | **Confirmado, bajo** | Conversión a número en una comparación. **Requiere revisión humana** porque toca un cuadre de caja. |
+| P04-4 | Suma decimal de incentivos (`incentives.ts:917`) | **Aceptado** | Es Decimal de principio a fin. Correcto. |
+| P04-5 | Centavos enteros en `income-day.ts:52` | **Aceptado** | Se divide al final. Correcto. |
+| P04-6 | Cierre de mes con bloqueo (`incentives.ts:852-924`) | **Aceptado sin revisar a fondo** | No verifiqué el bloqueo. |
+| P05-1 | `DEFAULT_INVOICE_MODEL = "claude-opus-5-5"` «no existe» (`invoice.ts:324`) | **Rechazado** | El SDK instalado lo lista (`node_modules/@anthropic-ai/sdk/src/resources/beta/agents/agents.ts:943`) y el proyecto lo usa a propósito (`docs/coordinacion/VEREDICTO_GEMINI_2_24OCT.md:37`). Lo que sí vale la pena revisar es el costo: ese documento dice que es el modelo más caro. Eso es decisión de la dueña, no un fallo. |
+| P05-2 | Beta `server-side-fallback-2026-07-01` no soportada (`invoice.ts:400`) | **Rechazado** | El SDK instalado la contiene (`helpers/beta` y `lib/middleware.ts`). |
+| P05-3 | `betaZodOutputFormat` podría no existir (`invoice.ts:402-404`) | **Rechazado** | Existe en `helpers/beta/zod.mjs` y `.d.ts` del mismo SDK. |
+| P05-4 a 7 | Otros controles marcados «sin hallazgo» | **Aceptados sin revisar uno por uno** | No los verifiqué. |
+
+Nota de método: DeepSeek basa sus afirmaciones sobre nombres de modelos y betas en conocimiento que puede no estar al día. Antes de aceptar un hallazgo de ese tipo, hay que comprobarlo en el SDK instalado.
