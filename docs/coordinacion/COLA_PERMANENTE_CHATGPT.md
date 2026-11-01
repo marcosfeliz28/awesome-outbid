@@ -19,6 +19,7 @@ La dueña se ausenta. **Nunca te quedes sin trabajo ni esperando una respuesta m
 9+. Reposición.
 
 ## ChatGPT PC — lista en orden
+**PRIORIDAD (1-nov, dueña): `ORDEN_CHATGPT_PC_REPORTES_INSTALADOR_1NOV.md` completo (bloques 1 y 2, piezas 1 a 11) va ANTES de lo demás; luego lo de abajo.**
 1. Animación futurista y dura (`chatgpt-pc/animacion-futurista`): login y Tablero «Hoy» primero; después Reportes, Configuración, Asistente y la pantalla de cierre de caja (solo al terminar). Nada de movimiento en la caja durante el cobro; apagable (reducción de movimiento y control «Efectos»); 60 fps; capturas a 390 y 1366 px.
 2. Imágenes y activos de marca. 3. PC-16 (Rust). 4. **Prueba real del instalador SIN internet** (`ORDEN_INSTALADOR_SIN_INTERNET_1NOV.md`, parte 2) cuando la dueña dé el «sí» en la laptop; usa el plan que deje el agente de auditoría en `docs/auditoria/INSTALADOR_SIN_INTERNET_1NOV.md`. 5. **Reportes amigables, pieza C:** botones «PDF» y «Excel» en cada reporte (`Management.tsx`, `FormalReports.tsx`, `MonthReport.tsx`) con vista previa de «De qué trata», 390 px, accesible; rama `chatgpt-pc/reportes-botones`. Diseña la maqueta ya; conecta al endpoint `/reports/:id/export` cuando la pieza A (rama `claude-pc/reportes-export`) lo tenga. Prioridad ALTA.
 6+. Reposición.

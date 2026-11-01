@@ -1,4 +1,4 @@
-# Orden: verificar que el instalador de PC (sin internet) de Norexos funciona (1-nov-2026)
+# Orden: verificar que el instalador de PC de Norexos funciona SIN internet y CON internet (1-nov-2026)
 
 Pedido de la dueña: comprobar que el **instalador para PC, sin internet,** de la aplicación Norexos funciona, y que todo lo nuevo de hoy (reportes en PDF y Excel, GV, cursos en dólares/pesos, animaciones) también funcione **sin conexión**.
 
@@ -16,3 +16,6 @@ Con el plan de la parte 1: PC limpia (o VM), **sin red** (cable y Wi-Fi apagados
 
 ## Reglas
 Sin credenciales en archivos; no tocar Render ni la base de la tienda; no mezclar ni desplegar (espera la autorización de Norexos 1).
+
+## Aclaración (dueña, 1-nov): dos modos y prueba real autorizada
+Hay que auditar y probar **los dos modos**: instalación y uso **sin internet** y **con internet** (actualizaciones, respaldo a la nube, IA, sincronización con la tienda en vivo, si existen). La dueña dio el «sí» para la **prueba real** en la laptop: ChatGPT PC la ejecuta (con Claude PC de apoyo). La contraseña y el PIN de la cuenta de prueba los escribe la dueña en privado; **nunca** van en archivos ni chats. Resultado en `docs/coordinacion/PRUEBA_INSTALADOR_27OCT.md`, con una tabla «paso | sin internet | con internet | captura | resultado».
