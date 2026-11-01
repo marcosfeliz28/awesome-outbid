@@ -5,11 +5,23 @@ const css = readFileSync("apps/web/src/styles.css", "utf8");
 const monthReport = readFileSync("apps/web/src/MonthReport.tsx", "utf8");
 
 // Orden 98 · pieza 3: animación de reportes y desglose del mes (tarjetas,
-// periodo, top 10 y filas). Solo CSS: transform y opacity, tokens --nx-dur-*,
-// hover de 2 px y prefers-reduced-motion que apaga todo. Bloque propio al final
-// de styles.css. Las tarjetas se acotan con :not(.tablero-kpis) para no tocar el tablero.
+// periodo, top 10 y filas). Solo CSS: transform y opacity, tokens --nx-dur-* y
+// --nx-stagger-*, hover de 2 px y prefers-reduced-motion que apaga todo. Bloque
+// propio al final de styles.css. Todo queda detrás de .reporte-animado: el
+// desglose de venta y ganancia (MonthReport) no lleva esa clase, así que no se anima.
 const start = css.indexOf("/* Orden 98 · pieza 3");
 const bloque = start > -1 ? css.slice(start) : "";
+
+// Reglas CSS del bloque (sin @keyframes ni @media): selector y cuerpo.
+function reglas(texto: string) {
+  const out: { selectores: string[]; cuerpo: string }[] = [];
+  for (const m of texto.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const sel = m[1].trim();
+    if (sel.startsWith("@") || /^(from|to|\d+%)$/.test(sel)) continue;
+    out.push({ selectores: sel.split(",").map((s) => s.trim()), cuerpo: m[2] });
+  }
+  return out;
+}
 
 describe("Reportes y desglose · animación", () => {
   it("el bloque de animación de reportes existe al final de styles.css", () => {
@@ -19,11 +31,22 @@ describe("Reportes y desglose · animación", () => {
     ).toBeGreaterThan(-1);
   });
 
-  it("las clases que animamos existen en MonthReport.tsx", () => {
-    expect(monthReport).toMatch(/className="kpi-grid"/);
-    expect(monthReport).toMatch(/className="panel month-range"/);
-    expect(monthReport).toMatch(/className="panel month-top-panel"/);
-    expect(monthReport).toMatch(/className="month-table"/);
+  it("MonthReport no lleva el interruptor .reporte-animado (venta y ganancia no se animan)", () => {
+    expect(monthReport).not.toMatch(/reporte-animado/);
+  });
+
+  it("toda regla animada exige el ancestro .reporte-animado", () => {
+    const animadas = reglas(bloque).filter((r) =>
+      /animation/.test(r.cuerpo),
+    );
+    expect(animadas.length, "no hay reglas animadas en el bloque").toBeGreaterThan(0);
+    for (const r of animadas) {
+      for (const s of r.selectores) {
+        expect(s, `selector sin .reporte-animado: ${s}`).toMatch(
+          /^\.reporte-animado /,
+        );
+      }
+    }
   });
 
   it("la entrada de reportes anima solo opacity y transform", () => {
@@ -36,26 +59,26 @@ describe("Reportes y desglose · animación", () => {
 
   it("tarjetas, periodo, top 10 y filas entran con tokens de movimiento y sin duraciones sueltas", () => {
     expect(bloque).toMatch(
-      /\.kpi-grid:not\(\.tablero-kpis\) > \.kpi-card,\s*\.month-range,\s*\.month-top-panel \{\s*animation:\s*reporte-enter var\(--nx-dur-slow\) var\(--nx-ease-out\) backwards;/,
+      /\.reporte-animado \.kpi-grid > \.kpi-card,\s*\.reporte-animado \.panel \{\s*animation:\s*reporte-enter var\(--nx-dur-slow\) var\(--nx-ease-out\) backwards;/,
     );
     expect(bloque).toMatch(
-      /\.month-table tbody tr \{\s*animation:\s*reporte-enter var\(--nx-dur-base\) var\(--nx-ease-out\) backwards;/,
+      /\.reporte-animado tbody tr \{\s*animation:\s*reporte-enter var\(--nx-dur-base\) var\(--nx-ease-out\) backwards;/,
     );
     expect(bloque).not.toMatch(/animation:[^;]*\b\d+ms\b[^;]*;/);
   });
 
   it("el escalonado usa retrasos con nth-child en las tarjetas y las filas", () => {
     expect(bloque).toMatch(
-      /\.kpi-grid:not\(\.tablero-kpis\) > \.kpi-card:nth-child\(4\)[^{]*\{\s*animation-delay:/,
+      /\.reporte-animado \.kpi-grid > \.kpi-card:nth-child\(4\)[^{]*\{\s*animation-delay:/,
     );
     expect(bloque).toMatch(
-      /\.month-table tbody tr:nth-child\(3\)[^{]*\{\s*animation-delay:/,
+      /\.reporte-animado tbody tr:nth-child\(3\)[^{]*\{\s*animation-delay:/,
     );
   });
 
   it("las tarjetas suben 2 px al pasar el cursor, con transición corta", () => {
     expect(bloque).toMatch(
-      /\.kpi-grid:not\(\.tablero-kpis\) > \.kpi-card:hover \{\s*transform: translateY\(-2px\);/,
+      /\.reporte-animado \.kpi-grid > \.kpi-card:hover \{\s*transform: translateY\(-2px\);/,
     );
     expect(bloque).toMatch(
       /transition:\s*transform var\(--nx-dur-fast\) var\(--nx-ease-out\);/,
@@ -71,8 +94,8 @@ describe("Reportes y desglose · animación", () => {
       "falta el bloque de movimiento reducido de reportes",
     ).toBeTruthy();
     const reducido = m ? m[0] : "";
-    expect(reducido).toMatch(/\.month-range,\s*\.month-top-panel,/);
-    expect(reducido).toMatch(/\.month-table tbody tr \{\s*animation: none;/);
+    expect(reducido).toMatch(/\.reporte-animado \.panel,/);
+    expect(reducido).toMatch(/\.reporte-animado tbody tr \{\s*animation: none;/);
     expect(reducido).toMatch(/transition: none;/);
     expect(reducido).toMatch(/:hover \{\s*transform: none;/);
   });

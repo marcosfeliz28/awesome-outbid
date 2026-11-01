@@ -6665,8 +6665,11 @@ td strong {
   }
 }
 
-/* Orden 98 · pieza 3: animación de reportes y desglose del mes (tarjetas, periodo, top 10 y filas).
-   Solo transform y opacity, tokens --nx-dur-*; prefers-reduced-motion lo apaga todo. */
+/* Orden 98 · pieza 3: animación de reportes y desglose del mes (tarjetas,
+   periodo, top 10 y filas). Solo pantallas sin dinero: todo queda detrás de
+   .reporte-animado. Ninguna pantalla la lleva todavía; MonthReport (venta y
+   ganancia) queda fuera a propósito. Solo transform y opacity, tokens --nx-dur-*;
+   prefers-reduced-motion lo apaga todo. */
 @keyframes reporte-enter {
   from {
     opacity: 0;
@@ -6677,61 +6680,59 @@ td strong {
     transform: none;
   }
 }
-.kpi-grid:not(.tablero-kpis) > .kpi-card,
-.month-range,
-.month-top-panel {
+.reporte-animado .kpi-grid > .kpi-card,
+.reporte-animado .panel {
   animation: reporte-enter var(--nx-dur-slow) var(--nx-ease-out) backwards;
 }
-.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(2) {
+.reporte-animado .kpi-grid > .kpi-card:nth-child(2) {
   animation-delay: 60ms;
 }
-.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(3) {
+.reporte-animado .kpi-grid > .kpi-card:nth-child(3) {
   animation-delay: 120ms;
 }
-.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(4) {
+.reporte-animado .kpi-grid > .kpi-card:nth-child(4) {
   animation-delay: 180ms;
 }
-.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(5) {
+.reporte-animado .kpi-grid > .kpi-card:nth-child(5) {
   animation-delay: 240ms;
 }
-.kpi-grid:not(.tablero-kpis) > .kpi-card:nth-child(6) {
+.reporte-animado .kpi-grid > .kpi-card:nth-child(6) {
   animation-delay: 300ms;
 }
-.month-table tbody tr {
+.reporte-animado tbody tr {
   animation: reporte-enter var(--nx-dur-base) var(--nx-ease-out) backwards;
 }
-.month-table tbody tr:nth-child(2) {
+.reporte-animado tbody tr:nth-child(2) {
   animation-delay: 24ms;
 }
-.month-table tbody tr:nth-child(3) {
+.reporte-animado tbody tr:nth-child(3) {
   animation-delay: 48ms;
 }
-.month-table tbody tr:nth-child(4) {
+.reporte-animado tbody tr:nth-child(4) {
   animation-delay: 72ms;
 }
-.month-table tbody tr:nth-child(5) {
+.reporte-animado tbody tr:nth-child(5) {
   animation-delay: 96ms;
 }
-.month-table tbody tr:nth-child(6) {
+.reporte-animado tbody tr:nth-child(6) {
   animation-delay: 120ms;
 }
-.kpi-grid:not(.tablero-kpis) > .kpi-card {
+.reporte-animado .kpi-grid > .kpi-card {
   transition: transform var(--nx-dur-fast) var(--nx-ease-out);
 }
-.kpi-grid:not(.tablero-kpis) > .kpi-card:hover {
+.reporte-animado .kpi-grid > .kpi-card:hover {
   transform: translateY(-2px);
 }
 @media (prefers-reduced-motion: reduce) {
-  .kpi-grid:not(.tablero-kpis) > .kpi-card,
-  .month-range,
-  .month-top-panel,
-  .month-table tbody tr {
+  .reporte-animado .kpi-grid > .kpi-card,
+  .reporte-animado .panel,
+  .reporte-animado tbody tr {
     animation: none;
   }
-  .kpi-grid:not(.tablero-kpis) > .kpi-card {
+  .reporte-animado .kpi-grid > .kpi-card {
     transition: none;
   }
-  .kpi-grid:not(.tablero-kpis) > .kpi-card:hover {
+  .reporte-animado .kpi-grid > .kpi-card:hover {
     transform: none;
   }
 }
