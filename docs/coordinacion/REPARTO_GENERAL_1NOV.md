@@ -24,3 +24,6 @@ Orden de la dueña: usar a TODOS a la vez, sin pisarse. Cada quien tiene sus arc
 - Sin credenciales en archivos. Reglas de dinero de siempre: margen sin restar ITBIS, mínimo 15 %, no cambiar precios.
 - Modo barato y lento pero constante: una pieza a la vez por actor, modelo más barato que alcance, sin repetir CI sin cambios.
 - Orden de mezcla (decide Norexos 1): 1) arreglo del CI, 2) incentivos GV, 3) dinero y seguridad, 4) animación y diseño de ChatGPT, 5) `pq-*`.
+
+## Mapa del sistema (obligatorio para todos)
+Antes de leer archivos a ciegas o de afirmar «esto toca X», consulta el mapa: `docs/sistema/mapa/LEEME.md` (graphify; instrucciones de uso allí). Es inferido en parte: cita siempre la fuente (archivo:línea) y no decidas dinero solo con el mapa.
