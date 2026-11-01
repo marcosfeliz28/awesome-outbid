@@ -46,7 +46,7 @@ import {
   monedaDeCurso,
   valorPesos,
 } from "./gv-money";
-import { GV_CATALOGO, gvDevengoMes } from "./gv-incentives";
+import { GV_CATALOGO, gvDevengoMes, gvReembolsoMes } from "./gv-incentives";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -713,40 +713,55 @@ export class GvController {
             currency: true,
             amountDop: true,
             rate: true,
+            createdBy: true,
           },
         },
       },
     });
+    // Devengo de quien registró; reversa por reembolso a quien cobró cada pago.
     const calc = enrollments.flatMap((e) => {
-      const r = gvDevengoMes(
-        {
-          courseName: e.course.name,
-          agreedPrice: e.agreedPrice,
-          refundAmount: e.refundAmount,
-          refundDate: e.refundDate,
-          payments: e.payments,
-        },
+      const input = {
+        courseName: e.course.name,
+        agreedPrice: e.agreedPrice,
+        refundAmount: e.refundAmount,
+        refundDate: e.refundDate,
+        payments: e.payments,
+      };
+      const base = {
+        enrollmentId: e.id,
+        clientName: e.clientName,
+        course: e.course.name,
         period,
-      );
-      if (!r) return [];
+      };
+      const devengo = gvDevengoMes(input, period);
+      const reversas = gvReembolsoMes(input, period);
       return [
-        {
-          enrollmentId: e.id,
-          clientName: e.clientName,
-          course: e.course.name,
-          period: r.period,
+        ...(devengo
+          ? [
+              {
+                ...base,
+                kind: "devengo",
+                amount: devengo.amount,
+                personId: e.createdBy,
+              },
+            ]
+          : []),
+        ...reversas.map((r) => ({
+          ...base,
+          kind: "reembolso",
           amount: r.amount,
-          registeredBy: e.createdBy,
-        },
+          personId: r.createdBy,
+        })),
       ];
     });
     const name = await gvUserNames(
       this.db,
-      calc.map((r) => r.registeredBy),
+      calc.map((r) => r.personId),
     );
     const rows = calc.map((r) => ({
       ...r,
-      registeredByName: name(r.registeredBy),
+      registeredBy: r.personId,
+      registeredByName: name(r.personId),
     }));
     const porPersona = new Map<
       string,

@@ -255,7 +255,13 @@ export function valorEnMoneda(
   moneda: Moneda,
 ): Prisma.Decimal | null {
   const usd = p.currency === "USD";
-  if (moneda === "US$") return usd ? d(p.amount) : null;
+  if (moneda === "US$") {
+    if (usd) return d(p.amount);
+    // Pesos en un curso en US$: sólo con la tasa de ESE pago (sin tasa, no cuenta).
+    return p.rate && d(p.rate).gt(0)
+      ? d(p.amount).div(p.rate).toDecimalPlaces(2)
+      : null;
+  }
   if (!usd) return d(p.amount);
   return p.amountDop == null ? null : d(p.amountDop);
 }
@@ -391,8 +397,10 @@ export async function createGvPayment(
   const moneda =
     kind === "enrollment" ? monedaDeCurso(owner.course?.name) : "RD$";
   const usd = data.currency === "USD";
-  if (moneda === "US$" && !usd)
-    bad("Este curso se cobra en US$: el pago debe registrarse en US$.");
+  if (moneda === "US$" && !usd && !data.rate)
+    bad(
+      "Este curso se cobra en US$: indica la tasa (pesos por dólar) del pago.",
+    );
   // Equivalente en pesos con la tasa de este pago (en pesos, el mismo monto).
   const amountDop = usd
     ? d(data.amount)
@@ -400,7 +408,14 @@ export async function createGvPayment(
         .toDecimalPlaces(2)
     : d(data.amount);
   // El tope se compara en la moneda del curso.
-  const valor = moneda === "US$" ? d(data.amount) : amountDop;
+  const valor =
+    moneda === "US$"
+      ? usd
+        ? d(data.amount)
+        : d(data.amount)
+            .div(data.rate ?? 1)
+            .toDecimalPlaces(2)
+      : amountDop;
   const room = d(owner[o.total]).minus(committed(owner.payments, moneda));
   if (valor.gt(room))
     bad(
@@ -414,7 +429,7 @@ export async function createGvPayment(
     data: {
       ...data,
       currency: usd ? "USD" : "DOP",
-      rate: usd ? data.rate : null,
+      rate: usd || moneda === "US$" ? (data.rate ?? null) : null,
       amountDop: amountDop.toFixed(2),
       destination,
       date: dateOnly(data.date),

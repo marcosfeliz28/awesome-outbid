@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { GV_CATALOGO, gvDevengoMes } from "../apps/api/src/gv-incentives";
+import {
+  GV_CATALOGO,
+  gvDevengoMes,
+  gvReembolsoMes,
+} from "../apps/api/src/gv-incentives";
 import {
   gvPaymentInput,
   gvTotals,
@@ -126,16 +130,29 @@ describe("GV · devengo por porcentaje pagado", () => {
     });
   });
 
-  it("reembolso: resta su parte en el mes del reembolso", () => {
-    const e = alumna(AUTO, "4500", [pago("4500", "2026-10-03")], {
-      status: "reembolsada",
-      refundAmount: "4500",
-      refundDate: new Date("2026-11-02T00:00:00Z"),
+  it("reembolso: el registrador no pierde; la reversa va a quien cobró, en el mes del reembolso", () => {
+    const e = alumna(
+      AUTO,
+      "4500",
+      [
+        pago("4000", "2026-10-03", { createdBy: "A" }),
+        pago("500", "2026-10-04", { createdBy: "B" }),
+      ],
+      {
+        status: "reembolsada",
+        refundAmount: "4500",
+        refundDate: new Date("2026-11-02T00:00:00Z"),
+      },
+    );
+    expect(gvDevengoMes(e, "2026-10")).toEqual({
+      amount: "50.00",
+      period: "2026-10",
     });
-    expect(gvDevengoMes(e, "2026-11")).toEqual({
-      amount: "-50.00",
-      period: "2026-11",
-    });
+    expect(gvDevengoMes(e, "2026-11")).toBeNull();
+    expect(gvReembolsoMes(e, "2026-11")).toEqual([
+      { createdBy: "A", amount: "-44.44" },
+      { createdBy: "B", amount: "-5.56" },
+    ]);
   });
 
   it("sólo pagos verificados: los por verificar no devengan", () => {
@@ -147,9 +164,18 @@ describe("GV · devengo por porcentaje pagado", () => {
 });
 
 describe("GV · casos que no devengan", () => {
-  it("curso en dólares con pago en pesos sin tasa: no devenga (DUDA)", () => {
+  it("curso en dólares con pago en pesos sin tasa: no devenga", () => {
     const e = alumna(USD, "200", [pago("200", "2026-10-03")]);
     expect(gvDevengoMes(e, "2026-10")).toBeNull();
+  });
+
+  it("curso en dólares con pago en pesos y tasa: convierte con la tasa del pago", () => {
+    // RD$ 4,500 a 60 = US$ 75 de US$ 200 → 37.5 % de 50 = 18.75
+    const e = alumna(USD, "200", [pago("4500", "2026-10-03", { rate: "60" })]);
+    expect(gvDevengoMes(e, "2026-10")).toEqual({
+      amount: "18.75",
+      period: "2026-10",
+    });
   });
 
   it("curso en dólares pagado en US$: devenga con el monto en dólares", () => {
@@ -208,6 +234,12 @@ describe("GV · moneda del pago (decisiones de la dueña, 31-oct)", () => {
     expect(
       valorEnMoneda({ amount: "4500", currency: "DOP" }, "US$"),
     ).toBeNull();
+    expect(
+      valorEnMoneda(
+        { amount: "4500", currency: "DOP", rate: "60" },
+        "US$",
+      )?.toFixed(2),
+    ).toBe("75.00");
   });
 
   it("pagado (totales) de una inscripción en RD$ con pago en US$ suma el equivalente en pesos", () => {

@@ -734,7 +734,7 @@ function PaymentForm({
         ...form,
         bank: paymentBank(form.method, form.bank, banks.data?.terminals),
         amount: Number(form.amount),
-        rate: form.currency === "USD" ? Number(form.rate) : undefined,
+        rate: form.rate ? Number(form.rate) : undefined,
         enrollmentId: enrollment.id,
         operationId,
       });
@@ -801,17 +801,21 @@ function PaymentForm({
             <option value="USD">Dólares (US$)</option>
           </select>
         </label>
-        {form.currency === "USD" && (
-          <label className="field">
-            <span>Tasa (RD$ por US$)</span>
-            <input
-              inputMode="decimal"
-              required
-              value={form.rate}
-              onChange={(e) => set("rate", e.target.value)}
-            />
-          </label>
-        )}
+        <label className="field">
+          <span>
+            Tasa (RD$ por US$
+            {form.currency === "USD"
+              ? ""
+              : "; en pesos solo si el curso es en US$"}
+            )
+          </span>
+          <input
+            inputMode="decimal"
+            required={form.currency === "USD"}
+            value={form.rate}
+            onChange={(e) => set("rate", e.target.value)}
+          />
+        </label>
         {form.method === "transferencia" && (
           <>
             <label className="field">
