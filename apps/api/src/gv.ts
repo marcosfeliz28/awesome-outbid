@@ -714,6 +714,7 @@ export class GvController {
         course: { select: { name: true } },
         payments: {
           select: {
+            id: true,
             amount: true,
             date: true,
             verified: true,

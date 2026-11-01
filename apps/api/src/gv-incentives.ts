@@ -6,12 +6,13 @@
 //  - Pago anulado: el cobrador pierde lo que recibió, en el mes de la anulación.
 //  - Reembolso: reversa proporcional a lo que cobró cada uno, en el mes del
 //    reembolso.
-import { d } from "@fitstore/shared";
+import { businessDate, d } from "@fitstore/shared";
 import { GV_CATALOGO, valorEnMoneda } from "./gv-money";
 
 export { GV_CATALOGO } from "./gv-money";
 
 type Pago = {
+  id?: string;
   amount: unknown;
   date: Date;
   verified: boolean;
@@ -35,7 +36,10 @@ export type EventoIncentivo = {
   period: string;
 };
 
+// Fechas civiles de GV (pago, reembolso) se guardan a medianoche UTC del día:
+// su mes es el UTC. Anulación = instante real: su mes es el de negocio (RD).
 const mes = (f: Date) => f.toISOString().slice(0, 7);
+const mesNegocio = (f: Date) => businessDate(f).slice(0, 7);
 
 /** Eventos del incentivo de una inscripción, cada uno con su cobrador y mes. */
 export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
@@ -49,7 +53,11 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
     .filter((p) => p.verified)
     .map((p) => ({ p, valor: valorEnMoneda(p as any, curso.moneda) }))
     .filter((x) => x.valor !== null)
-    .sort((a, b) => a.p.date.getTime() - b.p.date.getTime());
+    .sort(
+      (a, b) =>
+        a.p.date.getTime() - b.p.date.getTime() ||
+        (a.p.id ?? "").localeCompare(b.p.id ?? ""),
+    );
 
   const eventos: EventoIncentivo[] = [];
   const porCobrador = new Map<string, ReturnType<typeof d>>();
@@ -93,7 +101,7 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
         personId: p.createdBy,
         kind: "anulado",
         amount: credito.negated().toFixed(2),
-        period: mes(p.rejectedAt),
+        period: mesNegocio(p.rejectedAt),
       });
     } else {
       porCobrador.set(

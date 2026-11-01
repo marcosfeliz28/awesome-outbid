@@ -413,3 +413,28 @@ describe("GV · redondeo del incentivo por acumulado (revisión C)", () => {
     ]);
   });
 });
+
+describe("GV · orden determinista y mes de anulación (revisión D)", () => {
+  it("dos pagos del mismo día: el orden lo da el id, no el orden de la lista", () => {
+    const e = alumna(AUTO, "4500", [
+      pago("4500", "2026-10-03", { id: "b", createdBy: "B" }),
+      pago("4500", "2026-10-03", { id: "a", createdBy: "A" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "50.00", kind: "pago" },
+    ]);
+  });
+
+  it("anulado el 1 de noviembre a las 22:00 (hora RD): cuenta en octubre, como el resto del API", () => {
+    const e = alumna(AUTO, "4500", [
+      pago("4500", "2026-10-03", {
+        createdBy: "A",
+        rejectedAt: new Date("2026-11-01T02:00:00Z"),
+      }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "50.00", kind: "pago" },
+      { personId: "A", amount: "-50.00", kind: "anulado" },
+    ]);
+  });
+});
