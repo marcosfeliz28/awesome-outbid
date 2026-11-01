@@ -6,7 +6,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { startPwaUpdates } from "./pwaUpdate";
 import { keepCartDraft } from "./cartDraft";
+import { applyEffects, readEffects } from "./motionEffects";
 import "./styles.css";
+try {
+  applyEffects(readEffects(window.localStorage), document.documentElement);
+} catch {
+  applyEffects("normal", document.documentElement);
+}
 // M7: la versión nueva de la PWA no recarga con una venta en curso.
 startPwaUpdates();
 // 05-A3/M1: el carrito en curso sobrevive a F5 y a la recarga de una versión

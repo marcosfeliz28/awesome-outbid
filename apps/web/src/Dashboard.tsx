@@ -193,7 +193,7 @@ export function Dashboard({
   ];
   return (
     <>
-      <div className="page-heading">
+      <div className={executive ? "page-heading fx-dashboard-heading" : "page-heading"}>
         <div>
           <div className="eyebrow">
             {executive

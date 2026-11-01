@@ -8522,3 +8522,24 @@ td strong {
     width: 100%;
   }
 }
+/* Movimiento de marca limitado al acceso y al tablero ejecutivo, nunca al POS. */
+@keyframes fx-title-reveal {
+  0% { opacity: 0; transform: translateX(-12px); }
+ 45% { opacity: 1; transform: translateX(3px); }
+ 100% { opacity: 1; transform: translateX(0); }
+}
+:root:not([data-effects="apagado"]) .login-art h1,
+:root:not([data-effects="apagado"]) .fx-dashboard-heading h1 {
+  animation: fx-title-reveal 340ms steps(3, end) both;
+}
+:root[data-effects="maximo"] .login-prism-scan { animation-duration: 1.2s; }
+:root[data-effects="apagado"] .login-laser,
+:root[data-effects="apagado"] .login-brand-mark,
+:root[data-effects="apagado"] .login-brand-mark::after,
+:root[data-effects="apagado"] .login-prism-frame img,
+:root[data-effects="apagado"] .login-prism-scan,
+:root[data-effects="apagado"] .login-art h1,
+:root[data-effects="apagado"] .fx-dashboard-heading h1 { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .login-art h1, .fx-dashboard-heading h1 { animation: none !important; }
+}

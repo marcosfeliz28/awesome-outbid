@@ -6,6 +6,7 @@ import {
   terminalIdentity,
 } from "./realtime";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { EffectsControl } from "./EffectsControl";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -4504,6 +4505,7 @@ export function Configuration() {
         </div>
       )}
         <div className="panel lumina-settings-content">
+        {tab === "business" && <EffectsControl />}
         {tab === "equipment" ? (
           <Equipment />
         ) : tab === "business" ? (
