@@ -23,3 +23,6 @@
 - **Pieza C (pantalla):** botones «PDF» y «Excel» en cada reporte de `Management.tsx`/`FormalReports.tsx`/`MonthReport.tsx`, con vista previa del «De qué trata» y accesibilidad a 390 px. Rama `chatgpt-pc/reportes-botones`. Dueño: ChatGPT PC (después de que la pieza A tenga el endpoint; mientras tanto diseña la maqueta).
 - **Pieza D (diseño del informe):** maqueta visual del PDF (portada, gráficas, estilo Obsidian Lumina en versión clara para imprimir) en `docs/diseno/informes/`. Dueño: ChatGPT nube.
 - **Orden de mezcla (Norexos 1):** B → A → C (D es insumo).
+
+## Todas las versiones (aclaración de la dueña, 1-nov)
+Todo lo que la dueña pide se aplica a **todas las versiones que se trabajan**: (1) la tienda en vivo (Render), (2) el **instalador de PC sin internet**, (3) el módulo GV (cursos y cobros), (4) la Tienda en línea y (5) el producto Norexos para clientes. Por tanto el exportador PDF/Excel y su guía **no pueden depender de internet**: fuentes tipográficas empaquetadas (nada de CDN ni Google Fonts), gráficas dibujadas en el propio servidor, sin servicios externos, y deben funcionar dentro del instalador. Cada pieza lo verifica y lo anota.
