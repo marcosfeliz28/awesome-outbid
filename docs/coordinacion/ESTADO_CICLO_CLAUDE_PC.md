@@ -2223,3 +2223,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (1-nov, 7) — orden 109 nueva (nexora-cloud d80eec2c)
 - RESPUESTA cambió (orden 109: procesar gv-incentivos, fix-dinero, fix-seg-menor, anim-reportes). Paso 2 bloqueado: claude-pc/fix-ci-mes e0efeda7 (otra sesión, no tocada) tiene verify ROJO tras esperar al CI (render-images y windows-installer verdes), así que no mezclé nada ni empujé a las 4 ramas; PROCESO_RAMAS_1NOV.md y LISTA no escritos. Orden 108: las NEXORA_CLAUDE_* están en la nube; la prueba de acceso sigue denegada por el clasificador de permisos, no reintentada.
 - pc23, a1, b01 y lumina siguen verdes; verify ROJO en las 4 ramas de la orden 109. Último hash visto de nexora-cloud: d80eec2c. No desplegar.
+
+## Ciclo nube (1-nov, 8) — orden 110 nueva (nexora-cloud 954155b6)
+- Orden 110 (costo solo con profit:read en kardex, low-stock, no-movement): no reproduce. En la API `safe()` ya quita Costo y Valor sin profit:read (pantalla, Excel; con profit:read queda igual); no hay prueba que falle antes, así que no cambié código. Dejé solo una prueba guarda en claude-pc/fix-costo-permiso d5f4d455 (render-images y windows-installer verdes, verify ROJO, sin confirmar si es el fallo común de base; fix-ci-mes 62d78b65 también rojo). LISTA NO escrita. pc23, a1, b01 y lumina siguen verdes.
+- Orden 109 sigue bloqueada (fix-ci-mes rojo). Último hash visto de nexora-cloud: 954155b6. No desplegar.
