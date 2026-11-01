@@ -113,7 +113,8 @@ describe("H-08: incentivo de ventas a crédito con fracción pagada entre 0 y 1"
       },
     };
     const out = await pendingCreditIncentive(db, "b1");
-    // s1: 0.30 − 0.10 = 0.20; s2: 0.004 − 0 = 0.004 → 0.00 (centavos).
+    // s1: 0.30 − 0.10 = 0.20; s2: 0.004 − 0 = 0.004. Se suman en Decimal y el
+    // total se redondea una sola vez al final: 0.204 → 0.20 (no venta por venta).
     expect(out.get("u1")).toBe(0.2);
   });
 });
