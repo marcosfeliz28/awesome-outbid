@@ -81,3 +81,21 @@ Pendiente: DeepSeek marcó «Aprobado con observaciones» sin detallar los demá
 | P05-4 a 7 | Otros controles marcados «sin hallazgo» | **Aceptados sin revisar uno por uno** | No los verifiqué. |
 
 Nota de método: DeepSeek basa sus afirmaciones sobre nombres de modelos y betas en conocimiento que puede no estar al día. Antes de aceptar un hallazgo de ese tipo, hay que comprobarlo en el SDK instalado.
+
+## Fase 2 · informe consolidado de DeepSeek (16 paquetes), verificado por Claude
+
+Muestra comprobada en el código: P02-1, P06-1, P07-2, P08-2, P10-1, P12-1, P13-2, P14-1, P16-1. Las citas son reales, y casi todos los comentarios de «sin hallazgo» corresponden a código que existe. No comprobé en detalle el resto de los «sin hallazgo».
+
+| Paquete | Hallazgo | Veredicto |
+|---|---|---|
+| P05-1 (`invoice.ts:324`) | Modelo `claude-opus-5-5` «inválido» (ahora marcado como **crítico**) | **Rechazado, de nuevo.** Está en el SDK instalado y el proyecto lo usa a propósito. El informe consolidado lo repite como crítico sin nueva evidencia. |
+| P05-2 y P05-3 | Beta y `betaZodOutputFormat` sin verificar | **Rechazados.** Están en el SDK instalado. |
+| P01-1 a P01-3 (`cash.ts:89, 152, 387`) | USD con método electrónico cuenta como efectivo | **Confirmado, medio** (como ya estaba registrado). |
+| P01-4 (`cash.ts:1389`) | Tasa en cero silencia la alerta | **Confirmado, bajo.** La corrección propuesta (`?? 1`) es mala idea: usaría una tasa inventada. Mejor marcar la alerta cuando no haya tasa. |
+| P02-1 (`courier.ts:101`) | Nombre de mensajería «Addison» por defecto en la API | **Confirmado, bajo.** También está en la web (`CourierFeeEditor.tsx:20`). Es dato de negocio fijo en el código. |
+| P02-2 (`credit-reminder.ts:162`) | `findMany` con `distinct` cargaría muchas filas | **No comprobado en detalle.** La línea existe, pero no vi el cuerpo del `distinct`. Bajo; sugerencia de rendimiento. |
+| P06 a P16 | «Sin hallazgo» | **Aceptados como revisados solo en las muestras citadas.** |
+| P11-1 (`Incentives.tsx:337`) | Dice «bloquea el cierre del mes en curso» | **Impreciso.** El código bloquea meses posteriores al último cerrado, no el mes en curso. |
+| P15-1 (`Purchases.tsx:361`) | «Step acotado a 0,001» | **No comprobado.** El fragmento citado no muestra el `step`. |
+
+Repetidos sin cambios respecto a lo ya registrado: P03 (`formal-report.ts:364`, `incentives.ts:602`, `incentives.ts:311`) y P04 (`incentives.ts:1029`, `income-report.ts:471`, `income-report.ts:262`).
