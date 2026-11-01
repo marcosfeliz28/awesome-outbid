@@ -110,14 +110,15 @@ export function decodeHeader(header: Buffer) {
     throw new BackupFormatError("Derivación de clave no soportada.");
   const params = { log2N: header[6]!, r: header[7]!, p: header[8]! };
   const chunkBytes = header.readUInt32BE(9);
-  // Límites: una cabecera manipulada no debe pedir gigabytes de memoria.
+  // Límites: una cabecera manipulada no debe pedir gigabytes de memoria
+  // (con p=2 y r=8 el tope es ~160 MiB; el respaldo usa log2N 15, r 8, p 1).
   if (
     params.log2N < 14 ||
-    params.log2N > 20 ||
+    params.log2N > 16 ||
     params.r < 1 ||
-    params.r > 16 ||
+    params.r > 8 ||
     params.p < 1 ||
-    params.p > 4 ||
+    params.p > 2 ||
     chunkBytes < 4096 ||
     chunkBytes > 16 * 1024 * 1024
   )
