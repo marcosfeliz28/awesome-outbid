@@ -159,6 +159,10 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - **Regresión:** antes: `FAIL: Ventas no tiene tarjetas móviles con etiquetas para 390 px`. Después: `PASS: Ventas conserva Total, Pagos y Acciones como tarjetas etiquetadas en móvil`. Añadí la comprobación contractual a `tests/accessibility-contract.test.ts`; pasó **32/32**. `pnpm --filter @fitstore/web typecheck` y `git diff --check` también pasaron.
 - **Autoauditoría:** no se alteraron permisos, API, caja, pagos ni solicitudes de anulación; sólo su presentación. Las cabeceras siguen presentes para lectores de tabla y cada celda recibe `data-label`; en móvil el encabezado visual se oculta sin eliminar el contenido. Falta la captura manual a 390/1366 y confirmar los tres CI del SHA posterior a este registro.
 
+### Actualización de CI · 2026-11-01
+
+- La ejecución `41311346961` del SHA `e0661cb7` dejó `windows-installer` y `render-images` en verde; `verify` falló en el paso **Run pnpm check**. El registro de GitHub ya había expirado al consultarlo (`Forbidden` al descargar el log), por lo que no se inventa la causa. Esta rama queda **BLOQUEADA por CI** hasta repetir el trabajo desde un SHA que incorpore el arreglo global de dinero o hasta disponer del log del fallo.
+
 ## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · `ac3ba19`…`6634a1a`
 
 - **Qué hice:** pantalla «Conciliar transferencias» visible solo para administración. Endpoint de lectura `GET /payments/pending-transfers` con permiso `sale:manage`, filtrado por sucursal y fecha de República Dominicana. Agrupa BHD, Popular, Banreservas y otros; muestra factura, cliente, cajera, monto y referencia. Selección múltiple, total por banco, diferencia, verificación secuencial usando el endpoint existente y resultado por pago; rechazo con motivo mediante el endpoint existente. CSV con protección contra fórmulas. Corregí la prueba para usar la fecha real del pago (`9d5757c`) y el reinicio de totales al cambiar de fecha (`3ebd886`). No cambié `verify`, `reject`, importes, inventario ni producción.
