@@ -187,7 +187,7 @@ Estas ramas no se vuelven a mezclar ni a rehacer.
 
 | Rama | Resultado de la comparación con `nexora-cloud` | Acción segura |
 | --- | --- | --- |
-| `chatgpt-nube/lumina-adentro-b` y `chatgpt-pc/lumina-adentro-a` | No son ancestros y sus parches no están integrados. La orden `af6b40a0` las declaró **obsoletas**; el rediseño vigente entró por otra cadena. | No arreglar su CI ni mezclarlas. |
+| `chatgpt-nube/lumina-adentro-b` y `chatgpt-pc/lumina-adentro-a` | No son ancestros y sus parches no están integrados. La orden histórica `af6b40a0` las declaró **obsoletas**, pero la orden constructora posterior del 1-nov pide verificar su CI por contenido. | No mezclar ni corregir la rama antigua a ciegas: reproducir cada fallo contra el producto actual y portar únicamente un arreglo todavía necesario. |
 | `chatgpt-nube/qa-medios` | Sus cinco commits de QA no están integrados por ancestro ni parche (`f613c51d`…`16eb1142`). | Reproducir sobre la UI actual los tres defectos: rutas prohibidas, tooltip anual oscuro y ventas móviles a 390 px; corregir solo los que sigan ocurriendo. |
 | `chatgpt-nube/f1-01-bundle` | El commit `980a5ca0` no está integrado. La configuración actual tiene `manualChunks`, pero no conserva la división por pantallas de esa rama. | Medir el bundle actual y rehacer F1-01 desde el `nexora-cloud` vigente solo si supera el contrato. No mezclar la rama antigua. |
 | `chatgpt-pc/visual-fase1-gemini` | Los commits F1-02…F1-05 (`4d3fe595`…`095bd39f`) no están integrados. En la rama actual faltan su prueba `visual-fase1-gemini`, `nx-file-dropzone`, chips y `resize: none`; la portada todavía contiene `login-stats`. | Reproducir cada defecto en la marca/UI actual y portar únicamente lo que siga fallando. No hacer cherry-pick de `aab91c9a`: parte de una base 512 commits detrás y toca `App.tsx`/`styles.css` ya rediseñados. |
@@ -212,6 +212,18 @@ Todas están entre 426 y 967 commits detrás del `nexora-cloud` de referencia o 
 
 ### Siguiente trabajo según la reorientación
 
-1. ChatGPT nube: revalidar `qa-medios` y F1-01 sobre la rama actual; `lumina-adentro-b` queda descartada por la orden posterior que la declaró obsoleta.
+1. ChatGPT nube: revalidar `lumina-adentro-b`, `qa-medios` y F1-01 sobre la rama actual. La orden constructora del 1-nov sustituye la instrucción histórica de descartar sin comprobación.
 2. ChatGPT PC: F2-01 y F2-03 ya están hechos por otra vía. Quedan la revalidación de F1-02…F1-05 y F3-01; `pc16` queda reportado, no mezclado.
 3. Antes de código: confirmar que ninguna tarea haya sido tomada en el tablero vigente y trabajar desde `origin/nexora-cloud` en una rama nueva por tarea.
+
+### Matriz de la cola del 27-oct contrastada con la orden constructora del 1-nov
+
+| Función / rama de la cola | Estado contra `nexora-cloud` actual | Decisión de esta auditoría |
+| --- | --- | --- |
+| CI de `chatgpt-nube/lumina-adentro-b`: selector de tema accesible, etiqueta de almacén y E2E | La rama no está integrada. La orden más reciente exige comprobar los tres fallos por contenido, aunque una orden intermedia la llamó obsoleta. `Management.tsx` no es archivo asignado a ChatGPT PC por el reparto actual. | Reproducir primero el fallo en la rama vigente; si requiere `Management.tsx`, anotarlo para Norexos 1 y no tocar ese archivo. |
+| `chatgpt-nube/qa-medios`: ruta prohibida, tooltip anual oscuro, Ventas a 390 px | No integrada como ancestro/parche. `App.tsx` y `styles.css` sí son archivos de ChatGPT. | Necesaria solo si el recorrido actual reproduce los defectos; siguiente corrección permitida después de la auditoría. |
+| `chatgpt-nube/ventas-ciego` B-01 | Sigue fuera de mezcla por decisión de la dueña; toca visibilidad de caja/pagos. | No preparar ni cambiar mientras Claude PC/Norexos 1 mantiene dinero y caja reservados. |
+| `chatgpt-nube/f1-01-bundle` | No integrado como parche; `manualChunks` actual no demuestra la división por pantalla de `980a5ca0`. | Necesita una medición limpia del bundle actual y una corrección nueva solo si incumple el límite. |
+| `chatgpt-pc/lumina-adentro-a`: POS claro y tablero «Hoy» | Sus cambios no son integrables directamente; F2-01/F2-03 ya fueron entregados desde otra vía y las capturas históricas no acreditan la UI actual. | Revalidar visualmente solo defectos presentes, sin repetir F2-01/F2-03. |
+| `chatgpt-pc/pc16-compilacion-27oct` | Informe y CI histórico disponibles; no hay verificación física de hardware/Windows limpio. | Reportado; no mezclar ni editar dinero/caja/Tauri sin una orden específica. |
+| Q2–Q5 de la cola 3: guía, «Preguntas», plantilla Excel, PDF | No se identificaron como cambios pendientes en la rama actual durante esta comparación. | No reactivarlos hasta que Norexos 1 los asigne de nuevo; evitar duplicar documentos o pruebas. |
