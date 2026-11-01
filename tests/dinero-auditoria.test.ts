@@ -888,17 +888,22 @@ describe("Auditoría 01 · dinero", () => {
     await sell(c, v, 2, [{ method: "cash", amount: 1400 }]);
     const range = "?from=" + today() + "&to=" + today();
     const breakdown = await ok("/dashboard/breakdown" + range, admin);
-    const year = await ok("/dashboard/year", admin);
+    // Otras pruebas escriben ventas de hoy en la misma base mientras esta lee:
+    // el año y el desglose del mes sólo se comparan si nada cambió entre lecturas.
+    const monthRange = "?from=" + today().slice(0, 7) + "-01&to=" + today();
+    let year: any, monthToDate: any;
+    for (let attempt = 1; ; attempt++) {
+      const before = await ok("/dashboard/breakdown" + monthRange, admin);
+      year = await ok("/dashboard/year", admin);
+      monthToDate = await ok("/dashboard/breakdown" + monthRange, admin);
+      if (monthToDate.revenue === before.revenue || attempt === 5) break;
+    }
     expect(year.months).toHaveLength(12);
     expect(
       year.months.reduce((a: number, m: any) => a + m.revenue, 0),
     ).toBeCloseTo(year.revenue, 2);
     const month = year.months[Number(today().slice(5, 7)) - 1];
     // Cuadre exacto con el desglose del mes hasta hoy (mismas ventas y devoluciones).
-    const monthToDate = await ok(
-      "/dashboard/breakdown?from=" + today().slice(0, 7) + "-01&to=" + today(),
-      admin,
-    );
     expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
     expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
     expect(breakdown.units).toBeGreaterThanOrEqual(2);
