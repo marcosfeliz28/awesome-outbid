@@ -98,10 +98,10 @@ const addTo = (map: Map<string, any>, key: string, amount: unknown) =>
   map.set(key, (map.get(key) ?? d(0)).plus(amount as any));
 
 // D-05: una sola definición de venta neta en todos los informes de ventas.
-// Lo vendido en el período (por la fecha de la venta) menos lo devuelto en el
-// período (por la fecha de la devolución), igual que «ingresos» del dashboard.
+// Lo vendido en el período (por la fecha de la venta) menos lo devuelto de esas
+// mismas ventas (opción A, 1-nov), igual que «ingresos» del dashboard.
 // Cada desglose descuenta la devolución en su propia dimensión: día de la
-// devolución, vendedor y categoría de la venta original, y forma de pago (lo
+// venta, vendedor y categoría de la venta original, y forma de pago (lo
 // reembolsado con su método; lo que redujo la deuda, con el crédito o la
 // contraentrega de la venta).
 async function periodReturns(
@@ -115,8 +115,8 @@ async function periodReturns(
   return db.saleReturn.findMany({
     where: {
       branchId: actor.branchId,
-      createdAt: range,
-      ...(sale ? { sale } : {}),
+      // Opción A (1-nov): la devolución cuenta en el período de la VENTA original.
+      sale: { ...sale, createdAt: range },
     },
     orderBy: { id: "asc" },
     take: RETURN_BATCH,
@@ -125,6 +125,7 @@ async function periodReturns(
       sale: {
         select: {
           sellerId: true,
+          createdAt: true,
           payments: { select: { method: true, entryType: true } },
           items: {
             select: {
@@ -207,7 +208,7 @@ async function returnedBreakdown(
     methods = new Map<string, any>(),
     sellers = new Map<string, any>();
   await forEachPeriodReturn(db, actor, range, undefined, (r) => {
-    addTo(days, businessDate(r.createdAt), r.total);
+    addTo(days, businessDate(r.sale.createdAt), r.total);
     for (const { category, amount } of returnedByCategory(r)) {
       addTo(categories, category.name, amount);
       if (!colors.has(category.name)) colors.set(category.name, category.color);
@@ -363,7 +364,7 @@ export class ReportsController {
       this.db.saleReturn.aggregate({
         where: {
           branchId: actor.branchId,
-          createdAt: { gte: priorYearStart, lte: priorYearEnd },
+          sale: { createdAt: { gte: priorYearStart, lte: priorYearEnd } },
         },
         _sum: { total: true },
       }),
@@ -372,7 +373,7 @@ export class ReportsController {
       >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day,hour ORDER BY day,hour`,
       // La tendencia compara ingresos netos de devoluciones (R9-dinero-10).
       this.db.saleReturn.aggregate({
-        where: { branchId: actor.branchId, createdAt: previousRange },
+        where: { branchId: actor.branchId, sale: { createdAt: previousRange } },
         _sum: { total: true },
       }),
       // Abonos cobrados en el período (fecha del abono, no de la venta): su
@@ -1233,8 +1234,7 @@ export class ReportsController {
           const page = await this.db.saleReturn.findMany({
             where: {
               branchId: actor.branchId,
-              createdAt: range,
-              sale: returnSaleWhere,
+              sale: { ...returnSaleWhere, createdAt: range },
             },
             orderBy: { id: "asc" },
             take: RETURN_BATCH,
