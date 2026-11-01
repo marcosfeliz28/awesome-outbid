@@ -951,6 +951,76 @@ describe("Auditoría 01 · dinero", () => {
     ).toBeCloseTo(monthToDate.revenue, 2);
   });
 
+  it("devolución de una venta del mes anterior: el desglose la muestra como fila propia y el mes cuadra con el año", async () => {
+    const c = await person("seller", "prior", 0);
+    const v = await product(400, 150, 10);
+    const sale = await sell(c, v, 1, [{ method: "cash", amount: 400 }]);
+    const originalDate = sale.createdAt ? new Date(sale.createdAt) : new Date();
+    // Venta del último día del mes anterior: queda fuera del período del desglose.
+    const monthStart = today().slice(0, 7) + "-01";
+    const lastDay = new Date(
+      Date.parse(monthStart + "T12:00:00-04:00") - 86400000,
+    );
+    let ret: any = null;
+    try {
+      await db.sale.update({
+        where: { id: sale.id },
+        data: { createdAt: lastDay },
+      });
+      ret = await db.saleReturn.create({
+        data: {
+          saleId: sale.id,
+          number: "NC-PRI-" + suffix + "-" + randomUUID().slice(0, 8),
+          reason: "Devolución del mes pasado",
+          total: 400,
+          taxTotal: 0,
+          costTotal: 150,
+          refundAmount: 400,
+          refundMethod: "cash",
+          cashSessionId: c.cash.id,
+          userId: c.id,
+          items: [
+            {
+              qty: 1,
+              tax: 0,
+              cost: 150,
+              total: 400,
+              opened: false,
+              damaged: false,
+              restock: false,
+              wasteQty: 0,
+              wasteCost: 0,
+              saleItemId: sale.items[0].id,
+            },
+          ],
+        },
+      });
+      const monthToDate = await ok(
+        "/dashboard/breakdown?from=" + monthStart + "&to=" + today(),
+        admin,
+      );
+      const year = await ok("/dashboard/year", admin);
+      const month = year.months[Number(today().slice(5, 7)) - 1];
+      expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
+      expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
+      const row = monthToDate.categories.find(
+        (r: any) => r.name === "Devoluciones de ventas anteriores",
+      );
+      expect(row).toBeDefined();
+      expect(row.revenue).toBeLessThanOrEqual(-400);
+      expect(
+        monthToDate.categories.reduce((a: number, r: any) => a + r.revenue, 0),
+      ).toBeCloseTo(monthToDate.revenue, 2);
+    } finally {
+      // Limpieza: otras suites usan la misma base el mismo día.
+      if (ret) await db.saleReturn.delete({ where: { id: ret.id } });
+      await db.sale.update({
+        where: { id: sale.id },
+        data: { createdAt: originalDate },
+      });
+    }
+  });
+
   it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {
     await withSettings(
       { unusualDiscountPercent: 25, unusualDiscountCount: 1 },

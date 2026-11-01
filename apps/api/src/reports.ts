@@ -628,27 +628,32 @@ export class ReportsController {
       this.db
         .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
     ])) as any[][];
-    // Devoluciones sin líneas (SaleReturn heredado, items vacíos): sólo tienen total
-    // y no bajan returnedQty. Se muestran como fila propia para que el desglose
-    // cuadre con el año (/dashboard/year), sin repartirlas en categorías inventadas.
-    // Se agrupan por forma de reembolso: el efectivo que salió también baja los cobros.
-    const legacyRows = (await this.db
-      .$queryRaw`SELECT r."refundMethod" AS method, COALESCE(SUM(r.total),0) AS revenue, COALESCE(SUM(r."costTotal"),0) AS cost FROM "SaleReturn" r WHERE r."branchId"=${actor.branchId} AND r."createdAt">=${since} AND r."createdAt"<=${until} AND jsonb_typeof(r.items::jsonb)='array' AND jsonb_array_length(r.items::jsonb)=0 GROUP BY 1`) as any[];
-    const legacyRevenue = legacyRows.reduce((a, r) => a.plus(r.revenue), d(0));
-    const legacyCost = legacyRows.reduce((a, r) => a.plus(r.cost), d(0));
-    const lines = [
-      ...categories,
-      ...(legacyRevenue.isZero()
+    // Devoluciones que el desglose (por línea y fecha de venta) no ve, pero el año sí
+    // (por fecha de devolución): «sin detalle» = SaleReturn sin items (heredado) y
+    // «de ventas anteriores» = devolución con items de una venta de antes del período.
+    // Filas propias, nunca repartidas en categorías; también bajan los cobros por forma de reembolso.
+    const returnRows = (await this.db
+      .$queryRaw`SELECT CASE WHEN jsonb_typeof(r.items::jsonb)='array' AND jsonb_array_length(r.items::jsonb)=0 THEN 'sin' ELSE 'antes' END AS kind, r."refundMethod" AS method, COALESCE(SUM(r.total),0) AS revenue, COALESCE(SUM(r."costTotal"),0) AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND r."createdAt">=${since} AND r."createdAt"<=${until} AND (jsonb_typeof(r.items::jsonb)<>'array' OR jsonb_array_length(r.items::jsonb)=0 OR s."createdAt"<${since}) GROUP BY 1, 2`) as any[];
+    const extraRow = (kind: string, name: string, color: string) => {
+      const rows = returnRows.filter((r) => r.kind === kind);
+      const revenue = rows.reduce((a, r) => a.plus(r.revenue), d(0));
+      const cost = rows.reduce((a, r) => a.plus(r.cost), d(0));
+      return revenue.isZero()
         ? []
         : [
             {
-              name: "Devoluciones sin detalle",
-              color: "#94a3b8",
-              revenue: legacyRevenue.negated(),
-              cost: legacyCost.negated(),
+              name,
+              color,
+              revenue: revenue.negated(),
+              cost: cost.negated(),
               units: 0,
             },
-          ]),
+          ];
+    };
+    const lines = [
+      ...categories,
+      ...extraRow("sin", "Devoluciones sin detalle", "#94a3b8"),
+      ...extraRow("antes", "Devoluciones de ventas anteriores", "#cbd5e1"),
     ];
     // Días del período hasta hoy: el promedio diario no se diluye con días
     // que todavía no llegan.
@@ -715,10 +720,13 @@ export class ReportsController {
                 bank: r.bank ?? null,
                 amount: money(d(r.amount ?? 0)),
               })),
-              ...legacyRows
+              ...returnRows
                 .filter((r) => !d(r.revenue).isZero())
                 .map((r) => ({
-                  category: "Devoluciones sin detalle",
+                  category:
+                    r.kind === "sin"
+                      ? "Devoluciones sin detalle"
+                      : "Devoluciones de ventas anteriores",
                   method: r.method,
                   bank: null,
                   amount: money(d(r.revenue).negated()),
