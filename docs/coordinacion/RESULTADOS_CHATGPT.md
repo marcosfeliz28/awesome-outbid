@@ -167,3 +167,10 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **Verificación local final:** `pnpm db:generate` pasó y `pnpm check` terminó con código 0: **70 archivos de prueba pasaron, 1 omitido; 656 pruebas pasaron, 10 omitidas**. Typecheck, ESLint, build web y build API pasaron. Vite mostró únicamente la advertencia de chunk >500 kB.
 - **CI y publicación:** CI de GitHub para `f182212` terminó verde en `windows-installer`, `verify` y `render-images`: [ejecución 38770399538](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/38770399538). Ese CI es anterior a la integración de `74441b2` y a este arreglo; los cambios de esta sección requieren publicar el commit y confirmar un nuevo CI antes de considerarlos verificados remotamente.
 - **Qué falta:** publicar este arreglo en `nexora-chatgpt-nube` y verificar que los tres trabajos del nuevo SHA queden verdes. No se desplegó ni se accedió a producción.
+
+## 2026-11-01 · ChatGPT NUBE · `chatgpt-nube/maqueta-informes-1nov` · Pieza D, reportes amigables
+
+- **Qué hice:** añadí `docs/diseno/informes/MAQUETA_INFORME_A4.svg` y su `LEEME.md`: una maqueta A4 imprimible de Obsidian Lumina en versión clara, con portada/periodo, bloque «De qué trata», resumen de cifras, gráfica con ejes, tabla de detalle, guía de lectura y pie paginado. Usa sólo marcadores entre corchetes; no contiene datos del negocio.
+- **Regresión:** antes: `FAIL: falta la maqueta visual A4 de informes`. Después: `PASS: maqueta A4 contiene portada, resumen, gráfica, detalle, guía y pie sin recursos externos`. `git diff --check` pasó.
+- **Autoauditoría:** el SVG no enlaza fuentes, imágenes, CDN ni servicios externos; es apto como insumo para el instalador sin internet. Usa tinta, violeta, esmeralda y grises con etiquetas y texto, por lo que la lectura no depende sólo del color. No implementa exportación, datos ni permisos: las piezas A/B/C deben sustituir los marcadores desde la misma fuente de la pantalla y respetar caja ciega.
+- **Qué falta:** CI del SHA final y revisión de Norexos 1. Esta pieza es insumo de diseño; no se desplegó ni se modificó la tienda.

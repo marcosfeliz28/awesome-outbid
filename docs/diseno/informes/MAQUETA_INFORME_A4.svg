@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123" viewBox="0 0 794 1123" role="img" aria-labelledby="title desc">
+  <title id="title">Maqueta A4 de informe amigable Nexora</title>
+  <desc id="desc">Propuesta visual imprimible con portada, resumen, gráfica, tabla y guía de lectura.</desc>
+  <style>
+    .title{font:700 28px Arial,sans-serif;fill:#182033}.sub{font:400 12px Arial,sans-serif;fill:#526077}.label{font:700 10px Arial,sans-serif;letter-spacing:1px;fill:#6654b8}.body{font:400 11px Arial,sans-serif;fill:#263249}.small{font:400 9px Arial,sans-serif;fill:#526077}.num{font:700 16px Arial,sans-serif;fill:#182033}.head{font:700 9px Arial,sans-serif;fill:#fff}.cell{font:400 10px Arial,sans-serif;fill:#263249}.guide{font:400 10px Arial,sans-serif;fill:#34405a}
+  </style>
+  <rect width="794" height="1123" fill="#f7f8fc"/>
+  <rect x="34" y="30" width="726" height="1063" rx="8" fill="#fff" stroke="#dde2ee"/>
+  <rect x="34" y="30" width="726" height="13" rx="8" fill="#7255d9"/>
+  <polygon points="716,43 760,43 760,184 700,124" fill="#e8e2ff"/>
+  <text x="68" y="86" class="label">NEXORA · INFORMES CLAROS</text>
+  <text x="68" y="125" class="title">Resumen de ventas</text>
+  <text x="68" y="148" class="sub">[Nombre del negocio] · [Período seleccionado] · Generado por [usuario]</text>
+  <line x1="68" y1="171" x2="726" y2="171" stroke="#dde2ee"/>
+  <rect x="68" y="194" width="658" height="70" rx="8" fill="#f1efff"/>
+  <text x="88" y="219" class="label">DE QUÉ TRATA ESTE REPORTE</text>
+  <text x="88" y="240" class="body">Explica las ventas del período y cómo se distribuyen. Úsalo para comparar días,</text>
+  <text x="88" y="256" class="body">identificar tendencias y revisar los movimientos que forman cada total.</text>
+  <text x="68" y="302" class="label">RESUMEN DEL PERÍODO</text>
+  <g>
+    <rect x="68" y="318" width="151" height="86" rx="8" fill="#fff" stroke="#dfe4ee"/>
+    <rect x="231" y="318" width="151" height="86" rx="8" fill="#fff" stroke="#dfe4ee"/>
+    <rect x="394" y="318" width="151" height="86" rx="8" fill="#fff" stroke="#dfe4ee"/>
+    <rect x="557" y="318" width="169" height="86" rx="8" fill="#fff" stroke="#dfe4ee"/>
+    <text x="82" y="343" class="small">VENTAS NETAS</text><text x="82" y="374" class="num">RD$ [total]</text>
+    <text x="245" y="343" class="small">FACTURAS</text><text x="245" y="374" class="num">[cantidad]</text>
+    <text x="408" y="343" class="small">TICKET PROMEDIO</text><text x="408" y="374" class="num">RD$ [monto]</text>
+    <text x="571" y="343" class="small">DEVOLUCIONES</text><text x="571" y="374" class="num">RD$ [monto]</text>
+  </g>
+  <text x="68" y="446" class="label">TENDENCIA DEL PERÍODO</text>
+  <rect x="68" y="462" width="658" height="210" rx="8" fill="#fbfcff" stroke="#dfe4ee"/>
+  <line x1="112" y1="625" x2="694" y2="625" stroke="#bfc8d9"/><line x1="112" y1="506" x2="112" y2="625" stroke="#bfc8d9"/>
+  <path d="M130 594 L210 565 L290 580 L370 525 L450 548 L530 490 L610 512 L680 475" fill="none" stroke="#7255d9" stroke-width="4"/>
+  <path d="M130 594 L210 565 L290 580 L370 525 L450 548 L530 490 L610 512 L680 475 L680 625 L130 625 Z" fill="#7255d9" opacity=".11"/>
+  <circle cx="530" cy="490" r="5" fill="#13a886"/><text x="127" y="647" class="small">L</text><text x="205" y="647" class="small">M</text><text x="285" y="647" class="small">M</text><text x="365" y="647" class="small">J</text><text x="445" y="647" class="small">V</text><text x="525" y="647" class="small">S</text><text x="605" y="647" class="small">D</text>
+  <text x="132" y="486" class="small">Ventas netas por día · cada punto representa un día del período</text>
+  <text x="68" y="714" class="label">DETALLE PRINCIPAL</text>
+  <rect x="68" y="730" width="658" height="28" rx="5" fill="#263249"/>
+  <text x="84" y="749" class="head">SECCIÓN</text><text x="300" y="749" class="head">QUÉ MUESTRA</text><text x="597" y="749" class="head">TOTAL</text>
+  <g fill="#fff" stroke="#e2e6ef"><rect x="68" y="758" width="658" height="32"/><rect x="68" y="790" width="658" height="32"/><rect x="68" y="822" width="658" height="32"/></g>
+  <text x="84" y="779" class="cell">Ventas completadas</text><text x="300" y="779" class="cell">Facturas registradas en el período</text><text x="597" y="779" class="cell">RD$ [monto]</text>
+  <text x="84" y="811" class="cell">Devoluciones</text><text x="300" y="811" class="cell">Monto que se resta de la venta original</text><text x="597" y="811" class="cell">− RD$ [monto]</text>
+  <text x="84" y="843" class="cell">Total neto</text><text x="300" y="843" class="cell">Ventas menos devoluciones del período</text><text x="597" y="843" class="cell">RD$ [monto]</text>
+  <rect x="68" y="881" width="658" height="112" rx="8" fill="#f5f7fb" stroke="#dfe4ee"/>
+  <text x="88" y="909" class="label">CÓMO LEERLO</text>
+  <text x="88" y="932" class="guide">• Lee primero el resumen y luego la tendencia para ver cambios entre días.</text>
+  <text x="88" y="950" class="guide">• Las devoluciones se muestran con signo negativo y se atribuyen según la regla aprobada.</text>
+  <text x="88" y="968" class="guide">• Las cifras de este informe deben coincidir con la pantalla del mismo período y filtros.</text>
+  <line x1="68" y1="1031" x2="726" y2="1031" stroke="#dde2ee"/>
+  <text x="68" y="1054" class="small">Documento interno · Datos generados por Nexora · Versión para impresión</text>
+  <text x="674" y="1054" class="small">Página 1 de 1</text>
+</svg>
