@@ -57,3 +57,8 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 ## 31-oct 12:40 UTC · Web con rediseño EN VIVO (ae63fb6d, desplegada 12:10; 0 cajas a las 10:41)
 - Auditoría pública (Agente C, Haiku): sin hallazgos altos. Pendientes bajos: 400 en /api/auth/refresh sin sesión (¿esperado?), 14 px en el login, foco visible de campos. Con sesión: NO COMPROBADO hasta que estén NEXORA_CLAUDE_USER/PASSWORD en el entorno (la dueña).
 - Skill nuevo: auditoria-usuario. Agentes A, B, C archivados. Pendiente: orden 98 (animaciones), zod4, T33, dominio/precios (dueña).
+
+## 31-oct 22:15 UTC · GV (decisiones de la dueña)
+- Incentivos GV: agente Haiku en `claude-pc/gv-incentivos` (bfd0844; CI en curso). Nuevas reglas: pagos en USD se registran con opción de moneda + equivalente en pesos con tasa capturada; devolución quita el incentivo; cada curso es un ítem (docs/operacion/GV_CATALOGO_CURSOS.md).
+- **GV debe tener CIERRE desde ahora** (abrir caja, cerrar caja, factura del día; decisión: la dueña dijo «deben hacerle un cierre»). Diseño (A: misma caja con área GV / B: caja propia) por decidir; asignar a un agente cuando termine el de incentivos (máx. 4 sesiones activas).
+- Reporte de ventas de octubre por área para Génesis: pedido a Norexos 2 (docs/operacion/REPORTE_VENTAS_OCT2026_POR_AREA.md en claude/bitacora-n2).
