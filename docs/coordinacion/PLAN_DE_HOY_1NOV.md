@@ -25,3 +25,6 @@ Pegar instrucciones nuevas en la rutina horaria de Claude PC; cambiar la clave d
 - **Claude PC:** «Lee `docs/coordinacion/PLAN_DE_HOY_1NOV.md` (área 2) y la orden 109 de `RESPUESTA_CLAUDE_PC_27OCT.md` y ejecútalas.»
 - **ChatGPT nube y PC:** «Lee `docs/coordinacion/PLAN_DE_HOY_1NOV.md` (áreas 6 y 10) y `ORDEN_CHATGPT_CONSTRUCTOR_1NOV.md` y sigue el orden. No mezcles ni despliegues; espera la autorización de Norexos 1.»
 - **IA local y Gemini:** «Lee `docs/coordinacion/PLAN_DE_HOY_1NOV.md` (área 7) y tu orden, y empieza.»
+
+## NUEVO (1-nov, pedido de la dueña): reportes amigables con PDF y Excel
+Orden completa: `ORDEN_REPORTES_AMIGABLES_1NOV.md`. Pieza A (motor de exportación, API) y pieza B (guía de cada reporte): agentes de la nube en `claude-pc/reportes-export` y `claude-pc/reportes-guia`. Pieza C (botones en pantalla): ChatGPT PC. Pieza D (maqueta del informe): ChatGPT nube. Claude PC revisa A y B. Todo espera la autorización de Norexos 1 para mezclar.
