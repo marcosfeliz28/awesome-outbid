@@ -73,3 +73,6 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 - Reembolsos GV en pesos (orden 106). GV con caja propia, opción B (orden 106; falta asignar agente: send_message de N1 caído a las 10:45 UTC).
 - La dueña reactivará el Relevo de Claude PC con el repo como fuente y pondrá NEXORA_CLAUDE_USER/PASSWORD en el entorno (pidió instrucciones).
 - Pendiente: H-19 (pagos a proveedores con caja registrada) sin respuesta; agente a6682e08 arreglando el CI rojo de dinero en mi entorno.
+
+## Decisión de la dueña (1-nov-2026) — margen mínimo del 15 %
+**No se bloquea la venta por debajo del 15 %.** La cajera puede vender con cualquier porcentaje; la dueña lo revisa y maneja al final, con el cobro. El 15 % sigue siendo el piso de referencia para fijar precios y para los avisos/reportes de margen bajo, pero **no es un bloqueo en caja, ni en promociones, ni al editar precios**. Ninguna IA debe agregar bloqueos por margen. Cierra el punto #8 del informe de revisión pesada (25-oct): fórmula única (ya hecha, commit 1fda5880) + esta decisión.

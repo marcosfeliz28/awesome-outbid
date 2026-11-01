@@ -606,3 +606,10 @@ La dueña guardó NEXORA_CLAUDE_USER y NEXORA_CLAUDE_PASSWORD en el entorno PC (
 3. Con el token (/tmp/nexora_tok) haz SOLO GET de lectura y anota solo códigos HTTP y conteos, sin datos personales: `/sales?limit=1`, `/cash-sessions`, `/dashboard/summary`, `/products?limit=1`, `/auth/me` (rol y permisos). NADA de POST/PUT/DELETE aparte del login de entrar.py. No pruebes escrituras.
 4. Escribe `docs/auditoria/PRUEBA_ACCESO_1NOV.md` (rama `claude-pc/prueba-acceso`): variables definidas sí/no, rol y permisos que ve `/auth/me`, GET que dieron 200/403, y si la cuenta PUEDE ESCRIBIR según su rol (sin probarlo). Si el rol es administrador, díselo claro a Nexora 1: eso es un riesgo y la dueña debe cambiarlo a solo lectura (orden 107).
 Después continúa con tu cola normal.
+
+## Orden 109 (1-nov, Norexos 1, por orden de la dueña) · procesar el trabajo de los agentes que ya terminaron
+Los agentes de la nube de estas ramas ya trabajaron y fueron cerrados (las ramas siguen en el remoto): `claude-pc/gv-incentivos` (c227d6b), `fix-dinero` (6a54a955), `fix-seg-menor` (7113b81a), `anim-reportes` (3ebcee55). Tú las procesas, sin mezclar en `nexora-cloud` (eso es solo de Norexos 1):
+1. Revisa cada diff con el mapa (`docs/sistema/mapa/INSTRUCTIVO_SESIONES.md`) y con `seguridad-20`.
+2. Cuando `claude-pc/fix-ci-mes` traiga el arreglo del CI (lo termina otra sesión; no lo toques), mezcla `fix-ci-mes` en cada rama, corre `scripts/pre-empuje.mjs` y empuja a la MISMA rama.
+3. Anota en `docs/auditoria/PROCESO_RAMAS_1NOV.md`: rama, SHA, pruebas, hallazgos y estado de los 3 CI. Orden de proceso: gv-incentivos, fix-dinero, fix-seg-menor, anim-reportes.
+4. Sobre la orden 108: las variables `NEXORA_CLAUDE_*` están en el entorno de la NUBE, no en la laptop; la prueba de acceso se corre desde una sesión de la nube. Anótalo y sigue con la cola permanente.
