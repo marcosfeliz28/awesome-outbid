@@ -126,3 +126,25 @@ Conclusión sobre el resumen de DeepSeek: sobrestima la gravedad de los hallazgo
 - Al final de las fases, todo el registro se envía a **Norexos 1**, que reaudita y decide. Ninguna corrección de dinero se aplica antes de esa decisión.
 - Siguiente entrega: **F4-P01 a F4-P04 juntos**, en un solo documento con instrucciones y notas (`ENCARGO-DEEPSEEK-F4-COMPLETO.txt`, scratchpad).
 - Los hallazgos de GV marcados como «críticos» en el informe anterior quedan **no comprobados** hasta verificar la moneda de los datos.
+
+## Fases 6 y 7 · informe de DeepSeek (25 paquetes), verificado por Claude
+
+DeepSeek aclara que leyó solo el texto pegado y marca como «no comprobado» lo que depende de archivos fuera del pegado. Comprobé en el repo las citas de sus hallazgos principales.
+
+| Paquete | Hallazgo | Veredicto |
+|---|---|---|
+| F7-P04 (`notifications.ts:695-698` y `101-103`) | «Alto»: el nombre del aprobador entra al HTML del correo sin escapar | **Confirmado en el código, medio.** El texto con `aprobó con PIN: ${approver}` se arma sin `cleanText`, mientras que cajera y cliente sí lo usan, y luego el cuerpo va como HTML con saltos de línea convertidos a `<br>`. No comprobé si `userName` ya escapa el nombre. El que lo controla es quien crea o renombra usuarios, así que el riesgo es bajo-medio. **Requiere revisión humana.** |
+| F7-P17 (`pendingSales.ts:69-86`) | «Alto»: `lineDiscount` sin tope de 100 al repreciar ventas offline | **Confirmado en el código; impacto no comprobado.** `lineDiscount` puede pasar de 100 si `discountAmount` supera el bruto; no comprobé si `lineTotals` lo acota. La pantalla de caja sí acota el descuento manual (0-100). **Requiere revisión humana** (dinero y offline). |
+| F7-P02 (`drive-backup-core.ts:111-124`) | Los límites de scrypt aceptan valores muy grandes | **Confirmado, bajo-medio.** Con `maxmem: 128*N*r*p + 32 MiB` (línea 73), una cabecera manipulada con log2N=20, r=16, p=4 pediría unos 8 GiB. El comentario del propio código dice que no debe pedir gigabytes. Solo aplica al restaurar un respaldo alterado. |
+| F7-P18 (`styles.css:155-158` vs `nx-primitivos.css:1-12`) | `button:not(.button)` pisa el fondo y el borde de `.nx-button` | **Confirmado en teoría, sin impacto hoy.** `.nx-button` no lleva la clase `button`, así que pierde por especificidad, pero no encontré ningún uso de NxButton en `apps/web`. |
+| F6-P02-1 (`nx-primitivos.tsx:25`) | `{...props}` pisa el `className` base | **Confirmado, bajo.** `className` va antes de `{...props}`. |
+| F6-P02-2 (`nx-primitivos.tsx:147-170`) | `aria-controls` apunta a paneles que no se renderizan | **Confirmado, bajo.** Solo se renderiza el panel activo. |
+| F6-P02-3 (`nx-button.ts:34-39`) | `alturaMinimaPx` no es atributo DOM | **Confirmado en el código, bajo.** No comprobé si se esparce en un `<button>`. |
+| F6-P02-4 (`nx-primitivos.tsx:222-225`) | `NxMoney` lanza con NaN | **Confirmado, bajo.** `formatDOP` lanza `Importe no finito` (`nx-money.ts:4`) y `NxMoney` solo revisa `null`. |
+| F7-P09 (`usd-rate.ts:54-63`) | `userId: "sistema"` en `AuditLog` | **Resuelto: sin problema.** `AuditLog.userId` es `String` sin relación a `User`, así que acepta «sistema». |
+| F7-P06 (`reportes/margen.ts:9, 26`) | El costo usa `unitCost`, no el costo contabilizado | **No comprobado.** El cálculo es como lo describe, pero no comparé con `bookedLineCosts`. **Requiere revisión humana** (reportes de dinero). |
+| F7-P16-1 (`VoidRequests.tsx:98-101`) | Importes de pagos visibles con caja ciega | **No comprobado.** La interfaz muestra el monto; falta ver si la API los devuelve cuando `hiddenUntilClose` es verdadero. **Requiere revisión humana.** |
+| F7-P16-2, P16-3, P17-2, P17-3 | Timeout en descargas, reset de «al por mayor», intervalos de PWA, `step` del formulario | **No comprobados.** Bajos. |
+| Resto (F6-P01, F7-P01, P03, P05, P07, P08, P10 a P15, P19 a P23) | «Sin hallazgo» | **Aceptados sin revisar a fondo.** DeepSeek declaró leer solo el texto pegado; no verifiqué estos paquetes uno por uno. |
+
+Nota: DeepSeek marcó dos hallazgos como «altos». Tras revisar, ninguno se confirma como alto: el del correo requiere acceso para renombrar usuarios, y el offline depende de un acotamiento que no comprobé.
