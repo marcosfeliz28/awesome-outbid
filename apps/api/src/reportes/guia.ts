@@ -1237,7 +1237,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
     paraQueSirve:
       "Para comparar meses y ver en qué época del año se vende más.",
     comoSeLee:
-      "Bruta es lo vendido de cada mes, con las devoluciones ya descontadas. Neta es la bruta menos el costo de la mercancía, sin restar el ITBIS ni los gastos; solo la ve quien tiene permiso de ganancia. Las devoluciones se restan en el mes en que se devolvieron." +
+      "Bruta es el total de las ventas del mes, con ITBIS, menos las devoluciones registradas en el mes. Neta es la bruta menos el costo de la mercancía, sin restar ITBIS ni gastos; solo la ve quien tiene permiso de ganancia." +
       POR_CONFIRMAR_DEVOLUCION,
     columnas: {
       "Ventas por mes": c(
@@ -1246,7 +1246,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
       ),
       Bruta: c(
         "Bruta",
-        "Lo vendido del mes, menos las devoluciones. El nombre dice bruta, pero ya descuenta devoluciones (por confirmar cómo debe llamarse).",
+        "Total de las ventas del mes con ITBIS, menos las devoluciones registradas en el mes.",
       ),
       Neta: c(
         "Neta",
@@ -1261,7 +1261,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
     paraQueSirve:
       "Para cerrar la caja y ver si cuadra o si falta o sobra dinero.",
     comoSeLee:
-      "Una diferencia negativa es faltante y una positiva es sobrante. La diferencia en efectivo es lo contado, más los vales, menos las ventas en efectivo y el fondo inicial. Si hay un descuadre, aparecen quién lo aprobó y el motivo. Rentabilidad resta el ITBIS y el costo: no coincide con la regla de margen de la dueña (ITBIS no se resta); por confirmar.",
+      "Una diferencia negativa es faltante y una positiva es sobrante. La diferencia en efectivo es lo contado, más los vales, menos las ventas en efectivo y el fondo inicial. Si hay un descuadre, aparecen quién lo aprobó y el motivo. Rentabilidad es ventas sin ITBIS menos costo, menos devoluciones de esa caja. Por confirmar con la dueña: la regla de margen es sin restar ITBIS.",
     columnas: {
       "Crédito RD$": c(
         "Crédito en pesos",
@@ -1317,7 +1317,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
       ),
       Rentabilidad: c(
         "Rentabilidad",
-        "Ventas menos ITBIS y costo, menos devoluciones de la caja. Solo con permiso de ganancia. Por confirmar, porque la regla de margen no resta el ITBIS.",
+        "Ventas sin ITBIS menos costo, menos devoluciones registradas en esa caja. Solo con permiso de ganancia. Por confirmar con la dueña: la regla de margen es sin restar ITBIS.",
       ),
       "Fondo Caja inicial": c(
         "Fondo inicial",
@@ -1445,4 +1445,406 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
 export const GUIA_INFORMES: Record<string, Guia> = {
   ...INFORMES_MACGEN,
   ...INFORMES_VERSIONES,
+};
+
+// Reportes antiguos de Management (apps/web/src/Management.tsx, lista reportList):
+// no están en el registro REPORTES, pero el sistema los ofrece y deben tener guía.
+// Descripciones según el código que hoy los calcula en apps/api/src/reports.ts.
+const CON_ITBIS = "Las cifras de venta incluyen el ITBIS.";
+export const GUIA_LEGACY: Record<string, Guia> = {
+  sales: {
+    queEs:
+      "La lista de cada factura del período: número, fecha, vendedora, total, ITBIS y lo devuelto.",
+    paraQueSirve:
+      "Para revisar factura por factura, buscar una venta y ver si tiene devoluciones o saldo a crédito.",
+    comoSeLee: `Es la lista detallada, de la más reciente a la más antigua. ${CON_ITBIS} Total no resta las devoluciones: se ven en la columna Devoluciones.`,
+    columnas: {
+      Factura: c("Factura", "Número de la factura."),
+      Fecha: c("Fecha", "Fecha y hora de la venta."),
+      Vendedor: c("Vendedora", "Nombre de quien hizo la venta."),
+      Total: c(
+        "Total",
+        "Total de la factura con ITBIS, sin restar devoluciones.",
+      ),
+      ITBIS: c("ITBIS", "Impuesto de la factura."),
+      Saldo_crédito: c(
+        "Saldo a crédito",
+        "Lo que la factura todavía debe. Cero si ya se pagó.",
+      ),
+      NCF: c("NCF", "Número de comprobante fiscal, si tiene."),
+      Tipo_NCF: c("Tipo de NCF", "Tipo de comprobante fiscal."),
+      Estado_fiscal: c(
+        "Estado fiscal",
+        "Estado del comprobante fiscal (por confirmar su significado exacto).",
+      ),
+      Devoluciones: c("Devuelto", "Lo que se devolvió de esa factura."),
+    },
+  },
+  "monthly-consumption": {
+    queEs: "Cuántas piezas de cada producto se vendieron en cada mes.",
+    paraQueSirve:
+      "Para planear compras mes a mes según lo que realmente se vende.",
+    comoSeLee:
+      "Cada fila es un mes y un producto. Las piezas se cuentan por la fecha de la venta, menos las devueltas.",
+    columnas: {
+      Mes_Producto: c(
+        "Mes y producto",
+        "El mes (año-mes) seguido del nombre del producto.",
+      ),
+      Unidades: c(
+        "Piezas",
+        "Piezas vendidas de ese producto en ese mes, menos devueltas.",
+      ),
+    },
+  },
+  profit: {
+    queEs:
+      "La ganancia de cada producto: cuánto se vendió, cuánto costó y cuánto quedó.",
+    paraQueSirve: "Para saber qué productos dejan más ganancia.",
+    comoSeLee:
+      "Ventas y Utilidad son sin ITBIS, para cuadrar con el estado de resultados. Margen es sobre lo cobrado con ITBIS, sin restarlo. Las devoluciones se restan en la fecha de la venta original. Por confirmar con la dueña: la regla de margen es sin restar ITBIS, y aquí Ventas y Utilidad sí lo restan.",
+    columnas: {
+      Producto: c("Producto", "Nombre del producto."),
+      Categoría: c("Categoría", "La categoría del producto."),
+      Ventas: c(
+        "Ventas sin ITBIS",
+        "Lo vendido del producto sin ITBIS, menos devoluciones.",
+      ),
+      Costo: c(
+        "Costo",
+        "Lo que costó la mercancía vendida, menos la que volvió a existencia por devolución.",
+      ),
+      Unidades: c("Piezas", "Piezas vendidas, menos devueltas."),
+      Utilidad: c("Ganancia sin ITBIS", "Ventas sin ITBIS menos costo."),
+      Margen: c(
+        "Margen %",
+        "De cada 100 pesos cobrados, cuántos quedan de ganancia. Calculado sobre lo cobrado con ITBIS. Por confirmar.",
+      ),
+    },
+  },
+  "inventory-value": {
+    queEs: "Cuánto vale la mercancía en existencia, producto por producto.",
+    paraQueSirve: "Para saber cuánto dinero hay guardado en mercancía.",
+    comoSeLee:
+      "Costo es el costo promedio de cada producto. Valor es la existencia total por el costo. Tienda es Stock; Casa es la bodega; Total suma las dos.",
+    columnas: {
+      SKU: c("Código", "El código interno del producto (SKU)."),
+      Producto: c("Producto", "Nombre del producto."),
+      Categoría: c("Categoría", "La categoría del producto."),
+      Stock: c("Tienda", "Piezas en la tienda."),
+      Costo: c("Costo", "Costo promedio de una pieza."),
+      Precio: c("Precio", "Precio de venta de una pieza."),
+      Casa: c("Casa", "Piezas en la casa (bodega)."),
+      Total: c("Total", "Piezas en todos los almacenes."),
+      Valor: c("Valor a costo", "Total de piezas por el costo promedio."),
+    },
+  },
+  kardex: {
+    queEs:
+      "La historia de cada movimiento de la mercancía: entradas, salidas, ventas, ajustes y traspasos, con el saldo después de cada uno.",
+    paraQueSirve:
+      "Para seguir un producto desde que entró hasta hoy y encontrar de dónde salió una diferencia.",
+    comoSeLee:
+      "Tipo es el código técnico del movimiento. Saldo es la existencia después del movimiento. Costo es el costo de la pieza en ese movimiento. Por confirmar con la dueña: este reporte muestra el costo a quien tiene solo permiso de reportes, y la regla es que el costo solo lo vea quien tiene permiso de ganancia.",
+    columnas: {
+      Fecha: c("Fecha y hora", "Cuándo se hizo el movimiento."),
+      SKU: c("Código", "El código interno del producto (SKU)."),
+      Producto: c("Producto", "Nombre del producto."),
+      Tipo: c(
+        "Tipo de movimiento",
+        "Código técnico del movimiento (venta, ajuste, conteo, traspaso, etc.).",
+      ),
+      Cantidad: c("Cantidad", "Piezas que entraron (+) o salieron (−)."),
+      Saldo: c(
+        "Saldo después",
+        "Existencia del producto después del movimiento.",
+      ),
+      Costo: c(
+        "Costo unitario",
+        "Costo de una pieza en ese movimiento. Por confirmar quién debe verlo.",
+      ),
+      Motivo: c("Motivo", "La razón que se escribió para el movimiento."),
+    },
+  },
+  "low-stock": {
+    queEs:
+      "Los productos cuya existencia en la tienda ya está en el mínimo o por debajo, con una cantidad sugerida para reponer.",
+    paraQueSirve: "Para decidir qué reponer.",
+    comoSeLee:
+      "Sugerido es 20 menos lo que hay en la tienda, cero si ya hay 20 o más. Ese 20 es un número fijo, por confirmar con la dueña. Costo y Valor se muestran a quien tiene permiso de reportes; por confirmar quién debe verlos.",
+    columnas: {
+      SKU: c("Código", "El código interno del producto (SKU)."),
+      Producto: c("Producto", "Nombre del producto."),
+      Categoría: c("Categoría", "La categoría del producto."),
+      Stock: c("Tienda", "Piezas en la tienda hoy."),
+      Costo: c("Costo", "Costo promedio de una pieza."),
+      Precio: c("Precio", "Precio de venta de una pieza."),
+      Casa: c("Casa", "Piezas en la casa (bodega)."),
+      Total: c("Total", "Piezas en todos los almacenes."),
+      Valor: c("Valor a costo", "Total de piezas por el costo promedio."),
+      Sugerido: c(
+        "Sugerido a pedir",
+        "Piezas sugeridas para reponer: 20 menos lo que hay en la tienda. Número fijo, por confirmar.",
+      ),
+    },
+  },
+  "no-movement": {
+    queEs:
+      "Los productos con existencia que no se han vendido en los últimos días (60 por defecto).",
+    paraQueSirve:
+      "Para ver qué mercancía está quieta y decidir si hay que rebajarla.",
+    comoSeLee:
+      "Cuenta los días desde hoy, no desde la fecha del período. Costo y Valor se muestran a quien tiene permiso de reportes; por confirmar quién debe verlos.",
+    columnas: {
+      SKU: c("Código", "El código interno del producto (SKU)."),
+      Producto: c("Producto", "Nombre del producto."),
+      Categoría: c("Categoría", "La categoría del producto."),
+      Stock: c("Tienda", "Piezas en la tienda."),
+      Costo: c("Costo", "Costo promedio de una pieza."),
+      Precio: c("Precio", "Precio de venta de una pieza."),
+      Casa: c("Casa", "Piezas en la casa (bodega)."),
+      Total: c("Total", "Piezas en todos los almacenes."),
+      Valor: c("Valor a costo", "Total de piezas por el costo promedio."),
+    },
+  },
+  expiring: {
+    queEs:
+      "Los lotes de mercancía que ya vencieron o vencen pronto (60 días por defecto).",
+    paraQueSirve: "Para vender o retirar antes de que se venza la mercancía.",
+    comoSeLee:
+      "Un lote con fecha de vencimiento ya pasada también aparece. Cantidad son las piezas del lote.",
+    columnas: {
+      SKU: c("Código", "El código interno del producto (SKU)."),
+      Producto: c("Producto", "Nombre del producto."),
+      Lote: c("Lote", "Número de lote."),
+      Vencimiento: c("Vence", "Fecha de vencimiento del lote."),
+      Cantidad: c("Piezas del lote", "Piezas que quedan de ese lote."),
+    },
+  },
+  abc: {
+    queEs:
+      "Clasifica los productos por cuánto venden: A los que suman el 80 % de las ventas, B hasta el 95 % y C el resto.",
+    paraQueSirve: "Para enfocarse en los productos que más dinero dejan.",
+    comoSeLee:
+      "Se ordena por Ventas sin ITBIS, de mayor a menor. La clase depende del porcentaje acumulado antes de ese producto. Solo con permiso de ganancia.",
+    columnas: {
+      Producto: c("Producto", "Nombre del producto."),
+      Categoría: c("Categoría", "La categoría del producto."),
+      Ventas: c(
+        "Ventas sin ITBIS",
+        "Lo vendido del producto sin ITBIS, menos devoluciones.",
+      ),
+      Costo: c("Costo", "Lo que costó la mercancía vendida."),
+      Unidades: c("Piezas", "Piezas vendidas, menos devueltas."),
+      Utilidad: c("Ganancia sin ITBIS", "Ventas sin ITBIS menos costo."),
+      Margen: c(
+        "Margen %",
+        "De cada 100 pesos cobrados, cuántos quedan de ganancia. Calculado sobre lo cobrado con ITBIS. Por confirmar.",
+      ),
+      Clasificación: c(
+        "Clase A, B o C",
+        "A: el 80 % de las ventas; B: hasta el 95 %; C: el resto.",
+      ),
+    },
+  },
+  expenses: {
+    queEs:
+      "Los gastos registrados en el período (renta, servicios, compras pequeñas, etc.).",
+    paraQueSirve: "Para ver en qué se gasta el dinero del negocio.",
+    comoSeLee:
+      "Presupuesto es el presupuesto mensual de la categoría, no lo gastado en el período. Por confirmar cómo se compara con el monto. Los gastos anulados no aparecen.",
+    columnas: {
+      Fecha: c("Fecha", "Día del gasto."),
+      Categoría: c("Categoría", "Tipo de gasto."),
+      Descripción: c("Descripción", "Qué se pagó."),
+      Monto: c("Monto", "Cuánto se pagó."),
+      Presupuesto: c(
+        "Presupuesto mensual",
+        "Presupuesto mensual de la categoría. Por confirmar.",
+      ),
+    },
+  },
+  "income-statement": {
+    queEs:
+      "El estado de resultados del período: de las ventas sin ITBIS, cuánto queda de ganancia después de costo, gastos, comisiones y mermas.",
+    paraQueSirve: "Para saber si el negocio gana dinero en el período.",
+    comoSeLee:
+      "Ventas sin ITBIS es lo vendido menos el ITBIS y las devoluciones. Ganancia bruta es ventas sin ITBIS menos costo. Ganancia neta resta gastos, comisiones y mermas. Por confirmar con la dueña: la regla de margen es sin restar ITBIS, y este reporte sí lo resta. Solo con permiso de ganancia.",
+    columnas: {
+      Concepto: c("Concepto", "Qué cuenta la fila."),
+      Monto: c("Monto", "Cantidad de esa fila."),
+      "Ventas sin ITBIS": c(
+        "Ventas sin ITBIS",
+        "Lo vendido menos el ITBIS y las devoluciones.",
+      ),
+      "Costo de lo vendido": c(
+        "Costo de lo vendido",
+        "Lo que costó la mercancía vendida, menos devoluciones.",
+      ),
+      "Ganancia bruta": c("Ganancia bruta", "Ventas sin ITBIS menos costo."),
+      Gastos: c("Gastos", "Gastos registrados en el período."),
+      "Comisiones bancarias": c(
+        "Comisiones bancarias",
+        "Comisiones de tarjeta y de los abonos que entraron en el período.",
+      ),
+      "Mermas, ajustes y devoluciones a proveedor de inventario (a costo)": c(
+        "Mermas y ajustes",
+        "Mercancía que salió sin venderse, a costo, sin contar correcciones de conteo.",
+      ),
+      "Ganancia neta": c(
+        "Ganancia neta",
+        "Ganancia bruta menos gastos, comisiones y mermas.",
+      ),
+    },
+  },
+  cash: {
+    queEs:
+      "Cada caja abierta o cerrada en el período: lo esperado, lo contado y la diferencia por forma de pago.",
+    paraQueSirve:
+      "Para revisar los cierres de caja y ver dónde faltó o sobró dinero.",
+    comoSeLee:
+      "Una diferencia negativa es faltante y una positiva es sobrante. Usuario muestra el código de la persona que abrió la caja. Solo lo ve quien puede ver el arqueo.",
+    columnas: {
+      Fecha: c("Apertura", "Cuándo se abrió la caja."),
+      Usuario: c(
+        "Cajera",
+        "Código de quien abrió la caja. Por confirmar si debe mostrarse el nombre.",
+      ),
+      Estado: c("Estado", "Cerrada o abierta."),
+      Esperado: c("Esperado en efectivo", "Efectivo que debía haber."),
+      Contado: c("Contado en efectivo", "Efectivo que se contó."),
+      Diferencia_efectivo: c(
+        "Diferencia en efectivo",
+        "Falta (−) o sobra (+) en efectivo.",
+      ),
+      Diferencia_tarjeta: c(
+        "Diferencia en tarjeta",
+        "Falta (−) o sobra (+) en tarjeta.",
+      ),
+      Diferencia_transferencia: c(
+        "Diferencia en transferencia",
+        "Falta (−) o sobra (+) en transferencias.",
+      ),
+    },
+  },
+  "by-seller": {
+    queEs: "Cuánto vendió cada vendedora en el período.",
+    paraQueSirve: "Para ver quién vende más.",
+    comoSeLee:
+      "Ventas es el total con ITBIS de sus facturas, menos las devoluciones registradas en el período. Por confirmar: aquí las devoluciones se restan en la fecha en que se devolvieron.",
+    columnas: {
+      Vendedor: c("Vendedora", "Nombre de la vendedora."),
+      Ventas: c(
+        "Ventas",
+        "Total con ITBIS de sus facturas, menos devoluciones del período.",
+      ),
+    },
+  },
+  "by-payment": {
+    queEs:
+      "Cómo se cobraron las ventas del período (efectivo, tarjeta, transferencia, crédito) y cuánto llegó por abonos de crédito.",
+    paraQueSirve: "Para cuadrar cómo entró el dinero según la forma de pago.",
+    comoSeLee:
+      "Ventas es lo cobrado de las facturas por forma de pago, menos devoluciones. Cobros de crédito son los abonos verificados de ese período, por fecha del abono. Las dos columnas no se suman entre sí. Método muestra el código técnico: cash, card, transfer, credit, cod, credit_note. Solo lo ve quien puede ver el arqueo.",
+    columnas: {
+      Método: c(
+        "Forma de pago",
+        "Código técnico de la forma de pago (cash, card, transfer, credit, cod, credit_note).",
+      ),
+      Ventas: c(
+        "Ventas cobradas",
+        "Lo cobrado de las facturas con esa forma de pago, menos devoluciones.",
+      ),
+      Cobros_de_crédito: c(
+        "Cobros de crédito",
+        "Abonos verificados de crédito o contraentrega de ese período.",
+      ),
+    },
+  },
+  "returns-discounts": {
+    queEs:
+      "La lista de movimientos sensibles: anulaciones, devoluciones y descuentos aprobados.",
+    paraQueSirve:
+      "Para revisar quién anuló, devolvió o aprobó un descuento, y cuándo.",
+    comoSeLee:
+      "Evento es el tipo de acción: void (anulación), return (devolución) o discount_approved (descuento aprobado). Usuario muestra el código de quien lo hizo. Detalle es el registro completo de la acción.",
+    columnas: {
+      Fecha: c("Fecha y hora", "Cuándo se hizo la acción."),
+      Evento: c(
+        "Evento",
+        "Anulación, devolución o descuento aprobado (código técnico).",
+      ),
+      Usuario: c(
+        "Quién lo hizo",
+        "Código de quien hizo la acción. Por confirmar si debe mostrarse el nombre.",
+      ),
+      Referencia: c(
+        "Referencia",
+        "Código de la factura o devolución afectada.",
+      ),
+      Detalle: c(
+        "Detalle",
+        "Datos completos de la acción, en formato técnico.",
+      ),
+    },
+  },
+  customers: {
+    queEs: "Los clientes que más han comprado en el período, de mayor a menor.",
+    paraQueSirve: "Para ver quiénes son los mejores clientes.",
+    comoSeLee:
+      "Ventas es el total con ITBIS de sus facturas. Por confirmar: no resta las devoluciones. Las compras sin cliente aparecen como Consumidor final.",
+    columnas: {
+      Cliente: c("Cliente", "Nombre del cliente, o Consumidor final."),
+      Ventas: c(
+        "Ventas",
+        "Total con ITBIS de sus facturas. Por confirmar si debe restar devoluciones.",
+      ),
+    },
+  },
+  purchases: {
+    queEs:
+      "Las compras a cada proveedor: lo ordenado, lo recibido, lo pagado y lo que todavía se debe.",
+    paraQueSirve: "Para saber cuánto le debemos a cada proveedor.",
+    comoSeLee:
+      "Compras es el total de cada recepción de mercancía, con el costo real, el flete y los impuestos. Ordenado es el compromiso de las órdenes de compra; no se suma a la deuda. Pendiente es Compras menos Pagado. Sin conciliar cuenta las recepciones sin total o sin proveedor. Solo con permiso de ganancia.",
+    columnas: {
+      Proveedor: c("Proveedor", "Nombre del proveedor."),
+      Ordenado: c(
+        "Ordenado",
+        "Total de las órdenes de compra del período. Es un compromiso, no deuda.",
+      ),
+      Compras: c("Compras", "Total de lo recibido y aceptado en el período."),
+      Pagado: c("Pagado", "Lo que se le pagó en el período."),
+      Pendiente: c(
+        "Pendiente",
+        "Lo que todavía le debemos: Compras menos Pagado.",
+      ),
+      Sin_conciliar: c(
+        "Sin conciliar",
+        "Recepciones sin total o sin proveedor, que hay que revisar.",
+      ),
+    },
+  },
+  "ventas-categoria-forma-pago": {
+    queEs:
+      "Las ventas por categoría y forma de pago, con el porcentaje de cada forma de pago.",
+    paraQueSirve: "Para ver cómo se cobra cada categoría.",
+    comoSeLee:
+      "Lo vendido de cada categoría en cada factura se reparte según cómo se pagó la factura. TODAS suma todas las categorías. Las devoluciones se restan en la fecha de la venta original.",
+    columnas: {
+      Categoría: c(
+        "Categoría",
+        "La categoría del producto, o TODAS para el total.",
+      ),
+      "Forma de pago": c(
+        "Forma de pago",
+        "Efectivo, tarjeta, transferencia, crédito o contraentrega, y nota de crédito.",
+      ),
+      Monto: c("Monto", "Lo cobrado de esa categoría con esa forma de pago."),
+      "%": c(
+        "% de la categoría",
+        "Qué parte de la categoría se cobró con esa forma de pago.",
+      ),
+    },
+  },
 };
