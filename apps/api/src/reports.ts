@@ -612,11 +612,13 @@ export class ReportsController {
       until = utc(range.lte);
     const line = Prisma.sql`i."lineTotal"*(1-i."returnedQty"/i.qty)`;
     const units = Prisma.sql`(i.qty-i."returnedQty")`;
+    // Regla de costo: lo devuelto solo resta costo si reingresó (parte.cost); sin reingreso se conserva.
+    const cost = Prisma.sql`(i.qty*i."unitCost"-CASE WHEN i."returnedQty"=0 THEN 0 ELSE COALESCE((SELECT SUM(COALESCE((e->>'cost')::numeric,(e->>'qty')::numeric*i."unitCost")) FROM "SaleReturn" r CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.items::jsonb)='array' THEN r.items::jsonb ELSE '[]'::jsonb END) e WHERE r."saleId"=i."saleId" AND e->>'saleItemId'=i.id::text),0) END)`;
     const [categories, top, count, mix, ranked] = (await Promise.all([
       this.db
-        .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
+        .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
       this.db
-        .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
+        .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
       this.db
         .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
       // Orden 18-oct: cómo se pagó cada categoría. Lo vendido de la categoría
@@ -627,7 +629,7 @@ export class ReportsController {
         : Promise.resolve(null),
       // Top 10 de cada categoría (la lista de categorías sale de los datos), por unidades y por monto.
       this.db
-        .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
+        .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
     ])) as any[][];
     // Devoluciones sin líneas (SaleReturn heredado, items vacíos) de ventas del período:
     // el desglose no las ve por línea, así que van en una fila propia. Criterio único con el
