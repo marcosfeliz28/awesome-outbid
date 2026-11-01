@@ -378,14 +378,38 @@ describe("GV · reembolso siempre en RD$ (orden 106, revisión B)", () => {
   });
 
   it("reversa en proporción de RD$: RD$ 150 de RD$ 12,000 quita 150/12000 del incentivo", () => {
-    const e = alumna(USD, "200", [pagoUsd("200", 60, "2026-10-03", { createdBy: "A" })], {
-      status: "reembolsada",
-      refundAmount: "150",
-      refundDate: new Date("2026-11-02T00:00:00Z"),
-    });
+    const e = alumna(
+      USD,
+      "200",
+      [pagoUsd("200", 60, "2026-10-03", { createdBy: "A" })],
+      {
+        status: "reembolsada",
+        refundAmount: "150",
+        refundDate: new Date("2026-11-02T00:00:00Z"),
+      },
+    );
     // 50 × 150 / 12000 = 0.625 → 0.63 (no 37.50, que sería 150/200 en US$)
     expect(mapa(gvIncentivosMes(e), "2026-11")).toEqual([
       { personId: "A", amount: "-0.63", kind: "reembolso" },
+    ]);
+  });
+});
+
+describe("GV · redondeo del incentivo por acumulado (revisión C)", () => {
+  it("tres pagos de 18,333.33 en un curso de 55,000 acreditan el 100 % exacto", () => {
+    const MAQ_55 = "Curso maquilladora profesional personalizado"; // RD$ 55,000 · 1,000
+    const e = alumna(MAQ_55, "55000", [
+      pago("18333.33", "2026-10-03", { createdBy: "A" }),
+      pago("18333.33", "2026-10-10", { createdBy: "B" }),
+      pago("18333.33", "2026-10-17", { createdBy: "C" }),
+    ]);
+    const creditos = gvIncentivosMes(e).filter((x) => x.kind === "pago");
+    const total = creditos.reduce((s, x) => s + Number(x.amount), 0);
+    expect(total.toFixed(2)).toBe("1000.00");
+    expect(creditos.map((x) => x.amount)).toEqual([
+      "333.33",
+      "333.34",
+      "333.33",
     ]);
   });
 });

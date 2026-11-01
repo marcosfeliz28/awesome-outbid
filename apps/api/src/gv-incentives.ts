@@ -54,6 +54,9 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
   const eventos: EventoIncentivo[] = [];
   const porCobrador = new Map<string, ReturnType<typeof d>>();
   let cum = d(0);
+  // Incentivo ya acreditado, redondeado sobre el acumulado: la suma de los
+  // créditos siempre es el incentivo del acumulado redondeado, sin centavos perdidos.
+  let acreditado = d(0);
   let aceptadoDop = d(0);
   for (const { p, valor } of ordenados) {
     // Tope 100 % sobre pagos vigentes: el que excede el precio se recorta.
@@ -63,16 +66,21 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
       : (valor as any).gt(restante)
         ? restante
         : (valor as any);
+    const conEste = cum.plus(aceptado);
+    const meta = d(curso.incentivo)
+      .times(conEste)
+      .div(precio)
+      .toDecimalPlaces(2);
+    const credito = meta.minus(acreditado);
     // Un pago anulado no consume el tope: sólo los vigentes suman al acumulado.
-    if (!p.rejectedAt) cum = cum.plus(aceptado);
+    if (!p.rejectedAt) {
+      cum = conEste;
+      acreditado = meta;
+    }
     // Lo aceptado en pesos (el reembolso es en RD$, orden 106).
     const dop = valorEnMoneda(p as any, "RD$");
     if (!p.rejectedAt && dop && (valor as any).gt(0))
       aceptadoDop = aceptadoDop.plus(dop.times(aceptado).div(valor as any));
-    const credito = d(curso.incentivo)
-      .times(aceptado)
-      .div(precio)
-      .toDecimalPlaces(2);
     if (credito.lte(0)) continue;
     eventos.push({
       personId: p.createdBy,
