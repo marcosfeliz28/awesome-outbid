@@ -9,6 +9,7 @@ import {
   licensePayload,
   type LicenseClaims,
 } from "../apps/api/src/local-license";
+import { bootstrapOwnerPasswordSchema } from "../apps/api/src/local-install-password";
 
 const keys = generateKeyPairSync("ed25519");
 const other = generateKeyPairSync("ed25519");
@@ -53,6 +54,17 @@ function fixture() {
 }
 
 describe("PC-19 licencia local", () => {
+  it("la clave del dueño local acepta 4–20, mientras la nube conserva mínimo 12", () => {
+    const local = bootstrapOwnerPasswordSchema(true);
+    expect(() => local.parse("abc")).toThrow();
+    expect(local.parse("abcd")).toBe("abcd");
+    expect(local.parse("a".repeat(20))).toHaveLength(20);
+    expect(() => local.parse("a".repeat(21))).toThrow();
+
+    const cloud = bootstrapOwnerPasswordSchema(false);
+    expect(() => cloud.parse("abcd")).toThrow();
+    expect(cloud.parse("a".repeat(12))).toHaveLength(12);
+  });
   it("acepta solo Ed25519 de esta instalación y no admite alterar estado ni fechas", () => {
     const f = fixture();
     try {

@@ -55,6 +55,9 @@ ${envAnchor}`);
 }
 New-FitStoreDirectory -Path (Join-Path $paths.Data 'license')
 ${stateAnchor}`);
+    const ownerAnchor = '    $env:ADMIN_MODE = "bootstrap"';
+    if (!content.includes(ownerAnchor)) throw new Error("Falta el punto de creación del dueño local.");
+    content = content.replace(ownerAnchor, `${ownerAnchor}\n    $env:NEXORA_LOCAL_INSTALL = "1"`);
   }
   if (basename(source) === "FitStore.Common.ps1") {
     const aclAnchor = '    $logDir = Join-Path $Paths.Logs $account[0]';
@@ -81,8 +84,16 @@ ${aclAnchor}`);
   \${EndIf}
 `,
     );
+    content = content
+      .replaceAll("La contraseña debe tener al menos 12 caracteres.", "La contraseña debe tener de 4 a 20 caracteres.")
+      .replace("${If} $0 < 12", "${If} $0 < 4")
+      .replace('MessageBox MB_ICONEXCLAMATION "La contraseña debe tener al menos 12 caracteres."', 'MessageBox MB_ICONEXCLAMATION "La contraseña debe tener de 4 a 20 caracteres."')
+      .replace('${If} $0 < 4\n    MessageBox MB_ICONEXCLAMATION "La contraseña debe tener de 4 a 20 caracteres."\n    Abort\n  ${EndIf}', '${If} $0 < 4\n    MessageBox MB_ICONEXCLAMATION "La contraseña debe tener de 4 a 20 caracteres."\n    Abort\n  ${EndIf}\n  ${If} $0 > 20\n    MessageBox MB_ICONEXCLAMATION "La contraseña debe tener de 4 a 20 caracteres."\n    Abort\n  ${EndIf}');
   }
-  writeFileSync(target, transform(content), "utf8");
+  // NSIS and Windows PowerShell 5.1 need an explicit marker to distinguish
+  // UTF-8 from the legacy Windows code page.  Without it, ñ and tildes render
+  // as mojibake in the generated local installer.
+  writeFileSync(target, `\uFEFF${transform(content)}`, "utf8");
 }
 
 export function applyProductLocalProfile({ source, target, nsi, nsiOut = join(target, "FitStore.nsi") }) {

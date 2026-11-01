@@ -3,17 +3,15 @@ import { PrismaClient } from "@prisma/client";
 import { compare, hash } from "bcryptjs";
 import { z } from "zod";
 import { permissions, categories } from "@fitstore/shared";
+import { bootstrapOwnerPasswordSchema } from "../src/local-install-password";
 config({ path: "../../.env", quiet: true });
 const db = new PrismaClient();
 async function main() {
+  const localInstall = process.env.NEXORA_LOCAL_INSTALL === "1";
   const input = z
     .object({
       email: z.string().email(),
-      password: z
-        .string()
-        .min(12)
-        .max(128)
-        .refine((value) => Buffer.byteLength(value, "utf8") <= 72),
+      password: bootstrapOwnerPasswordSchema(localInstall),
       pin: z.string().regex(/^\d{6}$/),
       name: z.string().min(2).max(100).optional(),
       mode: z.enum(["bootstrap", "repair"]).default("bootstrap"),
