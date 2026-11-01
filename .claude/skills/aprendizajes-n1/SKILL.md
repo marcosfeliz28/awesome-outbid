@@ -49,3 +49,7 @@ description: Lecciones operativas de Norexos 1 (cómo hacer las cosas rápido y 
 - Antes de empujar: `grep -rn '^<<<<<<<\|^>>>>>>>'` en lo mezclado y correr tests/docs-sistema-citas.test.ts (mover .claude/worktrees fuera si falla por symlinks). Si la mezcla mueve líneas de código citado, corregir citas en el mismo lote.
 - Conflictos de vitest.config.ts: conservar el include de TODAS las ramas; nunca borrar marcadores a ciegas.
 - Máximo 4 sesiones activas (N1, Taller, Mercancía, Claude PC); las demás en reposo o archivadas al terminar.
+
+- 1-nov: la herramienta de sesiones (claude-code-remote) puede quedar «conectada» sin herramientas en sesiones largas; solo la arregla reiniciar el contenedor. Canario con ToolSearch list_sessions en cada revisión; ver docs/auditoria/PERDIDA_HERRAMIENTA_SESIONES_1NOV.md.
+
+- 1-nov (tarde): un agente que empuja commit por commit cancela el CI del anterior y ningún SHA llega a verificarse; ordenar «un solo push y esperar los 3 CI». Un agente barato sin reproducción de fecha (PostgreSQL con reloj real) se atasca: dale el análisis de código y la decisión de la dueña, no más experimentos. Segunda opinión de ChatGPT sobre el CI coincidió con la opción A.

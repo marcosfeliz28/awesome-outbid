@@ -1,3 +1,5 @@
+> **AVISO 1-nov (Norexos 1):** DeepSeek ya NO es dueño de `App.tsx` ni `styles.css`; ahora lo es ChatGPT (ver `REPARTO_GENERAL_1NOV.md`). Sigue solo con documentos, borradores y pruebas aisladas.
+
 # Misión de la noche para DeepSeek Harness (28-oct-2026) — orden de la dueña
 
 La dueña se acostó y pidió que DeepSeek trabaje toda la noche, en todas las áreas, hasta completar esta lista. Claude PC la lee y se la entrega (sin esperar a la dueña). Nexora 1 revisa cada 15 minutos (rutinas desfasadas) y mezcla/despliega solo lo que cumpla las reglas. Cuando DeepSeek termine todo, escribe **`DEEPSEEK-TERMINADO`** en `docs/coordinacion/PROGRESO_DEEPSEEK_NOCHE.md`; Nexora 1 recibe y detiene las revisiones.
