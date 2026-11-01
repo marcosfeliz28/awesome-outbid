@@ -147,6 +147,13 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - **Autoauditoría:** el diff de la opción A consulta `SaleReturn` unido a `Sale` para resumen, año y desglose; no modifica venta, stock, caja, utilidad ni API de anulación. Verifiqué que el criterio de fecha es consistente en los tres agregados. No hubo cambios de código en esta rama, ni producción, Render, base de tienda o credenciales.
 - **Pendiente:** publicar este informe y esperar los tres CI del commit documental. El CI remoto rojo original no se pudo inspeccionar desde este entorno, por lo que no se declara corregido ni reproducido.
 
+### Actualización con CI remoto y reproducción aislada
+
+- El CI del commit `98dfeffb` confirmó el fallo reproducible: `verify` rojo; `windows-installer` y `render-images` verdes. El log exacto del CI incluye `tests/dinero-auditoria.test.ts:861` (diferencia `118`), `:903`, `:943` y `:1013` (diferencia `60`), y `tests/api.test.ts:2243` (`expected 100 to be less than or equal to 0.02`).
+- Reproducción con PostgreSQL local limpio, migraciones, seed y API temporal: `tests/dinero-auditoria.test.ts` terminó `1 failed | 23 passed (24)`. Fallo exacto: `tests/dinero-auditoria.test.ts:1014:33` — `expected 414250 to be close to 414650, received difference is 400, but expected 0.005`.
+- **Causa comprobada:** la opción A cambió resumen y año a `SaleReturn JOIN Sale` por fecha de la venta (`apps/api/src/reports.ts:293`, `570`) y ajustó la fila heredada del desglose (`635`), pero dejó `periodReturns` filtrando `SaleReturn.createdAt` (`apps/api/src/reports.ts:101-106`) y `returnedBreakdown` agrupando `r.createdAt` (`198-230`). Por eso una devolución hecha hoy de una venta del mes anterior se descuenta del año anterior, mientras el desglose anterior no la incorpora. El test crea precisamente ese caso en `tests/dinero-auditoria.test.ts:957-1015`.
+- **Diff mínimo propuesto (no aplicado):** en `periodReturns`, reemplazar `createdAt: range` por `sale: { createdAt: range, ...(sale ?? {}) }` sin perder el filtro de venta existente; incluir `sale.createdAt` en el `select`; en `returnedBreakdown`, usar la fecha de la venta para `days` y el mismo universo de devoluciones. Después ejecutar la suite completa dos veces. Esto no cambia la regla aprobada: hace consistente, por fecha de la venta original, el resumen, año y desglose.
+
 ## Plantilla
 
 **Fecha · asistente (NUBE o PC) · rama · commit**
