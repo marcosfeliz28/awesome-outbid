@@ -650,16 +650,14 @@ export const CASH_DENOMINATIONS = [
   1, 5, 10, 20, 25, 50, 100, 200, 500, 1000, 2000,
 ] as const;
 /** Conteo por denominación: { "100": 3, "2000": 1 }. Sólo las del impreso. */
-export const denominationCountsSchema = z
-  .object(
-    Object.fromEntries(
-      CASH_DENOMINATIONS.map((value) => [
-        String(value),
-        z.number().int().min(0).max(1000000).optional(),
-      ]),
-    ) as Record<string, z.ZodOptional<z.ZodNumber>>,
-  )
-  .strict();
+export const denominationCountsSchema = z.strictObject(
+  Object.fromEntries(
+    CASH_DENOMINATIONS.map((value) => [
+      String(value),
+      z.number().int().min(0).max(1000000).optional(),
+    ]),
+  ) as Record<string, z.ZodOptional<z.ZodNumber>>,
+);
 export type DenominationCounts = Partial<Record<string, number>>;
 /** Moneda × cantidad = total por denominación, y el subtotal contado. */
 export function countDenominations(counts: DenominationCounts = {}) {
@@ -1095,7 +1093,7 @@ export function surveyAnswers(input: unknown) {
       ).optional(),
     ]),
   );
-  return z.object(shape).strict().parse(input) as Record<
+  return z.strictObject(shape).parse(input) as Record<
     string,
     boolean | number | string | undefined
   >;
