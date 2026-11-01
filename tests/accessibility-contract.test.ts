@@ -32,7 +32,8 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(app).toContain("Ir al punto de venta");
   });
   it("una ruta sin permiso no monta su pantalla ni consulta alertas antes de redirigir", () => {
-    expect(app).toContain('const route = page.split("?")[0];');
+    expect(app).toContain('const pantalla = page.split("?")[0];');
+    expect(app).toContain("const route = pantalla;");
     expect(app).toContain("const routeAllowed =");
     expect(app).toContain("const safePage = routeAllowed ? route");
     expect(app).toContain("routeAllowed &&");

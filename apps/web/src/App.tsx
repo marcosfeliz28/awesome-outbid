@@ -650,7 +650,9 @@ function Shell() {
   // Una ruta escrita a mano no puede montar su pantalla ni disparar sus
   // consultas: se resuelve antes de renderizar las páginas y se redirige en
   // el efecto de abajo. Los parámetros sólo aplican a la pantalla permitida.
-  const route = page.split("?")[0];
+  // Se conserva «pantalla» como ancla de la documentación del sistema.
+  const pantalla = page.split("?")[0];
+  const route = pantalla;
   const routeAllowed =
     allowed.some((item) => item.id === route) ||
     (route === "settings" && !!user && can(user.permissions, "sale:manage")) ||
@@ -1197,6 +1199,7 @@ function Shell() {
                   <LogOut size={16} />
                   Cerrar sesión
                 </button>
+                {/* Fin del menú de cuenta. */}
               </div>
             )}
           </div>
