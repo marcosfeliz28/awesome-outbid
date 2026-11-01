@@ -115,8 +115,10 @@ async function periodReturns(
   return db.saleReturn.findMany({
     where: {
       branchId: actor.branchId,
-      createdAt: range,
-      ...(sale ? { sale } : {}),
+      // Criterio único (orden 1-nov): con filtro de venta, la fecha es la de la venta original.
+      ...(sale
+        ? { sale: { ...sale, createdAt: range } }
+        : { createdAt: range }),
     },
     orderBy: { id: "asc" },
     take: RETURN_BATCH,
@@ -363,7 +365,7 @@ export class ReportsController {
       this.db.saleReturn.aggregate({
         where: {
           branchId: actor.branchId,
-          createdAt: { gte: priorYearStart, lte: priorYearEnd },
+          sale: { createdAt: { gte: priorYearStart, lte: priorYearEnd } },
         },
         _sum: { total: true },
       }),
@@ -372,7 +374,7 @@ export class ReportsController {
       >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day,hour ORDER BY day,hour`,
       // La tendencia compara ingresos netos de devoluciones (R9-dinero-10).
       this.db.saleReturn.aggregate({
-        where: { branchId: actor.branchId, createdAt: previousRange },
+        where: { branchId: actor.branchId, sale: { createdAt: previousRange } },
         _sum: { total: true },
       }),
       // Abonos cobrados en el período (fecha del abono, no de la venta): su
@@ -1233,8 +1235,7 @@ export class ReportsController {
           const page = await this.db.saleReturn.findMany({
             where: {
               branchId: actor.branchId,
-              createdAt: range,
-              sale: returnSaleWhere,
+              sale: { ...returnSaleWhere, createdAt: range },
             },
             orderBy: { id: "asc" },
             take: RETURN_BATCH,

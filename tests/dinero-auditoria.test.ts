@@ -1029,6 +1029,79 @@ describe("Auditoría 01 · dinero", () => {
     }
   });
 
+  it("devolución de una venta de otro mes: el resumen y el informe de utilidad de hoy no cambian", async () => {
+    const c = await person("seller", "priorprof", 0);
+    const v = await product(400, 150, 10);
+    const sale = await sell(c, v, 1, [{ method: "cash", amount: 400 }]);
+    const originalDate = sale.createdAt ? new Date(sale.createdAt) : new Date();
+    const monthStart = today().slice(0, 7) + "-01";
+    const lastDay = new Date(
+      Date.parse(monthStart + "T12:00:00-04:00") - 86400000,
+    );
+    const range = "?from=" + today() + "&to=" + today();
+    const before = {
+      summary: await ok("/dashboard/summary" + range, admin),
+      profit: await ok("/reports/profit" + range, admin),
+    };
+    let ret: any = null;
+    try {
+      await db.sale.update({
+        where: { id: sale.id },
+        data: { createdAt: lastDay },
+      });
+      ret = await db.saleReturn.create({
+        data: {
+          saleId: sale.id,
+          number: "NC-PRF-" + suffix + "-" + randomUUID().slice(0, 8),
+          reason: "Devolución del mes pasado",
+          total: 400,
+          taxTotal: 0,
+          costTotal: 150,
+          refundAmount: 400,
+          refundMethod: "cash",
+          cashSessionId: c.cash.id,
+          userId: c.id,
+          items: [
+            {
+              qty: 1,
+              tax: 0,
+              cost: 150,
+              total: 400,
+              opened: false,
+              damaged: false,
+              restock: true,
+              wasteQty: 0,
+              wasteCost: 0,
+              saleItemId: sale.items[0].id,
+            },
+          ],
+        },
+      });
+      const summary = await ok("/dashboard/summary" + range, admin);
+      const profit = await ok("/reports/profit" + range, admin);
+      // Una devolución atribuida a la venta de otro mes no cambia las cifras de hoy.
+      expect(summary.revenue).toBeCloseTo(before.summary.revenue, 2);
+      expect(summary.costTotal).toBeCloseTo(before.summary.costTotal, 2);
+      const sum = (rows: any[], k: string) =>
+        rows.reduce((a: number, r: any) => a + Number(r[k] ?? 0), 0);
+      expect(sum(profit.rows, "Ventas")).toBeCloseTo(
+        sum(before.profit.rows, "Ventas"),
+        2,
+      );
+      expect(sum(profit.rows, "Costo")).toBeCloseTo(
+        sum(before.profit.rows, "Costo"),
+        2,
+      );
+    } finally {
+      // Limpieza: otras suites usan la misma base el mismo día.
+      if (ret) await db.saleReturn.delete({ where: { id: ret.id } });
+      await db.sale.update({
+        where: { id: sale.id },
+        data: { createdAt: originalDate },
+      });
+    }
+  });
+
   it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {
     await withSettings(
       { unusualDiscountPercent: 25, unusualDiscountCount: 1 },
