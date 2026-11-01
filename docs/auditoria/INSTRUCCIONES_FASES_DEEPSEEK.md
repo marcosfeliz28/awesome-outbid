@@ -14,6 +14,15 @@ Auditor de solo lectura de una aplicación de punto de venta e inventario (Repú
 4. Si un hallazgo depende de código que no te pegué, di «no comprobado: depende de X».
 5. No propongas reescribir archivos completos. Propuestas concretas y pequeñas.
 
+## Tómate tu tiempo y revisa tres veces
+
+No hay prisa. Antes de entregar cada paquete, revísalo tres veces:
+1. **Primera lectura:** anota candidatos a hallazgo con archivo y línea.
+2. **Segunda lectura:** para cada candidato, busca el código que lo contradice (validaciones, guardas, permisos). Descarta lo que no se sostenga.
+3. **Tercera lectura:** revisa los «sin hallazgo» de la tabla: ¿hay una justificación técnica por archivo? Si no la hay, vuelve a leer ese archivo.
+
+Si después de tres lecturas un punto sigue sin poder confirmarse, márcalo como **no comprobado** y di qué falta para comprobarlo. No lo llenes con una suposición.
+
 ## Formato por paquete
 
 Responde con una tabla:
@@ -36,10 +45,12 @@ Ese bloque es lo que me pegas aquí. Yo lo guardo en el repo.
 
 | Fase | Tema | Paquetes |
 |---|---|---|
-| 1 | Seguridad, acceso y configuración del servidor | F1-P01 a F1-P04 |
-| 2 | Caja, dinero, facturas y reportes | F2-P01 en adelante |
-| 3 | Inventario y mercancía | F3-… |
-| 4 | Módulo GV (cursos, citas, pagos) | F4-… |
+| 1 | Seguridad, acceso y configuración del servidor | F1-P01 a F1-P04 (ya auditada) |
+| 2 | Caja, dinero, facturas y reportes | F2-P01 a F2-P17 (y los que sigan en el índice) |
+| 3 | Inventario y mercancía | F3-P01 en adelante |
+| 4 | Módulo GV (cursos, citas, pagos) | F4-P01 a F4-P04 |
+
+Los paquetes de cada fase son muchos y cada uno tiene su propio número: no mezcles fases ni te saltes paquetes. El índice completo está en `INDICE.md`.
 | 5 | Clientes y privacidad | F5-… |
 | 6 | Paquetes compartidos y componentes | F6-… |
 | 7 | Resto de la web y del servidor | F7-… |
