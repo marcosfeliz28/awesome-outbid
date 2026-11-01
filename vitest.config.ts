@@ -35,6 +35,7 @@ export default defineConfig({
       "tests/formal-period.test.ts",
       "tests/formal-pdf.test.ts",
       "tests/management-messages.test.ts",
+      "tests/report-export-actions.test.ts",
       "tests/u-credit-cleanup.test.ts",
       "tests/credito-dias.test.ts",
       "tests/recibo-envio.test.ts",

@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@fitstore/ui";
 import { formatMoney } from "@fitstore/shared";
-import { api, download } from "./api";
-import { QueryState, toast, today } from "./helpers";
+import { api } from "./api";
+import { QueryState, today } from "./helpers";
+import { ReportExportActions } from "./ReportExportActions";
+
+const reportBounds = (period: "day" | "month", date: string) => {
+  if (period === "day") return { from: date, to: date };
+  const [year, month] = date.split("-").map(Number);
+  const last = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  return { from: `${date}-01`, to: last };
+};
 
 export function FormalReports() {
   const [period, setPeriod] = useState<"day" | "month">("day");
@@ -15,17 +22,7 @@ export function FormalReports() {
     enabled: !!date,
   });
   const report = query.data;
-  const pdf = async () => {
-    try {
-      await download(
-        "/reports/formal?" +
-          new URLSearchParams({ period, date, format: "pdf" }),
-        `informe-${period}-${date}.pdf`,
-      );
-    } catch (error: any) {
-      toast(error.message, true);
-    }
-  };
+  const bounds = reportBounds(period, date);
   return (
     <section className="panel formal-report">
       <div className="panel-heading">
@@ -36,9 +33,19 @@ export function FormalReports() {
             compartir.
           </p>
         </div>
-        <Button onClick={pdf} disabled={!date || query.isLoading}>
-          Descargar PDF
-        </Button>
+        <ReportExportActions
+          reportId="formal"
+          reportName="informe-formal"
+          from={bounds.from}
+          to={bounds.to}
+          hasData={Boolean(report)}
+          legacyPath={(format) =>
+            format === "pdf"
+              ? "/reports/formal?" +
+                new URLSearchParams({ period, date, format })
+              : null
+          }
+        />
       </div>
       <div className="date-filters">
         <label className="field">

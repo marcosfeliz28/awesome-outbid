@@ -1440,6 +1440,49 @@ td strong {
   gap: 10px;
   align-items: center;
 }
+.report-export {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  max-width: 360px;
+}
+.report-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.report-export-actions .button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+.report-export-hint,
+.report-export-error {
+  margin: 0;
+  font-size: 0.78rem;
+  text-align: right;
+  color: var(--muted);
+}
+.report-export-error {
+  color: var(--danger);
+}
+@media (max-width: 480px) {
+  .report-export {
+    width: 100%;
+    justify-items: stretch;
+  }
+  .report-export-actions {
+    justify-content: stretch;
+  }
+  .report-export-actions .button {
+    flex: 1 1 120px;
+    justify-content: center;
+  }
+  .report-export-hint,
+  .report-export-error {
+    text-align: left;
+  }
+}
 .table-actions button:not(.button) {
   min-width: 28px;
   min-height: 36px;

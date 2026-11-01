@@ -6,6 +6,7 @@ import { api, useStore } from "./api";
 import { QueryState, today } from "./helpers";
 import { monthNames, reportCsv } from "./year-report-utils";
 import { MIX_LABEL, PaymentMixPie, type MixRow } from "./PaymentMixPie";
+import { ReportExportActions } from "./ReportExportActions";
 
 const params = () => {
   const q = new URLSearchParams(location.hash.split("?")[1] ?? "");
@@ -132,6 +133,13 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
           <Button onClick={download} disabled={!data}>
             Exportar CSV
           </Button>
+          <ReportExportActions
+            reportId="dashboard-breakdown"
+            reportName="desglose-de-ventas"
+            from={from}
+            to={to}
+            hasData={Boolean(data)}
+          />
         </div>
       </div>
       <section className="panel month-range" aria-label="Fechas del reporte">

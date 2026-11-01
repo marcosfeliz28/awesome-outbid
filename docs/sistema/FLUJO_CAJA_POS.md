@@ -113,7 +113,7 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 - Otros botones: **«Recibo PDF»** (`:2385-2398`; API `apps/api/src/sales.ts:4450`), **«WhatsApp»** y **«Correo»** con el texto del recibo (`:2399-2426`), **«Nueva venta»** (`:2428-2430`).
 - Ancho del ticket 80 mm o 58 mm según Configuración (`POS.tsx:2431`; `admin.ts:91`).
 - El recibo es **«DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL»**; el NCF solo se imprime si la venta ya trae uno y el modo es electrónico (`apps/web/src/Prints.tsx:509-510`, `:546-553`). Con solicitud B01/B02 imprime «Solicitud NCF … · pendiente de emisión fiscal» (`:625-626`). No hay NCF real emitido por este sistema.
-- Reimpresión: pantalla **Ventas** › icono de descarga (PDF) en la fila (`Management.tsx:3247-3257`).
+- Reimpresión: pantalla **Ventas** › icono de descarga (PDF) en la fila (`Management.tsx:3237-3247`).
 - Sin internet: solo si Configuración lo permite («Permitir ventas sin conexión»), la venta queda «Guardada en este dispositivo · Pendiente de sincronizar» con número LOCAL-xxxxxxxx; crédito, contraentrega, nota de crédito y descuentos con PIN requieren conexión (`POS.tsx:2146-2207`; `apps/api/src/admin.ts:96`). Por defecto está apagado.
 
 ## 7. Devolución y nota de crédito (NC)
@@ -122,14 +122,14 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 2. Ventana **«Devolución · FS-…»** (`:3640`): «Artículo a devolver», «Cantidad», «Motivo», **«Método de reembolso»** (Efectivo, Tarjeta, Transferencia o **Nota de crédito**), casillas «Reingresar al stock vendible», «Producto abierto», «Producto dañado» (`:3643-3690`). API `POST /returns` (`apps/api/src/sales.ts:3223`).
 3. Se crea la devolución con número **NC-000000** (`sales.ts:3350`). Si el reembolso es en efectivo desde la caja de **otra persona**, hace falta el PIN de su dueña o de otro gerente (`sales.ts:3046-3060`); si no hay efectivo suficiente: «No hay suficiente efectivo en caja para este reembolso. Reembolsa por el medio del pago original o como nota de crédito.» (`sales.ts:3336-3339`).
 4. Con método «Nota de crédito» se crea la nota con un **código de canje** de 32 caracteres hex y saldo (`apps/api/prisma/schema.prisma` modelo `CreditNote`).
-5. **¿Se imprime la nota?** No sale sola al devolver. Se imprime a mano: en **Ventas** › abrir la venta (ojo) › botón **«Imprimir nota NC-000000»** (solo `sale:manage`) (`Management.tsx:3390-3404`). Descarga un **PDF A4** «Nota de crédito · NC-… / Nota interna de crédito · no fiscal», con importe, saldo, motivo y el «Código para presentar en caja» (`apps/api/src/sales.ts:3469-3522`, ruta `GET /returns/:id/credit-note.pdf`). No se imprime en el ticket térmico.
+5. **¿Se imprime la nota?** No sale sola al devolver. Se imprime a mano: en **Ventas** › abrir la venta (ojo) › botón **«Imprimir nota NC-000000»** (solo `sale:manage`) (`Management.tsx:3380-3394`). Descarga un **PDF A4** «Nota de crédito · NC-… / Nota interna de crédito · no fiscal», con importe, saldo, motivo y el «Código para presentar en caja» (`apps/api/src/sales.ts:3469-3522`, ruta `GET /returns/:id/credit-note.pdf`). No se imprime en el ticket térmico.
 6. Usarla: en el cobro, método **Nota de crédito**, escribir el código y elegir la nota (sección 5.1). Una nota con cliente solo la usa ese cliente (`sales.ts:1081`).
 
 ## 8. Anulación
 
 - **Cajera:** en **Ventas**, solo sobre una venta suya completada y sin solicitud pendiente: **«Solicitar anulación»** → «Tipo de motivo» (Solicitud del cliente, Venta duplicada, Error de pago, Error de artículo, Otro) + «Explica el motivo» (`Management.tsx:3280-3295`, `:3555-3587`; API `apps/api/src/sales.ts:1862`).
 - **Administración (`*`):** en **Ventas** › **«Anular»** (si no tiene devoluciones ni abonos válidos) con motivo → «Sí, anular venta» (`Management.tsx:3320-3334`, `:3540-3554`; API `POST /sales/:id/void`, `apps/api/src/sales.ts:2369-2377`). O en **Solicitudes de anulación** › **«Aprobar y anular»** (`apps/web/src/VoidRequests.tsx:123-129`). Nadie aprueba su propia solicitud (`sales.ts:2081`, `:2404`).
-- Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:3543`; `sales.ts:2429-2441`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2422-2427`).
+- Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:3533`; `sales.ts:2429-2441`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2422-2427`).
 
 ## 9. Movimientos de efectivo durante el día
 

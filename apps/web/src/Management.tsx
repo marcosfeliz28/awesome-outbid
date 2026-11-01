@@ -33,7 +33,6 @@ import {
   loadCatalog,
   useStore,
   download,
-  DOWNLOAD_FAILED,
   localDB,
   syncSales,
   type Product,
@@ -56,6 +55,7 @@ import { CourierFeeEditor } from "./CourierFeeEditor";
 import { SaleEditPanel, editableNow } from "./SaleEditPanel";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
+import { ReportExportActions } from "./ReportExportActions";
 import {
   CloseCashModal,
   CodPending,
@@ -2920,30 +2920,20 @@ export function Reports() {
                 <h2>{allReports.find((r) => r[0] === report)?.[1]}</h2>
                 <p>Información registrada en tu tienda.</p>
               </div>
-              <div className="table-actions">
-                {["xlsx", "pdf"].map((format) => (
-                  <Button
-                    variant="secondary"
-                    key={format}
-                    onClick={() =>
-                      download(
-                        `/reports/${report}?from=${from}&to=${to}&format=${format}`,
-                        `${report}.${format}`,
-                      ).catch((error) =>
-                        toast(
-                          error.message !== DOWNLOAD_FAILED
-                            ? error.message
-                            : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
-                          true,
-                        ),
-                      )
-                    }
-                  >
-                    <Download size={16} />
-                    {format === "xlsx" ? "Excel" : "PDF"}
-                  </Button>
-                ))}
-              </div>
+              <ReportExportActions
+                reportId={report}
+                reportName={allReports.find((r) => r[0] === report)?.[1] ?? report}
+                from={from}
+                to={to}
+                hasData={total > 0}
+                legacyPath={(format) =>
+                  `/reports/${report}?${new URLSearchParams({
+                    from,
+                    to,
+                    format,
+                  })}`
+                }
+              />
             </div>
             <div className="date-filters">
               <label className="field">
