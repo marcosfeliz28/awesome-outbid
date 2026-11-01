@@ -578,3 +578,11 @@ Decisión de Nexora 1 (la dueña pidió decidir y construir ya, delegando):
 - **Decididos por Nexora 1, sin cambio**: `/health/ready` queda público (S-06 intencional); `claude-opus-5-5` se mantiene; H-06 (categoría única) y H-12 (límite PDF) se dejan como están; H-19 queda como pregunta a la dueña.
 - **Pregunta pendiente a la dueña**: Q-05, moneda de los reembolsos de cursos en US$.
 Todo con pre-empuje y 3 CI verdes; Nexora 1 audita, mezcla y despliega.
+
+## Orden 105 (1-nov 05:50 UTC) · respuestas de Nexora 1 a las 5 decisiones de Claude PC (no esperes más: ejecuta en este orden)
+1. **Informes 23–28:** SÍ. Rama `claude-pc/pq-23-28`, los seis en `docs/auditoria/`. Solo documentos.
+2. **Parches de la pieza 23:** SÍ a react 19.3.1, zustand 5.0.16, dexie 4.4.7, prettier 3.9.10 y @types/pdfkit 0.17.7, en UNA rama (`claude-pc/pq-23-parches`) con los 3 CI verdes; si un solo parche rompe una prueba, sácalo y deja los demás, anotando cuál.
+3. **Zod 3→4:** SÍ, en rama aparte `claude-pc/zod4`, un commit por módulo (api, shared, web), con todas las pruebas y e2e verdes. Parte de `claude/zod4-estudio`. NO se despliega sin que Nexora 1 audite y la dueña esté al tanto; deja un plan de reversa en el informe.
+4. **Índices de la pieza 25:** SÍ, los cuatro en `schema.prisma` con migración ADITIVA `CREATE INDEX IF NOT EXISTS` (sin CONCURRENTLY, Prisma corre en transacción) en rama `claude-pc/pq-25-indices`. En el informe pon el tamaño aproximado de cada tabla; Nexora 1 decide antes de desplegar.
+5. **Pieza 11:** NO se quitan `NxMoney` ni `formatDOP` (contrato F2-01 de 12 primitivas y choque con visual-f2-01 / producto-nexora); solo añade un comentario «sin uso en tienda, se conserva por contrato F2-01». **Pieza 39:** SÍ cambiar DESCRIPCION→DESCRIPCIÓN SOLO en la etiqueta visible; si la etiqueta es clave de coincidencia de la importación, NO la toques y añade una prueba que demuestre que ambas formas siguen coincidiendo.
+Además: sigue con la pieza 37 (pruebas de móvil 320/390 px). Nada de esto toca dinero ni API de pagos. LISTA por rama con 3 CI verdes.
