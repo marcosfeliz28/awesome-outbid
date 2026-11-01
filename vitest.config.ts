@@ -109,6 +109,7 @@ export default defineConfig({
       "tests/promociones-paridad.test.ts",
       "tests/configuracion-pruebas.test.ts",
       "tests/gv-unit.test.ts",
+      "tests/pq22-casos-api.test.ts",
       "tests/gv-auditoria-migration-postgres.test.ts",
       "tests/dominio-redireccion.test.ts",
     ],
