@@ -509,11 +509,10 @@ export function checkGvOwnerEdit(
     bad(
       "Para marcarla «reembolsada» indica el monto y la fecha del reembolso.",
     );
-  const paid = gvTotals(0, before.payments, {}, moneda).paid;
+  // El reembolso es siempre en RD$ (orden 106): se valida contra lo pagado en pesos.
+  const paid = gvTotals(0, before.payments, {}, "RD$").paid;
   if (d(data.refundAmount).gt(paid))
-    bad(
-      `El reembolso no puede superar lo pagado verificado (${moneda} ${paid}).`,
-    );
+    bad(`El reembolso no puede superar lo pagado verificado (RD$ ${paid}).`);
   return { ...data, refundDate: dateOnly(data.refundDate) };
 }
 

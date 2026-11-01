@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GV_CATALOGO, gvIncentivosMes } from "../apps/api/src/gv-incentives";
 import {
   catalogoOpciones,
+  checkGvOwnerEdit,
   gvPaymentInput,
   gvTotals,
   valorEnMoneda,
@@ -346,6 +347,45 @@ describe("GV · incentivo: pago anulado no consume el tope (revisión, A)", () =
       { personId: "A", amount: "50.00", kind: "pago" },
       { personId: "A", amount: "-50.00", kind: "anulado" },
       { personId: "B", amount: "50.00", kind: "pago" },
+    ]);
+  });
+});
+
+describe("GV · reembolso siempre en RD$ (orden 106, revisión B)", () => {
+  const USD_PAGADO = () =>
+    alumna(USD, "200", [pagoUsd("200", 60, "2026-10-03", { createdBy: "A" })]);
+
+  it("curso US$ pagado en RD$ 12,000: reembolso total en RD$ se acepta", () => {
+    const before = { status: "activa", course: { name: USD }, ...USD_PAGADO() };
+    expect(() =>
+      checkGvOwnerEdit("enrollment", before, {
+        status: "reembolsada",
+        refundAmount: 12000,
+        refundDate: "2026-11-02",
+      }),
+    ).not.toThrow();
+  });
+
+  it("reembolso por encima de lo pagado en RD$ se rechaza con mensaje en RD$", () => {
+    const before = { status: "activa", course: { name: USD }, ...USD_PAGADO() };
+    expect(() =>
+      checkGvOwnerEdit("enrollment", before, {
+        status: "reembolsada",
+        refundAmount: 12001,
+        refundDate: "2026-11-02",
+      }),
+    ).toThrow(/RD\$ 12000\.00/);
+  });
+
+  it("reversa en proporción de RD$: RD$ 150 de RD$ 12,000 quita 150/12000 del incentivo", () => {
+    const e = alumna(USD, "200", [pagoUsd("200", 60, "2026-10-03", { createdBy: "A" })], {
+      status: "reembolsada",
+      refundAmount: "150",
+      refundDate: new Date("2026-11-02T00:00:00Z"),
+    });
+    // 50 × 150 / 12000 = 0.625 → 0.63 (no 37.50, que sería 150/200 en US$)
+    expect(mapa(gvIncentivosMes(e), "2026-11")).toEqual([
+      { personId: "A", amount: "-0.63", kind: "reembolso" },
     ]);
   });
 });

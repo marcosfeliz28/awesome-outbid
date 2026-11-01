@@ -54,7 +54,7 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
   const eventos: EventoIncentivo[] = [];
   const porCobrador = new Map<string, ReturnType<typeof d>>();
   let cum = d(0);
-  let aceptadoNeto = d(0);
+  let aceptadoDop = d(0);
   for (const { p, valor } of ordenados) {
     // Tope 100 % sobre pagos vigentes: el que excede el precio se recorta.
     const restante = precio.minus(cum);
@@ -65,6 +65,10 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
         : (valor as any);
     // Un pago anulado no consume el tope: sólo los vigentes suman al acumulado.
     if (!p.rejectedAt) cum = cum.plus(aceptado);
+    // Lo aceptado en pesos (el reembolso es en RD$, orden 106).
+    const dop = valorEnMoneda(p as any, "RD$");
+    if (!p.rejectedAt && dop && (valor as any).gt(0))
+      aceptadoDop = aceptadoDop.plus(dop.times(aceptado).div(valor as any));
     const credito = d(curso.incentivo)
       .times(aceptado)
       .div(precio)
@@ -84,7 +88,6 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
         period: mes(p.rejectedAt),
       });
     } else {
-      aceptadoNeto = aceptadoNeto.plus(aceptado);
       porCobrador.set(
         p.createdBy,
         (porCobrador.get(p.createdBy) ?? d(0)).plus(credito),
@@ -92,10 +95,10 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
     }
   }
 
-  // Reembolso: se reversa en proporción a lo cobrado por cada uno.
-  if (e.refundAmount && e.refundDate && aceptadoNeto.gt(0)) {
+  // Reembolso (siempre en RD$): se reversa en proporción de pesos cobrados.
+  if (e.refundAmount && e.refundDate && aceptadoDop.gt(0)) {
     const R = d(e.refundAmount as any);
-    const factor = R.gte(aceptadoNeto) ? d(1) : R.div(aceptadoNeto);
+    const factor = R.gte(aceptadoDop) ? d(1) : R.div(aceptadoDop);
     for (const [personId, credito] of porCobrador) {
       const quitado = credito.times(factor).toDecimalPlaces(2);
       if (quitado.lte(0)) continue;
