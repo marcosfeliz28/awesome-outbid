@@ -80,6 +80,9 @@ export const seesAllSales = (actor: Actor) =>
 export const seesAllCashSessions = (actor: Actor) =>
   can(actor.permissions, "sale:manage") ||
   readsWholeBranch(actor, "cash:read", "cash:write");
+// Sin ningún permiso de escritura (p. ej. rol lectura): no registra ni cambia equipos.
+export const readOnly = (actor: Actor) =>
+  !actor.permissions.some((p) => p === "*" || !p.endsWith(":read"));
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext) =>
     ctx.switchToHttp().getRequest<ActorRequest>().actor,

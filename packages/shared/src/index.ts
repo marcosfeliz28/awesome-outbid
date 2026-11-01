@@ -783,6 +783,8 @@ export const permissions: Record<string, string[]> = {
   warehouse: ["catalog:read", "inventory:write", "purchase:write"],
   // GV Makeup Studio (dueña, 25-oct): sólo cursos, inscripciones y pagos de GV.
   gv: ["gv:read", "gv:write", "gv:reports"],
+  // Solo lectura (orden 107): ventas, cajas, reportes y catálogo. Sin costos.
+  lectura: ["catalog:read", "reports:read", "sale:read", "cash:read"],
 };
 // Quien puede escribir ventas o caja puede leerlas: los GET de /sales y
 // /cash-sessions piden sólo la lectura, así los roles actuales no pierden acceso.

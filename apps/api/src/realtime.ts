@@ -22,6 +22,7 @@ import {
   bad,
   denied,
   parse,
+  readOnly,
   uuid,
 } from "./common";
 import {
@@ -159,6 +160,7 @@ export class RealtimeController {
   @Permit("authenticated")
   @Post("terminals/register")
   async register(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    if (readOnly(actor)) denied();
     const data = parse(
       z.object({
         id: uuid,
@@ -267,6 +269,7 @@ export class RealtimeController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
+    if (readOnly(actor)) denied();
     const terminalId = parse(uuid, id);
     if (actor.terminalId !== terminalId) denied();
     const data = parse(
@@ -327,6 +330,7 @@ export class RealtimeController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
+    if (readOnly(actor)) denied();
     const terminalId = parse(uuid, id);
     // Cada quien nombra su propio equipo; un gerente puede renombrar cualquiera.
     if (

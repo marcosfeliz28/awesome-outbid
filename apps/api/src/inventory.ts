@@ -1448,7 +1448,7 @@ export class InventoryController {
   }
   // Completar después el documento del proveedor de una recepción.
   @Patch("goods-receipts/:id/document")
-  @Permit("catalog:read")
+  @Permit("purchase:write")
   async receiptDocument(
     @Param("id") id: string,
     @Body() body: unknown,
