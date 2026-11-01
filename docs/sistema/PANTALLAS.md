@@ -115,7 +115,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1018-1048`):
 ## Reportes
 
 - **Etiqueta:** «Reportes». **Permiso:** `reports:read`. **Componente:** `Reports`, `apps/web/src/Management.tsx:2817`. Título: «Los números cuentan tu historia» (`:2861`).
-- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:2870`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:712`; carpeta `apps/api/src/reportes/`).
+- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:2870`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:720`; carpeta `apps/api/src/reportes/`).
 
 ## Resumen
 
