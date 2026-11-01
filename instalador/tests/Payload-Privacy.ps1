@@ -48,7 +48,7 @@ function Assert-FixtureBootstrap {
 }
 try {
   New-Item -ItemType Directory -Path $root | Out-Null
-  $keep = @('package.json', 'tsconfig.json', 'prisma.config.ts', 'dist/main.js', 'scripts/create-admin.ts', 'prisma/schema.prisma', 'prisma/migrations/migration_lock.toml', 'prisma/migrations/202610010001_example/migration.sql', 'node_modules/prisma/build/index.js', 'node_modules/.prisma/client/query_engine-windows.dll.node', 'node_modules/.bin/tsx.cmd')
+  $keep = @('package.json', 'tsconfig.json', 'prisma.config.ts', 'dist/main.js', 'scripts/create-admin.ts', 'src/local-install-password.ts', 'prisma/schema.prisma', 'prisma/migrations/migration_lock.toml', 'prisma/migrations/202610010001_example/migration.sql', 'node_modules/prisma/build/index.js', 'node_modules/.prisma/client/query_engine-windows.dll.node', 'node_modules/.bin/tsx.cmd')
   $remove = @('revision-inventario.csv', '.env', '.env.production', 'secrets.json', 'src/main.ts', 'scripts/import-inventario.ts', 'prisma/seed.ts', 'prisma/backup.sql', 'dist/.env', 'dist/secrets.json', 'dist/export.xlsx', 'node_modules/example/private.key', 'node_modules/example/.npmrc', 'node_modules/example/customer.csv', 'certificate.pfx', 'backup.dump')
   foreach ($relative in @($keep + $remove)) {
     $file = Join-Path $root $relative
