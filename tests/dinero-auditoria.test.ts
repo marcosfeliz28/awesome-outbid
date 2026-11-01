@@ -989,13 +989,18 @@ describe("Auditoría 01 · dinero", () => {
               total: 400,
               opened: false,
               damaged: false,
-              restock: false,
+              restock: true,
               wasteQty: 0,
               wasteCost: 0,
               saleItemId: sale.items[0].id,
             },
           ],
         },
+      });
+      // Como POST /returns: la línea queda marcada como devuelta (el desglose va por línea).
+      await db.saleItem.update({
+        where: { id: sale.items[0].id },
+        data: { returnedQty: 1 },
       });
       const year = await ok("/dashboard/year", admin);
       const cur = await ok(
@@ -1022,6 +1027,10 @@ describe("Auditoría 01 · dinero", () => {
     } finally {
       // Limpieza: otras suites usan la misma base el mismo día.
       if (ret) await db.saleReturn.delete({ where: { id: ret.id } });
+      await db.saleItem.update({
+        where: { id: sale.items[0].id },
+        data: { returnedQty: 0 },
+      });
       await db.sale.update({
         where: { id: sale.id },
         data: { createdAt: originalDate },
