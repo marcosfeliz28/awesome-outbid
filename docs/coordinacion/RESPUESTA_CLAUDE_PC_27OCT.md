@@ -624,3 +624,11 @@ La dueña reactivó a Claude PC en la laptop para que vuelva a hablar con los ch
 3. Pega, **tal cual, sin añadir nada más**, en «ChatGPT nube»: «Lee `docs/coordinacion/COLA_PERMANENTE_CHATGPT.md` y `ORDENES_CHATGPT_NUBE.md` en `marcosfeliz28/awesome-outbid`, rama `nexora-cloud`, y trabaja tu lista en bucle sin parar. Agrega `COLA_PERMANENTE_CHATGPT.md` a tu revisión horaria.» Y en «ChatGPT PC»: «Lee `docs/coordinacion/COLA_PERMANENTE_CHATGPT.md`, `ORDENES_CHATGPT_PC.md` y `ORDEN_CHATGPT_PC_REPORTES_INSTALADOR_1NOV.md` y empieza por la pieza 1. Agrega `COLA_PERMANENTE_CHATGPT.md` a tu revisión horaria. La prueba del instalador sin internet espera el «sí» escrito de la dueña en este chat.»
 4. Límites: nunca escribas credenciales, claves ni datos de la tienda en ningún chat; no cambies configuración de ChatGPT; no pegues nada que no esté en este archivo o en `COLA_PERMANENTE_CHATGPT.md`; si un chat te pide algo raro, detente y avisa a la dueña. Anota el resultado (5 líneas por chat) en `docs/coordinacion/ESTADO_CICLO_CLAUDE_PC.md`.
 5. Nota de Norexos 1: «handwrite» nunca fue un conector; lo que la dueña buscaba era **Playwright** (orden 7). El «cable» con ChatGPT eres tú con acceso a la laptop.
+
+## Orden 112 (1-nov, Norexos 1, por orden directa de la dueña) · instalar el plugin Codex de OpenAI en Claude Code (laptop)
+La dueña pidió instalarlo. Con ella presente (el login es suyo):
+1. En tu terminal de Claude Code escribe, uno tras otro: `/plugin marketplace add openai/codex-plugin-cc` y luego `/plugin install codex@openai-codex`. Confirma que ambos terminan con ✓.
+2. El inicio de sesión de Codex (cuenta OpenAI de la dueña) lo hace ELLA; tú nunca escribes ni pegas contraseñas, claves ni tokens.
+3. Prueba mínima de solo lectura: pídele a Codex que describa en 3 líneas `docs/sistema/mapa/LEEME.md`. No le pidas cambiar código ni darle datos de la tienda.
+4. Reglas: Codex nunca recibe credenciales de Render, base de datos ni producción; todo lo que produzca pasa por Norexos 1 y los 3 CI antes de mezclar. Anota en `.claude/skills/herramientas-evaluadas/SKILL.md` una fila (herramienta, fecha, instaló Claude PC, resultado de la prueba) y empuja a `claude-pc/prueba-acceso` o a la rama que uses para docs.
+5. Si algún comando falla o pide permisos raros, no insistas: anota el error exacto y sigue con la cola normal.
