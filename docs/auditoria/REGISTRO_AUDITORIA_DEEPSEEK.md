@@ -7,7 +7,7 @@ Paquetes: 57, en 7 fases. Índice y paquetes en la carpeta de trabajo temporal, 
 | Fase | Estado | Entregado en | Hallazgos críticos o altos | Verificado por Claude |
 |---|---|---|---|---|
 | 1 | entregada, con rechazos | Respuesta de DeepSeek a F1-P01 a F1-P04 (1 nov 2026) | Tres endpoints de `admin.ts` sin `@RequireTerminal()` (líneas 587, 675, 722): **decisión de negocio, no bug confirmado**. Rate limit de administración (`rate-limit.ts:184-229`): confirmado, medio. | Ver detalle abajo |
-| 1b | P02 y P03 **rechazados**: filas vacías con «sin hallazgo» en archivos de más de 1,400 líneas. Hay que repetirlos con revisión por archivo. | | | |
+| 1b | P02 y P03 repetidos archivo por archivo (2.ª entrega) y **aceptados como revisión**, con dos correcciones de Claude (ver abajo). | Segunda respuesta de DeepSeek (1 nov 2026) | Ningún hallazgo crítico. Un medio y varios bajos, todos sin impacto confirmado. | Verificado por Claude |
 | 2 | pendiente | | | |
 | 3 | pendiente | | | |
 | 4 | pendiente | | | |
@@ -27,4 +27,17 @@ Regla: un hallazgo solo pasa a «verificado» cuando lo compruebo leyendo el arc
 | 4 | Rate limit no cubre rutas de administración | `apps/api/src/rate-limit.ts:184-229` | **Confirmado, medio** | El guard lista rutas concretas (`/auth/pin`, `/sales`, imports…). Falta comprobar si hay un límite general para el resto. |
 | 5 | Lecturas con permiso de escritura | `apps/api/src/admin.ts:250` (`GET customers` con `customers:write`) | **Confirmado, bajo** | Exige más permiso del necesario para leer; no da acceso indebido. |
 
-Pendiente para la siguiente ronda: DeepSeek debe repetir P02 y P03 revisando cada archivo por separado, y citar al menos un «sin hallazgo» justificado por archivo.
+## Segunda entrega (P02 y P03, archivo por archivo)
+
+Comprobé con grep cada afirmación de la segunda entrega. La mayoría es correcta: `DUMMY_PASSWORD_HASH` (auth.ts:63), `randomBytes(48)` y `sameSite: "strict"` (auth.ts:354, 398), `FOR UPDATE` (auth.ts:362), rotación de uso único con `deleteMany` (auth.ts:21 del refresh), `canSwitchUserTo` (auth.ts:845), `randomInt` (password-policy.ts:2), filtro `safe()` (common.ts:367), `ApiExceptionFilter` con P2002/P2025 (common.ts:776-805), helmet, límites de 100 kb y 4 mb (main.ts:42-46), `connection_limit` (database-pool.ts), `sort()` antes de `FOR UPDATE` (require-password-change.ts:70-72) y jitter en reintentos de deadlock (database-errors.ts:84).
+
+**Correcciones de Claude**
+
+| # | Hallazgo de DeepSeek | Veredicto | Motivo |
+|---|---|---|---|
+| 1 | `app.ts:54`: `/health/ready` revela el estado de la base de datos a cualquiera | **Rechazado como fallo** | El código lo hace a propósito (comentario S-06 en `app.ts`): la ruta pública solo dice listo o no listo, sin detalle de la base. Revelar solo disponibilidad es aceptable; decidir si se queda es humano. Bajo. |
+| 2 | `auth.ts:754-790`: descripción de la rotación del refresh | **Correcto con precisión** | La rotación es real (`deleteMany` por hash, uso único), pero el mismo archivo también borra todas las sesiones de un usuario (auth.ts:613-615). Eso es otra función, no la rotación. |
+
+**Pendientes que no se pudieron comprobar en esta fase:** el `JWT_SECRET` y `validateSecret` (en `security.ts`, fuera del paquete) y la configuración real de Nginx.
+
+**Preguntas de DeepSeek para la fase 3:** el bloqueo `FOR UPDATE` en inventario concurrente y los endpoints de `sales.ts` que anulan o registran pagos mixtos. Ambas van en la fase 2 y la 3; las anoto para cuando lleguemos.
