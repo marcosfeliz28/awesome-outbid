@@ -6735,3 +6735,43 @@ td strong {
     transform: none;
   }
 }
+
+/* Orden 98 · pieza 5: animación de inventario y mercancía (tarjetas, estados vacíos, confirmación
+   y vista previa de la importación). Solo transform y opacity, tokens --nx-dur-*;
+   prefers-reduced-motion lo apaga todo. */
+@keyframes inventario-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.goods-card,
+.goods-empty,
+.goods-done,
+.inv-preview,
+.inv-ok,
+.inv-warn,
+.inv-error {
+  animation: inventario-enter var(--nx-dur-slow) var(--nx-ease-out) backwards;
+}
+.goods-card + .goods-card {
+  animation-delay: 60ms;
+}
+.goods-card + .goods-card + .goods-card {
+  animation-delay: 120ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .goods-card,
+  .goods-empty,
+  .goods-done,
+  .inv-preview,
+  .inv-ok,
+  .inv-warn,
+  .inv-error {
+    animation: none;
+  }
+}

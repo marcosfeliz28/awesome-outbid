@@ -13,6 +13,7 @@ export default defineConfig({
       "tests/login-animacion.test.ts",
       "tests/tablero-animacion.test.ts",
       "tests/reportes-animacion.test.ts",
+      "tests/inventario-animacion.test.ts",
       "tests/ai-daily-limit.test.ts",
       "tests/cors-origin.test.ts",
       "tests/sql-sin-unsafe.test.ts",
