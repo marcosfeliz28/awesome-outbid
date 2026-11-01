@@ -14,7 +14,7 @@ const migrationsDir = join(root, "apps", "api", "prisma", "migrations");
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
-const { PrismaClient, Prisma } = requireApi("@prisma/client");
+const { PrismaClient } = requireApi("@prisma/client");
 const ExcelJS = requireApi("exceljs");
 
 const freePort = () =>
