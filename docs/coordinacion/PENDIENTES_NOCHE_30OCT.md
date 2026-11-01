@@ -79,3 +79,7 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 
 ## 1-nov 13:50 UTC · Hallazgo del agente de guías: «Rentabilidad» del cierre de caja resta ITBIS
 `apps/api/src/cash.ts` (~l.474): la rentabilidad del cuadre se calcula como Σ(total − taxTotal − costTotal) menos devoluciones, es decir **resta el ITBIS**; la regla de la dueña es margen = (precio − costo)/precio **sin restar ITBIS** (el commit 1fda5880 ya unificó el tablero, el reporte por producto y la alerta, pero este cálculo del cuadre sigue distinto). Solo lo ve quien tiene `profit:read`. **Decisión pendiente de la dueña:** ¿dejarlo como está (utilidad neta de ITBIS, que es dinero que no es de la tienda) o alinearlo con la regla? No se cambia sin su respuesta. También por confirmar en las guías: nombres «Bruta/Neta» del informe anual/mensual y la fórmula de «Diferencia total».
+
+## 1-nov 13:55 UTC · Más hallazgos del agente de guías (reportes viejos de Management)
+1. **Costo visible con permiso equivocado (seguridad, orden 110):** `kardex`, `stock bajo` (low-stock) y `sin movimiento` (no-movement) muestran costo a quien tiene `reports:read`; la regla del sistema pide `profit:read`. Se corrige sin cambiar cifras (ocultar costo sin `profit:read`), con prueba.
+2. **ITBIS en la ganancia (decisión de la dueña, junto con la «Rentabilidad» del cuadre):** `estado de resultados`, `ABC` y `utilidad por producto` restan el ITBIS en la ganancia; la regla es sin restar. No se cambia sin su respuesta.
