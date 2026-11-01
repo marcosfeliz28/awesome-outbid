@@ -89,6 +89,8 @@ export default defineConfig({
       "tests/f2-03-pos-visual.test.ts",
       "tests/licencias.test.ts",
       "tests/auth-guard.test.ts",
+      "tests/rol-lectura.test.ts",
+      "tests/rol-lectura-postgres.test.ts",
       "tests/db-errores.test.ts",
       "tests/post-deploy-check.test.ts",
       "tests/perf-apertura.test.ts",
