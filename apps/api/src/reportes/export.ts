@@ -1,28 +1,12 @@
 import { can } from "@fitstore/shared";
 import { bad } from "../common";
 import type { ReportDef, Row } from "./base";
+import { GUIA_REPORTES, type Guia } from "./guia";
 
 // Motor común de exportación (PDF y Excel). Recibe las mismas filas que la
-// pantalla (`def.run`), así que las cifras son idénticas. Sólo presenta.
+// pantalla (`def.run`), así que las cifras son idénticas. Sólo presenta: los
+// textos y nombres amigables salen de guia.ts.
 
-// shortcut: textos mínimos de la guía; la pieza B (guia.ts) los reemplaza.
-export type ReportGuide = {
-  queEs: string;
-  paraQueSirve: string;
-  comoSeLee: string;
-  notas?: string[];
-  /** Columnas con importes en RD$. */
-  moneda?: string[];
-  /** Qué significa cada columna. */
-  columnas?: Record<string, string>;
-  /** Filas de resumen: van en su propia sección y no suman en los totales. */
-  esResumen?: (fila: Row) => boolean;
-  tituloResumen?: string;
-  tituloDetalle?: string;
-  /** Columnas del detalle que se suman (sólo filas de detalle). */
-  totales?: string[];
-  grafica?: Grafica;
-};
 export type Grafica =
   | {
       tipo: "barras" | "linea";
@@ -40,8 +24,25 @@ export type Grafica =
       columnas: string[];
       filtro?: (fila: Row) => boolean;
     };
+
+// Presentación específica de un reporte (resúmenes, totales, gráficas). Sin
+// entrada: detalle, importes según la guía y una gráfica automática de barras
+// si hay una columna de texto y otra de importe.
+export type Presentacion = {
+  moneda?: string[];
+  esResumen?: (fila: Row) => boolean;
+  tituloResumen?: string;
+  tituloDetalle?: string;
+  totales?: string[];
+  grafica?: Grafica;
+};
 export type Formato = "moneda" | "entero" | "decimal" | "porcentaje" | "texto";
-export type Columna = { clave: string; formato: Formato; significa?: string };
+export type Columna = {
+  clave: string;
+  etiqueta: string;
+  formato: Formato;
+  significa?: string;
+};
 export type Seccion = {
   titulo: string;
   columnas: Columna[];
@@ -65,11 +66,96 @@ export type Modelo = {
   queEs: string;
   paraQueSirve: string;
   comoSeLee: string;
-  notas: string[];
   cifras: { etiqueta: string; valor: number; formato: Formato }[];
   secciones: Seccion[];
   grafica: GraficaModelo | null;
 };
+
+// Presentación de los reportes que la necesitan. Verificada contra su `run`.
+export const PRESENTACION: Record<string, Presentacion> = {
+  "ticket-promedio": {
+    moneda: ["Ventas netas", "Ticket promedio"],
+    esResumen: (f) => f.Tipo === "Mes",
+    tituloResumen: "Por mes",
+    tituloDetalle: "Por día",
+    totales: ["Facturas", "Ventas netas"],
+    grafica: {
+      tipo: "linea",
+      titulo: "Ventas netas por día",
+      etiqueta: "Período",
+      valor: "Ventas netas",
+      filtro: (f) => f.Tipo === "Día",
+    },
+  },
+  "formas-pago-mes": {
+    moneda: [
+      "Efectivo",
+      "Transferencia",
+      "Tarjeta",
+      "Crédito/contraentrega",
+      "Otros",
+      "Total",
+    ],
+    totales: [
+      "Efectivo",
+      "Transferencia",
+      "Tarjeta",
+      "Crédito/contraentrega",
+      "Otros",
+      "Total",
+    ],
+    grafica: {
+      tipo: "pastel",
+      titulo: "Participación de cada forma de pago",
+      columnas: [
+        "Efectivo",
+        "Transferencia",
+        "Tarjeta",
+        "Crédito/contraentrega",
+        "Otros",
+      ],
+    },
+  },
+  "margen-por-producto": {
+    moneda: ["Venta", "Costo", "Utilidad"],
+    totales: ["Unidades", "Venta", "Costo", "Utilidad"],
+    grafica: {
+      tipo: "barras",
+      titulo: "Venta de los productos que más venden",
+      etiqueta: "Producto",
+      valor: "Venta",
+      maximo: 15,
+    },
+  },
+  "valor-inventario-almacen": {
+    moneda: ["Valor a costo"],
+    totales: ["Unidades", "Valor a costo"],
+    grafica: {
+      tipo: "barras",
+      titulo: "Valor a costo por almacén",
+      etiqueta: "Almacén",
+      valor: "Valor a costo",
+      agrupar: true,
+    },
+  },
+  "creditos-por-antiguedad": {
+    moneda: ["Saldo"],
+    esResumen: (f) => f.Factura === "Resumen",
+    tituloResumen: "Por tramo de antigüedad",
+    tituloDetalle: "Facturas",
+    totales: ["Facturas", "Saldo"],
+    grafica: {
+      tipo: "barras",
+      titulo: "Saldo pendiente por tramo",
+      etiqueta: "Tramo",
+      valor: "Saldo",
+      filtro: (f) => f.Factura === "Resumen",
+    },
+  },
+};
+
+// Reportes exportables: los que tienen guía (los 40 de la pantalla).
+export const exportable = (name: string) => Object.hasOwn(GUIA_REPORTES, name);
 
 // Límite de filas por exportación (seguridad-20): protege memoria y tiempo.
 export const EXPORT_ROW_LIMIT = 20000;
@@ -108,10 +194,11 @@ export function nombreArchivo(
   );
 }
 
+const miles = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 export function comprobarLimite(filas: number) {
   if (filas > EXPORT_ROW_LIMIT)
     bad(
-      `El reporte tiene ${String(filas).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} filas y el máximo para exportar es ${String(EXPORT_ROW_LIMIT).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}. Selecciona un período más corto.`,
+      `El reporte tiene ${miles(filas)} filas y el máximo para exportar es ${miles(EXPORT_ROW_LIMIT)}. Selecciona un período más corto.`,
     );
 }
 
@@ -145,21 +232,37 @@ const textoFecha = (v: Date | string) =>
         timeZone: "America/Santo_Domingo",
       });
 
-function formatoDe(clave: string, filas: Row[], guia: ReportGuide): Formato {
-  if (guia.moneda?.includes(clave)) return "moneda";
+// Importe según el nombre y el significado de la columna. Cantidades, porcentajes
+// y días no cuentan como importe.
+const IMPORTE =
+  /RD\$|dinero|pesos|cobrad|vendid|costo|venta|saldo|ticket|utilidad|valor|monto|pagad|precio|reembols|efectivo|transferencia|tarjeta|crédito|contraentrega/i;
+const NO_IMPORTE =
+  /%|cantidad|unidades|piezas|facturas|días|número|veces|porcentaje/i;
+const esImporte = (texto: string) =>
+  IMPORTE.test(texto) && !NO_IMPORTE.test(texto);
+
+function formatoDe(
+  clave: string,
+  filas: Row[],
+  pres: Presentacion,
+  significa: string | undefined,
+): Formato {
+  if (pres.moneda?.includes(clave)) return "moneda";
   if (clave.includes("%")) return "porcentaje";
   const valores = filas
     .map((f) => f[clave])
     .filter((v) => v !== null && v !== undefined);
   if (!valores.length || !valores.every((v) => typeof v === "number"))
     return "texto";
+  if (esImporte(clave + " " + (significa ?? ""))) return "moneda";
   return valores.every((v) => Number.isInteger(v)) ? "entero" : "decimal";
 }
 
 // Lo que se ve en pantalla, en el orden de la pantalla, con totales del detalle.
 export function construirModelo(p: {
   nombre: string;
-  guia: ReportGuide;
+  guia: Guia;
+  presentacion?: Presentacion;
   titulo: string;
   filas: Row[];
   negocio: string;
@@ -169,28 +272,37 @@ export function construirModelo(p: {
   emitido: string;
 }): Modelo {
   const g = p.guia;
-  const esResumen = g.esResumen ?? (() => false);
+  const pres = p.presentacion ?? {};
+  const esResumen = pres.esResumen ?? (() => false);
   const resumen = p.filas.filter(esResumen);
   const detalle = p.filas.filter((f) => !esResumen(f));
   const claves = [...new Set(p.filas.flatMap((f) => Object.keys(f)))];
-  const formatos = new Map(claves.map((c) => [c, formatoDe(c, p.filas, g)]));
+  const explicacion = (clave: string) => g.columnas[clave];
+  const formatos = new Map(
+    claves.map((c) => [
+      c,
+      formatoDe(c, p.filas, pres, explicacion(c)?.significa),
+    ]),
+  );
+  const columnaDe = (clave: string): Columna => ({
+    clave,
+    etiqueta: explicacion(clave)?.nombreAmigable ?? clave,
+    formato: formatos.get(clave) ?? "texto",
+    significa: explicacion(clave)?.significa,
+  });
 
   const seccion = (
     titulo: string,
     filas: Row[],
     conTotales: boolean,
   ): Seccion => {
-    const columnas: Columna[] = claves
+    const columnas = claves
       .filter((c) => filas.some((f) => f[c] !== null && f[c] !== undefined))
-      .map((clave) => ({
-        clave,
-        formato: formatos.get(clave) ?? "texto",
-        significa: g.columnas?.[clave],
-      }));
+      .map(columnaDe);
     const totales =
-      conTotales && g.totales
+      conTotales && pres.totales
         ? Object.fromEntries(
-            g.totales
+            pres.totales
               .filter((c) => columnas.some((x) => x.clave === c))
               .map((c) => [
                 c,
@@ -203,15 +315,18 @@ export function construirModelo(p: {
 
   const secciones = resumen.length
     ? [
-        seccion(g.tituloResumen ?? "Totales", resumen, false),
-        seccion(g.tituloDetalle ?? "Detalle", detalle, true),
+        seccion(pres.tituloResumen ?? "Totales", resumen, false),
+        seccion(pres.tituloDetalle ?? "Detalle", detalle, true),
       ]
-    : [seccion(g.tituloDetalle ?? "Detalle", detalle, true)];
+    : [seccion(pres.tituloDetalle ?? "Detalle", detalle, true)];
 
-  const cifras = secciones.at(-1)!.totales
-    ? Object.entries(secciones.at(-1)!.totales!).map(([clave, valor]) => ({
+  const ultima = secciones.at(-1)!;
+  const cifras = ultima.totales
+    ? Object.entries(ultima.totales).map(([clave, valor]) => ({
         etiqueta:
-          clave === "Total" ? "Gran total" : "Total " + clave.toLowerCase(),
+          clave === "Total"
+            ? "Gran total"
+            : "Total " + columnaDe(clave).etiqueta.toLowerCase(),
         valor,
         formato: formatos.get(clave) ?? "decimal",
       }))
@@ -227,18 +342,36 @@ export function construirModelo(p: {
     queEs: g.queEs,
     paraQueSirve: g.paraQueSirve,
     comoSeLee: g.comoSeLee,
-    notas: g.notas ?? [],
     cifras,
     secciones,
-    grafica: construirGrafica(g.grafica, p.filas),
+    grafica: construirGrafica(pres.grafica, p.filas, ultima),
   };
 }
 
+// Gráfica de la presentación; si no hay, barras automáticas de la primera
+// columna de texto contra la primera de importe (con al menos dos filas).
 function construirGrafica(
   g: Grafica | undefined,
   filas: Row[],
+  detalle: Seccion,
 ): GraficaModelo | null {
-  if (!g) return null;
+  if (g) return graficaDe(g, filas);
+  const texto = detalle.columnas.find((c) => c.formato === "texto");
+  const importe = detalle.columnas.find((c) => c.formato === "moneda");
+  if (!texto || !importe || detalle.filas.length < 2) return null;
+  return graficaDe(
+    {
+      tipo: "barras",
+      titulo: importe.etiqueta,
+      etiqueta: texto.clave,
+      valor: importe.clave,
+      maximo: 15,
+    },
+    detalle.filas,
+  );
+}
+
+function graficaDe(g: Grafica, filas: Row[]): GraficaModelo | null {
   const base = g.filtro ? filas.filter(g.filtro) : filas;
   if (g.tipo === "pastel") {
     const puntos = g.columnas
@@ -274,166 +407,3 @@ function construirGrafica(
     })),
   };
 }
-
-// Textos mínimos por reporte exportable. La pieza B los reemplaza por guia.ts.
-const MONEDA_VENTAS = ["Ventas netas", "Ticket promedio"];
-export const GUIA_MINIMA: Record<string, ReportGuide> = {
-  "ticket-promedio": {
-    queEs:
-      "Cuánto se vendió en la tienda por día y por mes, y cuánto gasta en promedio cada compra.",
-    paraQueSirve:
-      "Ver si las ventas suben o bajan y el valor típico de una factura.",
-    comoSeLee:
-      "Cada fila «Día» es un día; cada fila «Mes» es el mes completo. Ticket promedio = ventas netas entre facturas.",
-    notas: ["Ventas netas: facturas vigentes menos devoluciones."],
-    moneda: MONEDA_VENTAS,
-    columnas: {
-      Tipo: "Si la fila es un día o un mes completo.",
-      Período: "Fecha del día o nombre del mes.",
-      Facturas: "Cantidad de facturas vigentes del período.",
-      "Ventas netas": "Dinero vendido, menos lo devuelto.",
-      "Ticket promedio": "Ventas netas dividido entre facturas.",
-    },
-    esResumen: (f) => f.Tipo === "Mes",
-    tituloResumen: "Por mes",
-    tituloDetalle: "Por día",
-    totales: ["Facturas", "Ventas netas"],
-    grafica: {
-      tipo: "linea",
-      titulo: "Ventas netas por día",
-      etiqueta: "Período",
-      valor: "Ventas netas",
-      filtro: (f) => f.Tipo === "Día",
-    },
-  },
-  "formas-pago-mes": {
-    queEs:
-      "Cuánto entró por cada forma de pago en cada mes: efectivo, transferencia, tarjeta y crédito o contraentrega.",
-    paraQueSirve: "Ver cómo cobra la tienda y cuánto está pendiente de cobrar.",
-    comoSeLee:
-      "Cada fila es un mes. Las devoluciones restan en el mes en que se hicieron, con la forma en que se reembolsaron.",
-    notas: [
-      "Si no tienes permiso para ver el arqueo y hay una caja abierta, el reporte no se muestra.",
-    ],
-    moneda: [
-      "Efectivo",
-      "Transferencia",
-      "Tarjeta",
-      "Crédito/contraentrega",
-      "Otros",
-      "Total",
-    ],
-    columnas: {
-      Mes: "Mes de negocio (año y mes).",
-      Efectivo: "Cobrado en efectivo.",
-      Transferencia: "Cobrado por transferencia.",
-      Tarjeta: "Cobrado con tarjeta.",
-      "Crédito/contraentrega": "Quedó a crédito o se cobra contra entrega.",
-      Otros: "Otras formas de pago.",
-      Total: "Suma de las formas de pago del mes.",
-    },
-    totales: [
-      "Efectivo",
-      "Transferencia",
-      "Tarjeta",
-      "Crédito/contraentrega",
-      "Otros",
-      "Total",
-    ],
-    grafica: {
-      tipo: "pastel",
-      titulo: "Participación de cada forma de pago",
-      columnas: [
-        "Efectivo",
-        "Transferencia",
-        "Tarjeta",
-        "Crédito/contraentrega",
-        "Otros",
-      ],
-    },
-  },
-  "margen-por-producto": {
-    queEs:
-      "Cuánto se vendió de cada producto, cuánto costó y cuánta ganancia dejó.",
-    paraQueSirve:
-      "Saber qué productos dejan más ganancia y cuáles casi no dejan nada.",
-    comoSeLee:
-      "Margen % = (venta − costo) entre venta, sin restar el ITBIS. Las devoluciones ya están descontadas.",
-    notas: [
-      "Este reporte muestra costos: solo lo ve quien tiene permiso de ganancia.",
-    ],
-    moneda: ["Venta", "Costo", "Utilidad"],
-    columnas: {
-      Producto: "Nombre del producto.",
-      Unidades: "Unidades vendidas, menos las devueltas.",
-      Venta: "Dinero vendido del producto.",
-      Costo: "Costo de lo que se vendió.",
-      Utilidad: "Venta menos costo.",
-      "Margen %": "Utilidad como porcentaje de la venta.",
-    },
-    totales: ["Unidades", "Venta", "Costo", "Utilidad"],
-    grafica: {
-      tipo: "barras",
-      titulo: "Venta de los productos que más venden",
-      etiqueta: "Producto",
-      valor: "Venta",
-      maximo: 15,
-    },
-  },
-  "valor-inventario-almacen": {
-    queEs:
-      "Cuánto vale la mercancía en existencia, por categoría y almacén, según su costo.",
-    paraQueSirve: "Saber cuánto dinero está guardado en inventario.",
-    comoSeLee:
-      "Valor a costo = unidades × costo promedio. Las existencias negativas restan.",
-    notas: [
-      "Este reporte muestra costos: solo lo ve quien tiene permiso de ganancia.",
-    ],
-    moneda: ["Valor a costo"],
-    columnas: {
-      Categoría: "Categoría del producto.",
-      Almacén: "Dónde está la mercancía (Casa o Tienda).",
-      Unidades: "Piezas en existencia.",
-      "Valor a costo": "Piezas por costo promedio.",
-    },
-    totales: ["Unidades", "Valor a costo"],
-    grafica: {
-      tipo: "barras",
-      titulo: "Valor a costo por almacén",
-      etiqueta: "Almacén",
-      valor: "Valor a costo",
-      agrupar: true,
-    },
-  },
-  "creditos-por-antiguedad": {
-    queEs:
-      "Lo que los clientes deben por compras a crédito o contra entrega, según cuántos días pasaron desde la venta.",
-    paraQueSirve: "Saber qué cobrar primero y qué facturas ya están vencidas.",
-    comoSeLee:
-      "La primera tabla resume por tramo de antigüedad. El detalle lista cada factura con su saldo. Los totales son del detalle.",
-    moneda: ["Saldo"],
-    columnas: {
-      Tramo: "Tiempo transcurrido desde la venta.",
-      Factura: "Número de factura.",
-      Tipo: "Crédito o contraentrega.",
-      Cliente: "Cliente de la factura.",
-      Teléfono: "Teléfono del cliente.",
-      Fecha: "Fecha de la venta.",
-      Vence: "Fecha en que vence el pago.",
-      Días: "Días desde la venta.",
-      Facturas: "Cantidad de facturas.",
-      Saldo: "Lo que falta por cobrar.",
-    },
-    esResumen: (f) => f.Factura === "Resumen",
-    tituloResumen: "Por tramo de antigüedad",
-    tituloDetalle: "Facturas",
-    totales: ["Facturas", "Saldo"],
-    grafica: {
-      tipo: "barras",
-      titulo: "Saldo pendiente por tramo",
-      etiqueta: "Tramo",
-      valor: "Saldo",
-      filtro: (f) => f.Factura === "Resumen",
-    },
-  },
-};

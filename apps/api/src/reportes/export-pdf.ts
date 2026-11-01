@@ -23,12 +23,17 @@ const ZEBRA = "#F5F8F9";
 const RH = 16; // alto de fila de tabla
 const PALETA = [ACC, "#7A9AA3", "#C9D6DA", "#3D3D3D", "#9E9E9E", "#E3E8EA"];
 
-export function renderPdf(m: Modelo): Promise<Buffer> {
+export function renderPdf(
+  m: Modelo,
+  // comprimir:false solo para pruebas: deja el texto legible en el archivo.
+  opciones: { comprimir?: boolean } = {},
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: "A4",
       margin: ML,
       bufferPages: true,
+      compress: opciones.comprimir ?? true,
       info: { Title: m.titulo, Author: "Nexora POS", Creator: "Nexora POS" },
     });
     const trozos: Buffer[] = [];
@@ -186,7 +191,6 @@ function dibujar(doc: PDFKit.PDFDocument, m: Modelo) {
 
   titulo("Cómo leerlo");
   parrafo(m.comoSeLee, 10);
-  for (const nota of m.notas) parrafo("• " + nota, 9.5);
 
   for (const sec of m.secciones) {
     titulo(sec.titulo);
@@ -235,7 +239,7 @@ function seccion(
         .font("Helvetica-Bold")
         .fontSize(8.5)
         .fillColor(INK)
-        .text(c.clave, ML + 4, getY() + 4, {
+        .text(c.etiqueta, ML + 4, getY() + 4, {
           width: ancho1 - 8,
           lineBreak: false,
           ellipsis: true,
@@ -270,7 +274,7 @@ function seccion(
         .fillColor(INK)
         .font("Helvetica-Bold")
         .fontSize(7.5)
-        .text(c.clave, x + 3, getY() + 4, {
+        .text(c.etiqueta, x + 3, getY() + 4, {
           width: anchos[i] - 6,
           height: RH - 4,
           ellipsis: true,

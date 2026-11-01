@@ -41,7 +41,8 @@ import {
 import { alertForActor, OWNER_ONLY_ALERT_TYPES } from "./alerts";
 import { REPORTES } from "./reportes";
 import {
-  GUIA_MINIMA,
+  PRESENTACION,
+  exportable,
   comprobarLimite,
   construirModelo,
   esFormato,
@@ -49,6 +50,7 @@ import {
   puedeVerReporte,
 } from "./reportes/export";
 import { renderPdf } from "./reportes/export-pdf";
+import { GUIA_REPORTES } from "./reportes/guia";
 import { renderXlsx } from "./reportes/export-xlsx";
 
 export function dateRange(query: Record<string, string>) {
@@ -719,7 +721,7 @@ export class ReportsController {
     @Res() res: Response,
   ) {
     const def = Object.hasOwn(REPORTES, name) ? REPORTES[name] : null;
-    if (!def || !Object.hasOwn(GUIA_MINIMA, name))
+    if (!def || !exportable(name))
       bad("Este reporte todavía no se puede exportar.");
     if (!esFormato(query.format)) bad("Formato no válido: usa pdf o xlsx.");
     if (!puedeVerReporte(def, actor.permissions)) denied();
@@ -731,7 +733,8 @@ export class ReportsController {
     comprobarLimite(rows.length);
     const modelo = construirModelo({
       nombre: name,
-      guia: GUIA_MINIMA[name],
+      guia: GUIA_REPORTES[name],
+      presentacion: PRESENTACION[name],
       titulo: def.title,
       filas: rows,
       negocio: settings.name ?? "",

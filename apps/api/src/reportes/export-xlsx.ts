@@ -59,17 +59,13 @@ export async function renderXlsx(m: Modelo): Promise<Buffer> {
   resumen.mergeCells(`A${como.number}:C${como.number}`);
   como.alignment = { wrapText: true, vertical: "top" };
   como.height = 32;
-  for (const nota of m.notas) {
-    const f = resumen.addRow(["• " + neutralizar(nota)]);
-    resumen.mergeCells(`A${f.number}:C${f.number}`);
-  }
 
   // Una hoja por sección, con encabezados fijos.
   for (const sec of m.secciones) {
     const hoja = libro.addWorksheet(nombreHoja(sec.titulo));
     hoja.views = [{ state: "frozen", ySplit: 1 }];
     hoja.columns = sec.columnas.map((c) => ({
-      header: c.clave,
+      header: c.etiqueta,
       key: c.clave,
       width: Math.min(Math.max(c.clave.length + 4, 14), 40),
     }));
