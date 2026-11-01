@@ -2,6 +2,25 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-01 · ChatGPT NUBE · Pieza 1 · verificación por contenido
+
+Base comparada: `origin/nexora-cloud` `d067a901`, la cola del 27-oct y las ramas remotas `chatgpt-*`. Se comparó contenido y comportamiento actual, no solo el número de commits. La rama `producto-nexora` se mantuvo como carril separado: sus cambios no se mezclan hacia la tienda.
+
+| Función / rama de origen | Estado en `nexora-cloud` | Decisión y evidencia |
+|---|---|---|
+| Selector claro/oscuro y ruta angosta · `lumina-adentro-b` | Ya está | `App.tsx` ya expone los `aria-label` de ambos modos; `Management.tsx` ya tiene la etiqueta de Almacén; la ruta tiene reglas móviles. El CI rojo histórico de esa rama está superado en la interfaz, pero el CI actual de la tienda sigue rojo por `tests/dinero-auditoria`, asunto reservado a Claude PC. No duplicar. |
+| Ruta prohibida sin montar ni pedir datos · `qa-medios` | Falta | El guardia actual redirige dentro de un efecto, después de que las consultas y el árbol de la pantalla pueden iniciarse. Se conserva como el primer arreglo de QA. |
+| Tooltip anual legible en oscuro · `qa-medios` | Falta | `.year-pie-tip` usa `var(--ink, ...)`, pero `:root` y el tema oscuro no definen `--ink`; el contraste depende del fallback oscuro y es incorrecto en oscuro. |
+| Historial de Ventas a 390 px · `qa-medios` | Falta | `SalesHistory` todavía usa `DataTable` sin la prop `cards`; Total, Pagos y Solicitar anulación pueden quedar fuera de vista. |
+| Ocultar totales/formas de pago a cajera · `ventas-ciego` | Pendiente de decisión | Sigue sin integrar, como ordenó la dueña. No se mezcla ni se modifica hasta su decisión expresa. |
+| Reportes, Configuración, Mercancía/Equipos y Asistente · `lumina-adentro-*` | Ya está / producto separado | La mayor parte del rediseño ya llegó por commits distintos al producto y/o a la tienda; las ramas viejas no se mezclarán en bloque. Se rescatará solamente un defecto verificable. |
+| División del bundle F1-01 · `f1-01-bundle` | Falta | La rama `980a5ca0` está un commit por delante de `producto-nexora`, con `verify`, `windows-installer` y `render-images` verdes. `nexora-cloud` aún no usa `React.lazy` por pantalla ni tiene `check-bundle`; se retoma después de los tres arreglos de QA. |
+| AT-04 y AT-11 | Ya no hace falta | Sus parches ya están incorporados por equivalencia en el producto; no se reaplican. |
+| Publicidad, soporte, auditorías y colas del 26-oct | Ya no hace falta como código | Son entregas documentales, auditorías o ramas históricas; se conservan para trazabilidad, no se mezclan en bloque. |
+| 3ab Fase 0 de WhatsApp · `nexora-chatgpt-nube-3ab-lote6` | Ya está | No tiene commits pendientes frente a `nexora-cloud`. |
+
+**Siguiente orden ejecutable:** primero los tres arreglos restantes de `qa-medios`; después se revalida `f1-01-bundle` sobre su carril de producto. No se tocará el fallo global de dinero ni archivos de API, migraciones, caja, pagos, NCF o pruebas de dinero.
+
 ## 2026-10-15 · ChatGPT PC · `nexora-chatgpt-pc` · validación envío del mensajero
 
 - **Base:** rama creada desde `nexora-chatgpt-nube` `bab48736bec28cd4599da8604619670053401076`. Solo se corrigió el aislamiento de una prueba E2E que fallaba al repetirla; el código de aplicación no cambió. PostgreSQL local embebido, base de pruebas separada de producción.
