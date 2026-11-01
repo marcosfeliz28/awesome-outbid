@@ -147,6 +147,11 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - **Autoauditoría:** la API estuvo en `127.0.0.1:33020` y PostgreSQL en `127.0.0.1:35436`, ambos temporales y detenidos al acabar. La primera preparación no era válida porque la API compilada no existía; la compilé antes de la corrida reportada. No se hicieron commits de código sobre la entrega de Claude, ni se relajó ninguna aserción.
 - **Pendiente:** aplicar los dos ajustes de fixture/prueba en una rama de quien mantiene el exportador y repetir las 5 pruebas API, después el CI completo. Este informe es de validación: no declara el exportador listo ni cambia su lógica.
 
+### Actualización con CI remoto
+
+- El CI del commit `a6bfe1bb` terminó con `windows-installer` y `render-images` verdes, y `verify` rojo. El fallo confirmado es solo `tests/reportes-export-api.test.ts:148:22`: `AssertionError: expected 401 to be 403 // Object.is equality`. La corrección mínima sigue siendo crear ese usuario de prueba con `mustChangePassword: false`.
+- La aserción de cifras de crédito sí pasó en CI (`las cifras del Excel son las mismas que las de la pantalla`, 158 ms). El `undefined` observado en mi corrida aislada dependió de su seed/rango temporal y no debe tratarse como defecto confirmado del exportador. Queda como riesgo de fixture determinista, no como bloqueo funcional.
+
 ## Plantilla
 
 **Fecha · asistente (NUBE o PC) · rama · commit**
