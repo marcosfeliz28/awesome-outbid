@@ -27,3 +27,15 @@ describe("H-05 · el descifrado de respaldos no pide gigabytes de memoria", () =
     expect(() => decodeWith({ log2N: 15, r: 16, p: 4 })).toThrow(BackupFormatError);
   });
 });
+
+describe("H-15 · download() tiene tiempo máximo y tope de reintentos", () => {
+  const src = read("apps/web/src/api.ts");
+  const fn = src.slice(src.indexOf("export async function download("));
+
+  it("la petición tiene tiempo máximo", () => {
+    expect(fn.slice(0, 400)).toMatch(/signal: AbortSignal\.timeout\(DOWNLOAD_TIMEOUT_MS\)/);
+  });
+  it("tras refrescar la sesión, un 401 que persiste no vuelve a reintentar", () => {
+    expect(fn).toContain("return download(path, filename, false);");
+  });
+});

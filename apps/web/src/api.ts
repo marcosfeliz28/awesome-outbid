@@ -542,14 +542,16 @@ export async function syncSales() {
   return total;
 }
 export const DOWNLOAD_FAILED = "No se pudo descargar el archivo.";
-export async function download(path: string, filename: string) {
+const DOWNLOAD_TIMEOUT_MS = 120_000; // shortcut: tope fijo; un respaldo grande podría necesitar más
+export async function download(path: string, filename: string, retry = true) {
   const response = await fetch("/api" + path, {
     headers: { Authorization: "Bearer " + useStore.getState().token },
     credentials: "include",
+    signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
   });
-  if (response.status === 401) {
+  if (response.status === 401 && retry) {
     await refreshSession();
-    return download(path, filename);
+    return download(path, filename, false);
   }
   if (!response.ok) {
     // Un 400 dice qué cambiar (por ejemplo, un período que supera el máximo
