@@ -5,6 +5,7 @@
 - Rama `chatgpt-pc/animacion-futurista`, base `origin/producto-nexora` `50563e46`. Se añadió una preferencia local «Máximo / Normal / Apagado», por defecto Normal, y un primer efecto de entrada para el título del acceso y del tablero ejecutivo. No se añadieron animaciones al cobro en POS ni se cambiaron API o reglas de negocio.
 - La prueba inicial falló porque la preferencia aún no existía; después pasó. Pruebas unitarias: 2/2; navegador del acceso con API simulada: 5/5 a 390 y 1366 px, incluidos Apagado y movimiento reducido; capturas en `docs/diseno/capturas/2026-11-01/`. ESLint, typecheck y build web aprobados. No se ha probado autenticación real ni interacción completa de Configuración/tablero en navegador.
 - `pnpm check`: aprobado, 1251 pruebas aprobadas y 11 omitidas; compilación web y API aprobadas. La prueba de restauración de respaldo se omitió por no contar con su base descartable específica.
+- Corrección adicional: el seguimiento visual del puntero se desactiva con efectos Apagado o movimiento reducido. Regresión de navegador: antes `Expected: ""; Received: "25px"`; después 6/6 pruebas de acceso aprobadas con la web reconstruida.
 - **No listo:** faltan completar los efectos solicitados para el tablero y sus gráficos, verificar el control real, medir rendimiento y aumento por pantalla, autoauditoría y tres CI verdes sobre el último SHA. La prueba de preferencias no sustituye esas comprobaciones. No se desplegó ni se tocó Render o la base de la tienda.
 
 ## 2026-10-24 · ChatGPT PC · corrección CPC-8 de PC-18

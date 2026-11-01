@@ -446,6 +446,10 @@ function Login() {
       }
       ref={page}
       onPointerMove={(e) => {
+        if (
+          document.documentElement.dataset.effects === "apagado" ||
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ) return;
         if (moved.current) return;
         const { clientX: x, clientY: y } = e;
         moved.current = requestAnimationFrame(() => {

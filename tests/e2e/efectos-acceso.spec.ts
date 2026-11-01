@@ -28,3 +28,15 @@ test("acceso respeta el movimiento reducido del sistema", async ({ page }) => {
   await expect(title).toBeVisible();
   expect(await title.evaluate((node) => getComputedStyle(node).animationName)).toBe("none");
 });
+
+test("acceso no programa movimiento del puntero cuando los efectos están apagados", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("norexos:efectos", "apagado"));
+  await page.route("**/api/**", (route) => route.fulfill({ status: 401, json: { message: "Prueba aislada" } }));
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /entrar/i }).first()).toBeVisible();
+  const login = page.locator(".login-page");
+  const before = await login.evaluate((node) => (node as HTMLElement).style.getPropertyValue("--mx"));
+  await login.dispatchEvent("pointermove", { clientX: 25, clientY: 25 });
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  expect(await login.evaluate((node) => (node as HTMLElement).style.getPropertyValue("--mx"))).toBe(before);
+});
