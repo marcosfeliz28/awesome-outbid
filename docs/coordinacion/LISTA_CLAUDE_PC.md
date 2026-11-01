@@ -58,3 +58,4 @@ LISTA: claude-pc/anim-entrada 29818b43b6afca4f40ddba5b763d080808d198cc (orden 98
 
 LISTA: claude-pc/pq-20 4fa1e1ec182d39600f0b2916214a87e7c53674be (cola permanente pieza 20: pruebas de casos borde de gv-money.ts, solo pruebas, 18 pasan; verify, windows-installer y render-images en verde en 4fa1e1ec; pnpm check exit 0; sin cambios de código de producción; no mezclado ni desplegado)
 LISTA: claude-pc/gv-incentivos 35fab9e160b91f4469c2fed528225d72a5323e17 (orden 103 revisada: incentivo GV por porcentaje pagado, catálogo de 10 cursos, moneda del pago DOP/USD y reembolsos; US$ sin tasa queda como DUDA; verify, windows-installer y render-images en verde; no desplegar sin revisión de Nexora 1)
+LISTA: claude-pc/anim-tablero 5d52f1498f075c0e9e973cc537b81c9a87854952 (orden 98 / cola pieza 2: animación del tablero —KPIs, franja de KPIs y alertas—; verify, windows-installer y render-images en verde; solo presentación; no desplegar sin revisión de Nexora 1)
