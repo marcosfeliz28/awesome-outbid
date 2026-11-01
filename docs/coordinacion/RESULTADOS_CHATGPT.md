@@ -138,6 +138,15 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
   - Corregir el mapeo de transferencias rechazadas en el reporte de cierre y definir idempotencia/reintentos de Resend.
   - Resultado entregado localmente; no hice `git push` ni PR porque la dueña aclaró que por ahora todo se trabaja en casa. El último commit local de código de prueba es `2902a03`; el documento queda en el siguiente commit local.
 
+## 2026-11-01 · ChatGPT NUBE · `chatgpt-nube/reportes-export-valida-1nov` · base `a7e47a16`
+
+- **Encargo:** validar el exportador de la rama de Claude sin modificarlo. Construí la API y ejecuté las pruebas en PostgreSQL local descartable, con migraciones y seed aplicados; no se accedió a producción, Render, base de tienda ni credenciales reales.
+- **Pruebas que pasan:** `pnpm exec vitest run tests/reportes-export.test.ts tests/gv-reportes-export.test.ts` pasó: `13 passed` (10 de reportes generales y 3 de GV). También pasaron 3 de las 5 pruebas de `tests/reportes-export-api.test.ts`: PDF de margen, Excel de formas de pago y respuestas 400/401.
+- **Prueba API real que falla:** `pnpm exec vitest run --config vitest.integration.config.ts --testNamePattern='exportar reportes a PDF y Excel' tests/reportes-export-api.test.ts` terminó `2 failed | 3 passed (5)`. Fallo exacto 1: `tests/reportes-export-api.test.ts:148:22` — `AssertionError: expected 401 to be 403`. La cuenta creada para probar el rol sin `profit:read` queda con `mustChangePassword=true`; su token no sirve para autorización normal y devuelve 401 antes de comprobar permiso. Corrección mínima propuesta para la prueba: al crearla en la petición `/users`, incluir `mustChangePassword: false`; no cambiar el guard ni permisos del producto.
+- **Segundo fallo API real:** `tests/reportes-export-api.test.ts:206:7` — `AssertionError: expected undefined to be close to +0, received difference is NaN, but expected 0.005`. La prueba busca `Total saldo que debe` en la hoja Resumen. En este seed no hay detalle de créditos abierto dentro del período que produzca esa cifra, por lo que `cifra(...)` da `undefined`. Antes de alterar exportación, la regresión debe crear un crédito pendiente determinista o comprobar el total de la sección que efectivamente se exporta. El motor construye esa etiqueta desde `GUIA_REPORTES` en `apps/api/src/reportes/export.ts:323-332`; no hay evidencia de que haya cambiado un monto.
+- **Autoauditoría:** la API estuvo en `127.0.0.1:33020` y PostgreSQL en `127.0.0.1:35436`, ambos temporales y detenidos al acabar. La primera preparación no era válida porque la API compilada no existía; la compilé antes de la corrida reportada. No se hicieron commits de código sobre la entrega de Claude, ni se relajó ninguna aserción.
+- **Pendiente:** aplicar los dos ajustes de fixture/prueba en una rama de quien mantiene el exportador y repetir las 5 pruebas API, después el CI completo. Este informe es de validación: no declara el exportador listo ni cambia su lógica.
+
 ## Plantilla
 
 **Fecha · asistente (NUBE o PC) · rama · commit**
