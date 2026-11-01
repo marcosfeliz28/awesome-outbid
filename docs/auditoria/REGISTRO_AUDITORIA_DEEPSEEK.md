@@ -52,3 +52,15 @@ Comprobé con grep cada afirmación de la segunda entrega. La mayoría es correc
 | 6-13 | Otros controles marcados «sin hallazgo» | **Aceptados sin revisar uno por uno** | Comprobé solo el cálculo y el umbral de USD. Los demás no los verifiqué individualmente. |
 
 Nota: DeepSeek marcó tres veces el mismo problema (1, 2 y 3). Lo registro como un solo hallazgo.
+
+## Fase 2 · paquete F2-P03 (`incentives.ts`, `formal-report.ts`), verificado por Claude
+
+Ninguna de las propuestas de corrección se aplica sin revisión humana: tocan incentivos y cálculos de dinero.
+
+| # | Hallazgo de DeepSeek | Veredicto | Motivo |
+|---|---|---|---|
+| 1 | Suma de incentivos convierte `Decimal` a `number` (`incentives.ts:599-603`) | **Confirmado, bajo-medio** | El código hace `left.toNumber()` antes de sumar. Con montos de pesos a dos decimales el error es muy pequeño, pero rompe la regla de aritmética decimal. La propuesta (`d(...).plus(left)`) es razonable; falta confirmar que `out` guarda `Decimal` y no `number`. **Requiere revisión humana.** |
+| 2 | Fecha `"2026-10-27"` fija en la rotación de `formal-report.ts:364` | **Confirmado, bajo** | La fecha existe en el código. La propuesta de leerla de una variable de entorno es **riesgosa**: si la variable se configura mal en producción, cambia en silencio qué períodos DGII se calculan. Mejor dejar la fecha en una constante con nombre y un comentario que diga de dónde sale. **Requiere revisión humana.** |
+| 3 | `paidFraction` no se acota entre 0 y 1 (`incentives.ts:309-311`) | **Confirmado, bajo** | La fórmula no tiene límites. Si `creditBalance` supera el total por un dato corrupto, el incentivo sale negativo o mayor que el total. Acotarlo oculta el dato malo: conviene también registrar el caso. **Requiere revisión humana.** |
+
+Pendiente: DeepSeek marcó «Aprobado con observaciones» sin detallar los demás controles del paquete. No los he verificado.
