@@ -26,6 +26,7 @@ export const GV_CURRENCIES = ["DOP", "USD"] as const;
 // monto fijo del incentivo en RD$ por alumna. Se empata por nombre exacto.
 // shortcut: catálogo en código, no en base; cambiarlo exige un despliegue.
 export type CursoGv = {
+  tipo: "automaquillaje" | "brazilian" | "personalizado";
   nombre: string;
   precio: number;
   moneda: "RD$" | "US$";
@@ -35,54 +36,63 @@ export type CursoGv = {
 // Brazilian touch (curso 8): incentivo 0; lo lleva Yaisa aparte.
 export const GV_CATALOGO: CursoGv[] = [
   {
+    tipo: "personalizado",
     nombre: "Curso de maquilladora profesional personalizado",
     precio: 70000,
     moneda: "RD$",
     incentivo: 1000,
   },
   {
+    tipo: "personalizado",
     nombre: "Curso maquilladora profesional personalizado",
     precio: 55000,
     moneda: "RD$",
     incentivo: 1000,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso de automaquillaje básico grupal",
     precio: 4500,
     moneda: "RD$",
     incentivo: 50,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso de automaquillaje básico personalizado",
     precio: 200,
     moneda: "US$",
     incentivo: 50,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso de automaquillaje básico personalizado avanzado",
     precio: 270,
     moneda: "US$",
     incentivo: 50,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso automaquillaje básico modalidad 2 clases",
     precio: 350,
     moneda: "US$",
     incentivo: 50,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso de automaquillaje básico personalizado 3 clases",
     precio: 450,
     moneda: "US$",
     incentivo: 50,
   },
   {
+    tipo: "brazilian",
     nombre: "Perfeccionamiento para maquilladores grupal Brazilian touch",
     precio: 18000,
     moneda: "RD$",
     incentivo: 0,
   },
   {
+    tipo: "personalizado",
     nombre:
       "Perfeccionamiento para maquilladores VIP personalizado: piel blindada + ojos social con delineado o novias",
     precio: 18000,
@@ -90,12 +100,21 @@ export const GV_CATALOGO: CursoGv[] = [
     incentivo: 500,
   },
   {
+    tipo: "personalizado",
     nombre: "Perfeccionamiento para maquilladores: piel glow + ojos social",
     precio: 15000,
     moneda: "RD$",
     incentivo: 500,
   },
 ];
+/** Opciones del formulario «nuevo curso»: sin incentivo ni costos. */
+export const catalogoOpciones = () =>
+  GV_CATALOGO.map(({ nombre, precio, moneda, tipo }) => ({
+    nombre,
+    precio,
+    moneda,
+    tipo,
+  }));
 /** Moneda de precio del curso; un curso fuera del catálogo se cobra en RD$. */
 export const monedaDeCurso = (nombre: string | null | undefined) =>
   GV_CATALOGO.find((c) => c.nombre === nombre)?.moneda ?? "RD$";

@@ -5,6 +5,7 @@ import {
   gvReembolsoMes,
 } from "../apps/api/src/gv-incentives";
 import {
+  catalogoOpciones,
   gvPaymentInput,
   gvTotals,
   valorEnMoneda,
@@ -278,5 +279,35 @@ describe("GV · moneda del pago (decisiones de la dueña, 31-oct)", () => {
       method: "efectivo",
     });
     expect(dop.success).toBe(true);
+  });
+});
+
+describe("GV · catálogo como opciones del formulario de curso (N1, 1-nov)", () => {
+  it("cada curso tiene su tipo: automaquillaje 3–7, brazilian 8, personalizado 1, 2, 9, 10", () => {
+    const tipos = GV_CATALOGO.map((c) => c.tipo);
+    expect(tipos).toEqual([
+      "personalizado",
+      "personalizado",
+      "automaquillaje",
+      "automaquillaje",
+      "automaquillaje",
+      "automaquillaje",
+      "automaquillaje",
+      "brazilian",
+      "personalizado",
+      "personalizado",
+    ]);
+  });
+
+  it("la lista de opciones sale sin incentivo y con precio y moneda del catálogo", () => {
+    const opciones = catalogoOpciones();
+    expect(opciones).toHaveLength(10);
+    expect(opciones[3]).toEqual({
+      nombre: "Curso de automaquillaje básico personalizado",
+      precio: 200,
+      moneda: "US$",
+      tipo: "automaquillaje",
+    });
+    expect(opciones.every((o) => !("incentivo" in o))).toBe(true);
   });
 });

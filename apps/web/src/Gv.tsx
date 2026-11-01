@@ -235,6 +235,17 @@ function CourseForm({
   onClose: () => void;
 }) {
   const client = useQueryClient();
+  // Catálogo de Génesis: al elegir una opción se rellenan nombre, precio y tipo.
+  const catalog = useQuery({
+    queryKey: ["gv-catalog"],
+    queryFn: () =>
+      api<{ nombre: string; precio: number; moneda: string; tipo: string }[]>(
+        "/gv/catalog",
+      ),
+    enabled: !course,
+  });
+  const [opcion, setOpcion] = useState("");
+  const elegida = catalog.data?.find((c) => c.nombre === opcion);
   const [form, setForm] = useState({
     name: course?.name ?? "",
     type: course?.type ?? "automaquillaje",
@@ -243,6 +254,17 @@ function CourseForm({
     capacity: String(course?.capacity ?? ""),
     active: course?.active ?? true,
   });
+  const elegir = (nombre: string) => {
+    setOpcion(nombre);
+    const c = catalog.data?.find((x) => x.nombre === nombre);
+    if (c)
+      setForm((f) => ({
+        ...f,
+        name: c.nombre,
+        type: c.tipo,
+        price: String(c.precio),
+      }));
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = (key: string, value: unknown) =>
@@ -276,10 +298,24 @@ function CourseForm({
       title={course ? "Editar curso" : "Nuevo curso"}
     >
       <form onSubmit={save} className="form-grid gv-form">
+        {!course && (
+          <label className="field full">
+            <span>Curso del catálogo</span>
+            <select value={opcion} onChange={(e) => elegir(e.target.value)}>
+              <option value="">Curso libre (otro)</option>
+              {(catalog.data ?? []).map((c) => (
+                <option key={c.nombre} value={c.nombre}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="field full">
           <span>Nombre</span>
           <input
             required
+            readOnly={!!elegida}
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
           />
@@ -288,6 +324,7 @@ function CourseForm({
           <span>Tipo</span>
           <select
             value={form.type}
+            disabled={!!elegida}
             onChange={(e) => set("type", e.target.value)}
           >
             <Options map={TYPES} />
@@ -303,10 +340,11 @@ function CourseForm({
           />
         </label>
         <label className="field">
-          <span>Precio (RD$)</span>
+          <span>Precio ({elegida?.moneda ?? "RD$"})</span>
           <input
             inputMode="decimal"
             required
+            readOnly={!!elegida}
             value={form.price}
             onChange={(e) => set("price", e.target.value)}
           />

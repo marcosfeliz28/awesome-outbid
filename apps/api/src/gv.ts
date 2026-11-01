@@ -44,6 +44,7 @@ import {
   planGvImportPayments,
   gvBankOptions,
   monedaDeCurso,
+  catalogoOpciones,
   valorPesos,
 } from "./gv-money";
 import { GV_CATALOGO, gvDevengoMes, gvReembolsoMes } from "./gv-incentives";
@@ -148,6 +149,13 @@ export class GvController {
     });
     if (!row) bad("Curso no encontrado.");
     return row;
+  }
+
+  // Catálogo de cursos para el formulario «nuevo curso» (solo lectura, sin incentivo).
+  @Get("catalog")
+  @Permit("gv:read")
+  catalog() {
+    return catalogoOpciones();
   }
 
   @Get("courses")
