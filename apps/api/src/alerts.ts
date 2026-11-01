@@ -825,6 +825,17 @@ export class AlertCacheInterceptor implements NestInterceptor {
     return next.handle().pipe(finalize(() => this.engine.invalidate()));
   }
 }
+// Cuerpo de PUT /alert-rules. El tope de 100 reglas da holgura: hay un puñado de tipos.
+export const alertRulesBody = z.object({
+  rules: z.array(
+    z.object({
+      type: z.string(),
+      active: z.boolean(),
+      threshold: z.record(z.number()),
+    }),
+  ).max(100),
+});
+
 @Controller()
 export class AlertsController {
   constructor(
@@ -913,18 +924,7 @@ export class AlertsController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
-      z.object({
-        rules: z.array(
-          z.object({
-            type: z.string(),
-            active: z.boolean(),
-            threshold: z.record(z.number()),
-          }),
-        ),
-      }),
-      body,
-    );
+    const data = parse(alertRulesBody, body);
     for (const rule of data.rules)
       await this.db.alertRule.upsert({
         where: { type: rule.type },

@@ -209,6 +209,75 @@ describe("GV · banco de lista y anular pago", () => {
   });
 });
 
+describe("GV · pago con tarjeta sin cuenta bancaria", () => {
+  it("tarjeta no exige banco pero sí referencia; transferencia sigue exigiendo banco", async () => {
+    const course = (await newCourse(gv)).body;
+    courseIds.push(course.id);
+    const e = await enroll(course.id, 9000, "QA Tarjeta");
+    const sinReferencia = await request(
+      "/gv/payments",
+      gv,
+      payBody(e.id, { amount: 100, method: "tarjeta", bank: "Terminal GV" }),
+    );
+    expect(sinReferencia.status).toBe(400);
+    const paid = await ok(
+      "/gv/payments",
+      gv,
+      payBody(e.id, {
+        amount: 100,
+        method: "tarjeta",
+        bank: "Terminal GV",
+        reference: "LOTE001-APR8841",
+      }),
+    );
+    expect(paid.method).toBe("tarjeta");
+    expect(paid.verified).toBe(true);
+    expect(paid.bank).toBe("Terminal GV");
+    expect(paid.destination).toBe("gv");
+    const sinBanco = await ok(
+      "/gv/payments",
+      gv,
+      payBody(e.id, {
+        amount: 100,
+        method: "tarjeta",
+        reference: "LOTE001-APR8842",
+      }),
+    );
+    // Sin terminal en Configuración: «Terminal GV» fijo; el destino es el
+    // área GV, nunca una cuenta de banco (aclaración de la orden 93).
+    expect(sinBanco.bank).toBe("Terminal GV");
+    expect(sinBanco.destination).toBe("gv");
+    expect(sinBanco.verified).toBe(true);
+    const transferSinBanco = await request(
+      "/gv/payments",
+      gv,
+      payBody(e.id, { amount: 100, method: "transferencia", reference: "T-1" }),
+    );
+    expect(transferSinBanco.status).toBe(400);
+    const efectivo = await ok(
+      "/gv/payments",
+      gv,
+      payBody(e.id, { amount: 100, method: "efectivo" }),
+    );
+    expect(efectivo.destination).toBeNull();
+  });
+});
+
+describe("GV · anular un pago ya verificado", () => {
+  it("lo anula sin chocar con la regla verificado/rechazado", async () => {
+    const course = (await newCourse(gv)).body;
+    courseIds.push(course.id);
+    const e = await enroll(course.id, 4500, "QA Verificado");
+    const paid = await ok("/gv/payments", gv, transferBody(e.id, 2000));
+    await ok(`/gv/payments/${paid.id}/review`, admin, { verified: true });
+    const voided = await ok("/gv/payments/" + paid.id + "/void", gv, {
+      reason: "Cambio al 15 de noviembre",
+    });
+    expect(voided.rejectedAt).toBeTruthy();
+    expect(voided.verified).toBe(false);
+  });
+});
+
 describe("GV · cursos, inscripciones y pagos", () => {
   it("valida el curso; pagado cuenta sólo lo verificado y el pendiente es exacto", async () => {
     expect((await newCourse(gv, { type: "boda" })).status).toBe(400);

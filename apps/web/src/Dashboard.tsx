@@ -30,6 +30,8 @@ import { formatMoney, can, weekStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
+import { KpiStrip } from "./KpiStrip";
+import { kpiStripVisible } from "./kpiStripModel";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -301,6 +303,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         </Modal>
       )}
       <QueryState query={query}>
+        {kpiStripVisible(user.permissions) && <KpiStrip />}
         <div className="welcome-banner">
           <div>
             <span className="banner-chip">
@@ -343,7 +346,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         </div>
         <YearPie go={go} />
         <DayCard />
-        <div className="kpi-grid">
+        <div className="kpi-grid tablero-kpis">
           {metric.map((m) => (
             <article className="kpi-card" key={m.label}>
               <div className="kpi-top">

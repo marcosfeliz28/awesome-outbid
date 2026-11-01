@@ -6,7 +6,7 @@ import { Badge, Button, Modal } from "@fitstore/ui";
 import { businessDate, can, formatMoney } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { QueryState, toast } from "./helpers";
-import { GvAppointments } from "./GvCitas";
+import { GvAppointments, GV_TERMINAL, paymentBank } from "./GvCitas";
 import { GvLeads } from "./GvInteresadas";
 import "./gv.css";
 
@@ -710,10 +710,16 @@ function PaymentForm({
     method: "transferencia",
     bank: "",
     reference: "",
+    // Moneda del pago: pesos por defecto; en US$ la tasa es obligatoria.
+    currency: "DOP",
+    rate: "",
   });
   const banks = useQuery({
     queryKey: ["gv-banks"],
-    queryFn: () => api<{ genesis: string[]; macgen: string[] }>("/gv/banks"),
+    queryFn: () =>
+      api<{ genesis: string[]; macgen: string[]; terminals: string[] }>(
+        "/gv/banks",
+      ),
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -726,7 +732,9 @@ function PaymentForm({
     try {
       await post("/gv/payments", {
         ...form,
+        bank: paymentBank(form.method, form.bank, banks.data?.terminals),
         amount: Number(form.amount),
+        rate: form.currency === "USD" ? Number(form.rate) : undefined,
         enrollmentId: enrollment.id,
         operationId,
       });
@@ -757,7 +765,7 @@ function PaymentForm({
           />
         </label>
         <label className="field">
-          <span>Monto (RD$)</span>
+          <span>Monto ({form.currency === "USD" ? "US$" : "RD$"})</span>
           <input
             inputMode="decimal"
             required
@@ -783,7 +791,28 @@ function PaymentForm({
             <Options map={METHODS} />
           </select>
         </label>
-        {form.method !== "efectivo" && (
+        <label className="field">
+          <span>Moneda</span>
+          <select
+            value={form.currency}
+            onChange={(e) => set("currency", e.target.value)}
+          >
+            <option value="DOP">Pesos (RD$)</option>
+            <option value="USD">Dólares (US$)</option>
+          </select>
+        </label>
+        {form.currency === "USD" && (
+          <label className="field">
+            <span>Tasa (RD$ por US$)</span>
+            <input
+              inputMode="decimal"
+              required
+              value={form.rate}
+              onChange={(e) => set("rate", e.target.value)}
+            />
+          </label>
+        )}
+        {form.method === "transferencia" && (
           <>
             <label className="field">
               <span>Banco</span>
@@ -812,7 +841,36 @@ function PaymentForm({
             <label className="field">
               <span>Referencia</span>
               <input
-                required={form.method === "transferencia"}
+                required
+                value={form.reference}
+                onChange={(e) => set("reference", e.target.value)}
+              />
+            </label>
+          </>
+        )}
+        {form.method === "tarjeta" && (
+          <>
+            <label className="field">
+              <span>Terminal</span>
+              {(banks.data?.terminals.length ?? 0) > 0 ? (
+                <select
+                  required
+                  value={form.bank}
+                  onChange={(e) => set("bank", e.target.value)}
+                >
+                  <option value="">Elige la terminal…</option>
+                  {banks.data?.terminals.map((t: string) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+              ) : (
+                <input readOnly value={GV_TERMINAL} />
+              )}
+            </label>
+            <label className="field">
+              <span>Referencia (aprobación, lote o voucher)</span>
+              <input
+                required
                 value={form.reference}
                 onChange={(e) => set("reference", e.target.value)}
               />

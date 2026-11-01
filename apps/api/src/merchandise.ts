@@ -36,6 +36,7 @@ import {
   parse,
   uuid,
 } from "./common";
+import { reserveAiInvoiceRead } from "./ai-daily-limit";
 import { assertCodesFree, explainCodeConflict } from "./catalog";
 import {
   checkDamage,
@@ -259,6 +260,7 @@ export class MerchandiseController {
         )
       )
         bad("Usa foto PNG/JPEG/WebP o PDF.");
+      await reserveAiInvoiceRead(this.db, actor);
       extracted = await extractAnthropic(file, process.env.ANTHROPIC_API_KEY, {
         model: process.env.ANTHROPIC_MODEL || DEFAULT_INVOICE_MODEL,
       });

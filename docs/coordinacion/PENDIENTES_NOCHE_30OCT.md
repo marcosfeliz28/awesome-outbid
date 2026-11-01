@@ -43,3 +43,22 @@ Dominio de la portada y casilla de soporte; qué es «la Lacto»; 4 decisiones E
 | Control del cronograma | Norexos 5 | control/norexos | no ejecuta tareas de código |
 | Pedidos de la dueña a revisar | Consultor (Norexos 6) | — | solo reparte; no construye |
 Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; si no tiene dueño, escribir «Tomo: …» en PENDIENTES.
+
+## Registro 30-oct 13:00 UTC (N1, por orden de la dueña: decidir, gastar menos, terminar)
+- Lote único mezclado en un solo push: desglose-e2e-estable (con citas de merchandise.ts), seguridad-bajo, ui-cobros-admin, seguridad-zod-limites, seguridad-20-auditoria; citas de docs/sistema movidas a sus líneas nuevas; vitest.config con todas las pruebas. Nada se despliega hasta que este CI termine verde.
+- Siguiente en orden: (1) CI verde del lote → lectura de cajas (Norexos 2) → desplegar solo web del desglose; (2) T33 (claude/ia-ventas-linea 62720b17, rojo solo por cuatro-cajas.spec.ts:185, intermitente ajeno a la IA) tras rebase sobre el lote; revisar que las 2 migraciones sean aditivas; (3) Fase 2 visual (producto-nexora) sin desplegar.
+- Reducción de gasto: Norexos 7 y 8 archivadas (terminadas); rutina del Director apagada; sesiones activas máximas = N1, Taller, Mercancía (N11), Claude PC. docs-citas-fix (Taller) y claude/ia-ventas-linea-obrero2 quedan obsoletas.
+
+## Registro 31-oct 00:55 UTC (N1)
+- DESPLEGADO en la tienda (commit f656cefa, 3 CI verdes; 0 cajas abiertas leídas por Norexos 2 a las 00:39 UTC; sí de la dueña para API y web): API en vivo 00:45:35 UTC, web en vivo 00:54:07 UTC. /api/health ok, web 200; único error en logs: corte esperado de /api/events al reiniciar la API. Incluye: GV anular pago verificado, GV tarjeta sin banco (GvPayment.destination aditiva), deps de seguridad (body-parser, multer, qs), SQL con Prisma.sql y CORS, topes zod, tope 30/día lecturas IA de facturas, botones admin de cobros, desglose 390 px, reanclado de citas.
+- Primer cobro tras el despliegue: FS-66 Ginette (19,800, transferencia Popular) por Norexos 2 a las 00:51 UTC con la API nueva.
+- NO desplegado aún: T33 IA de ventas (claude-pc/t33-rebase 182e2278, auditada: migraciones aditivas, sin texto de consultas); espera ver la dueña. Pendientes de Claude PC: órdenes 94 (pruebas intermitentes) y 95 (precios, contrato, dominio).
+
+## 31-oct 12:40 UTC · Web con rediseño EN VIVO (ae63fb6d, desplegada 12:10; 0 cajas a las 10:41)
+- Auditoría pública (Agente C, Haiku): sin hallazgos altos. Pendientes bajos: 400 en /api/auth/refresh sin sesión (¿esperado?), 14 px en el login, foco visible de campos. Con sesión: NO COMPROBADO hasta que estén NEXORA_CLAUDE_USER/PASSWORD en el entorno (la dueña).
+- Skill nuevo: auditoria-usuario. Agentes A, B, C archivados. Pendiente: orden 98 (animaciones), zod4, T33, dominio/precios (dueña).
+
+## 31-oct 22:15 UTC · GV (decisiones de la dueña)
+- Incentivos GV: agente Haiku en `claude-pc/gv-incentivos` (bfd0844; CI en curso). Nuevas reglas: pagos en USD se registran con opción de moneda + equivalente en pesos con tasa capturada; devolución quita el incentivo; cada curso es un ítem (docs/operacion/GV_CATALOGO_CURSOS.md).
+- **GV debe tener CIERRE desde ahora** (abrir caja, cerrar caja, factura del día; decisión: la dueña dijo «deben hacerle un cierre»). Diseño (A: misma caja con área GV / B: caja propia) por decidir; asignar a un agente cuando termine el de incentivos (máx. 4 sesiones activas).
+- Reporte de ventas de octubre por área para Génesis: pedido a Norexos 2 (docs/operacion/REPORTE_VENTAS_OCT2026_POR_AREA.md en claude/bitacora-n2).

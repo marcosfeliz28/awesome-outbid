@@ -7,7 +7,7 @@ import {
 } from "../apps/api/src/database-timezone";
 
 const db = (tz: unknown) => ({
-  $queryRawUnsafe: vi.fn(async () => [{ tz }]),
+  $queryRaw: vi.fn(async () => [{ tz }]),
 });
 
 describe("D-B7 · zona horaria de la base al arrancar", () => {
@@ -36,7 +36,7 @@ describe("D-B7 · zona horaria de la base al arrancar", () => {
   it("si la lectura falla no lanza ni avisa", async () => {
     const warn = vi.fn();
     const broken = {
-      $queryRawUnsafe: vi.fn(async () => {
+      $queryRaw: vi.fn(async () => {
         throw new Error("sin conexión");
       }),
     };

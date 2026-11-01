@@ -184,7 +184,7 @@ function DriveBackupPanel() {
       {data && !data.configured && (
         <>
           <p>
-            Falta configurarlo en el servidor. Pide a quien instaló Nexora que
+            Falta configurarlo en el servidor. Pide a quien instaló Norexos que
             siga la guía «Respaldo diario a Google Drive»
             (docs/RESPALDO_DRIVE.md).
           </p>

@@ -77,3 +77,10 @@ Revisadas las 41 líneas: **ninguna es tilde rota**. Todas son consultas de URL 
 | `apps/web/src/YearPie.tsx:41` | queryFn: () => api<any>("/dashboard/year?year=" + year), | (sin cambio: URL o código) | ninguna |
 | `apps/web/src/YearPie.tsx:52` | go(`month-report?from=${range.from}&to=${range.to}`); | (sin cambio: URL o código) | ninguna |
 | `apps/web/src/api.ts:414` | "/products?limit=" + limit + "&page=" + page, | (sin cambio: URL o código) | ninguna |
+
+## Estado (T38, rama `claude/docs-venta-acciones` desde `nexora-cloud`)
+
+- Aplicado: `docs/diseno/borradores-local/titulares-portada.md:10` («Nexora POS» → «Norexos»). Conteo de `scripts/prohibidos-borradores.mjs`: 24 → 23.
+- Ya estaba aplicado en `nexora-cloud`: las filas de `docs/venta/LANDING_TEXTOS.md` (no se tocó, según la orden).
+- No se cambió (la acción es ninguna, nota de fuente, [RETIRADO] o aviso de revisión): `LANDING_EN_PLANES.md`, `META_DESCRIPCIONES.md`, `consistencia-marca.md`, `titulares-cortos.md`, y las líneas 1 y 3 de `titulares-portada.md`.
+- Hallazgos que no estaban en esta tabla y no son promesas (se dejan para revisión): `docs/venta/LANDING_TEXTOS_EN.md:3-4` (nota de borrador), `docs/venta/REVISION_FAQ_MANUAL.md:7` («ninguna mención»), `docs/diseno/borradores-local/glosario-en.md:25` y `meta-tabla.md:12` (negaciones), `guion-video.md:1` (nota de fuente), `glosario-cajera-esqueleto-2.md:11-12` (definición con [REVISAR A MANO]).

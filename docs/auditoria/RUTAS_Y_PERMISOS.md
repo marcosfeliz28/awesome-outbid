@@ -140,8 +140,8 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del m√
 | `/api/quotes` | GET | `sale:write` | `apps/api/src/admin.ts:739` |
 | `/api/quotes` | POST | `sale:write` | `apps/api/src/admin.ts:745` |
 | `/api/quotes/:id/convert` | POST | `sale:write` | `apps/api/src/admin.ts:802` |
-| `/api/reportes` | GET | `reports:read` | `apps/api/src/reports.ts:684` |
-| `/api/reports/:name` | GET | `reports:read` | `apps/api/src/reports.ts:692` |
+| `/api/reportes` | GET | `reports:read` | `apps/api/src/reports.ts:697` |
+| `/api/reports/:name` | GET | `reports:read` | `apps/api/src/reports.ts:705` |
 | `/api/reports/formal` | GET | `reports:read` | `apps/api/src/formal-report.ts:42` |
 | `/api/reports/income-by-day` | GET | `reports:read` | `apps/api/src/income-report.ts:292` |
 | `/api/returns` | POST | `sale:manage` | `apps/api/src/sales.ts:3223` |
@@ -160,7 +160,7 @@ Generado por `scripts/rutas-permisos.mjs`. 187 rutas; 0 sin @Permit cerca del m√
 | `/api/sales/:id/seller` | POST | `*` | `apps/api/src/sales.ts:2147` |
 | `/api/sales/:id/void` | POST | `*` | `apps/api/src/sales.ts:2405` |
 | `/api/sales/:id/void-requests` | POST | `sale:write` | `apps/api/src/sales.ts:1868` |
-| `/api/sales/mine/:period` | GET | `sale:write` | `apps/api/src/reports.ts:1356` |
+| `/api/sales/mine/:period` | GET | `sale:write` | `apps/api/src/reports.ts:1369` |
 | `/api/sales/offline-resolution` | POST | `sale:write` | `apps/api/src/offline-sales.ts:40` |
 | `/api/sales/offline-review/discard` | POST | `sale:write` | `apps/api/src/offline-sale-review.ts:90` |
 | `/api/sales/sync` | POST | `sale:write` | `apps/api/src/sales.ts:1481` |

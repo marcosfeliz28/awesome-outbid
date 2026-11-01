@@ -20,6 +20,85 @@ export const GV_CONCEPTS = [
 ] as const;
 export const GV_METHODS = ["efectivo", "transferencia", "tarjeta"] as const;
 export const GV_CLOSED = new Set(["cancelada", "reembolsada"]);
+export const GV_CURRENCIES = ["DOP", "USD"] as const;
+
+// Catálogo de cursos de Génesis (docs/operacion/GV_CATALOGO_CURSOS.md), con
+// monto fijo del incentivo en RD$ por alumna. Se empata por nombre exacto.
+// shortcut: catálogo en código, no en base; cambiarlo exige un despliegue.
+export type CursoGv = {
+  nombre: string;
+  precio: number;
+  moneda: "RD$" | "US$";
+  incentivo: number;
+};
+// DUDA: la asignación del incentivo por curso es lectura de N1 del catálogo.
+// Brazilian touch (curso 8): incentivo 0; lo lleva Yaisa aparte.
+export const GV_CATALOGO: CursoGv[] = [
+  {
+    nombre: "Curso de maquilladora profesional personalizado",
+    precio: 70000,
+    moneda: "RD$",
+    incentivo: 1000,
+  },
+  {
+    nombre: "Curso maquilladora profesional personalizado",
+    precio: 55000,
+    moneda: "RD$",
+    incentivo: 1000,
+  },
+  {
+    nombre: "Curso de automaquillaje básico grupal",
+    precio: 4500,
+    moneda: "RD$",
+    incentivo: 50,
+  },
+  {
+    nombre: "Curso de automaquillaje básico personalizado",
+    precio: 200,
+    moneda: "US$",
+    incentivo: 50,
+  },
+  {
+    nombre: "Curso de automaquillaje básico personalizado avanzado",
+    precio: 270,
+    moneda: "US$",
+    incentivo: 50,
+  },
+  {
+    nombre: "Curso automaquillaje básico modalidad 2 clases",
+    precio: 350,
+    moneda: "US$",
+    incentivo: 50,
+  },
+  {
+    nombre: "Curso de automaquillaje básico personalizado 3 clases",
+    precio: 450,
+    moneda: "US$",
+    incentivo: 50,
+  },
+  {
+    nombre: "Perfeccionamiento para maquilladores grupal Brazilian touch",
+    precio: 18000,
+    moneda: "RD$",
+    incentivo: 0,
+  },
+  {
+    nombre:
+      "Perfeccionamiento para maquilladores VIP personalizado: piel blindada + ojos social con delineado o novias",
+    precio: 18000,
+    moneda: "RD$",
+    incentivo: 500,
+  },
+  {
+    nombre: "Perfeccionamiento para maquilladores: piel glow + ojos social",
+    precio: 15000,
+    moneda: "RD$",
+    incentivo: 500,
+  },
+];
+/** Moneda de precio del curso; un curso fuera del catálogo se cobra en RD$. */
+export const monedaDeCurso = (nombre: string | null | undefined) =>
+  GV_CATALOGO.find((c) => c.nombre === nombre)?.moneda ?? "RD$";
 
 const optionalText = (max: number) =>
   z
@@ -57,6 +136,9 @@ export const gvPaymentFields = {
   method: z.enum(GV_METHODS),
   bank: optionalText(120),
   reference: optionalText(120),
+  // Moneda del pago (por defecto pesos). En US$ la tasa es obligatoria.
+  currency: z.enum(GV_CURRENCIES).default("DOP"),
+  rate: z.number().positive().max(100000).nullish(),
 };
 // Bancos de GV (orden de la dueña, 28-oct): la misma lista de la caja
 // (Configuración → cuentas de banco), agrupada por empresa según su nombre.
@@ -70,12 +152,16 @@ export async function gvBankOptions(tx: any, branchId: string) {
   return {
     genesis: all.filter(genesis),
     macgen: all.filter((b) => !genesis(b)),
+    // Terminales de tarjeta (Configuración); con tarjeta no se elige banco.
+    terminals: Array.isArray(data.cardTerminals)
+      ? (data.cardTerminals as string[])
+      : [],
   };
 }
 // Con lista en Configuración, el banco debe ser de la lista; sin lista no se
 // exige (igual que la caja).
 export function assertGvBank(
-  banks: { genesis: string[]; macgen: string[] },
+  banks: { genesis: string[]; macgen: string[]; terminals?: string[] },
   bank: string | null,
 ) {
   const listed = [...banks.genesis, ...banks.macgen];
@@ -101,10 +187,38 @@ export const transferDetails = (
       message: "es obligatoria en una transferencia",
     });
 };
+export const GV_TERMINAL = "Terminal GV";
+export const GV_CARD_DESTINATION = "gv";
+// Tarjeta: sin banco; la referencia (aprobación, lote o voucher) identifica el
+// cobro en la conciliación.
+export const cardDetails = (
+  p: { method: string; reference: string | null },
+  ctx: z.RefinementCtx,
+) => {
+  if (p.method === "tarjeta" && !p.reference)
+    ctx.addIssue({
+      code: "custom",
+      path: ["reference"],
+      message: "es obligatoria con tarjeta (aprobación, lote o voucher)",
+    });
+};
+export const usdRate = (
+  p: { currency?: string; rate?: number | null },
+  ctx: z.RefinementCtx,
+) => {
+  if (p.currency === "USD" && !p.rate)
+    ctx.addIssue({
+      code: "custom",
+      path: ["rate"],
+      message: "es obligatoria en US$ (pesos por dólar)",
+    });
+};
 export const gvPaymentInput = <T extends z.ZodRawShape>(extra: T) =>
-  z
-    .object({ ...gvPaymentFields, ...extra })
-    .superRefine((v, ctx) => transferDetails(v as GvPaymentData, ctx));
+  z.object({ ...gvPaymentFields, ...extra }).superRefine((v, ctx) => {
+    transferDetails(v as GvPaymentData, ctx);
+    cardDetails(v as GvPaymentData, ctx);
+    usdRate(v as GvPaymentData, ctx);
+  });
 export type GvPaymentData = {
   date: string;
   amount: number;
@@ -112,6 +226,8 @@ export type GvPaymentData = {
   method: (typeof GV_METHODS)[number];
   bank: string | null;
   reference: string | null;
+  currency?: (typeof GV_CURRENCIES)[number];
+  rate?: number | null;
 };
 // Reembolso de una inscripción o cita «reembolsada» (GV-13).
 export const gvRefundFields = {
@@ -123,12 +239,41 @@ type PaymentLike = {
   amount: Prisma.Decimal.Value;
   verified: boolean;
   rejectedAt?: Date | string | null;
+  currency?: string | null;
+  amountDop?: Prisma.Decimal.Value | null;
+  rate?: Prisma.Decimal.Value | null;
 };
-const sum = (rows: PaymentLike[]): Prisma.Decimal =>
-  rows.reduce((s, p) => s.plus(p.amount), d(0));
+type Moneda = "RD$" | "US$";
+
+/**
+ * Valor de un pago en la moneda del curso (decisiones de la dueña, 31-oct):
+ * RD$ → pesos (el equivalente si el pago fue en US$); US$ → dólares, sólo
+ * si el pago fue en US$. Null si no se puede convertir (no cuenta).
+ */
+export function valorEnMoneda(
+  p: PaymentLike,
+  moneda: Moneda,
+): Prisma.Decimal | null {
+  const usd = p.currency === "USD";
+  if (moneda === "US$") return usd ? d(p.amount) : null;
+  if (!usd) return d(p.amount);
+  return p.amountDop == null ? null : d(p.amountDop);
+}
+/** Valor en pesos para reportes: el equivalente guardado, o el monto si es en pesos. */
+export const valorPesos = (p: PaymentLike): Prisma.Decimal =>
+  p.currency === "USD" && p.amountDop != null ? d(p.amountDop) : d(p.amount);
+
+const sum = (rows: PaymentLike[], moneda: Moneda = "RD$"): Prisma.Decimal =>
+  rows.reduce((s, p) => s.plus(valorEnMoneda(p, moneda) ?? 0), d(0));
 /** Pagos vigentes (verificados o por verificar): lo que ya está comprometido. */
-export const committed = (payments: PaymentLike[]): Prisma.Decimal =>
-  sum(payments.filter((p) => !p.rejectedAt));
+export const committed = (
+  payments: PaymentLike[],
+  moneda: Moneda = "RD$",
+): Prisma.Decimal =>
+  sum(
+    payments.filter((p) => !p.rejectedAt),
+    moneda,
+  );
 
 /**
  * pagado = sólo lo verificado; por verificar aparte; pendiente = total −
@@ -141,10 +286,17 @@ export function gvTotals(
     status?: string;
     refundAmount?: Prisma.Decimal.Value | null;
   } = {},
+  moneda: Moneda = "RD$",
 ) {
   const valid = payments.filter((p) => !p.rejectedAt);
-  const paid = sum(valid.filter((p) => p.verified));
-  const unverified = sum(valid.filter((p) => !p.verified));
+  const paid = sum(
+    valid.filter((p) => p.verified),
+    moneda,
+  );
+  const unverified = sum(
+    valid.filter((p) => !p.verified),
+    moneda,
+  );
   const pending =
     owner.status && GV_CLOSED.has(owner.status)
       ? d(0)
@@ -183,14 +335,15 @@ export async function lockGvOwner(
   branchId: string,
 ) {
   const o = OWNER[kind];
-  await tx.$queryRawUnsafe(
-    `SELECT id FROM ${o.table} WHERE id = $1::uuid AND "branchId" = $2 FOR UPDATE`,
-    id,
-    branchId,
+  await tx.$queryRaw(
+    Prisma.sql`SELECT id FROM ${Prisma.raw(o.table)} WHERE id = ${id}::uuid AND "branchId" = ${branchId} FOR UPDATE`,
   );
   const row = await tx[o.model].findFirst({
     where: { id, branchId },
-    include: { payments: true },
+    include: {
+      payments: true,
+      ...(kind === "enrollment" ? { course: { select: { name: true } } } : {}),
+    },
   });
   if (!row)
     bad(
@@ -225,18 +378,45 @@ export async function createGvPayment(
   }
   if (GV_CLOSED.has(owner.status))
     bad(`${o.label} está ${owner.status}: no acepta pagos.`);
-  if (data.method !== "efectivo")
+  if (data.method === "transferencia")
     assertGvBank(await gvBankOptions(tx, actor.branchId), data.bank);
-  const room = d(owner[o.total]).minus(committed(owner.payments));
-  if (d(data.amount).gt(room))
+  else if (data.method === "tarjeta") {
+    // El «banco» de una tarjeta es la terminal: con lista, de la lista; sin
+    // lista y sin terminal, el texto fijo «Terminal GV».
+    const { terminals } = await gvBankOptions(tx, actor.branchId);
+    if (data.bank && terminals.length && !terminals.includes(data.bank))
+      bad("Elige la terminal de la lista.");
+    data = { ...data, bank: data.bank || GV_TERMINAL };
+  }
+  const moneda =
+    kind === "enrollment" ? monedaDeCurso(owner.course?.name) : "RD$";
+  const usd = data.currency === "USD";
+  if (moneda === "US$" && !usd)
+    bad("Este curso se cobra en US$: el pago debe registrarse en US$.");
+  // Equivalente en pesos con la tasa de este pago (en pesos, el mismo monto).
+  const amountDop = usd
+    ? d(data.amount)
+        .times(data.rate ?? 0)
+        .toDecimalPlaces(2)
+    : d(data.amount);
+  // El tope se compara en la moneda del curso.
+  const valor = moneda === "US$" ? d(data.amount) : amountDop;
+  const room = d(owner[o.total]).minus(committed(owner.payments, moneda));
+  if (valor.gt(room))
     bad(
-      `El pago supera lo pendiente (RD$ ${Prisma.Decimal.max(0, room).toFixed(2)}, contando lo por verificar).`,
+      `El pago supera lo pendiente (${moneda} ${Prisma.Decimal.max(0, room).toFixed(2)}, contando lo por verificar).`,
     );
   // La transferencia queda por verificar; efectivo y tarjeta, verificados.
   const verified = data.method !== "transferencia";
+  // El dinero de tarjeta se registra en el área GV, sin elegir cuenta de banco.
+  const destination = data.method === "tarjeta" ? GV_CARD_DESTINATION : null;
   const row = await tx.gvPayment.create({
     data: {
       ...data,
+      currency: usd ? "USD" : "DOP",
+      rate: usd ? data.rate : null,
+      amountDop: amountDop.toFixed(2),
+      destination,
       date: dateOnly(data.date),
       operationId,
       [o.field]: ownerId,
@@ -273,9 +453,11 @@ export function checkGvOwnerEdit(
 ) {
   const o = OWNER[kind];
   const total = data[o.total] as number | undefined;
-  if (total !== undefined && d(total).lt(committed(before.payments)))
+  const moneda =
+    kind === "enrollment" ? monedaDeCurso(before.course?.name) : "RD$";
+  if (total !== undefined && d(total).lt(committed(before.payments, moneda)))
     bad(
-      `El total no puede ser menor que lo ya cobrado (RD$ ${committed(before.payments).toFixed(2)}).`,
+      `El total no puede ser menor que lo ya cobrado (${moneda} ${committed(before.payments, moneda).toFixed(2)}).`,
     );
   const status = data.status ?? before.status;
   if (before.status === "reembolsada" && status !== "reembolsada")
@@ -293,9 +475,11 @@ export function checkGvOwnerEdit(
     bad(
       "Para marcarla «reembolsada» indica el monto y la fecha del reembolso.",
     );
-  const paid = gvTotals(0, before.payments).paid;
+  const paid = gvTotals(0, before.payments, {}, moneda).paid;
   if (d(data.refundAmount).gt(paid))
-    bad(`El reembolso no puede superar lo pagado verificado (RD$ ${paid}).`);
+    bad(
+      `El reembolso no puede superar lo pagado verificado (${moneda} ${paid}).`,
+    );
   return { ...data, refundDate: dateOnly(data.refundDate) };
 }
 
@@ -351,10 +535,8 @@ export async function planGvImportPayments(
     if (!ownerKeys.length) continue;
     // Bloqueadas hasta el final de la importación: nadie cobra en ellas entre
     // la validación y la escritura.
-    await db.$queryRawUnsafe(
-      `SELECT id FROM ${OWNER[kind].table} WHERE "branchId" = $1 AND "externalId" = ANY($2::text[]) FOR UPDATE`,
-      branchId,
-      ownerKeys,
+    await db.$queryRaw(
+      Prisma.sql`SELECT id FROM ${Prisma.raw(OWNER[kind].table)} WHERE "branchId" = ${branchId} AND "externalId" = ANY(${ownerKeys}::text[]) FOR UPDATE`,
     );
     for (const row of await db[OWNER[kind].model].findMany({
       where: { branchId, externalId: { in: ownerKeys } },

@@ -1,0 +1,80 @@
+/* capa 1: base */
+:root {
+  --nx-base-blanco: #ffffff;
+  --nx-base-negro: #0b0b12;
+  --nx-base-violeta: #7c3aed;
+  --nx-base-verde: #10b981;
+  --nx-base-azul: #3b82f6;
+}
+
+/* capa 2: semántica */
+:root {
+  --nx-fondo: var(--nx-base-blanco);
+  --nx-texto: var(--nx-base-negro);
+  --nx-acento: var(--nx-base-violeta);
+  --nx-exito: var(--nx-base-verde);
+  --nx-info: var(--nx-base-azul);
+}
+
+/* capa 3: componente */
+:root {
+  --nx-boton-fondo: var(--nx-acento);
+  --nx-boton-texto: var(--nx-base-blanco);
+  --nx-tarjeta-fondo: var(--nx-fondo);
+  --nx-tarjeta-texto: var(--nx-texto);
+}
+
+:root[data-theme="dark"] {
+  --nx-fondo: #14141f;
+  --nx-texto: #f5f5f7;
+}
+
+/* capa 4: movimiento (≤240 ms; solo transform y opacity) */
+:root {
+  --nx-dur-fast: 120ms;
+  --nx-dur-base: 180ms;
+  --nx-dur-slow: 240ms;
+  --nx-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* capa 3b: componente de los primitivos Nx* (pares texto/fondo ≥ 4,5:1) */
+:root {
+  --nx-borde: #d1d5db;
+  --nx-superficie: #ffffff;
+  --nx-boton-sec-fondo: #ede9fe;
+  --nx-boton-sec-texto: #4c1d95;
+  --nx-exito-fondo: #d1fae5;
+  --nx-exito-texto: #065f46;
+  --nx-alerta-fondo: #fef3c7;
+  --nx-alerta-texto: #92400e;
+  --nx-error-fondo: #fee2e2;
+  --nx-error-texto: #991b1b;
+  --nx-neutro-fondo: #f3f4f6;
+  --nx-neutro-texto: #374151;
+  --nx-esqueleto: #e5e7eb;
+}
+:root[data-theme="dark"] {
+  --nx-borde: #374151;
+  --nx-superficie: #1c1c2b;
+  --nx-boton-sec-fondo: #2e2350;
+  --nx-boton-sec-texto: #ddd6fe;
+  --nx-exito-fondo: #064e3b;
+  --nx-exito-texto: #a7f3d0;
+  --nx-alerta-fondo: #78350f;
+  --nx-alerta-texto: #fde68a;
+  --nx-error-fondo: #7f1d1d;
+  --nx-error-texto: #fecaca;
+  --nx-neutro-fondo: #2a2a3a;
+  --nx-neutro-texto: #e5e7eb;
+  --nx-esqueleto: #2a2a3a;
+}
+
+/* Tipografía (órdenes 97 y 99): un solo sitio para el tamaño y la legibilidad de la letra.
+   Base 16 px; ningún texto por debajo de 14 px; el resto escala ×1.12 (≈ +12 %). */
+:root {
+  --fs-base: 16px;
+  --fs-min: 14px;
+  --fs-scale: 1.12;
+  --lh-base: 1.5;
+  --fw-label: 600;
+}

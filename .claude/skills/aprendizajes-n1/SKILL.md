@@ -42,3 +42,10 @@ description: Lecciones operativas de Norexos 1 (cómo hacer las cosas rápido y 
 - 30-oct 06:39: las sesiones hijas creadas con `create_session` se BLOQUEAN en el primer `send_message` («Waiting on permission») porque no lo traen preaprobado. Al crear un obrero pasa SIEMPRE `extra_allowed_tools: ["mcp__claude-code-remote__send_message"]` y dile que no espere si algo pide permiso (que deje el estado en commits/ESTADO_OBRERO.md). Taller (Norexos 3) y Norexos 7 quedaron bloqueados por esto; Norexos 8 es el reemplazo. Comprobar progreso de un obrero sin gastar tokens: `git ls-remote origin refs/heads/<rama>` + `get_session` (status_bucket).
 - 30-oct 07:38: `actions_list list_workflow_runs` IGNORA `per_page` y también `head_sha` (devuelve ~20 runs, ≈12k tokens). NO LA USES nunca. El id del run sale del push: busca el SHA en `git ls-remote` y usa `actions_get get_workflow_run resource_id=<id>`. Para conocer el id de un run nuevo: `mcp__github__get_commit` NO sirve; guárdalo cuando lo veas. Ids vigentes: desglose-mes f9715f66 → run 41018638383.
 - actions_list list_workflow_runs con resource_id=ci.yml, workflow_runs_filter={"branch":"X"} y per_page=1 SÍ devuelve pocos runs (barato, ~1k tokens); sin el filtro de rama devuelve ~12k.
+
+## Reglas anti-choque (30-oct, tras errores de coordinación)
+- Antes de delegar: leer la tabla «Dueño único por pieza» de PENDIENTES y actualizarla en el mismo paso. Pieza con dueño = no se asigna.
+- Una sola ventana de mezcla: un lote, un push, esperar el CI completo (~30 min) sin empujar nada encima.
+- Antes de empujar: `grep -rn '^<<<<<<<\|^>>>>>>>'` en lo mezclado y correr tests/docs-sistema-citas.test.ts (mover .claude/worktrees fuera si falla por symlinks). Si la mezcla mueve líneas de código citado, corregir citas en el mismo lote.
+- Conflictos de vitest.config.ts: conservar el include de TODAS las ramas; nunca borrar marcadores a ciegas.
+- Máximo 4 sesiones activas (N1, Taller, Mercancía, Claude PC); las demás en reposo o archivadas al terminar.

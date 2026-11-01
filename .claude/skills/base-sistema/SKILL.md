@@ -25,3 +25,7 @@ Un cambio de sistema sin su línea en CAMBIOS.md no se mezcla ni se despliega (q
 - Nada inventado: «NO ENCONTRADO» si no se confirmó.
 - Sin credenciales, claves ni datos de clientes.
 - La base se copia a `producto-nexora` solo en lo que aplique allí.
+
+## Citas y pre-empuje
+- `pnpm docs:citas` mueve cada cita `archivo:línea` de `docs/sistema` a su línea nueva usando el fragmento guardado en `docs/sistema/CITAS_ANCLAS.json`; la prueba de citas también lo corre. Si una cita sale «PERDIDA», el código de esa línea desapareció: reescribe la frase. Sube el JSON con el cambio.
+- `node scripts/pre-empuje.mjs` antes de empujar: marcadores de conflicto, citas, prettier/eslint de lo cambiado y typecheck (`--sin-typecheck` para omitirlo).

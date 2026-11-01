@@ -223,7 +223,7 @@ test.describe("A1 y 03 · recibo de la venta", () => {
     expect(await page2.text()).toContain("Aviso de privacidad");
     await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Acerca de" }).click();
-    const about = page.getByRole("dialog", { name: "Acerca de Nexora POS" });
+    const about = page.getByRole("dialog", { name: "Acerca de Norexos" });
     await expect(about).toContainText("Privacidad");
     await expect(
       about.getByRole("link", { name: /Aviso de privacidad/ }),

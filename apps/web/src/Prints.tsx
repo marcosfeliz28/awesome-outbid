@@ -85,7 +85,7 @@ export function BusinessHeader({
         src={b.logo || "/logo-grupo-macgen.png"}
         alt=""
       />
-      <h2>{b.name || "Nexora POS"}</h2>
+      <h2>{b.name || "Norexos"}</h2>
       {b.branchName && <p className="tp-branch">{b.branchName}</p>}
       {b.address && <p>{b.address}</p>}
       {b.legalId && <p>RNC: {b.legalId}</p>}
