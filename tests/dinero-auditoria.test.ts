@@ -967,6 +967,12 @@ describe("Auditoría 01 · dinero", () => {
         where: { id: sale.id },
         data: { createdAt: lastDay },
       });
+      const categoria = (b: any) =>
+        b.categories.find((r: any) => r.name === "QA Dinero " + suffix);
+      const antes = await ok(
+        "/dashboard/breakdown?from=" + monthStart + "&to=" + today(),
+        admin,
+      );
       ret = await db.saleReturn.create({
         data: {
           saleId: sale.id,
@@ -1003,11 +1009,20 @@ describe("Auditoría 01 · dinero", () => {
       const month = year.months[Number(today().slice(5, 7)) - 1];
       expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
       expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
-      const row = monthToDate.categories.find(
-        (r: any) => r.name === "Devoluciones de ventas anteriores",
+      // La devolución baja la categoría de la venta (no una fila aparte) y el costo.
+      expect(
+        monthToDate.categories.find(
+          (r: any) => r.name === "Devoluciones de ventas anteriores",
+        ),
+      ).toBeUndefined();
+      expect(categoria(monthToDate).revenue).toBeCloseTo(
+        (categoria(antes)?.revenue ?? 0) - 400,
+        2,
       );
-      expect(row).toBeDefined();
-      expect(row.revenue).toBeLessThanOrEqual(-400);
+      expect(categoria(monthToDate).cost).toBeCloseTo(
+        (categoria(antes)?.cost ?? 0) - 150,
+        2,
+      );
       expect(
         monthToDate.categories.reduce((a: number, r: any) => a + r.revenue, 0),
       ).toBeCloseTo(monthToDate.revenue, 2);
