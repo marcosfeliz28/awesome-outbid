@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  GV_CATALOGO,
-  gvDevengoMes,
-  gvReembolsoMes,
-} from "../apps/api/src/gv-incentives";
+import { GV_CATALOGO, gvIncentivosMes } from "../apps/api/src/gv-incentives";
 import {
   catalogoOpciones,
   gvPaymentInput,
@@ -20,6 +16,7 @@ const pago = (amount: string, date: string, extra = {}) => ({
   date: new Date(date + "T00:00:00Z"),
   verified: true,
   rejectedAt: null,
+  createdBy: "C",
   ...extra,
 });
 const pagoUsd = (amount: string, rate: number, date: string, extra = {}) =>
@@ -78,60 +75,79 @@ describe("GV · catálogo de cursos (orden 103, Génesis)", () => {
   });
 });
 
-describe("GV · devengo por porcentaje pagado", () => {
-  it("pagó la mitad en el mes: recibe la mitad del incentivo en ese mes", () => {
-    const e = alumna(AUTO, "4500", [pago("2250", "2026-10-03")]);
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "25.00",
-      period: "2026-10",
-    });
-    expect(gvDevengoMes(e, "2026-11")).toBeNull();
-  });
+// Por pago: incentivo del curso × valor del pago ÷ precio, acreditado a quien
+// cobró ese pago, en el mes del pago. Tope 100 %. Anulado resta en su mes.
+// Reembolso: reversa proporcional a quienes cobraron, en el mes del reembolso.
+const mapa = (
+  rows: { personId: string; amount: string; period: string; kind: string }[],
+  period: string,
+) =>
+  rows
+    .filter((r) => r.period === period)
+    .map((r) => ({ personId: r.personId, amount: r.amount, kind: r.kind }));
 
-  it("completa el pago el mes siguiente: el resto se devenga entonces", () => {
-    const e = alumna(PERF, "15000", [
-      pago("7500", "2026-10-03"),
-      pago("7500", "2026-11-05"),
-    ]);
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "250.00",
-      period: "2026-10",
-    });
-    expect(gvDevengoMes(e, "2026-11")).toEqual({
-      amount: "250.00",
-      period: "2026-11",
-    });
-  });
-
-  it("nunca pasa del 100 %: pagar de más no devenga más", () => {
+describe("GV · incentivo por pago (cobrador)", () => {
+  it("pagó la mitad: el cobrador recibe la mitad del incentivo en ese mes", () => {
     const e = alumna(AUTO, "4500", [
-      pago("4500", "2026-10-03"),
-      pago("900", "2026-11-03"),
+      pago("2250", "2026-10-03", { createdBy: "A" }),
     ]);
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "50.00",
-      period: "2026-10",
-    });
-    expect(gvDevengoMes(e, "2026-11")).toBeNull();
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "25.00", kind: "pago" },
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-11")).toEqual([]);
   });
 
-  it("pago anulado: resta su parte en el mes de la anulación", () => {
+  it("completa el pago el mes siguiente: cada cobrador recibe en el mes de su pago", () => {
+    const e = alumna(PERF, "15000", [
+      pago("7500", "2026-10-03", { createdBy: "A" }),
+      pago("7500", "2026-11-05", { createdBy: "B" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "250.00", kind: "pago" },
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-11")).toEqual([
+      { personId: "B", amount: "250.00", kind: "pago" },
+    ]);
+  });
+
+  it("dos cobradores el mismo mes: cada uno recibe lo que cobró", () => {
+    const e = alumna(AUTO, "4500", [
+      pago("4000", "2026-10-03", { createdBy: "A" }),
+      pago("500", "2026-10-04", { createdBy: "B" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "44.44", kind: "pago" },
+      { personId: "B", amount: "5.56", kind: "pago" },
+    ]);
+  });
+
+  it("tope 100 %: el pago que excede el precio no devenga", () => {
+    const e = alumna(AUTO, "4500", [
+      pago("4500", "2026-10-03", { createdBy: "A" }),
+      pago("900", "2026-11-03", { createdBy: "B" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "50.00", kind: "pago" },
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-11")).toEqual([]);
+  });
+
+  it("pago anulado: el cobrador pierde lo que recibió, en el mes de la anulación", () => {
     const e = alumna(AUTO, "4500", [
       pago("4500", "2026-10-03", {
+        createdBy: "A",
         rejectedAt: new Date("2026-11-10T12:00:00Z"),
       }),
     ]);
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "50.00",
-      period: "2026-10",
-    });
-    expect(gvDevengoMes(e, "2026-11")).toEqual({
-      amount: "-50.00",
-      period: "2026-11",
-    });
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "50.00", kind: "pago" },
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-11")).toEqual([
+      { personId: "A", amount: "-50.00", kind: "anulado" },
+    ]);
   });
 
-  it("reembolso: el registrador no pierde; la reversa va a quien cobró, en el mes del reembolso", () => {
+  it("reembolso: la reversa es proporcional a quienes cobraron, en el mes del reembolso", () => {
     const e = alumna(
       AUTO,
       "4500",
@@ -145,14 +161,9 @@ describe("GV · devengo por porcentaje pagado", () => {
         refundDate: new Date("2026-11-02T00:00:00Z"),
       },
     );
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "50.00",
-      period: "2026-10",
-    });
-    expect(gvDevengoMes(e, "2026-11")).toBeNull();
-    expect(gvReembolsoMes(e, "2026-11")).toEqual([
-      { createdBy: "A", amount: "-44.44" },
-      { createdBy: "B", amount: "-5.56" },
+    expect(mapa(gvIncentivosMes(e), "2026-11")).toEqual([
+      { personId: "A", amount: "-44.44", kind: "reembolso" },
+      { personId: "B", amount: "-5.56", kind: "reembolso" },
     ]);
   });
 
@@ -160,57 +171,67 @@ describe("GV · devengo por porcentaje pagado", () => {
     const e = alumna(AUTO, "4500", [
       pago("4500", "2026-10-03", { verified: false }),
     ]);
-    expect(gvDevengoMes(e, "2026-10")).toBeNull();
+    expect(gvIncentivosMes(e)).toEqual([]);
   });
 });
 
-describe("GV · casos que no devengan", () => {
+describe("GV · casos de moneda y catálogo", () => {
   it("curso en dólares con pago en pesos sin tasa: no devenga", () => {
-    const e = alumna(USD, "200", [pago("200", "2026-10-03")]);
-    expect(gvDevengoMes(e, "2026-10")).toBeNull();
+    const e = alumna(USD, "200", [
+      pago("200", "2026-10-03", { createdBy: "A" }),
+    ]);
+    expect(gvIncentivosMes(e)).toEqual([]);
   });
 
   it("curso en dólares con pago en pesos y tasa: convierte con la tasa del pago", () => {
     // RD$ 4,500 a 60 = US$ 75 de US$ 200 → 37.5 % de 50 = 18.75
-    const e = alumna(USD, "200", [pago("4500", "2026-10-03", { rate: "60" })]);
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "18.75",
-      period: "2026-10",
-    });
+    const e = alumna(USD, "200", [
+      pago("4500", "2026-10-03", { rate: "60", createdBy: "A" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "18.75", kind: "pago" },
+    ]);
   });
 
   it("curso en dólares pagado en US$: devenga con el monto en dólares", () => {
-    const e = alumna(USD, "200", [pagoUsd("100", 60, "2026-10-03")]);
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "25.00",
-      period: "2026-10",
-    });
+    const e = alumna(USD, "200", [
+      pagoUsd("100", 60, "2026-10-03", { createdBy: "A" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "25.00", kind: "pago" },
+    ]);
   });
 
   it("curso en RD$ pagado en US$: usa el equivalente en pesos con la tasa", () => {
-    const e = alumna(AUTO, "4500", [pagoUsd("75", 60, "2026-10-03")]);
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "50.00",
-      period: "2026-10",
-    });
+    const e = alumna(AUTO, "4500", [
+      pagoUsd("75", 60, "2026-10-03", { createdBy: "A" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "50.00", kind: "pago" },
+    ]);
   });
 
-  it("Brazilian touch: incentivo 0 para quien registra", () => {
-    const e = alumna(BRAZ, "18000", [pago("18000", "2026-10-03")]);
-    expect(gvDevengoMes(e, "2026-10")).toBeNull();
+  it("Brazilian touch: incentivo 0 para quien cobra", () => {
+    const e = alumna(BRAZ, "18000", [
+      pago("18000", "2026-10-03", { createdBy: "A" }),
+    ]);
+    expect(gvIncentivosMes(e)).toEqual([]);
   });
 
   it("curso que no está en el catálogo no devenga", () => {
-    const e = alumna("Curso inventado", "4500", [pago("4500", "2026-10-03")]);
-    expect(gvDevengoMes(e, "2026-10")).toBeNull();
+    const e = alumna("Curso inventado", "4500", [
+      pago("4500", "2026-10-03", { createdBy: "A" }),
+    ]);
+    expect(gvIncentivosMes(e)).toEqual([]);
   });
 
-  it("maquilladora profesional sí devenga RD$ 1,000 en proporción", () => {
-    const e = alumna(MAQ, "70000", [pago("35000", "2026-10-03")]);
-    expect(gvDevengoMes(e, "2026-10")).toEqual({
-      amount: "500.00",
-      period: "2026-10",
-    });
+  it("maquilladora profesional: RD$ 1,000 en proporción al pago", () => {
+    const e = alumna(MAQ, "70000", [
+      pago("35000", "2026-10-03", { createdBy: "A" }),
+    ]);
+    expect(mapa(gvIncentivosMes(e), "2026-10")).toEqual([
+      { personId: "A", amount: "500.00", kind: "pago" },
+    ]);
   });
 });
 

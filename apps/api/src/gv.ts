@@ -47,7 +47,7 @@ import {
   catalogoOpciones,
   valorPesos,
 } from "./gv-money";
-import { GV_CATALOGO, gvDevengoMes, gvReembolsoMes } from "./gv-incentives";
+import { GV_CATALOGO, gvIncentivosMes } from "./gv-incentives";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -726,57 +726,42 @@ export class GvController {
         },
       },
     });
-    // Devengo de quien registró; reversa por reembolso a quien cobró cada pago.
-    const calc = enrollments.flatMap((e) => {
-      const input = {
-        courseName: e.course.name,
-        agreedPrice: e.agreedPrice,
-        refundAmount: e.refundAmount,
-        refundDate: e.refundDate,
-        payments: e.payments,
-      };
-      const base = {
+    // Incentivo por pago: a quien cobró cada pago (eventos del mes pedido).
+    const calc = enrollments.flatMap((e) =>
+      gvIncentivosMes(
+        {
+          courseName: e.course.name,
+          agreedPrice: e.agreedPrice,
+          refundAmount: e.refundAmount,
+          refundDate: e.refundDate,
+          payments: e.payments,
+        },
+        period,
+      ).map((ev) => ({
         enrollmentId: e.id,
         clientName: e.clientName,
         course: e.course.name,
-        period,
-      };
-      const devengo = gvDevengoMes(input, period);
-      const reversas = gvReembolsoMes(input, period);
-      return [
-        ...(devengo
-          ? [
-              {
-                ...base,
-                kind: "devengo",
-                amount: devengo.amount,
-                personId: e.createdBy,
-              },
-            ]
-          : []),
-        ...reversas.map((r) => ({
-          ...base,
-          kind: "reembolso",
-          amount: r.amount,
-          personId: r.createdBy,
-        })),
-      ];
-    });
+        period: ev.period,
+        kind: ev.kind,
+        amount: ev.amount,
+        personId: ev.personId,
+      })),
+    );
     const name = await gvUserNames(
       this.db,
       calc.map((r) => r.personId),
     );
     const rows = calc.map((r) => ({
       ...r,
-      registeredBy: r.personId,
-      registeredByName: name(r.personId),
+      cobradoPor: r.personId,
+      cobradoPorName: name(r.personId),
     }));
     const porPersona = new Map<
       string,
       { name: string; total: Prisma.Decimal; count: number }
     >();
     for (const r of rows) {
-      const key = r.registeredByName ?? "Sin nombre";
+      const key = r.cobradoPorName ?? "Sin nombre";
       const acc = porPersona.get(key) ?? { name: key, total: d(0), count: 0 };
       porPersona.set(key, {
         name: key,

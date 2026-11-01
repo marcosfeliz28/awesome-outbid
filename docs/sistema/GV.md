@@ -60,7 +60,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 - **Estados de un pago**: `Verificado` (insignia verde), `Por verificar` (amarilla) o `Rechazado` (roja) (`Gv.tsx:704-712`). **Efectivo y tarjeta quedan verificados al registrarse; la transferencia queda por verificar** hasta que gerencia/administración la verifique (`docs/coordinacion/MODULO-GV.md:74`; esquema `apps/api/prisma/schema.prisma` modelo `GvPayment`, campo `verified`).
 - **Reglas de dinero** (`apps/api/src/gv-money.ts:1-8`): lo pagado cuenta solo lo verificado; «por verificar» va aparte; **ningún cobro puede superar el total** (contando lo por verificar) y el total no baja de lo cobrado; cancelada o reembolsada no aceptan pagos.
 - **Anular un pago** (botón **«Anular»**, con motivo de mínimo 3 letras, quien tenga `gv:write`): deja de contar, queda en auditoría y se registra el correcto con un pago nuevo (`Gv.tsx:678-692`, `:677-686`; API `POST /gv/payments/:id/void`, `apps/api/src/gv.ts:414-465`). No se anula en una inscripción reembolsada (`gv.ts:441`).
-- **Verificar o rechazar** (pestaña **«Por verificar»**, botones **«Verificar»** / **«Rechazar»**, el rechazo pide motivo): solo `gv:verify` (administración y gerencia), nunca quien registró el pago salvo `*`, solo transferencias pendientes y una sola vez (`Gv.tsx:952`; API `POST /gv/payments/:id/review`, `apps/api/src/gv.ts:467-538`, mensajes `:472-492`). Lista: `GET /gv/transfers/pending` (`gv.ts:798`). Esta pantalla muestra «No hay transferencias por verificar.» si está vacía (`Gv.tsx:1008`).
+- **Verificar o rechazar** (pestaña **«Por verificar»**, botones **«Verificar»** / **«Rechazar»**, el rechazo pide motivo): solo `gv:verify` (administración y gerencia), nunca quien registró el pago salvo `*`, solo transferencias pendientes y una sola vez (`Gv.tsx:952`; API `POST /gv/payments/:id/review`, `apps/api/src/gv.ts:467-538`, mensajes `:472-492`). Lista: `GET /gv/transfers/pending` (`gv.ts:783`). Esta pantalla muestra «No hay transferencias por verificar.» si está vacía (`Gv.tsx:1008`).
 
 ## 6. Citas (pestaña «Citas»)
 
@@ -86,7 +86,7 @@ Filtros **Desde** / **Hasta** (`Gv.tsx:1050-1058`). Secciones (`:970-1037`): **I
 | `gv:write`   | Crear/editar cursos, inscripciones, citas, interesadas; registrar y anular pagos. | Rol `gv`, `manager`, `admin`           |
 | `gv:reports` | Pestaña «Reportes».                                                               | Rol `gv`, `manager`, `admin`           |
 | `gv:verify`  | Verificar o rechazar transferencias.                                              | `manager`, `admin`; **no** el rol `gv` |
-| `*`          | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:830`).                 | `admin`                                |
+| `*`          | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:815`).                 | `admin`                                |
 
 Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `gv` (p. ej. la empleada Clary) no tiene acceso a configuración, usuarios, costos, inventario ni datos de MacGen (`docs/coordinacion/MODULO-GV.md:43-44`).
 
@@ -97,15 +97,16 @@ Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `
 
 ## 11. Incentivo por inscripción (orden 103)
 
-- Quien **registra la inscripción** gana el incentivo fijo de su curso, según el catálogo de Génesis (`docs/operacion/GV_CATALOGO_CURSOS.md`): maquilladora profesional RD$ 1,000; automaquillaje RD$ 50; perfeccionamiento RD$ 500; **Brazilian touch RD$ 0** (lo lleva Yaisa aparte). Catálogo `GV_CATALOGO` en `apps/api/src/gv-money.ts`; el curso se empata por nombre exacto.
-- **Devengo por porcentaje pagado:** incentivo del mes = incentivo del curso × (pagado verificado en ese mes ÷ precio acordado). El resto se devenga con los abonos siguientes; al completarse queda 100 %, ni más ni menos. Función `gvDevengoMes` en `apps/api/src/gv-incentives.ts`.
-- **Moneda del pago:** cada pago es en RD$ (por defecto) o en US$. En US$ la **tasa** (pesos por dólar) es obligatoria y el equivalente en pesos se guarda (`amountDop`). Migración `202610310004_gv_pago_moneda`.
-- **Curso en US$:** se cobra en dólares y el porcentaje se calcula en dólares. Un pago en pesos se acepta con su tasa y se convierte a dólares con esa tasa.
-- **Curso en RD$:** acepta pagos en US$ (con tasa) y suma el equivalente en pesos.
-- **Reembolso:** la reversa del incentivo va a **quien cobró cada pago**, en proporción a lo que cobró, en el mes del reembolso. Función `gvReembolsoMes`. El registrador conserva su devengo. Una inscripción cancelada sin reembolso no quita nada ya devengado.
-- Se calcula al leer, no se guarda. Lo ve quien tiene `sale:manage`. API `GET /gv/incentives?period=AAAA-MM` (`apps/api/src/gv.ts`): filas de devengo y de reembolso, y total por persona, sin costos.
+- **El incentivo se paga por pago, a quien cobró cada pago** (decisión de la dueña, 1-nov, «el incentivo se hace por pago, no por inscripción»). Quien registró la inscripción no gana nada por eso.
+- Montos fijos del catálogo de Génesis (`docs/operacion/GV_CATALOGO_CURSOS.md`): maquilladora profesional RD$ 1,000; automaquillaje RD$ 50; perfeccionamiento RD$ 500; **Brazilian touch RD$ 0** (lo lleva Yaisa aparte). Catálogo `GV_CATALOGO` en `apps/api/src/gv-money.ts`; el curso se empata por nombre exacto.
+- **Cálculo por pago** (`gvIncentivosEventos` en `apps/api/src/gv-incentives.ts`): cada pago verificado da incentivo del curso × valor del pago ÷ precio, a quien cobró ese pago, en el mes del pago. El acumulado de la inscripción nunca pasa del 100 %: el pago que lo excede se recorta.
+- **Moneda:** pagos en RD$ o en US$ (con tasa). Curso en US$: el valor se mide en dólares; un pago en pesos se convierte con la tasa de ese pago y sin tasa no cuenta. Curso en RD$: pagos en US$ suman su equivalente en pesos.
+- **Anulado:** el cobrador pierde lo que recibió, en el mes de la anulación.
+- **Reembolso:** reversa proporcional a lo que cobró cada uno, en el mes del reembolso. Una inscripción cancelada sin reembolso no quita nada ya devengado.
+- Se calcula al leer, no se guarda. Lo ve quien tiene `sale:manage`. API `GET /gv/incentives?period=AAAA-MM` (`apps/api/src/gv.ts`): filas con `kind` (pago, anulado, reembolso), `cobradoPor` y total por persona, sin costos.
 - **DUDA:** los reportes de ingresos suman los reembolsos sin convertir cuando el curso es en US$.
-- **DUDA:** las inscripciones canceladas no tienen regla explícita; hoy el devengo sigue a sus pagos verificados.
-- **DUDA:** «maquilladora profesional» (1 y 2) y «perfeccionamiento» (9 y 10) se empatan por nombre; si el nombre no coincide exacto, no devenga.
+- **DUDA:** una anulación de un pago que había recortado el tope puede dejar el total de la inscripción fuera del 100 % exacto (el tope se calcula sobre el orden de fechas, no sobre lo vigente).
+- **DUDA:** las inscripciones canceladas no tienen regla explícita; hoy el incentivo sigue a sus pagos verificados.
+- **DUDA:** «maquilladora profesional» (1 y 2) y «perfeccionamiento» (9 y 10) se empatan por nombre; si el nombre no coincide exacto, no hay incentivo.
 - **Cursos del catálogo en «Nuevo curso»** (`GET /gv/catalog`, solo lectura, sin incentivo): el formulario ofrece los 10 cursos como opciones. Al elegir una se rellenan nombre, precio (en US$ si el curso es en dólares) y tipo; esos tres quedan fijos. Fecha y cupo se ponen a mano. «Curso libre (otro)» sigue como antes. No se pre-crean cursos: cada curso se crea al elegirlo. Tipos: automaquillaje (3–7), brazilian (8), personalizado (1, 2, 9 y 10).
 - Pendiente: cierre mensual con instantánea como las ventas de caja; tarifas configurables en la base de datos.
