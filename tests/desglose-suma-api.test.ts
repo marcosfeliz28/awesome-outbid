@@ -257,7 +257,8 @@ describe("desglose del mes: cobros = venta bruta con devoluciones (D-05)", () =>
           g.byAmount[i].revenue,
         );
       // Con 10 o menos productos vendidos la lista es completa: suma = total de la categoría.
-      if (g.byUnits.length < 10) {
+      // «Devoluciones sin detalle» no es una categoría de productos: no tiene lista.
+      if (g.byUnits.length < 10 && cat.name !== "Devoluciones sin detalle") {
         expect(sumOf(g.byUnits, "units")).toBe(cat.units);
         expect(sumOf(g.byUnits, "revenue")).toBeCloseTo(cat.revenue, 1);
         expect(sumOf(g.byAmount, "revenue")).toBeCloseTo(cat.revenue, 1);

@@ -894,8 +894,13 @@ describe("Auditoría 01 · dinero", () => {
       year.months.reduce((a: number, m: any) => a + m.revenue, 0),
     ).toBeCloseTo(year.revenue, 2);
     const month = year.months[Number(today().slice(5, 7)) - 1];
-    // Hoy es parte del mes: el mes tiene al menos lo vendido hoy.
-    expect(month.revenue).toBeGreaterThanOrEqual(breakdown.revenue - 1);
+    // Cuadre exacto con el desglose del mes hasta hoy (mismas ventas y devoluciones).
+    const monthToDate = await ok(
+      "/dashboard/breakdown?from=" + today().slice(0, 7) + "-01&to=" + today(),
+      admin,
+    );
+    expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
+    expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
     expect(breakdown.units).toBeGreaterThanOrEqual(2);
     expect(breakdown.invoices).toBeGreaterThanOrEqual(1);
     expect(
@@ -906,6 +911,44 @@ describe("Auditoría 01 · dinero", () => {
     expect(breakdown.days).toBe(1);
     expect(breakdown.averagePerDay).toBeCloseTo(breakdown.revenue, 2);
     expect(breakdown.top.length).toBeLessThanOrEqual(10);
+  });
+
+  it("devolución heredada sin líneas: el desglose la resta como fila explícita y cuadra con el año, también el día 1", async () => {
+    const c = await person("seller", "legacy", 0);
+    const v = await product(500, 200, 10);
+    const sale = await sell(c, v, 1, [{ method: "cash", amount: 500 }]);
+    // Antes de la corrección por línea: sólo SaleReturn.total, sin items ni returnedQty.
+    await db.saleReturn.create({
+      data: {
+        saleId: sale.id,
+        number: "NC-LEG-" + suffix + "-" + randomUUID().slice(0, 8),
+        reason: "Heredada",
+        total: 500,
+        taxTotal: 0,
+        costTotal: 200,
+        refundAmount: 500,
+        refundMethod: "cash",
+        cashSessionId: c.cash.id,
+        userId: c.id,
+        items: [],
+      },
+    });
+    const monthToDate = await ok(
+      "/dashboard/breakdown?from=" + today().slice(0, 7) + "-01&to=" + today(),
+      admin,
+    );
+    const year = await ok("/dashboard/year", admin);
+    const month = year.months[Number(today().slice(5, 7)) - 1];
+    expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
+    expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
+    const row = monthToDate.categories.find(
+      (r: any) => r.name === "Devoluciones sin detalle",
+    );
+    expect(row).toBeDefined();
+    expect(row.revenue).toBeLessThanOrEqual(-500);
+    expect(
+      monthToDate.categories.reduce((a: number, r: any) => a + r.revenue, 0),
+    ).toBeCloseTo(monthToDate.revenue, 2);
   });
 
   it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {

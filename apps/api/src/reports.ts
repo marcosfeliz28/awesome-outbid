@@ -628,6 +628,28 @@ export class ReportsController {
       this.db
         .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
     ])) as any[][];
+    // Devoluciones sin líneas (SaleReturn heredado, items vacíos): sólo tienen total
+    // y no bajan returnedQty. Se muestran como fila propia para que el desglose
+    // cuadre con el año (/dashboard/year), sin repartirlas en categorías inventadas.
+    // Se agrupan por forma de reembolso: el efectivo que salió también baja los cobros.
+    const legacyRows = (await this.db
+      .$queryRaw`SELECT r."refundMethod" AS method, COALESCE(SUM(r.total),0) AS revenue, COALESCE(SUM(r."costTotal"),0) AS cost FROM "SaleReturn" r WHERE r."branchId"=${actor.branchId} AND r."createdAt">=${since} AND r."createdAt"<=${until} AND jsonb_typeof(r.items::jsonb)='array' AND jsonb_array_length(r.items::jsonb)=0 GROUP BY 1`) as any[];
+    const legacyRevenue = legacyRows.reduce((a, r) => a.plus(r.revenue), d(0));
+    const legacyCost = legacyRows.reduce((a, r) => a.plus(r.cost), d(0));
+    const lines = [
+      ...categories,
+      ...(legacyRevenue.isZero()
+        ? []
+        : [
+            {
+              name: "Devoluciones sin detalle",
+              color: "#94a3b8",
+              revenue: legacyRevenue.negated(),
+              cost: legacyCost.negated(),
+              units: 0,
+            },
+          ]),
+    ];
     // Días del período hasta hoy: el promedio diario no se diluye con días
     // que todavía no llegan.
     const last = new Date(Math.min(+range.lte, Date.now()));
@@ -651,9 +673,9 @@ export class ReportsController {
       };
     };
     const total = row({
-      revenue: categories.reduce((a, r) => a.plus(r.revenue ?? 0), d(0)),
-      cost: categories.reduce((a, r) => a.plus(r.cost ?? 0), d(0)),
-      units: categories.reduce((a, r) => a + Number(r.units ?? 0), 0),
+      revenue: lines.reduce((a, r) => a.plus(r.revenue ?? 0), d(0)),
+      cost: lines.reduce((a, r) => a.plus(r.cost ?? 0), d(0)),
+      units: lines.reduce((a, r) => a + Number(r.units ?? 0), 0),
     });
     const invoices = Number(count[0]?.invoices ?? 0);
     return safe(
@@ -665,29 +687,43 @@ export class ReportsController {
         ...total,
         averagePerDay: money(total.revenue / days),
         averageTicket: invoices ? money(total.revenue / invoices) : 0,
-        categories: categories.map((r) => ({
+        categories: lines.map((r) => ({
           name: r.name,
           color: r.color,
           ...row(r),
         })),
         top: top.map((r) => ({ name: r.name, sku: r.sku, ...row(r) })),
-        topByCategory: categories.map((c) => {
+        topByCategory: lines.map((c) => {
           const rows = ranked.filter((r) => r.category === c.name);
           const list = (key: string) =>
             rows
               .filter((r) => Number(r[key]) <= 10)
               .sort((a, b) => Number(a[key]) - Number(b[key]))
               .map((r) => ({ name: r.name, sku: r.sku, ...row(r) }));
-          return { category: c.name, byUnits: list("ru"), byAmount: list("ra") };
+          return {
+            category: c.name,
+            byUnits: list("ru"),
+            byAmount: list("ra"),
+          };
         }),
         // null: quien no ve el esperado de caja no ve la mezcla de pagos.
         payments: mix
-          ? mix.map((r: any) => ({
-              category: r.category,
-              method: r.method,
-              bank: r.bank ?? null,
-              amount: money(d(r.amount ?? 0)),
-            }))
+          ? [
+              ...mix.map((r: any) => ({
+                category: r.category,
+                method: r.method,
+                bank: r.bank ?? null,
+                amount: money(d(r.amount ?? 0)),
+              })),
+              ...legacyRows
+                .filter((r) => !d(r.revenue).isZero())
+                .map((r) => ({
+                  category: "Devoluciones sin detalle",
+                  method: r.method,
+                  bank: null,
+                  amount: money(d(r.revenue).negated()),
+                })),
+            ]
           : null,
       },
       actor,
@@ -1369,11 +1405,7 @@ export class ReportsController {
   @Get("sales/mine/:period")
   @Permit("sale:write")
   mine(@Param("period") period: string, @CurrentUser() actor: Actor) {
-    return mySales(
-      this.db,
-      actor,
-      parse(z.enum(["today", "week"]), period),
-    );
+    return mySales(this.db, actor, parse(z.enum(["today", "week"]), period));
   }
 }
 
@@ -1440,7 +1472,11 @@ export async function mySales(
     credit_note: d(0),
   };
   const key = (method: string, rejected = false) =>
-    rejected || method === "cod" ? "credit" : method in methods ? method : "credit_note";
+    rejected || method === "cod"
+      ? "credit"
+      : method in methods
+        ? method
+        : "credit_note";
   const shown = (sessionId: string | null) =>
     !sessionId || !hidden.includes(sessionId);
   let hiddenUntilClose = false;
@@ -1473,7 +1509,9 @@ export async function mySales(
   // Caja ciega: con caja propia abierta (o cobros en una abierta) ningún
   // importe, ni suelto ni sumable, para que no se deduzca el efectivo esperado.
   if (ownOpen || hiddenUntilClose) {
-    const [{ units }] = await db.$queryRaw<{ units: unknown }[]>`SELECT COALESCE(SUM(i.qty-i."returnedQty"),0) AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
+    const [{ units }] = await db.$queryRaw<
+      { units: unknown }[]
+    >`SELECT COALESCE(SUM(i.qty-i."returnedQty"),0) AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
     return {
       day,
       from,
@@ -1492,14 +1530,21 @@ export async function mySales(
     total: money(d(sales._sum.total ?? 0).minus(returned)),
     methods: Object.fromEntries(
       Object.entries(methods).map(([k, v]) => [k, money(v)]),
-    ) as Record<"cash" | "card" | "transfer" | "credit" | "credit_note", number>,
+    ) as Record<
+      "cash" | "card" | "transfer" | "credit" | "credit_note",
+      number
+    >,
     hiddenUntilClose: false as const,
     pendingTransfers: {
       count: pending._count,
       amount: money(pending._sum.amount ?? 0),
     },
     lastSale: last
-      ? { number: last.number, total: money(last.total), createdAt: last.createdAt }
+      ? {
+          number: last.number,
+          total: money(last.total),
+          createdAt: last.createdAt,
+        }
       : null,
     topProduct: top[0]
       ? { name: top[0].name, units: d(top[0].units as any).toNumber() }
