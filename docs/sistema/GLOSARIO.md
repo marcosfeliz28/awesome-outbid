@@ -2,7 +2,7 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su cita; los que son jerga de la dueña sin cita en el código se marcan «uso interno».
 
-**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:3756`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3277`).
+**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:3767`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3277`).
 
 **Aprobar con PIN / PIN de gerente** — Código de 6 dígitos de un usuario con `sale:manage` que autoriza una operación de riesgo (descuento grande, crédito grande, descuadre, vale…). No puede ser el de quien pide, salvo la dueña (`apps/api/src/security.ts:81-136`). Ver `ROLES_Y_PERMISOS.md` §5.
 
@@ -12,11 +12,11 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:250`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
 
-**Caja ciega / arqueo ciego / conteo ciego** — Mientras la caja está abierta, y al cerrar, la cajera **no ve** cuánto se espera que tenga; declara lo que contó y el sistema compara después. «Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados» (`apps/web/src/managementMessages.ts:37-44`). Solo ven los esperados `profit:read` o `sale:manage` (`apps/api/src/common.ts:70-72`). Además existe una bandera para ocultar importes de las ventas a quien no ve esperados, **apagada por defecto**: `NEXORA_VENTAS_CAJA_CIEGA` (`apps/api/src/sales.ts:139-152`).
+**Caja ciega / arqueo ciego / conteo ciego** — Mientras la caja está abierta, y al cerrar, la cajera **no ve** cuánto se espera que tenga; declara lo que contó y el sistema compara después. «Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados» (`apps/web/src/managementMessages.ts:37-44`). Solo ven los esperados `profit:read` o `sale:manage` (`apps/api/src/common.ts:70-72`). Además existe una bandera para ocultar importes de las ventas a quien no ve esperados, **apagada por defecto**: `NEXORA_VENTAS_CAJA_CIEGA` (`apps/api/src/sales.ts:140-153`).
 
 **Casa** — Almacén de la mercancía guardada fuera de la tienda (`kind=home`, no vendible). Solo se mueve con instrucción expresa de la dueña (`.claude/skills/mercancia/SKILL.md:33`; `apps/api/prisma/migrations/202610240401_warehouses/migration.sql:56`).
 
-**Cierre de emergencia** — Un gerente/administrador cierra la caja de otra persona; queda «cerrada por X en nombre de Y» (`apps/web/src/Tienda.tsx:321-328`; `apps/api/src/cash.ts:1335-1350`).
+**Cierre de emergencia** — Un gerente/administrador cierra la caja de otra persona; queda «cerrada por X en nombre de Y» (`apps/web/src/Tienda.tsx:321-328`; `apps/api/src/cash.ts:1340-1355`).
 
 **Conciliar** — Comparar las transferencias del sistema con el estado del banco antes de verificarlas. Pantalla «Conciliar transferencias» (`apps/web/src/TransferReconciliation.tsx:182-190`).
 
@@ -30,9 +30,9 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Crédito** — Venta a cuenta del cliente: la mercancía sale ahora, se cobra después. Pantalla: «Créditos pendientes» dentro de Caja (`apps/web/src/Tienda.tsx:602`). Reglas de PIN: `packages/shared/src/index.ts:446`.
 
-**Cuadre** — El resultado del cierre de caja: lo contado contra lo esperado por método (efectivo, tarjeta, transferencia, dólares), con diferencias; se imprime al cerrar (`apps/web/src/Management.tsx:2102-2112`; `apps/api/src/cash.ts:1112`). **Descuadre** = diferencia distinta de cero; exige justificación y el PIN de otra persona (`apps/api/src/cash.ts:1248-1300`).
+**Cuadre** — El resultado del cierre de caja: lo contado contra lo esperado por método (efectivo, tarjeta, transferencia, dólares), con diferencias; se imprime al cerrar (`apps/web/src/Management.tsx:2102-2112`; `apps/api/src/cash.ts:1117`). **Descuadre** = diferencia distinta de cero; exige justificación y el PIN de otra persona (`apps/api/src/cash.ts:1253-1305`).
 
-**Datáfono / verifón / lote del verifón** — Terminal de tarjeta. «Cerrar el lote» antes de cerrar la caja para que los cobros caigan al día siguiente; el número de lote es obligatorio si hubo tarjeta (`apps/web/src/Tienda.tsx:329-332`, `:399-412`; `apps/api/src/cash.ts:1196-1210`).
+**Datáfono / verifón / lote del verifón** — Terminal de tarjeta. «Cerrar el lote» antes de cerrar la caja para que los cobros caigan al día siguiente; el número de lote es obligatorio si hubo tarjeta (`apps/web/src/Tienda.tsx:329-332`, `:399-412`; `apps/api/src/cash.ts:1201-1215`).
 
 **Descuento** — Rebaja a una línea (% o RD$) o global (%). Siempre con motivo; sobre el límite del vendedor pide PIN. La caja aplica el mayor entre el descuento manual y el de la promoción (`apps/web/src/POS.tsx:340-353`).
 
@@ -46,7 +46,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **En espera** — Carrito guardado para seguir después (F8). **Cotizar** lo guarda como cotización. Ambos son `Quote` (`apps/web/src/POS.tsx:456-488`).
 
-**Factura (venta)** — En la tienda, «factura» es el número de una **venta** al cliente. **FS-0000123** (siete dígitos) es el número de venta (`apps/api/src/sales.ts:1114`). Ojo: el recibo dice «documento no fiscal»; no es factura fiscal (`apps/web/src/Prints.tsx:508-510`). La **factura del proveedor** (la que llega con la mercancía) es otra cosa: `supplierInvoice`.
+**Factura (venta)** — En la tienda, «factura» es el número de una **venta** al cliente. **FS-0000123** (siete dígitos) es el número de venta (`apps/api/src/sales.ts:1115`). Ojo: el recibo dice «documento no fiscal»; no es factura fiscal (`apps/web/src/Prints.tsx:508-510`). La **factura del proveedor** (la que llega con la mercancía) es otra cosa: `supplierInvoice`.
 
 **FEFO** — «Primero vence, primero sale»: la venta descuenta primero del lote que vence antes (`apps/api/src/inventory.ts:571`, texto «Venta FEFO»).
 
@@ -68,7 +68,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1044`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:674-681`).
 
-**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3350`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3402`).
+**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3361`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3402`).
 
 **NCF / e-CF** — Número de comprobante fiscal (DGII, República Dominicana). **Este sistema no lo emite**: los recibos son internos y solo se puede preparar la solicitud (`apps/web/src/Prints.tsx:508`; `apps/web/src/Management.tsx:4224-4232`). El «NCF del proveedor» sí se guarda en las compras (`apps/web/src/Purchases.tsx:90-100`).
 
@@ -100,7 +100,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Transferencia** — Pago por banco. Siempre pide cuenta y referencia y queda por verificar hasta que la administración la comprueba.
 
-**Vale de caja** — Comprobante de salida que está en la gaveta al cerrar y compensa efectivo faltante. Exige nota y el PIN de otro gerente, y genera una alerta alta (`apps/web/src/Tienda.tsx:362-368`; `apps/api/src/cash.ts:1139-1165`).
+**Vale de caja** — Comprobante de salida que está en la gaveta al cerrar y compensa efectivo faltante. Exige nota y el PIN de otro gerente, y genera una alerta alta (`apps/web/src/Tienda.tsx:362-368`; `apps/api/src/cash.ts:1144-1170`).
 
 **Variante** — Combinación concreta de un producto (talla, color, sabor) con su propio código, precio y existencia (`apps/api/prisma/schema.prisma:120`).
 

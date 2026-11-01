@@ -20,7 +20,7 @@ Gravedad: **alta** (detiene la mezcla), **media**, **baja**.
 |---|---|---|---|
 | 1 | Esconder llaves de API | **OK** | `git grep` con patrones fuertes (`sk-ant-[A-Za-z0-9_-]{20,}`, `AKIA…`, `ghp_…`, `github_pat_…`, `xox[bp]-…`, bloques PEM) en las 315 ramas remotas: 0 aciertos. Patrón suelto de nombres de llave con valor de 16+ caracteres: aparece solo en `tests/` y `docs/validacion/` (fixtures), 0 en `apps/`, `packages/`, `deploy/`, `scripts/`, `render.yaml`, `.env.example`. Ver también punto 18. **NO COMPROBADO:** los valores reales de Render y de producción (no es accesible ni se debe imprimir). |
 | 2 | Variables de entorno | **OK** | `.env.example` lista solo nombres. `validateSecret` exige `JWT_SECRET` de 32 o más caracteres (`apps/api/src/security.ts:17`). `WEB_ORIGIN` es obligatoria en producción (`apps/api/src/main.ts:23-24`). Ningún `VITE_*` secreto: solo `VITE_SHOW_DEMO_CREDENTIALS`, que no está en `render.yaml` y solo se activa con el texto `"true"` (`apps/web/src/App.tsx:95-96`). Baja: `.env.example` y `render.yaml` no se cruzaron variable por variable; **NO COMPROBADO** el conjunto completo de Render. |
-| 3 | Rutas de administración | **OK** | `node scripts/rutas-permisos.mjs`: `rutas=187 sinPermiso=0`. Rutas públicas (`@Public`): `health/live`, `login`, `change-password`, `refresh`, `google/callback` (retorno de Drive). El informe regenerado está en `docs/auditoria/RUTAS_Y_PERMISOS.md`. |
+| 3 | Rutas de administración | **OK** | `node scripts/rutas-permisos.mjs`: `rutas=188 sinPermiso=0` (1-nov, con el rol lectura). Rutas públicas (`@Public`): `health/live`, `login`, `change-password`, `refresh`, `google/callback` (retorno de Drive). El informe regenerado está en `docs/auditoria/RUTAS_Y_PERMISOS.md`. |
 | 4 | Autenticación | **OK (parcial)** | Contraseñas con `bcryptjs`; sesión de refresco en cookie `httpOnly`, `secure` y `sameSite: strict`, con caducidad de 7 días (`apps/api/src/auth.ts:396-400`). Bloqueo por intentos: `apps/api/src/auth.ts` y `tests/auth-lockout.test.ts`. Cambio de contraseña inicial forzado al arrancar (`safelyForcePasswordChangeAtStartup` en `main.ts`). **NO COMPROBADO:** la vida del token de acceso y el límite de intentos del PIN de gerente en cada ruta. |
 | 5 | Acceso por usuario | **OK (parcial)** | `safe()` recorta costos y ganancia (`apps/api/src/common.ts:367`), usado 33 veces en la API. La vendedora nunca ve costos aunque tenga `profit:read` (`common.ts:368-370`). Pruebas: `tests/caja-ciega-margen-api.test.ts`, `tests/mis-ventas-preguntas-postgres.test.ts`, `tests/ventas-caja-ciega-postgres.test.ts`. Las de Postgres no corren en este contenedor (ver nota). **NO COMPROBADO:** cada endpoint con usuario sin permiso (no se recorrieron los 187). |
 | 6 | Formularios | **OK (parcial)** | Entradas con `parse(schema, body)` (192 usos de `parse(` en la API) y límite de JSON de 100 kb (`main.ts:45`) y 4 MB solo para la importación de GV (`main.ts:44`). Archivos: `imageType` en `admin.ts`. **NO COMPROBADO:** cada una de las 88 rutas con `@Body()` (el conteo no prueba que cada una valide). |
@@ -62,6 +62,16 @@ Se corrigieron body-parser, multer y qs con `pnpm.overrides` en `pnpm-workspace.
 | moderada | qs | 6.16.0 (`pnpm-lock.yaml:3945`, `:8654`) | ≤6.16.0 | 6.16.1 | GHSA-6pq8-jhm2-2vcw (TypeError sin capturar en `stringify` con `arrayFormat: comma`) | transitiva de express y body-parser |
 
 Propuesta: subir body-parser a ≥2.4.0 y multer a ≥2.5.0 (por override de pnpm o al actualizar express y `@nestjs/platform-express`), y tratar zod 4.x como tarea aparte porque cambia los esquemas. Hasta corregirlo, no mezclar a `nexora-cloud`.
+
+## Rol lectura (orden 107, 1-nov)
+
+Rama `claude-pc/rol-lectura`. Cambia tres puntos de la tabla:
+
+- **Punto 3 (rutas):** `GET /sales` pide `sale:read` y `GET /cash-sessions` pide `cash:read`, antes `sale:write` y `cash:write`. Al cerrar el rol lectura se hallaron cuatro rutas que escribían con un permiso de lectura o sin permiso de escritura: `PATCH goods-receipts/:id/document` (era `catalog:read`), `POST payments/:id/proof` (era `authenticated`) y registrar, renombrar y aprobar equipos (eran `authenticated`; ahora niegan a quien no tiene ningún permiso de escritura). Se corrigieron en el mismo cambio.
+- **Punto 5 (acceso por usuario):** el rol lectura no recibe `profit:read`, así que el historial de ventas no lleva costos. La caja abierta no muestra importes a quien lee la sucursal, aunque no sea caja ciega (`tests/rol-lectura-postgres.test.ts`).
+- **Punto 9 (endpoints):** las escrituras responden 403 al rol lectura en el guard. `tests/rol-lectura.test.ts` recorre todas las rutas que no son `GET` ni públicas.
+
+Pendiente: no se probó en vivo con la cuenta `claude-lectura`; la creación de esa cuenta es de Norexos 2.
 
 ## Notas de comprobación
 
