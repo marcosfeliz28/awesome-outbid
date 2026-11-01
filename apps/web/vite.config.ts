@@ -23,9 +23,27 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          charts: ["recharts"],
-          "react-vendor": ["react", "react-dom"],
+        manualChunks(id) {
+          if (
+            id.includes("/recharts/") ||
+            id.includes("/victory-vendor/") ||
+            id.includes("/d3-")
+          ) {
+            return "charts";
+          }
+          if (
+            id.includes("/src/IncomeByDay.tsx") ||
+            id.includes("/src/FormalReports.tsx") ||
+            /\/(?:exceljs|xlsx|jspdf|pdfmake)\//.test(id)
+          ) {
+            return "document-export";
+          }
+          if (
+            id.includes("/node_modules/react/") ||
+            id.includes("/node_modules/react-dom/")
+          ) {
+            return "react-vendor";
+          }
         },
       },
     },
