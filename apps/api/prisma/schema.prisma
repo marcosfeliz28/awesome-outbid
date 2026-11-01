@@ -377,6 +377,8 @@ model Sale {
   @@index([customerId])
   @@index([createdAt])
   @@index([sellerId, createdAt])
+  // Migración 202611011000_pq25_indices (consultas de reportes por sucursal y estado).
+  @@index([branchId, status, createdAt])
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([cashSessionId])
 }
@@ -492,6 +494,8 @@ model Payment {
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([saleId])
   @@index([cashSessionId])
+  // Migración 202611011000_pq25_indices (reportes por tipo de movimiento y fecha).
+  @@index([entryType, createdAt])
 }
 
 // Un cobro por cliente puede abarcar varias ventas; conserva la respuesta y
@@ -537,6 +541,8 @@ model SaleReturn {
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([saleId])
   @@index([cashSessionId])
+  // Migración 202611011000_pq25_indices (reportes de devoluciones por sucursal y fecha).
+  @@index([branchId, createdAt])
 }
 
 model CreditNote {
@@ -699,6 +705,8 @@ model CashSession {
   movements          CashMovement[]
 
   @@index([userId, closedAt])
+  // Migración 202611011000_pq25_indices (cortes de caja por sucursal y apertura).
+  @@index([branchId, openedAt])
 }
 
 model CashMovement {
