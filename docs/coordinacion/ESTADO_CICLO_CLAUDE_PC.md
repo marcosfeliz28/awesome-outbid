@@ -2231,3 +2231,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (1-nov, 9) — orden 111 nueva (nexora-cloud 51a325b4)
 - RESPUESTA cambió (orden 111: «manos sobre ChatGPT», requiere pantalla de la laptop y la dueña presente). No ejecutable desde la nube (sin pantalla ni acceso a ChatGPT); no toqué ningún chat. Queda pendiente para la sesión de la laptop.
 - CI: pc23 c1fe8c0c, a1 498df5ee, b01 0500b03a y lumina 287db57e siguen verdes; fix-costo-permiso f21b276f verify ROJO. LISTA NO escrita. Último hash visto de nexora-cloud: 51a325b4 (cabeza 912d7133). No desplegar.
+
+## Ciclo nube (1-nov, 10) — orden 112 nueva (nexora-cloud 811a14d2)
+- RESPUESTA cambió (orden 112: instalar el plugin Codex de OpenAI en Claude Code de la laptop, con login de la dueña presente). No ejecutable desde la nube (sin laptop ni la dueña para el login); no instalé nada. Pendiente para la sesión de la laptop.
+- CI: pc23, a1, b01 y lumina siguen verdes; fix-ci-opcion-a 4d72ec15 (otra sesión, sin orden que la cite) verde sin LISTA; verify ROJO en fix-costo-permiso, fix-ci-mes, ci-desglose, landing-norexos-net y fix-ci-wip. LISTA NO escrita. Último hash visto de nexora-cloud: 811a14d2. No desplegar.
