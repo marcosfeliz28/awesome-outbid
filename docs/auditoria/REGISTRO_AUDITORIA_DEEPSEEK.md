@@ -41,3 +41,14 @@ Comprobé con grep cada afirmación de la segunda entrega. La mayoría es correc
 **Pendientes que no se pudieron comprobar en esta fase:** el `JWT_SECRET` y `validateSecret` (en `security.ts`, fuera del paquete) y la configuración real de Nginx.
 
 **Preguntas de DeepSeek para la fase 3:** el bloqueo `FOR UPDATE` en inventario concurrente y los endpoints de `sales.ts` que anulan o registran pagos mixtos. Ambas van en la fase 2 y la 3; las anoto para cuando lleguemos.
+
+## Fase 2 · paquete F2-P01 (`cash.ts`), verificado por Claude
+
+| # | Hallazgo de DeepSeek | Veredicto | Motivo |
+|---|---|---|---|
+| 1, 2, 3 | Pagos en USD se cuentan como efectivo en dólares sin filtrar por método (`cash.ts:89-92`, `152-154`, `387-393`) | **Confirmado, medio (un solo hallazgo, en tres lugares)** | El POS solo manda USD como efectivo (comentario en `POS.tsx:1777`), así que en uso normal no pasa. Pero el servidor (`sales.ts:490`) convierte cualquier pago con `currency: "USD"` sin importar el método, y no encontré una validación que lo rechace. Una llamada directa a la API con tarjeta en USD se contaría como dólares físicos. Es un hueco de validación en el servidor; requiere revisión humana porque toca dinero. |
+| 4 | Umbral de diferencias en USD multiplicado por `usdRate \|\| 0` (`cash.ts:1389-1393`) | **Confirmado, bajo** | Si no hay tasa, la diferencia en dólares vale 0 y no dispara alerta. En ventas en USD no se puede llegar ahí sin tasa, así que el caso es raro. |
+| 5 | `openingSuggestion` «no definida» (`cash.ts:872`) | **Rechazado** | Sí está definida en `cash.ts:1435`. DeepSeek solo buscó en sus primeras 1,400 líneas. |
+| 6-13 | Otros controles marcados «sin hallazgo» | **Aceptados sin revisar uno por uno** | Comprobé solo el cálculo y el umbral de USD. Los demás no los verifiqué individualmente. |
+
+Nota: DeepSeek marcó tres veces el mismo problema (1, 2 y 3). Lo registro como un solo hallazgo.
