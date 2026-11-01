@@ -167,3 +167,51 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **Verificación local final:** `pnpm db:generate` pasó y `pnpm check` terminó con código 0: **70 archivos de prueba pasaron, 1 omitido; 656 pruebas pasaron, 10 omitidas**. Typecheck, ESLint, build web y build API pasaron. Vite mostró únicamente la advertencia de chunk >500 kB.
 - **CI y publicación:** CI de GitHub para `f182212` terminó verde en `windows-installer`, `verify` y `render-images`: [ejecución 38770399538](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/38770399538). Ese CI es anterior a la integración de `74441b2` y a este arreglo; los cambios de esta sección requieren publicar el commit y confirmar un nuevo CI antes de considerarlos verificados remotamente.
 - **Qué falta:** publicar este arreglo en `nexora-chatgpt-nube` y verificar que los tres trabajos del nuevo SHA queden verdes. No se desplegó ni se accedió a producción.
+
+## 2026-11-01 · ChatGPT PC · paso 1 de `REORIENTACION_CHATGPT_1NOV.md`
+
+- **Rama de informe:** `chatgpt-pc/reorientacion-1nov`, creada desde `origin/nexora-cloud` `26d397ef`.
+- **Método:** `git fetch --prune`; comparación por ancestro, `git cherry` (equivalencia de parche), historial de `nexora-cloud` y comprobación de marcadores/pruebas actuales. Una rama antigua con muchos commits exclusivos no se considera aplicable: primero se revalida el defecto sobre el producto actual.
+- **Límites:** solo lectura y este informe. No se mezcló ninguna rama en `nexora-cloud`, no se desplegó y no se accedió a Render, bases ni credenciales.
+
+### Ya integradas
+
+| Estado comprobado | Ramas |
+| --- | --- |
+| Ancestro directo de `nexora-cloud` | `chatgpt-pc/cola2-26oct`, `nexora-chatgpt`, `nexora-chatgpt-nube-3ab-lote6`, `nexora-chatgpt-pc` |
+| Parche de la punta ya equivalente en `nexora-cloud` | `chatgpt-pc/e2e-gv`, `chatgpt-pc/guia-clary`, `chatgpt-pc/manual-cajera-preguntas`, `nexora-chatgpt-fase2-3y` |
+
+Estas ramas no se vuelven a mezclar ni a rehacer.
+
+### Ramas visuales y de QA que todavía requieren decisión o revalidación
+
+| Rama | Resultado de la comparación con `nexora-cloud` | Acción segura |
+| --- | --- | --- |
+| `chatgpt-nube/lumina-adentro-b` y `chatgpt-pc/lumina-adentro-a` | No son ancestros y sus parches no están integrados. La orden `af6b40a0` las declaró **obsoletas**; el rediseño vigente entró por otra cadena. | No arreglar su CI ni mezclarlas. |
+| `chatgpt-nube/qa-medios` | Sus cinco commits de QA no están integrados por ancestro ni parche (`f613c51d`…`16eb1142`). | Reproducir sobre la UI actual los tres defectos: rutas prohibidas, tooltip anual oscuro y ventas móviles a 390 px; corregir solo los que sigan ocurriendo. |
+| `chatgpt-nube/f1-01-bundle` | El commit `980a5ca0` no está integrado. La configuración actual tiene `manualChunks`, pero no conserva la división por pantallas de esa rama. | Medir el bundle actual y rehacer F1-01 desde el `nexora-cloud` vigente solo si supera el contrato. No mezclar la rama antigua. |
+| `chatgpt-pc/visual-fase1-gemini` | Los commits F1-02…F1-05 (`4d3fe595`…`095bd39f`) no están integrados. En la rama actual faltan su prueba `visual-fase1-gemini`, `nx-file-dropzone`, chips y `resize: none`; la portada todavía contiene `login-stats`. | Reproducir cada defecto en la marca/UI actual y portar únicamente lo que siga fallando. No hacer cherry-pick de `aab91c9a`: parte de una base 512 commits detrás y toca `App.tsx`/`styles.css` ya rediseñados. |
+| `chatgpt-pc/visual-integracion-27oct`, `visual-marco-27oct`, `visual-pos-27oct`, `visual-tokens-27oct`, `visual-vacios-27oct`, `visual-sistema-27oct`, `lumina-motion-integracion` | No son ancestros ni equivalentes completos. Varias piezas ya entraron por otra vía en el rediseño actual. | No mezclar en bloque; conservarlas solo como evidencia histórica y revalidar por defecto. |
+| F2-01 | Ya está en `nexora-cloud` por `7edafffb`: tokens y 12 primitivos `Nx*`, con `tests/f2-01-primitivos.test.tsx`. | Hecho; no repetir. |
+| F2-03 | Ya está en `nexora-cloud` por `74849305`: miniaturas translúcidas, botón `+` táctil y jerarquía de Cobrar, con `tests/f2-03-pos-visual.test.ts`. | Hecho; no repetir. |
+| F3-01 | Hay animaciones parciales de entrada/tablero y `prefers-reduced-motion`, pero no se encontró la transición general de vistas y apertura del asistente de 180 ms solicitada para `App.tsx`. | Pendiente después de revalidar el producto actual; una rama nueva y prueba rojo→verde. |
+
+### PC-16
+
+- `chatgpt-pc/pc16-compilacion-27oct` (`e182dbc5`) no está integrado en `nexora-cloud` y su cadena contiene cambios antiguos de API/caja además de Tauri; no se debe mezclar en bloque.
+- Evidencia útil: el informe `PC16_RUST_COMPILACION_27OCT.md` registra compilación Rust/Tauri en Windows; el CI histórico de PC-16 (`6ae6166`, run `40124069319`) tuvo `verify`, `windows-installer` y `render-images` verdes.
+- Puertas todavía abiertas: impresora/gaveta físicas y Windows 10/11 limpio. La rama posterior también declara que PC-16 requiere atar el backend nativo a la impresora configurada. No acredita hardware real ni autoriza tocar reglas de dinero.
+
+### Ramas históricas no integradas que no se reactivan automáticamente
+
+- **ChatGPT nube:** `at04-ruta-320`, `at11-postgres-estable`, `auditoria-gv`, `auditoria-nuevo`, `auditoria-total-27oct`, `auditoria-vivo`, `cola-26oct`, `cola2-26oct`, `fase3-auditoria-27oct`, `fase3-puerta-producto`, `fase4-marca-producto`, `fase4-pagina-publica-27oct`, `fase6-auditoria-ia-27oct`, `fase6-resumen-opt-in`, `lumina-adentro-merch-asistente`, `lumina-adentro-reportes-config`, `lumina-motion`, `obsidian-lumina-fase1`, `obsidian-lumina-fase2`, `obsidian-lumina-ronda-2`, `pagina-venta`, `plugins-claridad-27oct`, `pruebas-estables`, `soporte-venta`, `tablero-admin-a`, `ventas-ciego`.
+- **ChatGPT PC:** `cola3-26oct`, `estado-laptop`, `mercancia-salida-fix`, `obsidian-lumina-prototype`, `prueba-gv`, `tablero-admin-a` y las ramas visuales enumeradas arriba.
+- **Legado `nexora-chatgpt-*`:** `nexora-chatgpt-auditoria`, `nexora-chatgpt-fase2`, `nexora-chatgpt-limpieza-46`, `nexora-chatgpt-nube`, `nexora-chatgpt-nube-3ag`, `nexora-chatgpt-nube-3ah`, `nexora-chatgpt-nube-ia`, `nexora-chatgpt-pc-40mejoras`, `nexora-chatgpt-pc-n16-n35`, `nexora-chatgpt-pc-producto`, `nexora-chatgpt-pc-producto-fixes`, `nexora-chatgpt-pc-saas`.
+
+Todas están entre 426 y 967 commits detrás del `nexora-cloud` de referencia o pertenecen a líneas de producto anteriores. Sus aportes pueden servir como evidencia, pero no se mezclan ni se continúan sin una orden nueva y una reproducción sobre el producto vigente.
+
+### Siguiente trabajo según la reorientación
+
+1. ChatGPT nube: revalidar `qa-medios` y F1-01 sobre la rama actual; `lumina-adentro-b` queda descartada por la orden posterior que la declaró obsoleta.
+2. ChatGPT PC: F2-01 y F2-03 ya están hechos por otra vía. Quedan la revalidación de F1-02…F1-05 y F3-01; `pc16` queda reportado, no mezclado.
+3. Antes de código: confirmar que ninguna tarea haya sido tomada en el tablero vigente y trabajar desde `origin/nexora-cloud` en una rama nueva por tarea.
