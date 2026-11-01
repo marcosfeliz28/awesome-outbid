@@ -70,6 +70,16 @@ export type ActorRequest = Request & { actor: Actor };
 export const canViewCashExpected = (actor: Actor) =>
   can(actor.permissions, "profit:read") ||
   can(actor.permissions, "sale:manage");
+// Lectura de toda la sucursal sin poder escribir (rol lectura). Se mira el
+// permiso explícito: quien escribe ventas o caja ya lee sólo lo suyo.
+const readsWholeBranch = (actor: Actor, read: string, write: string) =>
+  actor.permissions.includes(read) && !can(actor.permissions, write);
+export const seesAllSales = (actor: Actor) =>
+  can(actor.permissions, "sale:manage") ||
+  readsWholeBranch(actor, "sale:read", "sale:write");
+export const seesAllCashSessions = (actor: Actor) =>
+  can(actor.permissions, "sale:manage") ||
+  readsWholeBranch(actor, "cash:read", "cash:write");
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext) =>
     ctx.switchToHttp().getRequest<ActorRequest>().actor,

@@ -69,6 +69,7 @@ import {
   customerForActor,
   maskTail,
   canViewCashExpected,
+  seesAllSales,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
 import { captureApiException } from "./monitoring";
@@ -1665,7 +1666,7 @@ export class SalesController {
     return { results };
   }
   @Get("sales")
-  @Permit("sale:write")
+  @Permit("sale:read")
   async list(
     @CurrentUser() actor: Actor,
     @Query() query: Record<string, string>,
@@ -1699,9 +1700,7 @@ export class SalesController {
     const rows = await this.db.sale.findMany({
       where: {
         branchId: actor.branchId,
-        ...(can(actor.permissions, "sale:manage")
-          ? {}
-          : { sellerId: actor.id }),
+        ...(seesAllSales(actor) ? {} : { sellerId: actor.id }),
         ...(filters.q
           ? { number: { contains: filters.q, mode: "insensitive" as const } }
           : {}),
@@ -1720,9 +1719,21 @@ export class SalesController {
       take: filters.q || filters.date ? 500 : 100,
     });
     const blind = await blindSalesScope(this.db, actor);
+    // Quien lee la sucursal (rol lectura) no ve los importes de ninguna caja
+    // abierta, sea o no caja ciega: la bandera sólo cubre a las cajeras.
+    const openSessions =
+      seesAllSales(actor) && !canViewCashExpected(actor)
+        ? await this.db.cashSession.findMany({
+            where: { branchId: actor.branchId, closedAt: null },
+            select: { id: true, openedAt: true },
+          })
+        : [];
     return rows.map((sale) => {
       const dto = saleHistoryDto(sale, actor);
-      return inBlindScope(blind, sale) ? hideSaleAmounts(dto) : dto;
+      const hidden =
+        inBlindScope(blind, sale) ||
+        openSessions.some((s) => inBlindScope(s, sale));
+      return hidden ? hideSaleAmounts(dto) : dto;
     });
   }
   private async voidRequestDto(id: string, actor: Actor) {

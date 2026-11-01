@@ -37,6 +37,7 @@ import {
   bad,
   denied,
   canViewCashExpected,
+  seesAllCashSessions,
 } from "./common";
 import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
@@ -757,12 +758,13 @@ const CLOSED_SESSIONS_LIMIT = 100;
 export class CashController {
   constructor(@Inject(Database) private db: Database) {}
   @Get()
-  @Permit("cash:write")
+  @Permit("cash:read")
   async sessions(@CurrentUser() actor: Actor) {
     const showExpected = canViewCashExpected(actor);
+    const seesAll = seesAllCashSessions(actor);
     const scope = {
       branchId: actor.branchId,
-      ...(can(actor.permissions, "sale:manage") ? {} : { userId: actor.id }),
+      ...(seesAll ? {} : { userId: actor.id }),
     };
     // Todas las cajas abiertas (aunque sean antiguas) y las cerradas más
     // recientes; el esperado se calcula para todas con consultas agrupadas.
@@ -807,8 +809,11 @@ export class CashController {
           differenceTransfer,
           ...visible
         } = s;
+        // Caja ciega para el rol lectura: la apertura de una caja abierta no se ve.
+        const blindOpen = seesAll && !showExpected && !s.closedAt;
         return {
           ...visible,
+          ...(blindOpen ? { openingAmount: null, hiddenUntilClose: true } : {}),
           registerName: registerName(s.registerId),
           userName: owners.get(s.userId) ?? null,
           ...(showExpected

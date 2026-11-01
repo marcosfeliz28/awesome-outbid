@@ -784,8 +784,16 @@ export const permissions: Record<string, string[]> = {
   // GV Makeup Studio (dueña, 25-oct): sólo cursos, inscripciones y pagos de GV.
   gv: ["gv:read", "gv:write", "gv:reports"],
 };
+// Quien puede escribir ventas o caja puede leerlas: los GET de /sales y
+// /cash-sessions piden sólo la lectura, así los roles actuales no pierden acceso.
+const WRITE_FOR_READ: Record<string, string> = {
+  "sale:read": "sale:write",
+  "cash:read": "cash:write",
+};
 export const can = (grants: string[], permission: string) =>
-  grants.includes("*") || grants.includes(permission);
+  grants.includes("*") ||
+  grants.includes(permission) ||
+  (permission in WRITE_FOR_READ && grants.includes(WRITE_FOR_READ[permission]));
 export const categories = [
   "Suplementos",
   "Ropa deportiva",
