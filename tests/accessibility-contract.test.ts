@@ -40,6 +40,16 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(app).toContain("if (user && !routeAllowed) go(safePage);");
     expect(app).toContain("{pages[safePage] || <Dashboard go={go} />}");
   });
+  it("Ventas muestra cada columna como tarjeta etiquetada a 390 px", () => {
+    const management = readFileSync("apps/web/src/Management.tsx", "utf8");
+    expect(management).toContain("mobileCards");
+    expect(management).toContain('data-label={c.label}');
+    expect(management).toMatch(
+      /rows=\{query\.data \|\| \[\]\}[\s\S]{0,80}mobileCards/,
+    );
+    expect(css).toContain(".table-wrap.table-wrap-cards");
+    expect(css).toContain("content: attr(data-label)");
+  });
 });
 describe("Cambiar mi contraseña (voluntario)", () => {
   it("usa las mismas reglas y habla de la contraseña actual, no de la temporal", () => {

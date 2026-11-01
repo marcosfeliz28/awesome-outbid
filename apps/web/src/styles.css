@@ -1346,6 +1346,58 @@ kbd {
   overflow-x: auto;
   width: 100%;
 }
+/* Ventas conserva todas sus columnas en celular, pero las presenta por fila:
+ * así Total, Pagos y Solicitar anulación no quedan fuera de una tabla lateral. */
+@media (max-width: 640px) {
+  .table-wrap.table-wrap-cards {
+    overflow-x: visible;
+  }
+  .table-wrap.table-wrap-cards table,
+  .table-wrap.table-wrap-cards tbody,
+  .table-wrap.table-wrap-cards tr,
+  .table-wrap.table-wrap-cards td {
+    display: block;
+    width: 100%;
+  }
+  .table-wrap.table-wrap-cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .table-wrap.table-wrap-cards tr {
+    margin: 0 0 12px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .table-wrap.table-wrap-cards td {
+    display: grid;
+    grid-template-columns: minmax(104px, 42%) minmax(0, 1fr);
+    gap: 10px;
+    padding: 9px 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .table-wrap.table-wrap-cards td + td {
+    border-top: 1px solid var(--border);
+  }
+  .table-wrap.table-wrap-cards td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .table-wrap.table-wrap-cards .table-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
 table {
   border-collapse: collapse;
   width: 100%;

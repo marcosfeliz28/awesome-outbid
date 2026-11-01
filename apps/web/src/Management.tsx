@@ -115,11 +115,14 @@ function DataTable({
   columns,
   empty = "Todavía no hay registros",
   emptyDescription = "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.",
+  mobileCards = false,
 }: {
   rows: any[];
   columns: Column[];
   empty?: string;
   emptyDescription?: string;
+  /** En celular, cada fila conserva todos sus datos como una tarjeta etiquetada. */
+  mobileCards?: boolean;
 }) {
   const [page, setPage] = useState(1);
   useEffect(() => setPage(1), [rows.length]);
@@ -127,7 +130,10 @@ function DataTable({
   return rows.length ? (
     <>
       {/* G12: con desplazamiento horizontal, la tabla se recorre con teclado. */}
-      <div className="table-wrap" tabIndex={0}>
+      <div
+        className={"table-wrap" + (mobileCards ? " table-wrap-cards" : "")}
+        tabIndex={0}
+      >
         <table>
           <thead>
             <tr>
@@ -142,7 +148,7 @@ function DataTable({
             {rows.slice((page - 1) * 20, page * 20).map((r, index) => (
               <tr key={r.id || r.sku || index}>
                 {columns.map((c) => (
-                  <td key={c.label} className={c.className}>
+                  <td key={c.label} className={c.className} data-label={c.label}>
                     {c.render(r)}
                   </td>
                 ))}
@@ -1926,6 +1932,7 @@ export function Cash() {
         <QueryState query={query}>
           <DataTable
             rows={query.data || []}
+            mobileCards
             columns={[
               ...(can(user.permissions, "sale:manage")
                 ? [
