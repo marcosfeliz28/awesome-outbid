@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
+## 2026-11-01 · ChatGPT PC · estado para Norexos 1
+
+- En `chatgpt-pc/visual-integracion-27oct`, el commit `120e4a06` corrigió el selector accesible de salida de mercancía y una carrera reproducible que podía impedir recuperar el carrito al reingresar durante un cierre por inactividad. La carrera es una causa posible, no demostrada, del fallo intermitente concreto visto en CI.
+- En ese SHA pasaron `verify`, `windows-installer` y `render-images`: https://github.com/marcosfeliz28/awesome-outbid/actions/runs/40603114516. `pnpm check` local: 1.048 aprobadas, 11 omitidas. Las dos pruebas de navegador afectadas pasaron en entorno aislado.
+- Este aviso documental crea un SHA posterior: sus tres trabajos deben comprobarse por separado. No considerar automáticamente verde el SHA nuevo por el resultado de `120e4a06`.
+- Portada: existe un avance **solo local**, rama `agent/visual-portada-27oct`, commit `701e2f41`. Compacta el acceso móvil y conserva el emblema; tiene capturas y una prueba de formulario con API simulada. No se ha integrado ni publicado, no cubre la bóveda completa ni una sesión real, y debe compararse con `origin/nexora-cloud` antes de reutilizarse.
+- Video Runway: no reproduce la N oficial. El clip local sí la usa, pero muestra un recorte rectangular; ninguno está aprobado como final. La sesión «Implementa Fase 1 visual» figura activa, por lo que no se ha duplicado su trabajo.
+- Sin despliegue, sin cambios en Render, credenciales ni base de la tienda. Queda pendiente cotejar el alcance de las ramas visuales con `nexora-cloud` actualizado según `REORIENTACION_CHATGPT_1NOV.md`.
+
 ## 2026-10-24 · ChatGPT PC · corrección CPC-8 de PC-18
 
 - El perfil del instalador local inyecta un guard al inicio de NSIS: `$INSTDIR` debe ser exactamente `C:\Program Files\Nexora POS Local`. Cualquier `/D=` hacia la carpeta de la tienda u otra ruta termina con código 4 antes de copiar archivos o tocar servicios.
