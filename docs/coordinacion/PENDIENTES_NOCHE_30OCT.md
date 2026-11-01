@@ -62,3 +62,9 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 - Incentivos GV: agente Haiku en `claude-pc/gv-incentivos` (bfd0844; CI en curso). Nuevas reglas: pagos en USD se registran con opción de moneda + equivalente en pesos con tasa capturada; devolución quita el incentivo; cada curso es un ítem (docs/operacion/GV_CATALOGO_CURSOS.md).
 - **GV debe tener CIERRE desde ahora** (abrir caja, cerrar caja, factura del día; decisión: la dueña dijo «deben hacerle un cierre»). Diseño (A: misma caja con área GV / B: caja propia) por decidir; asignar a un agente cuando termine el de incentivos (máx. 4 sesiones activas).
 - Reporte de ventas de octubre por área para Génesis: pedido a Norexos 2 (docs/operacion/REPORTE_VENTAS_OCT2026_POR_AREA.md en claude/bitacora-n2).
+
+## 1-nov 10:45 UTC · CI ROJO EN TODAS LAS RAMAS (prueba de dinero del día 1 del mes)
+- Causa 1 (confirmada por el agente de diagnóstico): `/dashboard/year` resta `SaleReturn.total` y `/dashboard/breakdown` solo líneas devueltas; la devolución heredada de 500 (sin líneas) que crea la prueba N-3 solo la ve el año. Fix A (desglose resta devoluciones sin detalle como fila explícita) en `claude-pc/fix-ci-mes` 4f994d7b.
+- 4f994d7b AÚN FALLA en CI: `tests/dinero-auditoria.test.ts:902` y `:942`, diferencia de 118 (89439.5 vs 89557.5). Hay una segunda causa en la suite completa. Pendiente de devolver al agente (session_01CjMpH6i9MQ46RPz1qbGhSG): reproducir la suite de dinero completa en orden CI y hallar los 118 con SQL. El canal send_message de N1 estuvo caído a las 10:45.
+- Producción: N2 no ve devoluciones en 381 ventas (8–31 oct); la BD de Render bloquea consultas externas (allowlist vacía), la dueña decide si abrirla.
+- Bloqueadas por este CI (no mezclar hasta que pase): gv-incentivos c227d6b (por pago), anim-reportes, fix-dinero, fix-seg-menor, pq-23-parches, pq-23-28, pq-25-indices, pq-39, pq-37, pq-11, zod4.
