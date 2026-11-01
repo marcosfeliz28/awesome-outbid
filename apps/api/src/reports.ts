@@ -229,6 +229,24 @@ async function returnedBreakdown(
     sellers: list(sellers),
   };
 }
+// Movimientos del período: líneas vendidas (por fecha de venta) menos líneas
+// devueltas (por fecha de devolución, de SaleReturn.items), como dashboard/year.
+// Así una devolución cae en el mes en que se hizo, aunque la venta sea anterior.
+const movimientos = (
+  branchId: string,
+  since: Prisma.Sql,
+  until: Prisma.Sql,
+) => Prisma.sql`mv AS (
+  SELECT i."variantId", NULL::text AS method, i.qty AS units, i."lineTotal" AS revenue, i.qty*i."unitCost" AS cost
+  FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId"
+  WHERE s."branchId"=${branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until}
+  UNION ALL
+  SELECT i."variantId", r."refundMethod", -x.qty, -x.total, -x.cost
+  FROM (SELECT * FROM "SaleReturn" WHERE "branchId"=${branchId} AND "createdAt">=${since} AND "createdAt"<=${until} AND jsonb_typeof(items::jsonb)='array') r
+  CROSS JOIN LATERAL jsonb_to_recordset(r.items::jsonb) AS x("saleItemId" text, qty numeric, total numeric, cost numeric)
+  JOIN "SaleItem" i ON i.id = x."saleItemId"::uuid
+)`;
+
 @Controller()
 export class ReportsController {
   constructor(@Inject(Database) private db: Database) {}
@@ -609,51 +627,54 @@ export class ReportsController {
     const range = dateRange(query);
     const since = utc(range.gte),
       until = utc(range.lte);
-    const line = Prisma.sql`i."lineTotal"*(1-i."returnedQty"/i.qty)`;
-    const units = Prisma.sql`(i.qty-i."returnedQty")`;
+    const mv = movimientos(actor.branchId, since, until);
     const [categories, top, count, mix, ranked] = (await Promise.all([
       this.db
-        .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
+        .$queryRaw`WITH ${mv} SELECT c.name, c.color, SUM(m.revenue) AS revenue, SUM(m.units) AS units, SUM(m.cost) AS cost FROM mv m JOIN "Variant" v ON v.id=m."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" GROUP BY c.name,c.color ORDER BY revenue DESC`,
       this.db
-        .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
+        .$queryRaw`WITH ${mv} SELECT p.name, v.sku, SUM(m.units) AS units, SUM(m.revenue) AS revenue, SUM(m.cost) AS cost FROM mv m JOIN "Variant" v ON v.id=m."variantId" JOIN "Product" p ON p.id=v."productId" GROUP BY p.name, v.sku HAVING SUM(m.units) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
       this.db
         .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
       // Orden 18-oct: cómo se pagó cada categoría. Lo vendido de la categoría
       // en cada factura se reparte según la mezcla de pagos de esa factura.
       canViewCashExpected(actor)
         ? this.db
-            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), pk AS (SELECT p."saleId", CASE WHEN p.method='transfer' AND p.status='pending_verification' THEN 'transfer_pending' ELSE p.method END AS method, CASE WHEN p.method='transfer' THEN COALESCE(NULLIF(BTRIM(p.bank),''),'Sin banco') WHEN p.method='card' THEN NULLIF(BTRIM(p.bank),'') END AS bank, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method NOT IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2, 3), cr AS (SELECT p."saleId", SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1), sp AS (SELECT "saleId", method, bank, amt FROM pk UNION ALL SELECT cr."saleId", 'credit', NULL::text, LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT cr."saleId", 'credit_paid', NULL::text, cr.amt-LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT s.id, 'unrecorded', NULL::text, GREATEST(s.total-COALESCE((SELECT SUM(amt) FROM pk WHERE pk."saleId"=s.id),0)-COALESCE((SELECT amt FROM cr WHERE cr."saleId"=s.id),0), 0) FROM "Sale" s WHERE s.id IN (SELECT "saleId" FROM cl)), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, sp.bank, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" WHERE sp.amt>0 GROUP BY cl.name, sp.method, sp.bank`
+            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(i."lineTotal") AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), pk AS (SELECT p."saleId", CASE WHEN p.method='transfer' AND p.status='pending_verification' THEN 'transfer_pending' ELSE p.method END AS method, CASE WHEN p.method='transfer' THEN COALESCE(NULLIF(BTRIM(p.bank),''),'Sin banco') WHEN p.method='card' THEN NULLIF(BTRIM(p.bank),'') END AS bank, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method NOT IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2, 3), cr AS (SELECT p."saleId", SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1), sp AS (SELECT "saleId", method, bank, amt FROM pk UNION ALL SELECT cr."saleId", 'credit', NULL::text, LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT cr."saleId", 'credit_paid', NULL::text, cr.amt-LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT s.id, 'unrecorded', NULL::text, GREATEST(s.total-COALESCE((SELECT SUM(amt) FROM pk WHERE pk."saleId"=s.id),0)-COALESCE((SELECT amt FROM cr WHERE cr."saleId"=s.id),0), 0) FROM "Sale" s WHERE s.id IN (SELECT "saleId" FROM cl)), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, sp.bank, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" WHERE sp.amt>0 GROUP BY cl.name, sp.method, sp.bank`
         : Promise.resolve(null),
       // Top 10 de cada categoría (la lista de categorías sale de los datos), por unidades y por monto.
       this.db
-        .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
+        .$queryRaw`WITH ${mv}, t AS (SELECT c.name AS category, p.name, v.sku, SUM(m.units) AS units, SUM(m.revenue) AS revenue, SUM(m.cost) AS cost FROM mv m JOIN "Variant" v ON v.id=m."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" GROUP BY c.name, p.name, v.sku HAVING SUM(m.units) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
     ])) as any[][];
     // Devoluciones que el desglose (por línea y fecha de venta) no ve, pero el año sí
-    // (por fecha de devolución): «sin detalle» = SaleReturn sin items (heredado) y
-    // «de ventas anteriores» = devolución con items de una venta de antes del período.
-    // Filas propias, nunca repartidas en categorías; también bajan los cobros por forma de reembolso.
+    // (por fecha de devolución). Las devoluciones con líneas ya restan en su
+    // categoría (movimientos). «Sin detalle» = SaleReturn sin items (heredado): fila propia.
     const returnRows = (await this.db
-      .$queryRaw`SELECT CASE WHEN jsonb_typeof(r.items::jsonb)='array' AND jsonb_array_length(r.items::jsonb)=0 THEN 'sin' ELSE 'antes' END AS kind, r."refundMethod" AS method, COALESCE(SUM(r.total),0) AS revenue, COALESCE(SUM(r."costTotal"),0) AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND r."createdAt">=${since} AND r."createdAt"<=${until} AND (jsonb_typeof(r.items::jsonb)<>'array' OR jsonb_array_length(r.items::jsonb)=0 OR s."createdAt"<${since}) GROUP BY 1, 2`) as any[];
-    const extraRow = (kind: string, name: string, color: string) => {
-      const rows = returnRows.filter((r) => r.kind === kind);
-      const revenue = rows.reduce((a, r) => a.plus(r.revenue), d(0));
-      const cost = rows.reduce((a, r) => a.plus(r.cost), d(0));
-      return revenue.isZero()
+      .$queryRaw`SELECT r."refundMethod" AS method, COALESCE(SUM(r.total),0) AS revenue, COALESCE(SUM(r."costTotal"),0) AS cost FROM "SaleReturn" r WHERE r."branchId"=${actor.branchId} AND r."createdAt">=${since} AND r."createdAt"<=${until} AND (jsonb_typeof(r.items::jsonb)<>'array' OR jsonb_array_length(r.items::jsonb)=0) GROUP BY 1`) as any[];
+    // Cobros por forma de reembolso de las devoluciones con líneas, por categoría.
+    const refunds = mix
+      ? ((await this.db
+          .$queryRaw`WITH ${mv} SELECT c.name AS category, m.method, SUM(m.revenue) AS amount FROM mv m JOIN "Variant" v ON v.id=m."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE m.method IS NOT NULL GROUP BY 1, 2`) as any[])
+      : [];
+    const sinDetalle = returnRows.reduce(
+      (a, r) => ({
+        revenue: a.revenue.plus(r.revenue),
+        cost: a.cost.plus(r.cost),
+      }),
+      { revenue: d(0), cost: d(0) },
+    );
+    const lines = [
+      ...categories,
+      ...(sinDetalle.revenue.isZero()
         ? []
         : [
             {
-              name,
-              color,
-              revenue: revenue.negated(),
-              cost: cost.negated(),
+              name: "Devoluciones sin detalle",
+              color: "#94a3b8",
+              revenue: sinDetalle.revenue.negated(),
+              cost: sinDetalle.cost.negated(),
               units: 0,
             },
-          ];
-    };
-    const lines = [
-      ...categories,
-      ...extraRow("sin", "Devoluciones sin detalle", "#94a3b8"),
-      ...extraRow("antes", "Devoluciones de ventas anteriores", "#cbd5e1"),
+          ]),
     ];
     // Días del período hasta hoy: el promedio diario no se diluye con días
     // que todavía no llegan.
@@ -720,13 +741,18 @@ export class ReportsController {
                 bank: r.bank ?? null,
                 amount: money(d(r.amount ?? 0)),
               })),
+              ...refunds
+                .filter((r) => !d(r.amount).isZero())
+                .map((r) => ({
+                  category: r.category,
+                  method: r.method,
+                  bank: null,
+                  amount: money(d(r.amount)),
+                })),
               ...returnRows
                 .filter((r) => !d(r.revenue).isZero())
                 .map((r) => ({
-                  category:
-                    r.kind === "sin"
-                      ? "Devoluciones sin detalle"
-                      : "Devoluciones de ventas anteriores",
+                  category: "Devoluciones sin detalle",
                   method: r.method,
                   bank: null,
                   amount: money(d(r.revenue).negated()),
