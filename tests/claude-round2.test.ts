@@ -212,7 +212,7 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     ).rejects.toMatchObject({ status: 403 });
     expect(
       Reflect.getMetadata("permission", SalesController.prototype.paymentProof),
-    ).toBe("authenticated");
+    ).toBe("sale:write");
     expect(
       Reflect.getMetadata(
         "permission",
