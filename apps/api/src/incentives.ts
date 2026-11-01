@@ -307,7 +307,7 @@ export async function recordSaleIncentives(
   // fracción ya pagada; el resto llega con cada cobro (syncCreditIncentives).
   const paidFraction =
     sale.incentiveOnCollection && d(sale.total).gt(0)
-      ? d(sale.total).minus(sale.creditBalance).div(sale.total)
+      ? d(sale.total).minus(sale.creditBalance).div(sale.total).clamp(0, 1)
       : d(1);
   const data = sale.items.map((item: any) => {
     const category = item.variant.product.category;
@@ -578,6 +578,8 @@ export async function pendingCreditIncentive(
   });
   const out = new Map<string, number>();
   if (!sales.length) return out;
+  // Se suma en Decimal y sólo al final pasa a número (centavos).
+  const acc = new Map<string, ReturnType<typeof d>>();
   const entries: any[] = await db.incentiveEntry.findMany({
     where: { saleId: { in: sales.map((s) => s.id) } },
   });
@@ -597,11 +599,9 @@ export async function pendingCreditIncentive(
         .minus(returnedAt(full, line.qty, line.returnedQty))
         .minus(mine.reduce((s, e) => s.plus(e.amount), d(0)));
       if (left.gt(0))
-        out.set(
-          origin.userId,
-          money((out.get(origin.userId) ?? 0) + left.toNumber()),
-        );
+        acc.set(origin.userId, (acc.get(origin.userId) ?? d(0)).plus(left));
     }
+  for (const [userId, total] of acc) out.set(userId, money(total));
   return out;
 }
 
