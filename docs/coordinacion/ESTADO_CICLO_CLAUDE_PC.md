@@ -2215,3 +2215,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (1-nov, 5) — sin órdenes nuevas (nexora-cloud 3e272476 en archivos vigilados)
 - RESPUESTA y OBSIDIAN_LUMINA_PROGRESO sin cambios desde 3e272476. CI: nada nuevo en verde, LISTA NO escrita. verify sigue ROJO en fix-dinero, fix-seg-menor, pq-11, pq-23-28 (solo documentos), pq-23-parches, pq-25-indices, pq-37, pq-39-descripcion, gv-incentivos c227d6b0, anim-reportes 3ebcee55 y zod4 0f069afb (rama nueva); el fallo común está en tests/dinero-auditoria.test.ts (base), windows-installer y render-images verdes. pc23, a1, b01 y lumina siguen verdes.
 - No ejecuté órdenes: arreglar la prueba dinero-auditoria en la base necesita decisión de Nexora 1. Último hash visto de nexora-cloud: 3e272476. No desplegar.
+
+## Ciclo nube (1-nov, 6) — órdenes 106, 107 y 108 nuevas (nexora-cloud aeffc73d)
+- RESPUESTA cambió (órdenes 106 GV en pesos/caja propia, 107 rol «lectura», 108 prueba de acceso). Orden 108: NEXORA_CLAUDE_USER y NEXORA_CLAUDE_PASSWORD «definida», pero el clasificador de permisos de la sesión DENEGÓ ejecutar entrar.py (login a la API de producción); no lo reintenté ni lo rodeé, así que PRUEBA_ACCESO_1NOV.md no se escribió. Órdenes 106/107 no ejecutadas (piezas grandes con migración; pendientes de sesión con pruebas locales).
+- CI: pc23, a1, b01 y lumina siguen verdes; verify sigue ROJO en fix-dinero, zod4, gv-incentivos c227d6b0 y pq-23-28 (fallo común de base); LISTA NO escrita. Último hash visto de nexora-cloud: aeffc73d. No desplegar.
