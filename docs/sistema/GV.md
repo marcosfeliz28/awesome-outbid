@@ -88,7 +88,7 @@ Filtros **Desde** / **Hasta** (`Gv.tsx:1008-1016`). Secciones (`:970-1037`): **I
 | `gv:verify`  | Verificar o rechazar transferencias.                                              | `manager`, `admin`; **no** el rol `gv` |
 | `*`          | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:807`).                 | `admin`                                |
 
-Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `gv` (p. ej. la empleada Clary) no tiene acceso a configuración, usuarios, costos, inventario ni datos de MacGen (`docs/coordinacion/MODULO-GV.md:43-44`).
+Fuente de los permisos por rol: `packages/shared/src/index.ts:760-787`. El rol `gv` (p. ej. la empleada Clary) no tiene acceso a configuración, usuarios, costos, inventario ni datos de MacGen (`docs/coordinacion/MODULO-GV.md:43-44`).
 
 ## 10. Datos que NO están en el sistema (no preguntar al código)
 

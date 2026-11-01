@@ -1022,7 +1022,10 @@ const choice = (
   options: string[],
 ): SurveyQuestion => ({ id, text, kind: "choice", options });
 export const CASHIER_SURVEY: readonly SurveyQuestion[] = [
-  scale("cobro_rapido", "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)"),
+  scale(
+    "cobro_rapido",
+    "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+  ),
   yesno("cobro_pasos", "¿Cobrar te pide más pasos de los necesarios?"),
   scale("buscar_producto", "¿Qué tan fácil es encontrar un producto?"),
   choice("buscar_como", "¿Cómo buscas los productos casi siempre?", [

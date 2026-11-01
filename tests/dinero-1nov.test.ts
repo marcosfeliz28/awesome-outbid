@@ -39,7 +39,11 @@ describe("H-08: incentivo de ventas a crédito con fracción pagada entre 0 y 1"
     creditBalance,
     incentiveOnCollection: true,
     items: [
-      { id: "l1", qty: 2, variant: { product: { category: { id: "c1", name: "Suplementos" } } } },
+      {
+        id: "l1",
+        qty: 2,
+        variant: { product: { category: { id: "c1", name: "Suplementos" } } },
+      },
     ],
   });
   const fakeTx = (s: any) => {
@@ -48,7 +52,9 @@ describe("H-08: incentivo de ventas a crédito con fracción pagada entre 0 y 1"
       created,
       $queryRaw: async () => [{ locked: "" }],
       sale: { findUniqueOrThrow: async () => s },
-      incentiveRate: { findMany: async () => [{ categoryId: "c1", amount: 10 }] },
+      incentiveRate: {
+        findMany: async () => [{ categoryId: "c1", amount: 10 }],
+      },
       incentivePeriodClose: { findMany: async () => [] },
       incentiveEntry: {
         createMany: async ({ data }: any) => created.push(...data),
@@ -82,8 +88,26 @@ describe("H-08: incentivo de ventas a crédito con fracción pagada entre 0 y 1"
       },
       incentiveEntry: {
         findMany: async () => [
-          { saleId: "s1", saleItemId: "l1", kind: "sale", userId: "u1", qty: 3, rateAtSale: "0.1", wholesale: false, amount: 0.1 },
-          { saleId: "s2", saleItemId: "l2", kind: "sale", userId: "u1", qty: 1, rateAtSale: "0.004", wholesale: false, amount: 0 },
+          {
+            saleId: "s1",
+            saleItemId: "l1",
+            kind: "sale",
+            userId: "u1",
+            qty: 3,
+            rateAtSale: "0.1",
+            wholesale: false,
+            amount: 0.1,
+          },
+          {
+            saleId: "s2",
+            saleItemId: "l2",
+            kind: "sale",
+            userId: "u1",
+            qty: 1,
+            rateAtSale: "0.004",
+            wholesale: false,
+            amount: 0,
+          },
         ],
       },
     };

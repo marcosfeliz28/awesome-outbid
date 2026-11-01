@@ -37,6 +37,7 @@ Permiso `inventory:write`; el rol `seller` queda bloqueado (`apps/api/src/mercha
 3. Cargar productos igual que en la entrada. Si hay lotes se elige **«Lote de salida»** (solo lotes con existencia) (`:1185-1215`; API: «Selecciona el lote de salida.» `merchandise.ts:684`). En una salida no se crean productos (`merchandise.ts:375`).
 4. **«Confirmar salida»** (`:1297-1310`), pregunta «¿Confirmar salida de N unidad(es) por …?» (`:498-505`).
 5. Una orden solo permite entradas; una factura solo permite entradas (`merchandise.ts:435`, `:478`).
+
 - El **tipo** importa para el reporte de ganancias: una merma real no se registra como «conteo». Tipos de la bitácora de la dueña: `conteo`, `entrada`, `salida`, `regalo`, `ajuste` (`.claude/skills/mercancia/SKILL.md:27-29`). Mermas, ajustes y devoluciones a proveedor se restan a costo en el Resumen; las «Correcciones del conteo de inventario» **no restan** (`apps/web/src/Dashboard.tsx:674-681`).
 
 ## 3. Pantalla «Inventario»: stock, ajustes y conteos
@@ -70,7 +71,7 @@ Pantalla **Compras** (`purchase:write`), `apps/web/src/Management.tsx:1158`:
 - **Recepciones** (pestaña): historial con detalle y exportación (`Purchases.tsx:454-640`; API `GET /goods-receipts`, `inventory.ts:1337`, `:1441`; exportar `goods-receipts/export` requiere `reports:read`, `:1360`).
 - **Proveedores**: crear proveedor (nombre, RNC, teléfono, correo, plazo de pago, entrega) y **registrar un pago al proveedor** (monto, método, referencia) (`Management.tsx:1185`, `:1348-1370`; API `apps/api/src/admin.ts:568-600`). Las cuentas por pagar salen en el reporte «Compras y cuentas por pagar» (`Management.tsx:2729`).
 - La **factura del proveedor** (foto/PDF/Excel) que se sube en Mercancía queda adjunta a la recepción y no se puede borrar (`apps/api/prisma/schema.prisma` modelo `GoodsReceipt`, campo `attachmentId`; modelos `InvoiceDraft` e `InvoiceAttachment`). Hay un tope diario de facturas sin confirmar: «Tienes muchas facturas sin confirmar hoy. Confirma o espera.» (`merchandise.ts:236`).
-- No confundir: **«FS-0000123» es el número de una VENTA de la tienda** (factura al cliente), no una factura de proveedor (`apps/api/src/sales.ts:1120`). La factura del proveedor se identifica por su propio número (`supplierInvoice`) y NCF (`supplierNcf`).
+- No confundir: **«FS-0000123» es el número de una VENTA de la tienda** (factura al cliente), no una factura de proveedor (`apps/api/src/sales.ts:1124`). La factura del proveedor se identifica por su propio número (`supplierInvoice`) y NCF (`supplierNcf`).
 
 ## 6. Procedimiento fijo de la dueña (verificación triple)
 
@@ -83,18 +84,19 @@ Fuente: `.claude/skills/mercancia/SKILL.md`, `CLAUDE.md` punto 6. Resumen:
 5. **Ventas o facturas que haga Claude**: después, `mercancia.py nota --orden … --detalle "FS-xxxx, productos y montos"` y verificar la existencia de cada producto en modo plan.
 6. **Conteos**: comparar con 4 métodos (existencia, suma de movimientos, saldo anterior menos ventas, recálculo por renglón) y entregar la tabla antes de ajustar.
 7. **Guardar** la bitácora `docs/operacion/bitacora-mercancia.jsonl` (una línea por cambio con la frase exacta de la dueña) y subirla a la rama de producción.
+
 - Programa: `docs/coordinacion/claude-nube/mercancia.py` (entra con `entrar.py`; credenciales del entorno, nunca impresas). La bitácora tiene campos `id`, `cuando`, `cuando_rd`, `quien`, `orden`, `tipo`, `detalle` (`docs/operacion/bitacora-mercancia.jsonl:1`).
 - Reglas fijas: Casa solo con instrucción expresa; no tocar lo que la dueña contó o modificó ayer u hoy sin un conteo nuevo suyo; nunca imprimir credenciales (`.claude/skills/mercancia/SKILL.md:33`).
 - Antes de dar cualquier cifra, lista, estado de factura o cuadre a la dueña: skill `informe-triple` (leer el dato 3 veces por caminos distintos y decir qué no se comprobó).
 
 ## 7. Quién puede qué (mercancía)
 
-| Acción | Permiso | Cita |
-|---|---|---|
+| Acción                                | Permiso                        | Cita                                              |
+| ------------------------------------- | ------------------------------ | ------------------------------------------------- |
 | Entradas/salidas (pantalla Mercancía) | `inventory:write`, no `seller` | `apps/api/src/merchandise.ts:155-157`, `:343-345` |
-| Ajustar / Contar | `inventory:write` | `apps/api/src/inventory.ts:637-639`, `:1495-1496` |
-| Aprobar conteo | `sale:manage` | `inventory.ts:1550-1552` |
-| Traspasar Casa↔Tienda | `*` | `apps/api/src/warehouses.ts:112-114` |
-| Levantamiento de Casa | `inventory:import` (solo `*`) | `apps/api/src/inventory-import.ts:47`, `:314-348` |
-| Órdenes de compra y recepciones | `purchase:write` | `inventory.ts:954-1041` |
-| Ver stock, kardex, productos | `catalog:read` | `inventory.ts:581-619` |
+| Ajustar / Contar                      | `inventory:write`              | `apps/api/src/inventory.ts:637-639`, `:1495-1496` |
+| Aprobar conteo                        | `sale:manage`                  | `inventory.ts:1550-1552`                          |
+| Traspasar Casa↔Tienda                 | `*`                            | `apps/api/src/warehouses.ts:112-114`              |
+| Levantamiento de Casa                 | `inventory:import` (solo `*`)  | `apps/api/src/inventory-import.ts:47`, `:314-348` |
+| Órdenes de compra y recepciones       | `purchase:write`               | `inventory.ts:954-1041`                           |
+| Ver stock, kardex, productos          | `catalog:read`                 | `inventory.ts:581-619`                            |
