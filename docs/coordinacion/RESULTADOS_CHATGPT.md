@@ -138,6 +138,15 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
   - Corregir el mapeo de transferencias rechazadas en el reporte de cierre y definir idempotencia/reintentos de Resend.
   - Resultado entregado localmente; no hice `git push` ni PR porque la dueña aclaró que por ahora todo se trabaja en casa. El último commit local de código de prueba es `2902a03`; el documento queda en el siguiente commit local.
 
+## 2026-11-01 · ChatGPT NUBE · `chatgpt-nube/ci-opcion-a-verifica-1nov` · base `62d78b65`
+
+- **Encargo:** reproducir el CI rojo de la opción A sin tocar la rama de Claude. Revisé `apps/api/src/reports.ts` y `tests/dinero-auditoria.test.ts`; la opción A asigna cada devolución a la fecha de la venta original y descuenta costo únicamente cuando la mercancía reingresa.
+- **Dos repeticiones limpias:** ejecuté dos veces `pnpm check`, cada una con PostgreSQL local descartable. Ambas terminaron con código 0: `103 passed | 1 skipped (104)` y `800 passed | 10 skipped (810)`, además de typecheck, ESLint y ambos builds. No se reprodujeron los fallos objetivo de `tests/dinero-auditoria.test.ts` (aprox. 861, 903, 943 y 1013), el círculo anual, diferencias 118/60/residuo 80, ni `tests/api.test.ts:2243` (diferencia 100).
+- **Ejecución completa de CI local:** `node scripts/verify.mjs` terminó con código 1 antes de llegar a las aserciones de dinero. Texto exacto: `PrismaClientInitializationError ... Environment variable not found: DATABASE_URL`; después: `Error: No se pudo iniciar http://127.0.0.1:33117/api/health. Consulta test-results.` El script inició su PostgreSQL local, pero esa URL no llegó al proceso de API. Es un bloqueo del arnés local, no evidencia de una regresión de la opción A.
+- **Diagnóstico y parche mínimo:** con evidencia reproducible no corresponde cambiar cálculo de dinero ni relajar una prueba. El parche mínimo propuesto es **ningún cambio de código** hasta obtener el log del trabajo `verify` rojo del SHA exacto: conservar la opción A y reejecutar ese mismo trabajo con su artefacto/log; si reaparece, aislar primero la prueba/orden que deja datos de devolución, en vez de modificar los agregados. No se puede atribuir causa a concurrencia, fecha ni estado sin ese log.
+- **Autoauditoría:** el diff de la opción A consulta `SaleReturn` unido a `Sale` para resumen, año y desglose; no modifica venta, stock, caja, utilidad ni API de anulación. Verifiqué que el criterio de fecha es consistente en los tres agregados. No hubo cambios de código en esta rama, ni producción, Render, base de tienda o credenciales.
+- **Pendiente:** publicar este informe y esperar los tres CI del commit documental. El CI remoto rojo original no se pudo inspeccionar desde este entorno, por lo que no se declara corregido ni reproducido.
+
 ## Plantilla
 
 **Fecha · asistente (NUBE o PC) · rama · commit**
