@@ -385,6 +385,47 @@ test("A5 (390 px): la barra inferior muestra el carrito y el total y lleva al ca
   await retire(request, headers, [product]);
 });
 
+// Mismo recorrido que A5 a 390 px, en 320 px: la barra inferior y el carrito
+// con un producto no pueden desbordar la página ni salir de la pantalla.
+test("A5 (320 px): la barra inferior y el carrito con un producto caben sin desplazamiento horizontal", async ({
+  browser,
+  request,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 320, height: 640 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  const { headers } = await ownerApi(request);
+  const sku = code("7");
+  const name = "Faja E2E 320 px " + sku;
+  const product = await newProduct(request, headers, name, sku);
+  await login(page);
+  await openCash(page);
+  const search = await pos(page);
+  await search.fill(sku);
+  await search.press("Enter");
+  await expect(qty(page, name)).toHaveText("1");
+  const bar = page.locator(".pos-mobile-bar");
+  await expect(bar).toBeInViewport();
+  await expect(bar.getByRole("button", { name: /Cobrar RD\$/ })).toBeVisible();
+  await bar.getByRole("button", { name: /Ver carrito/ }).click();
+  await expect(page.locator(".cart-item", { hasText: name })).toBeInViewport();
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+  await page.screenshot({
+    path: test.info().outputPath("a5-carrito-320.png"),
+  });
+  await page.getByRole("button", { name: "Limpiar", exact: true }).click();
+  await context.close();
+  await retire(request, headers, [product]);
+});
+
 test("05-M2: el error de un escaneo no se va solo ni lo tapa otro aviso; suena un pitido distinto y se puede apagar", async ({
   page,
   request,
