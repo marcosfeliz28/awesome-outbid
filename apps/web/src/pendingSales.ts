@@ -67,9 +67,12 @@ export function repricePendingSale(
       throw new Error("Un producto de la venta ya no está disponible.");
     const { variant, product } = current;
     const gross = Number(variant.price) * item.qty;
-    const lineDiscount = Math.max(
-      item.discountPercent,
-      gross ? ((item.discountAmount ?? 0) / gross) * 100 : 0,
+    const lineDiscount = Math.min(
+      100,
+      Math.max(
+        item.discountPercent,
+        gross ? ((item.discountAmount ?? 0) / gross) * 100 : 0,
+      ),
     );
     const manual =
       100 - ((100 - lineDiscount) * (100 - input.globalDiscount)) / 100;

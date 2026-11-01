@@ -330,8 +330,9 @@ export const lineTotals = (
   const gross = d(qty).times(price);
   if (discountAmount < 0 || discountAmount > gross.toNumber())
     throw new Error("El descuento por monto supera el importe de la línea.");
+  // El descuento por línea nunca pasa de 100 %: el total no sale negativo.
   const discount = Decimal.max(
-    gross.times(discountPercent).div(100),
+    gross.times(Math.min(discountPercent, 100)).div(100),
     discountAmount,
   );
   const amount = gross.minus(discount);

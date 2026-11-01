@@ -2,6 +2,8 @@
 // Cada bloque es una regresión que falla antes de la corrección y pasa después.
 import { describe, expect, it } from "vitest";
 import { usdCashPayments } from "../apps/api/src/sales";
+import { lineTotals } from "../packages/shared/src/index";
+import { repricePendingSale } from "../apps/web/src/pendingSales";
 import {
   pendingCreditIncentive,
   recordSaleIncentives,
@@ -88,5 +90,33 @@ describe("H-08: incentivo de ventas a crédito con fracción pagada entre 0 y 1"
     const out = await pendingCreditIncentive(db, "b1");
     // s1: 0.30 − 0.10 = 0.20; s2: 0.004 − 0 = 0.004 → 0.00 (centavos).
     expect(out.get("u1")).toBe(0.2);
+  });
+});
+
+describe("H-04: descuento por línea acotado a 100 %", () => {
+  it("lineTotals con más de 100 % no deja el total negativo", () => {
+    for (const taxIncluded of [true, false]) {
+      const t = lineTotals(1, 100, 150, 18, taxIncluded);
+      expect(t.total).toBe(0);
+      expect(t.net).toBeGreaterThanOrEqual(0);
+    }
+  });
+  it("reprecio offline con descuento de 150 % deja la línea en 0, no en negativo", () => {
+    const products: any[] = [
+      {
+        id: "p1",
+        name: "Producto",
+        taxRate: 18,
+        variants: [{ id: "v1", sku: "S1", price: 100 }],
+      },
+    ];
+    const input: any = {
+      items: [{ variantId: "v1", qty: 1, discountPercent: 150 }],
+      globalDiscount: 0,
+      payments: [{ method: "cash", amount: 0 }],
+    };
+    const r = repricePendingSale(input, products, []);
+    expect(r.total).toBe(0);
+    expect(r.prices[0].lineTotal).toBe(0);
   });
 });
