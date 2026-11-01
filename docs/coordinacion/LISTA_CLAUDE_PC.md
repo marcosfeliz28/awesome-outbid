@@ -62,3 +62,5 @@ LISTA: claude-pc/anim-tablero 5d52f1498f075c0e9e973cc537b81c9a87854952 (orden 98
 
 LISTA: claude-pc/pq-22 82321a409c6809da78ffc29f1ff842ede3c4b6e0 (cola permanente pieza 22: prueba directa de session-activity.ts, usd-rate.ts y xlsx-guard.ts, 10 pruebas; solo pruebas; verify, windows-installer y render-images en verde en 82321a40; pnpm check exit 0; las otras 7 piezas de la lista de 10 no se hicieron aquí)
 LISTA: claude-pc/gv-incentivos 1c7bf8d8ce1dda2efea89ea843060d664f06087a (orden 103: reembolso a quien cobró, pesos en curso US$ con tasa y catálogo de cursos como opciones de «Nuevo curso»; mezcla de nexora-cloud 8c38837e; verify, windows-installer y render-images en verde; no desplegar sin revisión de Nexora 1)
+
+LISTA: claude-pc/pq-22 bfeb39b544d01e90bff7e730b3df628820206893 (cola permanente pieza 22, continuación: pruebas directas de reportes/margen, inventario, ventas, clientes, dinero, income-report.ts y gv-citas.ts, 10 pruebas; solo pruebas, sin código de producción; verify, windows-installer y render-images en verde en bfeb39b5; pnpm check exit 0; offline-sale-review.ts queda fuera por requerir base de datos)
