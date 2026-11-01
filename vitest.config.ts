@@ -49,6 +49,7 @@ export default defineConfig({
       "tests/realtime.test.ts",
       "tests/inventario.test.ts",
       "tests/inventory-import-core.test.ts",
+      "tests/inventory-descripcion-acento.test.ts",
       "tests/inventory-resilience.test.ts",
       "tests/lot-migration-postgres.test.ts",
       "tests/warehouses-postgres.test.ts",
