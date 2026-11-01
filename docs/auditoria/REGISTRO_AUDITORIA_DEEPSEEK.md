@@ -8,12 +8,12 @@ Paquetes: 57, en 7 fases. Índice y paquetes en la carpeta de trabajo temporal, 
 |---|---|---|---|---|
 | 1 | entregada, con rechazos | Respuesta de DeepSeek a F1-P01 a F1-P04 (1 nov 2026) | Tres endpoints de `admin.ts` sin `@RequireTerminal()` (líneas 587, 675, 722): **decisión de negocio, no bug confirmado**. Rate limit de administración (`rate-limit.ts:184-229`): confirmado, medio. | Ver detalle abajo |
 | 1b | P02 y P03 repetidos archivo por archivo (2.ª entrega) y **aceptados como revisión**, con dos correcciones de Claude (ver abajo). | Segunda respuesta de DeepSeek (1 nov 2026) | Ningún hallazgo crítico. Un medio y varios bajos, todos sin impacto confirmado. | Verificado por Claude |
-| 2 | pendiente | | | |
-| 3 | pendiente | | | |
-| 4 | pendiente | | | |
-| 5 | pendiente | | | |
-| 6 | pendiente | | | |
-| 7 | pendiente | | | |
+| 2 | entregada y revisada (16 paquetes) | Informe consolidado de DeepSeek (1 nov 2026) | Falso crítico del modelo `claude-opus-5-5` rechazado. Confirmado, medio: pagos en USD con método electrónico cuentan como efectivo (`cash.ts`). | Verificado por Claude (muestra); resto sin revisar a fondo |
+| 3 | entregada y revisada (7 paquetes) | Informe «10 pasadas» de DeepSeek (1 nov 2026) | Categoría compartida entre sucursales (`Category.name` único): medio, decisión humana. | Verificado por Claude (muestra) |
+| 4 | entregada; hallazgos GV **no comprobados** | Mismo informe | Dinero GV en US$: pendiente de prueba (ver `Q-04` y `Q-05`). | Parcial |
+| 5 | entregada y revisada (1 paquete) | Mismo informe | Ninguno crítico ni alto. | Parcial |
+| 6 | entregada y revisada (2 paquetes) | Informe de fases 6 y 7 (1 nov 2026) | Cuatro hallazgos bajos de componentes compartidos. | Verificado por Claude |
+| 7 | entregada y revisada (23 paquetes) | Mismo informe | Dos «altos» de DeepSeek bajan a medio y a «confirmado en código, impacto por probar». | Verificado por Claude (muestra) |
 
 Regla: un hallazgo solo pasa a «verificado» cuando lo compruebo leyendo el archivo y la línea citados en el repo.
 
@@ -29,7 +29,7 @@ Regla: un hallazgo solo pasa a «verificado» cuando lo compruebo leyendo el arc
 
 ## Segunda entrega (P02 y P03, archivo por archivo)
 
-Comprobé con grep cada afirmación de la segunda entrega. La mayoría es correcta: `DUMMY_PASSWORD_HASH` (auth.ts:63), `randomBytes(48)` y `sameSite: "strict"` (auth.ts:354, 398), `FOR UPDATE` (auth.ts:362), rotación de uso único con `deleteMany` (auth.ts:21 del refresh), `canSwitchUserTo` (auth.ts:845), `randomInt` (password-policy.ts:2), filtro `safe()` (common.ts:367), `ApiExceptionFilter` con P2002/P2025 (common.ts:776-805), helmet, límites de 100 kb y 4 mb (main.ts:42-46), `connection_limit` (database-pool.ts), `sort()` antes de `FOR UPDATE` (require-password-change.ts:70-72) y jitter en reintentos de deadlock (database-errors.ts:84).
+Comprobé con grep cada afirmación de la segunda entrega. La mayoría es correcta: `DUMMY_PASSWORD_HASH` (auth.ts:63), `randomBytes(48)` y `sameSite: "strict"` (auth.ts:354, 398), `FOR UPDATE` (auth.ts:362), rotación de uso único con `deleteMany` (auth.ts:774), `canSwitchUserTo` (auth.ts:845), `randomInt` (password-policy.ts:2), filtro `safe()` (common.ts:367), `ApiExceptionFilter` con P2002/P2025 (common.ts:776-805), helmet, límites de 100 kb y 4 mb (main.ts:42-46), `connection_limit` (database-pool.ts), `sort()` antes de `FOR UPDATE` (require-password-change.ts:70-72) y jitter en reintentos de deadlock (database-errors.ts:84).
 
 **Correcciones de Claude**
 
