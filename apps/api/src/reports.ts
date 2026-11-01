@@ -612,8 +612,8 @@ export class ReportsController {
       until = utc(range.lte);
     const line = Prisma.sql`i."lineTotal"*(1-i."returnedQty"/i.qty)`;
     const units = Prisma.sql`(i.qty-i."returnedQty")`;
-    // Regla de costo: lo devuelto solo resta costo si reingresó (parte.cost); sin reingreso se conserva.
-    const cost = Prisma.sql`(i.qty*i."unitCost"-CASE WHEN i."returnedQty"=0 THEN 0 ELSE COALESCE((SELECT SUM(COALESCE((e->>'cost')::numeric,(e->>'qty')::numeric*i."unitCost")) FROM "SaleReturn" r CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.items::jsonb)='array' THEN r.items::jsonb ELSE '[]'::jsonb END) e WHERE r."saleId"=i."saleId" AND e->>'saleItemId'=i.id::text),0) END)`;
+    // Regla de costo: lo devuelto solo resta costo si reingresó; las partes sin reingreso (restock=false) lo conservan.
+    const cost = Prisma.sql`(i."unitCost"*(i.qty-i."returnedQty"+CASE WHEN i."returnedQty"=0 THEN 0 ELSE COALESCE((SELECT SUM((e->>'qty')::numeric) FROM "SaleReturn" r CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(r.items::jsonb)='array' THEN r.items::jsonb ELSE '[]'::jsonb END) e WHERE r."saleId"=i."saleId" AND e->>'saleItemId'=i.id::text AND e->>'restock'='false'),0) END))`;
     const [categories, top, count, mix, ranked] = (await Promise.all([
       this.db
         .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
