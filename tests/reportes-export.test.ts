@@ -1,9 +1,19 @@
 // Motor común de exportación de reportes (PDF y Excel): cifras del detalle,
 // fórmulas inyectadas neutralizadas, nombre de archivo seguro, límite de filas,
-// permiso de costo/margen y archivos que se generan y se pueden abrir.
+// permiso de costo/margen, archivos que se generan y se pueden abrir, y que no
+// dependen de internet (instalador sin red).
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import dns from "node:dns";
+import http from "node:http";
+import https from "node:https";
+import net from "node:net";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 import {
   EXPORT_ROW_LIMIT,
   GUIA_MINIMA,
@@ -161,5 +171,22 @@ describe("motor de exportación de reportes", () => {
     expect(buf.toString("latin1").trimEnd().endsWith("%%EOF")).toBe(true);
     const paginas = buf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) ?? [];
     expect(paginas.length).toBeGreaterThanOrEqual(3);
+  });
+
+  // Instalador sin internet: PDF y Excel no pueden tocar la red.
+  it("PDF y Excel se generan con la red bloqueada", async () => {
+    const sinRed = () => {
+      throw new Error("red bloqueada durante la exportación");
+    };
+    vi.spyOn(net.Socket.prototype, "connect").mockImplementation(sinRed as any);
+    vi.spyOn(dns, "lookup").mockImplementation(sinRed as any);
+    vi.spyOn(http, "request").mockImplementation(sinRed as any);
+    vi.spyOn(https, "request").mockImplementation(sinRed as any);
+    vi.stubGlobal("fetch", sinRed);
+    const m = modelo();
+    const pdf = await renderPdf(m);
+    const xlsx = await renderXlsx(m);
+    expect(pdf.subarray(0, 4).toString("latin1")).toBe("%PDF");
+    expect(xlsx.subarray(0, 2).toString("latin1")).toBe("PK");
   });
 });
