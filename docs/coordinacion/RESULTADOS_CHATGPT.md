@@ -224,6 +224,13 @@ Todas están entre 426 y 967 commits detrás del `nexora-cloud` de referencia o 
 - **CI comprobado:** en la ejecución `41306631645`, `windows-installer` y `render-images` concluyeron correctamente. `verify` falló solamente en `tests/dinero-auditoria.test.ts:898:27`: `expected 89439.5 to be greater than or equal to 90056.5` (604/605 pruebas); el reparto vigente asigna el CI rojo a Claude nube (`fix-ci-mes`), por lo que no se modifica dinero ni esa prueba.
 - **Siguiente decisión necesaria:** Norexos 1 debe asignar una pantalla/alcance F3 que no esté tomado, o confirmar que la variante nueva de F3-01 sustituye explícitamente las ramas citadas. Hasta entonces no inicio código ni capturas para evitar una tarea duplicada.
 
+## 2026-11-01 · ChatGPT PC · pieza 2: auditoría de Norexos 1
+
+- **Rama:** `chatgpt-pc/auditoria-n1-1nov` (parte de `eb36c677` por merge, sin rebase).
+- **Entrega:** [AUDITORIA_CHATGPT_A_N1_2026-11-01.md](../auditoria/AUDITORIA_CHATGPT_A_N1_2026-11-01.md) documenta tres hallazgos demostrables: la incoherencia de devoluciones que deja `verify` rojo, la validación incompleta de importación GV y `zod@3.25.76` con una vulnerabilidad alta reportada por `pnpm audit --prod`.
+- **Límites:** solo lectura; no se cambió dinero, GV, API, base, Render ni credenciales. No se ejecutó `pnpm check` ni CI antes de corregir los hallazgos ajenos; `pnpm exec tsx` y la prueba unitaria `pnpm exec vitest run tests/gv-incentivos-unit.test.ts` no arrancaron porque este worktree no tiene `tsx` ni `vitest` en `node_modules`.
+- **Siguiente paso:** Claude PC debe tratar A-01/A-02 y una rama de seguridad A-03; ChatGPT no los corrige porque pertenecen a `apps/api/**` y pruebas de dinero.
+
 ### Matriz de la cola del 27-oct contrastada con la orden constructora del 1-nov
 
 | Función / rama de la cola | Estado contra `nexora-cloud` actual | Decisión de esta auditoría |
