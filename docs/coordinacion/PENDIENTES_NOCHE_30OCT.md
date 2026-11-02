@@ -62,3 +62,33 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 - Incentivos GV: agente Haiku en `claude-pc/gv-incentivos` (bfd0844; CI en curso). Nuevas reglas: pagos en USD se registran con opción de moneda + equivalente en pesos con tasa capturada; devolución quita el incentivo; cada curso es un ítem (docs/operacion/GV_CATALOGO_CURSOS.md).
 - **GV debe tener CIERRE desde ahora** (abrir caja, cerrar caja, factura del día; decisión: la dueña dijo «deben hacerle un cierre»). Diseño (A: misma caja con área GV / B: caja propia) por decidir; asignar a un agente cuando termine el de incentivos (máx. 4 sesiones activas).
 - Reporte de ventas de octubre por área para Génesis: pedido a Norexos 2 (docs/operacion/REPORTE_VENTAS_OCT2026_POR_AREA.md en claude/bitacora-n2).
+
+## 1-nov 10:45 UTC · CI ROJO EN TODAS LAS RAMAS (prueba de dinero del día 1 del mes)
+- Causa 1 (confirmada por el agente de diagnóstico): `/dashboard/year` resta `SaleReturn.total` y `/dashboard/breakdown` solo líneas devueltas; la devolución heredada de 500 (sin líneas) que crea la prueba N-3 solo la ve el año. Fix A (desglose resta devoluciones sin detalle como fila explícita) en `claude-pc/fix-ci-mes` 4f994d7b.
+- 4f994d7b AÚN FALLA en CI: `tests/dinero-auditoria.test.ts:902` y `:942`, diferencia de 118 (89439.5 vs 89557.5). Hay una segunda causa en la suite completa. Pendiente de devolver al agente (session_01CjMpH6i9MQ46RPz1qbGhSG): reproducir la suite de dinero completa en orden CI y hallar los 118 con SQL. El canal send_message de N1 estuvo caído a las 10:45.
+- Producción: N2 no ve devoluciones en 381 ventas (8–31 oct); la BD de Render bloquea consultas externas (allowlist vacía), la dueña decide si abrirla.
+- Bloqueadas por este CI (no mezclar hasta que pase): gv-incentivos c227d6b (por pago), anim-reportes, fix-dinero, fix-seg-menor, pq-23-parches, pq-23-28, pq-25-indices, pq-39, pq-37, pq-11, zod4.
+
+## 1-nov (dueña, antes de dormir): decisiones
+- Reembolsos GV en pesos (orden 106). GV con caja propia, opción B (orden 106; falta asignar agente: send_message de N1 caído a las 10:45 UTC).
+- La dueña reactivará el Relevo de Claude PC con el repo como fuente y pondrá NEXORA_CLAUDE_USER/PASSWORD en el entorno (pidió instrucciones).
+- Pendiente: H-19 (pagos a proveedores con caja registrada) sin respuesta; agente a6682e08 arreglando el CI rojo de dinero en mi entorno.
+
+## Decisión de la dueña (1-nov-2026) — margen mínimo del 15 %
+**No se bloquea la venta por debajo del 15 %.** La cajera puede vender con cualquier porcentaje; la dueña lo revisa y maneja al final, con el cobro. El 15 % sigue siendo el piso de referencia para fijar precios y para los avisos/reportes de margen bajo, pero **no es un bloqueo en caja, ni en promociones, ni al editar precios**. Ninguna IA debe agregar bloqueos por margen. Cierra el punto #8 del informe de revisión pesada (25-oct): fórmula única (ya hecha, commit 1fda5880) + esta decisión.
+
+## 1-nov 13:50 UTC · Hallazgo del agente de guías: «Rentabilidad» del cierre de caja resta ITBIS
+`apps/api/src/cash.ts` (~l.474): la rentabilidad del cuadre se calcula como Σ(total − taxTotal − costTotal) menos devoluciones, es decir **resta el ITBIS**; la regla de la dueña es margen = (precio − costo)/precio **sin restar ITBIS** (el commit 1fda5880 ya unificó el tablero, el reporte por producto y la alerta, pero este cálculo del cuadre sigue distinto). Solo lo ve quien tiene `profit:read`. **Decisión pendiente de la dueña:** ¿dejarlo como está (utilidad neta de ITBIS, que es dinero que no es de la tienda) o alinearlo con la regla? No se cambia sin su respuesta. También por confirmar en las guías: nombres «Bruta/Neta» del informe anual/mensual y la fórmula de «Diferencia total».
+
+## 1-nov 13:55 UTC · Más hallazgos del agente de guías (reportes viejos de Management)
+1. **Costo visible con permiso equivocado (seguridad, orden 110):** `kardex`, `stock bajo` (low-stock) y `sin movimiento` (no-movement) muestran costo a quien tiene `reports:read`; la regla del sistema pide `profit:read`. Se corrige sin cambiar cifras (ocultar costo sin `profit:read`), con prueba.
+2. **ITBIS en la ganancia (decisión de la dueña, junto con la «Rentabilidad» del cuadre):** `estado de resultados`, `ABC` y `utilidad por producto` restan el ITBIS en la ganancia; la regla es sin restar. No se cambia sin su respuesta.
+
+## 1-nov 14:45 UTC · Revisión N1 (CI rojo, opción A)
+- `claude-pc/fix-ci-mes` 62d78b65 (opción A: devoluciones por fecha de la venta original; diff auditado, correcto): verify AÚN ROJO — dinero-auditoria:861 (dif 118), :903/:943/:1013 (dif 60), api.test:2243 (profit vs dashboard, dif 100). El agente tiene orden (13:55) de aplicar el mismo criterio a /reports/profit y demás informes, un solo push. Regla de costo de devolución sin reingreso: sin cambios (decidido).
+- ChatGPT nube (ci-fecha-1nov, 13:25): segunda opinión coincide con unificar por fecha de venta; no hay aprobación de CI para mezclar nada.
+- Otras ramas en juego (reportes-export a7e47a16, reportes-guia 270a22de, instalador-sin-internet 2035206, recuento-decisiones f68cc9f0, fix-costo-permiso d5f4d455): windows-installer y render-images verdes, verify rojo por la base roja. No se mezcla nada hasta el CI verde.
+- NO desplegado. Producción sigue en 2e87d8b7. Al desplegar la opción A hay que mostrar a la dueña la tabla antes→después (prometido).
+
+## 1-nov 16:55 UTC · Decisión de la dueña: dominio **norexos.net** (en vez de norexos.ai)
+Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.com` 11,17; `.ai` 80). Intentos de registro por API (x2) fallaron SIN cobrar: «No registrant contact provided and no default address book entry». Falta que la dueña deje un contacto **predeterminado** en `dash.cloudflare.com/<cuenta>/domains/registrations` (puede que ya exista el de `nexorapos.net` y solo haya que marcarlo como predeterminado) y confirme tarjeta en facturación; o que dé nombre, dirección, teléfono (+1…) para enviarlo en la solicitud. Tras registrar: DNS a la landing, certificado, `soporte@norexos.net` (Email Routing, como en nexorapos.net), 301 desde nexorapos.net. Landing: agente en `claude-pc/landing-norexos-net`. Se actualizan las menciones de norexos.ai en `docs/venta/` cuando el dominio exista.
