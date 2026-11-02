@@ -269,7 +269,9 @@ export async function saveSession(
 // el usuario anterior. Si el servidor no responde, la sesión guardada queda
 // vencida para pedir la contraseña e intentarlo otra vez al abrir
 // (R9-offline-5).
-export async function endSession() {
+// keep: registros de `cache` que deben sobrevivir al cierre (el borrador del
+// carrito al bloquear por inactividad, 05-N2).
+export async function endSession(keep: { key: string; data: any }[] = []) {
   let revoked = true;
   try {
     await api("/auth/logout", { method: "POST", body: "{}", timeout: 8000 });
@@ -277,7 +279,7 @@ export async function endSession() {
     revoked = !isNetworkError(e);
   }
   useStore.getState().clearSession();
-  await forgetSessionData(revoked);
+  await forgetSessionData(revoked, keep);
 }
 // Privacidad al salir (G9). Se borra lo que el servidor puede volver a dar al
 // iniciar sesión: la tabla `cache` completa (catálogo, clientes, caja,
@@ -294,9 +296,15 @@ export async function endSession() {
 //   revocar la cookie de renovación (R9-offline-5).
 // - localStorage: el tema y la identidad de este equipo, que no son datos de
 //   clientes ni de la sesión.
-export async function forgetSessionData(revoked = true) {
+export async function forgetSessionData(
+  revoked = true,
+  keep: { key: string; data: any }[] = [],
+) {
   await localDB.transaction("rw", localDB.cache, async () => {
     await localDB.cache.clear();
+    // En la misma transacción que el borrado: una recarga justo después de
+    // bloquear la pantalla ya no encuentra la tabla vacía sin el borrador.
+    if (keep.length) await localDB.cache.bulkPut(keep);
     if (!revoked)
       await localDB.cache.put({ key: "session", data: { expiresAt: 0 } });
   });
