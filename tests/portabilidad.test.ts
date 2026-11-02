@@ -695,7 +695,9 @@ describe("Portabilidad · verificación (scripts/verify.mjs)", () => {
         try {
           process.kill(server, "SIGKILL");
         } catch (e: any) {
-          if (e?.code !== "ESRCH") throw e;
+          // Un throw en finally taparía el fallo real de la prueba (no-unsafe-finally).
+          if (e?.code !== "ESRCH")
+            console.warn("No se pudo detener la API:", e);
         }
       await until(() => !server || !alive(server));
       remove(dir);
