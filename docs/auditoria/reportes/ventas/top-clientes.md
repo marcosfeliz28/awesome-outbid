@@ -16,7 +16,7 @@ Estado `completed`, devolución restada en la venta original (opción A), zona R
 Guía leída del código (el endpoint /guia aún da 404 en producción). Ver hallazgos.
 
 ## 5. PDF y Excel
-**Pendiente:** /export da 404 (se despliega ~9:00 AM RD).
+Descargados PDF y Excel (2-nov ~10:25 RD, mismo rango): abren bien, tildes correctas, gráfica legible y nada cortado; las cifras coinciden con la pantalla. Hojas del Excel: Resumen, Detalle y Guía. El texto de la guía exportada es el desplegado antes de la corrección (ITBIS/envío): saldrá con el próximo despliegue. Total al final: ver hallazgo ventas-08.
 
 ## 6. Veredicto
 HALLAZGO
