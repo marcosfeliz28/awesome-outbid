@@ -695,7 +695,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver qué productos se mueven rápido y cuáles se quedan quietos.",
     comoSeLee:
-      "El stock cuenta Tienda más Casa. El stock inicial y final se calculan a partir del stock actual, quitando los movimientos posteriores. Rotación es vendidas dividido entre el stock promedio: más alto significa que el producto se mueve más rápido.",
+      "El stock cuenta Tienda más Casa. El stock inicial y final se calculan a partir del stock actual, quitando los movimientos posteriores. Rotación es vendidas dividido entre el stock promedio: más alto significa que el producto se mueve más rápido. Si la existencia al inicio sale en 0, es porque la mercancía entró al sistema dentro del mismo período; en ese caso el promedio es la mitad de lo que hay hoy y la rotación sale más alta de lo real. Compara mejor con un período donde la mercancía ya estaba cargada.",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -728,7 +728,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para saber qué productos se van a acabar pronto y cuándo hay que comprar.",
     comoSeLee:
-      "La venta diaria es lo vendido en el período dividido entre los días del período. Días restantes es el stock total dividido entre la venta diaria. Ordenado de menos a más días.",
+      "La venta diaria es lo vendido en el período dividido entre los días del período. Días restantes es el stock total dividido entre la venta diaria. Ordenado de menos a más días. Solo salen los productos que se vendieron en el período; los que no se vendieron no aparecen aquí (búscalos en «Sin movimiento»).",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -756,7 +756,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver qué productos están quietos y decidir si hay que rebajarlos o dejar de comprarlos.",
     comoSeLee:
-      "Los días sin vender se cuentan desde la última venta hasta la fecha final del reporte. Si nunca se vendió, se cuentan desde que se creó el producto. Nunca en Última venta significa que no tiene ventas.",
+      "Los días sin vender se cuentan desde la última venta hasta la fecha final del reporte. Si nunca se vendió, se cuentan desde que se creó el producto. Nunca en Última venta significa que no tiene ventas. Si la lista sale vacía es buena señal: ningún producto con existencia lleva 30 días o más sin venderse (o el producto es más nuevo que 30 días).",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -779,7 +779,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Los productos cuya existencia en la tienda ya está en el mínimo o por debajo.",
     paraQueSirve: "Para saber qué comprar o reponer hoy.",
     comoSeLee:
-      "Es la existencia de hoy, no la del período. Faltan es cuántas piezas faltan para llegar al mínimo.",
+      "Es la existencia de hoy, no la del período. Faltan es cuántas piezas faltan en la Tienda para llegar al mínimo; 0 quiere decir que está justo en el mínimo. La Casa no se suma: si hay piezas en Casa, se pueden pasar a la Tienda antes de comprar.",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -809,11 +809,11 @@ export const GUIA_REPORTES: Record<string, Guia> = {
   },
   "perdidas-conteo": {
     queEs:
-      "La mercancía que salió sin venderse por mes: mermas, ajustes de conteo y salidas.",
+      "La mercancía que salió del inventario sin venderse, por mes: lo que se corrigió al contar y lo que de verdad se perdió o salió.",
     paraQueSirve:
       "Para ver cuánta mercancía se pierde y si son errores de conteo o pérdidas reales.",
     comoSeLee:
-      "Corrección de conteo es un ajuste que corrigió el sistema al contar; no es una pérdida del mes. Salida real es mermas, desperdicios, devoluciones a proveedor y salidas de mercancía. Valor a costo es el costo de esas piezas.",
+      "Solo la «Salida real» es dinero perdido en el mes. «Corrección de conteo» es ordenar el sistema para que coincida con lo que hay en los estantes: no se suma como pérdida (por eso no baja la ganancia neta) y puede ser grande cuando se está arreglando el inventario. Solo aparecen las salidas; las piezas que se encontraron de más no se restan aquí. Salida real es mermas, desperdicios, devoluciones a proveedor y salidas de mercancía. Valor a costo es el costo de esas piezas.",
     columnas: {
       Mes: c("Mes", "El mes del movimiento."),
       Tipo: c(

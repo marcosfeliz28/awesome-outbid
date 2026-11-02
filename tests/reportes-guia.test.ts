@@ -140,3 +140,11 @@ describe("guía de reportes", () => {
     );
   });
 });
+
+describe("guía de inventario (auditoría 2-nov)", () => {
+  it("perdidas-conteo aclara qué es pérdida real y qué no", () => {
+    const g: any = GUIA_REPORTES["perdidas-conteo"];
+    expect(g.comoSeLee).toMatch(/Solo la «Salida real» es dinero perdido/);
+    expect(g.comoSeLee).toMatch(/no se suma como pérdida/);
+  });
+});
