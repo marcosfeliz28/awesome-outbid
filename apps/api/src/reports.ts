@@ -811,7 +811,22 @@ export class ReportsController {
     const margin = can(actor.permissions, "profit:read");
     return Object.entries(REPORTES)
       .filter(([, r]) => margin || !r.margin)
-      .map(([name, r]) => ({ name, title: r.title, group: r.group }));
+      .map(([name, r]) => ({
+        name,
+        title: r.title,
+        group: r.group,
+        exportable: exportable(name),
+      }));
+  }
+  // «¿Qué es y cómo se lee?»: texto de la guía, solo lectura, mismo permiso.
+  @Get("reportes/:name/guia")
+  @Permit("reports:read")
+  reportGuide(@Param("name") name: string, @CurrentUser() actor: Actor) {
+    const def = Object.hasOwn(REPORTES, name) ? REPORTES[name] : null;
+    if (!def || !exportable(name)) bad("Este reporte no tiene guía.");
+    if (!puedeVerReporte(def, actor.permissions)) denied();
+    const { queEs, paraQueSirve, comoSeLee } = GUIA_REPORTES[name];
+    return { queEs, paraQueSirve, comoSeLee };
   }
   @Get("reports/:name")
   @Permit("reports:read")

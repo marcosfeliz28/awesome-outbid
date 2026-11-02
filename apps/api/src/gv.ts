@@ -50,9 +50,10 @@ import {
   planGvImportPayments,
   gvBankOptions,
   monedaDeCurso,
+  catalogoOpciones,
   valorPesos,
 } from "./gv-money";
-import { GV_CATALOGO, gvDevengoMes } from "./gv-incentives";
+import { GV_CATALOGO, gvIncentivosMes } from "./gv-incentives";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -154,6 +155,13 @@ export class GvController {
     });
     if (!row) bad("Curso no encontrado.");
     return row;
+  }
+
+  // Catálogo de cursos para el formulario «nuevo curso» (solo lectura, sin incentivo).
+  @Get("catalog")
+  @Permit("gv:read")
+  catalog() {
+    return catalogoOpciones();
   }
 
   @Get("courses")
@@ -775,6 +783,7 @@ export class GvController {
         course: { select: { name: true } },
         payments: {
           select: {
+            id: true,
             amount: true,
             date: true,
             verified: true,
@@ -782,12 +791,14 @@ export class GvController {
             currency: true,
             amountDop: true,
             rate: true,
+            createdBy: true,
           },
         },
       },
     });
-    const calc = enrollments.flatMap((e) => {
-      const r = gvDevengoMes(
+    // Incentivo por pago: a quien cobró cada pago (eventos del mes pedido).
+    const calc = enrollments.flatMap((e) =>
+      gvIncentivosMes(
         {
           courseName: e.course.name,
           agreedPrice: e.agreedPrice,
@@ -796,33 +807,31 @@ export class GvController {
           payments: e.payments,
         },
         period,
-      );
-      if (!r) return [];
-      return [
-        {
-          enrollmentId: e.id,
-          clientName: e.clientName,
-          course: e.course.name,
-          period: r.period,
-          amount: r.amount,
-          registeredBy: e.createdBy,
-        },
-      ];
-    });
+      ).map((ev) => ({
+        enrollmentId: e.id,
+        clientName: e.clientName,
+        course: e.course.name,
+        period: ev.period,
+        kind: ev.kind,
+        amount: ev.amount,
+        personId: ev.personId,
+      })),
+    );
     const name = await gvUserNames(
       this.db,
-      calc.map((r) => r.registeredBy),
+      calc.map((r) => r.personId),
     );
     const rows = calc.map((r) => ({
       ...r,
-      registeredByName: name(r.registeredBy),
+      cobradoPor: r.personId,
+      cobradoPorName: name(r.personId),
     }));
     const porPersona = new Map<
       string,
       { name: string; total: Prisma.Decimal; count: number }
     >();
     for (const r of rows) {
-      const key = r.registeredByName ?? "Sin nombre";
+      const key = r.cobradoPorName ?? "Sin nombre";
       const acc = porPersona.get(key) ?? { name: key, total: d(0), count: 0 };
       porPersona.set(key, {
         name: key,
