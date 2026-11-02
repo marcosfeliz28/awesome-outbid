@@ -71,11 +71,11 @@ const MARGEN_COLUMNAS: Record<string, Explicacion> = {
   ),
   Utilidad: c(
     "Ganancia",
-    "Venta menos costo. Es lo que queda antes de pagar gastos.",
+    "Venta menos costo, antes de pagar gastos. Ej.: vendes RD$ 200 algo que costó RD$ 150; la ganancia es RD$ 50.",
   ),
   "Margen %": c(
     "Margen %",
-    "De cada 100 pesos de venta, cuántos quedan de ganancia: (precio menos costo) dividido entre precio. No se resta el ITBIS.",
+    "De cada 100 pesos de venta, cuántos quedan de ganancia. Se calcula (precio menos costo) ÷ precio, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %.",
   ),
 };
 
@@ -185,7 +185,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       ),
       "Ticket promedio": c(
         "Ticket promedio",
-        "Lo vendido dividido entre las facturas.",
+        "Lo vendido dividido entre las facturas. Ej.: RD$ 10,000 en 4 facturas = ticket de RD$ 2,500.",
       ),
     },
   },
@@ -612,7 +612,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Utilidad: c("Ganancia", "Venta menos costo."),
       "Margen %": c(
         "Margen %",
-        "De cada 100 pesos de venta, cuántos quedan de ganancia. No se resta el ITBIS.",
+        "De cada 100 pesos de venta, cuántos quedan de ganancia, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %, o sea 25 de cada 100.",
       ),
     },
   },
@@ -626,10 +626,13 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Facturas: c("Facturas", "Cuántas facturas tuvo el mes."),
       Venta: c("Venta", "Lo cobrado en el mes, menos devoluciones."),
       Costo: c("Costo", "Lo que costó la mercancía vendida ese mes."),
-      Utilidad: c("Ganancia bruta", "Venta menos costo. No descuenta gastos."),
+      Utilidad: c(
+        "Ganancia bruta",
+        "Venta menos costo. No descuenta gastos. Ej.: venta RD$ 200 − costo RD$ 150 = ganancia RD$ 50.",
+      ),
       "Margen %": c(
         "Margen %",
-        "De cada 100 pesos de venta, cuántos quedan de ganancia. No se resta el ITBIS.",
+        "De cada 100 pesos de venta, cuántos quedan de ganancia, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %, o sea 25 de cada 100.",
       ),
     },
   },
@@ -695,7 +698,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
   // ---------------- INVENTARIO ----------------
   "rotacion-producto": {
     queEs:
-      "Cuántas veces rotó cada producto en el período: vendidas frente al inventario que hubo.",
+      "Qué tan rápido se mueve cada producto: cuántas veces se vendió lo que había en existencia durante el período.",
     paraQueSirve:
       "Para ver qué productos se mueven rápido y cuáles se quedan quietos.",
     comoSeLee:
@@ -722,7 +725,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       ),
       Rotación: c(
         "Rotación",
-        "Cuántas veces se vendió el inventario promedio. Vacío si no hubo inventario.",
+        "Cuántas veces se vendió el inventario promedio. Ej.: tenías 10 en promedio y vendiste 30; rotación 3 (se vendió tres veces lo que había). Más alto = se mueve más rápido. Vacío si no hubo inventario.",
       ),
     },
   },
@@ -1185,7 +1188,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       ),
       "Margen promedio": c(
         "Margen promedio",
-        "De cada 100 pesos de venta, cuántos quedan de ganancia. No se resta el ITBIS.",
+        "De cada 100 pesos de venta, cuántos quedan de ganancia, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %, o sea 25 de cada 100.",
       ),
       "Promedio por día": c(
         "Promedio por día",
@@ -1193,7 +1196,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       ),
       "Promedio por venta": c(
         "Promedio por venta",
-        "Lo vendido dividido entre las facturas.",
+        "Lo vendido dividido entre las facturas. Ej.: RD$ 10,000 en 4 facturas = RD$ 2,500 por venta.",
       ),
       "Unidades vendidas": c(
         "Piezas vendidas",
@@ -1205,7 +1208,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       Ganancia: c("Ganancia", "Venta menos costo de esa categoría o producto."),
       "Margen %": c(
         "Margen %",
-        "De cada 100 pesos de venta, cuántos quedan de ganancia. No se resta el ITBIS.",
+        "De cada 100 pesos de venta, cuántos quedan de ganancia, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %, o sea 25 de cada 100.",
       ),
       "Forma de pago": c(
         "Forma de pago",
@@ -1254,7 +1257,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
       ),
       Neta: c(
         "Neta",
-        "Bruta menos costo de la mercancía, sin restar ITBIS ni gastos. Solo con permiso de ganancia.",
+        "Bruta menos costo de la mercancía, sin restar ITBIS ni gastos. Solo con permiso de ganancia. Ej.: bruta RD$ 300,000 − costo RD$ 200,000 = neta RD$ 100,000.",
       ),
       Ventas: c("Ventas", "Cuántas facturas se hicieron en el mes."),
     },
