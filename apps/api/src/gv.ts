@@ -11,7 +11,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { Prisma } from "@prisma/client";
 import { can, d, z } from "@fitstore/shared";
 import {
@@ -25,6 +27,10 @@ import {
   parse,
   uuid,
 } from "./common";
+import { comprobarLimite, esFormato, nombreArchivo } from "./reportes/export";
+import { renderPdf } from "./reportes/export-pdf";
+import { renderXlsx } from "./reportes/export-xlsx";
+import { modeloGv } from "./reportes/gv-export";
 import {
   gvImportUpsert,
   gvMoney,
@@ -685,6 +691,69 @@ export class GvController {
     };
   }
 
+  // Exportación a PDF o Excel de los reportes de GV. Usa el mismo objeto que la
+  // pantalla (this.reports), así las cifras son idénticas.
+  @Get("reports/export")
+  @Permit("gv:reports")
+  async reportsExport(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    if (!esFormato(query.format)) bad("Formato no válido: usa pdf o xlsx.");
+    const rep: any = await this.reports(query, actor);
+    const filas =
+      rep.income.byDay.length +
+      rep.income.byMethod.length +
+      rep.income.byBank.length +
+      rep.income.byEmployee.length +
+      rep.courses.length +
+      rep.pendingByClient.length;
+    comprobarLimite(filas);
+    const settings = ((
+      await this.db.settings.findUnique({ where: { id: actor.branchId } })
+    )?.data ?? {}) as any;
+    const modelo = modeloGv(rep, {
+      negocio: settings.name ?? "",
+      desde: query.from || "inicio",
+      hasta: query.to || "hoy",
+      generadoPor: actor.name,
+      emitido: new Date().toLocaleString("es-DO", {
+        timeZone: "America/Santo_Domingo",
+        dateStyle: "long",
+        timeStyle: "short",
+      }),
+    });
+    const archivo =
+      query.format === "xlsx"
+        ? await renderXlsx(modelo)
+        : await renderPdf(modelo);
+    await audit(
+      this.db,
+      actor,
+      "report.export",
+      "GvReport",
+      "reports",
+      undefined,
+      {
+        format: query.format,
+        from: query.from ?? null,
+        to: query.to ?? null,
+        rows: filas,
+      },
+    );
+    res.setHeader(
+      "Content-Type",
+      query.format === "xlsx"
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "application/pdf",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${nombreArchivo("gv-reportes", query.from, query.to, query.format)}"`,
+    );
+    res.end(archivo);
+  }
   // Incentivo fijo por inscripción (orden 103), a nombre de quien la registró.
   // Sin costos: sólo monto, mes y nombre.
   @Get("incentives")

@@ -26,3 +26,4 @@ __pycache__/
 
 # Solo el Taller lo genera (scripts/taller-instalar.sh); nunca se sube
 /.mcp.json
+graphify-out/
