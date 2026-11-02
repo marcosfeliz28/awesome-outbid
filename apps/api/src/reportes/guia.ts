@@ -1192,7 +1192,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       ),
       "Promedio por venta": c(
         "Promedio por venta",
-        "Lo vendido dividido entre las facturas.",
+        "Lo vendido dividido entre las facturas. Ej.: RD$ 10,000 en 4 facturas = RD$ 2,500 por venta.",
       ),
       "Unidades vendidas": c(
         "Piezas vendidas",
@@ -1253,7 +1253,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
       ),
       Neta: c(
         "Neta",
-        "Bruta menos costo de la mercancía, sin restar ITBIS ni gastos. Solo con permiso de ganancia.",
+        "Bruta menos costo de la mercancía, sin restar ITBIS ni gastos. Solo con permiso de ganancia. Ej.: bruta RD$ 300,000 − costo RD$ 200,000 = neta RD$ 100,000.",
       ),
       Ventas: c("Ventas", "Cuántas facturas se hicieron en el mes."),
     },
