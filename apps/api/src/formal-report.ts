@@ -225,7 +225,8 @@ export class FormalReportController {
           ...realSaleWhere,
           branchId: actor.branchId,
           status: "voided",
-          updatedAt: range,
+          // Por fecha de la factura, como el reporte «Anulaciones» (S-18).
+          createdAt: range,
         },
         select: {
           number: true,
@@ -567,6 +568,9 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
     `Banco esperado por pagos: ${fmt(report.totals.bankIn)} · Efectivo ingresado para caja: ${fmt(report.totals.cashIn)} · Devoluciones: ${report.totals.returns} · Descuentos: ${fmt(report.totals.discounts)}`,
   );
   section("Por día y forma de pago");
+  line(
+    "Dinero de cada día: la devolución se resta el día en que se hizo. El vendido neto del resumen la resta en el período de la venta original.",
+  );
   for (const row of report.daily) {
     line(
       `${row.day} · Vendido ${fmt(row.sold)} · Entró ${fmt(row.moneyIn)} · Crédito ${fmt(row.creditGenerated)}`,

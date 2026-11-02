@@ -41,6 +41,8 @@ Por eso hoy las reglas de devolución no cambian ninguna cifra; los fallos de l�
 
 Año 2026: panel 468,225.89 vs utilidad-bruta 693,783.32; mes actual 3,682.68 vs 5,642.86; margen 46.92 % / 43.91 % en ambos.
 
+**Después del arreglo (2-nov, visto bueno «Procede arreglarlo»):** panel «Ganancia bruta» y «Utilidad por producto» = 688,140.46 / 46.95 % (con ITBIS, regla de la dueña), igual que utilidad-bruta-por-mes, breakdown, year y `reportes.py`. Solo el estado de resultados queda en 464,543.21 y lo dice: «ventas sin ITBIS − costo».
+
 ## 3. ITBIS, descuentos, envíos, anulaciones
 
 | Concepto (octubre)          | Fuente A                                           | Fuente B                                                 | ¿Cuadra?                         |

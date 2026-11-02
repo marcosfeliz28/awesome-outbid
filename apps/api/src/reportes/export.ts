@@ -73,6 +73,9 @@ export type Modelo = {
 
 // Presentación de los reportes que la necesitan. Verificada contra su `run`.
 export const PRESENTACION: Record<string, Presentacion> = {
+  // Total al final (S-20).
+  "ranking-cajeras": { totales: ["Facturas", "Unidades", "Ventas netas"] },
+  "ventas-por-hora": { totales: ["Facturas", "Ventas netas"] },
   "ticket-promedio": {
     moneda: ["Ventas netas", "Ticket promedio"],
     esResumen: (f) => f.Tipo === "Mes",

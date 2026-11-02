@@ -536,7 +536,10 @@ export class ReportsController {
         netSales: net,
         tax,
         costTotal: cost,
+        // Fiscal: ventas sin ITBIS − costo (estado de resultados).
         grossProfit: money(d(net).minus(cost)),
+        // Regla de la dueña: ventas con ITBIS − costo; va con `margin` (S-01).
+        profit: money(d(revenue).minus(cost)),
         expenses: expense,
         // M-5: lo que salió del inventario sin venta también es pérdida.
         inventoryLoss,
@@ -1021,7 +1024,10 @@ export class ReportsController {
       rows = [
         { Concepto: "Ventas sin ITBIS", Monto: summary.netSales },
         { Concepto: "Costo de lo vendido", Monto: summary.costTotal },
-        { Concepto: "Ganancia bruta", Monto: summary.grossProfit },
+        {
+          Concepto: "Ganancia bruta (ventas sin ITBIS − costo)",
+          Monto: summary.grossProfit,
+        },
         { Concepto: "Gastos", Monto: summary.expenses },
         { Concepto: "Comisiones bancarias", Monto: summary.fees },
         {
@@ -1417,16 +1423,17 @@ export class ReportsController {
           cursor = page[page.length - 1].id;
         }
         rows = [...grouped.values()].map(({ gross, ...i }) => {
-          const Ventas = money(i.Ventas),
+          // Regla de la dueña (#8): venta con ITBIS, utilidad = venta − costo y
+          // margen sobre esa venta, como «Margen por producto» y el panel.
+          // Antes Ventas/Utilidad iban sin ITBIS y el margen no cuadraba (S-02).
+          const Ventas = money(gross ?? 0),
             Costo = money(i.Costo);
           return {
             ...i,
             Ventas,
             Costo,
             Utilidad: money(d(Ventas).minus(Costo)),
-            // Ventas y Utilidad son sin ITBIS (cuadran con el estado de
-            // resultados); el margen es el de la dueña, sobre lo cobrado (#8).
-            Margen: margin(money(gross ?? 0), Costo),
+            Margen: margin(Ventas, Costo),
           };
         });
         if (name === "abc")

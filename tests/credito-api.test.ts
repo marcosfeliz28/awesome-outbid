@@ -793,6 +793,21 @@ describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día
     });
     const beforePrev = await formal(prev),
       beforeNow = await formal(thisMonth);
+    // Reportes de dinero del mes de la venta y de este mes (opción A).
+    const prevRange = `from=${prev}-01&to=${lastMonth.toISOString().slice(0, 10)}`;
+    const nowRange = `from=${thisMonth}-01&to=${bizDay(0)}`;
+    const money = async (range: string) => {
+      const rows = (name: string) =>
+        ok(`/reports/${name}?${range}`, owner).then((r: any) => r.rows);
+      const mayor = await rows("por-mayor-detalle");
+      const formas = await rows("formas-pago-mes");
+      return {
+        returned: mayor.reduce((t: number, r: any) => t + r.Devoluciones, 0),
+        total: formas.reduce((t: number, r: any) => t + r.Total, 0),
+      };
+    };
+    const moneyPrev = await money(prevRange),
+      moneyNow = await money(nowRange);
     const numbers = (f: any) => f.credits.open.map((c: any) => c.number);
     expect(numbers(beforePrev)).toContain(old.number);
     expect(numbers(beforePrev)).not.toContain(now.number);
@@ -819,6 +834,28 @@ describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día
     expect(afterNow.totals.sold).toBeCloseTo(beforeNow.totals.sold, 2);
     // Las categorías suman lo mismo que el total vendido.
     expect(catSum(afterPrev) - catSum(beforePrev)).toBeCloseTo(-100, 2);
+    // Dinero: la devolución baja el mes de la venta, no este mes.
+    const moneyPrevAfter = await money(prevRange),
+      moneyNowAfter = await money(nowRange);
+    expect(moneyPrevAfter.returned - moneyPrev.returned).toBeCloseTo(100, 2);
+    expect(moneyPrevAfter.total - moneyPrev.total).toBeCloseTo(-100, 2);
+    expect(moneyNowAfter.returned).toBeCloseTo(moneyNow.returned, 2);
+    expect(moneyNowAfter.total).toBeCloseTo(moneyNow.total, 2);
+    // Panel y «Utilidad por producto»: ganancia = venta − costo, sin restar
+    // ITBIS, y el margen sale de esa misma ganancia (S-01, S-02).
+    const panel = await ok(`/dashboard/summary?${prevRange}`, owner);
+    expect(panel.profit).toBeCloseTo(panel.revenue - panel.costTotal, 2);
+    if (panel.revenue)
+      expect(panel.margin).toBeCloseTo((panel.profit / panel.revenue) * 100, 1);
+    const profit = (await ok(`/reports/profit?${prevRange}`, owner)).rows;
+    for (const r of profit) {
+      expect(r.Utilidad).toBeCloseTo(r.Ventas - r.Costo, 2);
+      if (r.Ventas > 0)
+        expect(r.Margen).toBeCloseTo((r.Utilidad / r.Ventas) * 100, 1);
+    }
+    const sum = (k: string) =>
+      profit.reduce((t: number, r: any) => t + r[k], 0);
+    expect(sum("Ventas")).toBeCloseTo(panel.revenue, 1);
   });
 
   it("3w: separa crédito antiguo y cobro actual; exporta CSV y Excel", async () => {
