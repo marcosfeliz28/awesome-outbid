@@ -12,3 +12,6 @@ Eres el único (con ChatGPT PC) con base de pruebas real; los agentes de la nube
 2. **Validar el exportador con base real:** checkout de `origin/claude-pc/reportes-export` y corre `tests/reportes-export-api.test.ts`, `tests/reportes-export.test.ts`, `tests/gv-reportes-export.test.ts`. Reporta qué pasa y qué falla (el agente que lo escribió no pudo correrlas). El 403 sin `profit:read` falla porque el usuario nace con `mustChangePassword = true` (`common.ts:665`); el arreglo es poner `false` en la prueba.
 3. Después, tu cola (`COLA_PERMANENTE_CHATGPT.md`).
 Reporta en `docs/coordinacion/RESULTADOS_CHATGPT.md`. Sin credenciales; no tocar Render ni la base de la tienda.
+
+## 2-nov · Contra-auditoría de los reportes (después de la auditoría de los agentes Claude)
+Plan y reglas: `docs/auditoria/reportes/PLAN_AUDITORIA_REPORTES_2NOV.md` (rama `claude-pc/plan-auditoria-reportes`). Cuando Norexos 1 publique `docs/auditoria/reportes/HALLAZGOS_TOTAL.jsonl`, contra-audita cada hallazgo con PostgreSQL de PRUEBA (nunca datos reales ni credenciales): reproduce, confirma o discrepa y llena el campo `contra_audit`. Mientras tanto, sigue tu cola. Rama: `chatgpt-nube/contra-auditoria`; un solo push.
