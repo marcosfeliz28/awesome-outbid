@@ -25,6 +25,10 @@ const NETO_POR_VENTA =
 const POR_CONFIRMAR_DEVOLUCION =
   " Por confirmar: en este reporte las devoluciones se restan en la fecha en que se devolvieron, no en la de la venta.";
 
+// Lo que hay detrás de «Ventas netas» en los reportes de ventas: el total de la
+// factura (con ITBIS); el envío del mensajero va aparte y no entra.
+const NETO_VENTAS = `${NETO_POR_VENTA} Incluye el ITBIS; no incluye el envío, que se cobra aparte.`;
+
 // Mismas columnas de mezcla de pagos (formas-pago-mes y formas-pago-categoria).
 const MEZCLA: Record<string, Explicacion> = {
   Efectivo: c("Efectivo", "Lo cobrado en efectivo de las facturas."),
@@ -81,7 +85,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Cuántas ventas y cuánto dinero entra en cada hora del día.",
     paraQueSirve:
       "Para saber en qué horas hay más clientes y ponerle más gente a caja.",
-    comoSeLee: `Cada fila es una hora (hora de Santo Domingo). ${NETO_POR_VENTA}`,
+    comoSeLee: `Cada fila es una hora (hora de Santo Domingo). ${NETO_VENTAS}`,
     columnas: {
       Hora: c("Hora", "La hora del día, de 00:00 a 23:00."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en esa hora."),
@@ -99,7 +103,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Ventas agrupadas por día de la semana (lunes a domingo).",
     paraQueSirve:
       "Para ver qué días de la semana venden más y planear personal y compras.",
-    comoSeLee: `Compara todos los lunes del período, todos los martes, etc. ${NETO_POR_VENTA}`,
+    comoSeLee: `Compara todos los lunes del período, todos los martes, etc. ${NETO_VENTAS}`,
     columnas: {
       Día: c("Día", "Día de la semana."),
       Facturas: c(
@@ -124,7 +128,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs:
       "Compara el mes que termina en la fecha final del reporte con el mes anterior.",
     paraQueSirve: "Para ver si este mes vende más o menos que el mes pasado.",
-    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango. ${NETO_POR_VENTA} El cambio % solo aparece en el mes actual.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -147,7 +151,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Compara el mes que termina en la fecha final del reporte con el mismo mes del año pasado.",
     paraQueSirve:
       "Para ver si el negocio crece frente al mismo mes del año anterior, sin que pesen las temporadas.",
-    comoSeLee: `Usa el mes de la fecha final del reporte. ${NETO_POR_VENTA} El cambio % solo aparece en el mes actual.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -170,7 +174,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Cuánto gasta en promedio un cliente por factura, día por día y mes por mes.",
     paraQueSirve:
       "Para saber si la gente compra más o menos cada vez que viene.",
-    comoSeLee: `Hay filas de tipo Día y filas de tipo Mes. ${NETO_POR_VENTA}`,
+    comoSeLee: `Hay filas de tipo Día y filas de tipo Mes. ${NETO_VENTAS}`,
     columnas: {
       Tipo: c("Tipo", "Si la fila es un día o un mes completo."),
       Período: c("Período", "La fecha del día, o el nombre del mes."),
@@ -189,7 +193,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Cuántas piezas lleva cada cliente por factura, agrupado en rangos.",
     paraQueSirve:
       "Para ver si la gente compra una sola cosa o varias, y si conviene ofrecer combos.",
-    comoSeLee: `Cada fila es un rango de piezas. Devuelta completa significa que la factura quedó en cero piezas por devoluciones. La última fila da el promedio de piezas por factura. ${NETO_POR_VENTA}`,
+    comoSeLee: `Cada fila es un rango de piezas. Devuelta completa significa que la factura quedó en cero piezas por devoluciones. La última fila da el promedio de piezas por factura. ${NETO_VENTAS}`,
     columnas: {
       Unidades: c(
         "Piezas por factura",
@@ -210,7 +214,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Las cajeras ordenadas de la que más vendió a la que menos vendió.",
     paraQueSirve:
       "Para reconocer el trabajo de cada cajera y ver quién necesita apoyo.",
-    comoSeLee: `El puesto 1 es la cajera con más ventas netas del período. ${NETO_POR_VENTA}`,
+    comoSeLee: `El puesto 1 es la cajera con más ventas netas del período. ${NETO_VENTAS}`,
     columnas: {
       Puesto: c("Puesto", "El lugar de la cajera en el ranking."),
       Cajera: c(
@@ -237,7 +241,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Los 20 clientes que más compraron en el período.",
     paraQueSirve:
       "Para cuidar a los mejores clientes y darles atención especial.",
-    comoSeLee: `Ordenado por ventas netas. ${NETO_POR_VENTA} El porcentaje se calcula sobre todas las ventas del período, no solo sobre estos 20.`,
+    comoSeLee: `Ordenado por ventas netas. ${NETO_VENTAS} El porcentaje se calcula sobre todas las ventas del período, no solo sobre estos 20.`,
     columnas: {
       Puesto: c("Puesto", "El lugar del cliente en el ranking, del 1 al 20."),
       Cliente: c("Cliente", "Nombre del cliente."),
@@ -258,9 +262,9 @@ export const GUIA_REPORTES: Record<string, Guia> = {
   },
   "ventas-categoria-mes": {
     queEs:
-      "Las ventas de cada categoría (suplementos, ropa, etc.) mes por mes.",
+      "Las ventas de cada categoría (suplementos, maquillaje, fajas, etc.) mes por mes.",
     paraQueSirve: "Para ver qué categorías crecen o bajan con el tiempo.",
-    comoSeLee: `Cada fila es una categoría en un mes. ${NETO_POR_VENTA} El % del mes muestra qué parte de las ventas de ese mes fue de esa categoría.`,
+    comoSeLee: `Cada fila es una categoría en un mes. ${NETO_VENTAS} El % del mes muestra qué parte de las ventas de ese mes fue de esa categoría.`,
     columnas: {
       Mes: c("Mes", "El mes del período."),
       Categoría: c("Categoría", "La categoría del producto."),
@@ -286,7 +290,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Las ventas de cada marca, de la que más vende a la que menos.",
     paraQueSirve:
       "Para decidir qué marcas comprar más y cuáles conviene reducir.",
-    comoSeLee: `Los productos sin marca aparecen como Sin marca. ${NETO_POR_VENTA}`,
+    comoSeLee: `Los productos sin marca aparecen como Sin marca. ${NETO_VENTAS}`,
     columnas: {
       Marca: c("Marca", "El nombre de la marca del producto."),
       Facturas: c("Facturas", "Cuántas facturas incluyeron esa marca."),

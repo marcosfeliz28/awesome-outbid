@@ -139,4 +139,15 @@ describe("guía de reportes", () => {
       ]),
     );
   });
+
+  it("los reportes de ventas dicen que incluyen ITBIS y no el envío", () => {
+    for (const n of Object.keys(REPORTES).filter(
+      (k) => REPORTES[k].group === "Ventas",
+    )) {
+      const g = GUIA_REPORTES[n].comoSeLee;
+      expect(g, n).toContain("ITBIS");
+      expect(g, n).toContain("envío");
+    }
+    expect(GUIA_REPORTES["ventas-categoria-mes"].queEs).not.toContain("ropa");
+  });
 });
