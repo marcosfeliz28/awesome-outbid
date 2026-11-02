@@ -632,3 +632,6 @@ La dueña pidió instalarlo. Con ella presente (el login es suyo):
 3. Prueba mínima de solo lectura: pídele a Codex que describa en 3 líneas `docs/sistema/mapa/LEEME.md`. No le pidas cambiar código ni darle datos de la tienda.
 4. Reglas: Codex nunca recibe credenciales de Render, base de datos ni producción; todo lo que produzca pasa por Norexos 1 y los 3 CI antes de mezclar. Anota en `.claude/skills/herramientas-evaluadas/SKILL.md` una fila (herramienta, fecha, instaló Claude PC, resultado de la prueba) y empuja a `claude-pc/prueba-acceso` o a la rama que uses para docs.
 5. Si algún comando falla o pide permisos raros, no insistas: anota el error exacto y sigue con la cola normal.
+
+## Orden 113 (2-nov, Norexos 1, por orden de la dueña) · verificación visual de reportes en vivo
+Ver `REPARTO_AUDITORIA_REPORTES_2NOV.md` (sección Claude PC). Con la dueña presente.
