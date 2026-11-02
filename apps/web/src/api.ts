@@ -434,19 +434,23 @@ export async function loadCatalog() {
   const user = useStore.getState().user;
   if (!user) throw new Error("Inicia sesión.");
   const key = "catalog:" + user.branchId;
+  // Se aplica justo antes de devolver: guardar la copia local tarda y un aviso
+  // puede llegar mientras tanto.
+  const started = liveSeq;
+  const withLive = (products: Product[]) =>
+    products.map((p) => ({
+      ...p,
+      variants: p.variants.map((v) => {
+        const live = liveStock.get(v.id);
+        return live && live.seq > started
+          ? { ...v, stock: String(live.stock) }
+          : v;
+      }),
+    }));
   if (isOnline()) {
     try {
-      const started = liveSeq;
-      const products = (await fetchCatalog()).map((p) => ({
-        ...p,
-        variants: p.variants.map((v) => {
-          const live = liveStock.get(v.id);
-          return live && live.seq > started
-            ? { ...v, stock: String(live.stock) }
-            : v;
-        }),
-      }));
-      const cached = products.map((p) => ({
+      const products = await fetchCatalog();
+      const cached = withLive(products).map((p) => ({
         ...p,
         variants: p.variants.map(({ costAvg: removed, lots, ...v }) => {
           void removed;
@@ -461,7 +465,7 @@ export async function loadCatalog() {
       }));
       if (stillSignedIn(user.id))
         await localDB.cache.put({ key, data: cached });
-      return products;
+      return withLive(products);
     } catch (e) {
       // Sin respuesta del servidor se vende con la copia local (R9-offline-1).
       if (!isNetworkError(e)) throw e;
@@ -469,7 +473,7 @@ export async function loadCatalog() {
   }
   const cached = await localDB.cache.get(key);
   if (!cached) throw new Error("Conéctate una vez para descargar el catálogo.");
-  return cached.data as Product[];
+  return withLive(cached.data as Product[]);
 }
 // Lo vendido sin conexión se descuenta del catálogo de la pantalla y del de
 // este equipo: sin esto la caja volvía a vender las mismas unidades y la
