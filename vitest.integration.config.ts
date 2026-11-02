@@ -37,6 +37,7 @@ export default defineConfig({
       "tests/reportes-ventas-api.test.ts",
       "tests/reportes-dinero-api.test.ts",
       "tests/reportes-margen-api.test.ts",
+      "tests/reportes-export-api.test.ts",
       "tests/reportes-inventario-api.test.ts",
       "tests/reportes-clientes-api.test.ts",
       "tests/pin-otra-persona-api.test.ts",
