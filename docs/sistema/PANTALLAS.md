@@ -128,7 +128,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1018-1048`):
 
 ## Incentivos
 
-- **Etiqueta:** «Incentivos». **Permiso:** `sale:manage`. **Componente:** `IncentivesPage`, `apps/web/src/Incentives.tsx:287`. Reporte mensual por cajera; la administración (`*`) cierra el mes (`:306-318`, API `apps/api/src/incentives.ts:852`). La cajera ve el suyo en «Mis incentivos» dentro de Caja (`apps/api/src/incentives.ts:754`). Reglas: `docs/INCENTIVOS.md`.
+- **Etiqueta:** «Incentivos». **Permiso:** `sale:manage`. **Componente:** `IncentivesPage`, `apps/web/src/Incentives.tsx:287`. Reporte mensual por cajera; la administración (`*`) cierra el mes (`:306-318`, API `apps/api/src/incentives.ts:856`). La cajera ve el suyo en «Mis incentivos» dentro de Caja (`apps/api/src/incentives.ts:758`). Reglas: `docs/INCENTIVOS.md`.
 
 ## GV Makeup Studio
 

@@ -92,7 +92,7 @@ Lista de lo que la API exige `@Permit("*")` (verificado en el código; no se enu
 | Configuración (guardar), logo, cajas                                        | `PUT /settings`, `/settings/logo`, `/terminals/:id/register`       | `admin.ts:839-940`                                     |
 | Usuarios, restablecer contraseña, roles                                     | `/users`, `/roles`                                                 | `admin.ts:1024-1320`                                   |
 | Bitácora y reglas de alertas                                                | `/audit-log`, `/alert-rules`                                       | `admin.ts:1321`; `alerts.ts:909-912`                   |
-| Cerrar el mes de incentivos / ajustar tasas                                 | `/incentives/close`, `/incentives/rates`                           | `apps/api/src/incentives.ts:801`, `:852`               |
+| Cerrar el mes de incentivos / ajustar tasas                                 | `/incentives/close`, `/incentives/rates`                           | `apps/api/src/incentives.ts:805`, `:852`               |
 | Importación de GV                                                           | `POST /gv/import`                                                  | `apps/api/src/gv.ts:876`                               |
 | Respaldo a Drive (tarjeta)                                                  | Configuración                                                      | `apps/api/src/drive-backup.ts`                         |
 
