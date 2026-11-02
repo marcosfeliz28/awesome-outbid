@@ -72,7 +72,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 
 ### GV (`gv`)
 
-- Solo «GV Makeup Studio» (cursos, citas, interesadas, por verificar sin poder verificar, reportes). Sin acceso a configuración, usuarios, costos, inventario ni datos de MacGen. No carga el catálogo de la caja (`apps/web/src/realtime.tsx:147-153`).
+- Solo «GV Makeup Studio» (cursos, citas, interesadas, por verificar sin poder verificar, reportes). Sin acceso a configuración, usuarios, costos, inventario ni datos de MacGen. No carga el catálogo de la caja (`apps/web/src/realtime.tsx:148-154`).
 
 ## 4. Qué es solo de administración (`*`)
 
@@ -117,12 +117,12 @@ DUDOSO: el botón «Configuración» lo ve un gerente (`sale:manage`), pero guar
 | Devolver efectivo desde la caja abierta de otra persona (PIN de su dueña o de otro gerente)                                            | `sales.ts:3046-3060`                                                    |
 | «Este efectivo ya lo tiene la dueña» al cobrar un crédito                                                                              | `sales.ts:4205-4220`                                                    |
 | Descartar una venta sin conexión en conflicto (cajera)                                                                                 | `apps/web/src/Management.tsx:2146-2271`                                 |
-| Aprobar un equipo nuevo con PIN desde el propio equipo                                                                                 | `apps/api/src/realtime.ts:263-264`; `apps/web/src/realtime.tsx:513-516` |
+| Aprobar un equipo nuevo con PIN desde el propio equipo                                                                                 | `apps/api/src/realtime.ts:263-264`; `apps/web/src/realtime.tsx:515-518` |
 | Cambiar de usuario con PIN (PIN del usuario al que se cambia; solo a usuarios con permisos iguales o menores)                          | `apps/api/src/auth.ts:838-873`; `common.ts:96-97`                       |
 
 ## 6. Equipos (terminales)
 
-- Un equipo nuevo de vendedor/almacén **espera aprobación** de un gerente: «Este equipo necesita aprobación. Puedes consultar, pero para vender o mover mercancía un gerente debe aprobarlo» (`apps/web/src/realtime.tsx:513-516`). Se aprueba con PIN en el mismo equipo o desde Configuración › **Equipos** (`apps/api/src/realtime.ts:257-264`; modelo `Terminal`, campo `approvedAt`).
+- Un equipo nuevo de vendedor/almacén **espera aprobación** de un gerente: «Este equipo necesita aprobación. Puedes consultar, pero para vender o mover mercancía un gerente debe aprobarlo» (`apps/web/src/realtime.tsx:515-518`). Se aprueba con PIN en el mismo equipo o desde Configuración › **Equipos** (`apps/api/src/realtime.ts:257-264`; modelo `Terminal`, campo `approvedAt`).
 - Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1475`, `cash.ts:838`).
 - La caja se asigna al equipo con nombre y número visibles en el cuadre (ej. «4012 · GPRO STORE RD») y cada cajero tiene un «No. de cajero» (ej. 1031) (`apps/web/src/Tienda.tsx:1293-1360`; `schema.prisma` `Terminal.registerNumber`, `User.cashierNumber`).
 - Una sesión se cierra por inactividad según «sessionTimeoutMinutes» (30 min por defecto) (`apps/api/src/auth.ts:358-360`; `apps/api/src/admin.ts:92`).

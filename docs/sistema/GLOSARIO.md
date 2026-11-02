@@ -42,7 +42,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Envío / mensajero** — Cobro del envío que paga el cliente junto con la transferencia o la tarjeta. Va **aparte** del total (no es venta, ganancia ni ITBIS) y se le paga luego al mensajero (por defecto «Addison») en «Envíos del mensajero» (`apps/web/src/POS.tsx:2857-2902`; `apps/web/src/CourierPayouts.tsx:26`; `packages/shared/src/index.ts` `courierCharge`).
 
-**Equipo / terminal** — Computadora registrada. Un equipo nuevo necesita aprobación de un gerente (`apps/web/src/realtime.tsx:513-516`).
+**Equipo / terminal** — Computadora registrada. Un equipo nuevo necesita aprobación de un gerente (`apps/web/src/realtime.tsx:515-518`).
 
 **En espera** — Carrito guardado para seguir después (F8). **Cotizar** lo guarda como cotización. Ambos son `Quote` (`apps/web/src/POS.tsx:456-488`).
 

@@ -9,7 +9,7 @@ Resumen de pantallas que usa el cajero: **Caja** (abrir y cerrar) y **Punto de v
 ## 0. Antes de empezar
 
 - Entrar: pantalla de acceso con campo «Tu usuario o correo» y «Tu contraseña», botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:466`, `:512`). La contraseña temporal se cambia al entrar (`apps/web/src/App.tsx:549`).
-- El equipo (computadora) debe estar **aprobado**. Si no, sale «Este equipo necesita aprobación … un gerente debe aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos» (`apps/web/src/realtime.tsx:513-516`). Sin equipo aprobado no se puede vender ni mover mercancía (`apps/api/src/common.ts` decorador `RequireTerminal`, usado en `apps/api/src/sales.ts:1475` y `apps/api/src/cash.ts:838`).
+- El equipo (computadora) debe estar **aprobado**. Si no, sale «Este equipo necesita aprobación … un gerente debe aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos» (`apps/web/src/realtime.tsx:515-518`). Sin equipo aprobado no se puede vender ni mover mercancía (`apps/api/src/common.ts` decorador `RequireTerminal`, usado en `apps/api/src/sales.ts:1475` y `apps/api/src/cash.ts:838`).
 - Cambiar de cajera sin salir: menú de la cuenta › **«Cambiar de usuario con PIN»** (`apps/web/src/App.tsx:1162`). No se puede cambiar con PIN a alguien con más permisos (`apps/api/src/auth.ts:845-859`).
 
 ## 1. Abrir la caja
@@ -20,7 +20,7 @@ Resumen de pantallas que usa el cajero: **Caja** (abrir y cerrar) y **Punto de v
 4. Si el fondo es **menor** que lo sugerido aparece **«Nota si el fondo es menor que el sugerido»** y es obligatoria; no pide PIN (`apps/web/src/Management.tsx:2030-2040`; `apps/api/src/cash.ts:868-885`).
 5. Se guarda con `POST /cash-sessions/open` (`apps/api/src/cash.ts:837-947`). Requiere permiso `cash:write`. Una persona solo puede tener **una caja abierta**; si pulsa «Abrir» otra vez devuelve la misma (`apps/api/src/cash.ts:893-908`). La caja es de quien la abre, no del equipo.
 6. En el Punto de venta el estado pasa de «Caja sin abrir» a **«Caja abierta»** (`apps/web/src/POS.tsx:1024-1028`). Si se intenta cobrar sin caja: «Abre tu caja antes de cobrar.» (`:523`); además aparece el enlace **«Abre tu caja para comenzar»** que lleva a Caja (`:1218-1221`).
-7. Si la caja quedó abierta en **otro equipo**: «Tu caja está abierta en «…». Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.» con el botón **«Trasladar caja aquí»** y la ventana «Trasladar caja a este equipo» (botón **«Trasladar caja»**; pide PIN de gerente según el caso) (`apps/web/src/realtime.tsx:629-668`; API `apps/api/src/cash.ts:1061-1111`).
+7. Si la caja quedó abierta en **otro equipo**: «Tu caja está abierta en «…». Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.» con el botón **«Trasladar caja aquí»** y la ventana «Trasladar caja a este equipo» (botón **«Trasladar caja»**; pide PIN de gerente según el caso) (`apps/web/src/realtime.tsx:631-670`; API `apps/api/src/cash.ts:1061-1111`).
 
 Caja ciega: mientras está abierta, quien no tiene `profit:read` ni `sale:manage` no ve los montos esperados. El texto: «Arqueo ciego activo…» (`apps/web/src/managementMessages.ts:41-44`, `apps/web/src/Management.tsx:1732-1737`; regla `apps/api/src/common.ts:70-72`).
 

@@ -66,5 +66,5 @@ DUDOSO (no inventar): el mínimo de 15 % no bloquea la venta ni el cambio de pre
 
 - Para entrar al sistema como Claude: `docs/coordinacion/claude-nube/entrar.py` (lee las credenciales del entorno; nunca se imprimen).
 - El menú que ve cada persona depende de sus permisos (`apps/web/src/App.tsx:654-656`). Ver `ROLES_Y_PERMISOS.md`.
-- Un equipo nuevo debe ser aprobado por un gerente antes de vender o mover mercancía (`apps/web/src/realtime.tsx:513-516`).
+- Un equipo nuevo debe ser aprobado por un gerente antes de vender o mover mercancía (`apps/web/src/realtime.tsx:515-518`).
 - Atajos de teclado en la caja: F2 buscar, F4 cliente, F8 en espera, F12 cobrar, Ctrl+K cambiar pantalla (`apps/web/src/App.tsx:1239-1263`).
