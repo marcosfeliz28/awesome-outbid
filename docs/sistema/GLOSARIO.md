@@ -2,7 +2,7 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su cita; los que son jerga de la dueña sin cita en el código se marcan «uso interno».
 
-**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:3756`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3328`).
+**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:3760`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3328`).
 
 **Aprobar con PIN / PIN de gerente** — Código de 6 dígitos de un usuario con `sale:manage` que autoriza una operación de riesgo (descuento grande, crédito grande, descuadre, vale…). No puede ser el de quien pide, salvo la dueña (`apps/api/src/security.ts:81-136`). Ver `ROLES_Y_PERMISOS.md` §5.
 
@@ -68,7 +68,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1045`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:674-681`).
 
-**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3350`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3453`).
+**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3354`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3453`).
 
 **NCF / e-CF** — Número de comprobante fiscal (DGII, República Dominicana). **Este sistema no lo emite**: los recibos son internos y solo se puede preparar la solicitud (`apps/web/src/Prints.tsx:508`; `apps/web/src/Management.tsx:4275-4283`). El «NCF del proveedor» sí se guarda en las compras (`apps/web/src/Purchases.tsx:90-100`).
 

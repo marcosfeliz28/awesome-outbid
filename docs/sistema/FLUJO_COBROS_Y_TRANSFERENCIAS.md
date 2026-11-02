@@ -44,10 +44,10 @@ Pasos exactos en `FLUJO_CAJA_POS.md` §5.1. Resumen:
 
 ### 3.3 Otras vías de cobro (solo administración `*`)
 
-- **Ventas › «Registrar abono»** en una venta con saldo (`apps/web/src/Management.tsx:3328`): ventana «Registrar pago de crédito / contraentrega · FS-…» (`:3716`) con «Monto del abono», «Método», banco/referencia o últimos 4/aprobación. API `POST /sales/:id/installments` (`apps/api/src/sales.ts:3756`). Exige caja abierta: «Abre tu caja para registrar abonos.» (`apps/web/src/Management.tsx:3317`).
-- **Cobro de contraentrega cuando el mensajero trae el dinero**: `POST /sales/:id/cod-collections` (`apps/api/src/sales.ts:3768`); pide la referencia del voucher si es tarjeta.
-- **Cobro por persona** (varias ventas de un cliente a la vez): `POST /credit-accounts/:id/collections` (`apps/api/src/sales.ts:4083`, manejador `collectCustomerCredit` en `:4086`); usa `allocateCredit` (`apps/api/src/credit-allocation.ts:2`).
-- **Dueña (`*`)**: al registrar una transferencia se da por recibida y cierra el cobro al instante, solo indica el banco; el efectivo sin caja abierta queda como recibido por ella, fuera de cualquier caja (`apps/web/src/Tienda.tsx:947-949`, `:1098`, `:1216-1217`; API marca `OWNER_CASH_MARK`, `apps/api/src/sales.ts:4741`).
+- **Ventas › «Registrar abono»** en una venta con saldo (`apps/web/src/Management.tsx:3328`): ventana «Registrar pago de crédito / contraentrega · FS-…» (`:3716`) con «Monto del abono», «Método», banco/referencia o últimos 4/aprobación. API `POST /sales/:id/installments` (`apps/api/src/sales.ts:3760`). Exige caja abierta: «Abre tu caja para registrar abonos.» (`apps/web/src/Management.tsx:3317`).
+- **Cobro de contraentrega cuando el mensajero trae el dinero**: `POST /sales/:id/cod-collections` (`apps/api/src/sales.ts:3772`); pide la referencia del voucher si es tarjeta.
+- **Cobro por persona** (varias ventas de un cliente a la vez): `POST /credit-accounts/:id/collections` (`apps/api/src/sales.ts:4087`, manejador `collectCustomerCredit` en `:4086`); usa `allocateCredit` (`apps/api/src/credit-allocation.ts:2`).
+- **Dueña (`*`)**: al registrar una transferencia se da por recibida y cierra el cobro al instante, solo indica el banco; el efectivo sin caja abierta queda como recibido por ella, fuera de cualquier caja (`apps/web/src/Tienda.tsx:947-949`, `:1098`, `:1216-1217`; API marca `OWNER_CASH_MARK`, `apps/api/src/sales.ts:4745`).
 
 ### 3.4 Venta con saldo y devolución
 
@@ -85,14 +85,14 @@ API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales
 
 ### 4.3 Rechazar (el dinero no llegó)
 
-- Botón «Rechazar» → «Rechazar transferencia de RD$ …» con motivo (`apps/web/src/Management.tsx:3642`; textos de ayuda en `:3594-3596`). API `POST /payments/:id/reject` (`*`) (`apps/api/src/sales.ts:3111`).
-- Transferencia **de una venta**: la mercancía ya salió, así que ese importe **pasa a cuenta por cobrar del cliente** y sale del esperado de la caja; si la caja ya cerró, se recalcula (`sales.ts:3111` y siguientes; auditoría `rejected_after_close` en `:3207`). Si parte ya se devolvió y no se puede cobrar, crea la alerta `transfer_rejected_loss` (`:3173`).
+- Botón «Rechazar» → «Rechazar transferencia de RD$ …» con motivo (`apps/web/src/Management.tsx:3642`; textos de ayuda en `:3594-3596`). API `POST /payments/:id/reject` (`*`) (`apps/api/src/sales.ts:3115`).
+- Transferencia **de una venta**: la mercancía ya salió, así que ese importe **pasa a cuenta por cobrar del cliente** y sale del esperado de la caja; si la caja ya cerró, se recalcula (`sales.ts:3115` y siguientes; auditoría `rejected_after_close` en `:3207`). Si parte ya se devolvió y no se puede cobrar, crea la alerta `transfer_rejected_loss` (`:3173`).
 - Transferencia **de un abono**: no descuenta deuda ni entra a caja (`apps/web/src/Management.tsx:3646`).
 - Solo se rechaza una `pending_verification`.
 
 ### 4.4 Corregir banco y referencia
 
-- «Corregir banco y referencia» (`*`; pago `pending_verification` u `ok`): campos «Banco correcto», «Referencia correcta», «Motivo de la corrección» (`apps/web/src/Management.tsx:3691-3723`, etiqueta en `:3614`); no cambia importe ni estado y queda en la bitácora. API `POST /payments/:id/correct-transfer` (`apps/api/src/sales.ts:3038`). Si otra persona la corrigió antes: «Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.» (`apps/api/src/sales.ts:3080`).
+- «Corregir banco y referencia» (`*`; pago `pending_verification` u `ok`): campos «Banco correcto», «Referencia correcta», «Motivo de la corrección» (`apps/web/src/Management.tsx:3691-3723`, etiqueta en `:3614`); no cambia importe ni estado y queda en la bitácora. API `POST /payments/:id/correct-transfer` (`apps/api/src/sales.ts:3042`). Si otra persona la corrigió antes: «Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.» (`apps/api/src/sales.ts:3084`).
 
 ## 5. Cuando la caja ya cerró
 
@@ -139,5 +139,5 @@ API solamente; **no hay pantalla** para estas dos acciones en `apps/web` (búsqu
 
 ## GV: pago con tarjeta (sin cuenta bancaria)
 
-- Los pagos de GV no pasan por la caja. Con **Tarjeta** el formulario no pide banco: muestra **Terminal** y una **Referencia** obligatoria (aprobación, lote o voucher); el pago queda verificado al registrarse (`apps/api/src/gv-money.ts:211-227`, `apps/api/src/gv-money.ts:404-411`). La transferencia sigue exigiendo banco y referencia.
+- Los pagos de GV no pasan por la caja. Con **Tarjeta** el formulario no pide banco: muestra **Terminal** y una **Referencia** obligatoria (aprobación, lote o voucher); el pago queda verificado al registrarse (`apps/api/src/gv-money.ts:211-227`, `apps/api/src/gv-money.ts:418-425`). La transferencia sigue exigiendo banco y referencia.
 - El dinero de tarjeta de GV se registra en el área GV / Grupo Génesis, sin elegir cuenta de banco (respuesta de la dueña): el pago guarda `destination = "gv"`; no hay cuenta ni terminal inventadas.
