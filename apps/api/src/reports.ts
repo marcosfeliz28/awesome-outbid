@@ -53,6 +53,16 @@ import { renderPdf } from "./reportes/export-pdf";
 import { GUIA_REPORTES } from "./reportes/guia";
 import { renderXlsx } from "./reportes/export-xlsx";
 
+// Reportes de Dinero que no miden ventas netas (cuadres, abonos, anuladas…).
+const NOT_NET_SALES = [
+  "descuadres",
+  "entradas-cuenta",
+  "diferencias-cuadre",
+  "anulaciones",
+  "devoluciones-producto",
+  "envios-mensajero",
+];
+
 export function dateRange(query: Record<string, string>) {
   const from = query.from
     ? new Date(query.from + "T00:00:00-04:00")
@@ -872,7 +882,9 @@ export class ReportsController {
           from: range40.gte,
           to: range40.lte,
           printedAt: new Date(),
-          note: "Ventas netas: facturas vigentes menos devoluciones.",
+          note: NOT_NET_SALES.includes(name)
+            ? ""
+            : "Ventas netas: facturas vigentes menos devoluciones.",
           rows: await r40.run(this.db, actor, range40, query),
         },
         query.format,

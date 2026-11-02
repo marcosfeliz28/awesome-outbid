@@ -139,4 +139,23 @@ describe("guía de reportes", () => {
       ]),
     );
   });
+
+  it("los reportes de ventas dicen que incluyen ITBIS y no el envío", () => {
+    for (const n of Object.keys(REPORTES).filter(
+      (k) => REPORTES[k].group === "Ventas",
+    )) {
+      const g = GUIA_REPORTES[n].comoSeLee;
+      expect(g, n).toContain("ITBIS");
+      expect(g, n).toContain("envío");
+    }
+    expect(GUIA_REPORTES["ventas-categoria-mes"].queEs).not.toContain("ropa");
+  });
+});
+
+describe("guía de inventario (auditoría 2-nov)", () => {
+  it("perdidas-conteo aclara qué es pérdida real y qué no", () => {
+    const g: any = GUIA_REPORTES["perdidas-conteo"];
+    expect(g.comoSeLee).toMatch(/Solo la «Salida real» es dinero perdido/);
+    expect(g.comoSeLee).toMatch(/no se suma como pérdida/);
+  });
 });
