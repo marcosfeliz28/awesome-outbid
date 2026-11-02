@@ -53,6 +53,30 @@ import { renderPdf } from "./reportes/export-pdf";
 import { GUIA_REPORTES } from "./reportes/guia";
 import { renderXlsx } from "./reportes/export-xlsx";
 
+// Títulos en español de los PDF de los informes de siempre (salía «profit»),
+// los mismos de la pantalla de Reportes.
+const TITULOS: Record<string, string> = {
+  sales: "Ventas detalladas",
+  "monthly-consumption": "Consumo mensual",
+  profit: "Utilidad por producto",
+  "inventory-value": "Inventario valorizado",
+  kardex: "Kardex",
+  "low-stock": "Stock bajo y reposición",
+  "no-movement": "Productos sin movimiento",
+  expiring: "Lotes próximos a vencer",
+  abc: "Clasificación ABC",
+  expenses: "Gastos y presupuesto",
+  "income-statement": "Estado de resultados",
+  cash: "Cierres y diferencias",
+  "by-seller": "Ventas por vendedor",
+  "by-payment": "Ventas por método de pago",
+  "ventas-categoria-forma-pago":
+    "Ventas por categoría y forma de pago (% y monto)",
+  "returns-discounts": "Devoluciones y descuentos",
+  customers: "Mejores clientes",
+  purchases: "Compras y cuentas por pagar",
+};
+
 export function dateRange(query: Record<string, string>) {
   const from = query.from
     ? new Date(query.from + "T00:00:00-04:00")
@@ -1468,7 +1492,7 @@ export class ReportsController {
       doc.pipe(res);
       doc
         .fontSize(18)
-        .text("Nexora POS · " + name)
+        .text("Nexora POS · " + (TITULOS[name] ?? name))
         .fontSize(9)
         .text(
           range.gte.toLocaleDateString("en-CA", {
@@ -1891,7 +1915,7 @@ async function sendListing(
     doc.pipe(res);
     doc
       .fontSize(18)
-      .text("Nexora POS · " + name)
+      .text("Nexora POS · " + (TITULOS[name] ?? name))
       .fontSize(9)
       .text(
         range.gte.toLocaleDateString("en-CA", {

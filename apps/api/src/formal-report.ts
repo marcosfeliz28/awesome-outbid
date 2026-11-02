@@ -91,7 +91,7 @@ export class FormalReportController {
         FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
           LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
         WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
-          AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)}`),
+          AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}`),
       this.db.$queryRaw<
         { userId: string; sold: unknown; count: bigint }[]
       >(Prisma.sql`
@@ -103,14 +103,14 @@ export class FormalReportController {
       this.db.$queryRaw<
         { categoryId: string; sold: unknown; soldProducts: bigint }[]
       >(Prisma.sql`
-        SELECT c.id::text AS "categoryId",COALESCE(SUM(i."lineTotal"),0) sold,
-          COUNT(DISTINCT p.id)::bigint AS "soldProducts"
+        SELECT c.id::text AS "categoryId",COALESCE(SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)),0) sold,
+          COUNT(DISTINCT p.id) FILTER (WHERE p.active)::bigint AS "soldProducts"
         FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId"
           JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId"
           JOIN "Category" c ON c.id=p."categoryId"
           LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
         WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
-          AND p.active=true AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
+          AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
         GROUP BY c.id ORDER BY sold DESC`),
       this.db.$queryRaw<
         { categoryId: string; name: string; products: bigint }[]
@@ -163,6 +163,8 @@ export class FormalReportController {
           ...realSaleWhere,
           branchId: actor.branchId,
           status: "completed",
+          // Créditos vendidos hasta el cierre del período (no los de después).
+          createdAt: { lte: range.lte },
           creditBalance: { gt: 0 },
           payments: {
             some: { entryType: "sale", method: { in: ["cod", "credit"] } },
@@ -183,6 +185,7 @@ export class FormalReportController {
           ...realSaleWhere,
           branchId: actor.branchId,
           status: "completed",
+          createdAt: { lte: range.lte },
           creditBalance: { gt: 0 },
           payments: {
             some: { entryType: "sale", method: { in: ["cod", "credit"] } },
@@ -268,13 +271,22 @@ export class FormalReportController {
       this.db.settings.findUnique({ where: { id: actor.branchId } }),
     ]);
     const person = new Map(users.map((u) => [u.id, u.name]));
+    // La contable veía el código interno de la caja; se muestra su nombre.
+    const terminal = new Map(
+      (
+        await this.db.terminal.findMany({
+          where: { branchId: actor.branchId },
+          select: { id: true, name: true },
+        })
+      ).map((t) => [t.id, t.name]),
+    );
     const sessions = cashSessions.filter((s) => !isTestRegister(s.registerId));
     const expected = await cashExpectedMany(this.db, sessions.slice(0, capped));
     const cash = sessions.slice(0, capped).map((s) => {
       const e = expected.get(s.id);
       return {
         id: s.id,
-        register: s.registerId,
+        register: terminal.get(s.registerId) ?? s.registerId,
         user: person.get(s.userId) ?? s.userId,
         openedAt: s.openedAt,
         closedAt: s.closedAt,
@@ -405,7 +417,7 @@ export class FormalReportController {
       ),
     ))
       findings.push(
-        `${s.register}: diferencias de cierre E ${money2(s.differenceCash)} / T ${money2(s.differenceCard)} / Tr ${money2(s.differenceTransfer)}.`,
+        `${s.register} (${s.user}): diferencias de cierre E ${money2(s.differenceCash)} / T ${money2(s.differenceCard)} / Tr ${money2(s.differenceTransfer)}.`,
       );
     if (voids.length)
       findings.push(

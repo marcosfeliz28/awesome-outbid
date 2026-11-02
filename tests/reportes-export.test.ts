@@ -243,4 +243,109 @@ describe("motor de exportación de reportes", () => {
       expect(xlsx.subarray(0, 2).toString("latin1"), nombre).toBe("PK");
     }
   });
+  // Sincronía 2-nov: lo que vio la contable en los PDF.
+  const hex = (t: string) => Buffer.from(t, "latin1").toString("hex");
+  const paginas = (pdf: Buffer) =>
+    (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+  const de = (nombre: string, filas: Record<string, unknown>[]) =>
+    construirModelo({
+      nombre,
+      guia: GUIA_REPORTES[nombre],
+      presentacion: PRESENTACION[nombre],
+      titulo: REPORTES[nombre].title,
+      filas: filas as any,
+      negocio: "Tienda de prueba",
+      desde: "2026-10-01",
+      hasta: "2026-10-31",
+      generadoPor: "Ana Pérez",
+      emitido: "2 de noviembre de 2026",
+    });
+
+  it("PDF: un monto de millones sale completo y sin página en blanco", async () => {
+    const pdf = await renderPdf(
+      de("utilidad-bruta-por-mes", [
+        {
+          Mes: "2026-10",
+          Facturas: 356,
+          Venta: 1465804.5,
+          Costo: 777664.04,
+          Utilidad: 688140.46,
+          "Margen %": 46.9,
+        },
+      ]),
+      { comprimir: false },
+    );
+    expect(pdf.toString("latin1")).toContain(hex("1,465,804.50"));
+    // Portada + una hoja de contenido; el pie va en esa hoja, no en otra nueva.
+    expect(paginas(pdf)).toBe(2);
+  });
+
+  it("PDF: una tabla de 11 columnas cabe en la hoja y no corta montos", async () => {
+    const pdf = (
+      await renderPdf(
+        de("formas-pago-mes", [
+          {
+            Mes: "2026-10",
+            Efectivo: 202900,
+            Transferencia: 562214.5,
+            Tarjeta: 326990,
+            "Crédito/contraentrega": 373700,
+            Otros: 0,
+            Total: 1465804.5,
+            "% Efectivo": 13.8,
+            "% Transferencia": 38.4,
+            "% Tarjeta": 22.3,
+            "% Crédito/contraentrega": 25.5,
+          },
+        ]),
+        { comprimir: false },
+      )
+    ).toString("latin1");
+    for (const monto of ["562,214.50", "373,700.00", "1,465,804.50"])
+      expect(pdf, monto).toContain(hex(monto));
+  });
+  it("«Venta» y «Descuento total» son dinero; la gráfica de margen usa la venta", () => {
+    const margen = de("margen-por-categoria", [
+      {
+        Categoría: "A",
+        Unidades: 3,
+        Venta: 900,
+        Costo: 400,
+        Utilidad: 500,
+        "Margen %": 55.6,
+      },
+      {
+        Categoría: "B",
+        Unidades: 1,
+        Venta: 300,
+        Costo: 200,
+        Utilidad: 100,
+        "Margen %": 33.3,
+      },
+    ]);
+    const col = (m: any, k: string) =>
+      m.secciones.at(-1).columnas.find((c: any) => c.clave === k).formato;
+    expect(col(margen, "Venta")).toBe("moneda");
+    expect(margen.grafica?.valor).toBe("Venta");
+    const desc = de("descuentos-cajera", [
+      {
+        Cajera: "Ana",
+        "Facturas con descuento": 2,
+        "Descuento total": 150,
+        "Ventas netas": 900,
+        "% de sus ventas": 16.7,
+        "Aprobados por ella misma": 1,
+      },
+      {
+        Cajera: "Eva",
+        "Facturas con descuento": 1,
+        "Descuento total": 50,
+        "Ventas netas": 500,
+        "% de sus ventas": 10,
+        "Aprobados por ella misma": 0,
+      },
+    ]);
+    expect(col(desc, "Descuento total")).toBe("moneda");
+    expect(col(desc, "Aprobados por ella misma")).toBe("entero");
+  });
 });
