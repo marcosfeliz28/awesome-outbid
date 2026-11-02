@@ -158,6 +158,8 @@ beforeAll(async () => {
   adminCash = await ok("/cash-sessions/open", admin, {
     registerId: "qa-mar-admin-" + suffix,
     openingAmount: 0,
+    // Otra prueba pudo dejar un cierre del admin: abrir en 0 exige la nota (D-03).
+    openingNote: "QA: fondo de la prueba",
   });
   const roles = await ok("/roles", admin);
   const email = `qa-mar-luz-${suffix}@example.test`;

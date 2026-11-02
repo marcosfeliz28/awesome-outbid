@@ -78,7 +78,11 @@ beforeAll(async () => {
     data: { closedAt: new Date() },
   });
   cashSessionId = (
-    await call("/cash-sessions/open", token, { openingAmount: 0 })
+    await call("/cash-sessions/open", token, {
+      openingAmount: 0,
+      // Otra prueba pudo dejar un cierre del admin: abrir en 0 exige la nota (D-03).
+      openingNote: "QA: fondo de la prueba",
+    })
   ).body.id;
   customerId = (
     await call("/customers", token, { name: "QA desglose " + id.slice(0, 6) })
