@@ -102,6 +102,7 @@ export default defineConfig({
       "tests/caja-web-ticket.test.ts",
       "tests/offline-review-web.test.ts",
       "tests/pwa-update.test.ts",
+      "tests/seguridad-menor.test.ts",
       "tests/cart-draft-policy.test.ts",
       "tests/cart-draft-race.test.ts",
       "tests/alertas-rendimiento.test.ts",
