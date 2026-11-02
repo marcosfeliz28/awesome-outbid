@@ -421,13 +421,31 @@ async function fetchCatalog() {
     if (stable || attempt === 3) return [...byId.values()];
   }
 }
+// Último stock recibido en tiempo real por variante, con su orden de llegada.
+// Una descarga del catálogo que empezó antes de ese aviso trae un stock leído
+// antes y lo pisaba: dos cajas vendían a la vez y una se quedaba con el valor
+// viejo, sin otro aviso que lo corrigiera.
+const liveStock = new Map<string, { stock: number; seq: number }>();
+let liveSeq = 0;
+export function noteLiveStock(variantId: string, stock: number) {
+  liveStock.set(variantId, { stock, seq: ++liveSeq });
+}
 export async function loadCatalog() {
   const user = useStore.getState().user;
   if (!user) throw new Error("Inicia sesión.");
   const key = "catalog:" + user.branchId;
   if (isOnline()) {
     try {
-      const products = await fetchCatalog();
+      const started = liveSeq;
+      const products = (await fetchCatalog()).map((p) => ({
+        ...p,
+        variants: p.variants.map((v) => {
+          const live = liveStock.get(v.id);
+          return live && live.seq > started
+            ? { ...v, stock: String(live.stock) }
+            : v;
+        }),
+      }));
       const cached = products.map((p) => ({
         ...p,
         variants: p.variants.map(({ costAvg: removed, lots, ...v }) => {
