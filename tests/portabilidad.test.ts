@@ -694,8 +694,8 @@ describe("Portabilidad · verificación (scripts/verify.mjs)", () => {
       if (server && alive(server))
         try {
           process.kill(server, "SIGKILL");
-        } catch (e: any) {
-          if (e?.code !== "ESRCH") throw e;
+        } catch {
+          // ESRCH: ya salió.
         }
       await until(() => !server || !alive(server));
       remove(dir);

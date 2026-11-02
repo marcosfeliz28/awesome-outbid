@@ -8,3 +8,6 @@ Lee siempre `origin/nexora-cloud`. Cada hora: `git fetch`, relee esos archivos p
 
 ## 2-nov · Prioridad: auditoría A–Z del trabajo del 1-nov (ChatGPT PC)
 Ver `ORDEN_CHATGPT_PC_AUDITORIA_PUNTO1_2NOV.md`. Es lo primero de tu cola hoy.
+
+## 2-nov · Después de la auditoría A–Z: contra-auditoría de los reportes
+Cuando termines `AUDITORIA_PUNTO1_2NOV.md`, lee `docs/auditoria/reportes/PLAN_AUDITORIA_REPORTES_2NOV.md` (rama `claude-pc/plan-auditoria-reportes`) y, cuando exista `HALLAZGOS_TOTAL.jsonl`, contra-audita los de dinero y sincronía con datos de PRUEBA (sin datos reales ni credenciales). También revisa los textos de los reportes con ojos de una persona de 18 a 70 años. Rama `chatgpt-pc/contra-auditoria`; un solo push.
