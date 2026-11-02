@@ -507,7 +507,13 @@ function EnrollmentForm({
 }) {
   const client = useQueryClient();
   const [operationId] = useState(() => crypto.randomUUID());
+  const courses = useQuery<Course[]>({
+    queryKey: ["gv-courses"],
+    queryFn: () => api("/gv/courses"),
+    enabled: !!enrollment,
+  });
   const [form, setForm] = useState({
+    courseId,
     clientName: enrollment?.clientName ?? "",
     phone: enrollment?.phone ?? "",
     instagram: enrollment?.instagram ?? "",
@@ -534,9 +540,12 @@ function EnrollmentForm({
     setBusy(true);
     setError("");
     try {
-      const { refundAmount, refundDate, ...rest } = form;
+      const { refundAmount, refundDate, courseId: newCourseId, ...rest } = form;
       const data = {
         ...rest,
+        ...(enrollment && newCourseId !== courseId
+          ? { courseId: newCourseId }
+          : {}),
         agreedPrice: Number(form.agreedPrice),
         attended: form.attended === "" ? null : form.attended === "true",
         ...(refunding
@@ -546,9 +555,15 @@ function EnrollmentForm({
       if (enrollment)
         await send("/gv/enrollments/" + enrollment.id, data, "PATCH");
       else await post("/gv/enrollments", { ...data, courseId, operationId });
-      await client.invalidateQueries({ queryKey: ["gv-course", courseId] });
+      await client.invalidateQueries({ queryKey: ["gv-course"] });
       await client.invalidateQueries({ queryKey: ["gv-courses"] });
-      toast(enrollment ? "Inscripción actualizada." : "Inscripción guardada.");
+      toast(
+        enrollment && form.courseId !== courseId
+          ? "Alumna pasada a la nueva fecha."
+          : enrollment
+            ? "Inscripción actualizada."
+            : "Inscripción guardada.",
+      );
       onClose();
     } catch (cause: any) {
       setError(cause.message);
@@ -572,6 +587,23 @@ function EnrollmentForm({
             onChange={(e) => set("clientName", e.target.value)}
           />
         </label>
+        {enrollment && (
+          <label className="field full">
+            <span>Fecha del curso (para pasarla a otra fecha)</span>
+            <select
+              value={form.courseId}
+              onChange={(e) => set("courseId", e.target.value)}
+            >
+              {(courses.data ?? [])
+                .filter((c) => c.active || c.id === courseId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} · {dateText(c.date)}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
         <label className="field">
           <span>Teléfono</span>
           <input

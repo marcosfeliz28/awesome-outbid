@@ -366,7 +366,9 @@ export class GvController {
     );
     // partial(): lo que no llega queda undefined (sin los valores por defecto
     // del alta) y Prisma no lo cambia.
-    if (data.courseId) await this.course(actor, data.courseId);
+    const target = data.courseId
+      ? await this.course(actor, data.courseId)
+      : null;
     const enrollmentId = parse(uuid, id);
     return this.db.$transaction(async (tx) => {
       const locked = await lockGvOwner(
@@ -377,6 +379,13 @@ export class GvController {
       );
       const { payments: _p, ...before } = locked;
       void _p;
+      // Pasarla a otra fecha: el curso nuevo se cobra en la misma moneda que el actual
+      // (los pagos ya registrados no se convierten).
+      if (
+        target &&
+        monedaDeCurso(target.name) !== monedaDeCurso(locked.course?.name)
+      )
+        bad("Solo puedes pasarla a un curso que se cobre en la misma moneda.");
       const row = await tx.gvEnrollment.update({
         where: { id: before.id },
         data: checkGvOwnerEdit("enrollment", locked, data) as any,
