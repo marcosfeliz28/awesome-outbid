@@ -243,4 +243,48 @@ describe("motor de exportación de reportes", () => {
       expect(xlsx.subarray(0, 2).toString("latin1"), nombre).toBe("PK");
     }
   });
+
+  it("el máximo público de 20.000 filas produce PDF y Excel identificables", async () => {
+    const filas = Array.from({ length: EXPORT_ROW_LIMIT }, (_, index) => ({
+      Producto: `Producto QA ${index + 1}`,
+      Venta: 1000 + index,
+      Costo: 500 + index / 2,
+      Margen: 50,
+      Fecha: "2026-11-02",
+      Nota: "prueba local",
+    }));
+    const columnas = [
+      { clave: "Producto", titulo: "Producto", formato: "texto" },
+      { clave: "Venta", titulo: "Venta", formato: "moneda" },
+      { clave: "Costo", titulo: "Costo", formato: "moneda" },
+      { clave: "Margen", titulo: "Margen", formato: "porcentaje" },
+      { clave: "Fecha", titulo: "Fecha", formato: "texto" },
+      { clave: "Nota", titulo: "Nota", formato: "texto" },
+    ];
+    const m = modelo(filas);
+    m.secciones = [
+      {
+        titulo: "Detalle",
+        columnas: columnas.map(({ clave, titulo, formato }) => ({
+          clave,
+          etiqueta: titulo,
+          formato,
+        })),
+        filas,
+        totales: null,
+      },
+    ];
+    const xlsx = await renderXlsx(m);
+    const pdf = await renderPdf(m);
+    const libro = new ExcelJS.Workbook();
+    await libro.xlsx.load(xlsx);
+
+    expect(xlsx.subarray(0, 2).toString("latin1")).toBe("PK");
+    expect(pdf.subarray(0, 4).toString("latin1")).toBe("%PDF");
+    expect(xlsx.length).toBeGreaterThan(10_000);
+    expect(pdf.length).toBeGreaterThan(10_000);
+    expect(
+      libro.worksheets.some((hoja: any) => hoja.rowCount === EXPORT_ROW_LIMIT + 1),
+    ).toBe(true);
+  }, 120_000);
 });
