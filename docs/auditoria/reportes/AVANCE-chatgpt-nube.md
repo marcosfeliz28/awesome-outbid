@@ -2,6 +2,11 @@
 
 Fecha: 2-nov-2026. Rama: `chatgpt-nube/contra-auditoria`.
 
+Actualización 3-nov-2026: MarkItDown 0.1.9 quedó instalado conforme a la
+orden 114. Se verificó en un XLSX temporal de prueba creado localmente: produjo
+una tabla Markdown legible. No se procesaron exportaciones reales ni datos de
+la tienda.
+
 ## Preparación y evidencia inicial
 
 - Se usó exclusivamente PostgreSQL embebido temporal y una API local; no se usó Render, producción, datos reales ni credenciales.
