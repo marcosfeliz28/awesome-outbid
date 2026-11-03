@@ -2263,3 +2263,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (2-nov, 7) — sin órdenes nuevas, CI verde sin orden que lo cite
 - RESPUESTA y OBSIDIAN_LUMINA_PROGRESO sin cambios desde 3296b440. flaky-e2e da702bdd y aud-consolidado c69b10f5 verdes (verify, windows-installer, render-images) pero ninguna orden las cita: LISTA NO escrita; flaky-e2e-final b3fdf492 verify ROJO. pc23, a1, b01 y lumina siguen verdes.
 - Último hash visto de nexora-cloud: 3296b440 (cabeza da702bdd). No desplegar.
+
+## Ciclo nube (3-nov, 1) — orden 114 nueva (nexora-cloud 3b8604c7), no ejecutable desde la nube
+- RESPUESTA cambió (orden 114: instalar MarkItDown en la laptop; es de la laptop, no de este entorno). No instalé nada. OBSIDIAN_LUMINA_PROGRESO sin cambios. Pendiente con 106–113 para la sesión de la laptop.
+- CI: pc23, a1, b01 y lumina siguen verdes; LISTA NO escrita (ninguna orden nueva cita ramas). Último hash visto de nexora-cloud: 3b8604c7 (cabeza 3b8604c7). No desplegar.
