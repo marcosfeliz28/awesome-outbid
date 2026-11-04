@@ -52,6 +52,8 @@ import {
   monedaDeCurso,
   catalogoOpciones,
   valorPesos,
+  approverPin,
+  gvAprobacionDuena,
 } from "./gv-money";
 import { GV_CATALOGO, gvIncentivosMes } from "./gv-incentives";
 
@@ -373,12 +375,22 @@ export class GvController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
+    const { approverPin: pin, ...data } = parse(
       z
-        .object({ courseId: uuid, ...enrollmentFields, ...gvRefundFields })
+        .object({
+          courseId: uuid,
+          ...enrollmentFields,
+          ...gvRefundFields,
+          approverPin,
+        })
         .partial(),
       body,
     );
+    // Devolver dinero lo aprueba la dueña (pendiente de su visto bueno).
+    const approvedBy =
+      data.status === "reembolsada"
+        ? await gvAprobacionDuena(this.db, actor, pin)
+        : null;
     // partial(): lo que no llega queda undefined (sin los valores por defecto
     // del alta) y Prisma no lo cambia.
     const target = data.courseId
@@ -420,7 +432,7 @@ export class GvController {
         "gv_enrollment",
         row.id,
         before,
-        row,
+        approvedBy ? { ...row, approvedBy } : row,
       );
       return row;
     });
@@ -456,11 +468,15 @@ export class GvController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const { reason } = parse(
-      z.object({ reason: z.string().trim().min(3).max(500) }),
+    const { reason, approverPin: pin } = parse(
+      z.object({
+        reason: z.string().trim().min(3).max(500),
+        approverPin,
+      }),
       body,
     );
     const paymentId = parse(uuid, id);
+    const approvedBy = await gvAprobacionDuena(this.db, actor, pin);
     return this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "GvPayment" WHERE id = ${paymentId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
       const before = await tx.gvPayment.findFirst({
@@ -486,15 +502,10 @@ export class GvController {
           rejectReason: "Anulado: " + reason,
         },
       });
-      await audit(
-        tx,
-        actor,
-        "gv_payment_void",
-        "gv_payment",
-        row.id,
-        before,
-        row,
-      );
+      await audit(tx, actor, "gv_payment_void", "gv_payment", row.id, before, {
+        ...row,
+        approvedBy,
+      });
       return row;
     });
   }

@@ -34,6 +34,8 @@ import {
   gvImportPayment,
   gvPaymentInput,
   gvRefundFields,
+  approverPin,
+  gvAprobacionDuena,
   gvTotals,
   lockGvOwner,
   planGvImportPayments,
@@ -412,11 +414,18 @@ export class GvCitasController {
     @CurrentUser() actor: Actor,
   ) {
     // partial(): lo que no llega queda undefined y Prisma no lo cambia.
-    const data = parse(
-      z.object({ ...appointmentFields, ...gvRefundFields }).partial(),
+    const { approverPin: pin, ...data } = parse(
+      z
+        .object({ ...appointmentFields, ...gvRefundFields, approverPin })
+        .partial(),
       body,
     );
     const appointmentId = parse(uuid, id);
+    // Devolver dinero lo aprueba la dueña (pendiente de su visto bueno).
+    const approvedBy =
+      data.status === "reembolsada"
+        ? await gvAprobacionDuena(this.db, actor, pin)
+        : null;
     return this.db.$transaction(async (tx) => {
       const locked = await lockGvOwner(
         tx,
@@ -440,7 +449,7 @@ export class GvCitasController {
         "gv_appointment",
         row.id,
         before,
-        after,
+        approvedBy ? { ...after, approvedBy } : after,
       );
       return appointmentView(row);
     });

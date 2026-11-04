@@ -7,8 +7,9 @@
 // - en la importación, cada pago con su clave, sin mover pagos entre dueñas
 //   ni cambiar pagos ya revisados (GV-10/11/12).
 import { Prisma } from "@prisma/client";
-import { businessDate, d, moneyAmount, z } from "@fitstore/shared";
-import { Actor, audit, bad } from "./common";
+import { businessDate, can, d, moneyAmount, z } from "@fitstore/shared";
+import { Actor, audit, bad, denied } from "./common";
+import { managerPinApproval } from "./security";
 
 export const GV_CONCEPTS = [
   "separo",
@@ -824,4 +825,31 @@ export async function gvUserNames(db: any, ids: string[]) {
     );
   return (id: string | null | undefined) =>
     id ? (names.get(id) ?? "Gerencia") : null;
+}
+
+/** PIN de la dueña en el cuerpo de anular/reembolsar. */
+export const approverPin = z
+  .string()
+  .regex(/^\d{4,6}$/)
+  .optional();
+
+/**
+ * PENDIENTE DE VISTO BUENO DE LA DUEÑA (4-nov): anular o devolver un pago de GV
+ * lo aprueba la dueña («*») con su PIN; ella misma no lo necesita. Devuelve quién aprobó.
+ */
+export async function gvAprobacionDuena(
+  db: any,
+  actor: Actor,
+  pin: string | undefined,
+): Promise<string> {
+  if (can(actor.permissions, "*")) return actor.id;
+  if (!pin) denied("Anular o devolver un pago necesita el PIN de la dueña.");
+  const approver = await managerPinApproval(db, actor, pin);
+  const user = await db.user.findUnique({
+    where: { id: approver },
+    include: { role: true },
+  });
+  if (!can(user?.role.permissions ?? [], "*"))
+    denied("Solo la dueña (administración) aprueba anular o devolver un pago.");
+  return approver;
 }

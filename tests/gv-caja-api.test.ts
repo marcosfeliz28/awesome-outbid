@@ -252,3 +252,57 @@ describe("GV · cupos (pendiente de visto bueno de la dueña)", () => {
     await db.gvCourse.delete({ where: { id: c.id } });
   });
 });
+
+describe("GV · anular y devolver con aprobación de la dueña (pendiente de visto bueno)", () => {
+  it("sin el PIN de la dueña no se anula ni se devuelve; con él, sí", async () => {
+    const e = await enroll();
+    const p = await pay(e.id, 200);
+    const voidPath = "/gv/payments/" + p.body.id + "/void";
+    expect(
+      (await request(voidPath, gv, { reason: "Error de monto" })).status,
+    ).toBe(403);
+    // PIN de una gerente que no es la dueña: tampoco.
+    expect(
+      (
+        await request(voidPath, gv, {
+          reason: "Error de monto",
+          approverPin: "234567",
+        })
+      ).status,
+    ).toBe(403);
+    const ok1 = await ok(voidPath, gv, {
+      reason: "Error de monto",
+      approverPin: "123456",
+    });
+    expect(ok1.rejectedAt).toBeTruthy();
+    // La dueña anula sin PIN; devolver sin PIN también se frena a la vendedora.
+    const p2 = await pay(e.id, 200);
+    expect(
+      (
+        await ok("/gv/payments/" + p2.body.id + "/void", admin, {
+          reason: "Duplicado",
+        })
+      ).rejectedAt,
+    ).toBeTruthy();
+    const p3 = await pay(e.id, 300);
+    const refund = {
+      status: "reembolsada",
+      refundAmount: 300,
+      refundDate: "2026-11-04",
+    };
+    expect(
+      (await request("/gv/enrollments/" + e.id, gv, refund, "PATCH")).status,
+    ).toBe(403);
+    expect(
+      (
+        await request(
+          "/gv/enrollments/" + e.id,
+          gv,
+          { ...refund, approverPin: "123456" },
+          "PATCH",
+        )
+      ).status,
+    ).toBe(200);
+    expect(p3.status).toBe(201);
+  });
+});
