@@ -7,7 +7,7 @@
 // - en la importación, cada pago con su clave, sin mover pagos entre dueñas
 //   ni cambiar pagos ya revisados (GV-10/11/12).
 import { Prisma } from "@prisma/client";
-import { d, moneyAmount, z } from "@fitstore/shared";
+import { businessDate, d, moneyAmount, z } from "@fitstore/shared";
 import { Actor, audit, bad } from "./common";
 
 export const GV_CONCEPTS = [
@@ -380,6 +380,33 @@ export async function lockGvOwner(
 }
 
 /** Alta de un pago con bloqueo, idempotencia y tope de saldo. */
+/** Esperado de una caja GV por método, en pesos (pagos no anulados ni rechazados). */
+export async function gvCajaEsperado(
+  tx: any,
+  sessionId: string,
+): Promise<{
+  efectivo: string;
+  tarjeta: string;
+  transferencia: string;
+  count: number;
+}> {
+  const rows = await tx.gvPayment.findMany({
+    where: { cashSessionId: sessionId, rejectedAt: null },
+    select: { method: true, amount: true, amountDop: true },
+  });
+  const out = { efectivo: d(0), tarjeta: d(0), transferencia: d(0) };
+  for (const r of rows)
+    out[r.method as keyof typeof out] = out[r.method as keyof typeof out].plus(
+      d(r.amountDop ?? r.amount),
+    );
+  return {
+    efectivo: out.efectivo.toFixed(2),
+    tarjeta: out.tarjeta.toFixed(2),
+    transferencia: out.transferencia.toFixed(2),
+    count: rows.length,
+  };
+}
+
 export async function createGvPayment(
   tx: any,
   actor: Actor,
@@ -440,6 +467,21 @@ export async function createGvPayment(
     bad(
       `El pago supera lo pendiente (${moneda} ${Prisma.Decimal.max(0, room).toFixed(2)}, contando lo por verificar).`,
     );
+  // Caja propia de GV: con la caja de un día anterior abierta no se cobra.
+  const cash = await tx.gvCashSession.findFirst({
+    where: { branchId: actor.branchId, closedAt: null },
+    select: { id: true, openedAt: true },
+  });
+  if (cash && businessDate(cash.openedAt) < businessDate(new Date()))
+    bad(
+      "Cierra la caja de GV del día anterior antes de registrar pagos nuevos.",
+    );
+  // Recibo interno numerado con el contador de la sucursal (sin NCF: GV aún no tiene RNC).
+  const counter = await tx.counter.upsert({
+    where: { key: "gvrecibo:" + actor.branchId },
+    create: { key: "gvrecibo:" + actor.branchId, value: 1 },
+    update: { value: { increment: 1 } },
+  });
   // La transferencia queda por verificar; efectivo y tarjeta, verificados.
   const verified = data.method !== "transferencia";
   // El dinero de tarjeta se registra en el área GV, sin elegir cuenta de banco.
@@ -455,6 +497,8 @@ export async function createGvPayment(
       operationId,
       [o.field]: ownerId,
       verified,
+      cashSessionId: cash?.id ?? null,
+      receiptNumber: "GV-" + String(counter.value).padStart(7, "0"),
       ...(verified ? { verifiedBy: actor.id, verifiedAt: new Date() } : {}),
       branchId: actor.branchId,
       createdBy: actor.id,

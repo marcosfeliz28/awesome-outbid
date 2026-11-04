@@ -8,6 +8,7 @@ export default defineConfig({
       "tests/desglose-suma-api.test.ts",
       "tests/pagos-ajustes-api.test.ts",
       "tests/gv-modulo-api.test.ts",
+      "tests/gv-caja-api.test.ts",
       "tests/gv-adversarial-t5-postgres.test.ts",
       "tests/gv-adversarial-independiente.test.ts",
       "tests/gv-citas-api.test.ts",
