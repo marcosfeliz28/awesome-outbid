@@ -209,3 +209,46 @@ describe("GV · caja propia", () => {
     ).toBe(401);
   });
 });
+
+describe("GV · cupos (pendiente de visto bueno de la dueña)", () => {
+  it("no inscribe pasado el cupo y deja volver a cancelar y reinscribir", async () => {
+    const c = await ok("/gv/courses", gv, {
+      name: "QA Cupo " + suffix,
+      type: "otro",
+      date: "2026-11-09",
+      price: 1000,
+      capacity: 1,
+    });
+    const mk = (status?: string) =>
+      request("/gv/enrollments", gv, {
+        operationId: opId(),
+        courseId: c.id,
+        clientName: "Cupo " + suffix,
+        agreedPrice: 1000,
+        ...(status ? { status } : {}),
+      });
+    const first = await mk();
+    expect(first.status).toBe(201);
+    const second = await mk();
+    expect(second.status).toBe(400);
+    expect(JSON.stringify(second.body)).toContain("lleno");
+    // Cancelar libera el lugar; reactivar con el curso lleno otra vez se frena.
+    await ok(
+      "/gv/enrollments/" + first.body.id,
+      gv,
+      { status: "cancelada" },
+      "PATCH",
+    );
+    const third = await mk();
+    expect(third.status).toBe(201);
+    const back = await request(
+      "/gv/enrollments/" + first.body.id,
+      gv,
+      { status: "activa" },
+      "PATCH",
+    );
+    expect(back.status).toBe(400);
+    await db.gvEnrollment.deleteMany({ where: { courseId: c.id } });
+    await db.gvCourse.delete({ where: { id: c.id } });
+  });
+});

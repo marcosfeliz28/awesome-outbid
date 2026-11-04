@@ -104,6 +104,19 @@ const enrollmentFields = {
 // Ocupan cupo las inscritas que no cancelaron ni pasaron a personalizado.
 const OCCUPIES = new Set(["activa", "no_asistio"]);
 
+// PENDIENTE DE VISTO BUENO DE LA DUEÑA (4-nov): no se inscribe pasado el cupo.
+// Solo frena inscripciones nuevas o que ocupan un lugar más; lo ya inscrito no cambia.
+async function assertCupo(tx: any, courseId: string, branchId: string) {
+  const [course] = await tx.$queryRaw<
+    { capacity: number }[]
+  >`SELECT capacity FROM "GvCourse" WHERE id = ${courseId}::uuid AND "branchId" = ${branchId} FOR UPDATE`;
+  const used = await tx.gvEnrollment.count({
+    where: { courseId, status: { in: [...OCCUPIES] } },
+  });
+  if (course && used >= course.capacity)
+    bad(`El curso está lleno (${used} de ${course.capacity} cupos).`);
+}
+
 const importSchema = z.object({
   courses: z
     .array(
@@ -329,6 +342,8 @@ export class GvController {
           bad("La clave de la operación ya corresponde a otra inscripción.");
         return existing;
       }
+      if (OCCUPIES.has(data.status))
+        await assertCupo(tx, courseId, actor.branchId);
       const row = await tx.gvEnrollment.create({
         data: {
           ...data,
@@ -379,6 +394,14 @@ export class GvController {
       );
       const { payments: _p, ...before } = locked;
       void _p;
+      // Subir la ocupación (otro curso, o volver de cancelada/personalizada).
+      const next = data.status ?? before.status;
+      const nextCourse = data.courseId ?? before.courseId;
+      if (
+        OCCUPIES.has(next) &&
+        (nextCourse !== before.courseId || !OCCUPIES.has(before.status))
+      )
+        await assertCupo(tx, nextCourse, actor.branchId);
       // Pasarla a otra fecha: el curso nuevo se cobra en la misma moneda que el actual
       // (los pagos ya registrados no se convierten).
       if (
