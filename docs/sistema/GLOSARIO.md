@@ -52,7 +52,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Fondo / «Efectivo inicial»** — Dinero con el que se abre la caja (`apps/web/src/Management.tsx:2023`).
 
-**Génesis / Macgen** — Nombres de las dos empresas/grupos de cuentas bancarias. En GV, las cuentas se agrupan «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis» (`apps/api/src/gv-money.ts:163-175`). Los cobros de GV caen en cuentas de Génesis (`docs/coordinacion/MODULO-GV.md:3`).
+**Génesis / Macgen** — Nombres de las dos empresas/grupos de cuentas bancarias. En GV, las cuentas se agrupan «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis» (`apps/api/src/gv-money.ts:164-176`). Los cobros de GV caen en cuentas de Génesis (`docs/coordinacion/MODULO-GV.md:3`).
 
 **Grupo MacGen** — La empresa dueña de la tienda: suplementos, fajas, tenis y ropa deportiva, accesorios de gym y maquillaje (`apps/web/src/App.tsx:284-312`, `:349`).
 
@@ -86,7 +86,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Recepción** — Registro de lo que llegó de una orden de compra o factura (`GoodsReceipt`) (`apps/web/src/Purchases.tsx:338-453`).
 
-**Reembolsada (GV)** — Estado final de una inscripción o cita: se devolvió dinero; exige monto y fecha y se resta de los ingresos (`apps/web/src/Gv.tsx:669-678`).
+**Reembolsada (GV)** — Estado final de una inscripción o cita: se devolvió dinero; exige monto y fecha y se resta de los ingresos (`apps/web/src/Gv.tsx:690-699`).
 
 **RNC** — Registro Nacional del Contribuyente (identificación de empresa). Campo `legalId` de cliente, proveedor y del negocio (`apps/api/prisma/schema.prisma:292-300`).
 

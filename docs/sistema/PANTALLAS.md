@@ -25,7 +25,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 15  | **Reportes**                 | `reports:read`     | `Reports` (`apps/web/src/Management.tsx:2842`)                          | 271                |
 | 16  | **Alertas**                  | `alerts:write`     | `Alerts` (`apps/web/src/Management.tsx:3063`)                           | 275                |
 | 17  | **Incentivos**               | `sale:manage`      | `IncentivesPage` (`apps/web/src/Incentives.tsx:287`)                    | 278                |
-| 18  | **GV Makeup Studio**         | `gv:read`          | `Gv` (`apps/web/src/Gv.tsx:111`)                                        | 282                |
+| 18  | **GV Makeup Studio**         | `gv:read`          | `Gv` (`apps/web/src/Gv.tsx:112`)                                        | 282                |
 
 Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1018-1048`):
 
@@ -132,8 +132,8 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1018-1048`):
 
 ## GV Makeup Studio
 
-- **Etiqueta:** «GV Makeup Studio». **Permiso:** `gv:read`. **Componente:** `Gv`, `apps/web/src/Gv.tsx:111`. Título en pantalla: «Cursos y cobros» (`:122`).
-- **Pestañas internas:** «Cursos», «Citas», «Interesadas», «Por verificar» y «Reportes» (esta última solo con `gv:reports`) (`apps/web/src/Gv.tsx:129-174`).
+- **Etiqueta:** «GV Makeup Studio». **Permiso:** `gv:read`. **Componente:** `Gv`, `apps/web/src/Gv.tsx:112`. Título en pantalla: «Cursos y cobros» (`:122`).
+- **Pestañas internas:** «Cursos», «Citas», «Interesadas», «Por verificar» y «Reportes» (esta última solo con `gv:reports`) (`apps/web/src/Gv.tsx:130-175`).
 - Detalle completo: `GV.md`.
 
 ## Configuración (lo que el equipo llama «gestión»)

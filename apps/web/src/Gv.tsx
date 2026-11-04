@@ -8,6 +8,7 @@ import { api, post, useStore } from "./api";
 import { QueryState, toast } from "./helpers";
 import { GvAppointments, GV_TERMINAL, paymentBank } from "./GvCitas";
 import { GvLeads } from "./GvInteresadas";
+import { GvCaja } from "./GvCaja";
 import "./gv.css";
 
 type Payment = {
@@ -111,7 +112,7 @@ function Options({ map }: { map: Record<string, string> }) {
 export function Gv() {
   const user = useStore((s) => s.user)!;
   const [tab, setTab] = useState<
-    "courses" | "appointments" | "leads" | "transfers" | "reports"
+    "courses" | "appointments" | "leads" | "transfers" | "cash" | "reports"
   >("courses");
   const [courseId, setCourseId] = useState<string | null>(null);
   return (
@@ -162,6 +163,14 @@ export function Gv() {
         >
           Por verificar
         </button>
+        <button
+          role="tab"
+          aria-selected={tab === "cash"}
+          className={tab === "cash" ? "active" : ""}
+          onClick={() => setTab("cash")}
+        >
+          Caja GV
+        </button>
         {can(user.permissions, "gv:reports") && (
           <button
             role="tab"
@@ -182,6 +191,7 @@ export function Gv() {
       {tab === "appointments" && <GvAppointments />}
       {tab === "leads" && <GvLeads />}
       {tab === "transfers" && <Transfers />}
+      {tab === "cash" && <GvCaja />}
       {tab === "reports" && <Reports />}
     </section>
   );
@@ -526,6 +536,7 @@ function EnrollmentForm({
     boughtBrushSet: enrollment?.boughtBrushSet ?? false,
     note: enrollment?.note ?? "",
     refundAmount: "",
+    approverPin: "",
     refundDate: businessDate(),
   });
   // «Reembolsada» se registra una vez, con monto y fecha (GV-13).
@@ -540,7 +551,13 @@ function EnrollmentForm({
     setBusy(true);
     setError("");
     try {
-      const { refundAmount, refundDate, courseId: newCourseId, ...rest } = form;
+      const {
+        refundAmount,
+        refundDate,
+        approverPin,
+        courseId: newCourseId,
+        ...rest
+      } = form;
       const data = {
         ...rest,
         ...(enrollment && newCourseId !== courseId
@@ -549,7 +566,11 @@ function EnrollmentForm({
         agreedPrice: Number(form.agreedPrice),
         attended: form.attended === "" ? null : form.attended === "true",
         ...(refunding
-          ? { refundAmount: Number(refundAmount), refundDate }
+          ? {
+              refundAmount: Number(refundAmount),
+              refundDate,
+              ...(approverPin ? { approverPin } : {}),
+            }
           : {}),
       };
       if (enrollment)
@@ -683,6 +704,17 @@ function EnrollmentForm({
                 onChange={(e) => set("refundDate", e.target.value)}
               />
             </label>
+            <label className="field">
+              <span>PIN de la dueña (aprueba la devolución)</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={6}
+                value={form.approverPin}
+                onChange={(e) => set("approverPin", e.target.value)}
+              />
+            </label>
           </>
         )}
         {enrollment && <PaymentList enrollment={enrollment} />}
@@ -710,8 +742,12 @@ function PaymentList({ enrollment }: { enrollment: Enrollment }) {
   const voidPayment = async (p: Payment) => {
     const reason = prompt("¿Por qué se anula este pago?");
     if (!reason || reason.trim().length < 3) return;
+    // Anular lo aprueba la dueña: ella misma no necesita PIN.
+    const approverPin = can(user?.permissions ?? [], "*")
+      ? undefined
+      : prompt("PIN de la dueña para aprobar la anulación") || undefined;
     try {
-      await post("/gv/payments/" + p.id + "/void", { reason });
+      await post("/gv/payments/" + p.id + "/void", { reason, approverPin });
       toast("Pago anulado.");
       await client.invalidateQueries({ queryKey: ["gv-course"] });
       await client.invalidateQueries({ queryKey: ["gv-courses"] });
