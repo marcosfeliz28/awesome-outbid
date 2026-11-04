@@ -1,6 +1,6 @@
 # Resultados · control de la vendedora de GV (orden 4-nov)
 
-Rama `claude-pc/gv-control-vendedora`. SHA: ver el último commit de la rama. CI (`verify`, `windows-installer`, `render-images`): se anota abajo al terminar.
+Rama `claude-pc/gv-control-vendedora`. SHA del código: `5821224`. CI en ese SHA: `verify`, `windows-installer` y `render-images` en verde (run 41873692482). El commit siguiente solo cambia esta nota.
 
 ## Qué se hizo
 
