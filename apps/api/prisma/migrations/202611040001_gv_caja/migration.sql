@@ -1,7 +1,7 @@
 -- GV: caja propia (opción B, orden 106/4-nov). Solo aditiva: tabla nueva y dos
 -- columnas nulas en GvPayment. No toca CashSession ni nada de MacGen.
 CREATE TABLE IF NOT EXISTS "GvCashSession" (
-  "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+  "id" UUID NOT NULL,
   "branchId" TEXT NOT NULL DEFAULT 'main',
   "userId" TEXT NOT NULL,
   "openingAmount" DECIMAL(14,2) NOT NULL,
