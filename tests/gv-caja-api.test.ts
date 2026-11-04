@@ -306,3 +306,28 @@ describe("GV · anular y devolver con aprobación de la dueña (pendiente de vis
     expect(p3.status).toBe(201);
   });
 });
+
+describe("GV · alertas (pendiente de visto bueno)", () => {
+  it("avisa del abono de más de 15 días con saldo y no del reciente", async () => {
+    const old = await enroll();
+    const fresh = await enroll();
+    const dayAgo = (n: number) =>
+      new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+    const payOn = (id: string, date: string) =>
+      ok("/gv/payments", gv, {
+        operationId: opId(),
+        enrollmentId: id,
+        date,
+        amount: 500,
+        concept: "separo",
+        method: "efectivo",
+      });
+    await payOn(old.id, dayAgo(20));
+    await payOn(fresh.id, dayAgo(3));
+    const a = await ok("/gv/alerts", gv);
+    const ids = a.staleBalances.map((x: any) => x.enrollmentId);
+    expect(ids).toContain(old.id);
+    expect(ids).not.toContain(fresh.id);
+    expect(a.cashOverdue).toBe(false);
+  });
+});

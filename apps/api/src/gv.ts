@@ -15,7 +15,7 @@ import {
 } from "@nestjs/common";
 import type { Response } from "express";
 import { Prisma } from "@prisma/client";
-import { can, d, z } from "@fitstore/shared";
+import { businessDate, can, d, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -890,6 +890,49 @@ export class GvController {
         total: p.total.toFixed(2),
         count: p.count,
       })),
+    };
+  }
+
+  // PENDIENTE DE VISTO BUENO DE LA DUEÑA (4-nov): avisos de GV. Abono viejo =
+  // inscripción activa con saldo cuyo último pago válido tiene más de 15 días.
+  @Get("alerts")
+  @Permit("gv:read")
+  async gvAlerts(@CurrentUser() actor: Actor) {
+    const today = Date.parse(businessDate(new Date()) + "T00:00:00Z");
+    const rows = await this.db.gvEnrollment.findMany({
+      where: { branchId: actor.branchId, status: { in: [...OCCUPIES] } },
+      include: {
+        course: { select: { name: true } },
+        payments: { where: { rejectedAt: null } },
+      },
+    });
+    const staleBalances = rows
+      .filter((e) => e.payments.length > 0)
+      .map((e) => {
+        const last = Math.max(...e.payments.map((p) => p.date.getTime()));
+        const t = gvTotals(
+          e.agreedPrice,
+          e.payments,
+          e,
+          monedaDeCurso(e.course.name),
+        );
+        return {
+          enrollmentId: e.id,
+          clientName: e.clientName,
+          course: e.course.name,
+          pending: t.pending,
+          daysSinceLastPayment: Math.floor((today - last) / 86400000),
+        };
+      })
+      .filter((x) => d(x.pending).gt(0) && x.daysSinceLastPayment > 15)
+      .sort((a, b) => b.daysSinceLastPayment - a.daysSinceLastPayment);
+    const open = await this.db.gvCashSession.findFirst({
+      where: { branchId: actor.branchId, closedAt: null },
+    });
+    return {
+      staleBalances,
+      cashOverdue:
+        !!open && businessDate(open.openedAt) < businessDate(new Date()),
     };
   }
 
