@@ -71,7 +71,7 @@ Leyenda: SÍ = confirmado con banco, voucher o la dueña. PENDIENTE = falta dato
 | 6 | Cobro FS-420 Neuroby, 2,200 (+350 envío) | SÍ | Transferencia Popular ···3620 ref 611040510; verificada |
 | 7 | Tarjeta 4-nov +6,350 | SÍ (explicada, queda +550 = envíos de Addison) | Lote 159: 3,500 (FS-415) + 2,850 (FS-413) |
 | 8 | Voucher 2,850 del lote 159 = FS-413 romana del ober (2,500 + 350) | SÍ (confirmado por la dueña 5-nov) | Cobro registrado y pasado a la caja de Wendy 4-nov; tarjeta +550 = envíos de Addison |
-| 9 | Cobro FS-425 Conny Musulla, 2,550 (2,200 + 350) tarjeta, lote 160 del 5-nov | SÍ (cobro confirmado por la dueña), PENDIENTE de registrar | Falta voucher individual (aprobación y últimos 4) o que Wendy lo registre en su caja abierta 8d2c2810 |
+| 9 | Cobro FS-425 Conny Musulla, 2,550 (2,200 + 350) tarjeta, lote 160 | SÍ (5-nov) | Voucher: 4-nov 7:12 p. m., ···7988, aprob. 040429, ref 000832; registrado y pasado a la caja de Wendy del 5-nov (queda +350 = envío Addison) |
 | 10 | Efectivo −50 (2-nov), −10 (3-nov), +10 (4-nov) | PENDIENTE | Wendy explica |
 | 11 | FS-404 heanny ortiz 3,950 (depósito a nombre de Yeraldina Monegro, ref 243390492270) | SÍ (5-nov) | Verificada: el depósito de 3,950 era la única transferencia sin factura del 3-nov y coincide en monto y banco |
 | 12 | FS-408 melsi medrano 1,450 (Banreservas Génesis) | SÍ por orden de la dueña (5-nov: «el 3 dalo como válido») | Verificada sin extracto de Génesis; sin comprobante propio |
@@ -125,3 +125,6 @@ Decidida por la dueña («haz lo que sea mejor para nosotros»): Wendy se maneja
 3. **Envío aparte.** El envío de Addison cobrado con el cliente no entra en la factura; se anota para pagarle a fin de semana.
 4. **Cierre diario completo.** Al cerrar: efectivo contado, cierre del lote del terminal (foto del voucher de totales) y transferencias con su comprobante. Claude cuadra cada día y escribe la explicación de cada diferencia.
 5. **Las dos por igual.** Misma regla para Lizbeth; la revisión empieza por Lizbeth y sigue con Wendy.
+
+### Cierre de Wendy, 5-nov
+Efectivo +6 (sin explicar). Tarjeta +350 = envío Addison del cobro FS-425 (el +2,550 del cierre era ese cobro sin registrar). Ventas del día: 4 transferencias de 3,000 (FS-435 Banreservas MacGen, FS-438 y FS-440 Popular Génesis ···9797, FS-441 BHD) **pendientes de verificar con extracto**; FS-438 y FS-440 pueden tener el banco mal marcado (como FS-417, que cayó en Popular ···3620). Contraentrega FS-433 Manuel Suriel 5,900 sin cobrar.
