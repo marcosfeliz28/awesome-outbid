@@ -245,6 +245,7 @@ function AppointmentForm({
     venue: a?.venue ?? "",
     people: a?.people ? String(a.people) : "",
     refundAmount: "",
+    approverPin: "",
     refundDate: businessDate(),
   });
   // «Reembolsada» se registra una vez, con monto y fecha (GV-13).
@@ -260,11 +261,15 @@ function AppointmentForm({
     setError("");
     try {
       const wedding = form.service === "boda";
-      const { refundAmount, refundDate, ...rest } = form;
+      const { refundAmount, refundDate, approverPin, ...rest } = form;
       const data = {
         ...rest,
         ...(refunding
-          ? { refundAmount: Number(refundAmount), refundDate }
+          ? {
+              refundAmount: Number(refundAmount),
+              refundDate,
+              ...(approverPin ? { approverPin } : {}),
+            }
           : {}),
         date: fromLocalInput(form.date),
         total: Number(form.total),
@@ -388,6 +393,17 @@ function AppointmentForm({
                 required
                 value={form.refundDate}
                 onChange={(e) => set("refundDate", e.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>PIN de la dueña (aprueba la devolución)</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={6}
+                value={form.approverPin}
+                onChange={(e) => set("approverPin", e.target.value)}
               />
             </label>
           </>

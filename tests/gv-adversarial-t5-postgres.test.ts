@@ -410,7 +410,10 @@ describe("T5 · permisos y estados cerrados", () => {
         name: `T5 Cerrada ${status} ${marker}`,
       });
       const enrollment = await createEnrollment(course.id);
-      const closing: Record<string, unknown> = { status };
+      const closing: Record<string, unknown> = {
+        status,
+        approverPin: "123456",
+      };
       if (status === "reembolsada") {
         expectStatus(
           await request(
@@ -445,7 +448,10 @@ describe("T5 · permisos y estados cerrados", () => {
         await request("/gv/appointments", gv, appointmentBody()),
         201,
       );
-      const closing: Record<string, unknown> = { status };
+      const closing: Record<string, unknown> = {
+        status,
+        approverPin: "123456",
+      };
       if (status === "reembolsada") {
         expectStatus(
           await request(`/gv/appointments/${appointment.id}/payments`, gv, {

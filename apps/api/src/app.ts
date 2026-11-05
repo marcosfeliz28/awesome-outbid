@@ -44,6 +44,7 @@ import {
 import { SecurityMaintenance } from "./security";
 import { GvController } from "./gv";
 import { GvCitasController } from "./gv-citas";
+import { GvCajaController } from "./gv-caja";
 
 @Controller()
 export class HealthController {
@@ -94,6 +95,7 @@ export function createAppModule(secret: string) {
       DriveBackupController,
       GvController,
       GvCitasController,
+      GvCajaController,
     ],
     providers: [
       Database,
