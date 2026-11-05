@@ -12,4 +12,4 @@
 4. Dominio `norexos.net` (DNS/publicación: no tocado, ver `docs/venta/PUBLICAR_LANDING_NOREXOS_NET.md`).
 
 ## SHA y CI
-Ver abajo (se completa tras el push).
+Código verificado: `881f6a5`. Run 41969507184 en verde: `verify`, `windows-installer` y `render-images` (todos en ese SHA). Este commit de la nota solo cambia docs.
