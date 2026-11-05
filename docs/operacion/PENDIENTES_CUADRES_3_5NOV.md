@@ -19,9 +19,9 @@ Guardado por Norexos 2 (Mercancía) por orden de la dueña, 5-nov. Datos leídos
 - Posible pago duplicado en GV: dos de 2,000 con la misma referencia 611020917 (Popular Génesis ···9797, 2-nov).
 
 ## Depósitos del banco sin factura
-- Miguel Antonio Gómez 8,350 (Banreservas, 4-nov).
-- Eudomar Espino 2,955 (Banreservas, cayó el 2-nov).
-- TPAGO 3,000 (Popular, 2-nov). Víctor Francisco de Oleo 90,300: la dueña dijo que cayó; sin factura.
+- Miguel Antonio Gómez 8,350 (Banreservas, 4-nov): la dueña lo está revisando.
+- TPAGO 3,000 (Popular, 2-nov).
+- Descartados 5-nov: Víctor Francisco de Oleo 90,300 (manejo interno) y Eudomar Espino 2,955 (seguro de Génesis).
 - Débito Banreservas de 9,085 (3-nov): sin identificar.
 
 ## Pagos de GV que no están registrados en ningún lado
@@ -48,10 +48,10 @@ Anotado por orden de la dueña, 5-nov. Trabajo para la dueña y las cajeras.
 | Mayelin Presinal, reserva Brazilian 22-nov (Banreservas ···5853, ref 243398889606) | 6,000 | Clary registra en GV |
 | Paola Sánchez, curso 29-nov (BHD Génesis ···0015) | 2,000 | Clary registra en GV |
 | Depósito de Miguel Antonio Gómez, Banreservas 4-nov | 8,350 | Dueña: de quién es |
-| Depósito de Eudomar Espino, Banreservas 2-nov | 2,955 | Dueña: de quién es |
 | Depósito TPAGO, Popular 2-nov | 3,000 | Dueña: de quién es |
-| Depósito de Víctor Francisco de Oleo | 90,300 | Dueña: ya dijo que cayó; falta decir a qué factura o cuenta corresponde |
-| **Total sin factura o sin registrar** | **119,605** | |
+| **Total sin factura o sin registrar** | **26,350** | |
+
+Descartados por la dueña el 5-nov: depósito de Víctor Francisco de Oleo (90,300, se manejó interno) y de Eudomar Espino (2,955, paga un seguro a Génesis que ayudamos).
 
 Sin explicar, aparte del total: tarjeta de Wendy 4-nov 2,850 (posible FS-425, falta voucher); tarjeta de Lizbeth 4-nov 700; efectivo de Wendy 2-nov −50; envío de la FS-416 (450 en sistema, 1,050 real).
 Contraentregas abiertas hoy: FS-413 2,500, FS-414 1,200, FS-425 2,200, FS-427 6,200 = 12,100 (más 350 de envío en FS-425 y FS-427).
