@@ -88,7 +88,8 @@ Leyenda: SÍ = confirmado con banco, voucher o la dueña. PENDIENTE = falta dato
 | 4 | Tarjeta 4-nov +3,200: 2,500 cobro del terminal GV sin factura (5:03 y 5:06 p. m.) | PENDIENTE | Traer los 2 vouchers; facturar o confirmar duplicado |
 | 5 | Tarjeta 4-nov: 700 más de lo que muestra el lote 006 | PENDIENTE | Sin explicación |
 | 6 | Efectivo +50 y tarjeta +100 del 3-nov | PENDIENTE | Explicar |
-| 7 | Contraentregas FS-413 (2,500) y FS-414 (1,200) | PENDIENTE | Sin cobrar en sistema |
+| 7 | Contraentrega FS-413 (2,500) | SÍ (5-nov) | Lizbeth confirmó por WhatsApp: entregó a Ramona (romana del ober) y se cobró con tarjeta; cobro registrado (2,500 + 350 de envío = voucher 2,850 lote 159). Falta que confirme que fue en el verifón de Wendy |
+| 8 | Contraentrega FS-414 bomboshell (1,200) | PENDIENTE | Sin cobrar en sistema |
 
 ### Descartados por la dueña (5-nov)
 Depósito de Víctor Francisco de Oleo (90,300, manejo interno) y de Eudomar Espino (2,955, seguro de Génesis).
