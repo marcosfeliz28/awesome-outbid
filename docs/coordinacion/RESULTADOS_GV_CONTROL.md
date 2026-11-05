@@ -29,7 +29,7 @@ Prueba nueva `tests/gv-caja-api.test.ts` (PostgreSQL real, API real): falla ante
 
 # Resultados · Clary cierra caja todos los días (orden 5-nov)
 
-Rama `claude-pc/gv-exigir-cierre` (base `nexora-cloud` 5-nov). SHA y CI: ver abajo (se llenan al terminar la CI).
+Rama `claude-pc/gv-exigir-cierre` (base `nexora-cloud` 5-nov, `cc3bc69`). SHA del código: `119e136`. CI en ese SHA: `verify`, `windows-installer` y `render-images` en verde (run 42061052236). El commit siguiente solo cambia esta nota. Un primer intento (`5b8c262`) falló solo por la prueba adversaria de GV, que cobraba sin caja ni foto; corregida.
 
 ## Qué se hizo (un commit por punto)
 
