@@ -243,4 +243,34 @@ describe("motor de exportación de reportes", () => {
       expect(xlsx.subarray(0, 2).toString("latin1"), nombre).toBe("PK");
     }
   });
+
+  it("reportes de Ventas: fila de total, sin sumar «Facturas» por marca/categoría", () => {
+    const m = (nombre: string) =>
+      construirModelo({
+        nombre,
+        guia: GUIA_REPORTES[nombre],
+        presentacion: PRESENTACION[nombre],
+        titulo: nombre,
+        filas: [
+          { Marca: "A", Facturas: 2, Unidades: 3, "Ventas netas": 100 },
+          { Marca: "B", Facturas: 2, Unidades: 4, "Ventas netas": 50 },
+        ] as any,
+        negocio: "T",
+        desde: "2026-10-01",
+        hasta: "2026-10-31",
+        generadoPor: "Ana",
+        emitido: "1 de noviembre de 2026",
+      }).secciones[0].totales;
+    expect(m("ventas-por-marca")).toEqual({ Unidades: 7, "Ventas netas": 150 });
+    expect(m("ventas-categoria-mes")).toEqual({
+      Unidades: 7,
+      "Ventas netas": 150,
+    });
+    expect(m("ranking-cajeras")).toMatchObject({ Facturas: 4 });
+    expect(m("ventas-por-hora")).toEqual({ Facturas: 4, "Ventas netas": 150 });
+    expect(
+      GUIA_REPORTES["ventas-por-marca"].columnas.Facturas.significa,
+    ).toMatch(/no se suma/);
+    expect(GUIA_REPORTES["ventas-mes-anterior"].comoSeLee).toMatch(/Desde/);
+  });
 });

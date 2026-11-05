@@ -122,7 +122,9 @@ export const ventas: Record<string, ReportDef> = {
         await db.$queryRaw`${sales(actor, range)} SELECT month, day, COUNT(*)::int AS invoices, SUM(net) AS net FROM (SELECT to_char(${AT}, 'YYYY-MM') AS month, to_char(${AT}, 'YYYY-MM-DD') AS day, net FROM f) x GROUP BY GROUPING SETS ((month), (month, day)) ORDER BY month, day NULLS LAST`;
       return rows.map((r) => ({
         Tipo: r.day ? "Día" : "Mes",
-        Período: r.day ?? monthName(r.month),
+        Período: r.day
+          ? r.day.split("-").reverse().join("/")
+          : monthName(r.month),
         Facturas: r.invoices,
         "Ventas netas": num(r.net),
         "Ticket promedio": ticket(r.net, r.invoices),
