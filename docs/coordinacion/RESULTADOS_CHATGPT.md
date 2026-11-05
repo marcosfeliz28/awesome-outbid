@@ -146,6 +146,14 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - Qué pasó (pruebas que pasan y que fallan, con el texto exacto del error):
 - Qué falta o necesita decisión de la dueña:
 
+## 2026-11-05 · ChatGPT NUBE · `chatgpt-nube/contra-auditoria` · `72e5cf2f`
+
+- Qué hice: integré el consolidado `HALLAZGOS_TOTAL.jsonl` y dejé la matriz de
+  contra-auditoría en `docs/auditoria/reportes/CONTRA_AUDITORIA_CHATGPT_NUBE.md`.
+  No se cambiaron cálculos, caja, cobros, inventario ni datos reales.
+- Qué pasó: `pnpm exec vitest run tests/reportes-export.test.ts tests/gv-reportes-export.test.ts tests/reportes-export-ui.test.ts tests/reports-memory-postgres.test.ts` pasó: **17/17**. Incluye PostgreSQL embebido, exportación de 20.000 filas y reapertura del XLSX. MarkItDown 0.1.9 convirtió correctamente un XLSX temporal local; no procesó exportaciones de tienda.
+- Autoauditoría y límites: se confirmó que las devoluciones en los reportes de Dinero usan `SaleReturn.createdAt`, distinto a opción A; el porcentaje de descuentos usa venta neta; y entradas por cuenta incluye abonos. Son decisiones de dinero de la dueña, por lo que no se modificaron. El 404 histórico del exportador no se reprodujo localmente; requiere verificación visual/autorizada. Falta QA visual de los 43 reportes y medición de memoria del proceso. No se desplegó.
+
 ## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · `ac3ba19`…`6634a1a`
 
 - **Qué hice:** pantalla «Conciliar transferencias» visible solo para administración. Endpoint de lectura `GET /payments/pending-transfers` con permiso `sale:manage`, filtrado por sucursal y fecha de República Dominicana. Agrupa BHD, Popular, Banreservas y otros; muestra factura, cliente, cajera, monto y referencia. Selección múltiple, total por banco, diferencia, verificación secuencial usando el endpoint existente y resultado por pago; rechazo con motivo mediante el endpoint existente. CSV con protección contra fórmulas. Corregí la prueba para usar la fecha real del pago (`9d5757c`) y el reinicio de totales al cambiar de fecha (`3ebd886`). No cambié `verify`, `reject`, importes, inventario ni producción.
