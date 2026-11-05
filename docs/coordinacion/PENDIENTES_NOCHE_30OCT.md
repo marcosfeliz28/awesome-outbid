@@ -104,3 +104,8 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Defaults que la dueña puede cambiar: cobrar SIN caja GV abierta sigue permitido; reembolsos en efectivo aún no restan de la caja GV.
 - Landing norexos.net lista en su rama (881f6a5, CI verde), sin publicar: faltan planes/precios, buzón, destino app, dominio.
 - Levantamiento solo lectura: 82 transferencias sin verificar (RD$ 331,030), 561 productos bajo mínimo, 16 créditos por antigüedad, 37 descuadres, 6 ventas con margen bajo; 0 cajas abiertas salvo la de la dueña.
+
+## 5-nov 11:36 UTC · DESPLEGADO reportes de Ventas (0a17101b; API 11:25, web 11:35)
+- Solo exportación/texto: fila de total en PDF/Excel, fecha legible, «Facturas que la incluyen». Sin cambios de cifras. 3 CI verdes en el SHA; N2 sin cobros en curso (10:39 UTC). Verificado: health ok, logs vacíos, PDF de ventas-por-marca 200 con fila de total.
+- HALLAZGOS_TOTAL.jsonl y RESUMEN.md ya en docs/auditoria/reportes/: listos para la contra-auditoría de ChatGPT PC/nube.
+- Producción = 0a17101b (+ docs posteriores). Pendientes de la dueña sin cambio.
