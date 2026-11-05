@@ -117,3 +117,11 @@ Anotado por orden de la dueña, 5-nov.
   - FS-430: posible +100 (pagó 6,300 contra 6,200 de factura + envío).
   - Anteriores sin identificar: 550 (inmaru 300, Maderly/gran 250) y Wilmer 150.
 - Los envíos cobrados con el cliente por tarjeta o transferencia no son ingreso de la tienda: se entregan a Addison.
+
+## Regla de caja para Wendy y Lizbeth (desde el 5-nov)
+Decidida por la dueña («haz lo que sea mejor para nosotros»): Wendy se maneja igual que las demás cajas.
+1. **Cobros en su propia caja.** Todo cobro de contraentrega, crédito o abono (efectivo, tarjeta o transferencia) lo registra la cajera en SU caja abierta, el mismo día. Ya no pasan por cajas temporales de Claude.
+2. **Tarjeta con datos reales.** En cada cobro con tarjeta: últimos 4 dígitos y aprobación del voucher, no «1111».
+3. **Envío aparte.** El envío de Addison cobrado con el cliente no entra en la factura; se anota para pagarle a fin de semana.
+4. **Cierre diario completo.** Al cerrar: efectivo contado, cierre del lote del terminal (foto del voucher de totales) y transferencias con su comprobante. Claude cuadra cada día y escribe la explicación de cada diferencia.
+5. **Las dos por igual.** Misma regla para Lizbeth; la revisión empieza por Lizbeth y sigue con Wendy.
