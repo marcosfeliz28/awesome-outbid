@@ -72,6 +72,8 @@ async function seedGvFlow(
     },
   );
   const gv = { Authorization: "Bearer " + changed.accessToken };
+  // Cobrar exige caja GV abierta.
+  await apiPost(request, "/gv/cash/open", gv, { openingAmount: 0 });
 
   const courseName = "Curso E2E " + suffix;
   const course = await apiPost(request, "/gv/courses", gv, {

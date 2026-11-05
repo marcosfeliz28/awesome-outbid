@@ -198,7 +198,41 @@ describe("GV · caja propia", () => {
       countedCard: 0,
       countedTransfer: 0,
     });
+    // Ya cerrada, sin caja abierta tampoco se cobra: se abre una nueva.
+    expect((await pay(e.id, 100)).status).toBe(400);
+    await ok("/gv/cash/open", gv, { openingAmount: 0 });
     expect((await pay(e.id, 100)).status).toBe(201);
+    await ok("/gv/cash/close", gv, {
+      countedCash: 100,
+      countedCard: 0,
+      countedTransfer: 0,
+    });
+  });
+
+  it("cobrar exige caja abierta: 400 para el rol gv; la dueña solo con motivo", async () => {
+    const e = await enroll();
+    const r = await pay(e.id, 100);
+    expect(r.status).toBe(400);
+    expect(JSON.stringify(r.body)).toContain(
+      "Abre tu caja de GV antes de cobrar",
+    );
+    const body = (extra = {}) => ({
+      operationId: opId(),
+      enrollmentId: e.id,
+      date: "2026-11-05",
+      amount: 100,
+      concept: "separo",
+      method: "efectivo",
+      ...extra,
+    });
+    expect((await request("/gv/payments", admin, body())).status).toBe(400);
+    const owner = await request(
+      "/gv/payments",
+      admin,
+      body({ cashlessReason: "Cobro en casa de la clienta" }),
+    );
+    expect(owner.status).toBe(201);
+    expect(owner.body.cashSessionId).toBeNull();
   });
 
   it("la caja de GV no aparece en la caja de MacGen y exige permisos", async () => {
@@ -255,6 +289,7 @@ describe("GV · cupos (pendiente de visto bueno de la dueña)", () => {
 
 describe("GV · anular y devolver con aprobación de la dueña (pendiente de visto bueno)", () => {
   it("sin el PIN de la dueña no se anula ni se devuelve; con él, sí", async () => {
+    await ok("/gv/cash/open", gv, { openingAmount: 0 });
     const e = await enroll();
     const p = await pay(e.id, 200);
     const voidPath = "/gv/payments/" + p.body.id + "/void";
@@ -309,6 +344,7 @@ describe("GV · anular y devolver con aprobación de la dueña (pendiente de vis
 
 describe("GV · alertas (pendiente de visto bueno)", () => {
   it("avisa del abono de más de 15 días con saldo y no del reciente", async () => {
+    await ok("/gv/cash/open", gv, { openingAmount: 0 });
     const old = await enroll();
     const fresh = await enroll();
     const dayAgo = (n: number) =>

@@ -90,6 +90,12 @@ beforeAll(async () => {
     })
   ).id;
   gv = await login(email, "FitStore-QA-2026!", "FitStore-QA-Nueva-2026!");
+  // Cobrar exige caja GV abierta (5-nov): sin cajas de otras corridas y con una propia.
+  await db.gvCashSession.updateMany({
+    where: { closedAt: null },
+    data: { closedAt: new Date() },
+  });
+  await ok("/gv/cash/open", gv, { openingAmount: 0 });
 }, 120000);
 
 afterAll(async () => {
@@ -105,6 +111,7 @@ afterAll(async () => {
       OR: [{ id: { in: leadIds } }, { externalId: { startsWith: key } }],
     },
   });
+  await db.gvCashSession.deleteMany({ where: { userId: gvUserId } });
   if (gvUserId)
     await db.user.update({ where: { id: gvUserId }, data: { active: false } });
   await db.$disconnect();

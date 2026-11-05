@@ -234,11 +234,18 @@ export const usdRate = (
     });
 };
 export const gvPaymentInput = <T extends z.ZodRawShape>(extra: T) =>
-  z.object({ ...gvPaymentFields, ...extra }).superRefine((v, ctx) => {
-    transferDetails(v as GvPaymentData, ctx);
-    cardDetails(v as GvPaymentData, ctx);
-    usdRate(v as GvPaymentData, ctx);
-  });
+  z
+    .object({
+      ...gvPaymentFields,
+      // Solo la dueña ("*") puede cobrar sin caja abierta, y con motivo escrito.
+      cashlessReason: z.string().trim().max(300).optional(),
+      ...extra,
+    })
+    .superRefine((v, ctx) => {
+      transferDetails(v as GvPaymentData, ctx);
+      cardDetails(v as GvPaymentData, ctx);
+      usdRate(v as GvPaymentData, ctx);
+    });
 export type GvPaymentData = {
   date: string;
   amount: number;
@@ -248,6 +255,7 @@ export type GvPaymentData = {
   reference: string | null;
   currency?: (typeof GV_CURRENCIES)[number];
   rate?: number | null;
+  cashlessReason?: string;
 };
 // Reembolso de una inscripción o cita «reembolsada» (GV-13).
 export const gvRefundFields = {
@@ -414,7 +422,7 @@ export async function createGvPayment(
   kind: GvOwnerKind,
   ownerId: string,
   operationId: string,
-  data: GvPaymentData,
+  { cashlessReason, ...data }: GvPaymentData,
 ) {
   const o = OWNER[kind];
   const owner = await lockGvOwner(tx, kind, ownerId, actor.branchId);
@@ -477,6 +485,13 @@ export async function createGvPayment(
     bad(
       "Cierra la caja de GV del día anterior antes de registrar pagos nuevos.",
     );
+  // Sin caja abierta no se cobra (orden de la dueña, 5-nov); ella sí, con motivo.
+  if (!cash) {
+    if (!can(actor.permissions, "*"))
+      bad("Abre tu caja de GV antes de cobrar.");
+    if ((cashlessReason ?? "").length < 3)
+      bad("Para cobrar sin caja abierta escribe el motivo.");
+  }
   // Recibo interno numerado con el contador de la sucursal (sin NCF: GV aún no tiene RNC).
   const counter = await tx.counter.upsert({
     where: { key: "gvrecibo:" + actor.branchId },
@@ -512,7 +527,7 @@ export async function createGvPayment(
     "gv_payment",
     row.id,
     undefined,
-    row,
+    cash ? row : { ...row, cashlessReason },
   );
   return row;
 }

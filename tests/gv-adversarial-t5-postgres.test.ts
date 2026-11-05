@@ -160,9 +160,19 @@ beforeAll(async () => {
     gvUserId,
   );
   gv = await login(email, password);
+  // Cobrar exige caja GV abierta (5-nov): sin cajas ajenas y con una propia.
+  await db.gvCashSession.updateMany({
+    where: { closedAt: null },
+    data: { closedAt: new Date() },
+  });
+  expectStatus(await request("/gv/cash/open", gv, { openingAmount: 0 }), 201);
 }, 120_000);
 
 afterAll(async () => {
+  await db.gvCashSession.updateMany({
+    where: { userId: gvUserId, closedAt: null },
+    data: { closedAt: new Date() },
+  });
   if (gvUserId)
     await request("/users/" + gvUserId, admin, { active: false }, "PATCH");
   await db.$disconnect();
