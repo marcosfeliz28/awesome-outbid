@@ -56,3 +56,39 @@ Descartados por la dueña el 5-nov: depósito de Víctor Francisco de Oleo (90,3
 Sin explicar, aparte del total: tarjeta de Wendy 4-nov 2,850 (posible FS-425, falta voucher); tarjeta de Lizbeth 4-nov 700; efectivo de Wendy 2-nov −50; envío de la FS-416 (450 en sistema, 1,050 real).
 Contraentregas abiertas hoy: FS-413 2,500, FS-414 1,200, FS-425 2,200, FS-427 6,200 = 12,100 (más 350 de envío en FS-425 y FS-427).
 Faltan de la dueña: cierre del lote 159 (GPRO), voucher de Conny Musulla, extractos de Génesis (Popular ···9797, Banreservas ···5853, BHD ···0015) y de MacGen del 11 al 29 de octubre.
+
+## Estado confirmado del cuadre (5-nov, tarde)
+Leyenda: SÍ = confirmado con banco, voucher o la dueña. PENDIENTE = falta dato.
+
+### Wendy
+| # | Punto | Estado | Evidencia o lo que falta |
+|---|---|---|---|
+| 1 | Tarjeta 2-nov (FS-398, 6,650) | SÍ | Pasada a su caja 0a08b750 |
+| 2 | Transferencia −3,500 del 2-nov (FS-389) | SÍ | Depósito BHD 3,950 = 3,500 + 450 envío Addison; verificada |
+| 3 | Transferencias 3-nov FS-400, 405, 409 | SÍ | Verificadas con extracto |
+| 4 | Transferencias 4-nov FS-416, 417, 418, 426, 429, 430 (22,450) | SÍ | Verificadas; FS-417 con banco corregido a Popular ···3620 |
+| 5 | Cobro FS-415 Elvys, 3,300 (tarjeta lote 159, aprob. 00MY1Y) | SÍ | Voucher del cierre lote 159; registrado en caja temporal 6e818217 |
+| 6 | Cobro FS-420 Neuroby, 2,200 (+350 envío) | SÍ | Transferencia Popular ···3620 ref 611040510; verificada |
+| 7 | Tarjeta 4-nov +6,350 | SÍ (explicada) | Lote 159: 3,500 (FS-415) + 2,850 |
+| 8 | Voucher 2,850 del lote 159 = FS-413 romana del ober (2,500 + 350) | PENDIENTE | Wendy/Lizbeth confirman entrega y cobro con tarjeta; no registrado |
+| 9 | Cobro FS-425 Conny Musulla, 2,550 (2,200 + 350) tarjeta, lote 160 del 5-nov | SÍ (cobro confirmado por la dueña), PENDIENTE de registrar | Falta voucher individual (aprobación y últimos 4) o que Wendy lo registre en su caja abierta 8d2c2810 |
+| 10 | Efectivo −50 (2-nov), −10 (3-nov), +10 (4-nov) | PENDIENTE | Wendy explica |
+| 11 | FS-404 heanny ortiz 3,950 (depósito a nombre de Yeraldina Monegro) | PENDIENTE | Quién pagó |
+| 12 | FS-408 melsi medrano 1,450 (Banreservas Génesis) | PENDIENTE | Comprobante y cuenta; falta extracto de Génesis |
+| 13 | Envío FS-416 (450 en sistema, 1,050 real) | PENDIENTE | Caja cerrada, no editable; anotar a mano |
+| 14 | FS-430: pagó 100 más de factura + envío | PENDIENTE | Confirmar envío 650 o propina |
+| 15 | Contraentrega FS-427 Manuel Suriel 6,200 + 350 | PENDIENTE | Sin cobrar |
+
+### Lizbeth
+| # | Punto | Estado | Evidencia o lo que falta |
+|---|---|---|---|
+| 1 | Transferencia FS-421 (9,600) | SÍ | BHD, verificada |
+| 2 | Efectivo 4-nov | SÍ | Cuadra en 0 |
+| 3 | Pago de su incentivo 16,143 | SÍ | Transferencia del 3-nov en Banreservas |
+| 4 | Tarjeta 4-nov +3,200: 2,500 cobro del terminal GV sin factura (5:03 y 5:06 p. m.) | PENDIENTE | Traer los 2 vouchers; facturar o confirmar duplicado |
+| 5 | Tarjeta 4-nov: 700 más de lo que muestra el lote 006 | PENDIENTE | Sin explicación |
+| 6 | Efectivo +50 y tarjeta +100 del 3-nov | PENDIENTE | Explicar |
+| 7 | Contraentregas FS-413 (2,500) y FS-414 (1,200) | PENDIENTE | Sin cobrar en sistema |
+
+### Descartados por la dueña (5-nov)
+Depósito de Víctor Francisco de Oleo (90,300, manejo interno) y de Eudomar Espino (2,955, seguro de Génesis).
