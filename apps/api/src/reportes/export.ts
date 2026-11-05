@@ -73,6 +73,15 @@ export type Modelo = {
 
 // Presentación de los reportes que la necesitan. Verificada contra su `run`.
 export const PRESENTACION: Record<string, Presentacion> = {
+  // Fila de total en PDF y Excel (hallazgo ventas-08). «Facturas» no se suma en
+  // marca/categoría: una factura con 2 marcas cuenta en ambas (ventas-05).
+  // unidades-por-factura ya trae su propia fila final de promedio y total.
+  "ventas-por-hora": { totales: ["Facturas", "Ventas netas"] },
+  "ventas-por-dia-semana": { totales: ["Facturas", "Ventas netas"] },
+  "ranking-cajeras": { totales: ["Facturas", "Unidades", "Ventas netas"] },
+  "top-clientes": { totales: ["Facturas", "Ventas netas"] },
+  "ventas-categoria-mes": { totales: ["Unidades", "Ventas netas"] },
+  "ventas-por-marca": { totales: ["Unidades", "Ventas netas"] },
   "ticket-promedio": {
     moneda: ["Ventas netas", "Ticket promedio"],
     esResumen: (f) => f.Tipo === "Mes",
