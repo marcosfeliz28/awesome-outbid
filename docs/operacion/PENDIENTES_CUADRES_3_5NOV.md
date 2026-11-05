@@ -37,3 +37,22 @@ Guardado por Norexos 2 (Mercancía) por orden de la dueña, 5-nov. Datos leídos
 - Salidas del 31-oct 17:47 (Serious Mass Chocolate 6 lb y Platinum Creatine 80 servicios) no están en la lista de salidas de la dueña: esperan que diga anular o dejar.
 - Pendiente de la dueña: archivar sesiones viejas; costo del producto Mota (1988, hoy en 0); decidir A o B del rol de la gerente de GV.
 - Bitácora: commits locales sin subir a `claude/bitacora-n2` (el sistema bloqueó el push el 5-nov).
+
+## Seguimiento para mañana (6-nov): facturas que faltan
+Anotado por orden de la dueña, 5-nov. Trabajo para la dueña y las cajeras.
+
+| Qué falta | Monto | Quién lo resuelve |
+|---|---|---|
+| Cobro de tarjeta de 2,500 sin factura (terminal GV lote 006, 17:03 o 17:06 del 4-nov; solo existe FS-432) | 2,500 | Lizbeth: factura o confirma duplicado |
+| Johanna Almanzar, curso 8-nov (Popular ···9797, ref 611040517) | 4,500 | Clary registra en GV |
+| Mayelin Presinal, reserva Brazilian 22-nov (Banreservas ···5853, ref 243398889606) | 6,000 | Clary registra en GV |
+| Paola Sánchez, curso 29-nov (BHD Génesis ···0015) | 2,000 | Clary registra en GV |
+| Depósito de Miguel Antonio Gómez, Banreservas 4-nov | 8,350 | Dueña: de quién es |
+| Depósito de Eudomar Espino, Banreservas 2-nov | 2,955 | Dueña: de quién es |
+| Depósito TPAGO, Popular 2-nov | 3,000 | Dueña: de quién es |
+| Depósito de Víctor Francisco de Oleo | 90,300 | Dueña: ya dijo que cayó; falta decir a qué factura o cuenta corresponde |
+| **Total sin factura o sin registrar** | **119,605** | |
+
+Sin explicar, aparte del total: tarjeta de Wendy 4-nov 2,850 (posible FS-425, falta voucher); tarjeta de Lizbeth 4-nov 700; efectivo de Wendy 2-nov −50; envío de la FS-416 (450 en sistema, 1,050 real).
+Contraentregas abiertas hoy: FS-413 2,500, FS-414 1,200, FS-425 2,200, FS-427 6,200 = 12,100 (más 350 de envío en FS-425 y FS-427).
+Faltan de la dueña: cierre del lote 159 (GPRO), voucher de Conny Musulla, extractos de Génesis (Popular ···9797, Banreservas ···5853, BHD ···0015) y de MacGen del 11 al 29 de octubre.
