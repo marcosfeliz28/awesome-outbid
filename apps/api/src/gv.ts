@@ -43,6 +43,8 @@ import {
   gvDay as day,
   gvImportPayment,
   gvPaymentInput,
+  gvProofFields,
+  PROOF_INFO,
   gvRefundFields,
   gvTotals,
   gvUserNames,
@@ -289,7 +291,10 @@ export class GvController {
     const enrollments = await this.db.gvEnrollment.findMany({
       where: { courseId: course.id, branchId: actor.branchId },
       include: {
-        payments: { orderBy: [{ date: "asc" }, { createdAt: "asc" }] },
+        payments: {
+          orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+          include: { proof: PROOF_INFO },
+        },
       },
       orderBy: { clientName: "asc" },
     });
@@ -448,6 +453,30 @@ export class GvController {
     return this.db.$transaction((tx) =>
       createGvPayment(tx, actor, "enrollment", enrollmentId, operationId, data),
     );
+  }
+
+  // Foto del voucher/comprobante de un pago: quien lo registró o quien verifica
+  // (gv:verify); nunca se envía a terceros ni se guarda en caché.
+  @Get("payments/:id/proof")
+  @Permit("gv:read")
+  async paymentProof(
+    @Param("id") id: string,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    const p = await this.db.gvPayment.findFirst({
+      where: { id: parse(uuid, id), branchId: actor.branchId },
+      include: { proof: true },
+    });
+    if (
+      !p ||
+      (p.createdBy !== actor.id && !can(actor.permissions, "gv:verify"))
+    )
+      denied();
+    if (!p.proof) bad("Este pago no tiene foto adjunta.");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    return res.type(p.proof.contentType).send(Buffer.from(p.proof.data));
   }
 
   // Lista de bancos y terminales para el modal de pago, por empresa.
@@ -954,6 +983,7 @@ export class GvController {
           },
         },
         appointment: { select: { clientName: true, service: true } },
+        proof: PROOF_INFO,
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     });
@@ -1187,7 +1217,7 @@ export function paymentView(
   p: any,
   name: (id: string | null | undefined) => string | null,
 ) {
-  const { createdBy, verifiedBy, rejectedBy, ...rest } = p;
+  const { createdBy, verifiedBy, rejectedBy, ...rest } = gvProofFields(p);
   return {
     ...rest,
     date: dayText(p.date),

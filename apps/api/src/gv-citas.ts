@@ -33,6 +33,8 @@ import {
   createGvPayment,
   gvImportPayment,
   gvPaymentInput,
+  gvProofFields,
+  PROOF_INFO,
   gvRefundFields,
   approverPin,
   gvAprobacionDuena,
@@ -138,7 +140,7 @@ function appointmentView(row: any) {
     refundDate: row.refundDate ? dayText(row.refundDate) : null,
     ...gvTotals(row.total, payments, row),
     payments: payments.map((p) => ({
-      ...p,
+      ...gvProofFields(p),
       date: dayText(p.date),
       amount: p.amount.toFixed(2),
     })),
@@ -146,6 +148,7 @@ function appointmentView(row: any) {
 }
 const paymentsOrder = {
   orderBy: [{ date: "asc" as const }, { createdAt: "asc" as const }],
+  include: { proof: PROOF_INFO },
 };
 
 // ── Importación (la llama POST /gv/import de gv.ts, misma transacción) ──

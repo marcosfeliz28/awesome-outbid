@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
+import { withGvProof } from "./helpers-gv-proof";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -99,6 +100,7 @@ beforeAll(async () => {
 }, 120000);
 
 afterAll(async () => {
+  await db.gvProof.deleteMany({ where: { createdBy: gvUserId } });
   const appointments = await db.gvAppointment.findMany({
     where: { OR: [{ id: { in: ids } }, { externalId: { startsWith: key } }] },
     select: { id: true },
@@ -187,15 +189,19 @@ describe("GV · citas", () => {
     ).toBe(400);
 
     const pay = (amount: number, method: string, operationId = randomUUID()) =>
-      ok(`/gv/appointments/${created.id}/payments`, gv, {
-        operationId,
-        date: "2026-10-20",
-        amount,
-        concept: "separo",
-        method,
-        bank: method === "transferencia" ? "Popular" : undefined,
-        reference: method === "transferencia" ? "QA-" + suffix : undefined,
-      });
+      ok(
+        `/gv/appointments/${created.id}/payments`,
+        gv,
+        withGvProof({
+          operationId,
+          date: "2026-10-20",
+          amount,
+          concept: "separo",
+          method,
+          bank: method === "transferencia" ? "Popular" : undefined,
+          reference: method === "transferencia" ? "QA-" + suffix : undefined,
+        }),
+      );
     const payOp = randomUUID();
     await pay(1000.1, "efectivo", payOp);
     await pay(1000.1, "efectivo", payOp);

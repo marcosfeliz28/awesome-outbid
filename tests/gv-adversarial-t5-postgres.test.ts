@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { withGvProof } from "./helpers-gv-proof";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -93,7 +94,7 @@ async function createEnrollment(
   );
 }
 
-const paymentBody = (
+const rawPaymentBody = (
   enrollmentId: string,
   extra: Record<string, unknown> = {},
 ) => ({
@@ -105,6 +106,10 @@ const paymentBody = (
   method: "efectivo",
   ...extra,
 });
+const paymentBody = (
+  enrollmentId: string,
+  extra: Record<string, unknown> = {},
+) => withGvProof(rawPaymentBody(enrollmentId, extra));
 
 const appointmentBody = (extra: Record<string, unknown> = {}) => ({
   operationId: randomUUID(),

@@ -1140,6 +1140,7 @@ model GvPayment {
   cashSessionId String?       @db.Uuid
   cashSession   GvCashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
   receiptNumber String?
+  proof        GvProof?
   verifiedBy   String?
   verifiedAt   DateTime?
   // Rechazado (transferencia que no llegó o pago anulado): no cuenta como pagado.
@@ -1176,8 +1177,25 @@ model GvCashSession {
   difference       Decimal?    @db.Decimal(14, 2)
   notes            String      @default("")
   payments         GvPayment[]
+  // Foto del cierre de lote del terminal (obligatoria si hubo pagos con tarjeta).
+  proof            GvProof?
 
   @@index([branchId, openedAt])
+}
+
+// Foto o PDF de un voucher/comprobante (pago) o del cierre de lote (caja).
+// Tabla aparte para que las listas de pagos nunca arrastren los bytes.
+model GvProof {
+  id            String          @id @default(uuid()) @db.Uuid
+  paymentId     String?         @unique @db.Uuid
+  payment       GvPayment?      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  cashSessionId String?         @unique @db.Uuid
+  cashSession   GvCashSession?  @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  contentType   String
+  size          Int
+  data          Bytes
+  createdBy     String
+  createdAt     DateTime        @default(now())
 }
 
 // GV Makeup Studio · citas de maquillaje (docs/coordinacion/MODULO-GV.md §3 y

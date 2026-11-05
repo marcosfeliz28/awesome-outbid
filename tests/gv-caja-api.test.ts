@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
+import { GV_PROOF_PNG, withGvProof } from "./helpers-gv-proof";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -99,6 +100,7 @@ beforeAll(async () => {
 }, 120000);
 
 afterAll(async () => {
+  await db.gvProof.deleteMany({ where: { createdBy: gvUserId } });
   await db.gvPayment.deleteMany({
     where: { enrollment: { courseId } },
   });
@@ -118,15 +120,19 @@ const enroll = (price = 4500) =>
     agreedPrice: price,
   });
 const pay = (enrollmentId: string, amount: number, method = "efectivo") =>
-  request("/gv/payments", gv, {
-    operationId: opId(),
-    enrollmentId,
-    date: "2026-11-04",
-    amount,
-    concept: "separo",
-    method,
-    ...(method === "tarjeta" ? { reference: "AP123" } : {}),
-  });
+  request(
+    "/gv/payments",
+    gv,
+    withGvProof({
+      operationId: opId(),
+      enrollmentId,
+      date: "2026-11-04",
+      amount,
+      concept: "separo",
+      method,
+      ...(method === "tarjeta" ? { reference: "AP123" } : {}),
+    }),
+  );
 
 describe("GV · caja propia", () => {
   it("abrir, cobrar con recibo, arqueo ciego y cerrar con diferencias", async () => {
@@ -241,6 +247,117 @@ describe("GV · caja propia", () => {
     expect(
       (await request("/gv/cash/open", "", { openingAmount: 1 })).status,
     ).toBe(401);
+  });
+});
+
+describe("GV · foto del voucher o comprobante", () => {
+  const body = (
+    e: string,
+    method: string,
+    extra: Record<string, unknown> = {},
+  ) => ({
+    operationId: opId(),
+    enrollmentId: e,
+    date: "2026-11-05",
+    amount: 100,
+    concept: "separo",
+    method,
+    reference: "REF-" + suffix,
+    ...(method === "transferencia" ? { bank: "Popular" } : {}),
+    ...extra,
+  });
+  it("tarjeta y transferencia no se guardan sin foto válida; efectivo no la pide", async () => {
+    await ok("/gv/cash/open", gv, { openingAmount: 0 });
+    const e = await enroll();
+    const before = await db.gvPayment.count({ where: { enrollmentId: e.id } });
+    for (const method of ["tarjeta", "transferencia"]) {
+      const none = await request("/gv/payments", gv, body(e.id, method));
+      expect(none.status).toBe(400);
+      expect(JSON.stringify(none.body)).toContain("Adjunta la foto");
+    }
+    const png = GV_PROOF_PNG.split(",")[1];
+    const bad = (proof: string) =>
+      request("/gv/payments", gv, body(e.id, "tarjeta", { proof }));
+    // Tipo declarado falso (GIF o texto disfrazado de PNG) y tipo no permitido.
+    expect(
+      (
+        await bad(
+          "data:image/png;base64," +
+            Buffer.from("GIF89a....").toString("base64"),
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await bad(
+          "data:image/png;base64," +
+            Buffer.from("no soy imagen").toString("base64"),
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await bad(
+          "data:image/gif;base64," +
+            Buffer.from("GIF89a....").toString("base64"),
+        )
+      ).status,
+    ).toBe(400);
+    expect((await bad("data:application/pdf;base64," + png)).status).toBe(400);
+    expect((await bad("hola")).status).toBe(400);
+    // Más de 2 MB.
+    const big = Buffer.concat([
+      Buffer.from(png, "base64"),
+      Buffer.alloc(2 * 1024 * 1024),
+    ]);
+    expect(
+      (await bad("data:image/png;base64," + big.toString("base64"))).status,
+    ).toBe(400);
+    expect(await db.gvPayment.count({ where: { enrollmentId: e.id } })).toBe(
+      before,
+    );
+    // Con foto: se guarda; PDF también; la respuesta no trae los bytes.
+    const ok1 = await request(
+      "/gv/payments",
+      gv,
+      body(e.id, "tarjeta", { proof: GV_PROOF_PNG }),
+    );
+    expect(ok1.status).toBe(201);
+    expect(ok1.body.hasProof).toBe(true);
+    expect(ok1.body.proofContentType).toBe("image/png");
+    const pdf =
+      "data:application/pdf;base64," +
+      Buffer.from("%PDF-1.4 prueba").toString("base64");
+    expect(
+      (
+        await request(
+          "/gv/payments",
+          gv,
+          body(e.id, "transferencia", { proof: pdf }),
+        )
+      ).status,
+    ).toBe(201);
+    expect(
+      (await request("/gv/payments", gv, body(e.id, "efectivo"))).status,
+    ).toBe(201);
+    // El detalle del curso marca hasProof y nunca los bytes.
+    const detail = JSON.stringify(await ok("/gv/courses/" + courseId, gv));
+    expect(detail).toContain('"hasProof":true');
+    expect(detail).not.toContain("iVBORw0KGgo");
+    // La foto se baja con permiso: quien la subió sí; otro rol sin GV no.
+    const url = base + "/gv/payments/" + ok1.body.id + "/proof";
+    const mine = await fetch(url, {
+      headers: { Authorization: "Bearer " + gv },
+    });
+    expect(mine.status).toBe(200);
+    expect(mine.headers.get("content-type")).toContain("image/png");
+    const other = await fetch(url, {
+      headers: {
+        Authorization:
+          "Bearer " + (await login("vendedor@fitstore.demo", DEMO)),
+      },
+    });
+    expect(other.status).toBe(403);
   });
 });
 

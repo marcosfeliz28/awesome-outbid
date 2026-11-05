@@ -3,6 +3,7 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { test, expect, ownerHeaders } from "./apoyo";
+import { GV_PROOF_PNG } from "../helpers-gv-proof";
 
 const DEMO_PASSWORD = "FitStore-Demo-2026!";
 const TEMP_PASSWORD = "E2E-Gv-Temporal-2026!";
@@ -111,6 +112,7 @@ async function seedGvFlow(
       date: "2026-10-26",
       method: "transferencia",
       bank: "Banco E2E",
+      proof: GV_PROOF_PNG,
       ...payment,
     });
 
