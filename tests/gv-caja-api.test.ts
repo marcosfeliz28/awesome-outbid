@@ -204,7 +204,7 @@ describe("GV · caja propia", () => {
       total: "-100.00",
     });
     expect(closed.receipts).toHaveLength(2);
-    expect(await ok("/gv/cash/current", gv)).toBeFalsy(); // sin caja abierta
+    expect((await ok("/gv/cash/current", gv)).open).toBe(false); // sin caja abierta
     expect(
       (
         await request("/gv/cash/close", gv, {

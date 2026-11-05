@@ -73,7 +73,10 @@ export function useGvCajaGuard() {
   const user = useStore((s) => s.user);
   const cash = useQuery<{ id: string } | null>({
     queryKey: ["gv-cash"],
-    queryFn: async () => (await api("/gv/cash/current")) || null,
+    queryFn: async () => {
+      const c = await api<{ id: string; open: boolean }>("/gv/cash/current");
+      return c.open ? c : null;
+    },
   });
   const owner = can(user?.permissions ?? [], "*");
   const [reason, setReason] = useState("");

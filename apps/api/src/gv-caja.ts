@@ -43,10 +43,12 @@ export class GvCajaController {
     const s = await this.db.gvCashSession.findFirst({
       where: { branchId: actor.branchId, closedAt: null },
     });
-    if (!s) return null;
+    // Un cuerpo vacío rompe el JSON del navegador: sin caja, `open: false`.
+    if (!s) return { open: false as const };
     const e = await gvCajaEsperado(this.db, s.id);
     return {
       ...s,
+      open: true as const,
       payments: e.count,
       cardPayments: e.cards,
       overdue: businessDate(s.openedAt) < businessDate(new Date()),

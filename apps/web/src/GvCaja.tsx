@@ -38,7 +38,10 @@ export function GvCaja() {
   const client = useQueryClient();
   const current = useQuery<Cash | null>({
     queryKey: ["gv-cash"],
-    queryFn: async () => (await api("/gv/cash/current")) || null,
+    queryFn: async () => {
+      const c = await api<Cash & { open: boolean }>("/gv/cash/current");
+      return c.open ? c : null;
+    },
   });
   const alerts = useQuery<Alerts>({
     queryKey: ["gv-alerts"],
