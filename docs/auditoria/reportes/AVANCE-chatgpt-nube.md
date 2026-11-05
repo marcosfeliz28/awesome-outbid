@@ -27,7 +27,7 @@ la tienda.
 
 ## Pendiente
 
-1. Reproducir todos los hallazgos Alto/Medio de dinero, margen y sincronía en datos de prueba, completando `contra_audit`.
+1. La clasificación Alto/Medio quedó documentada en `CONTRA_AUDITORIA_CHATGPT_NUBE.md`; quedan las decisiones de dinero y la QA visual.
 2. Ejecutar QA Playwright de 43 reportes y permisos (la revisión de código y API ya está iniciada).
 3. Medir memoria en un entorno que exponga ese contador; generación y apertura de 20.000 filas ya comprobadas.
 
