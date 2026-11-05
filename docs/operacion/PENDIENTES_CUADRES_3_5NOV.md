@@ -77,7 +77,7 @@ Leyenda: SÍ = confirmado con banco, voucher o la dueña. PENDIENTE = falta dato
 | 12 | FS-408 melsi medrano 1,450 (Banreservas Génesis) | PENDIENTE | Comprobante y cuenta; falta extracto de Génesis |
 | 13 | Envío FS-416 (450 en sistema, 1,050 real) | PENDIENTE | Caja cerrada, no editable; anotar a mano |
 | 14 | FS-430: pagó 100 más de factura + envío | PENDIENTE | Confirmar envío 650 o propina |
-| 15 | Contraentrega FS-427 Manuel Suriel 6,200 + 350 | PENDIENTE | Sin cobrar |
+| 15 | Contraentrega Manuel Suriel: FS-427 (6,200) ANULADA 5-nov por cambio de producto; la reemplaza FS-433 (5,900 + 350 envío, Carnivor Beef 3.9 lb + Gorilla Mode) | PENDIENTE | Sin cobrar; envío 350 aparte para Addison |
 
 ### Lizbeth
 | # | Punto | Estado | Evidencia o lo que falta |
@@ -92,3 +92,6 @@ Leyenda: SÍ = confirmado con banco, voucher o la dueña. PENDIENTE = falta dato
 
 ### Descartados por la dueña (5-nov)
 Depósito de Víctor Francisco de Oleo (90,300, manejo interno) y de Eudomar Espino (2,955, seguro de Génesis).
+
+### Anulaciones del 5-nov
+FS-427 (Wendy, contraentrega 6,200, producto equivocado) y FS-188 (Lizbeth, 6,000 efectivo duplicada; la dueña ya devolvió el efectivo; reembolso asentado en caja temporal 94d155ab con fondo contable de 6,000, cerrada en 0). Falta comprobar que exista la factura que reemplaza a la FS-188.
