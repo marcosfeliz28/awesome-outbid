@@ -73,8 +73,8 @@ Leyenda: SÍ = confirmado con banco, voucher o la dueña. PENDIENTE = falta dato
 | 8 | Voucher 2,850 del lote 159 = FS-413 romana del ober (2,500 + 350) | SÍ (confirmado por la dueña 5-nov) | Cobro registrado y pasado a la caja de Wendy 4-nov; tarjeta +550 = envíos de Addison |
 | 9 | Cobro FS-425 Conny Musulla, 2,550 (2,200 + 350) tarjeta, lote 160 del 5-nov | SÍ (cobro confirmado por la dueña), PENDIENTE de registrar | Falta voucher individual (aprobación y últimos 4) o que Wendy lo registre en su caja abierta 8d2c2810 |
 | 10 | Efectivo −50 (2-nov), −10 (3-nov), +10 (4-nov) | PENDIENTE | Wendy explica |
-| 11 | FS-404 heanny ortiz 3,950 (depósito a nombre de Yeraldina Monegro) | PENDIENTE | Quién pagó |
-| 12 | FS-408 melsi medrano 1,450 (Banreservas Génesis) | PENDIENTE | Comprobante y cuenta; falta extracto de Génesis |
+| 11 | FS-404 heanny ortiz 3,950 (depósito a nombre de Yeraldina Monegro, ref 243390492270) | SÍ (5-nov) | Verificada: el depósito de 3,950 era la única transferencia sin factura del 3-nov y coincide en monto y banco |
+| 12 | FS-408 melsi medrano 1,450 (Banreservas Génesis) | SÍ por orden de la dueña (5-nov: «el 3 dalo como válido») | Verificada sin extracto de Génesis; sin comprobante propio |
 | 13 | Envío FS-416 (450 en sistema, 1,050 real) | PENDIENTE | Caja cerrada, no editable; anotar a mano |
 | 14 | FS-430: pagó 100 más de factura + envío | PENDIENTE | Confirmar envío 650 o propina |
 | 15 | Contraentrega Manuel Suriel: FS-427 (6,200) ANULADA 5-nov por cambio de producto; la reemplaza FS-433 (5,900 + 350 envío, Carnivor Beef 3.9 lb + Gorilla Mode) | PENDIENTE | Sin cobrar; envío 350 aparte para Addison |
@@ -96,3 +96,24 @@ Depósito de Víctor Francisco de Oleo (90,300, manejo interno) y de Eudomar Esp
 
 ### Anulaciones del 5-nov
 FS-427 (Wendy, contraentrega 6,200, producto equivocado) y FS-188 (Lizbeth, 6,000 efectivo duplicada; la dueña ya devolvió el efectivo; reembolso asentado en caja temporal 94d155ab con fondo contable de 6,000, cerrada en 0). Falta comprobar que exista la factura que reemplaza a la FS-188.
+
+### Decisiones de la dueña, 5-nov (tarde)
+- **3-nov: válido.** Se verificaron FS-404 y FS-408; las diferencias de caja del 3-nov (Wendy efectivo −10; Lizbeth efectivo +50 y tarjeta +100) quedaron aceptadas por escrito en cada cierre.
+- **4-nov:** se hizo todo lo posible; queda lo que necesita datos de las cajeras (ver tablas).
+- **5-nov:** esperar a la entrega de hoy; no se cuadra todavía.
+- **Orden de revisión:** primero Lizbeth, luego Wendy.
+
+## Envíos de Addison por pagar (pagar a final de semana)
+Anotado por orden de la dueña, 5-nov.
+- **En el sistema (courier/pendientes):** 54 envíos desde el 19-oct hasta el 4-nov, total RD$19,199.93 (consultar la pantalla de mensajería para el detalle por factura).
+- **No están en el sistema** (contraentregas y ajustes), a sumar a mano:
+  - FS-389: 450 (cobrado dentro del depósito de 3,950).
+  - FS-415: 200 (cobrado con tarjeta, lote 159).
+  - FS-413: 350 (cobrado con tarjeta, lote 159).
+  - FS-420: 350 (cobrado con el depósito de 2,550).
+  - FS-425: 350 (cobrado en el lote 160, 5-nov; falta registrar).
+  - FS-433: 350 (contraentrega, aún sin cobrar).
+  - FS-416: el sistema tiene 450 y el real fue 1,050 (diferencia +600).
+  - FS-430: posible +100 (pagó 6,300 contra 6,200 de factura + envío).
+  - Anteriores sin identificar: 550 (inmaru 300, Maderly/gran 250) y Wilmer 150.
+- Los envíos cobrados con el cliente por tarjeta o transferencia no son ingreso de la tienda: se entregan a Addison.
