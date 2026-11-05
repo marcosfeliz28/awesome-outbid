@@ -3,6 +3,7 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { test, expect, ownerHeaders } from "./apoyo";
+import { GV_PROOF_PNG } from "../helpers-gv-proof";
 
 const DEMO_PASSWORD = "FitStore-Demo-2026!";
 const TEMP_PASSWORD = "E2E-Gv-Temporal-2026!";
@@ -72,6 +73,8 @@ async function seedGvFlow(
     },
   );
   const gv = { Authorization: "Bearer " + changed.accessToken };
+  // Cobrar exige caja GV abierta.
+  await apiPost(request, "/gv/cash/open", gv, { openingAmount: 0 });
 
   const courseName = "Curso E2E " + suffix;
   const course = await apiPost(request, "/gv/courses", gv, {
@@ -109,6 +112,7 @@ async function seedGvFlow(
       date: "2026-10-26",
       method: "transferencia",
       bank: "Banco E2E",
+      proof: GV_PROOF_PNG,
       ...payment,
     });
 

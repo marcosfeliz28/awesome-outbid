@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
+import { withGvProof } from "./helpers-gv-proof";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -92,6 +93,12 @@ beforeAll(async () => {
   });
   gvUserId = user.id;
   gv = await login(email, "FitStore-QA-2026!", "FitStore-QA-Nueva-2026!");
+  // Cobrar exige caja GV abierta (5-nov): sin cajas de otras corridas y con una propia.
+  await db.gvCashSession.updateMany({
+    where: { closedAt: null },
+    data: { closedAt: new Date() },
+  });
+  await ok("/gv/cash/open", gv, { openingAmount: 0 });
 }, 120000);
 
 afterAll(async () => {
@@ -105,11 +112,15 @@ afterAll(async () => {
     select: { id: true },
   });
   const ids = courses.map((c: any) => c.id);
+  await db.gvProof.deleteMany({
+    where: { payment: { enrollment: { courseId: { in: ids } } } },
+  });
   await db.gvPayment.deleteMany({
     where: { enrollment: { courseId: { in: ids } } },
   });
   await db.gvEnrollment.deleteMany({ where: { courseId: { in: ids } } });
   await db.gvCourse.deleteMany({ where: { id: { in: ids } } });
+  await db.gvCashSession.deleteMany({ where: { userId: gvUserId } });
   if (gvUserId)
     await db.user.update({ where: { id: gvUserId }, data: { active: false } });
   await db.$disconnect();
@@ -166,14 +177,15 @@ const enroll = (courseId: string, agreedPrice: number, name = "QA") =>
     clientName: name + " " + suffix,
     agreedPrice,
   });
-const payBody = (enrollmentId: string, extra: Record<string, unknown>) => ({
-  operationId: randomUUID(),
-  enrollmentId,
-  date: "2026-10-26",
-  concept: "separo",
-  method: "efectivo",
-  ...extra,
-});
+const payBody = (enrollmentId: string, extra: Record<string, unknown>) =>
+  withGvProof({
+    operationId: randomUUID(),
+    enrollmentId,
+    date: "2026-10-26",
+    concept: "separo",
+    method: "efectivo",
+    ...extra,
+  });
 const transferBody = (enrollmentId: string, amount: number) =>
   payBody(enrollmentId, {
     amount,

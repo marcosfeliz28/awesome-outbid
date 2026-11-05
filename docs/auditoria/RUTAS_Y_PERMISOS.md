@@ -1,6 +1,6 @@
 # Rutas de la API y sus permisos
 
-Generado por `scripts/rutas-permisos.mjs`. 197 rutas; 0 sin @Permit cerca del método (revisar).
+Generado por `scripts/rutas-permisos.mjs`. 199 rutas; 0 sin @Permit cerca del método (revisar).
 
 | ruta | método | permiso | archivo:línea |
 |---|---|---|---|
@@ -63,35 +63,37 @@ Generado por `scripts/rutas-permisos.mjs`. 197 rutas; 0 sin @Permit cerca del m�
 | `/api/goods-receipts/:id` | GET | `catalog:read` | `apps/api/src/inventory.ts:1439` |
 | `/api/goods-receipts/:id/document` | PATCH | `catalog:read` | `apps/api/src/inventory.ts:1450` |
 | `/api/goods-receipts/export` | GET | `reports:read` | `apps/api/src/inventory.ts:1358` |
-| `/api/gv/alerts` | GET | `gv:read` | `apps/api/src/gv.ts:898` |
-| `/api/gv/appointments` | GET | `gv:read` | `apps/api/src/gv-citas.ts:318` |
-| `/api/gv/appointments` | POST | `gv:write` | `apps/api/src/gv-citas.ts:367` |
-| `/api/gv/appointments/:id` | GET | `gv:read` | `apps/api/src/gv-citas.ts:351` |
-| `/api/gv/appointments/:id` | PATCH | `gv:write` | `apps/api/src/gv-citas.ts:409` |
-| `/api/gv/appointments/:id/payments` | POST | `gv:write` | `apps/api/src/gv-citas.ts:460` |
-| `/api/gv/banks` | GET | `gv:read` | `apps/api/src/gv.ts:454` |
-| `/api/gv/cash` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:47` |
-| `/api/gv/cash/close` | POST | `gv:write` | `apps/api/src/gv-caja.ts:84` |
-| `/api/gv/cash/current` | GET | `gv:read` | `apps/api/src/gv-caja.ts:23` |
-| `/api/gv/cash/open` | POST | `gv:write` | `apps/api/src/gv-caja.ts:57` |
-| `/api/gv/catalog` | GET | `gv:read` | `apps/api/src/gv.ts:176` |
-| `/api/gv/courses` | GET | `gv:read` | `apps/api/src/gv.ts:182` |
-| `/api/gv/courses` | POST | `gv:write` | `apps/api/src/gv.ts:232` |
-| `/api/gv/courses/:id` | GET | `gv:read` | `apps/api/src/gv.ts:285` |
-| `/api/gv/courses/:id` | PATCH | `gv:write` | `apps/api/src/gv.ts:258` |
-| `/api/gv/enrollments` | POST | `gv:write` | `apps/api/src/gv.ts:324` |
-| `/api/gv/enrollments/:id` | PATCH | `gv:write` | `apps/api/src/gv.ts:371` |
-| `/api/gv/import` | POST | `*` | `apps/api/src/gv.ts:971` |
-| `/api/gv/incentives` | GET | `sale:manage` | `apps/api/src/gv.ts:810` |
-| `/api/gv/leads` | GET | `gv:read` | `apps/api/src/gv-citas.ts:485` |
-| `/api/gv/leads` | POST | `gv:write` | `apps/api/src/gv-citas.ts:502` |
-| `/api/gv/leads/:id` | PATCH | `gv:write` | `apps/api/src/gv-citas.ts:541` |
-| `/api/gv/payments` | POST | `gv:write` | `apps/api/src/gv.ts:441` |
-| `/api/gv/payments/:id/review` | POST | `gv:verify` | `apps/api/src/gv.ts:516` |
-| `/api/gv/payments/:id/void` | POST | `gv:write` | `apps/api/src/gv.ts:464` |
-| `/api/gv/reports` | GET | `gv:reports` | `apps/api/src/gv.ts:588` |
-| `/api/gv/reports/export` | GET | `gv:reports` | `apps/api/src/gv.ts:747` |
-| `/api/gv/transfers/pending` | GET | `gv:read` | `apps/api/src/gv.ts:939` |
+| `/api/gv/alerts` | GET | `gv:read` | `apps/api/src/gv.ts:927` |
+| `/api/gv/appointments` | GET | `gv:read` | `apps/api/src/gv-citas.ts:321` |
+| `/api/gv/appointments` | POST | `gv:write` | `apps/api/src/gv-citas.ts:370` |
+| `/api/gv/appointments/:id` | GET | `gv:read` | `apps/api/src/gv-citas.ts:354` |
+| `/api/gv/appointments/:id` | PATCH | `gv:write` | `apps/api/src/gv-citas.ts:412` |
+| `/api/gv/appointments/:id/payments` | POST | `gv:write` | `apps/api/src/gv-citas.ts:463` |
+| `/api/gv/banks` | GET | `gv:read` | `apps/api/src/gv.ts:483` |
+| `/api/gv/cash` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:65` |
+| `/api/gv/cash/:id/proof` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:78` |
+| `/api/gv/cash/close` | POST | `gv:write` | `apps/api/src/gv-caja.ts:123` |
+| `/api/gv/cash/current` | GET | `gv:read` | `apps/api/src/gv-caja.ts:40` |
+| `/api/gv/cash/open` | POST | `gv:write` | `apps/api/src/gv-caja.ts:96` |
+| `/api/gv/catalog` | GET | `gv:read` | `apps/api/src/gv.ts:178` |
+| `/api/gv/courses` | GET | `gv:read` | `apps/api/src/gv.ts:184` |
+| `/api/gv/courses` | POST | `gv:write` | `apps/api/src/gv.ts:234` |
+| `/api/gv/courses/:id` | GET | `gv:read` | `apps/api/src/gv.ts:287` |
+| `/api/gv/courses/:id` | PATCH | `gv:write` | `apps/api/src/gv.ts:260` |
+| `/api/gv/enrollments` | POST | `gv:write` | `apps/api/src/gv.ts:329` |
+| `/api/gv/enrollments/:id` | PATCH | `gv:write` | `apps/api/src/gv.ts:376` |
+| `/api/gv/import` | POST | `*` | `apps/api/src/gv.ts:1001` |
+| `/api/gv/incentives` | GET | `sale:manage` | `apps/api/src/gv.ts:839` |
+| `/api/gv/leads` | GET | `gv:read` | `apps/api/src/gv-citas.ts:488` |
+| `/api/gv/leads` | POST | `gv:write` | `apps/api/src/gv-citas.ts:505` |
+| `/api/gv/leads/:id` | PATCH | `gv:write` | `apps/api/src/gv-citas.ts:544` |
+| `/api/gv/payments` | POST | `gv:write` | `apps/api/src/gv.ts:446` |
+| `/api/gv/payments/:id/proof` | GET | `gv:read` | `apps/api/src/gv.ts:460` |
+| `/api/gv/payments/:id/review` | POST | `gv:verify` | `apps/api/src/gv.ts:545` |
+| `/api/gv/payments/:id/void` | POST | `gv:write` | `apps/api/src/gv.ts:493` |
+| `/api/gv/reports` | GET | `gv:reports` | `apps/api/src/gv.ts:617` |
+| `/api/gv/reports/export` | GET | `gv:reports` | `apps/api/src/gv.ts:776` |
+| `/api/gv/transfers/pending` | GET | `gv:read` | `apps/api/src/gv.ts:968` |
 | `/api/health/live` | GET | `pública por diseño (@Public)` | `apps/api/src/app.ts:55` |
 | `/api/incentives` | GET | `sale:manage` | `apps/api/src/incentives.ts:743` |
 | `/api/incentives/close` | POST | `*` | `apps/api/src/incentives.ts:852` |

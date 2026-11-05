@@ -1,6 +1,15 @@
 // Caja propia de GV (opción B, orden 106): apertura, cierre con arqueo ciego y
 // diferencias, separada de la caja de MacGen (CashSession no se toca).
-import { Body, Controller, Get, Inject, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Res,
+} from "@nestjs/common";
+import type { Response } from "express";
 import { businessDate, can, d, z } from "@fitstore/shared";
 import {
   Actor,
@@ -10,8 +19,16 @@ import {
   audit,
   bad,
   parse,
+  uuid,
 } from "./common";
-import { gvCajaEsperado, gvMoney } from "./gv-money";
+import {
+  GV_PROOF_DATA_MAX,
+  PROOF_INFO,
+  gvCajaEsperado,
+  gvProofFields,
+  gvMoney,
+  gvProofParse,
+} from "./gv-money";
 
 const fix = (v: unknown) => d(v as any).toFixed(2);
 
@@ -26,11 +43,14 @@ export class GvCajaController {
     const s = await this.db.gvCashSession.findFirst({
       where: { branchId: actor.branchId, closedAt: null },
     });
-    if (!s) return null;
+    // Un cuerpo vacío rompe el JSON del navegador: sin caja, `open: false`.
+    if (!s) return { open: false as const };
     const e = await gvCajaEsperado(this.db, s.id);
     return {
       ...s,
+      open: true as const,
       payments: e.count,
+      cardPayments: e.cards,
       overdue: businessDate(s.openedAt) < businessDate(new Date()),
       ...(can(actor.permissions, "gv:verify")
         ? {
@@ -46,12 +66,33 @@ export class GvCajaController {
 
   @Get()
   @Permit("gv:reports")
-  list(@CurrentUser() actor: Actor) {
-    return this.db.gvCashSession.findMany({
+  async list(@CurrentUser() actor: Actor) {
+    const rows = await this.db.gvCashSession.findMany({
       where: { branchId: actor.branchId },
+      include: { proof: PROOF_INFO },
       orderBy: { openedAt: "desc" },
       take: 60,
     });
+    return rows.map(gvProofFields);
+  }
+
+  // Foto del cierre de lote: solo quien revisa los informes de GV.
+  @Get(":id/proof")
+  @Permit("gv:reports")
+  async proof(
+    @Param("id") id: string,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    const p = await this.db.gvProof.findFirst({
+      where: {
+        cashSession: { id: parse(uuid, id), branchId: actor.branchId },
+      },
+    });
+    if (!p) bad("Este cierre no tiene foto de lote.");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    return res.type(p.contentType).send(Buffer.from(p.data));
   }
 
   @Post("open")
@@ -90,6 +131,8 @@ export class GvCajaController {
         countedCard: gvMoney(true),
         countedTransfer: gvMoney(true),
         notes: z.string().trim().max(500).default(""),
+        // Foto del cierre de lote del terminal (data URL): obligatoria si hubo tarjeta.
+        batchProof: z.string().max(GV_PROOF_DATA_MAX).optional(),
       }),
       body,
     );
@@ -100,6 +143,13 @@ export class GvCajaController {
       });
       if (!s) bad("No hay una caja de GV abierta.");
       const e = await gvCajaEsperado(tx, s.id);
+      if (e.cards > 0 && !data.batchProof)
+        bad(
+          "Adjunta la foto del cierre de lote del terminal (hubo pagos con tarjeta).",
+        );
+      const batch = data.batchProof
+        ? gvProofParse(data.batchProof, "foto del cierre de lote")
+        : null;
       const expectedCash = d(s.openingAmount).plus(e.efectivo);
       const diffs = {
         cash: d(data.countedCash).minus(expectedCash),
@@ -122,7 +172,22 @@ export class GvCajaController {
           notes: data.notes,
         },
       });
-      await audit(tx, actor, "gv_cash_close", "gv_cash", row.id, s, row);
+      if (batch)
+        await tx.gvProof.create({
+          data: {
+            cashSessionId: s.id,
+            contentType: batch.contentType,
+            size: batch.size,
+            data: batch.bytes,
+            createdBy: actor.id,
+          },
+        });
+      await audit(tx, actor, "gv_cash_close", "gv_cash", row.id, s, {
+        ...row,
+        ...(batch
+          ? { batchProof: `(${batch.contentType}, ${batch.size} bytes)` }
+          : {}),
+      });
       const differences = {
         cash: fix(diffs.cash),
         card: fix(diffs.card),

@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import EmbeddedPostgres from "embedded-postgres";
+import { withGvProof } from "./helpers-gv-proof";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const apiDir = join(root, "apps/api");
@@ -183,6 +184,8 @@ beforeAll(async () => {
     },
   });
   gv = (await ok("/auth/login", "", { email, password })).accessToken;
+  // Cobrar exige caja GV abierta (5-nov).
+  await ok("/gv/cash/open", gv, { openingAmount: 0 });
 });
 
 afterAll(async () => {
@@ -289,7 +292,7 @@ async function pay(
   return request(
     kind === "cita" ? `/gv/appointments/${id}/payments` : "/gv/payments",
     gv,
-    {
+    withGvProof({
       operationId: randomUUID(),
       ...(kind === "inscripción" ? { enrollmentId: id } : {}),
       date: "2026-10-26",
@@ -297,7 +300,7 @@ async function pay(
       concept: "separo",
       method: "efectivo",
       ...extra,
-    },
+    }),
   );
 }
 const ownerWhere = (kind: Kind, id: string) =>

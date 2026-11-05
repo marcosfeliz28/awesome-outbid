@@ -1571,6 +1571,8 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   offline_conflict: "Venta sin conexión",
   receivable: "Por cobrar",
   credit_reminder: "Créditos por cobrar",
+  gv_cash_open_night: "Caja GV abierta de noche",
+  gv_day_no_close: "Día de GV sin cierre",
   cash_difference: "Diferencia de caja",
   return_waste: "Merma por devolución",
   expense_budget: "Presupuesto de gastos",

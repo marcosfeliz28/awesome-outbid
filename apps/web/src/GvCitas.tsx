@@ -6,6 +6,7 @@ import { Badge, Button, Modal } from "@fitstore/ui";
 import { businessDate, can, formatMoney } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { QueryState, toast } from "./helpers";
+import { GvCajaGuardNotice, GvProofField, useGvCajaGuard } from "./GvProof";
 
 type Payment = {
   id: string;
@@ -520,6 +521,9 @@ function AppointmentPaymentForm({
     bank: "",
     reference: "",
   });
+  const [proof, setProof] = useState("");
+  const guard = useGvCajaGuard();
+  const needsProof = form.method !== "efectivo";
   const terminals = useQuery({
     queryKey: ["gv-banks"],
     queryFn: () => api<{ terminals: string[] }>("/gv/banks"),
@@ -538,8 +542,11 @@ function AppointmentPaymentForm({
         bank: paymentBank(form.method, form.bank, terminals.data?.terminals),
         amount: Number(form.amount),
         operationId,
+        proof: needsProof ? proof : undefined,
+        cashlessReason: guard.noCash ? guard.reason : undefined,
       });
       await refresh(client);
+      await client.invalidateQueries({ queryKey: ["gv-cash"] });
       toast("Pago registrado.");
       onClose();
     } catch (cause: any) {
@@ -550,7 +557,7 @@ function AppointmentPaymentForm({
   };
   return (
     <Modal open onClose={onClose} title={"Pago de " + a.clientName}>
-      <p>Pendiente: {money(a.pending)}. Este pago no pasa por la caja.</p>
+      <p>Pendiente: {money(a.pending)}. Se cobra en tu caja de GV.</p>
       <form onSubmit={save} className="form-grid gv-form">
         <label className="field">
           <span>Fecha</span>
@@ -637,6 +644,18 @@ function AppointmentPaymentForm({
             </label>
           </>
         )}
+        {needsProof && (
+          <GvProofField
+            label={
+              form.method === "tarjeta"
+                ? "Foto del voucher de la tarjeta (obligatoria)"
+                : "Foto del comprobante de la transferencia (obligatoria)"
+            }
+            value={proof}
+            onChange={setProof}
+          />
+        )}
+        <GvCajaGuardNotice guard={guard} />
         {error && (
           <p className="form-error full" role="alert">
             {error}
@@ -646,7 +665,7 @@ function AppointmentPaymentForm({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button disabled={busy}>
+          <Button disabled={busy || guard.blocked || (needsProof && !proof)}>
             {busy ? "Guardando…" : "Registrar pago"}
           </Button>
         </div>

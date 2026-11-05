@@ -8,7 +8,7 @@
 //   ni cambiar pagos ya revisados (GV-10/11/12).
 import { Prisma } from "@prisma/client";
 import { businessDate, can, d, moneyAmount, z } from "@fitstore/shared";
-import { Actor, audit, bad, denied } from "./common";
+import { Actor, audit, bad, denied, imageType } from "./common";
 import { managerPinApproval } from "./security";
 
 export const GV_CONCEPTS = [
@@ -233,12 +233,61 @@ export const usdRate = (
       message: "es obligatoria en US$ (pesos por dólar)",
     });
 };
+/** Qué se trae de GvProof en las listas: nunca los bytes. */
+export const PROOF_INFO = { select: { contentType: true, size: true } };
+export const GV_PROOF_MAX = 2 * 1024 * 1024;
+export const GV_PROOF_DATA_MAX = 3_000_000; // 2 MB en base64 + encabezado
+/**
+ * Foto o PDF de evidencia (data URL base64): tipo REAL por los primeros bytes
+ * (jpeg, png, webp o pdf; no gif), debe coincidir con el declarado, máx. 2 MB.
+ * Nada sale del servidor: se guarda en la base (GvProof).
+ */
+export function gvProofParse(dataUrl: string, what = "foto") {
+  const m = /^data:([a-z]+\/[a-z.+-]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(
+    dataUrl,
+  );
+  if (!m) bad(`Adjunta la ${what} como imagen (JPG, PNG, WebP) o PDF.`);
+  const bytes = Buffer.from(m[2], "base64");
+  if (!bytes.length) bad(`La ${what} está vacía.`);
+  if (bytes.length > GV_PROOF_MAX)
+    bad(`La ${what} debe pesar como máximo 2 MB.`);
+  const img = imageType(bytes);
+  const contentType =
+    img && img !== "gif"
+      ? "image/" + img
+      : bytes.subarray(0, 5).toString("latin1") === "%PDF-"
+        ? "application/pdf"
+        : null;
+  if (!contentType || contentType !== m[1])
+    bad(`La ${what} debe ser una imagen JPG, PNG o WebP, o un PDF.`);
+  return { contentType, bytes, size: bytes.length };
+}
+/** Campos de comprobante de un pago (como las ventas): sin los bytes. */
+export function gvProofFields<T extends { proof?: any }>(p: T) {
+  const { proof, ...rest } = p;
+  return {
+    ...rest,
+    hasProof: !!proof,
+    proofContentType: (proof?.contentType as string | undefined) ?? null,
+    proofBytes: (proof?.size as number | undefined) ?? null,
+  };
+}
 export const gvPaymentInput = <T extends z.ZodRawShape>(extra: T) =>
-  z.object({ ...gvPaymentFields, ...extra }).superRefine((v, ctx) => {
-    transferDetails(v as GvPaymentData, ctx);
-    cardDetails(v as GvPaymentData, ctx);
-    usdRate(v as GvPaymentData, ctx);
-  });
+  z
+    .object({
+      ...gvPaymentFields,
+      // Solo la dueña ("*") puede cobrar sin caja abierta, y con motivo escrito.
+      cashlessReason: z.string().trim().max(300).optional(),
+      // Foto o PDF del voucher/comprobante como data URL (obligatoria con
+      // tarjeta o transferencia; ver gvProofParse).
+      proof: z.string().max(GV_PROOF_DATA_MAX).optional(),
+      ...extra,
+    })
+    .superRefine((v, ctx) => {
+      transferDetails(v as GvPaymentData, ctx);
+      cardDetails(v as GvPaymentData, ctx);
+      usdRate(v as GvPaymentData, ctx);
+    });
 export type GvPaymentData = {
   date: string;
   amount: number;
@@ -248,6 +297,8 @@ export type GvPaymentData = {
   reference: string | null;
   currency?: (typeof GV_CURRENCIES)[number];
   rate?: number | null;
+  cashlessReason?: string;
+  proof?: string;
 };
 // Reembolso de una inscripción o cita «reembolsada» (GV-13).
 export const gvRefundFields = {
@@ -390,6 +441,7 @@ export async function gvCajaEsperado(
   tarjeta: string;
   transferencia: string;
   count: number;
+  cards: number;
 }> {
   const rows = await tx.gvPayment.findMany({
     where: { cashSessionId: sessionId, rejectedAt: null },
@@ -405,6 +457,7 @@ export async function gvCajaEsperado(
     tarjeta: out.tarjeta.toFixed(2),
     transferencia: out.transferencia.toFixed(2),
     count: rows.length,
+    cards: rows.filter((r: any) => r.method === "tarjeta").length,
   };
 }
 
@@ -414,7 +467,7 @@ export async function createGvPayment(
   kind: GvOwnerKind,
   ownerId: string,
   operationId: string,
-  data: GvPaymentData,
+  { cashlessReason, proof, ...data }: GvPaymentData,
 ) {
   const o = OWNER[kind];
   const owner = await lockGvOwner(tx, kind, ownerId, actor.branchId);
@@ -431,6 +484,19 @@ export async function createGvPayment(
   }
   if (GV_CLOSED.has(owner.status))
     bad(`${o.label} está ${owner.status}: no acepta pagos.`);
+  // Tarjeta o transferencia: sin foto del voucher/comprobante no se guarda.
+  if (data.method !== "efectivo" && !proof)
+    bad(
+      data.method === "tarjeta"
+        ? "Adjunta la foto del voucher de la tarjeta."
+        : "Adjunta la foto del comprobante de la transferencia.",
+    );
+  const proofFile = proof
+    ? gvProofParse(
+        proof,
+        data.method === "tarjeta" ? "foto del voucher" : "foto del comprobante",
+      )
+    : null;
   if (data.method === "transferencia")
     assertGvBank(await gvBankOptions(tx, actor.branchId), data.bank);
   else if (data.method === "tarjeta") {
@@ -477,6 +543,13 @@ export async function createGvPayment(
     bad(
       "Cierra la caja de GV del día anterior antes de registrar pagos nuevos.",
     );
+  // Sin caja abierta no se cobra (orden de la dueña, 5-nov); ella sí, con motivo.
+  if (!cash) {
+    if (!can(actor.permissions, "*"))
+      bad("Abre tu caja de GV antes de cobrar.");
+    if ((cashlessReason ?? "").length < 3)
+      bad("Para cobrar sin caja abierta escribe el motivo.");
+  }
   // Recibo interno numerado con el contador de la sucursal (sin NCF: GV aún no tiene RNC).
   const counter = await tx.counter.upsert({
     where: { key: "gvrecibo:" + actor.branchId },
@@ -505,16 +578,29 @@ export async function createGvPayment(
       createdBy: actor.id,
     },
   });
-  await audit(
-    tx,
-    actor,
-    "gv_payment_create",
-    "gv_payment",
-    row.id,
-    undefined,
-    row,
-  );
-  return row;
+  if (proofFile)
+    await tx.gvProof.create({
+      data: {
+        paymentId: row.id,
+        contentType: proofFile.contentType,
+        size: proofFile.size,
+        data: proofFile.bytes,
+        createdBy: actor.id,
+      },
+    });
+  await audit(tx, actor, "gv_payment_create", "gv_payment", row.id, undefined, {
+    ...row,
+    ...(cash ? {} : { cashlessReason }),
+    ...(proofFile
+      ? { proof: `(${proofFile.contentType}, ${proofFile.size} bytes)` }
+      : {}),
+  });
+  return {
+    ...row,
+    hasProof: !!proofFile,
+    proofContentType: proofFile?.contentType ?? null,
+    proofBytes: proofFile?.size ?? null,
+  };
 }
 
 /**
