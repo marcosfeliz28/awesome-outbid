@@ -6,12 +6,14 @@ import { Button } from "@fitstore/ui";
 import { formatMoney } from "@fitstore/shared";
 import { api, post } from "./api";
 import { QueryState, toast } from "./helpers";
+import { GvProofField } from "./GvProof";
 
 type Cash = {
   id: string;
   openingAmount: string;
   openedAt: string;
   payments: number;
+  cardPayments: number;
   overdue: boolean;
   expected?: Record<string, string>;
 };
@@ -44,6 +46,7 @@ export function GvCaja() {
   });
   const [opening, setOpening] = useState("0");
   const [counted, setCounted] = useState({ cash: "", card: "", transfer: "" });
+  const [batchProof, setBatchProof] = useState("");
   const [result, setResult] = useState<Closed | null>(null);
   const run = async (work: () => Promise<unknown>) => {
     try {
@@ -62,6 +65,33 @@ export function GvCaja() {
             abono de más de 15 días.
           </p>
         ) : null}
+        <div className="gv-card" aria-label="Qué te falta">
+          <h3>Qué te falta hoy</h3>
+          <ul>
+            {!current.data ? (
+              <li>⚠ Abre tu caja de GV antes de cobrar.</li>
+            ) : (
+              <>
+                <li>✓ Caja abierta.</li>
+                {current.data.cardPayments > 0 && (
+                  <li>
+                    {batchProof ? "✓" : "⚠"} Foto del cierre de lote del
+                    terminal (hubo {current.data.cardPayments} pago(s) con
+                    tarjeta).
+                  </li>
+                )}
+                <li>
+                  ⚠ Al terminar tu turno (tarde y noche) cierra la caja. No la
+                  dejes abierta de un día para otro.
+                </li>
+              </>
+            )}
+          </ul>
+          <small>
+            Cada pago con tarjeta o transferencia lleva la foto del voucher o
+            del comprobante.
+          </small>
+        </div>
         {!current.data ? (
           <>
             <label className="field">
@@ -93,11 +123,16 @@ export function GvCaja() {
               {current.data.payments} cobro(s).
               {current.data.overdue && " Es de un día anterior: ciérrala."}
             </p>
+            <p>
+              Cuenta el dinero y escribe cuánto hay en cada forma de pago. Si no
+              hubo, escribe 0.
+            </p>
             {(["cash", "card", "transfer"] as const).map((k) => (
               <label className="field" key={k}>
                 <span>Contado en {LABEL[k].toLowerCase()} (RD$)</span>
                 <input
                   inputMode="decimal"
+                  required
                   value={counted[k]}
                   onChange={(e) =>
                     setCounted((c) => ({ ...c, [k]: e.target.value }))
@@ -105,17 +140,32 @@ export function GvCaja() {
                 />
               </label>
             ))}
+            {current.data.cardPayments > 0 && (
+              <GvProofField
+                label="Foto del cierre de lote del terminal (obligatoria)"
+                value={batchProof}
+                onChange={setBatchProof}
+              />
+            )}
             <Button
+              disabled={
+                !counted.cash ||
+                !counted.card ||
+                !counted.transfer ||
+                (current.data.cardPayments > 0 && !batchProof)
+              }
               onClick={() =>
                 run(async () => {
                   setResult(
                     await post<Closed>("/gv/cash/close", {
-                      countedCash: Number(counted.cash || 0),
-                      countedCard: Number(counted.card || 0),
-                      countedTransfer: Number(counted.transfer || 0),
+                      countedCash: Number(counted.cash),
+                      countedCard: Number(counted.card),
+                      countedTransfer: Number(counted.transfer),
+                      batchProof: batchProof || undefined,
                     }),
                   );
                   setCounted({ cash: "", card: "", transfer: "" });
+                  setBatchProof("");
                 })
               }
             >
