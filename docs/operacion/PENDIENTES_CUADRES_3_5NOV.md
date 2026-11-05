@@ -69,8 +69,8 @@ Leyenda: SÍ = confirmado con banco, voucher o la dueña. PENDIENTE = falta dato
 | 4 | Transferencias 4-nov FS-416, 417, 418, 426, 429, 430 (22,450) | SÍ | Verificadas; FS-417 con banco corregido a Popular ···3620 |
 | 5 | Cobro FS-415 Elvys, 3,300 (tarjeta lote 159, aprob. 00MY1Y) | SÍ | Voucher del cierre lote 159; registrado en caja temporal 6e818217 |
 | 6 | Cobro FS-420 Neuroby, 2,200 (+350 envío) | SÍ | Transferencia Popular ···3620 ref 611040510; verificada |
-| 7 | Tarjeta 4-nov +6,350 | SÍ (explicada) | Lote 159: 3,500 (FS-415) + 2,850 |
-| 8 | Voucher 2,850 del lote 159 = FS-413 romana del ober (2,500 + 350) | PENDIENTE | Wendy/Lizbeth confirman entrega y cobro con tarjeta; no registrado |
+| 7 | Tarjeta 4-nov +6,350 | SÍ (explicada, queda +550 = envíos de Addison) | Lote 159: 3,500 (FS-415) + 2,850 (FS-413) |
+| 8 | Voucher 2,850 del lote 159 = FS-413 romana del ober (2,500 + 350) | SÍ (confirmado por la dueña 5-nov) | Cobro registrado y pasado a la caja de Wendy 4-nov; tarjeta +550 = envíos de Addison |
 | 9 | Cobro FS-425 Conny Musulla, 2,550 (2,200 + 350) tarjeta, lote 160 del 5-nov | SÍ (cobro confirmado por la dueña), PENDIENTE de registrar | Falta voucher individual (aprobación y últimos 4) o que Wendy lo registre en su caja abierta 8d2c2810 |
 | 10 | Efectivo −50 (2-nov), −10 (3-nov), +10 (4-nov) | PENDIENTE | Wendy explica |
 | 11 | FS-404 heanny ortiz 3,950 (depósito a nombre de Yeraldina Monegro) | PENDIENTE | Quién pagó |
