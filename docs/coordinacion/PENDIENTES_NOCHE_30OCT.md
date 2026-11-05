@@ -92,3 +92,15 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 
 ## 1-nov 16:55 UTC · Decisión de la dueña: dominio **norexos.net** (en vez de norexos.ai)
 Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.com` 11,17; `.ai` 80). Intentos de registro por API (x2) fallaron SIN cobrar: «No registrant contact provided and no default address book entry». Falta que la dueña deje un contacto **predeterminado** en `dash.cloudflare.com/<cuenta>/domains/registrations` (puede que ya exista el de `nexorapos.net` y solo haya que marcarlo como predeterminado) y confirme tarjeta en facturación; o que dé nombre, dirección, teléfono (+1…) para enviarlo en la solicitud. Tras registrar: DNS a la landing, certificado, `soporte@norexos.net` (Email Routing, como en nexorapos.net), 301 desde nexorapos.net. Landing: agente en `claude-pc/landing-norexos-net`. Se actualizan las menciones de norexos.ai en `docs/venta/` cuando el dominio exista.
+
+## 5-nov 04:50 UTC · Orden de la dueña (se fue a dormir): «procede a hacer todo lo que falte, venta y no venta, hasta mañana»
+- Agentes en marcha (sin desplegar): landing norexos.net (`claude-pc/landing-norexos-net`, session_01CjMpH79rw2VkFCZiqy8GaB), reportes bajos + HALLAZGOS_TOTAL (`claude-pc/aud-pendientes-bajos`, session_01CjMpH86z4UQ77hBJSbqkLp), control de GV (`claude-pc/gv-control-vendedora` 58212243, CI verde, esperando visto bueno).
+- NO se despliega nada que cambie caja, cobros, precios o inventario (GV caja/recibos/cupo/PIN) sin su respuesta a los 5 puntos de RESULTADOS_GV_CONTROL.md; sí docs, landing estática y reportes de solo texto con 3 CI verdes y 0 cajas (N2).
+- Esperan a la dueña: ganancia de octubre y devoluciones heredadas (dinero-seguridad-final, aud-sincronia), rol de la gerente de GV (A o B), regla de permiso `git push` de N2 (claude/bitacora-n2), vouchers de tarjeta (Lizbeth 17:03/17:06; Wendy FS-0000425), dominio/precios.
+
+## 5-nov · DESPLEGADO control de GV (1868b1b4; API 05:56 UTC, web 08:06 UTC)
+- Autorizado por la dueña («cerrar y aplicarle más control a GV; autorización de todo hasta las 6 AM»). 3 CI verdes en el SHA exacto; N2 confirmó sin cobros en curso; única caja abierta: 8a61d2c1 de la dueña (0 ventas) = excepción anotada.
+- Vivo: caja propia de GV (abrir/cerrar con arqueo ciego), recibo GV-0000001 por pago, bloqueo con caja del día anterior abierta, cupo bloqueado, PIN de la dueña para anular/devolver, alerta de abonos >15 días. Migración aditiva 202611040001. Verificado: health ok, /gv/cash/current 200, logs de error vacíos.
+- Defaults que la dueña puede cambiar: cobrar SIN caja GV abierta sigue permitido; reembolsos en efectivo aún no restan de la caja GV.
+- Landing norexos.net lista en su rama (881f6a5, CI verde), sin publicar: faltan planes/precios, buzón, destino app, dominio.
+- Levantamiento solo lectura: 82 transferencias sin verificar (RD$ 331,030), 561 productos bajo mínimo, 16 créditos por antigüedad, 37 descuadres, 6 ventas con margen bajo; 0 cajas abiertas salvo la de la dueña.

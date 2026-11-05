@@ -1135,6 +1135,11 @@ model GvPayment {
   amountDop    Decimal?      @db.Decimal(14, 2)
   // Transferencia: pendiente hasta verificarla; efectivo y tarjeta, verificados.
   verified     Boolean       @default(false)
+  // Caja GV en la que se cobró y recibo interno (GV-0000001, contador
+  // «gvrecibo:<sucursal>»). El recibo no es comprobante fiscal (sin NCF).
+  cashSessionId String?       @db.Uuid
+  cashSession   GvCashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  receiptNumber String?
   verifiedBy   String?
   verifiedAt   DateTime?
   // Rechazado (transferencia que no llegó o pago anulado): no cuenta como pagado.
@@ -1145,9 +1150,34 @@ model GvPayment {
   createdAt    DateTime      @default(now())
 
   @@unique([branchId, externalId])
+  @@unique([branchId, receiptNumber])
   @@index([enrollmentId])
   @@index([appointmentId])
+  @@index([cashSessionId])
   @@index([branchId, date])
+}
+
+// Caja propia de GV (opción B): separada de CashSession de MacGen. Una abierta
+// por sucursal (índice único parcial gv_cash_one_open en la migración).
+model GvCashSession {
+  id               String      @id @default(uuid()) @db.Uuid
+  branchId         String      @default("main")
+  userId           String
+  openingAmount    Decimal     @db.Decimal(14, 2)
+  openedAt         DateTime    @default(now())
+  closedAt         DateTime?
+  closedBy         String?
+  expectedCash     Decimal?    @db.Decimal(14, 2)
+  countedCash      Decimal?    @db.Decimal(14, 2)
+  expectedCard     Decimal?    @db.Decimal(14, 2)
+  countedCard      Decimal?    @db.Decimal(14, 2)
+  expectedTransfer Decimal?    @db.Decimal(14, 2)
+  countedTransfer  Decimal?    @db.Decimal(14, 2)
+  difference       Decimal?    @db.Decimal(14, 2)
+  notes            String      @default("")
+  payments         GvPayment[]
+
+  @@index([branchId, openedAt])
 }
 
 // GV Makeup Studio · citas de maquillaje (docs/coordinacion/MODULO-GV.md §3 y

@@ -25,7 +25,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 15  | **Reportes**                 | `reports:read`     | `Reports` (`apps/web/src/Management.tsx:2842`)                          | 271                |
 | 16  | **Alertas**                  | `alerts:write`     | `Alerts` (`apps/web/src/Management.tsx:3063`)                           | 275                |
 | 17  | **Incentivos**               | `sale:manage`      | `IncentivesPage` (`apps/web/src/Incentives.tsx:287`)                    | 278                |
-| 18  | **GV Makeup Studio**         | `gv:read`          | `Gv` (`apps/web/src/Gv.tsx:111`)                                        | 282                |
+| 18  | **GV Makeup Studio**         | `gv:read`          | `Gv` (`apps/web/src/Gv.tsx:112`)                                        | 282                |
 
 Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1018-1048`):
 
@@ -115,7 +115,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1018-1048`):
 ## Reportes
 
 - **Etiqueta:** «Reportes». **Permiso:** `reports:read`. **Componente:** `Reports`, `apps/web/src/Management.tsx:2842`. Título: «Los números cuentan tu historia» (`:2861`).
-- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:2898`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:726`; carpeta `apps/api/src/reportes/`).
+- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:2898`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:736`; carpeta `apps/api/src/reportes/`).
 
 ## Resumen
 
@@ -132,8 +132,8 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1018-1048`):
 
 ## GV Makeup Studio
 
-- **Etiqueta:** «GV Makeup Studio». **Permiso:** `gv:read`. **Componente:** `Gv`, `apps/web/src/Gv.tsx:111`. Título en pantalla: «Cursos y cobros» (`:122`).
-- **Pestañas internas:** «Cursos», «Citas», «Interesadas», «Por verificar» y «Reportes» (esta última solo con `gv:reports`) (`apps/web/src/Gv.tsx:129-174`).
+- **Etiqueta:** «GV Makeup Studio». **Permiso:** `gv:read`. **Componente:** `Gv`, `apps/web/src/Gv.tsx:112`. Título en pantalla: «Cursos y cobros» (`:122`).
+- **Pestañas internas:** «Cursos», «Citas», «Interesadas», «Por verificar» y «Reportes» (esta última solo con `gv:reports`) (`apps/web/src/Gv.tsx:130-175`).
 - Detalle completo: `GV.md`.
 
 ## Configuración (lo que el equipo llama «gestión»)

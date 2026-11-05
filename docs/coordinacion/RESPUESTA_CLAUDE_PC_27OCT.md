@@ -635,3 +635,10 @@ La dueña pidió instalarlo. Con ella presente (el login es suyo):
 
 ## Orden 113 (2-nov, Norexos 1, por orden de la dueña) · verificación visual de reportes en vivo
 Ver `REPARTO_AUDITORIA_REPORTES_2NOV.md` (sección Claude PC). Con la dueña presente.
+
+## Orden 114 (3-nov, Norexos 1, por orden de la dueña) · instalar MarkItDown (Microsoft) en la laptop
+Convierte PDF, Word, Excel, PowerPoint e imágenes a Markdown (útil para que las IA lean los reportes PDF/Excel).
+1. En la terminal de la laptop: `pip install "markitdown[all]"` (mejor dentro de un entorno virtual). Comprueba con `markitdown --version`.
+2. Prueba de solo lectura con un archivo de muestra (por ejemplo un reporte exportado): `markitdown archivo.xlsx`. Nunca con credenciales ni datos que no sean de la tienda ya exportados.
+3. Si falla, anota el error exacto y sigue con la cola normal. Anota el resultado en `RESPUESTA_CLAUDE_PC_27OCT.md`.
+Ya instalado en el entorno de Norexos 1 (nube, v0.1.7–0.1.9).

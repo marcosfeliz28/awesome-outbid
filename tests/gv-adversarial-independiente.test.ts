@@ -383,7 +383,11 @@ for (const kind of ["inscripción", "cita"] as const)
           {
             status,
             ...(status === "reembolsada"
-              ? { refundAmount: 40, refundDate: "2026-10-26" }
+              ? {
+                  refundAmount: 40,
+                  refundDate: "2026-10-26",
+                  approverPin: "123456",
+                }
               : {}),
           },
           "PATCH",
@@ -549,7 +553,12 @@ for (const kind of ["inscripción", "cita"] as const)
       await ok(
         path,
         gv,
-        { status: "reembolsada", refundAmount: 40, refundDate: "2026-10-26" },
+        {
+          status: "reembolsada",
+          refundAmount: 40,
+          refundDate: "2026-10-26",
+          approverPin: "123456",
+        },
         "PATCH",
       );
       const rows = kind === "cita" ? payload.appointments : payload.enrollments;

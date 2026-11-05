@@ -42,7 +42,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Envío / mensajero** — Cobro del envío que paga el cliente junto con la transferencia o la tarjeta. Va **aparte** del total (no es venta, ganancia ni ITBIS) y se le paga luego al mensajero (por defecto «Addison») en «Envíos del mensajero» (`apps/web/src/POS.tsx:2857-2902`; `apps/web/src/CourierPayouts.tsx:26`; `packages/shared/src/index.ts` `courierCharge`).
 
-**Equipo / terminal** — Computadora registrada. Un equipo nuevo necesita aprobación de un gerente (`apps/web/src/realtime.tsx:513-516`).
+**Equipo / terminal** — Computadora registrada. Un equipo nuevo necesita aprobación de un gerente (`apps/web/src/realtime.tsx:515-518`).
 
 **En espera** — Carrito guardado para seguir después (F8). **Cotizar** lo guarda como cotización. Ambos son `Quote` (`apps/web/src/POS.tsx:456-488`).
 
@@ -52,7 +52,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Fondo / «Efectivo inicial»** — Dinero con el que se abre la caja (`apps/web/src/Management.tsx:2023`).
 
-**Génesis / Macgen** — Nombres de las dos empresas/grupos de cuentas bancarias. En GV, las cuentas se agrupan «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis» (`apps/api/src/gv-money.ts:163-175`). Los cobros de GV caen en cuentas de Génesis (`docs/coordinacion/MODULO-GV.md:3`).
+**Génesis / Macgen** — Nombres de las dos empresas/grupos de cuentas bancarias. En GV, las cuentas se agrupan «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis» (`apps/api/src/gv-money.ts:164-176`). Los cobros de GV caen en cuentas de Génesis (`docs/coordinacion/MODULO-GV.md:3`).
 
 **Grupo MacGen** — La empresa dueña de la tienda: suplementos, fajas, tenis y ropa deportiva, accesorios de gym y maquillaje (`apps/web/src/App.tsx:284-312`, `:349`).
 
@@ -86,7 +86,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Recepción** — Registro de lo que llegó de una orden de compra o factura (`GoodsReceipt`) (`apps/web/src/Purchases.tsx:338-453`).
 
-**Reembolsada (GV)** — Estado final de una inscripción o cita: se devolvió dinero; exige monto y fecha y se resta de los ingresos (`apps/web/src/Gv.tsx:637-646`).
+**Reembolsada (GV)** — Estado final de una inscripción o cita: se devolvió dinero; exige monto y fecha y se resta de los ingresos (`apps/web/src/Gv.tsx:690-699`).
 
 **RNC** — Registro Nacional del Contribuyente (identificación de empresa). Campo `legalId` de cliente, proveedor y del negocio (`apps/api/prisma/schema.prisma:292-300`).
 

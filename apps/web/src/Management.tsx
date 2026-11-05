@@ -3022,6 +3022,12 @@ export function Reports() {
               </label>
               <Badge tone="violet">{total} registros</Badge>
             </div>
+            {report.startsWith("ventas-mes-") && (
+              <p className="muted">
+                Compara el mes de la fecha «Hasta»; la fecha «Desde» no cambia
+                el resultado.
+              </p>
+            )}
             {pages > 1 && (
               <div className="pagination">
                 <span>

@@ -197,10 +197,15 @@ describe("GV · banco de lista y anular pago", () => {
     expect(paid.concept).toBe("completo");
     // Sin razón no se anula; con razón, sí, y deja de contar.
     expect(
-      (await request("/gv/payments/" + paid.id + "/void", gv, {})).status,
+      (
+        await request("/gv/payments/" + paid.id + "/void", gv, {
+          approverPin: "123456",
+        })
+      ).status,
     ).toBe(400);
     const voided = await ok("/gv/payments/" + paid.id + "/void", gv, {
       reason: "Monto mal escrito",
+      approverPin: "123456",
     });
     expect(voided.rejectedAt).toBeTruthy();
     const detail = await ok("/gv/courses/" + course.id, gv);
@@ -272,6 +277,7 @@ describe("GV · anular un pago ya verificado", () => {
     await ok(`/gv/payments/${paid.id}/review`, admin, { verified: true });
     const voided = await ok("/gv/payments/" + paid.id + "/void", gv, {
       reason: "Cambio al 15 de noviembre",
+      approverPin: "123456",
     });
     expect(voided.rejectedAt).toBeTruthy();
     expect(voided.verified).toBe(false);
@@ -483,7 +489,12 @@ describe("GV · cursos, inscripciones y pagos", () => {
     await ok("/gv/payments", gv, payBody(e.id, { amount: 2000 }));
     const late = await ok("/gv/payments", gv, transferBody(e.id, 100));
     const patch = (data: unknown) =>
-      request("/gv/enrollments/" + e.id, gv, data, "PATCH");
+      request(
+        "/gv/enrollments/" + e.id,
+        gv,
+        { approverPin: "123456", ...(data as object) },
+        "PATCH",
+      );
     expect((await patch({ status: "reembolsada" })).status).toBe(400);
     expect(
       (
@@ -829,7 +840,12 @@ describe("GV · auditoría de Claude PC", () => {
     await ok(
       "/gv/enrollments/" + e.id,
       gv,
-      { status: "reembolsada", refundAmount: 800, refundDate: "2026-10-26" },
+      {
+        status: "reembolsada",
+        refundAmount: 800,
+        refundDate: "2026-10-26",
+        approverPin: "123456",
+      },
       "PATCH",
     );
     const reopen = structuredClone(base);
