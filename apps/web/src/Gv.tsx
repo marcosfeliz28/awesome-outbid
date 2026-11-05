@@ -235,6 +235,17 @@ function CourseForm({
   onClose: () => void;
 }) {
   const client = useQueryClient();
+  // Catálogo de Génesis: al elegir una opción se rellenan nombre, precio y tipo.
+  const catalog = useQuery({
+    queryKey: ["gv-catalog"],
+    queryFn: () =>
+      api<{ nombre: string; precio: number; moneda: string; tipo: string }[]>(
+        "/gv/catalog",
+      ),
+    enabled: !course,
+  });
+  const [opcion, setOpcion] = useState("");
+  const elegida = catalog.data?.find((c) => c.nombre === opcion);
   const [form, setForm] = useState({
     name: course?.name ?? "",
     type: course?.type ?? "automaquillaje",
@@ -243,6 +254,17 @@ function CourseForm({
     capacity: String(course?.capacity ?? ""),
     active: course?.active ?? true,
   });
+  const elegir = (nombre: string) => {
+    setOpcion(nombre);
+    const c = catalog.data?.find((x) => x.nombre === nombre);
+    if (c)
+      setForm((f) => ({
+        ...f,
+        name: c.nombre,
+        type: c.tipo,
+        price: String(c.precio),
+      }));
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = (key: string, value: unknown) =>
@@ -276,10 +298,24 @@ function CourseForm({
       title={course ? "Editar curso" : "Nuevo curso"}
     >
       <form onSubmit={save} className="form-grid gv-form">
+        {!course && (
+          <label className="field full">
+            <span>Curso del catálogo</span>
+            <select value={opcion} onChange={(e) => elegir(e.target.value)}>
+              <option value="">Curso libre (otro)</option>
+              {(catalog.data ?? []).map((c) => (
+                <option key={c.nombre} value={c.nombre}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="field full">
           <span>Nombre</span>
           <input
             required
+            readOnly={!!elegida}
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
           />
@@ -288,6 +324,7 @@ function CourseForm({
           <span>Tipo</span>
           <select
             value={form.type}
+            disabled={!!elegida}
             onChange={(e) => set("type", e.target.value)}
           >
             <Options map={TYPES} />
@@ -303,10 +340,11 @@ function CourseForm({
           />
         </label>
         <label className="field">
-          <span>Precio (RD$)</span>
+          <span>Precio ({elegida?.moneda ?? "RD$"})</span>
           <input
             inputMode="decimal"
             required
+            readOnly={!!elegida}
             value={form.price}
             onChange={(e) => set("price", e.target.value)}
           />
@@ -469,7 +507,13 @@ function EnrollmentForm({
 }) {
   const client = useQueryClient();
   const [operationId] = useState(() => crypto.randomUUID());
+  const courses = useQuery<Course[]>({
+    queryKey: ["gv-courses"],
+    queryFn: () => api("/gv/courses"),
+    enabled: !!enrollment,
+  });
   const [form, setForm] = useState({
+    courseId,
     clientName: enrollment?.clientName ?? "",
     phone: enrollment?.phone ?? "",
     instagram: enrollment?.instagram ?? "",
@@ -496,9 +540,12 @@ function EnrollmentForm({
     setBusy(true);
     setError("");
     try {
-      const { refundAmount, refundDate, ...rest } = form;
+      const { refundAmount, refundDate, courseId: newCourseId, ...rest } = form;
       const data = {
         ...rest,
+        ...(enrollment && newCourseId !== courseId
+          ? { courseId: newCourseId }
+          : {}),
         agreedPrice: Number(form.agreedPrice),
         attended: form.attended === "" ? null : form.attended === "true",
         ...(refunding
@@ -508,9 +555,15 @@ function EnrollmentForm({
       if (enrollment)
         await send("/gv/enrollments/" + enrollment.id, data, "PATCH");
       else await post("/gv/enrollments", { ...data, courseId, operationId });
-      await client.invalidateQueries({ queryKey: ["gv-course", courseId] });
+      await client.invalidateQueries({ queryKey: ["gv-course"] });
       await client.invalidateQueries({ queryKey: ["gv-courses"] });
-      toast(enrollment ? "Inscripción actualizada." : "Inscripción guardada.");
+      toast(
+        enrollment && form.courseId !== courseId
+          ? "Alumna pasada a la nueva fecha."
+          : enrollment
+            ? "Inscripción actualizada."
+            : "Inscripción guardada.",
+      );
       onClose();
     } catch (cause: any) {
       setError(cause.message);
@@ -534,6 +587,23 @@ function EnrollmentForm({
             onChange={(e) => set("clientName", e.target.value)}
           />
         </label>
+        {enrollment && (
+          <label className="field full">
+            <span>Fecha del curso (para pasarla a otra fecha)</span>
+            <select
+              value={form.courseId}
+              onChange={(e) => set("courseId", e.target.value)}
+            >
+              {(courses.data ?? [])
+                .filter((c) => c.active || c.id === courseId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} · {dateText(c.date)}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
         <label className="field">
           <span>Teléfono</span>
           <input
@@ -734,7 +804,7 @@ function PaymentForm({
         ...form,
         bank: paymentBank(form.method, form.bank, banks.data?.terminals),
         amount: Number(form.amount),
-        rate: form.currency === "USD" ? Number(form.rate) : undefined,
+        rate: form.rate ? Number(form.rate) : undefined,
         enrollmentId: enrollment.id,
         operationId,
       });
@@ -801,17 +871,21 @@ function PaymentForm({
             <option value="USD">Dólares (US$)</option>
           </select>
         </label>
-        {form.currency === "USD" && (
-          <label className="field">
-            <span>Tasa (RD$ por US$)</span>
-            <input
-              inputMode="decimal"
-              required
-              value={form.rate}
-              onChange={(e) => set("rate", e.target.value)}
-            />
-          </label>
-        )}
+        <label className="field">
+          <span>
+            Tasa (RD$ por US$
+            {form.currency === "USD"
+              ? ""
+              : "; en pesos solo si el curso es en US$"}
+            )
+          </span>
+          <input
+            inputMode="decimal"
+            required={form.currency === "USD"}
+            value={form.rate}
+            onChange={(e) => set("rate", e.target.value)}
+          />
+        </label>
         {form.method === "transferencia" && (
           <>
             <label className="field">

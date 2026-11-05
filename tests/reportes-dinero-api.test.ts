@@ -272,6 +272,14 @@ describe("Reportes 40 · Dinero", () => {
     );
   });
 
+  it("la nota «Ventas netas» solo aparece en reportes de ventas", async () => {
+    const q = `?from=${today}&to=${today}`;
+    expect((await ok("/reports/anulaciones" + q, admin)).note).toBe("");
+    expect((await ok("/reports/por-mayor-detalle" + q, admin)).note).toMatch(
+      /Ventas netas/,
+    );
+  });
+
   it("Configuración guarda cuentas y terminales; sin la clave se conservan", async () => {
     const original = await ok("/settings", admin);
     try {

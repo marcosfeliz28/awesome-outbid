@@ -111,11 +111,14 @@ export async function discardCartDraft() {
 
 /**
  * 05-N2: la sesión se cierra por inactividad con un carrito a medias. Cerrar
- * la sesión borra la tabla `cache` (G9), borrador incluido; aquí se vuelve a
- * dejar el del propio usuario para que lo encuentre al volver a entrar (sólo
- * lo recupera él, y caduca a las 12 h).
+ * la sesión borra la tabla `cache` (G9); el borrador del propio usuario se
+ * conserva en la misma transacción del borrado, para que lo encuentre al
+ * volver a entrar aunque la página se recargue enseguida (sólo lo recupera
+ * él, y caduca a las 12 h).
  */
-export async function keepDraftThrough(close: () => Promise<void>) {
+export async function keepDraftThrough(
+  close: (keep: { key: string; data: any }[]) => Promise<void>,
+) {
   const userId = useStore.getState().user?.id;
   if (userId && useStore.getState().cart.length && !sealed) {
     cancelPending();
@@ -124,8 +127,7 @@ export async function keepDraftThrough(close: () => Promise<void>) {
   const saved = userId
     ? await localDB.cache.get(draftKey(userId)).catch(() => undefined)
     : undefined;
-  await close();
-  if (saved) await localDB.cache.put(saved).catch(() => {});
+  await close(saved ? [saved] : []);
 }
 
 let owner: string | null = null;

@@ -11,7 +11,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { Prisma } from "@prisma/client";
 import { can, d, z } from "@fitstore/shared";
 import {
@@ -25,6 +27,10 @@ import {
   parse,
   uuid,
 } from "./common";
+import { comprobarLimite, esFormato, nombreArchivo } from "./reportes/export";
+import { renderPdf } from "./reportes/export-pdf";
+import { renderXlsx } from "./reportes/export-xlsx";
+import { modeloGv } from "./reportes/gv-export";
 import {
   gvImportUpsert,
   gvMoney,
@@ -44,9 +50,10 @@ import {
   planGvImportPayments,
   gvBankOptions,
   monedaDeCurso,
+  catalogoOpciones,
   valorPesos,
 } from "./gv-money";
-import { GV_CATALOGO, gvDevengoMes } from "./gv-incentives";
+import { GV_CATALOGO, gvIncentivosMes } from "./gv-incentives";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -148,6 +155,13 @@ export class GvController {
     });
     if (!row) bad("Curso no encontrado.");
     return row;
+  }
+
+  // Catálogo de cursos para el formulario «nuevo curso» (solo lectura, sin incentivo).
+  @Get("catalog")
+  @Permit("gv:read")
+  catalog() {
+    return catalogoOpciones();
   }
 
   @Get("courses")
@@ -352,7 +366,9 @@ export class GvController {
     );
     // partial(): lo que no llega queda undefined (sin los valores por defecto
     // del alta) y Prisma no lo cambia.
-    if (data.courseId) await this.course(actor, data.courseId);
+    const target = data.courseId
+      ? await this.course(actor, data.courseId)
+      : null;
     const enrollmentId = parse(uuid, id);
     return this.db.$transaction(async (tx) => {
       const locked = await lockGvOwner(
@@ -363,6 +379,13 @@ export class GvController {
       );
       const { payments: _p, ...before } = locked;
       void _p;
+      // Pasarla a otra fecha: el curso nuevo se cobra en la misma moneda que el actual
+      // (los pagos ya registrados no se convierten).
+      if (
+        target &&
+        monedaDeCurso(target.name) !== monedaDeCurso(locked.course?.name)
+      )
+        bad("Solo puedes pasarla a un curso que se cobre en la misma moneda.");
       const row = await tx.gvEnrollment.update({
         where: { id: before.id },
         data: checkGvOwnerEdit("enrollment", locked, data) as any,
@@ -685,6 +708,69 @@ export class GvController {
     };
   }
 
+  // Exportación a PDF o Excel de los reportes de GV. Usa el mismo objeto que la
+  // pantalla (this.reports), así las cifras son idénticas.
+  @Get("reports/export")
+  @Permit("gv:reports")
+  async reportsExport(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    if (!esFormato(query.format)) bad("Formato no válido: usa pdf o xlsx.");
+    const rep: any = await this.reports(query, actor);
+    const filas =
+      rep.income.byDay.length +
+      rep.income.byMethod.length +
+      rep.income.byBank.length +
+      rep.income.byEmployee.length +
+      rep.courses.length +
+      rep.pendingByClient.length;
+    comprobarLimite(filas);
+    const settings = ((
+      await this.db.settings.findUnique({ where: { id: actor.branchId } })
+    )?.data ?? {}) as any;
+    const modelo = modeloGv(rep, {
+      negocio: settings.name ?? "",
+      desde: query.from || "inicio",
+      hasta: query.to || "hoy",
+      generadoPor: actor.name,
+      emitido: new Date().toLocaleString("es-DO", {
+        timeZone: "America/Santo_Domingo",
+        dateStyle: "long",
+        timeStyle: "short",
+      }),
+    });
+    const archivo =
+      query.format === "xlsx"
+        ? await renderXlsx(modelo)
+        : await renderPdf(modelo);
+    await audit(
+      this.db,
+      actor,
+      "report.export",
+      "GvReport",
+      "reports",
+      undefined,
+      {
+        format: query.format,
+        from: query.from ?? null,
+        to: query.to ?? null,
+        rows: filas,
+      },
+    );
+    res.setHeader(
+      "Content-Type",
+      query.format === "xlsx"
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "application/pdf",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${nombreArchivo("gv-reportes", query.from, query.to, query.format)}"`,
+    );
+    res.end(archivo);
+  }
   // Incentivo fijo por inscripción (orden 103), a nombre de quien la registró.
   // Sin costos: sólo monto, mes y nombre.
   @Get("incentives")
@@ -706,6 +792,7 @@ export class GvController {
         course: { select: { name: true } },
         payments: {
           select: {
+            id: true,
             amount: true,
             date: true,
             verified: true,
@@ -713,12 +800,14 @@ export class GvController {
             currency: true,
             amountDop: true,
             rate: true,
+            createdBy: true,
           },
         },
       },
     });
-    const calc = enrollments.flatMap((e) => {
-      const r = gvDevengoMes(
+    // Incentivo por pago: a quien cobró cada pago (eventos del mes pedido).
+    const calc = enrollments.flatMap((e) =>
+      gvIncentivosMes(
         {
           courseName: e.course.name,
           agreedPrice: e.agreedPrice,
@@ -727,33 +816,31 @@ export class GvController {
           payments: e.payments,
         },
         period,
-      );
-      if (!r) return [];
-      return [
-        {
-          enrollmentId: e.id,
-          clientName: e.clientName,
-          course: e.course.name,
-          period: r.period,
-          amount: r.amount,
-          registeredBy: e.createdBy,
-        },
-      ];
-    });
+      ).map((ev) => ({
+        enrollmentId: e.id,
+        clientName: e.clientName,
+        course: e.course.name,
+        period: ev.period,
+        kind: ev.kind,
+        amount: ev.amount,
+        personId: ev.personId,
+      })),
+    );
     const name = await gvUserNames(
       this.db,
-      calc.map((r) => r.registeredBy),
+      calc.map((r) => r.personId),
     );
     const rows = calc.map((r) => ({
       ...r,
-      registeredByName: name(r.registeredBy),
+      cobradoPor: r.personId,
+      cobradoPorName: name(r.personId),
     }));
     const porPersona = new Map<
       string,
       { name: string; total: Prisma.Decimal; count: number }
     >();
     for (const r of rows) {
-      const key = r.registeredByName ?? "Sin nombre";
+      const key = r.cobradoPorName ?? "Sin nombre";
       const acc = porPersona.get(key) ?? { name: key, total: d(0), count: 0 };
       porPersona.set(key, {
         name: key,

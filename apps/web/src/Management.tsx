@@ -56,6 +56,7 @@ import { CourierFeeEditor } from "./CourierFeeEditor";
 import { SaleEditPanel, editableNow } from "./SaleEditPanel";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
+import { exportPath, exportFileName, type ExportFormat } from "./reportExport";
 import {
   CloseCashModal,
   CodPending,
@@ -2814,6 +2815,30 @@ export function groupReports(
   }
   return [...out].filter(([, list]) => list.length);
 }
+function ReportGuide({ name }: { name: string }) {
+  const [open, setOpen] = useState(false);
+  const guide = useQuery({
+    queryKey: ["reporte-guia", name],
+    queryFn: () =>
+      api<{ queEs: string; paraQueSirve: string; comoSeLee: string }>(
+        `/reportes/${encodeURIComponent(name)}/guia`,
+      ),
+    enabled: open,
+  });
+  return (
+    <details onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary>¿Qué es y cómo se lee?</summary>
+      {guide.isError && <p>No pudimos cargar la explicación.</p>}
+      {guide.data && (
+        <>
+          <p>{guide.data.queEs}</p>
+          <p>{guide.data.paraQueSirve}</p>
+          <p>{guide.data.comoSeLee}</p>
+        </>
+      )}
+    </details>
+  );
+}
 export function Reports() {
   const user = useStore((s) => s.user);
   // Los 40 reportes de la dueña (orden 18-oct) vienen del servidor, ya
@@ -2821,8 +2846,11 @@ export function Reports() {
   const extra = useQuery({
     queryKey: ["reportes-40"],
     queryFn: () =>
-      api<{ name: string; title: string; group: string }[]>("/reportes"),
+      api<
+        { name: string; title: string; group: string; exportable?: boolean }[]
+      >("/reportes"),
   });
+  const [busy, setBusy] = useState<ExportFormat | null>(null);
   const allReports: string[][] = [
     ...reportList,
     ...(extra.data ?? []).map((r) => [r.name, r.title]),
@@ -2921,30 +2949,52 @@ export function Reports() {
                 <p>Información registrada en tu tienda.</p>
               </div>
               <div className="table-actions">
-                {["xlsx", "pdf"].map((format) => (
-                  <Button
-                    variant="secondary"
-                    key={format}
-                    onClick={() =>
-                      download(
-                        `/reports/${report}?from=${from}&to=${to}&format=${format}`,
-                        `${report}.${format}`,
-                      ).catch((error) =>
-                        toast(
-                          error.message !== DOWNLOAD_FAILED
-                            ? error.message
-                            : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
-                          true,
-                        ),
-                      )
-                    }
-                  >
-                    <Download size={16} />
-                    {format === "xlsx" ? "Excel" : "PDF"}
-                  </Button>
-                ))}
+                {can(user?.permissions ?? [], "reports:read") &&
+                  (["xlsx", "pdf"] as const).map((format) => (
+                    <Button
+                      variant="secondary"
+                      key={format}
+                      disabled={busy !== null}
+                      onClick={async () => {
+                        const nuevo = extra.data?.find(
+                          (r) => r.name === report,
+                        )?.exportable;
+                        setBusy(format);
+                        try {
+                          await download(
+                            nuevo
+                              ? exportPath(report, from, to, format)
+                              : `/reports/${report}?from=${from}&to=${to}&format=${format}`,
+                            nuevo
+                              ? exportFileName(report, format)
+                              : `${report}.${format}`,
+                          );
+                        } catch (error: any) {
+                          // 400 trae el motivo (p. ej. límite de 20,000 filas).
+                          toast(
+                            error.message !== DOWNLOAD_FAILED
+                              ? error.message
+                              : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
+                            true,
+                          );
+                        } finally {
+                          setBusy(null);
+                        }
+                      }}
+                    >
+                      <Download size={16} />
+                      {busy === format
+                        ? "Preparando…"
+                        : format === "xlsx"
+                          ? "Descargar Excel"
+                          : "Descargar PDF"}
+                    </Button>
+                  ))}
               </div>
             </div>
+            {extra.data?.find((r) => r.name === report)?.exportable && (
+              <ReportGuide name={report} />
+            )}
             <div className="date-filters">
               <label className="field">
                 <span>Desde</span>
@@ -3236,11 +3286,12 @@ export function SalesHistory() {
                   s.hiddenUntilClose
                     ? "Se ve al cerrar tu caja"
                     : s.payments
-                    .map(
-                      (p: any) =>
-                        paymentOptions.find((o) => o.value === p.method)?.label,
-                    )
-                    .join(" + "),
+                        .map(
+                          (p: any) =>
+                            paymentOptions.find((o) => o.value === p.method)
+                              ?.label,
+                        )
+                        .join(" + "),
               },
               {
                 label: "Acciones",
@@ -3430,8 +3481,8 @@ export function SalesHistory() {
             {selected.hiddenUntilClose && <p>Se ve al cerrar tu caja.</p>}
             {Number(selected.discountTotal) > 0 && (
               <p>
-                Descuento: {saleMoney(selected, selected.discountTotal)} · Motivo:{" "}
-                {selected.discountReason}
+                Descuento: {saleMoney(selected, selected.discountTotal)} ·
+                Motivo: {selected.discountReason}
                 {selected.discountApprovedName
                   ? ` · Autorizó: ${selected.discountApprovedName}`
                   : ""}
@@ -3444,8 +3495,8 @@ export function SalesHistory() {
                     {METHOD_LABEL[p.method] ??
                       paymentOptions.find((o) => o.value === p.method)?.label ??
                       p.method}{" "}
-                    · Recibido: {saleMoney(selected, p.tendered ?? p.amount)}{" "}
-                    · Aplicado: {saleMoney(selected, p.amount)} · Cambio:{" "}
+                    · Recibido: {saleMoney(selected, p.tendered ?? p.amount)} ·
+                    Aplicado: {saleMoney(selected, p.amount)} · Cambio:{" "}
                     {saleMoney(selected, p.change ?? 0)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>

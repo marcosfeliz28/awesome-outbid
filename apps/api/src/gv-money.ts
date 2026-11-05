@@ -26,6 +26,7 @@ export const GV_CURRENCIES = ["DOP", "USD"] as const;
 // monto fijo del incentivo en RD$ por alumna. Se empata por nombre exacto.
 // shortcut: catálogo en código, no en base; cambiarlo exige un despliegue.
 export type CursoGv = {
+  tipo: "automaquillaje" | "brazilian" | "personalizado";
   nombre: string;
   precio: number;
   moneda: "RD$" | "US$";
@@ -35,54 +36,63 @@ export type CursoGv = {
 // Brazilian touch (curso 8): incentivo 0; lo lleva Yaisa aparte.
 export const GV_CATALOGO: CursoGv[] = [
   {
+    tipo: "personalizado",
     nombre: "Curso de maquilladora profesional personalizado",
     precio: 70000,
     moneda: "RD$",
     incentivo: 1000,
   },
   {
+    tipo: "personalizado",
     nombre: "Curso maquilladora profesional personalizado",
     precio: 55000,
     moneda: "RD$",
     incentivo: 1000,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso de automaquillaje básico grupal",
     precio: 4500,
     moneda: "RD$",
     incentivo: 50,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso de automaquillaje básico personalizado",
     precio: 200,
     moneda: "US$",
     incentivo: 50,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso de automaquillaje básico personalizado avanzado",
     precio: 270,
     moneda: "US$",
     incentivo: 50,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso automaquillaje básico modalidad 2 clases",
     precio: 350,
     moneda: "US$",
     incentivo: 50,
   },
   {
+    tipo: "automaquillaje",
     nombre: "Curso de automaquillaje básico personalizado 3 clases",
     precio: 450,
     moneda: "US$",
     incentivo: 50,
   },
   {
+    tipo: "brazilian",
     nombre: "Perfeccionamiento para maquilladores grupal Brazilian touch",
     precio: 18000,
     moneda: "RD$",
     incentivo: 0,
   },
   {
+    tipo: "personalizado",
     nombre:
       "Perfeccionamiento para maquilladores VIP personalizado: piel blindada + ojos social con delineado o novias",
     precio: 18000,
@@ -90,12 +100,21 @@ export const GV_CATALOGO: CursoGv[] = [
     incentivo: 500,
   },
   {
+    tipo: "personalizado",
     nombre: "Perfeccionamiento para maquilladores: piel glow + ojos social",
     precio: 15000,
     moneda: "RD$",
     incentivo: 500,
   },
 ];
+/** Opciones del formulario «nuevo curso»: sin incentivo ni costos. */
+export const catalogoOpciones = () =>
+  GV_CATALOGO.map(({ nombre, precio, moneda, tipo }) => ({
+    nombre,
+    precio,
+    moneda,
+    tipo,
+  }));
 /** Moneda de precio del curso; un curso fuera del catálogo se cobra en RD$. */
 export const monedaDeCurso = (nombre: string | null | undefined) =>
   GV_CATALOGO.find((c) => c.nombre === nombre)?.moneda ?? "RD$";
@@ -255,7 +274,13 @@ export function valorEnMoneda(
   moneda: Moneda,
 ): Prisma.Decimal | null {
   const usd = p.currency === "USD";
-  if (moneda === "US$") return usd ? d(p.amount) : null;
+  if (moneda === "US$") {
+    if (usd) return d(p.amount);
+    // Pesos en un curso en US$: sólo con la tasa de ESE pago (sin tasa, no cuenta).
+    return p.rate && d(p.rate).gt(0)
+      ? d(p.amount).div(p.rate).toDecimalPlaces(2)
+      : null;
+  }
   if (!usd) return d(p.amount);
   return p.amountDop == null ? null : d(p.amountDop);
 }
@@ -391,8 +416,10 @@ export async function createGvPayment(
   const moneda =
     kind === "enrollment" ? monedaDeCurso(owner.course?.name) : "RD$";
   const usd = data.currency === "USD";
-  if (moneda === "US$" && !usd)
-    bad("Este curso se cobra en US$: el pago debe registrarse en US$.");
+  if (moneda === "US$" && !usd && !data.rate)
+    bad(
+      "Este curso se cobra en US$: indica la tasa (pesos por dólar) del pago.",
+    );
   // Equivalente en pesos con la tasa de este pago (en pesos, el mismo monto).
   const amountDop = usd
     ? d(data.amount)
@@ -400,7 +427,14 @@ export async function createGvPayment(
         .toDecimalPlaces(2)
     : d(data.amount);
   // El tope se compara en la moneda del curso.
-  const valor = moneda === "US$" ? d(data.amount) : amountDop;
+  const valor =
+    moneda === "US$"
+      ? usd
+        ? d(data.amount)
+        : d(data.amount)
+            .div(data.rate ?? 1)
+            .toDecimalPlaces(2)
+      : amountDop;
   const room = d(owner[o.total]).minus(committed(owner.payments, moneda));
   if (valor.gt(room))
     bad(
@@ -414,7 +448,7 @@ export async function createGvPayment(
     data: {
       ...data,
       currency: usd ? "USD" : "DOP",
-      rate: usd ? data.rate : null,
+      rate: usd || moneda === "US$" ? (data.rate ?? null) : null,
       amountDop: amountDop.toFixed(2),
       destination,
       date: dateOnly(data.date),
@@ -475,11 +509,10 @@ export function checkGvOwnerEdit(
     bad(
       "Para marcarla «reembolsada» indica el monto y la fecha del reembolso.",
     );
-  const paid = gvTotals(0, before.payments, {}, moneda).paid;
+  // El reembolso es siempre en RD$ (orden 106): se valida contra lo pagado en pesos.
+  const paid = gvTotals(0, before.payments, {}, "RD$").paid;
   if (d(data.refundAmount).gt(paid))
-    bad(
-      `El reembolso no puede superar lo pagado verificado (${moneda} ${paid}).`,
-    );
+    bad(`El reembolso no puede superar lo pagado verificado (RD$ ${paid}).`);
   return { ...data, refundDate: dateOnly(data.refundDate) };
 }
 
