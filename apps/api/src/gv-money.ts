@@ -441,6 +441,7 @@ export async function gvCajaEsperado(
   tarjeta: string;
   transferencia: string;
   count: number;
+  cards: number;
 }> {
   const rows = await tx.gvPayment.findMany({
     where: { cashSessionId: sessionId, rejectedAt: null },
@@ -456,6 +457,7 @@ export async function gvCajaEsperado(
     tarjeta: out.tarjeta.toFixed(2),
     transferencia: out.transferencia.toFixed(2),
     count: rows.length,
+    cards: rows.filter((r: any) => r.method === "tarjeta").length,
   };
 }
 

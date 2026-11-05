@@ -160,12 +160,43 @@ describe("GV · caja propia", () => {
       tarjeta: "300.00",
       transferencia: "0.00",
     });
+    // Hubo tarjeta: sin la foto del cierre de lote no cierra; sin declarar un método tampoco.
+    const noBatch = await request("/gv/cash/close", gv, {
+      countedCash: 1400,
+      countedCard: 300,
+      countedTransfer: 0,
+    });
+    expect(noBatch.status).toBe(400);
+    expect(JSON.stringify(noBatch.body)).toContain("cierre de lote");
+    expect(
+      (
+        await request("/gv/cash/close", gv, {
+          countedCash: 1400,
+          countedCard: 300,
+          batchProof: GV_PROOF_PNG,
+        })
+      ).status,
+    ).toBe(400);
+    expect((await ok("/gv/cash/current", gv)).cardPayments).toBe(1);
     // Declara 100 menos en efectivo.
     const closed = await ok("/gv/cash/close", gv, {
       countedCash: 1400,
       countedCard: 300,
       countedTransfer: 0,
+      batchProof: GV_PROOF_PNG,
     });
+    const listed = (await ok("/gv/cash", admin)).find(
+      (c: any) => c.id === closed.session.id,
+    );
+    expect(listed.hasProof).toBe(true);
+    const photo = await fetch(
+      base + "/gv/cash/" + closed.session.id + "/proof",
+      {
+        headers: { Authorization: "Bearer " + admin },
+      },
+    );
+    expect(photo.status).toBe(200);
+    expect(photo.headers.get("content-type")).toContain("image/png");
     expect(closed.differences).toEqual({
       cash: "-100.00",
       card: "0.00",

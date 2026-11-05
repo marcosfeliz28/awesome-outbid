@@ -1,6 +1,6 @@
 # Rutas de la API y sus permisos
 
-Generado por `scripts/rutas-permisos.mjs`. 198 rutas; 0 sin @Permit cerca del método (revisar).
+Generado por `scripts/rutas-permisos.mjs`. 199 rutas; 0 sin @Permit cerca del método (revisar).
 
 | ruta | método | permiso | archivo:línea |
 |---|---|---|---|
@@ -70,10 +70,11 @@ Generado por `scripts/rutas-permisos.mjs`. 198 rutas; 0 sin @Permit cerca del m�
 | `/api/gv/appointments/:id` | PATCH | `gv:write` | `apps/api/src/gv-citas.ts:412` |
 | `/api/gv/appointments/:id/payments` | POST | `gv:write` | `apps/api/src/gv-citas.ts:463` |
 | `/api/gv/banks` | GET | `gv:read` | `apps/api/src/gv.ts:483` |
-| `/api/gv/cash` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:47` |
-| `/api/gv/cash/close` | POST | `gv:write` | `apps/api/src/gv-caja.ts:84` |
-| `/api/gv/cash/current` | GET | `gv:read` | `apps/api/src/gv-caja.ts:23` |
-| `/api/gv/cash/open` | POST | `gv:write` | `apps/api/src/gv-caja.ts:57` |
+| `/api/gv/cash` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:65` |
+| `/api/gv/cash/:id/proof` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:78` |
+| `/api/gv/cash/close` | POST | `gv:write` | `apps/api/src/gv-caja.ts:123` |
+| `/api/gv/cash/current` | GET | `gv:read` | `apps/api/src/gv-caja.ts:40` |
+| `/api/gv/cash/open` | POST | `gv:write` | `apps/api/src/gv-caja.ts:96` |
 | `/api/gv/catalog` | GET | `gv:read` | `apps/api/src/gv.ts:178` |
 | `/api/gv/courses` | GET | `gv:read` | `apps/api/src/gv.ts:184` |
 | `/api/gv/courses` | POST | `gv:write` | `apps/api/src/gv.ts:234` |
