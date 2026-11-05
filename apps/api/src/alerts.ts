@@ -75,6 +75,9 @@ export const MANUAL_ALERT_TYPES = [
   // Cambio en una caja ya cerrada y su «falta lote» (#6, 25-oct).
   "cash_after_close",
   "card_batch_missing",
+  // Caja GV abierta pasadas las 10 PM / día con pagos GV sin cierre (gv-vigilante.ts).
+  "gv_cash_open_night",
+  "gv_day_no_close",
 ];
 // Avisos que sólo ve la dueña («*»).
 export const OWNER_ONLY_ALERT_TYPES = [
@@ -82,6 +85,8 @@ export const OWNER_ONLY_ALERT_TYPES = [
   "usd_rate_offline",
   "cash_after_close",
   "card_batch_missing",
+  "gv_cash_open_night",
+  "gv_day_no_close",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
@@ -827,13 +832,15 @@ export class AlertCacheInterceptor implements NestInterceptor {
 }
 // Cuerpo de PUT /alert-rules. El tope de 100 reglas da holgura: hay un puñado de tipos.
 export const alertRulesBody = z.object({
-  rules: z.array(
-    z.object({
-      type: z.string(),
-      active: z.boolean(),
-      threshold: z.record(z.number()),
-    }),
-  ).max(100),
+  rules: z
+    .array(
+      z.object({
+        type: z.string(),
+        active: z.boolean(),
+        threshold: z.record(z.number()),
+      }),
+    )
+    .max(100),
 });
 
 @Controller()
