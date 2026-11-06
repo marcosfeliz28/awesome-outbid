@@ -6736,3 +6736,41 @@ td strong {
     justify-content: flex-end;
   }
 }
+
+/* Celular: encabezados de panel y acciones envueltos; controles táctiles de
+   al menos 44 px. */
+@media (max-width: 768px) {
+  .panel-heading {
+    flex-wrap: wrap;
+  }
+  .table-actions {
+    flex-wrap: wrap;
+  }
+  .main-content button,
+  .main-content .button,
+  .main-content select,
+  .main-content input:not([type="checkbox"]):not([type="radio"]),
+  .modal button {
+    min-height: 44px;
+  }
+  .main-content .table-actions button:not(.button),
+  .main-content button:has(> svg:only-child) {
+    min-width: 44px;
+  }
+}
+
+/* Celular: el mapa de calor (24 horas) se recorre con el dedo y las sombras
+   laterales avisan que hay más a los lados. */
+@media (max-width: 768px) {
+  .heatmap {
+    background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 24px
+        100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 24px
+        100% no-repeat local,
+      linear-gradient(to right, #0003, transparent) left / 10px 100% no-repeat
+        scroll,
+      linear-gradient(to left, #0003, transparent) right / 10px 100% no-repeat
+        scroll;
+  }
+}

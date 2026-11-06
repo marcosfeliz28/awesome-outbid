@@ -210,3 +210,18 @@
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+
+/* Celular: texto de lectura de al menos 14 px. */
+@media (max-width: 768px) {
+  .wholesale-toggle button,
+  .wholesale-toggle small,
+  .wholesale-notice,
+  .incentive-mine p,
+  .incentive-mine small,
+  .incentive-table small,
+  .incentive-rules ul,
+  .incentive-rates p,
+  .incentive-hint {
+    font-size: 14px;
+  }
+}
