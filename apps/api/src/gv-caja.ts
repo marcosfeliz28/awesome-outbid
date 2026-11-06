@@ -32,6 +32,32 @@ import {
 
 const fix = (v: unknown) => d(v as any).toFixed(2);
 
+/** Resuelve los avisos de la caja `sessionId` y de los días con pagos en ella. */
+export async function resolveGvCashAlerts(
+  tx: any,
+  branchId: string,
+  sessionId: string,
+) {
+  const pays = await tx.gvPayment.findMany({
+    where: { cashSessionId: sessionId },
+    select: { createdAt: true },
+  });
+  const days = [
+    ...new Set<string>(pays.map((p: any) => businessDate(p.createdAt))),
+  ];
+  await tx.alert.updateMany({
+    where: {
+      branchId,
+      status: { not: "resolved" },
+      OR: [
+        { type: "gv_cash_open_night", entityId: sessionId },
+        { type: "gv_day_no_close", entityId: { in: days } },
+      ],
+    },
+    data: { status: "resolved" },
+  });
+}
+
 @Controller("gv/cash")
 export class GvCajaController {
   constructor(@Inject(Database) private readonly db: Database) {}
@@ -182,6 +208,8 @@ export class GvCajaController {
             createdBy: actor.id,
           },
         });
+      // Cerrar la caja resuelve sus avisos (10 PM abierta / día sin cierre).
+      await resolveGvCashAlerts(tx, actor.branchId, s.id);
       await audit(tx, actor, "gv_cash_close", "gv_cash", row.id, s, {
         ...row,
         ...(batch

@@ -86,7 +86,7 @@ Filtros **Desde** / **Hasta** (`Gv.tsx:1135-1143`). Secciones (`:970-1037`): **I
 | `gv:write`   | Crear/editar cursos, inscripciones, citas, interesadas; registrar y anular pagos. | Rol `gv`, `manager`, `admin`           |
 | `gv:reports` | Pestaña «Reportes».                                                               | Rol `gv`, `manager`, `admin`           |
 | `gv:verify`  | Verificar o rechazar transferencias.                                              | `manager`, `admin`; **no** el rol `gv` |
-| `*`          | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:1001`).                 | `admin`                                |
+| `*`          | Importación en lote `POST /gv/import` (`apps/api/src/gv.ts:1001`).                | `admin`                                |
 
 Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `gv` (p. ej. la empleada Clary) no tiene acceso a configuración, usuarios, costos, inventario ni datos de MacGen (`docs/coordinacion/MODULO-GV.md:43-44`).
 
@@ -126,3 +126,9 @@ Fuente de los permisos por rol: `packages/shared/src/index.ts:759-786`. El rol `
 - **`GET /gv/cash/current`** responde `{open:false}` sin caja (antes cuerpo vacío: la pestaña mostraba error) y, con caja, `open:true` y `cardPayments`.
 - **Alertas a la dueña** (`gv-vigilante.ts`, cada 10 min, tabla `Alert`, solo `*`): `gv_cash_open_night` si pasadas las 10 PM (hora RD) hay una caja GV abierta; `gv_day_no_close` si un día de los últimos 7 tuvo pagos en caja GV y ninguna caja cerró ese día. Una por caja/día; no se recrean si se resuelven.
 - **Pantalla:** «Caja GV» muestra «Qué te falta hoy» (caja, foto del lote, cerrar); el formulario de pago pide la foto, avisa «Abre tu caja de GV» y desactiva «Registrar pago» hasta tener lo necesario.
+
+## 14. Rol `gerente_gv`, alertas que se cierran solas y espacio de las fotos (orden de la dueña, 6-nov)
+
+- **Rol `gerente_gv`** (migración aditiva `202611060001_gv_gerente_rol`, también en `permissions` de `packages/shared/src/index.ts`): `gv:read`, `gv:reports`, `gv:verify`. Da seguimiento a las transferencias con foto; no registra pagos ni abre caja (sin `gv:write`). La dueña crea el usuario.
+- **Alertas:** al cerrar la caja GV (`POST /gv/cash/close`, `resolveGvCashAlerts` en `gv-caja.ts`) pasan a «resuelta» la alerta «caja abierta pasadas las 10 PM» de esa caja y las de «día con pagos sin cierre» de los días en que esa caja tuvo pagos. El vigilante no las vuelve a crear (la clave ya existe).
+- **Fotos (sin cambio de retención: se guardan sin vencimiento):** viven en la tabla `GvProof` de PostgreSQL (columna `data`, bytes), una fila por pago con tarjeta/transferencia (`paymentId`) y una por cierre con tarjeta (`cashSessionId`). Cada foto pesa **como máximo 2 MB** (jpeg/png/webp/pdf), normalmente 0,3–1 MB si es una foto de celular. Cálculo del espacio: `fotos al mes × peso medio`; con 100 comprobantes al mes de 1 MB ≈ 100 MB al mes ≈ 1,2 GB al año, y como tope absoluto 100 × 2 MB = 200 MB al mes. Medirlo real: `SELECT count(*), pg_size_pretty(sum(size)) FROM "GvProof";` (`size` guarda los bytes de cada foto).
