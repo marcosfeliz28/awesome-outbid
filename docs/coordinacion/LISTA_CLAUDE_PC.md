@@ -74,3 +74,7 @@ LISTA: claude-pc/gv-incentivos 70082e1c102faee1fe24d85797aa78a071866981 (orden 1
 LISTA: claude-pc/fix-dinero af86bb862b86431d227f3f81ba6880e573a0f3f1 (orden 104 lote DINERO, mezcla de nexora-cloud y citas re-ancladas por otra sesión; verify, windows-installer y render-images en verde; no ejecuté cambios míos; no desplegar sin revisión de Nexora 1)
 
 LISTA: claude-pc/fix-seg-menor e8d2acfe2079bbea8f5f97f1c7f0383a65da8260 (orden 105 lote seguridad menor; verify, windows-installer y render-images en verde; no ejecuté cambios míos; no desplegar sin revisión de Nexora 1)
+
+LISTA: claude-pc/movil-todo 1b2a29a85beaf7af02ee156b1bb42fab152e9b77 (orden 115 pieza 2, revisión sin corregir en RESULTADO_ORDEN_115_CLAUDE_PC.md; verify, windows-installer y render-images en verde; no ejecuté cambios míos; no desplegar sin revisión de Nexora 1)
+
+LISTA: claude-pc/landing-norexos-net d340664d70425a2a353d27a3373c265daac70cd2 (orden 115 pieza 2, revisión sin corregir en RESULTADO_ORDEN_115_CLAUDE_PC.md; verify, windows-installer y render-images en verde; no ejecuté cambios míos; no desplegar sin revisión de Nexora 1)
