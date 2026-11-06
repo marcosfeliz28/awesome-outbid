@@ -34,13 +34,13 @@ Regresión: `tests/avisos-propios.test.ts` (en `pnpm check`). Falla sin el arreg
 
 ## Corridas (local, PostgreSQL 16, API dev, `vite preview`)
 
-| Condición | Antes | Después |
-|---|---|---|
-| G9 inactividad, sin carga | 20/20 pasan | — |
-| G9 inactividad, 6 procesos de CPU al 100 % | 30/30 pasan | — |
+| Condición                                  | Antes                          | Después            |
+| ------------------------------------------ | ------------------------------ | ------------------ |
+| G9 inactividad, sin carga                  | 20/20 pasan                    | —                  |
+| G9 inactividad, 6 procesos de CPU al 100 % | 30/30 pasan                    | —                  |
 | G9 inactividad, CPU ×2,5 / ×3 / ×3,5 (CDP) | **3 fallos en 90** (2 + 1 + 0) | **0 fallos en 90** |
-| privacidad-sesion.spec.ts completo ×10 | — | 30/30 |
-| caja-borrador + cuatro-cajas ×3 | — | 15/15 |
+| privacidad-sesion.spec.ts completo ×10     | —                              | 30/30              |
+| caja-borrador + cuatro-cajas ×3            | —                              | 15/15              |
 
 `pnpm check`: typecheck y eslint OK. Las 14 suites `*-postgres` no corren en esta sandbox (`initdb` como root, Permission denied); el CI sí las corre.
 
@@ -50,5 +50,6 @@ Regresión: `tests/avisos-propios.test.ts` (en `pnpm check`). Falla sin el arreg
 
 ## SHA y CI
 
-- SHA: (se completa al empujar)
-- verify / windows-installer / render-images: (pendiente)
+- SHA del arreglo: `34c3d6a2e295bf20af0e18461a2dec9f8300fbdf` (rama `claude-pc/flaky-g9`).
+- CI run 42223134508, intento 1, sin relanzar: verify ✅ (e2e completa, incluida G9), windows-installer ✅, render-images ✅.
+- No se mezcló en nexora-cloud ni se desplegó.
