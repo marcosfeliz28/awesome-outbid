@@ -2267,3 +2267,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (3-nov, 1) — orden 114 nueva (nexora-cloud 3b8604c7), no ejecutable desde la nube
 - RESPUESTA cambió (orden 114: instalar MarkItDown en la laptop; es de la laptop, no de este entorno). No instalé nada. OBSIDIAN_LUMINA_PROGRESO sin cambios. Pendiente con 106–113 para la sesión de la laptop.
 - CI: pc23, a1, b01 y lumina siguen verdes; LISTA NO escrita (ninguna orden nueva cita ramas). Último hash visto de nexora-cloud: 3b8604c7 (cabeza 3b8604c7). No desplegar.
+
+## Ciclo nube (6-nov, 1) — orden 115 nueva (nexora-cloud 83408302): ejecutada la parte de la nube
+- Hecho: MarkItDown 0.1.9 instalado y probado; revisión sin corregir de movil-todo (1b2a29a8) y landing-norexos-net (d340664d) en RESULTADO_ORDEN_115_CLAUDE_PC.md. Saltadas 113 (producción), 112 y ChatGPT PC. OBSIDIAN_LUMINA_PROGRESO sin cambios.
+- CI: pc23, a1, b01 y lumina verdes; movil-todo y landing con verify aún en curso: LISTA NO escrita. Último hash visto de nexora-cloud: 83408302 (cabeza a26dc85c). No desplegar.
