@@ -109,3 +109,8 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Solo exportación/texto: fila de total en PDF/Excel, fecha legible, «Facturas que la incluyen». Sin cambios de cifras. 3 CI verdes en el SHA; N2 sin cobros en curso (10:39 UTC). Verificado: health ok, logs vacíos, PDF de ventas-por-marca 200 con fila de total.
 - HALLAZGOS_TOTAL.jsonl y RESUMEN.md ya en docs/auditoria/reportes/: listos para la contra-auditoría de ChatGPT PC/nube.
 - Producción = 0a17101b (+ docs posteriores). Pendientes de la dueña sin cambio.
+
+## 6-nov 06:40 UTC · EN VIVO: GV exige caja abierta, foto de voucher y cierre diario (a3b1b19c)
+- Render: API (dep-dbmig66k1f9s73b3q200) y web (dep-dbmig6dg1s2s73f2uc40) con a3b1b19c desde 01:06 UTC (9:06 PM RD), disparados por API de Render (trigger «api»). Este turno solo lo VERIFICÓ: health ok, web 200, `/api/gv/cash/current` devuelve `{"open":false}` (arreglo de la pestaña «Caja GV»), 0 cajas abiertas, última venta 21:52 UTC del 5-nov, logs de error vacíos.
+- N2 no contestó la lectura previa pedida a las 02:11 y 02:37 UTC; lectura propia en solo lectura (/cash-sessions, /sales, /gv/cash) = sin cajas ni cobros. Anotado como excepción a la regla «comprobado por N2».
+- Falta por comprobar en navegador: modal de pago con tarjeta y cierre con foto de lote (primer día de uso de Clary), seguridad-20 puntos 8 y 10–15.
