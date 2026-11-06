@@ -143,7 +143,11 @@ function DataTable({
             {rows.slice((page - 1) * 20, page * 20).map((r, index) => (
               <tr key={r.id || r.sku || index}>
                 {columns.map((c) => (
-                  <td key={c.label} className={c.className} data-label={c.label}>
+                  <td
+                    key={c.label}
+                    className={c.className}
+                    data-label={c.label}
+                  >
                     {c.render(r)}
                   </td>
                 ))}
