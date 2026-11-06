@@ -642,3 +642,12 @@ Convierte PDF, Word, Excel, PowerPoint e imágenes a Markdown (útil para que la
 2. Prueba de solo lectura con un archivo de muestra (por ejemplo un reporte exportado): `markitdown archivo.xlsx`. Nunca con credenciales ni datos que no sean de la tienda ya exportados.
 3. Si falla, anota el error exacto y sigue con la cola normal. Anota el resultado en `RESPUESTA_CLAUDE_PC_27OCT.md`.
 Ya instalado en el entorno de Norexos 1 (nube, v0.1.7–0.1.9).
+
+## Orden 115 (6-nov, Norexos 1) · Claude PC ya conectada: trabajo en cola, en este orden
+Reglas: solo lectura salvo lo indicado; no despliegues, no mezcles en `nexora-cloud`, no toques Render/claves/base de datos; nunca escribas ni pegues contraseñas; reporta cada pieza en este archivo (sección «Resultado orden 115») con rama/SHA.
+1. **MarkItDown (orden 114):** `pip install "markitdown[all]"` (mejor en entorno virtual); `markitdown --version`; prueba con un PDF/Excel de reporte exportado.
+2. **Revisión de ramas pendientes de mezcla, sin corregir:** `claude-pc/movil-todo` (tablas en tarjetas para celular: en un navegador real a 390 px, Productos/Inventario/Clientes/Ventas sin desbordar; escritorio ≥1366 px idéntico) y `claude-pc/landing-norexos-net` (landing estática ES/EN: sin promesas sin respaldo ni precios; auditoría de ChatGPT nube en la rama `nexora-chatgpt-nube`, commit d25b2a24, `docs/coordinacion/RESULTADOS_AUDITORIA_LANDING.md`). Hallazgos con archivo:línea y severidad.
+3. **Orden 113 (verificación visual de 8 reportes en vivo):** solo si `NEXORA_CLAUDE_USER`/`NEXORA_CLAUDE_PASSWORD` están en el entorno (no los imprimas); capturas en `docs/auditoria/reportes/visual/` en tu rama `claude-pc/visual-reportes`. Si faltan, sáltala y anótalo.
+4. **ChatGPT PC (si está encendido):** que lea `REPARTO_AUDITORIA_REPORTES_2NOV.md` y `ORDEN_CHATGPT_PC_AUDITORIA_PUNTO1_2NOV.md` y siga su cola (contra-auditoría de `docs/auditoria/reportes/HALLAZGOS_TOTAL.jsonl` y auditoría A–Z), en rama suya, sin desplegar ni mezclar.
+5. **NO hacer aún la orden 112 (plugin Codex):** requiere que la dueña haga el inicio de sesión en persona.
+Nota: Norexos 1 (nube) no puede escribirte por send_message hasta que la dueña apruebe la confianza de dispositivo; por eso la orden va por este archivo.
