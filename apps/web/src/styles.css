@@ -6664,3 +6664,75 @@ td strong {
     transform: none;
   }
 }
+
+/* Celular (≤ 768 px): barra de estado del iPhone, tablas como tarjetas e
+   imágenes dentro del ancho. El escritorio no cambia. */
+@media (max-width: 768px) {
+  .topbar {
+    height: auto;
+    min-height: calc(67px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+  }
+  .sidebar {
+    padding-top: calc(26px + env(safe-area-inset-top));
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+  .main-content img,
+  .modal img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+  .table-cards table,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+  .table-cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .table-cards tbody tr {
+    margin: 0 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .table-cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 14px;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .table-cards tbody tr:last-child td {
+    border-bottom: 1px solid var(--border);
+  }
+  .table-cards tbody tr td:last-child {
+    border-bottom: 0;
+  }
+  .table-cards td::before {
+    content: attr(data-label);
+    flex: 0 0 38%;
+    text-align: left;
+    color: var(--muted);
+    font-size: max(var(--fs-min), calc(9px * var(--fs-scale)));
+    font-weight: 550;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .table-cards td[data-label=""]::before {
+    display: none;
+  }
+  .table-cards td[data-label=""] {
+    justify-content: flex-end;
+  }
+}

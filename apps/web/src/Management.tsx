@@ -128,7 +128,7 @@ function DataTable({
   return rows.length ? (
     <>
       {/* G12: con desplazamiento horizontal, la tabla se recorre con teclado. */}
-      <div className="table-wrap" tabIndex={0}>
+      <div className="table-wrap table-cards" tabIndex={0}>
         <table>
           <thead>
             <tr>
@@ -143,7 +143,7 @@ function DataTable({
             {rows.slice((page - 1) * 20, page * 20).map((r, index) => (
               <tr key={r.id || r.sku || index}>
                 {columns.map((c) => (
-                  <td key={c.label} className={c.className}>
+                  <td key={c.label} className={c.className} data-label={c.label}>
                     {c.render(r)}
                   </td>
                 ))}
