@@ -133,3 +133,8 @@ Efectivo +6 (sin explicar). Tarjeta +350 = envío Addison del cobro FS-425 (el +
 - El depósito de Miguelina Rodríguez Reyn (3,250, Banreservas ···5237, 5-nov 5:09 p. m., ref 243411589049) era de la **FS-445** (6-nov, Panty Negro XS 2,800 + 450 envío), pagada por adelantado. Banco corregido de Génesis ···5853 a MacGen ···5237 y verificada. **No era de la FS-441.**
 - **FS-441 liz mary (3,000 + 450, BHD)** sigue SIN aparecer en el banco: la dueña confirmó que no cayó en el BHD de la tienda; hay que seguir buscando.
 - Precio del Panty Negro cambiado a 2,800 (6 tallas).
+
+### Cuadre del 6-nov
+**Cierres:** Lizbeth (CCB5): tarjeta 9,600 = lote 007 GV exacto; efectivo −20 («marcos lo sabe»); transferencias 44,350. Wendy (75AA): tarjeta 5,450 = lote 161 exacto (FS-447 + FS-450); efectivo −6; transferencias 44,450. FS-414 (bomboshell 1,200) cobrada en efectivo por Lizbeth: cerrada. FS-451 anulada y rehecha como FS-452.
+**Verificadas con extracto:** FS-443 (3,100) y FS-452 (3,250) en Popular ···3620 (banco corregido desde Génesis ···9797); FS-460 (2,750) BHD.
+**Montos que coinciden pero NOMBRE distinto (pendientes de confirmar):** FS-449 nayeli 3,500+400 = 3,900 ↔ Dayana Tejada 3,900; FS-453 dra attabeira 24,250 ↔ Yuleisis Gomez 24,250; FS-454 yaritza 10,550 + FS-456 yaritza 3,200 = 13,750 ↔ Wilson Yoel Mackoy 13,750; FS-457 wilson mackoy 1,800 ↔ Nayeli Mariel Rodriguez 1,800. **Sin depósito visible:** Attabeira Morales 3,650 (sin factura); FS-461 y FS-462 (dayana tejada 14,400 dos veces, 11 min; ¿duplicada?); FS-464 miguel antonio gomez 5,950; el tramo de arriba del extracto Banreservas estaba cortado. Cardnet 6-nov 11,000 (¿lote 161 5,450 + 160?) sin cuadrar.
