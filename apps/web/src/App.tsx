@@ -14,7 +14,8 @@ import {
   friendlyPasswordChangeError,
   type PasswordPolicy,
 } from "./passwordChange";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { watchTables } from "./mobileTables";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -630,6 +631,11 @@ function Shell() {
   });
   const alertCount =
     alertBell.data?.filter((a) => a.status === "new").length ?? 0;
+  const tablesOff = useRef<() => void>(undefined);
+  const mainRef = useCallback((el: HTMLElement | null) => {
+    tablesOff.current?.();
+    tablesOff.current = el ? watchTables(el) : undefined;
+  }, []);
   const [ready, setReady] = useState(false),
     [page, setPage] = useState(location.hash.slice(1) || "dashboard"),
     [menu, setMenu] = useState(false),
@@ -1192,7 +1198,10 @@ function Shell() {
             )}
           </div>
         </header>
-        <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
+        <main
+          ref={mainRef}
+          className={`main-content ${page === "pos" ? "pos-content" : ""}`}
+        >
           <DeviceGate />
           {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>
