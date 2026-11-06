@@ -79,7 +79,7 @@ export function VoidRequests() {
                   <p>
                     <strong>Cliente:</strong>{" "}
                     {row.sale.customer || "Sin nombre"} ·{" "}
-                    <strong>Total:</strong> {formatMoney(row.sale.total)}
+                    <strong>Total:</strong> {row.sale.hiddenUntilClose ? "—" : formatMoney(row.sale.total)}
                   </p>
                   <p>
                     <strong>Motivo:</strong> {row.reason}
@@ -89,7 +89,7 @@ export function VoidRequests() {
                     {row.sale.items.map((item: any, index: number) => (
                       <li key={index}>
                         {item.name} · {item.sku} · {item.qty} ·{" "}
-                        {formatMoney(item.lineTotal)}
+                        {row.sale.hiddenUntilClose ? "—" : formatMoney(item.lineTotal)}
                       </li>
                     ))}
                   </ul>

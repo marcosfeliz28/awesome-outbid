@@ -1125,8 +1125,22 @@ model GvPayment {
   method       String
   bank         String?
   reference    String?
+  // Adónde cae el dinero de tarjeta: «gv» = área GV / Grupo Génesis, sin cuenta
+  // de banco. Nulo en efectivo y transferencia (esa usa `bank`).
+  destination  String?
+  // Moneda del pago (decisiones de la dueña, 31-oct). En US$: rate = pesos por
+  // dólar y amountDop = equivalente en pesos. En pesos, amountDop = amount.
+  currency     String        @default("DOP")
+  rate         Decimal?      @db.Decimal(14, 4)
+  amountDop    Decimal?      @db.Decimal(14, 2)
   // Transferencia: pendiente hasta verificarla; efectivo y tarjeta, verificados.
   verified     Boolean       @default(false)
+  // Caja GV en la que se cobró y recibo interno (GV-0000001, contador
+  // «gvrecibo:<sucursal>»). El recibo no es comprobante fiscal (sin NCF).
+  cashSessionId String?       @db.Uuid
+  cashSession   GvCashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  receiptNumber String?
+  proof        GvProof?
   verifiedBy   String?
   verifiedAt   DateTime?
   // Rechazado (transferencia que no llegó o pago anulado): no cuenta como pagado.
@@ -1137,9 +1151,51 @@ model GvPayment {
   createdAt    DateTime      @default(now())
 
   @@unique([branchId, externalId])
+  @@unique([branchId, receiptNumber])
   @@index([enrollmentId])
   @@index([appointmentId])
+  @@index([cashSessionId])
   @@index([branchId, date])
+}
+
+// Caja propia de GV (opción B): separada de CashSession de MacGen. Una abierta
+// por sucursal (índice único parcial gv_cash_one_open en la migración).
+model GvCashSession {
+  id               String      @id @default(uuid()) @db.Uuid
+  branchId         String      @default("main")
+  userId           String
+  openingAmount    Decimal     @db.Decimal(14, 2)
+  openedAt         DateTime    @default(now())
+  closedAt         DateTime?
+  closedBy         String?
+  expectedCash     Decimal?    @db.Decimal(14, 2)
+  countedCash      Decimal?    @db.Decimal(14, 2)
+  expectedCard     Decimal?    @db.Decimal(14, 2)
+  countedCard      Decimal?    @db.Decimal(14, 2)
+  expectedTransfer Decimal?    @db.Decimal(14, 2)
+  countedTransfer  Decimal?    @db.Decimal(14, 2)
+  difference       Decimal?    @db.Decimal(14, 2)
+  notes            String      @default("")
+  payments         GvPayment[]
+  // Foto del cierre de lote del terminal (obligatoria si hubo pagos con tarjeta).
+  proof            GvProof?
+
+  @@index([branchId, openedAt])
+}
+
+// Foto o PDF de un voucher/comprobante (pago) o del cierre de lote (caja).
+// Tabla aparte para que las listas de pagos nunca arrastren los bytes.
+model GvProof {
+  id            String          @id @default(uuid()) @db.Uuid
+  paymentId     String?         @unique @db.Uuid
+  payment       GvPayment?      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  cashSessionId String?         @unique @db.Uuid
+  cashSession   GvCashSession?  @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  contentType   String
+  size          Int
+  data          Bytes
+  createdBy     String
+  createdAt     DateTime        @default(now())
 }
 
 // GV Makeup Studio · citas de maquillaje (docs/coordinacion/MODULO-GV.md §3 y

@@ -63,6 +63,17 @@
 - Escribe `~/.claude/CLAUDE.md` en su instalador (`src/installer/index.ts:173`).
 - Condición: desactivar auto-actualización, sin llaves en el entorno, nunca en «Llaves».
 
+### Actualización 5.7.19 (27-oct-2026) — aprobada para el Taller
+Pedido de «Llaves». Diff de las etiquetas `v5.7.17` → `v5.7.19` (41 archivos, nada ejecutado):
+- **Sin cambios** en `hooks/hooks.json`, `.mcp.json`, `scripts/*`, ni dependencias de `package.json` (solo sube `version`). Los únicos cambios de manifiesto son la versión en `.claude-plugin/plugin.json` y `marketplace.json`.
+- **Scripts de ciclo de vida** igual en npm: `postinstall: node scripts/postinstall-contained-fs.mjs` y `prepublishOnly`; las 12 dependencias son idénticas a 5.7.17 (registro npm).
+- **Código que sí cambia** (`src/features/auto-update.ts`, `src/installer/index.ts`, `src/team/worker-launch-ack.ts`, y su reflejo en `dist/` y `bridge/`): el tiempo de espera de la reconciliación tras actualizar (60 s → 600 s en manual, 60 s en automática), borra un enlace simbólico colgante de `hooks/lib/stdin.mjs` antes de copiar (`installer/index.ts` ~línea 1000), evita copiar dos veces la carga del plugin, y pasa `USER` (además de `HOME`) al entorno de los trabajadores de equipo (`worker-launch-ack.ts:353-355`).
+- **Hosts nuevos:** ninguno (el diff de `bridge/` y `dist/` no añade URLs). **Telemetría o descargas nuevas:** ninguna.
+- **Variables de entorno nuevas:** solo `OMC_UPDATE_RECONCILE` y `OMC_UPDATE_PLUGIN_CACHE_SYNCED` (internas). Sí amplía algo: ahora pasa `USER` a los procesos de trabajadores; no son llaves.
+- **Procedencia:** el paquete npm `oh-my-claude-sisyphus@5.7.19` trae atestación de procedencia SLSA y firmas del registro (igual que 5.7.17); su `gitHead` es `e10206d`. No descargué ni comparé el tarball con la etiqueta; las atestaciones tampoco las verifiqué criptográficamente.
+- **Se mantiene** todo lo anotado arriba para 5.7.17: el hook que aprueba solos `git status`/`ls`/`gh ... view`, el HUD que lee llaves, y la auto-actualización con `@latest`.
+- **Veredicto: 5.7.19 aprobada para el Taller.** Recomendación aparte: fijar la versión y apagar la auto-actualización, para que el candado no vuelva a saltar.
+
 ## claude-mem 15.3.0 — rechazado con llaves/datos reales (riesgo alto)
 - Fuente: `thedotmack/claude-mem`, autor Alex Newman, commit 35f2ec0, Apache-2.0.
 - Ejecuta solo: hooks en **cada** herramienta (`PostToolUse` matcher `*` → `claude-mem hook claude-code observation`, que manda `toolInput` y `toolResponse` completos; `src/shared/hook-spool-remote.ts:16-24`), en cada prompt y al inicio; un **servicio en segundo plano** (`claude-mem start`, `worker-service.ts:703`, escucha en 127.0.0.1 salvo configuración) y MCP vía `node -e` largo (`plugin/.mcp.json`).

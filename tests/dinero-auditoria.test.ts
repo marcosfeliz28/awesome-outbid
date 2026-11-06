@@ -894,8 +894,13 @@ describe("Auditoría 01 · dinero", () => {
       year.months.reduce((a: number, m: any) => a + m.revenue, 0),
     ).toBeCloseTo(year.revenue, 2);
     const month = year.months[Number(today().slice(5, 7)) - 1];
-    // Hoy es parte del mes: el mes tiene al menos lo vendido hoy.
-    expect(month.revenue).toBeGreaterThanOrEqual(breakdown.revenue - 1);
+    // Cuadre exacto con el desglose del mes hasta hoy (mismas ventas y devoluciones).
+    const monthToDate = await ok(
+      "/dashboard/breakdown?from=" + today().slice(0, 7) + "-01&to=" + today(),
+      admin,
+    );
+    expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
+    expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
     expect(breakdown.units).toBeGreaterThanOrEqual(2);
     expect(breakdown.invoices).toBeGreaterThanOrEqual(1);
     expect(
@@ -906,6 +911,131 @@ describe("Auditoría 01 · dinero", () => {
     expect(breakdown.days).toBe(1);
     expect(breakdown.averagePerDay).toBeCloseTo(breakdown.revenue, 2);
     expect(breakdown.top.length).toBeLessThanOrEqual(10);
+  });
+
+  it("devolución heredada sin líneas: el desglose la resta como fila explícita y cuadra con el año, también el día 1", async () => {
+    const c = await person("seller", "legacy", 0);
+    const v = await product(500, 200, 10);
+    const sale = await sell(c, v, 1, [{ method: "cash", amount: 500 }]);
+    // Antes de la corrección por línea: sólo SaleReturn.total, sin items ni returnedQty.
+    await db.saleReturn.create({
+      data: {
+        saleId: sale.id,
+        number: "NC-LEG-" + suffix + "-" + randomUUID().slice(0, 8),
+        reason: "Heredada",
+        total: 500,
+        taxTotal: 0,
+        costTotal: 200,
+        refundAmount: 500,
+        refundMethod: "cash",
+        cashSessionId: c.cash.id,
+        userId: c.id,
+        items: [],
+      },
+    });
+    const monthToDate = await ok(
+      "/dashboard/breakdown?from=" + today().slice(0, 7) + "-01&to=" + today(),
+      admin,
+    );
+    const year = await ok("/dashboard/year", admin);
+    const month = year.months[Number(today().slice(5, 7)) - 1];
+    expect(month.revenue).toBeCloseTo(monthToDate.revenue, 2);
+    expect(month.profit).toBeCloseTo(monthToDate.profit, 2);
+    const row = monthToDate.categories.find(
+      (r: any) => r.name === "Devoluciones sin detalle",
+    );
+    expect(row).toBeDefined();
+    expect(row.revenue).toBeLessThanOrEqual(-500);
+    expect(
+      monthToDate.categories.reduce((a: number, r: any) => a + r.revenue, 0),
+    ).toBeCloseTo(monthToDate.revenue, 2);
+  });
+
+  it("devolución de una venta del mes anterior: se atribuye al mes de la venta y el año cuadra exacto con el desglose de cada mes", async () => {
+    const c = await person("seller", "prior", 0);
+    const v = await product(400, 150, 10);
+    const sale = await sell(c, v, 1, [{ method: "cash", amount: 400 }]);
+    const originalDate = sale.createdAt ? new Date(sale.createdAt) : new Date();
+    // Venta del último día del mes anterior; la devolución se hace hoy.
+    const monthStart = today().slice(0, 7) + "-01";
+    const lastDay = new Date(
+      Date.parse(monthStart + "T12:00:00-04:00") - 86400000,
+    );
+    const prevDay = businessDate(lastDay);
+    const prevStart = prevDay.slice(0, 7) + "-01";
+    let ret: any = null;
+    try {
+      await db.sale.update({
+        where: { id: sale.id },
+        data: { createdAt: lastDay },
+      });
+      ret = await db.saleReturn.create({
+        data: {
+          saleId: sale.id,
+          number: "NC-PRI-" + suffix + "-" + randomUUID().slice(0, 8),
+          reason: "Devolución del mes pasado",
+          total: 400,
+          taxTotal: 0,
+          costTotal: 150,
+          refundAmount: 400,
+          refundMethod: "cash",
+          cashSessionId: c.cash.id,
+          userId: c.id,
+          items: [
+            {
+              qty: 1,
+              tax: 0,
+              cost: 150,
+              total: 400,
+              opened: false,
+              damaged: false,
+              restock: true,
+              wasteQty: 0,
+              wasteCost: 0,
+              saleItemId: sale.items[0].id,
+            },
+          ],
+        },
+      });
+      // Como POST /returns: la línea queda marcada como devuelta (el desglose va por línea).
+      await db.saleItem.update({
+        where: { id: sale.items[0].id },
+        data: { returnedQty: 1 },
+      });
+      const year = await ok("/dashboard/year", admin);
+      const cur = await ok(
+        "/dashboard/breakdown?from=" + monthStart + "&to=" + today(),
+        admin,
+      );
+      const prev = await ok(
+        "/dashboard/breakdown?from=" + prevStart + "&to=" + prevDay,
+        admin,
+      );
+      const curMonth = year.months[Number(today().slice(5, 7)) - 1];
+      const prevMonth = year.months[Number(prevDay.slice(5, 7)) - 1];
+      // Con un solo criterio (fecha de la venta) el año y el desglose cuadran exacto en ambos meses.
+      expect(curMonth.revenue).toBeCloseTo(cur.revenue, 2);
+      expect(curMonth.profit).toBeCloseTo(cur.profit, 2);
+      expect(prevMonth.revenue).toBeCloseTo(prev.revenue, 2);
+      expect(prevMonth.profit).toBeCloseTo(prev.profit, 2);
+      // Ya no hay fila «de ventas anteriores»: la devolución no cae en el mes de devolución.
+      expect(
+        cur.categories.find(
+          (r: any) => r.name === "Devoluciones de ventas anteriores",
+        ),
+      ).toBeUndefined();
+    } finally {
+      // Limpieza: otras suites usan la misma base el mismo día.
+      if (ret) await db.saleReturn.delete({ where: { id: ret.id } });
+      await db.saleItem.update({
+        where: { id: sale.items[0].id },
+        data: { returnedQty: 0 },
+      });
+      await db.sale.update({
+        where: { id: sale.id },
+        data: { createdAt: originalDate },
+      });
+    }
   });
 
   it("N-5: el aviso de descuento inusual nace al registrar la venta, sin esperar a la evaluación", async () => {

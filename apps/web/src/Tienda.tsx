@@ -594,7 +594,10 @@ export function CodPending({ session }: { session: any }) {
   });
   const [collecting, setCollecting] = useState<any>(null);
   const rows = query.data ?? [];
-  const totalPending = rows.reduce((a, r) => a + Number(r.pending), 0);
+  // B-01: la API manda null en los importes de la caja abierta (hiddenUntilClose).
+  const totalPending = rows.reduce((a, r) => a + (Number(r.pending) || 0), 0);
+  const money = (r: any, v: unknown) =>
+    r.hiddenUntilClose ? "—" : formatMoney(v as any);
   return (
     <section className="panel cod-panel" aria-labelledby="credits-title">
       <div className="panel-heading">
@@ -699,9 +702,9 @@ export function CodPending({ session }: { session: any }) {
                           : ""}
                       </small>
                       <small className="cod-figures">
-                        Total {formatMoney(r.total)} · Cobrado{" "}
-                        {formatMoney(r.collected)} · Pendiente{" "}
-                        {formatMoney(r.pending)}
+                        Total {money(r, r.total)} · Cobrado{" "}
+                        {money(r, r.collected)} · Pendiente{" "}
+                        {money(r, r.pending)}
                       </small>
                       {r.closedAt && (
                         <small>
@@ -744,7 +747,7 @@ export function CodPending({ session }: { session: any }) {
                       )}
                     </div>
                     <strong className="cod-amount">
-                      {formatMoney(r.pending)}
+                      {money(r, r.pending)}
                     </strong>
                     {state === "pending" && (
                       <Button onClick={() => setCollecting(r)}>
@@ -963,7 +966,7 @@ function CodCollect({
     reference: "",
   });
   const [lines, setLines] = useState<CollectLine[]>(() => [
-    newLine(String(row.pending)),
+    newLine(row.hiddenUntilClose ? "" : String(row.pending)),
   ]);
   const [proof, setProof] = useState<File | null>(null),
     // La cajera registra efectivo que ya tiene la dueña con el PIN de gerente.
@@ -974,7 +977,10 @@ function CodCollect({
   // Un reintento usa el mismo identificador: no se cobra dos veces.
   const [operationId] = useState(() => crypto.randomUUID());
   const total = lines.reduce((a, l) => a + (Number(l.amount) || 0), 0);
-  const left = Math.round((Number(row.pending) - total) * 100) / 100;
+  // Con el saldo oculto (caja abierta) el servidor valida el tope del cobro.
+  const left = row.hiddenUntilClose
+    ? 0
+    : Math.round((Number(row.pending) - total) * 100) / 100;
   const patch = (key: string, change: Partial<CollectLine>) =>
     setLines(lines.map((l) => (l.key === key ? { ...l, ...change } : l)));
   const submit = async (e: React.FormEvent) => {
@@ -1046,8 +1052,11 @@ function CodCollect({
     <Modal open onClose={onClose} title={"Registrar cobro · " + row.number}>
       <form className="form-grid" onSubmit={submit}>
         <p className="cod-hint full">
-          Pendiente: <strong>{formatMoney(row.pending)}</strong> de{" "}
-          {formatMoney(row.total)}
+          Pendiente:{" "}
+          <strong>
+            {row.hiddenUntilClose ? "—" : formatMoney(row.pending)}
+          </strong>{" "}
+          de {row.hiddenUntilClose ? "—" : formatMoney(row.total)}
           {row.customer ? " · " + row.customer.name : ""}. Agrega una línea por
           cada forma de pago (por ejemplo, mitad transferencia y mitad
           efectivo).
@@ -1116,7 +1125,7 @@ function CodCollect({
               <input
                 type="number"
                 min="0.01"
-                max={row.pending}
+                max={row.hiddenUntilClose ? undefined : row.pending}
                 step="0.01"
                 required
                 value={l.amount}
@@ -1194,7 +1203,10 @@ function CodCollect({
         )}
         <p className="cod-hint full" role="status">
           Suma de pagos: <strong>{formatMoney(total)}</strong> · Quedaría
-          pendiente: <strong>{formatMoney(Math.max(0, left))}</strong>
+          pendiente:{" "}
+          <strong>
+            {row.hiddenUntilClose ? "—" : formatMoney(Math.max(0, left))}
+          </strong>
         </p>
         <ProofPicker file={proof} onChange={setProof} disabled={busy} />
         <p className="cod-hint full">

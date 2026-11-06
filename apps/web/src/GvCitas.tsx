@@ -6,6 +6,7 @@ import { Badge, Button, Modal } from "@fitstore/ui";
 import { businessDate, can, formatMoney } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { QueryState, toast } from "./helpers";
+import { GvCajaGuardNotice, GvProofField, useGvCajaGuard } from "./GvProof";
 
 type Payment = {
   id: string;
@@ -59,11 +60,27 @@ const STATUS: Record<string, string> = {
 };
 const CONCEPTS: Record<string, string> = {
   separo: "Separo",
+  completo: "Pago completo",
   restante: "Restante",
   segundo: "Segundo pago",
   tercero: "Tercer pago",
   otro: "Otro",
 };
+// Con tarjeta no se elige banco: se registra la terminal (la de Configuración
+// si existe; si no, un único valor fijo).
+export const GV_TERMINAL = "Terminal GV";
+export const paymentBank = (
+  method: string,
+  bank: string,
+  terminals: string[] = [],
+) =>
+  method === "tarjeta"
+    ? terminals.length
+      ? bank
+      : GV_TERMINAL
+    : method === "transferencia"
+      ? bank
+      : "";
 const METHODS: Record<string, string> = {
   efectivo: "Efectivo",
   transferencia: "Transferencia",
@@ -229,6 +246,7 @@ function AppointmentForm({
     venue: a?.venue ?? "",
     people: a?.people ? String(a.people) : "",
     refundAmount: "",
+    approverPin: "",
     refundDate: businessDate(),
   });
   // «Reembolsada» se registra una vez, con monto y fecha (GV-13).
@@ -244,11 +262,15 @@ function AppointmentForm({
     setError("");
     try {
       const wedding = form.service === "boda";
-      const { refundAmount, refundDate, ...rest } = form;
+      const { refundAmount, refundDate, approverPin, ...rest } = form;
       const data = {
         ...rest,
         ...(refunding
-          ? { refundAmount: Number(refundAmount), refundDate }
+          ? {
+              refundAmount: Number(refundAmount),
+              refundDate,
+              ...(approverPin ? { approverPin } : {}),
+            }
           : {}),
         date: fromLocalInput(form.date),
         total: Number(form.total),
@@ -374,6 +396,17 @@ function AppointmentForm({
                 onChange={(e) => set("refundDate", e.target.value)}
               />
             </label>
+            <label className="field">
+              <span>PIN de la dueña (aprueba la devolución)</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={6}
+                value={form.approverPin}
+                onChange={(e) => set("approverPin", e.target.value)}
+              />
+            </label>
           </>
         )}
         <label className="field">
@@ -488,6 +521,13 @@ function AppointmentPaymentForm({
     bank: "",
     reference: "",
   });
+  const [proof, setProof] = useState("");
+  const guard = useGvCajaGuard();
+  const needsProof = form.method !== "efectivo";
+  const terminals = useQuery({
+    queryKey: ["gv-banks"],
+    queryFn: () => api<{ terminals: string[] }>("/gv/banks"),
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const set = (key: string, value: unknown) =>
@@ -499,10 +539,14 @@ function AppointmentPaymentForm({
     try {
       await post(`/gv/appointments/${a.id}/payments`, {
         ...form,
+        bank: paymentBank(form.method, form.bank, terminals.data?.terminals),
         amount: Number(form.amount),
         operationId,
+        proof: needsProof ? proof : undefined,
+        cashlessReason: guard.noCash ? guard.reason : undefined,
       });
       await refresh(client);
+      await client.invalidateQueries({ queryKey: ["gv-cash"] });
       toast("Pago registrado.");
       onClose();
     } catch (cause: any) {
@@ -513,7 +557,7 @@ function AppointmentPaymentForm({
   };
   return (
     <Modal open onClose={onClose} title={"Pago de " + a.clientName}>
-      <p>Pendiente: {money(a.pending)}. Este pago no pasa por la caja.</p>
+      <p>Pendiente: {money(a.pending)}. Se cobra en tu caja de GV.</p>
       <form onSubmit={save} className="form-grid gv-form">
         <label className="field">
           <span>Fecha</span>
@@ -551,12 +595,12 @@ function AppointmentPaymentForm({
             <Options map={METHODS} />
           </select>
         </label>
-        {form.method !== "efectivo" && (
+        {form.method === "transferencia" && (
           <>
             <label className="field">
               <span>Banco</span>
               <input
-                required={form.method === "transferencia"}
+                required
                 value={form.bank}
                 onChange={(e) => set("bank", e.target.value)}
               />
@@ -564,13 +608,54 @@ function AppointmentPaymentForm({
             <label className="field">
               <span>Referencia</span>
               <input
-                required={form.method === "transferencia"}
+                required
                 value={form.reference}
                 onChange={(e) => set("reference", e.target.value)}
               />
             </label>
           </>
         )}
+        {form.method === "tarjeta" && (
+          <>
+            <label className="field">
+              <span>Terminal</span>
+              {(terminals.data?.terminals.length ?? 0) > 0 ? (
+                <select
+                  required
+                  value={form.bank}
+                  onChange={(e) => set("bank", e.target.value)}
+                >
+                  <option value="">Elige la terminal…</option>
+                  {terminals.data?.terminals.map((t: string) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+              ) : (
+                <input readOnly value={GV_TERMINAL} />
+              )}
+            </label>
+            <label className="field">
+              <span>Referencia (aprobación, lote o voucher)</span>
+              <input
+                required
+                value={form.reference}
+                onChange={(e) => set("reference", e.target.value)}
+              />
+            </label>
+          </>
+        )}
+        {needsProof && (
+          <GvProofField
+            label={
+              form.method === "tarjeta"
+                ? "Foto del voucher de la tarjeta (obligatoria)"
+                : "Foto del comprobante de la transferencia (obligatoria)"
+            }
+            value={proof}
+            onChange={setProof}
+          />
+        )}
+        <GvCajaGuardNotice guard={guard} />
         {error && (
           <p className="form-error full" role="alert">
             {error}
@@ -580,7 +665,7 @@ function AppointmentPaymentForm({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button disabled={busy}>
+          <Button disabled={busy || guard.blocked || (needsProof && !proof)}>
             {busy ? "Guardando…" : "Registrar pago"}
           </Button>
         </div>

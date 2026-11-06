@@ -43,8 +43,8 @@ export default defineConfig({
       // conexión: printSoon imprime a los 50 ms y no espera a la red.
       includeAssets: ["icon.svg", "products/*.svg", "logo-grupo-macgen.png"],
       manifest: {
-        name: "Nexora POS",
-        short_name: "Nexora",
+        name: "Norexos",
+        short_name: "Norexos",
         lang: "es",
         description: "Caja e inventario para tu tienda",
         theme_color: "#7C3AED",

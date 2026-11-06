@@ -15,6 +15,7 @@ import {
   CartItem,
   loadCatalog,
   localDB,
+  noteLiveStock,
   post,
   Product,
   refreshCart,
@@ -189,6 +190,7 @@ export function useRealtime() {
         );
         void client.invalidateQueries();
       } else if (type === "stock.changed") {
+        noteLiveStock(data.variantId, data.qtyOnHand);
         const known = client
           .getQueryData<Product[]>(["catalog"])
           ?.some((p) => p.variants.some((v) => v.id === data.variantId));
@@ -414,7 +416,7 @@ export function Equipment() {
                       ? "Equipo de antes de la actualización, reclamado por " +
                         t.createdByName +
                         ". Apruébalo sólo si es el mismo dispositivo; si no, revócalo."
-                      : "Equipo de antes de la actualización. Debe abrir Nexora POS para identificarse antes de aprobarlo."}
+                      : "Equipo de antes de la actualización. Debe abrir Norexos para identificarse antes de aprobarlo."}
                   </small>
                 )}
               </div>

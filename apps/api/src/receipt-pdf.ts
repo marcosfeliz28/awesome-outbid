@@ -21,6 +21,8 @@ export type SaleReceiptInput = {
   business?: any;
   customer?: any;
   seller?: any;
+  /** B-01 (caja ciega): recibo sin importes, solo número, hora y artículos. */
+  hidden?: boolean;
 };
 
 const cleanText = (value: unknown, max = 4000) =>
@@ -146,7 +148,28 @@ export function drawSaleReceipt(
   doc: PDFKit.PDFDocument,
   input: SaleReceiptInput,
 ) {
-  const { sale, customer, seller } = input;
+  const { customer, seller } = input;
+  const hidden = !!input.hidden;
+  // Sin importes: ni el crédito, ni los pagos, ni las devoluciones se dibujan.
+  const sale = hidden
+    ? {
+        ...input.sale,
+        subtotal: null,
+        discountTotal: null,
+        taxTotal: null,
+        total: null,
+        creditBalance: null,
+        payments: [],
+        returns: [],
+        items: (input.sale?.items ?? []).map((i: any) => ({
+          ...i,
+          unitPrice: null,
+          discount: null,
+          tax: null,
+          lineTotal: null,
+        })),
+      }
+    : input.sale;
   const business = input.business ?? {};
   const left = PAGE_MARGIN;
   const right = doc.page.width - PAGE_MARGIN;
@@ -336,12 +359,13 @@ export function drawSaleReceipt(
     const description = promotion
       ? `${productName}\nPromoción: ${promotion}`
       : productName;
+    const money = (v: ReceiptValue) => (hidden ? "—" : formatReceiptMoney(v));
     const values = [
       description,
       formatReceiptQuantity(item?.qty),
-      formatReceiptMoney(item?.unitPrice),
-      formatReceiptMoney(item?.discount),
-      formatReceiptMoney(item?.lineTotal),
+      money(item?.unitPrice),
+      money(item?.discount),
+      money(item?.lineTotal),
     ];
     // Medir cada celda evita que un importe/cantidad largo invada la fila
     // siguiente. Los importes normales caben en las columnas financieras a 9 pt.
@@ -380,29 +404,31 @@ export function drawSaleReceipt(
   });
 
   y += 14;
-  const summaries = [
-    [
-      "Subtotal",
-      formatReceiptMoney(
-        sale?.subtotal ??
-          items.reduce(
-            (sum: number, item: any) =>
-              sum + amount(item?.qty) * amount(item?.unitPrice),
-            0,
+  const summaries = hidden
+    ? [["Importes", "Se ven al cerrar tu caja"]]
+    : [
+        [
+          "Subtotal",
+          formatReceiptMoney(
+            sale?.subtotal ??
+              items.reduce(
+                (sum: number, item: any) =>
+                  sum + amount(item?.qty) * amount(item?.unitPrice),
+                0,
+              ),
           ),
-      ),
-    ],
-    [
-      "Descuento",
-      formatReceiptMoney(sale?.discountTotal ?? lineSum(items, "discount")),
-    ],
-    [
-      sale?.taxIncluded === false ? "ITBIS adicional" : "ITBIS incluido",
-      formatReceiptMoney(sale?.taxTotal),
-    ],
-    ["Total", formatReceiptMoney(sale?.total)],
-  ];
-  const courier = courierCharge(sale ?? {});
+        ],
+        [
+          "Descuento",
+          formatReceiptMoney(sale?.discountTotal ?? lineSum(items, "discount")),
+        ],
+        [
+          sale?.taxIncluded === false ? "ITBIS adicional" : "ITBIS incluido",
+          formatReceiptMoney(sale?.taxTotal),
+        ],
+        ["Total", formatReceiptMoney(sale?.total)],
+      ];
+  const courier = hidden ? null : courierCharge(sale ?? {});
   if (courier)
     summaries.push(
       [`Envío (mensajero ${courier.name})`, formatReceiptMoney(courier.fee)],
@@ -446,7 +472,9 @@ export function drawSaleReceipt(
   drawSummary();
 
   const creditBalance = amount(sale?.creditBalance);
-  if (creditBalance > 0 && sale?.status !== "voided") {
+  if (hidden) {
+    // Nada más que mostrar: los pagos y el saldo son importes.
+  } else if (creditBalance > 0 && sale?.status !== "voided") {
     const paid = moneyPayments(sale).reduce(
       (sum: number, payment: any) => sum + amount(payment?.amount),
       0,

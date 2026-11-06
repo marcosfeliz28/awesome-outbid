@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import {
   Body,
   Controller,
@@ -417,11 +418,8 @@ export async function inventoryLossAlert(tx: any, actor: Actor) {
   if (can(actor.permissions, "sale:manage")) return;
   const day = businessDate();
   const since = new Date(day + "T00:00:00-04:00");
-  const rows = await tx.$queryRawUnsafe(
-    `SELECT COALESCE(SUM(-m.qty * m."unitCost"), 0)::text AS loss FROM "InventoryMovement" m WHERE m."branchId" = $1 AND m."userId" = $2 AND m."createdAt" >= $3 AND ${INVENTORY_LOSS_SQL}`,
-    actor.branchId,
-    actor.id,
-    since,
+  const rows = await tx.$queryRaw(
+    Prisma.sql`SELECT COALESCE(SUM(-m.qty * m."unitCost"), 0)::text AS loss FROM "InventoryMovement" m WHERE m."branchId" = ${actor.branchId} AND m."userId" = ${actor.id} AND m."createdAt" >= ${since} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
   );
   const loss = money(rows[0]?.loss ?? 0);
   const settings = await tx.settings.findUnique({

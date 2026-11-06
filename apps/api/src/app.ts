@@ -30,6 +30,7 @@ import { OfflineSaleReviewController } from "./offline-sale-review";
 import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
 import { CreditReminderService } from "./credit-reminder";
+import { GvCajaVigilante } from "./gv-vigilante";
 import { RetentionWorker } from "./retention";
 import { UsdRateWorker } from "./usd-rate";
 import {
@@ -44,6 +45,7 @@ import {
 import { SecurityMaintenance } from "./security";
 import { GvController } from "./gv";
 import { GvCitasController } from "./gv-citas";
+import { GvCajaController } from "./gv-caja";
 
 @Controller()
 export class HealthController {
@@ -94,12 +96,14 @@ export function createAppModule(secret: string) {
       DriveBackupController,
       GvController,
       GvCitasController,
+      GvCajaController,
     ],
     providers: [
       Database,
       AlertEngine,
       NotificationWorker,
       CreditReminderService,
+      GvCajaVigilante,
       DriveBackupService,
       DriveBackupWorker,
       RetentionWorker,

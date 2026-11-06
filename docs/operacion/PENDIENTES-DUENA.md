@@ -136,3 +136,8 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - ✅ Wendy US$58.30: de una venta suya; resuelto por la dueña (25-oct).
 - ✅ COD FS-241 Luisa 2,200 + FS-244 Margot 4,650 cobradas el 25-oct (Addison entregó 7,000, se le devolvieron 150).
 - Cardnet lote 24-oct 17,970 → esperar ~17,278 el lunes.
+
+## Recordatorio (30-oct, la dueña): corregir cobros que se registraron en efectivo y eran transferencia
+- Casos: **FS-0000328** (7,500; transferencia Banreservas 7,800, ref 43376075790) y «la otra» (FS-0000302, ya corregida el 26-oct). Revisar si hay más del mismo tipo al verificar las transferencias de octubre.
+- Herramienta ya publicada (30-oct 02:32 UTC): correct-method para cobros/abonos, `payments/:id/unverify`, `payments/:id/move-cash-session`.
+- Falta la confirmación de la dueña para aplicar FS-328, FS-288 (volver a por verificar) y FS-304 (mover el cobro con tarjeta a la caja de Wendy) con las 3 verificaciones.

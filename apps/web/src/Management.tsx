@@ -56,6 +56,7 @@ import { CourierFeeEditor } from "./CourierFeeEditor";
 import { SaleEditPanel, editableNow } from "./SaleEditPanel";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
+import { exportPath, exportFileName, type ExportFormat } from "./reportExport";
 import {
   CloseCashModal,
   CodPending,
@@ -1570,6 +1571,8 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   offline_conflict: "Venta sin conexión",
   receivable: "Por cobrar",
   credit_reminder: "Créditos por cobrar",
+  gv_cash_open_night: "Caja GV abierta de noche",
+  gv_day_no_close: "Día de GV sin cierre",
   cash_difference: "Diferencia de caja",
   return_waste: "Merma por devolución",
   expense_budget: "Presupuesto de gastos",
@@ -2814,6 +2817,30 @@ export function groupReports(
   }
   return [...out].filter(([, list]) => list.length);
 }
+function ReportGuide({ name }: { name: string }) {
+  const [open, setOpen] = useState(false);
+  const guide = useQuery({
+    queryKey: ["reporte-guia", name],
+    queryFn: () =>
+      api<{ queEs: string; paraQueSirve: string; comoSeLee: string }>(
+        `/reportes/${encodeURIComponent(name)}/guia`,
+      ),
+    enabled: open,
+  });
+  return (
+    <details onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary>¿Qué es y cómo se lee?</summary>
+      {guide.isError && <p>No pudimos cargar la explicación.</p>}
+      {guide.data && (
+        <>
+          <p>{guide.data.queEs}</p>
+          <p>{guide.data.paraQueSirve}</p>
+          <p>{guide.data.comoSeLee}</p>
+        </>
+      )}
+    </details>
+  );
+}
 export function Reports() {
   const user = useStore((s) => s.user);
   // Los 40 reportes de la dueña (orden 18-oct) vienen del servidor, ya
@@ -2821,8 +2848,11 @@ export function Reports() {
   const extra = useQuery({
     queryKey: ["reportes-40"],
     queryFn: () =>
-      api<{ name: string; title: string; group: string }[]>("/reportes"),
+      api<
+        { name: string; title: string; group: string; exportable?: boolean }[]
+      >("/reportes"),
   });
+  const [busy, setBusy] = useState<ExportFormat | null>(null);
   const allReports: string[][] = [
     ...reportList,
     ...(extra.data ?? []).map((r) => [r.name, r.title]),
@@ -2921,30 +2951,52 @@ export function Reports() {
                 <p>Información registrada en tu tienda.</p>
               </div>
               <div className="table-actions">
-                {["xlsx", "pdf"].map((format) => (
-                  <Button
-                    variant="secondary"
-                    key={format}
-                    onClick={() =>
-                      download(
-                        `/reports/${report}?from=${from}&to=${to}&format=${format}`,
-                        `${report}.${format}`,
-                      ).catch((error) =>
-                        toast(
-                          error.message !== DOWNLOAD_FAILED
-                            ? error.message
-                            : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
-                          true,
-                        ),
-                      )
-                    }
-                  >
-                    <Download size={16} />
-                    {format === "xlsx" ? "Excel" : "PDF"}
-                  </Button>
-                ))}
+                {can(user?.permissions ?? [], "reports:read") &&
+                  (["xlsx", "pdf"] as const).map((format) => (
+                    <Button
+                      variant="secondary"
+                      key={format}
+                      disabled={busy !== null}
+                      onClick={async () => {
+                        const nuevo = extra.data?.find(
+                          (r) => r.name === report,
+                        )?.exportable;
+                        setBusy(format);
+                        try {
+                          await download(
+                            nuevo
+                              ? exportPath(report, from, to, format)
+                              : `/reports/${report}?from=${from}&to=${to}&format=${format}`,
+                            nuevo
+                              ? exportFileName(report, format)
+                              : `${report}.${format}`,
+                          );
+                        } catch (error: any) {
+                          // 400 trae el motivo (p. ej. límite de 20,000 filas).
+                          toast(
+                            error.message !== DOWNLOAD_FAILED
+                              ? error.message
+                              : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
+                            true,
+                          );
+                        } finally {
+                          setBusy(null);
+                        }
+                      }}
+                    >
+                      <Download size={16} />
+                      {busy === format
+                        ? "Preparando…"
+                        : format === "xlsx"
+                          ? "Descargar Excel"
+                          : "Descargar PDF"}
+                    </Button>
+                  ))}
               </div>
             </div>
+            {extra.data?.find((r) => r.name === report)?.exportable && (
+              <ReportGuide name={report} />
+            )}
             <div className="date-filters">
               <label className="field">
                 <span>Desde</span>
@@ -2972,6 +3024,12 @@ export function Reports() {
               </label>
               <Badge tone="violet">{total} registros</Badge>
             </div>
+            {report.startsWith("ventas-mes-") && (
+              <p className="muted">
+                Compara el mes de la fecha «Hasta»; la fecha «Desde» no cambia
+                el resultado.
+              </p>
+            )}
             {pages > 1 && (
               <div className="pagination">
                 <span>
@@ -3127,6 +3185,11 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
   );
 }
 
+// B-01: con la bandera de caja ciega la API manda los importes en null.
+const HIDDEN_AMOUNT = "—";
+const saleMoney = (s: any, value: unknown) =>
+  s.hiddenUntilClose ? HIDDEN_AMOUNT : formatMoney(value as any);
+
 export function SalesHistory() {
   const user = useStore((s) => s.user)!;
   const [selected, setSelected] = useState<any>(null),
@@ -3136,8 +3199,16 @@ export function SalesHistory() {
     [installment, setInstallment] = useState<any>(null),
     [rejecting, setRejecting] = useState<any>(null),
     [correctingTransfer, setCorrectingTransfer] = useState<any>(null),
+    [unverifying, setUnverifying] = useState<any>(null),
+    [moving, setMoving] = useState<any>(null),
     [search, setSearch] = useState(""),
     [saleDate, setSaleDate] = useState("");
+  // Cajas para elegir destino al mover un cobro: solo se pide con el diálogo abierto.
+  const cashSessionsForMove = useQuery<any[]>({
+    queryKey: ["cash-sessions-move"],
+    queryFn: () => api("/cash-sessions"),
+    enabled: !!moving,
+  });
   const params = new URLSearchParams();
   if (search.trim()) params.set("q", search.trim());
   if (saleDate) params.set("date", saleDate);
@@ -3212,20 +3283,23 @@ export function SalesHistory() {
                   </>
                 ),
               },
-              { label: "Total", render: (s) => formatMoney(s.total) },
+              { label: "Total", render: (s) => saleMoney(s, s.total) },
               {
                 label: "Saldo pendiente",
-                render: (s) => formatMoney(s.creditBalance ?? 0),
+                render: (s) => saleMoney(s, s.creditBalance ?? 0),
               },
               {
                 label: "Pagos",
                 render: (s) =>
-                  s.payments
-                    .map(
-                      (p: any) =>
-                        paymentOptions.find((o) => o.value === p.method)?.label,
-                    )
-                    .join(" + "),
+                  s.hiddenUntilClose
+                    ? "Se ve al cerrar tu caja"
+                    : s.payments
+                        .map(
+                          (p: any) =>
+                            paymentOptions.find((o) => o.value === p.method)
+                              ?.label,
+                        )
+                        .join(" + "),
               },
               {
                 label: "Acciones",
@@ -3405,14 +3479,18 @@ export function SalesHistory() {
                 },
                 { label: "Cantidad", render: (i) => i.qty },
                 { label: "Devuelta", render: (i) => i.returnedQty },
-                { label: "Total", render: (i) => formatMoney(i.lineTotal) },
+                {
+                  label: "Total",
+                  render: (i) => saleMoney(selected, i.lineTotal),
+                },
               ]}
             />
             <h3>Pagos registrados</h3>
+            {selected.hiddenUntilClose && <p>Se ve al cerrar tu caja.</p>}
             {Number(selected.discountTotal) > 0 && (
               <p>
-                Descuento: {formatMoney(selected.discountTotal)} · Motivo:{" "}
-                {selected.discountReason}
+                Descuento: {saleMoney(selected, selected.discountTotal)} ·
+                Motivo: {selected.discountReason}
                 {selected.discountApprovedName
                   ? ` · Autorizó: ${selected.discountApprovedName}`
                   : ""}
@@ -3425,9 +3503,9 @@ export function SalesHistory() {
                     {METHOD_LABEL[p.method] ??
                       paymentOptions.find((o) => o.value === p.method)?.label ??
                       p.method}{" "}
-                    · Recibido: {formatMoney(p.tendered ?? p.amount)} ·
-                    Aplicado: {formatMoney(p.amount)} · Cambio:{" "}
-                    {formatMoney(p.change ?? 0)}
+                    · Recibido: {saleMoney(selected, p.tendered ?? p.amount)} ·
+                    Aplicado: {saleMoney(selected, p.amount)} · Cambio:{" "}
+                    {saleMoney(selected, p.change ?? 0)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
                   <ProofThumb paymentId={p.id} hasProof={p.hasProof} />
@@ -3442,6 +3520,33 @@ export function SalesHistory() {
                         }}
                       >
                         Corregir banco y referencia
+                      </button>
+                    )}
+                  {p.method === "transfer" &&
+                    p.status === "ok" &&
+                    p.entryType === "sale" &&
+                    can(user.permissions, "*") && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setSelected(null);
+                          setUnverifying(p);
+                        }}
+                      >
+                        Des-verificar transferencia
+                      </button>
+                    )}
+                  {p.cashSessionId &&
+                    p.status !== "rejected" &&
+                    can(user.permissions, "*") && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setSelected(null);
+                          setMoving(p);
+                        }}
+                      >
+                        Mover cobro a otra caja
                       </button>
                     )}
                   {p.entryType === "installment" &&
@@ -3522,7 +3627,7 @@ export function SalesHistory() {
                 </div>
               </div>
             ))}
-            <h3>Total {formatMoney(selected.total)}</h3>
+            <h3>Total {saleMoney(selected, selected.total)}</h3>
           </>
         )}
       </Modal>
@@ -3621,6 +3726,63 @@ export function SalesHistory() {
                 expectedReference: correctingTransfer.reference ?? null,
               },
             );
+            await client.invalidateQueries();
+          }}
+        />
+      )}
+      {unverifying && (
+        <FormModal
+          title="Des-verificar transferencia"
+          notice="La transferencia vuelve a «por verificar» y deja de contar como cobrada. Queda en la bitácora."
+          fields={[
+            {
+              key: "reason",
+              label: "Motivo",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          onClose={() => setUnverifying(null)}
+          onSubmit={async (data) => {
+            await post("/payments/" + unverifying.id + "/unverify", {
+              reason: data.reason,
+            });
+            setUnverifying(null);
+            await client.invalidateQueries();
+          }}
+        />
+      )}
+      {moving && (
+        <FormModal
+          title="Mover cobro a otra caja"
+          notice="El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
+          fields={[
+            {
+              key: "cashSessionId",
+              label: "Caja destino",
+              type: "select",
+              required: true,
+              options: (cashSessionsForMove.data || [])
+                .filter((s: any) => s.id !== moving.cashSessionId)
+                .map((s: any) => ({
+                  label: `${s.registerName ?? "Caja"} · ${s.closedAt ? "cerrada" : "abierta"} · ${new Date(s.openedAt).toLocaleString("es-DO")}`,
+                  value: s.id,
+                })),
+            },
+            {
+              key: "reason",
+              label: "Motivo",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          onClose={() => setMoving(null)}
+          onSubmit={async (data) => {
+            await post("/payments/" + moving.id + "/move-cash-session", {
+              cashSessionId: data.cashSessionId,
+              reason: data.reason,
+            });
+            setMoving(null);
             await client.invalidateQueries();
           }}
         />
@@ -4491,7 +4653,7 @@ export function StyleGuide() {
   return (
     <>
       <Heading
-        title="La energía de Nexora"
+        title="La energía de Norexos"
         caption="Un sistema visual para que cada interacción se sienta familiar."
       />
       <div className="panel style-guide">
@@ -4566,7 +4728,7 @@ export function StyleGuide() {
       <Modal
         open={modal}
         onClose={() => setModal(false)}
-        title="Diálogo Nexora"
+        title="Diálogo Norexos"
       >
         <p>Navega con Tab. Esc cierra. El foco regresa al control de origen.</p>
         <Button onClick={() => setModal(false)}>Entendido</Button>

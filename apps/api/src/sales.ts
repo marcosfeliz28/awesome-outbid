@@ -68,6 +68,7 @@ import {
   canViewCustomerPii,
   customerForActor,
   maskTail,
+  canViewCashExpected,
 } from "./common";
 import { lockVariant, takeStock, stockChange } from "./inventory";
 import { captureApiException } from "./monitoring";
@@ -130,6 +131,50 @@ const paymentSummary = (payment: any) => {
       : 0,
   };
 };
+
+// B-01 (caja ciega): bandera APAGADA por defecto (decisión de la dueña). Con
+// NEXORA_VENTAS_CAJA_CIEGA=1, quien no ve el esperado de caja y tiene caja
+// abierta no recibe importes de las ventas de esa caja: con la apertura podría
+// reconstruir el efectivo. receipt.pdf también va sin importes en ese alcance.
+export const blindSalesEnabled = () =>
+  process.env.NEXORA_VENTAS_CAJA_CIEGA === "1";
+type BlindScope = { id: string; openedAt: Date } | null;
+export async function blindSalesScope(
+  db: any,
+  actor: Actor,
+): Promise<BlindScope> {
+  if (!blindSalesEnabled() || canViewCashExpected(actor)) return null;
+  return db.cashSession.findFirst({
+    where: { branchId: actor.branchId, userId: actor.id, closedAt: null },
+    select: { id: true, openedAt: true },
+  });
+}
+export const inBlindScope = (scope: BlindScope, sale: any) =>
+  !!scope &&
+  (sale.cashSessionId
+    ? sale.cashSessionId === scope.id
+    : new Date(sale.createdAt) >= scope.openedAt);
+const nulled = (row: any, keys: string[]) =>
+  Object.fromEntries(
+    Object.entries(row).map(([k, v]) => [k, keys.includes(k) ? null : v]),
+  );
+export const hideSaleAmounts = (dto: any) => ({
+  ...nulled(dto, [
+    "subtotal",
+    "discountTotal",
+    "taxTotal",
+    "total",
+    "creditBalance",
+  ]),
+  items: dto.items.map((i: any) =>
+    nulled(i, ["unitPrice", "discount", "tax", "lineTotal", "unitCost"]),
+  ),
+  payments: [],
+  returns: dto.returns.map((r: any) =>
+    nulled(r, ["total", "taxTotal", "refundAmount", "refundMethod"]),
+  ),
+  hiddenUntilClose: true,
+});
 
 // `/sales` alimenta el historial operativo, no es una representación directa
 // de Prisma. Mantener una lista blanca evita que una columna nueva de costos o
@@ -1674,7 +1719,11 @@ export class SalesController {
       // cada artículo de todas las ventas en una sola respuesta.
       take: filters.q || filters.date ? 500 : 100,
     });
-    return rows.map((sale) => saleHistoryDto(sale, actor));
+    const blind = await blindSalesScope(this.db, actor);
+    return rows.map((sale) => {
+      const dto = saleHistoryDto(sale, actor);
+      return inBlindScope(blind, sale) ? hideSaleAmounts(dto) : dto;
+    });
   }
   private async voidRequestDto(id: string, actor: Actor) {
     const row = await this.db.saleVoidRequest.findFirstOrThrow({
@@ -1703,10 +1752,13 @@ export class SalesController {
         },
       },
     });
-    return this.voidRequestView(row);
+    return this.voidRequestView(
+      row,
+      inBlindScope(await blindSalesScope(this.db, actor), row.sale),
+    );
   }
 
-  private voidRequestView(row: any) {
+  private voidRequestView(row: any, hide = false) {
     const sale = row.sale;
     const approvalBlocker =
       sale.status !== "completed"
@@ -1742,21 +1794,24 @@ export class SalesController {
         id: sale.id,
         number: sale.number,
         status: sale.status,
-        total: sale.total,
+        total: hide ? null : sale.total,
+        ...(hide ? { hiddenUntilClose: true } : {}),
         createdAt: sale.createdAt,
         customer: sale.customer?.name ?? null,
         items: sale.items.map((i: any) => ({
           name: i.variant.product.name,
           sku: i.variant.sku,
           qty: i.qty,
-          lineTotal: i.lineTotal,
+          lineTotal: hide ? null : i.lineTotal,
         })),
-        payments: sale.payments.map((p: any) => ({
-          method: p.method,
-          amount: p.amount,
-          status: p.status,
-          entryType: p.entryType,
-        })),
+        payments: hide
+          ? []
+          : sale.payments.map((p: any) => ({
+              method: p.method,
+              amount: p.amount,
+              status: p.status,
+              entryType: p.entryType,
+            })),
       },
     };
   }
@@ -1804,7 +1859,10 @@ export class SalesController {
       orderBy: { requestedAt: "desc" },
       take: 100,
     });
-    return rows.map((row) => this.voidRequestView(row));
+    const blind = await blindSalesScope(this.db, actor);
+    return rows.map((row) =>
+      this.voidRequestView(row, inBlindScope(blind, row.sale)),
+    );
   }
 
   @Post("sales/:id/void-requests")
@@ -2165,8 +2223,16 @@ export class SalesController {
       const sale = await editableSale(tx, saleId, actor);
       const payments = await tx.payment.findMany({ where: { saleId } });
       const payment = payments.find((p) => p.id === paymentId);
-      if (!payment || payment.entryType !== "sale")
+      if (
+        !payment ||
+        (payment.entryType !== "sale" && payment.entryType !== "installment")
+      )
         bad("Pago no encontrado en esta venta.");
+      // 29-oct: también un COBRO (abono o contraentrega cobrada) mal marcado,
+      // p. ej. efectivo que fue transferencia (FS-328). Un cobro solo se mueve
+      // entre efectivo, tarjeta y transferencia: nunca pasa a crédito ni a
+      // contraentrega, que son deuda.
+      const collection = payment.entryType === "installment";
       if (payment.method === data.method)
         return { number: sale.number, method: payment.method };
       if (
@@ -2179,22 +2245,39 @@ export class SalesController {
         );
       if (payment.status === "rejected")
         bad("Este pago fue rechazado; no se puede corregir.");
-      if (
-        payments.some(
-          (p) => p.entryType === "installment" && p.status !== "rejected",
+      if (collection) {
+        if (
+          !["cash", "card"].includes(payment.method) ||
+          !["cash", "card", "transfer"].includes(data.method)
         )
-      )
-        bad("La venta ya tiene cobros registrados; no se puede corregir.");
-      if (await tx.saleReturn.count({ where: { saleId } }))
-        bad("La venta tiene devoluciones; no se puede corregir.");
+          bad(
+            "Un cobro solo se corrige entre efectivo, tarjeta y transferencia, y solo si hoy está en efectivo o tarjeta. Una transferencia se rechaza o se corrige con su banco y referencia.",
+          );
+        if (payment.status !== "ok")
+          bad("Este cobro no está aplicado; no se puede corregir.");
+      } else {
+        if (
+          payments.some(
+            (p) => p.entryType === "installment" && p.status !== "rejected",
+          )
+        )
+          bad("La venta ya tiene cobros registrados; no se puede corregir.");
+        if (await tx.saleReturn.count({ where: { saleId } }))
+          bad("La venta tiene devoluciones; no se puede corregir.");
+      }
       const settings = await tx.settings.findUnique({
         where: { id: actor.branchId },
       });
       const config = settings?.data as any;
       const amount = d(payment.amount);
-      const balanceChange = d(receivable(data.method) ? amount : 0).minus(
-        receivable(payment.method) ? amount : 0,
-      );
+      // Un cobro en efectivo/tarjeta ya descontó la deuda; una transferencia
+      // solo la descuenta al verificarse. Al pasar a transferencia la deuda
+      // vuelve hasta que se verifique (si no, se descontaría dos veces).
+      const balanceChange = collection
+        ? d(data.method === "transfer" ? amount : 0)
+        : d(receivable(data.method) ? amount : 0).minus(
+            receivable(payment.method) ? amount : 0,
+          );
       const balance = money(d(sale.creditBalance).plus(balanceChange));
       await tx.payment.update({
         where: { id: payment.id },
@@ -2220,6 +2303,10 @@ export class SalesController {
         where: { id: saleId },
         data: {
           creditBalance: balance,
+          // Si el saldo vuelve a ser deuda, la cuenta deja de estar cerrada.
+          ...(collection && Number(balance) > 0
+            ? { creditClosedAt: null, creditClosedById: null }
+            : {}),
           // Revisión 25-oct #9: con saldo pendiente el incentivo llega al
           // cobrar, como en una venta a crédito o contraentrega. No se apaga:
           // así devoluciones y anulaciones descuentan lo acreditado de verdad.
@@ -2295,6 +2382,7 @@ export class SalesController {
         {
           number: sale.number,
           paymentId: payment.id,
+          entryType: payment.entryType,
           method: data.method,
           amount: payment.amount,
           creditBalance: balance,
@@ -2753,6 +2841,196 @@ export class SalesController {
       });
       return { ok: true };
     });
+  }
+  // 29-oct (caso FS-288): una transferencia de VENTA que se verificó contra el
+  // depósito equivocado vuelve a «por verificar». Solo administración, con
+  // motivo; vuelve la alerta y, si la caja ya cerró, se recalcula y se avisa.
+  // Un abono verificado ya descontó la deuda: no se revierte aquí.
+  @Post("payments/:id/unverify")
+  @RequireTerminal()
+  @Permit("*")
+  async unverify(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(z.object({ reason }), body);
+    const paymentId = parse(uuid, id);
+    return this.db.$transaction(async (tx) => {
+      const found = await tx.payment.findFirstOrThrow({
+        where: {
+          id: paymentId,
+          method: "transfer",
+          sale: { branchId: actor.branchId },
+        },
+      });
+      // Mismo orden de bloqueo que verificar: caja, venta, pago.
+      if (found.cashSessionId)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${found.cashSessionId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${paymentId}::uuid FOR UPDATE`;
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+      });
+      if (payment.entryType !== "sale")
+        bad(
+          "Un abono verificado ya descontó la deuda; no se devuelve a «por verificar» desde aquí.",
+        );
+      if (payment.status !== "ok")
+        bad(
+          "Solo se devuelve a «por verificar» una transferencia ya verificada.",
+        );
+      const sale = await tx.sale.findUniqueOrThrow({
+        where: { id: payment.saleId },
+      });
+      if (sale.status !== "completed") bad("La venta ya no está completada.");
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: { status: "pending_verification" },
+      });
+      await tx.alert.upsert({
+        where: { key: "transfer:" + paymentId },
+        create: {
+          key: "transfer:" + paymentId,
+          type: "transfer_pending",
+          severity: "high",
+          entityId: sale.id,
+          branchId: actor.branchId,
+          message:
+            `Transferencia de ${sale.number} por RD$ ${formatAmount(Number(payment.amount))} sin verificar · ` +
+            `${payment.bank ?? ""} · ref. ${payment.reference ?? ""}`,
+        },
+        update: { status: "new" },
+      });
+      let differences: unknown = null;
+      if (payment.cashSessionId) {
+        const cash = await tx.cashSession.findUniqueOrThrow({
+          where: { id: payment.cashSessionId },
+        });
+        if (cash.closedAt) {
+          differences = await refreshClosedCash(tx, cash);
+          await closedCashChanged(tx, actor, cash, {
+            ref: "unverify:" + paymentId,
+            what: `en la venta ${sale.number}, una transferencia de RD$ ${formatAmount(Number(payment.amount))} volvió a «por verificar»`,
+            reason: data.reason,
+            differences,
+          });
+        }
+      }
+      await audit(
+        tx,
+        actor,
+        "payment_unverified",
+        "payment",
+        paymentId,
+        { status: "ok" },
+        {
+          number: sale.number,
+          status: "pending_verification",
+          cashSessionId: payment.cashSessionId,
+          differences,
+          reason: data.reason,
+        },
+      );
+      return { ok: true, number: sale.number, differences };
+    }, MONEY_TRANSACTION);
+  }
+  // 29-oct (caso FS-304): un cobro se registró en una caja que no era (p. ej.
+  // una caja temporal) y debe contar en otra. Solo administración, con motivo.
+  // Se recalculan las dos cajas si alguna ya cerró y queda aviso y bitácora.
+  // No toca la venta, su deuda ni el inventario: solo a qué caja pertenece.
+  @Post("payments/:id/move-cash-session")
+  @RequireTerminal()
+  @Permit("*")
+  async moveCashSession(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(z.object({ cashSessionId: uuid, reason }), body);
+    const paymentId = parse(uuid, id);
+    return moneyDb(this.db).$transaction(async (tx) => {
+      const found = await tx.payment.findFirstOrThrow({
+        where: { id: paymentId, sale: { branchId: actor.branchId } },
+      });
+      if (!found.cashSessionId)
+        bad("Este cobro no está en ninguna caja; no hay de dónde moverlo.");
+      if (found.cashSessionId === data.cashSessionId)
+        bad("El cobro ya está en esa caja.");
+      // Bloqueo en orden fijo (por id) para no cruzarse con otra operación.
+      const ids = [found.cashSessionId, data.cashSessionId].sort();
+      for (const sessionId of ids)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sessionId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${paymentId}::uuid FOR UPDATE`;
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+      });
+      if (payment.cashSessionId !== found.cashSessionId)
+        conflict("El cobro cambió de caja. Actualiza la venta.");
+      if (payment.status === "rejected")
+        bad("Este cobro fue rechazado; no se mueve.");
+      const sale = await tx.sale.findUniqueOrThrow({
+        where: { id: payment.saleId },
+        select: { number: true, status: true },
+      });
+      if (sale.status !== "completed") bad("La venta ya no está completada.");
+      const from = await tx.cashSession.findUniqueOrThrow({
+        where: { id: payment.cashSessionId! },
+      });
+      const to = await tx.cashSession.findFirst({
+        where: { id: data.cashSessionId, branchId: actor.branchId },
+      });
+      if (!to) bad("Esa caja no existe en esta sucursal.");
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: { cashSessionId: to.id },
+      });
+      const out: Record<string, unknown> = {};
+      for (const [side, session] of [
+        ["from", from],
+        ["to", to],
+      ] as const) {
+        if (!session.closedAt) continue;
+        const fresh = await tx.cashSession.findUniqueOrThrow({
+          where: { id: session.id },
+        });
+        const differences = await refreshClosedCash(tx, fresh);
+        out[side] = differences;
+        await closedCashChanged(tx, actor, fresh, {
+          ref: "move:" + paymentId,
+          what:
+            side === "from"
+              ? `el cobro de RD$ ${formatAmount(Number(payment.amount))} de la venta ${sale.number} salió de esta caja`
+              : `el cobro de RD$ ${formatAmount(Number(payment.amount))} de la venta ${sale.number} entró a esta caja`,
+          reason: data.reason,
+          differences,
+        });
+      }
+      await audit(
+        tx,
+        actor,
+        "payment_cash_session_moved",
+        "payment",
+        paymentId,
+        { cashSessionId: from.id },
+        {
+          number: sale.number,
+          method: payment.method,
+          amount: payment.amount,
+          cashSessionId: to.id,
+          differences: out,
+          reason: data.reason,
+        },
+      );
+      return {
+        ok: true,
+        number: sale.number,
+        from: from.id,
+        to: to.id,
+        differences: out,
+      };
+    }, MONEY_TRANSACTION);
   }
   // 3aa: corrige únicamente los datos de conciliación de una transferencia.
   // La referencia que vio la administradora es un requisito de concurrencia:
@@ -4020,7 +4298,12 @@ export class SalesController {
     const sum = (rows: { amount: unknown }[]) =>
       money(rows.reduce((a, p) => a.plus(p.amount as any), d(0)));
     const now = new Date();
+    const blind = await blindSalesScope(this.db, actor);
     return sales.flatMap((s) => {
+      // B-01: venta de la caja abierta o con un abono a ella: sin importes.
+      const hide =
+        inBlindScope(blind, s) ||
+        (!!blind && s.payments.some((p) => p.cashSessionId === blind.id));
       const collections = s.payments.filter(
         (p) => p.entryType === "installment",
       );
@@ -4048,23 +4331,28 @@ export class SalesController {
           receivableKind: s.receivableKind,
           status,
           cashSessionId: s.cashSessionId,
-          total: Number(s.total),
-          codAmount: receivableAmount,
-          receivableAmount,
-          collected,
-          pending,
+          total: hide ? null : Number(s.total),
+          codAmount: hide ? null : receivableAmount,
+          receivableAmount: hide ? null : receivableAmount,
+          collected: hide ? null : collected,
+          pending: hide ? null : pending,
+          ...(hide ? { hiddenUntilClose: true } : {}),
           closedAt: s.creditClosedAt,
           closedBy: nameOf(s.creditClosedById),
           // Transferencias del mensajero registradas que falta verificar.
-          pendingVerification: sum(
-            collections.filter((p) => p.status === "pending_verification"),
-          ),
-          collections: collections.map((p) => ({
-            ...paymentSummary(p),
-            paymentId: p.id,
-            amount: Number(p.amount),
-            receivedBy: nameOf(p.receivedById),
-          })),
+          pendingVerification: hide
+            ? null
+            : sum(
+                collections.filter((p) => p.status === "pending_verification"),
+              ),
+          collections: hide
+            ? []
+            : collections.map((p) => ({
+                ...paymentSummary(p),
+                paymentId: p.id,
+                amount: Number(p.amount),
+                receivedBy: nameOf(p.receivedById),
+              })),
           customer: customerForActor(
             customers.find((c) => c.id === s.customerId) ?? null,
             actor,
@@ -4431,7 +4719,15 @@ export class SalesController {
       `inline; filename="${sale.number}.pdf"`,
     );
     doc.pipe(res);
-    drawSaleReceipt(doc, { sale, business, customer, seller });
+    // B-01: con la bandera encendida, el recibo de la caja abierta sale sin
+    // importes (la venta recién cobrada se imprime en la caja con el POST).
+    drawSaleReceipt(doc, {
+      sale,
+      business,
+      customer,
+      seller,
+      hidden: inBlindScope(await blindSalesScope(this.db, actor), sale),
+    });
     doc.end();
   }
 }

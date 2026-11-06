@@ -491,7 +491,9 @@ function Invoke-FitStorePg {
         remove(dir);
       }
     },
-    30000,
+    // El runner de Windows tarda más que el límite de 30 s en lanzar PowerShell
+    // y los dobles; con 120 s la prueba no depende de la carga del equipo.
+    120000,
   );
 });
 
@@ -688,7 +690,13 @@ describe("Portabilidad · verificación (scripts/verify.mjs)", () => {
       expect(await until(() => !alive(child.pid))).toBe(true);
       if (WINDOWS) expect(await until(() => !alive(server))).toBe(true);
     } finally {
-      if (server && alive(server)) process.kill(server, "SIGKILL");
+      // El proceso puede salir entre alive() y kill() (ESRCH): ya no hay nada que matar.
+      if (server && alive(server))
+        try {
+          process.kill(server, "SIGKILL");
+        } catch {
+          // ESRCH: ya salió.
+        }
       await until(() => !server || !alive(server));
       remove(dir);
     }

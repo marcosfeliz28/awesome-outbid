@@ -2338,7 +2338,7 @@ function Checkout({
     const envioText = envio
       ? `\nEnvío (mensajero ${envio.name}): ${formatMoney(envio.fee)}\nTotal pagado: ${formatMoney(envio.paid)}`
       : "";
-    const text = `${config?.name || "Nexora POS"} · Recibo ${receipt.number}\nTotal: ${formatMoney(receipt.total)}${envioText}\n${NON_FISCAL_LEGEND}\nGracias por tu compra.`;
+    const text = `${config?.name || "Norexos"} · Recibo ${receipt.number}\nTotal: ${formatMoney(receipt.total)}${envioText}\n${NON_FISCAL_LEGEND}\nGracias por tu compra.`;
     const customer = receipt.customer;
     // SEC-05: un dato enmascarado («•••••••123») no es un destinatario; la
     // cajera elige el contacto en WhatsApp o en el correo.

@@ -10,6 +10,12 @@ on: [push, pull_request]
 # `<tag>^{}`, no el del objeto tag).
 permissions:
   contents: read
+# 29-oct-2026: un empuje nuevo a la misma rama cancela la ejecución anterior
+# (solo cuenta el último SHA). Sin esto, cada empuje de las sesiones apilaba
+# una ejecución completa de ~35 min y saturaba los ejecutores.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest

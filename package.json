@@ -16,6 +16,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "db:local": "node scripts/local-db.mjs",
     "verify": "node scripts/verify.mjs",
+    "docs:citas": "node scripts/citas-reanclar.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "cloud:validate": "vitest run tests/cloud-deploy.test.ts",
     "backup": "node scripts/backup.mjs",
