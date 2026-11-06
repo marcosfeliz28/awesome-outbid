@@ -116,6 +116,7 @@ export default defineConfig({
       "tests/gv-incentivos-unit.test.ts",
       "tests/gv-auditoria-migration-postgres.test.ts",
       "tests/dominio-redireccion.test.ts",
+      "tests/avisos-propios.test.ts",
     ],
   },
 });
