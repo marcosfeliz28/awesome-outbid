@@ -58,7 +58,7 @@ Rama `claude-pc/gv-exigir-cierre` (base `nexora-cloud` 5-nov, `cc3bc69`). SHA de
 
 # Rol `gerente_gv` y alertas que se cierran solas (6-nov, Norexos 1, rama `claude-pc/gv-gerente-rol`)
 
-SHA: ver el último commit de la rama (anotado abajo al cerrar CI). CI (`verify`, `windows-installer`, `render-images`): pendiente de anotar con el SHA exacto.
+SHA: `c5e43a1e2e1d482baeab0af9b31fa9590dc9f763`. CI en verde para ese SHA (run 42224110836): `verify`, `windows-installer` y `render-images`. La prueba de migración que no corrió en el contenedor (falta libicu) sí se ejecutó en `verify`.
 
 - **A. Rol:** migración aditiva `202611060001_gv_gerente_rol` (INSERT … ON CONFLICT DO NOTHING; no asigna usuarios) y `permissions.gerente_gv` en shared = exactamente `gv:read`, `gv:reports`, `gv:verify`. Verificar sigue prohibido a quien registró la transferencia (`gv.ts:582`, solo `*` lo salta; el rol no tiene `*`).
 - **B. Alertas:** `resolveGvCashAlerts` se llama dentro de la transacción de cierre; resuelve la de 10 PM de esa caja y las de día sin cierre de los días con pagos de esa caja.
