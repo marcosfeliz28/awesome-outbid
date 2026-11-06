@@ -25,4 +25,3 @@ Botones y campos del contenido ≥ 44 px de alto en ≤ 768 px; textos de Incent
 - Seguridad-20: sin endpoints, datos ni dependencias nuevas; solo CSS y un observador DOM de lectura (puntos de entrada de datos, permisos, secretos: no aplican).
 
 ## SHA y CI
-Ver el comentario final al pie (se completa tras el CI).
