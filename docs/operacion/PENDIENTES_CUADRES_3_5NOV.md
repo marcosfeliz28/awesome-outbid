@@ -128,3 +128,8 @@ Decidida por la dueña («haz lo que sea mejor para nosotros»): Wendy se maneja
 
 ### Cierre de Wendy, 5-nov
 Efectivo +6 (sin explicar). Tarjeta +350 = envío Addison del cobro FS-425 (el +2,550 del cierre era ese cobro sin registrar). Transferencias del día: FS-435 (3,450 con envío, Banreservas), FS-438 (3,000) y FS-440 (3,450 con envío) VERIFICADAS con extracto; FS-438 y FS-440 tenían el banco mal marcado (Popular Génesis ···9797) y se corrigieron a Popular MacGen ···3620. **FS-441 liz mary (3,000, BHD) sin verificar**: no hay movimiento en BHD el 5-nov; en Banreservas hay 3,250 de Miguelina Rodriguez (¿3,000 + 250 de envío?). FS-433 Manuel Suriel: cobrada por transferencia 5,900 (Banreservas, ref 243408179682), saldo 0. El depósito de Cardnet del 5-nov (6,105.52) es el lote 159 del 4-nov.
+
+### Actualización 6-nov
+- El depósito de Miguelina Rodríguez Reyn (3,250, Banreservas ···5237, 5-nov 5:09 p. m., ref 243411589049) era de la **FS-445** (6-nov, Panty Negro XS 2,800 + 450 envío), pagada por adelantado. Banco corregido de Génesis ···5853 a MacGen ···5237 y verificada. **No era de la FS-441.**
+- **FS-441 liz mary (3,000 + 450, BHD)** sigue SIN aparecer en el banco: la dueña confirmó que no cayó en el BHD de la tienda; hay que seguir buscando.
+- Precio del Panty Negro cambiado a 2,800 (6 tallas).
