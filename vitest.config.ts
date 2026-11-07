@@ -119,6 +119,7 @@ export default defineConfig({
       "tests/gv-gerente-rol-migration-postgres.test.ts",
       "tests/dominio-redireccion.test.ts",
       "tests/avisos-propios.test.ts",
+      "tests/intentos-borrados.test.ts",
       "tests/assistant-unit.test.ts",
     ],
   },
