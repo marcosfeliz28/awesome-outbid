@@ -660,3 +660,6 @@ Reporta aquí abajo. No desplegar.
 
 ## Orden 117 (N1, 7-nov, a pedido de la dueña): instalar «Claude Code Setup»
 Plugin oficial de Anthropic, solo lectura. En la laptop: dentro de Claude Code, `/plugin` → buscar «claude-code-setup» (marketplace oficial) → instalar; o `/plugin install claude-code-setup@claude-plugins-official`. Verifica que aparezca el skill `claude-automation-recommender`, córrelo una vez sobre este repo y deja sus recomendaciones en `docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md` SIN aplicar ninguna (las revisa Norexos 1). Reporta aquí.
+
+## Orden 118 (N1, 7-nov) para Claude PC
+Tras 116 y 117: (1) instala con versión fija y revisión seguridad-20 los MCP `context7` y Playwright (ver docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md; no uses `npx` sin versión; anota versión y hash) y déjalos en `.mcp.json` en una rama `claude-pc/mcp-recomendados`; (2) revisa que los hooks nuevos (`scripts/hooks/guard-edit.mjs`, `format-edit.mjs`, ya en nexora-cloud cuando pase su CI) funcionen en Windows (rutas con `\`, mayúsculas); (3) corre `claude-automation-recommender` y anota lo nuevo en RECOMENDACIONES_CLAUDE_SETUP.md. Sin desplegar.

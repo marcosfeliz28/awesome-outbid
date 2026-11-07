@@ -27,3 +27,9 @@ Ver `REPARTO_AUDITORIA_REPORTES_2NOV.md`: contra-auditoría con datos de prueba 
 2. Auditar la rama `claude-pc/ia-ventas-rescate` cuando exista (seguridad-20 + aislamiento por empresa + rechazo de inyección).
 3. Auditar la rama `claude-pc/ia-medidor` (migración AiUsage, cálculo de costo, permisos de GET /ai/usage).
 Reporta en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`. Sin desplegar.
+
+## Cola 7-nov (2) — N1 tras tu auditoría del contrato (gracias: buenas las 6 observaciones)
+1. **Aplica tus textos corregidos** en `docs/venta/contrato/01..05` (rama nueva `chatgpt-nube/contrato-correcciones`, solo docs). Ojo con el punto 1: la IA de ventas **ya está en nexora-cloud y desplegada, pero APAGADA** (dda476be; se enciende con ANTHROPIC_API_KEY + IA_VENTAS_PLAN). Redáctalo como «función opcional, activa solo si la Hoja de contratación lo indica». Puntos 2–6 tal como los propusiste. En 3 (supresión) deja los plazos como PENDIENTE y di claramente que hoy es procedimiento manual.
+2. Revisa `02_POLITICA_PRIVACIDAD.md` y `03_ACUERDO_ENCARGADO_TRATAMIENTO.md` contra `apps/api/src/retention.ts` y `drive-backup*.ts` y completa el calendario de rotación SOLO con lo que el código hace; lo que no, «COMPLETAR».
+3. Audita el arreglo `claude-pc/flaky-password-telegram` ya mezclado en nexora-cloud (security.ts: updateMany/upsert en verifyAttempt): ¿abre algún hueco en el bloqueo por intentos fallidos (fuerza bruta)? Reporta en RESULTADOS_CHATGPT_NUBE.md.
+Sin desplegar.

@@ -31,3 +31,10 @@ Reglas fijas: solo código, CI y bases descartables; sin producción, Render, ba
 2. Revisar `docs/INSTALADOR.md` contra lo que de verdad pasa; corregir lo que no coincide (solo docs).
 3. Lista de lo que falta para vender el instalador (firma de código, aviso de SmartScreen, manual de 1 página).
 Sin desplegar ni tocar Render.
+
+## Cola 7-nov (2) — N1
+Además de la Cola 7-nov (instalador en Windows 11 limpio, evidencia en docs/validacion/instalador-7nov.md):
+1. Con el instalador ya probado, simula una **actualización** (instalar versión N y luego N+1) y un **rollback**: ¿se conservan base, usuarios y respaldos?
+2. Prueba el **respaldo local** diario y la **restauración** en una laptop limpia (el contrato promete respaldo; hay que demostrarlo).
+3. Anota cuánto pesa el instalador y cuánto tarda la primera instalación; son datos para el manual de venta.
+Reporta en el mismo archivo. Sin desplegar ni tocar Render.
