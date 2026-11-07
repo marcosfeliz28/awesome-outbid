@@ -2275,3 +2275,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (6-nov, 2) — sin órdenes nuevas; movil-todo y landing ya verdes: LISTA escrita
 - RESPUESTA y OBSIDIAN_LUMINA_PROGRESO sin cambios desde 83408302. movil-todo 1b2a29a8 y landing-norexos-net d340664d con verify, windows-installer y render-images en verde (orden 115 los cita): LISTA escrita. pc23, a1, b01 y lumina siguen verdes.
 - Último hash visto de nexora-cloud: 83408302 (cabeza fa44ed85). No desplegar.
+
+## Ciclo nube (7-nov, 1) — orden 116 nueva (nexora-cloud 3743f7ec): ejecutada y reportada
+- Hecho: GV Caja 390 px correcta, ia-medidor e ia-ventas-rescate sin fallos propios (12 pruebas *-postgres fallan solo por correr como root), diferencias de precios de landing listadas; todo en RESULTADO_ORDEN_116_CLAUDE_PC.md. OBSIDIAN_LUMINA_PROGRESO sin cambios.
+- CI: pc23, a1, b01, lumina, gv-cierre-detalle, ia-medidor e ia-ventas-rescate verdes: LISTA escrita para las tres últimas. Último hash visto de nexora-cloud: 3743f7ec (cabeza 3606676a). No desplegar.

@@ -78,3 +78,9 @@ LISTA: claude-pc/fix-seg-menor e8d2acfe2079bbea8f5f97f1c7f0383a65da8260 (orden 1
 LISTA: claude-pc/movil-todo 1b2a29a85beaf7af02ee156b1bb42fab152e9b77 (orden 115 pieza 2, revisión sin corregir en RESULTADO_ORDEN_115_CLAUDE_PC.md; verify, windows-installer y render-images en verde; no ejecuté cambios míos; no desplegar sin revisión de Nexora 1)
 
 LISTA: claude-pc/landing-norexos-net d340664d70425a2a353d27a3373c265daac70cd2 (orden 115 pieza 2, revisión sin corregir en RESULTADO_ORDEN_115_CLAUDE_PC.md; verify, windows-installer y render-images en verde; no ejecuté cambios míos; no desplegar sin revisión de Nexora 1)
+
+LISTA: claude/gv-cierre-detalle 1a4c9bd7bd16b842edf0e6b54745ea9d10846061 (orden 116 punto 1, revisión visual 390 px correcta; verify, windows-installer y render-images en verde; no ejecuté cambios míos; no desplegar)
+
+LISTA: claude-pc/ia-medidor 0d176e79ab21293c8f5808d551857a189f0b96a8 (orden 116 punto 2, build, eslint y pruebas sin fallos propios; verify, windows-installer y render-images en verde; no desplegar)
+
+LISTA: claude-pc/ia-ventas-rescate 8954a099769cc484940f4e10f3dae200262a77e5 (orden 116 punto 2, build, eslint y pruebas sin fallos propios; verify, windows-installer y render-images en verde; no desplegar)
