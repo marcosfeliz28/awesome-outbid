@@ -1,0 +1,9 @@
+fuente,nombre,organismo,version,licencia,url,uso
+USDA_Foundation,USDA FoodData Central – Foundation Foods,Estados Unidos (USDA-ARS),2026-04-30,Dominio público (CC0),https://fdc.nal.usda.gov,Base principal
+USDA_SR_Legacy,USDA FoodData Central – SR Legacy,Estados Unidos (USDA-ARS),2018-04,Dominio público (CC0),https://fdc.nal.usda.gov,Base principal
+USDA_FNDDS,USDA FoodData Central – FNDDS 2021-2023,Estados Unidos (USDA-ARS),2024-10-31,Dominio público (CC0),https://fdc.nal.usda.gov,Base principal (platos y recetas)
+UK_CoFID_2021,McCance & Widdowson CoFID 2021,Reino Unido (Public Health England / OHID),2021-03,Open Government Licence v3.0 (uso comercial con atribución),https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid,Verificación cruzada
+AU_AFCD_R3,Australian Food Composition Database Release 3,Australia (FSANZ),2025-12,Términos de uso FSANZ (revisar antes de redistribuir),https://www.foodstandards.gov.au/science-data/food-nutrient-databases/afcd,Verificación cruzada
+BR_TACO_4ed,Tabela Brasileira de Composição de Alimentos TACO 4ª ed.,"Brasil (NEPA/UNICAMP, Ministério da Saúde)",2011,"Acceso público, citar fuente",https://nepa.unicamp.br/categoria/taco/,Verificación cruzada
+USDA_Branded,USDA FoodData Central – Branded Foods,Estados Unidos (USDA / GS1 / fabricantes),2026-04-30,Dominio público (CC0),https://fdc.nal.usda.gov,Extra: productos de marca (etiqueta)
+OpenFoodFacts,Open Food Facts,Colaborativo mundial (no gubernamental),2026-09,ODbL 1.0 (atribución + compartir igual en la base derivada),https://world.openfoodfacts.org,Extra: productos mundiales (no verificado oficialmente)
