@@ -2,7 +2,7 @@ Borrador generado por IA. Revisión por un abogado dominicano colegiado antes de
 
 # Condiciones de cobro de Norexos
 
-Estado: borrador del 31-oct-2026. Anexo B del contrato de servicio SaaS Norexos. Redactado para proteger a la proveedora. Todo precio, moneda, descuento, plazo y recargo marcado **PENDIENTE** es propuesta que decide la dueña (ver `docs/venta/PROPUESTA_PRECIOS.md`). No se incluyen datos bancarios: las cuentas o medios de pago se escriben en la factura o en la Hoja de contratación al firmar. Siglas: CC = Código Civil; CCom = Código de Comercio; CT = Código Tributario; L126 = Ley 126-02; L32 = Ley 32-23. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
+Estado: borrador del 31-oct-2026, corregido técnicamente el 7-nov-2026. Anexo B del contrato de servicio SaaS Norexos. Redactado para proteger a la proveedora. Todo precio, moneda, descuento, plazo y recargo marcado **PENDIENTE** es propuesta que decide la dueña (ver `docs/venta/PROPUESTA_PRECIOS.md`). No se incluyen datos bancarios: las cuentas o medios de pago se escriben en la factura o en la Hoja de contratación al firmar. Siglas: CC = Código Civil; CCom = Código de Comercio; CT = Código Tributario; L126 = Ley 126-02; L32 = Ley 32-23. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
 
 ## 1. Precios (PENDIENTE)
 
@@ -52,7 +52,7 @@ Estado: borrador del 31-oct-2026. Anexo B del contrato de servicio SaaS Norexos.
 
 6.2. Desde la mora, se cobra un recargo de [1.5] % mensual sobre el saldo (PENDIENTE: lo decide la dueña con su abogado). Se pacta como cláusula penal: ni la proveedora puede exigir más, ni se puede reducir. [Fundamento: CC art. 1152 y 1153, verificados: la cláusula penal fija la suma y el retraso en el pago de cantidad da intereses «salvas las reglas particulares del comercio y de las finanzas»; el tope y la licitud del recargo mensual: ABOGADO, no se leyó la norma de intereses]
 
-6.3. Si el pago no llega en [5] días hábiles desde el vencimiento, la proveedora puede suspender el acceso (solo lectura o bloqueo, PENDIENTE) con aviso previo. La suspensión no suspende la deuda. Los datos se conservan [30] días; pasado ese tiempo la proveedora puede terminar el contrato por incumplimiento. [Fundamento: contrato principal, cláusulas 20 y 21; CC art. 1134 y 1184, verificados]
+6.3. Si el pago no llega en [5] días hábiles desde el vencimiento, la proveedora puede suspender el acceso (solo lectura o bloqueo, PENDIENTE) con aviso previo. La suspensión no suspende la deuda. Los datos se conservan durante [30] días (**PENDIENTE**) para que el cliente solicite su exportación; pasado ese tiempo, la terminación y eventual supresión requieren un procedimiento manual de la proveedora (**PENDIENTE**). El sistema no borra automáticamente los datos de una empresa por mora. [Fundamento: contrato principal, cláusulas 20 y 21; CC art. 1134 y 1184, verificados]
 
 6.4. Reactivar una cuenta suspendida exige pagar lo adeudado y el período en curso; la proveedora puede cobrar [PENDIENTE] por reactivación.
 

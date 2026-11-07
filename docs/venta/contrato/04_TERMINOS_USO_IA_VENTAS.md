@@ -2,15 +2,15 @@ Borrador generado por IA. Revisión por un abogado dominicano colegiado antes de
 
 # Términos de uso de la IA de ventas de Norexos («Preguntar a Norexos»)
 
-Estado: borrador del 31-oct-2026; secciones 0, 1.1, 2.2, 3.1, 4.2 y 4.3 corregidas el 7-nov-2026 para que coincidan con el código. Anexo D del contrato de servicio SaaS Norexos. Redactado para proteger a la proveedora. Siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07; L126 = Ley 126-02. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
+Estado: borrador del 31-oct-2026; corregido técnicamente el 7-nov-2026 para que coincida con el código desplegado. Anexo D del contrato de servicio SaaS Norexos. Redactado para proteger a la proveedora. Siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07; L126 = Ley 126-02. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
 
 ## 0. Base técnica de las afirmaciones de este documento
 
-Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó del código de la rama `claude-pc/ia-ventas-rescate` (7-nov-2026): `apps/api/src/assistant.ts`, `apps/api/src/ai-usage.ts` (tabla `AiUsage`) y `docs/sistema/IA_VENTAS.md`. Reemplaza a la rama `claude/ia-ventas-linea` (commit `62720b17`). **Esa rama no está mezclada en `nexora-cloud` ni desplegada al 7-nov-2026.** Antes de firmar, la proveedora confirma que lo desplegado coincide con ese código; si no coincide, cambia este documento y no afirma lo que no se cumpla. [Fundamento: honestidad de la oferta, L358 art. 48, verificado: el proveedor responde por la veracidad de lo que publicita, por prudencia]
+Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó de `apps/api/src/assistant.ts`, `apps/api/src/ai-usage.ts` (tabla `AiUsage`) y `docs/sistema/IA_VENTAS.md`. La función ya está integrada y desplegada, pero **APAGADA** mientras no se configuren el proveedor y el plan. Para cada cliente solo se activa si su Hoja de contratación la incluye. Antes de firmar, la proveedora confirma que lo desplegado sigue coincidiendo con este documento; si no coincide, lo actualiza y no afirma lo que no se cumpla. [Fundamento: honestidad de la oferta, L358 art. 48, verificado: el proveedor responde por la veracidad de lo que publicita, por prudencia]
 
 ## 1. Qué es
 
-1.1. La IA de ventas es una función **opcional**, incluida según el plan (Medio: 10 preguntas por día por usuario; Completo: 30; Básico o sin plan: no incluida. Así lo aplica el código; los precios de cada plan siguen PENDIENTES de decisión de la dueña). Permite escribir una pregunta en lenguaje natural sobre las ventas del negocio y recibir una respuesta corta.
+1.1. La IA de ventas es una función **opcional**. Solo queda activa para el cliente cuando la Hoja de contratación la identifica como incluida y el Servicio tiene configurados el proveedor y el plan correspondiente. Los topes y precios aplicables son los de esa Hoja; mientras no se aprueben y firmen, siguen **PENDIENTES**. Permite escribir una pregunta en lenguaje natural sobre las ventas del negocio y recibir una respuesta corta.
 
 1.2. Funciona con herramientas **de solo lectura** (resumen de ventas, productos más vendidos, cobros por método y banco, comparación de períodos y ventas propias de la cajera). No hay herramienta que escriba o cambie datos; si se le pide cambiar un precio, una existencia o una venta, responde que no puede.
 
@@ -18,11 +18,11 @@ Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó d
 
 ## 2. No guarda consultas
 
-2.1. **Norexos no guarda el texto de las preguntas ni el de las respuestas.** Cada pregunta es independiente: no hay memoria ni historial entre preguntas (la pantalla no reenvía historial y la API solo acepta la pregunta).
+2.1. **Norexos no persiste el texto de las preguntas ni el de las respuestas en su base funcional.** Cada pregunta es independiente: no hay memoria ni historial entre preguntas (la pantalla no reenvía historial y la API solo acepta la pregunta). La retención en registros técnicos del alojamiento o del proveedor de IA es **NO CONFIRMADA**.
 
 2.2. Lo único que se guarda es **una fila de uso por pregunta** (tabla `AiUsage`): usuario, sucursal, fecha y hora, modelo, tokens, costo estimado y si salió bien, sin texto. Sirve para aplicar el tope diario y medir costos. No se encontró en el código de la rama una escritura del texto de la pregunta o la respuesta en la base, en la bitácora ni en un registro de peticiones (prueba automática `tests/assistant-api.test.ts`).
 
-2.3. **Lo que sí sucede fuera de Norexos:** para responder, la pregunta y las cifras que las herramientas devuelven en ese momento se envían al proveedor de IA. La proveedora no controla cuánto tiempo el proveedor las conserva ni si las usa para otros fines: **NO VERIFICADO**, depende de los términos del proveedor. Por eso el usuario no escribe en la pregunta datos personales de sus clientes, contraseñas, números de tarjeta ni secretos.
+2.3. **Lo que sí sucede fuera de Norexos:** para responder, la pregunta y las cifras que las herramientas devuelven en ese momento se envían al proveedor de IA. El sistema no detecta ni elimina automáticamente datos personales, contraseñas, números de tarjeta u otros secretos que el usuario escriba en la pregunta antes de transmitirla; el usuario no debe incluirlos. La proveedora no controla cuánto tiempo el proveedor los conserva ni si los usa para otros fines: **NO VERIFICADO**, depende de sus términos.
 
 2.4. Los registros técnicos del alojamiento (por ejemplo, de Render) no se revisaron para esta afirmación: NO VERIFICADO.
 
@@ -60,7 +60,7 @@ Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó d
 
 ## 6. Usos prohibidos
 
-El usuario no debe: intentar obtener datos que su rol no permite, saltarse los topes, automatizar preguntas en masa, intentar manipular el modelo («inyección de instrucciones») para ver datos ajenos o revelar las instrucciones internas, usar la función para fines ilícitos, ni compartir sus respuestas como si fueran certificaciones oficiales. Esos actos pueden causar suspensión inmediata y, si hay acceso ilícito o exceso de autorización, constituyen delito. [Fundamento: L53 arts. 6 y 10, verificados]
+El usuario no debe: intentar obtener datos que su rol no permite, saltarse los topes, automatizar preguntas en masa, intentar manipular el modelo («inyección de instrucciones») para ver datos ajenos o revelar las instrucciones internas, usar la función para fines ilícitos, ni compartir sus respuestas como si fueran certificaciones oficiales. Una pregunta manipuladora puede ser procesada por el proveedor de IA, pero no autoriza herramientas inventadas, operaciones de escritura ni acceso a otra empresa: el servidor vuelve a validar herramientas, parámetros, rol y empresa. Esos actos pueden causar suspensión inmediata y, si hay acceso ilícito o exceso de autorización, constituyen delito. [Fundamento: L53 arts. 6 y 10, verificados]
 
 ## 7. Responsabilidad
 
@@ -72,7 +72,7 @@ El usuario no debe: intentar obtener datos que su rol no permite, saltarse los t
 
 ## 8. Costos y plan
 
-El uso de la IA tiene un costo variable para la proveedora (estimado en `docs/venta/PROPUESTA_PRECIOS.md`, alrededor de US$0.005 por pregunta con el modelo económico; estimación no verificada contra la tarifa real). El sistema guarda los tokens de cada pregunta y deja el costo vacío hasta que se carguen los precios reales en `apps/api/src/ai-prices.ts`; no inventa precios. Por eso se limita por plan. La lectura de facturas con IA es otra función, cobrada o limitada aparte, que envía el documento completo al proveedor y conserva el borrador y el adjunto en el sistema; no se rige por la sección 2.
+El uso de la IA tiene un costo variable para la proveedora. El sistema guarda los tokens de cada pregunta y calcula el costo estimado con las tarifas documentadas en `apps/api/src/ai-prices.ts`; el importe real puede cambiar si el proveedor cambia sus tarifas o aplica condiciones regionales. Los topes y precios al cliente son los de la Hoja de contratación y siguen **PENDIENTES** mientras no se aprueben. La lectura de facturas con IA es otra función, cobrada o limitada aparte, que envía el documento completo al proveedor y conserva el borrador y el adjunto en el sistema; no se rige por la sección 2.
 
 ## 9. Cambios y terminación
 

@@ -2,7 +2,7 @@ Borrador generado por IA. Revisión por un abogado dominicano colegiado antes de
 
 # Contrato de servicio SaaS Norexos
 
-Estado: borrador del 31-oct-2026 (orden 95, parte B). Redactado para proteger a la proveedora. Los precios, los planes y los plazos marcados como **PENDIENTE** son propuesta y los decide la dueña (ver `docs/venta/PROPUESTA_PRECIOS.md`). Los corchetes `[Fundamento: ...]` indican la norma en que se apoya cada cláusula. «verificado» significa que el artículo se leyó en el texto de la fuente indicada en `FUENTES_LEGALES.md`; «NO VERIFICADO» significa que no se pudo leer y un abogado debe confirmarlo.
+Estado: borrador del 31-oct-2026, corregido técnicamente el 7-nov-2026 (orden 95, parte B). Redactado para proteger a la proveedora. Los precios, los planes y los plazos marcados como **PENDIENTE** son propuesta y los decide la dueña (ver `docs/venta/PROPUESTA_PRECIOS.md`). Los corchetes `[Fundamento: ...]` indican la norma en que se apoya cada cláusula. «verificado» significa que el artículo se leyó en el texto de la fuente indicada en `FUENTES_LEGALES.md`; «NO VERIFICADO» significa que no se pudo leer y un abogado debe confirmarlo.
 
 Clave de siglas: CC = Código Civil; CCom = Código de Comercio; CT = Código Tributario (Ley 11-92); L172 = Ley 172-13; L358 = Ley 358-05; L53 = Ley 53-07; L126 = Ley 126-02; L32 = Ley 32-23; L479 = Ley 479-08.
 
@@ -74,7 +74,7 @@ El precio, el ITBIS, la moneda, el tipo de cambio, la forma de pago, las fechas 
 
 6.3. En el plan anual, la cancelación anticipada no da derecho a devolución de los meses no usados (PENDIENTE: confirmar si la dueña prefiere devolver con descuento del precio mensual).
 
-6.4. Si el cliente cancela, la proveedora le permite exportar sus datos durante [30] días; después los borra conforme al acuerdo de encargado de tratamiento (cláusula 10 de `03_ACUERDO_ENCARGADO_TRATAMIENTO.md`).
+6.4. Si el cliente cancela, la proveedora le permite exportar sus datos durante [30] días (**PENDIENTE**). Después aplica un procedimiento manual documentado de bloqueo y supresión conforme al acuerdo de encargado de tratamiento (cláusula 10 de `03_ACUERDO_ENCARGADO_TRATAMIENTO.md`). El sistema no ejecuta hoy una supresión automática por empresa al terminar el contrato.
 
 [Fundamento: CC art. 1134 y 1147 a 1151, verificados; la limitación del remedio a un crédito es válida entre profesionales a juicio de la redactora, pero su validez: ABOGADO]
 
@@ -136,9 +136,9 @@ El precio, el ITBIS, la moneda, el tipo de cambio, la forma de pago, las fechas 
 
 ## Cláusula 12. Respaldos y continuidad
 
-12.1. La proveedora hace respaldos periódicos del sistema según su procedimiento vigente, que puede incluir copias cifradas en un almacenamiento externo si está configurado.
+12.1. Si Google Drive está configurado y conectado, el Servicio intenta un respaldo diario cifrado a las 03:30, hora de Santo Domingo. Puede reintentar hasta tres veces en el día y avisar si pasan 36 horas sin una copia correcta. Sin configuración o conexión activa no se promete una copia externa.
 
-12.2. Los respaldos son una medida de continuidad del Servicio, no un archivo legal del cliente. El cliente exporta y guarda por su cuenta los reportes y documentos que necesite por ley.
+12.2. La rotación implementada conserva la copia más reciente de cada uno de los 365 días más recientes con respaldo y la primera copia de cada uno de los 120 meses más recientes con respaldo. Solo rota archivos reconocidos como respaldos de Norexos; los respaldos locales de una instalación en PC son un mecanismo distinto. Los respaldos son una medida de continuidad del Servicio, no un archivo legal del cliente. El cliente exporta y guarda por su cuenta los reportes y documentos que necesite por ley.
 
 12.3. La restauración de un respaldo puede revertir datos recientes; la proveedora no responde por los datos cargados entre el último respaldo y el incidente más allá del tope de la cláusula 17.
 
@@ -158,7 +158,7 @@ El precio, el ITBIS, la moneda, el tipo de cambio, la forma de pago, las fechas 
 
 ## Cláusula 14. IA de ventas y otras funciones de inteligencia artificial
 
-14.1. La IA de ventas es opcional, de solo lectura, no guarda el texto de las consultas ni de las respuestas, y se rige por `04_TERMINOS_USO_IA_VENTAS.md`.
+14.1. La IA de ventas es una función opcional y de solo lectura. Solo queda activa para el cliente cuando la Hoja de contratación la identifica como incluida y el Servicio tiene configurado el proveedor y el plan correspondiente. Norexos no persiste el texto de las preguntas ni de las respuestas en su base funcional ni crea historial entre consultas; la pregunta y las cifras de lectura sí se transmiten al proveedor de IA para responder y la retención en sus registros o en los del alojamiento es **NO CONFIRMADA**. Se rige por `04_TERMINOS_USO_IA_VENTAS.md`.
 
 14.2. La lectura de facturas de proveedor con IA, si está activada, es otra función: envía la imagen o el PDF al proveedor de IA y el sistema conserva el borrador y el adjunto de la factura (`InvoiceDraft`, `InvoiceAttachment`). No debe confundirse con la IA de ventas.
 
@@ -216,7 +216,7 @@ La proveedora puede suspender el acceso, total o parcialmente y con aviso previo
 
 21.2. **Sin causa.** Cualquiera puede terminar al final de un período con el aviso de la cláusula 5.
 
-21.3. **Efectos.** El cliente paga lo debido hasta la fecha. La proveedora cierra el acceso, permite exportar los datos por [30] días y luego los suprime, salvo copias de respaldo que se eliminan por rotación y datos que deba conservar por ley. [Fundamento: L172 art. 15, verificado: la cancelación da lugar al bloqueo y la supresión no procede si hay obligación legal de conservar]
+21.3. **Efectos.** El cliente paga lo debido hasta la fecha. La proveedora cierra el acceso y permite exportar los datos por [30] días (**PENDIENTE**). Luego ejecuta un procedimiento manual documentado de bloqueo y supresión en un máximo de [60] días (**PENDIENTE**); hoy no existe una purga automática por empresa al terminar el contrato. Se exceptúan las copias de respaldo, que se eliminan por la rotación de la cláusula 12, y los datos que deban conservarse por ley. [Fundamento: L172 art. 15, verificado: la cancelación da lugar al bloqueo y la supresión no procede si hay obligación legal de conservar]
 
 21.4. Sobreviven la terminación las cláusulas de propiedad intelectual, confidencialidad, limitación de responsabilidad, indemnidad, pago y jurisdicción.
 
