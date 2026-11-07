@@ -2,7 +2,7 @@ Borrador generado por IA. Revisión por un abogado dominicano colegiado antes de
 
 # Contrato de licencia de uso de software instalado Norexos
 
-Estado: borrador del 7-nov-2026. Es el segundo contrato de Norexos: se usa cuando el cliente recibe el instalador en su propia laptop Windows y su base de datos queda **en su equipo**, no en la nube de Norexos. Para el servicio en línea se usa `01_CONTRATO_SERVICIO_SAAS.md`. Redactado para proteger a la proveedora. Los precios, los planes y los plazos marcados como **PENDIENTE** los decide la dueña (ver `docs/venta/PROPUESTA_PRECIOS.md`; la sección «Propuesta de introducción 7-nov» que se mencionó al pedir este borrador **no existe todavía** en ese archivo, por eso no se copió ninguna cifra). Los corchetes `[Fundamento: ...]` indican la norma en que se apoya cada cláusula. «verificado» significa que el artículo se leyó en la fuente indicada en `FUENTES_LEGALES.md`; «NO VERIFICADO» significa que no se pudo leer y un abogado debe confirmarlo.
+Estado: borrador del 7-nov-2026. Es el segundo contrato de Norexos: se usa cuando el cliente recibe el instalador en su propia laptop Windows y su base de datos queda **en su equipo**, no en la nube de Norexos. Para el servicio en línea se usa `01_CONTRATO_SERVICIO_SAAS.md`. Redactado para proteger a la proveedora. Los precios, los planes y los plazos marcados como **PENDIENTE** los decide la dueña (ver `docs/venta/PROPUESTA_PRECIOS.md`; las cifras de la sección «Propuesta de introducción 7-nov», publicada en `nexora-cloud`, se citan solo como propuesta). Los corchetes `[Fundamento: ...]` indican la norma en que se apoya cada cláusula. «verificado» significa que el artículo se leyó en la fuente indicada en `FUENTES_LEGALES.md`; «NO VERIFICADO» significa que no se pudo leer y un abogado debe confirmarlo.
 
 Clave de siglas: CC = Código Civil; CCom = Código de Comercio; CT = Código Tributario (Ley 11-92); L172 = Ley 172-13; L358 = Ley 358-05; L53 = Ley 53-07; L126 = Ley 126-02; L32 = Ley 32-23; L479 = Ley 479-08.
 
@@ -53,7 +53,7 @@ Antes de firmar no se deben dejar espacios en blanco: todo dato entre `[ ]` se c
 
 ## Cláusula 4. Precio, impuestos y pago (PENDIENTE de decisión de la dueña)
 
-4.1. **Pago único por la licencia:** [PENDIENTE: monto y moneda; lo decide la dueña]. **Instalación y carga de inventario por la proveedora (opcional):** [PENDIENTE]. **Cuota anual opcional** de actualizaciones y soporte (cláusula 5): [PENDIENTE]. Módulos extra: [PENDIENTE]. Descuentos o piloto: [PENDIENTE]. Todo se anota en el Anexo A. Nada vale hasta que la dueña decida y se anote ahí.
+4.1. **Pago único por la licencia:** [PENDIENTE; propuesta de introducción del 7-nov: US$149, 1 sucursal y hasta 3 cajas; lista US$249]. **Instalación y carga de inventario por la proveedora (opcional):** [PENDIENTE; propuesta: US$75, lista US$150]. **Cuota anual opcional** de actualizaciones y soporte (cláusula 5): [PENDIENTE; propuesta: US$39 al año, lista US$59]. **IA de ventas (opcional):** [PENDIENTE; propuesta: US$7 al mes por usuario, 10 preguntas al día]. Las cifras vienen de la sección «Propuesta de introducción 7-nov» de `docs/venta/PROPUESTA_PRECIOS.md` (rama `nexora-cloud`) y son propuesta, no precio definitivo. Módulos extra: [PENDIENTE]. Descuentos o piloto: [PENDIENTE]. Todo se anota en el Anexo A. Nada vale hasta que la dueña decida y se anote ahí.
 
 4.2. Los precios no incluyen ITBIS ni comisiones bancarias. El ITBIS se suma a la tasa vigente al facturar; la tasa vigente la confirma el contador de la proveedora antes de publicar precios. [Fundamento: CT art. 335 número 3, 337, 338 número 3, 341 y 345, verificados]
 
@@ -65,7 +65,7 @@ Antes de firmar no se deben dejar espacios en blanco: todo dato entre `[ ]` se c
 
 5.1. La cuota anual da derecho, durante el año pagado, a las Actualizaciones (cláusula 10) y al soporte (cláusula 11). **Es opcional**: el cliente puede no contratarla o dejarla vencer (cláusula 3.5).
 
-5.2. Se paga por adelantado cada [12] meses; el primer año [PENDIENTE: incluido o no en el pago único].
+5.2. Se paga por adelantado cada [12] meses; el primer año [PENDIENTE; la propuesta del 7-nov lo incluye en el pago único].
 
 5.3. Si la cuota vence, el cliente conserva la Versión instalada. Para volver a recibir Actualizaciones y soporte paga lo vencido o una cuota de reactivación de [PENDIENTE]. La proveedora no está obligada a ofrecer Actualizaciones a quien no pagó la cuota.
 
@@ -291,30 +291,30 @@ Este contrato y sus anexos son el acuerdo completo. Si una cláusula se declara 
 
 ## Anexo A. Hoja de contratación (completar y firmar)
 
-| Dato                                   | Valor                                                |
-| -------------------------------------- | ---------------------------------------------------- |
-| Número de licencia                     | [ASIGNAR]                                            |
-| Fecha de entrega del instalador        | [FECHA]                                              |
-| Versión entregada                      | [NÚMERO DE VERSIÓN]                                  |
-| SHA-256 del instalador                 | [COMPLETAR; el cliente lo compara antes de instalar] |
-| Sucursal licenciada (nombre y local)   | [COMPLETAR]                                          |
-| Equipo (marca, modelo, nombre de PC)   | [COMPLETAR]                                          |
-| Cajas y usuarios incluidos             | [COMPLETAR] (PENDIENTE)                              |
-| Módulos extra                          | [ninguno / GV / incentivos] (PENDIENTE)              |
-| Pago único de la licencia              | [PENDIENTE: monto y moneda]                          |
-| Instalación y carga de inventario      | [sí / no] [PENDIENTE: monto]                         |
-| Cuota anual de actualizaciones/soporte | [contratada / no contratada] [PENDIENTE: monto]      |
-| Primer año de la cuota                 | [incluido / no incluido] (PENDIENTE)                 |
-| Vence la cuota                         | [FECHA]                                              |
-| Moneda y tipo de cambio                | [USD / DOP] (PENDIENTE)                              |
-| Descuento o piloto                     | [ninguno / detalle] (PENDIENTE)                      |
-| Canales y horario de soporte           | [COMPLETAR] (PENDIENTE)                              |
-| Contactos del cliente para soporte     | [NOMBRE, CORREO, TELÉFONO]                           |
-| Usuario dueño en el sistema            | [NOMBRE Y CORREO; la contraseña no se escribe aquí]  |
-| Copia externa de respaldos             | [OneDrive / USB / otro]; responsable: [NOMBRE]       |
-| Acceso remoto de soporte permitido     | [sí, con autorización en cada sesión / no]           |
-| IA de ventas                           | [contratada / no contratada]                         |
-| Jurisdicción                           | [PENDIENTE]                                          |
+| Dato                                   | Valor                                                             |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| Número de licencia                     | [ASIGNAR]                                                         |
+| Fecha de entrega del instalador        | [FECHA]                                                           |
+| Versión entregada                      | [NÚMERO DE VERSIÓN]                                               |
+| SHA-256 del instalador                 | [COMPLETAR; el cliente lo compara antes de instalar]              |
+| Sucursal licenciada (nombre y local)   | [COMPLETAR]                                                       |
+| Equipo (marca, modelo, nombre de PC)   | [COMPLETAR]                                                       |
+| Cajas y usuarios incluidos             | [COMPLETAR; propuesta: hasta 3 cajas] (PENDIENTE)                 |
+| Módulos extra                          | [ninguno / GV / incentivos] (PENDIENTE)                           |
+| Pago único de la licencia              | [PENDIENTE; propuesta 7-nov: US$149]                              |
+| Instalación y carga de inventario      | [sí / no] [PENDIENTE; propuesta: US$75]                           |
+| Cuota anual de actualizaciones/soporte | [contratada / no contratada] [PENDIENTE; propuesta: US$39 al año] |
+| Primer año de la cuota                 | [incluido / no incluido] (PENDIENTE; propuesta: incluido)         |
+| Vence la cuota                         | [FECHA]                                                           |
+| Moneda y tipo de cambio                | [USD / DOP] (PENDIENTE)                                           |
+| Descuento o piloto                     | [ninguno / detalle] (PENDIENTE)                                   |
+| Canales y horario de soporte           | [COMPLETAR] (PENDIENTE)                                           |
+| Contactos del cliente para soporte     | [NOMBRE, CORREO, TELÉFONO]                                        |
+| Usuario dueño en el sistema            | [NOMBRE Y CORREO; la contraseña no se escribe aquí]               |
+| Copia externa de respaldos             | [OneDrive / USB / otro]; responsable: [NOMBRE]                    |
+| Acceso remoto de soporte permitido     | [sí, con autorización en cada sesión / no]                        |
+| IA de ventas                           | [contratada / no contratada]                                      |
+| Jurisdicción                           | [PENDIENTE]                                                       |
 
 El cliente confirma con su firma que recibió y leyó la cláusula 7 (respaldos) y la cláusula 14 (el Software no emite NCF ni e-CF).
 
