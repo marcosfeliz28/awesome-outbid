@@ -47,3 +47,6 @@ Después de la prueba del instalador:
 4. **Guion de demo de 10 minutos** (`docs/venta/DEMO_10_MIN.md`) con datos demo; qué mostrar y en qué orden.
 5. Lista de lo que la dueña debe decidir o comprar (dominio, correo de soporte, número de WhatsApp Business, certificado de firma de código) con costo aproximado de cada uno.
 Sin desplegar ni publicar.
+
+### Punto 2 (instalador): paso previo, aclaración de N1 (7-nov)
+El CI NO publica el `.exe` (solo prueba). Hay que compilarlo en Windows 11: `git pull` de nexora-cloud, `pnpm install`, `pnpm instalador:compilar` → `instalador/dist/Nexora-POS-Setup-<versión>.exe`. Anota la versión, el tamaño y el SHA-256 (`Get-FileHash`) en docs/validacion/instalador-7nov.md y prueba ESE archivo en una máquina limpia (o máquina virtual). Si falta algo para compilar (herramienta, certificado), lista exactamente qué.
