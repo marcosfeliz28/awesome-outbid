@@ -2,7 +2,7 @@ Borrador generado por IA. Revisión por un abogado dominicano colegiado antes de
 
 # Acuerdo de encargado del tratamiento de datos personales
 
-Estado: borrador del 31-oct-2026. Anexo C del contrato de servicio SaaS Norexos (`01_CONTRATO_SERVICIO_SAAS.md`). Redactado para proteger a la proveedora. Siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`. Nota: la L172 define al «encargado del tratamiento» pero no trae un modelo de contrato; las cláusulas siguientes son contractuales y se apoyan en las obligaciones que la ley sí impone al responsable y al encargado.
+Estado: borrador del 31-oct-2026, corregido técnicamente el 7-nov-2026. Anexo C del contrato de servicio SaaS Norexos (`01_CONTRATO_SERVICIO_SAAS.md`). Redactado para proteger a la proveedora. Siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`. Nota: la L172 define al «encargado del tratamiento» pero no trae un modelo de contrato; las cláusulas siguientes son contractuales y se apoyan en las obligaciones que la ley sí impone al responsable y al encargado.
 
 ## Partes
 
@@ -86,15 +86,17 @@ La encargada y las personas autorizadas a tratar los datos guardan secreto profe
 
 ## Cláusula 10. Devolución y supresión al terminar
 
-10.1. Al terminar el contrato, la encargada permite al responsable exportar sus datos durante [30] días.
+10.1. Al terminar el contrato, la encargada permite al responsable exportar sus datos durante [30] días (**PENDIENTE**).
 
-10.2. Vencido ese plazo, la encargada bloquea y suprime los datos en un máximo de [60] días, salvo copias de respaldo que se eliminan por rotación (calendario real: COMPLETAR) y lo que la ley obligue a conservar. [Fundamento: L172 art. 15, verificado]
+10.2. Vencido ese plazo, la encargada aplica un procedimiento manual documentado de bloqueo y supresión en un máximo de [60] días (**PENDIENTE**), salvo lo que la ley obligue a conservar. El sistema no ejecuta hoy una supresión automática por empresa al terminar el contrato. Antes de firmar deben aprobarse el plazo, la persona responsable y una prueba del procedimiento. [Fundamento: L172 art. 15, verificado]
 
-10.3. El responsable debe conservar por su cuenta los libros, registros y comprobantes que la ley tributaria le exija por diez años. [Fundamento: CT art. 50 letra h, verificado]
+10.3. Si Google Drive está configurado y conectado, la encargada intenta un respaldo diario cifrado a las 03:30, hora de Santo Domingo. La rotación implementada conserva la copia más reciente de cada uno de los 365 días más recientes con respaldo y la primera copia de cada uno de los 120 meses más recientes con respaldo; solo rota archivos reconocidos como respaldos de Norexos. Sin conexión activa no se promete una copia externa. Los respaldos se eliminan conforme a esa rotación, no por el procedimiento manual de 10.2. [Fuente: `apps/api/src/drive-backup-core.ts` y `drive-backup.ts`]
+
+10.4. El responsable debe conservar por su cuenta los libros, registros y comprobantes que la ley tributaria le exija por diez años. [Fundamento: CT art. 50 letra h, verificado]
 
 ## Cláusula 11. Fuera de alcance
 
-La encargada no es responsable de la licitud de los datos que el responsable cargue, de las decisiones que él tome con los datos ni de la conservación fiscal. La IA de ventas no guarda texto de consultas (ver `04_TERMINOS_USO_IA_VENTAS.md`); el proveedor de IA recibe cada pregunta para responderla y su conservación es: NO VERIFICADO.
+La encargada no es responsable de la licitud de los datos que el responsable cargue, de las decisiones que él tome con los datos ni de la conservación fiscal. Norexos no persiste el texto de las preguntas ni de las respuestas de la IA de ventas en su base funcional (ver `04_TERMINOS_USO_IA_VENTAS.md`); el proveedor de IA recibe cada pregunta para responderla y la conservación en sus registros o en los del alojamiento es **NO VERIFICADA**. El sistema no detecta ni elimina automáticamente datos personales o secretos escritos por el usuario antes de transmitir la pregunta.
 
 ## Cláusula 12. Responsabilidad
 
@@ -121,9 +123,9 @@ La de la República Dominicana y la jurisdicción de la cláusula 26 del contrat
 2. Bloqueo temporal tras intentos fallidos (`failedAttempts`, `lockedUntil`) y aprobación o revocación de equipos (`Terminal`).
 3. Bitácora de acciones sensibles con antes y después (`AuditLog`).
 4. Conexión cifrada y cabeceras de seguridad en el servicio web (`deploy/render`).
-5. Respaldos cifrados con AES-256-GCM cuando se conecta el almacenamiento externo (`docs/legal/POLITICA_PRIVACIDAD.md`).
+5. Respaldos cifrados con AES-256-GCM cuando se conecta el almacenamiento externo; intento diario a las 03:30 y rotación de 365 copias diarias más 120 mensuales (`apps/api/src/drive-backup-core.ts`).
 6. Purgas técnicas de registros antiguos (`apps/api/src/retention.ts`).
-7. La IA de ventas solo recibe cifras agregadas y se filtra el costo y la ganancia según permiso (`docs/coordinacion/ESTADO_T33.md`, rama `claude/ia-ventas-linea`).
+7. La IA de ventas usa herramientas de solo lectura; el servidor valida rol, empresa y parámetros, y filtra el costo y la ganancia según permiso (`apps/api/src/assistant.ts`).
 
 Estas medidas no se auditaron en vivo; no certifican configuración real de producción. [Fuente: `docs/sistema/DATOS_Y_MODELOS.md`; `docs/legal/POLITICA_PRIVACIDAD.md`; `docs/legal/REGISTRO_TERCEROS.md`]
 
