@@ -34,17 +34,16 @@ Antes de firmar no se deben dejar espacios en blanco: todo dato entre `[ ]` se c
 
 2.4. Aun así, este contrato se redacta en español, con letra legible, con aceptación expresa de ambas partes, sin cláusulas que exoneren totalmente a la proveedora de sus defectos esenciales, sin modificaciones sin aviso previo y sin arbitraje obligatorio exclusivo, para reducir el riesgo de que un tribunal lo trate como contrato de adhesión de consumo. [Fundamento: L358 arts. 81, 82 y 83, verificados; su aplicación a clientes empresariales: ABOGADO]
 
-## Cláusula 3. Planes, límites y módulos (PENDIENTE de decisión de la dueña)
+## Cláusula 3. Planes, límites y módulos (precios de introducción aprobados por la dueña el 7-nov-2026; plazos y condiciones PENDIENTES)
 
-3.1. Propuesta A de la dueña en estudio; ninguna cifra es definitiva hasta que ella decida:
+3.1. Precios de introducción (aprobados por la dueña el 7-nov-2026; el precio de lista posterior es Medio 79 y Completo 139). El plan Básico en la nube no se ofrece mientras no exista alojamiento compartido verificado:
 
 | Plan     | Precio/mes (USD) | Sucursales | Cajas | Usuarios | IA de ventas                 | Soporte                    |
 | -------- | ---------------- | ---------- | ----- | -------- | ---------------------------- | -------------------------- |
-| Básico   | 29 (PENDIENTE)   | 1          | 2     | 3        | no incluida                  | correo, 2 días hábiles     |
-| Medio    | 59 (PENDIENTE)   | 1          | 5     | 10       | 10 preguntas/día por usuario | correo y chat, 1 día hábil |
-| Completo | 119 (PENDIENTE)  | hasta 3    | 10    | 25       | 30 preguntas/día por usuario | prioritario, mismo día     |
+| Medio    | 69               | 1          | 5     | 10       | 10 preguntas/día por usuario | correo y chat, 1 día hábil |
+| Completo | 119              | hasta 3    | 10    | 25       | 30 preguntas/día por usuario | prioritario, mismo día     |
 
-Instalación y carga de inventario (opcional, pago único): 150, 250 y 400 USD según plan (PENDIENTE). Módulos extra (GV/citas y cursos, incentivos): 15 a 25 USD al mes cada uno (PENDIENTE). Pago anual con descuento de dos meses (PENDIENTE). Opción de piloto gratis de 60 días y descuento posterior (PENDIENTE; aplica solo si la dueña lo decide y se anota en el Anexo A).
+Instalación y carga de inventario (opcional, pago único): 75 USD por equipo (lista 150). La IA de ventas es opcional: 7 USD por usuario al mes (lista 9), con 10 preguntas diarias por usuario; la lectura de facturas con IA incluye 20 al mes y cada una extra cuesta 0.30 USD. Módulos extra (GV/citas y cursos, incentivos): 15 a 25 USD al mes cada uno (PENDIENTE). Pago anual con descuento de dos meses (PENDIENTE). Opción de piloto gratis de 60 días y descuento posterior (PENDIENTE; aplica solo si la dueña lo decide y se anota en el Anexo A).
 
 3.2. Si el cliente supera los límites de su plan, la proveedora puede bloquear la función que excede el límite o exigir el cambio de plan, con aviso previo.
 

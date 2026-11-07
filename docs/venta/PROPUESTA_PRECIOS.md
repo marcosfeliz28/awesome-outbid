@@ -41,7 +41,7 @@ Estudio de mercado y costo de hosting (orden 95 parte A, 31-oct-2026): ver docs/
 
 ## Propuesta de introducción 7-nov (pedida por la dueña: «los precios están muy caros» para República Dominicana)
 
-Estado: PROPUESTA; decide la dueña. Precios en US$; referencia aproximada RD$60 por US$ (confirmar tasa del día). Regla: margen = (precio − costo)/precio, mínimo 15 %, sin restar ITBIS.
+Estado: APROBADA por la dueña el 7-nov-2026 («los precios que pusiste ahora son más reales; me gustan más»); sigue revisándose con el costo real que mida el medidor. Precios en US$; referencia aproximada RD$60 por US$ (confirmar tasa del día). Regla: margen = (precio − costo)/precio, mínimo 15 %, sin restar ITBIS.
 
 Lo que cuesta de verdad (costos conocidos o medibles):
 

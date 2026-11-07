@@ -6,7 +6,7 @@ Estado: borrador del 31-oct-2026, corregido técnicamente el 7-nov-2026. Anexo B
 
 ## 1. Precios (PENDIENTE)
 
-1.1. Precios de lista propuestos (opción A), en dólares estadounidenses, por mes: Básico 29, Medio 59, Completo 119. Instalación opcional de pago único: 150, 250 y 400. Módulos extra: 15 a 25 por módulo y mes. Pago anual: dos meses gratis. Las opciones B (plan único de 69 con IA aparte de 9 por usuario) y C (piloto gratis de 60 días y 20 % de descuento el primer año) siguen en estudio. Nada de esto vale hasta que la dueña decida y se anote en el Anexo A del contrato.
+1.1. Precios de introducción aprobados por la dueña el 7-nov-2026, en dólares estadounidenses, por mes: Medio 69 (lista 79) y Completo 119 (lista 139). El plan Básico en la nube no se ofrece por ahora. Instalación opcional de pago único: 75 por equipo (lista 150). IA de ventas opcional: 7 por usuario y mes (lista 9). Lectura de facturas con IA: 20 al mes incluidas y 0.30 por cada extra. Módulos extra: 15 a 25 por módulo y mes (PENDIENTE). Pago anual: dos meses gratis (PENDIENTE). El piloto gratis de 60 días y sus condiciones se anotan en el Anexo A del contrato. Moneda, tasa de cambio, recargos y plazos siguen PENDIENTES.
 
 1.2. Los precios no incluyen impuestos, comisiones del medio de pago ni costos bancarios, que corren por cuenta del cliente.
 
