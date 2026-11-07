@@ -147,3 +147,4 @@ Efectivo +6 (sin explicar). Tarjeta +350 = envío Addison del cobro FS-425 (el +
 - **Miguel Antonio Gómez:** el depósito de 8,350 (Banreservas, 4-nov) es de él y cubre su factura FS-464 (5,500 + 450 de envío). Se le cobró menos y la diferencia (2,400) se queda en la tienda. **Tachado de pendientes.** La dueña manda foto de la transferencia; con ella se verifica la FS-464.
 - **Cardnet y las transferencias con otro nombre:** la dueña manda fotos y se verifican con ellas.
 - **Regla (orden de la dueña):** una diferencia de efectivo de **100 pesos o menos** no se persigue ni se lista como pendiente. Aplica al efectivo de Lizbeth (−20, +50) y de Wendy (−6, −10, +10, −50).
+- **FS-464 Miguel Antonio Gómez: VERIFICADA** (7-nov, por orden de la dueña, sin esperar la foto). Cerrado.
