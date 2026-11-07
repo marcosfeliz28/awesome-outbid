@@ -2283,3 +2283,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (7-nov, 2) — orden 117 nueva (nexora-cloud e1aa3482), de la laptop: no ejecutada
 - RESPUESTA cambió (orden 117: instalar Claude Code Setup y correr el recomendador sobre el repo, con salida en RECOMENDACIONES_CLAUDE_SETUP.md de nexora-cloud). Es de la laptop y esa ruta es de nexora-cloud, donde no escribo: nada instalado ni aplicado. OBSIDIAN_LUMINA_PROGRESO sin cambios. Pendiente con 106–114 para la sesión de la laptop.
 - CI: pc23, a1, b01 y lumina verdes; sin ramas nuevas que citar: LISTA NO escrita. Último hash visto de nexora-cloud: e1aa3482 (cabeza a4bfa214). No desplegar.
+
+## Ciclo nube (7-nov, 3) — órdenes 118 y 119 nuevas (nexora-cloud 73e48bb9/ecbdb829): no ejecutables desde la nube
+- 118: la parte 1 ya la hizo otra sesión en claude-pc/mcp-recomendados (a6e009f9, versiones fijas en docs; su verify sigue en curso); los hooks guard-edit/format-edit aún no existen en nexora-cloud y no tengo Windows. 119: no hay llave de Anthropic en este entorno (no la pedí): avisado. OBSIDIAN_LUMINA_PROGRESO sin cambios.
+- CI: pc23, a1, b01 y lumina verdes; mcp-recomendados con verify en curso: LISTA NO escrita. Último hash visto de nexora-cloud: ecbdb829 (cabeza 655570eb). No desplegar.
