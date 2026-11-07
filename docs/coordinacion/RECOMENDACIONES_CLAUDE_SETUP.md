@@ -35,3 +35,16 @@ Hecho por Norexos 1 (nube), solo lectura sobre nexora-cloud. **Ninguna está apl
 ## Cómo aplicar
 
 Pedir a Norexos 1 o Claude PC «aplica la recomendación N» sobre una rama `claude-pc/...`; pasa por CI y por la auditoría seguridad-20 como todo cambio.
+
+## Ejecución de Claude PC · orden 117 (7-nov-2026)
+- **Plugin:** `claude-code-setup` aparece como habilitado en el catálogo de la cuenta y el skill `claude-automation-recommender` está disponible. El `/plugin install` de terminal no lo pude correr desde la sesión de la app; se confirmó por el catálogo, no por la terminal.
+- **Corrida:** el recomendador se ejecutó una vez sobre este repo. Sus sugerencias quedan abajo SIN aplicar, salvo lo que se indica en la siguiente sección.
+- **Aviso honesto:** antes de recibir esta orden, en esta misma sesión, ya había creado en el árbol de trabajo (sin commit) hooks, subagentes y skills en `.claude/`. Eso NO estaba pedido en esta orden. Para revertirlo: borrar `.claude/agents/`, `.claude/hooks/`, `.claude/skills/diagnosticar-dinero/`, `.claude/skills/limpiar-entorno-local/` y quitar la clave `hooks` de `.claude/settings.json`. Lo dejo a decisión de Norexos 1.
+
+### Recomendaciones (sin aplicar)
+- **MCP:** `context7` (docs de NestJS, Prisma, React 19) y Playwright MCP (capturas a 390 px). Ver orden 118 para versiones.
+- **MCP descartado por ahora:** Postgres. El paquete oficial tiene un reporte de que su modo de solo lectura se puede evadir; antes de usarlo habría que conectarlo con un rol de base de solo lectura.
+- **Skills (solo usuario):** `diagnosticar-dinero` (reproduce un fallo de dinero en base limpia y puertos libres) y `limpiar-entorno-local` (lista y apaga procesos de prueba, pide confirmación).
+- **Hooks:** PreToolUse que bloquea `git commit` si `docs/sistema/` está en el índice (las pruebas regeneran esos archivos); PostToolUse que formatea con Prettier los archivos editados.
+- **Subagentes (solo lectura):** `auditor-dinero` (reglas: decimal, margen sin ITBIS, US$ solo efectivo, descuento ≤100 %) y `auditor-permisos` (`safe()` y `profit:read`).
+- **Plugins:** no recomendado instalar más.
