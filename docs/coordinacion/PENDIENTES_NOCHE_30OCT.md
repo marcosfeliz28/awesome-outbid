@@ -122,3 +122,10 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Verificado en vivo: /api/health ok, web 200 con bundle nuevo, /gv/cash/current → {"open":false}, rol gerente_gv existe, sin errores en logs.
 - Quitar la nota de «excepción N2 no respondió» de 6-nov: N2 confirmó 0 cajas.
 - Abierto: claude-pc/ia-medidor (corrección 0d176e79, esperando CI), claude-pc/ia-ventas-rescate (en curso), colas 7-nov de ChatGPT Nube/PC y Claude PC.
+
+## 7-nov 06:40 UTC — medidor de IA en vivo (N1)
+- API y web desplegadas con 3606676a (medidor AiUsage + GET /ai/usage + tarjeta en Configuración). Migración aditiva 202611070001 aplicada.
+- CI: verify falló una vez en tests/password-account.test.ts («dos cambios simultáneos de la propia contraseña», esperaba 400/401 y llegó 404; ajena al medidor); al relanzar pasó. Vigilar: si reaparece, buscar la causa de carrera, no saltarla.
+- Condiciones: 0 cajas abiertas y GV sin caja (lectura propia 04:38 UTC; tienda cerrada de noche).
+- Verificado: /api/health ok, /api/ai/usage responde (aún sin filas), bundle con la tarjeta, /gv/cash/current {"open":false}, sin errores en logs.
+- Pendiente del medidor: precios de modelos en ai-prices.ts (hoy costo = null), medir IA de ventas (rama claude-pc/ia-ventas-rescate, CI verdes en 8954a099; falta auditarla).
