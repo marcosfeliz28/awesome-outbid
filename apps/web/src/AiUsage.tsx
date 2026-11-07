@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { can } from "@fitstore/shared";
 import { api, useStore } from "./api";
-import "./driveBackup.css";
+import "./aiUsage.css";
 
 type Line = {
   key: string;
@@ -63,12 +63,10 @@ function AiUsagePanel() {
   });
   const d = q.data;
   return (
-    <section className="drive-card">
+    <section className="ai-usage-card">
       <h3>Uso y costo de IA</h3>
       {q.isLoading && <p>Cargando…</p>}
-      {q.isError && (
-        <p className="drive-error">No se pudo cargar el uso de IA.</p>
-      )}
+      {q.isError && <p className="ai-error">No se pudo cargar el uso de IA.</p>}
       {d && (
         <>
           <p>
