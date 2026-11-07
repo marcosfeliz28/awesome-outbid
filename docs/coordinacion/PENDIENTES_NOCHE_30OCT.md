@@ -129,3 +129,10 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Condiciones: 0 cajas abiertas y GV sin caja (lectura propia 04:38 UTC; tienda cerrada de noche).
 - Verificado: /api/health ok, /api/ai/usage responde (aún sin filas), bundle con la tarjeta, /gv/cash/current {"open":false}, sin errores en logs.
 - Pendiente del medidor: precios de modelos en ai-prices.ts (hoy costo = null), medir IA de ventas (rama claude-pc/ia-ventas-rescate, CI verdes en 8954a099; falta auditarla).
+
+## 7-nov 14:40 UTC — IA de ventas desplegada, APAGADA (N1)
+- API desplegada 12:38 UTC con dda476be (0 cajas abiertas, 0 ventas desde 21:50 UTC del 6-nov; 3 CI verdes sobre ese SHA). Web desplegada 14:32 UTC (solo frontend; con cajas ya abiertas, sin reinicio de API).
+- Contiene: asistente «Preguntar a Norexos» (apps/api/src/assistant.ts) tras auditoría independiente de N1 (sin hallazgos altos) y correcciones H1–H6 (límite 6/min por usuario, máx 4 herramientas por ronda, rango ≤366 días, datos entre <datos>, errores genéricos, contrato 04 ajustado).
+- Verificado: /api/health ok, web 200 con el bundle nuevo, POST /assistant/ask sin plan/llave → 503 (apagada), sin errores en logs.
+- Para encenderla (solo la dueña): clave ANTHROPIC_API_KEY en Render (sync false) y IA_VENTAS_PLAN=medio|completo. Precios de modelos en ai-prices.ts siguen null (costo no calculado): pedido a ChatGPT Nube verificar en la página oficial.
+- Falla intermitente reincidente en CI: tests/password-account.test.ts («dos cambios simultáneos», 404 en vez de 400/401) y tests/telegram.test.ts (purga por tiempo). Pasan al relanzar. Pendiente: causa raíz de la carrera (no saltar).
