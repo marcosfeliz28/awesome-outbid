@@ -75,6 +75,7 @@
       "titulo": "Índice de la base",
       "resumen": "Este archivo: lista de documentos con título y resumen para búsqueda.",
       "palabras": ["índice", "búsqueda"]
-    }
+    },
+    {"archivo": "MEDIDOR_IA.md", "titulo": "Medidor de uso y costo de IA", "resumen": "Tabla AiUsage, precios por modelo (null hasta cargarlos), GET /ai/usage solo admin y tarjeta en Configuración."}
   ]
 }
