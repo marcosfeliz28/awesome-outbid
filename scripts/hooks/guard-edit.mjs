@@ -21,7 +21,7 @@ try {
 }
 const p = abs.replaceAll("\\", "/").toLowerCase();
 const block = (why) => {
-  console.error(`Bloqueado por regla del repo: ${why}`);
+  process.stderr.write(`Bloqueado por regla del repo: ${why}\n`);
   process.exit(2);
 };
 
