@@ -2,7 +2,7 @@ Borrador generado por IA. Revisión por un abogado dominicano colegiado antes de
 
 # Términos de uso de la IA de ventas de Norexos («Preguntar a Norexos»)
 
-Estado: borrador del 31-oct-2026; secciones 0, 1.1, 2.2 y 4.3 corregidas el 7-nov-2026 para que coincidan con el código. Anexo D del contrato de servicio SaaS Norexos. Redactado para proteger a la proveedora. Siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07; L126 = Ley 126-02. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
+Estado: borrador del 31-oct-2026; secciones 0, 1.1, 2.2, 3.1, 4.2 y 4.3 corregidas el 7-nov-2026 para que coincidan con el código. Anexo D del contrato de servicio SaaS Norexos. Redactado para proteger a la proveedora. Siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07; L126 = Ley 126-02. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
 
 ## 0. Base técnica de las afirmaciones de este documento
 
@@ -30,7 +30,7 @@ Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó d
 
 ## 3. Qué datos ve la IA
 
-3.1. Solo **cifras agregadas** (totales, hasta diez productos, bancos o métodos de cobro), nunca filas de ventas, ni contraseñas, PIN, datos de tarjeta o tokens.
+3.1. Solo **cifras agregadas** (totales, hasta diez productos, bancos o métodos de cobro), nunca filas de ventas, ni contraseñas, PIN, datos de tarjeta o tokens. Única excepción: a la cajera, «mis ventas» le puede devolver su **última venta propia** (número de factura, total y hora) y su producto más vendido del período. Los nombres de productos y bancos se envían recortados y marcados como datos.
 
 3.2. Los permisos se aplican en el servidor **antes** de llamar a la IA: sin permiso de reportes y sin ser cajera, la función no responde. Costo, ganancia y margen solo se muestran a quien tenga el permiso `profit:read`. La cajera solo ve sus propias ventas, sin costos y sin totales de la tienda.
 
@@ -40,7 +40,7 @@ Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó d
 
 4.1. **Tope diario:** según el plan (10 o 30) y nunca más de 30 preguntas por día por usuario (día de negocio en `America/Santo_Domingo`). Al llegar al tope la función avisa y no llama a la IA.
 
-4.2. Máximo de 600 tokens por respuesta, tiempo máximo de 20 segundos y cuatro rondas de herramientas por pregunta.
+4.2. Máximo de 600 tokens por respuesta, tiempo máximo de 20 segundos, hasta 4 llamadas al modelo y 3 rondas de herramientas por pregunta, hasta 4 consultas por ronda, rangos de fechas de hasta 366 días y hasta 6 preguntas por minuto por usuario.
 
 4.3. La función está apagada si no hay llave del proveedor, si el plan no la incluye o por mantenimiento; en ese caso el menú se oculta y, si se intenta usar, el sistema dice por qué.
 
@@ -72,7 +72,7 @@ El usuario no debe: intentar obtener datos que su rol no permite, saltarse los t
 
 ## 8. Costos y plan
 
-El uso de la IA tiene un costo variable para la proveedora (estimado en `docs/venta/PROPUESTA_PRECIOS.md`, alrededor de US$0.005 por pregunta con el modelo económico; estimación no verificada contra la tarifa real). Por eso se limita por plan. La lectura de facturas con IA es otra función, cobrada o limitada aparte, que envía el documento completo al proveedor y conserva el borrador y el adjunto en el sistema; no se rige por la sección 2.
+El uso de la IA tiene un costo variable para la proveedora (estimado en `docs/venta/PROPUESTA_PRECIOS.md`, alrededor de US$0.005 por pregunta con el modelo económico; estimación no verificada contra la tarifa real). El sistema guarda los tokens de cada pregunta y deja el costo vacío hasta que se carguen los precios reales en `apps/api/src/ai-prices.ts`; no inventa precios. Por eso se limita por plan. La lectura de facturas con IA es otra función, cobrada o limitada aparte, que envía el documento completo al proveedor y conserva el borrador y el adjunto en el sistema; no se rige por la sección 2.
 
 ## 9. Cambios y terminación
 
