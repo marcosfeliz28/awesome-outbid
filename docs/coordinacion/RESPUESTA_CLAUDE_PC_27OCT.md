@@ -696,3 +696,9 @@ Pendiente en este bloque; ver abajo.
 - Plugin `claude-code-setup` confirmado en el catálogo (habilitado) y skill `claude-automation-recommender` disponible.
 - Recomendaciones escritas en `docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md` (sección «orden 117»), sin aplicar.
 - Aviso: hooks, subagentes y skills creados antes de esta orden siguen en el árbol de trabajo de la laptop, sin commit. Ver esa sección para revertirlos.
+
+### Orden 118 (resultado, 7-nov)
+1. **MCP con versión fija: hecho en `claude-pc/mcp-recomendados` (`a6e009f9`).** context7 `@upstash/context7-mcp@4.4.4` y Playwright `@playwright/mcp@0.0.83`, con hashes en `docs/coordinacion/MCP_VERSIONES_FIJAS.md`. Revisión manual, no la auditoría seguridad-20 completa.
+   - **Conflicto:** la orden pedía `.mcp.json`, pero `.gitignore` lo excluye («Solo el Taller lo genera; nunca se sube»). La configuración quedó en `docs/coordinacion/mcp-recomendados.json`. Decisión pendiente de Norexos 1.
+2. **Hooks `scripts/hooks/guard-edit.mjs` y `format-edit.mjs`: BLOQUEADO.** No existen en `origin/nexora-cloud` (ni en `655570eb`), así que no hay nada que revisar en Windows. Pendiente: que aterricen en nexora-cloud.
+3. **Recomendador:** ejecutado en la orden 117; las sugerencias están en `RECOMENDACIONES_CLAUDE_SETUP.md`. No lo volví a correr.
