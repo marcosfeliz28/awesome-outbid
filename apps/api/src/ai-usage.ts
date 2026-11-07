@@ -9,22 +9,42 @@ export type AiUsageInput = {
   output_tokens?: number | null;
   cache_read_input_tokens?: number | null;
   cache_creation_input_tokens?: number | null;
+  cache_creation?: {
+    ephemeral_5m_input_tokens?: number | null;
+    ephemeral_1h_input_tokens?: number | null;
+  } | null;
 };
 
-// Costo en US$ o null si falta el modelo o algún precio. Los tokens de caché usan
-// el precio de caché si está cargado; si no, el costo es null (no se adivina).
-export function costUsd(
-  model: string,
-  u: AiUsageInput,
-  cacheTokens: number,
-): number | null {
+// Costo en US$ o null si falta el modelo o el desglose de una escritura de caché.
+// Anthropic cobra distinto por lectura, escritura de 5 min y escritura de 1 h;
+// sumar las tres categorías con una sola tarifa subestimaría o inflaría el costo.
+export function costUsd(model: string, u: AiUsageInput): number | null {
   const p = AI_PRICES_USD_PER_MTOK[model];
-  if (!p || p.input == null || p.output == null) return null;
-  if (cacheTokens > 0 && p.cache == null) return null;
+  if (!p) return null;
+
+  const input = u.input_tokens ?? 0;
+  const output = u.output_tokens ?? 0;
+  const cacheRead = u.cache_read_input_tokens ?? 0;
+  const cacheCreation = u.cache_creation_input_tokens ?? 0;
+  const cacheWrite5m = u.cache_creation?.ephemeral_5m_input_tokens ?? 0;
+  const cacheWrite1h = u.cache_creation?.ephemeral_1h_input_tokens ?? 0;
+
+  // Las respuestas antiguas pueden traer solo el total de escritura. Sin saber
+  // la duración no hay una tarifa correcta, así que conservamos costo null.
+  if (cacheWrite5m + cacheWrite1h !== cacheCreation)
+    return null;
+
+  const promptTokens = input + cacheRead + cacheCreation;
+  const price =
+    p.longContext && promptTokens > p.longContext.aboveInputTokens
+      ? p.longContext
+      : p;
   const total =
-    ((u.input_tokens ?? 0) * p.input +
-      (u.output_tokens ?? 0) * p.output +
-      cacheTokens * (p.cache ?? 0)) /
+    (input * price.input +
+      output * price.output +
+      cacheRead * price.cacheRead +
+      cacheWrite5m * price.cacheWrite5m +
+      cacheWrite1h * price.cacheWrite1h) /
     1e6;
   return Math.round(total * 1e6) / 1e6;
 }
@@ -52,7 +72,7 @@ export async function recordAiUsage(
         inputTokens: u.input_tokens ?? 0,
         outputTokens: u.output_tokens ?? 0,
         cacheTokens: cache || null,
-        costUsd: usage ? costUsd(model, u, cache) : null,
+        costUsd: usage ? costUsd(model, u) : null,
         ok,
       },
     });

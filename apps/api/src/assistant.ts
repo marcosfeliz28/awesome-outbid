@@ -629,7 +629,6 @@ export const usageStore = (db: Database): AssistantDeps["usage"] => ({
           costUsd: costUsd(
             model,
             { input_tokens: p.inputTokens, output_tokens: p.outputTokens },
-            0,
           ),
           ok: p.ok,
         },
