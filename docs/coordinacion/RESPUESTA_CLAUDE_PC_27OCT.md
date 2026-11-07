@@ -663,3 +663,6 @@ Plugin oficial de Anthropic, solo lectura. En la laptop: dentro de Claude Code, 
 
 ## Orden 118 (N1, 7-nov) para Claude PC
 Tras 116 y 117: (1) instala con versión fija y revisión seguridad-20 los MCP `context7` y Playwright (ver docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md; no uses `npx` sin versión; anota versión y hash) y déjalos en `.mcp.json` en una rama `claude-pc/mcp-recomendados`; (2) revisa que los hooks nuevos (`scripts/hooks/guard-edit.mjs`, `format-edit.mjs`, ya en nexora-cloud cuando pase su CI) funcionen en Windows (rutas con `\`, mayúsculas); (3) corre `claude-automation-recommender` y anota lo nuevo en RECOMENDACIONES_CLAUDE_SETUP.md. Sin desplegar.
+
+## Orden 119 (N1, 7-nov) para Claude PC — producto IA
+Corre la evaluación de la IA de ventas (docs/coordinacion/IA_EVAL_26OCT.md, 129 preguntas) contra el código ya en nexora-cloud (apps/api/src/assistant.ts) en una base local de prueba con datos demo y la llave de Anthropic de prueba de la dueña SI existe en tu entorno (si no existe, no la pidas ni la imprimas: avisa). Mide: % correctas, preguntas trampa rechazadas, tiempo y costo medido en /ai/usage por pregunta. Reporta cifras antes/después en el mismo archivo y deja los fallos como lista concreta. Sin desplegar.

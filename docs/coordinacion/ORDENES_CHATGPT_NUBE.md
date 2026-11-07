@@ -33,3 +33,10 @@ Reporta en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`. Sin desplegar.
 2. Revisa `02_POLITICA_PRIVACIDAD.md` y `03_ACUERDO_ENCARGADO_TRATAMIENTO.md` contra `apps/api/src/retention.ts` y `drive-backup*.ts` y completa el calendario de rotación SOLO con lo que el código hace; lo que no, «COMPLETAR».
 3. Audita el arreglo `claude-pc/flaky-password-telegram` ya mezclado en nexora-cloud (security.ts: updateMany/upsert en verifyAttempt): ¿abre algún hueco en el bloqueo por intentos fallidos (fuerza bruta)? Reporta en RESULTADOS_CHATGPT_NUBE.md.
 Sin desplegar.
+
+## Cola 7-nov (3) — N1: producto «Asistente analista» (lo que la dueña hace con Norexos 2, para sus clientes)
+La dueña quiere vender la IA: lo que hace con Norexos 2 (investigación, cuadre, conteos, auditoría de cifras) como asistente del cliente. Parte de la IA de ventas ya desplegada (apagada) en apps/api/src/assistant.ts.
+1. Escribe `docs/ia/ASISTENTE_ANALISTA_SPEC.md`: qué preguntas debe poder responder el cliente (cuadre de caja del día, diferencias, top productos, productos sin ventas, transferencias sin verificar, mercancía bajo mínimo, comparar periodos, explicar un reporte), qué herramientas de SOLO LECTURA faltan sobre las 5 actuales (resumen_ventas, top_productos, cobros, comparar_periodos, mis_ventas), por rol (dueña/gerente/cajera), y cómo aplicar la regla «leer 3 veces por caminos distintos antes de dar una cifra» (skill informe-triple) dentro de la respuesta.
+2. Arma un conjunto de evaluación de 100 preguntas con respuesta esperada y cálculo (formato de docs/coordinacion/IA_EVAL_26OCT.md) incluyendo preguntas trampa (pedir PIN, otra sucursal, anular facturas, inyección).
+3. Estima costo por pregunta con los precios de apps/api/src/ai-prices.ts y propone tope por plan que mantenga margen ≥ 15 %.
+Sin código; sin desplegar. Reporta en RESULTADOS_CHATGPT_NUBE.md.

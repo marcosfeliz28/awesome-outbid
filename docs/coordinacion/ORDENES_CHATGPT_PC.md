@@ -38,3 +38,12 @@ Además de la Cola 7-nov (instalador en Windows 11 limpio, evidencia en docs/val
 2. Prueba el **respaldo local** diario y la **restauración** en una laptop limpia (el contrato promete respaldo; hay que demostrarlo).
 3. Anota cuánto pesa el instalador y cuánto tarda la primera instalación; son datos para el manual de venta.
 Reporta en el mismo archivo. Sin desplegar ni tocar Render.
+
+## Cola 7-nov (3) — N1: salir a vender (punto 7)
+Después de la prueba del instalador:
+1. **Landing:** revisar `apps/landing` contra `docs/venta/PROPUESTA_PRECIOS.md` («Propuesta de introducción 7-nov») y `docs/venta/PUBLICAR_LANDING_NOREXOS_NET.md`; dejar lista una versión con los precios nuevos (rama `chatgpt-pc/landing-precios`, sin publicar). Español primero.
+2. **Manual de 1 página** para el cliente nuevo (instalar, entrar, vender, cerrar caja, respaldo) con capturas; `docs/venta/MANUAL_1_PAGINA.md`.
+3. **Mensajes de soporte por WhatsApp** (plantillas: bienvenida, no puedo entrar, cierre de caja no cuadra, cómo restaurar respaldo, cómo activar la IA) en `docs/venta/WHATSAPP_PLANTILLAS.md`.
+4. **Guion de demo de 10 minutos** (`docs/venta/DEMO_10_MIN.md`) con datos demo; qué mostrar y en qué orden.
+5. Lista de lo que la dueña debe decidir o comprar (dominio, correo de soporte, número de WhatsApp Business, certificado de firma de código) con costo aproximado de cada uno.
+Sin desplegar ni publicar.
