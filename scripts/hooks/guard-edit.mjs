@@ -2,6 +2,8 @@
 // Lee el JSON del evento por stdin. Sale con código 2 (y mensaje en stderr) para bloquear.
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
 
 let file = "";
 try {
@@ -9,7 +11,12 @@ try {
 } catch {
   process.exit(0); // sin entrada válida no se bloquea nada
 }
-const p = file.replaceAll("\\", "/");
+// Ruta absoluta y real (resuelve .., rutas relativas y enlaces simbólicos); si el archivo aún no existe, se usa la ruta resuelta.
+let abs = resolve(process.cwd(), file);
+try {
+  abs = realpathSync(abs);
+} catch {}
+const p = abs.replaceAll("\\", "/").toLowerCase();
 const block = (why) => {
   console.error(`Bloqueado por regla del repo: ${why}`);
   process.exit(2);
@@ -22,7 +29,7 @@ if (/(^|\/)pnpm-lock\.yaml$/.test(p))
 if (/apps\/api\/prisma\/migrations\/[^/]+\/migration\.sql$/.test(p)) {
   let tracked = false;
   try {
-    execFileSync("git", ["ls-files", "--error-unmatch", "--", file], { stdio: "ignore" });
+    execFileSync("git", ["ls-files", "--error-unmatch", "--", abs], { stdio: "ignore" });
     tracked = true;
   } catch {}
   if (tracked)
