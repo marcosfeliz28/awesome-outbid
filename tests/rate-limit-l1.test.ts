@@ -101,6 +101,7 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
       authAttempt: {
         upsert: vi.fn(async () => ({ failedAttempts: 0, lockedUntil: null })),
         update: vi.fn(async () => ({})),
+        updateMany: vi.fn(async () => ({ count: 1 })),
       },
       $transaction: async (run: (tx: any) => unknown): Promise<unknown> =>
         run(db),
@@ -315,6 +316,7 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
           lockedUntil: null,
         })),
         update: vi.fn(async () => ({})),
+        updateMany: vi.fn(async () => ({ count: 1 })),
       },
       authSession: {
         create: vi.fn(async () => ({
