@@ -148,3 +148,4 @@ Efectivo +6 (sin explicar). Tarjeta +350 = envío Addison del cobro FS-425 (el +
 - **Cardnet y las transferencias con otro nombre:** la dueña manda fotos y se verifican con ellas.
 - **Regla (orden de la dueña):** una diferencia de efectivo de **100 pesos o menos** no se persigue ni se lista como pendiente. Aplica al efectivo de Lizbeth (−20, +50) y de Wendy (−6, −10, +10, −50).
 - **FS-464 Miguel Antonio Gómez: VERIFICADA** (7-nov, por orden de la dueña, sin esperar la foto). Cerrado.
+- **Banreservas 6-nov: VERIFICADAS por monto (orden de la dueña):** FS-449 (3,900), FS-453 (24,250), FS-454 + FS-456 (13,750), FS-457 (1,800) y FS-462 (14,650 = depósitos 11,000 + 3,650 de Attabeira Morales). Los 11,000 «Pagos Cardnet» se tratan como pago de cliente. Regla de la dueña: monto redondo por transferencia = cliente que pagó; si falta alguien por cuadrar, se verifica con ese depósito. Queda sin identificar solo el depósito de Dayana Tejada cortado en el extracto (arriba).
