@@ -666,3 +666,28 @@ Tras 116 y 117: (1) instala con versión fija y revisión seguridad-20 los MCP `
 
 ## Orden 119 (N1, 7-nov) para Claude PC — producto IA
 Corre la evaluación de la IA de ventas (docs/coordinacion/IA_EVAL_26OCT.md, 129 preguntas) contra el código ya en nexora-cloud (apps/api/src/assistant.ts) en una base local de prueba con datos demo y la llave de Anthropic de prueba de la dueña SI existe en tu entorno (si no existe, no la pidas ni la imprimas: avisa). Mide: % correctas, preguntas trampa rechazadas, tiempo y costo medido en /ai/usage por pregunta. Reporta cifras antes/después en el mismo archivo y deja los fallos como lista concreta. Sin desplegar.
+
+## Resultado Claude PC · Órdenes 116–119 (7-nov-2026)
+
+### Orden 116
+1. **Visual GV Caja en iPhone 390 px: BLOQUEADA.** Faltan `NEXORA_CLAUDE_USER` y `NEXORA_CLAUDE_PASSWORD` en el entorno. No inventé credenciales ni las pedí. Pendiente: que la dueña las cargue en el entorno local y se repite.
+2. **`claude-pc/ia-medidor` y `claude-pc/ia-ventas-rescate`:** las dos ramas ya son antecesoras de `origin/nexora-cloud` (ia-medidor va 23 commits atrás, ia-ventas-rescate 21), así que su contenido está en nexora-cloud. Revisado en `655570eb`:
+   - Pruebas `ai-usage`, `assistant-unit`, `assistant-api` y `rate-limit-l1`: **46 de 46 pasan**.
+   - ESLint sobre `ai-usage.ts`, `ai-prices.ts`, `assistant.ts`, `rate-limit.ts`, `AssistantPanel.tsx` y `GvCaja.tsx`: sin errores.
+   - Typecheck: pasa en `claude-pc/ia-medidor` (`0d176e79`) tras `db:generate`. No lo corrí de nuevo sobre `655570eb`.
+   - Build, eslint completo y pruebas de `ia-ventas-rescate` por separado: no corridos.
+   - Tarjeta de uso en Configuración en celular: no revisada (depende del punto 1).
+3. **Landing vs. precios: no comparable con las fuentes de la orden.** `apps/landing` y el LEEME de entrega-venta no existen en `origin/nexora-cloud`. Lo que sí hay, `docs/venta/PROPUESTA_PRECIOS.md`, dice: Básico US$29, Medio US$59, Completo US$119, y la opción B usa US$69 con IA aparte. La orden cita US$349 instalado + US$99/año, nube Medio US$69, Completo US$119, y Básico nube no ofrecido. Diferencias:
+   - Medio: US$59 en la propuesta frente a US$69 en la orden.
+   - Básico: US$29 en la propuesta; la orden dice que no se ofrece en nube (la propuesta no lo distingue).
+   - Instalación: US$150/250/400 por plan en la propuesta, frente a US$349 en la orden.
+   - No cambié ningún precio.
+
+### Orden 117
+Pendiente en este bloque; ver abajo.
+
+### Orden 118
+Pendiente en este bloque; ver abajo.
+
+### Orden 119
+**BLOQUEADA:** no existe `ANTHROPIC_API_KEY` en el entorno. Según la orden, no la pedí ni la imprimí, y no ejecuté la evaluación contra la API real. Pendiente: que la dueña proporcione la llave de prueba en el entorno.
