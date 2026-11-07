@@ -100,4 +100,44 @@ describe("verifyAttempt con las filas borradas por un cambio de contraseña", ()
     });
     expect(rows.get(budget.key)).toMatchObject({ failedAttempts: 2 });
   });
+
+  it("fallo 30: recrea el cupo bloqueado y no permite un intento 31", async () => {
+    const { db, rows } = fakeDb([own, budget.key]);
+    rows.get(budget.key).failedAttempts = 29;
+    let checks = 0;
+
+    const thirtieth = verifyAttempt(
+      db,
+      own,
+      async () => {
+        checks += 1;
+        rows.clear();
+        return null;
+      },
+      messages,
+      { budgets: [budget] },
+    );
+    await expect(thirtieth).rejects.toMatchObject({
+      status: 400,
+      message: "Incorrecta.",
+    });
+    expect(rows.get(budget.key)).toMatchObject({ failedAttempts: 30 });
+    expect(rows.get(budget.key).lockedUntil).toBeInstanceOf(Date);
+
+    const thirtyFirst = verifyAttempt(
+      db,
+      own,
+      async () => {
+        checks += 1;
+        return "user-1";
+      },
+      messages,
+      { budgets: [budget] },
+    );
+    await expect(thirtyFirst).rejects.toMatchObject({
+      status: 400,
+      message: "Cuenta bloqueada.",
+    });
+    expect(checks).toBe(1);
+  });
 });
