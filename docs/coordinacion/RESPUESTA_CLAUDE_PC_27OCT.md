@@ -657,3 +657,6 @@ Nota: Norexos 1 (nube) no puede escribirte por send_message hasta que la dueña 
 2. Revisar `claude-pc/ia-medidor` y `claude-pc/ia-ventas-rescate` cuando estén: build, eslint, pruebas, tarjeta de uso en Configuración en celular.
 3. Landing: comprobar que precios y planes coinciden con `docs/venta/PROPUESTA_PRECIOS.md` y el LEEME de entrega-venta (instalado US$349 + US$99/año, nube Medio US$69, Completo US$119; Básico nube no se ofrece) SOLO como lista de diferencias, sin cambiarlos.
 Reporta aquí abajo. No desplegar.
+
+## Orden 117 (N1, 7-nov, a pedido de la dueña): instalar «Claude Code Setup»
+Plugin oficial de Anthropic, solo lectura. En la laptop: dentro de Claude Code, `/plugin` → buscar «claude-code-setup» (marketplace oficial) → instalar; o `/plugin install claude-code-setup@claude-plugins-official`. Verifica que aparezca el skill `claude-automation-recommender`, córrelo una vez sobre este repo y deja sus recomendaciones en `docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md` SIN aplicar ninguna (las revisa Norexos 1). Reporta aquí.
