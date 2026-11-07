@@ -21,3 +21,10 @@
 - S-17: ingresos por día se queda como flujo de dinero (sirve al cuadre de caja); el informe formal y la guía lo explican.
 - S-18 corregido, S-19 aceptado, S-20 totales agregados. Abierto solo: encabezados y total del PDF viejo (Bajo).
 - Prueba «3z-sincronía» ampliada (roja con el código anterior). Integración en base limpia: crédito, dinero-auditoría, reportes-dinero/margen, caja-ciega-margen y desglose 100/100.
+
+## Cierre (7-nov)
+
+- Rama al día con `nexora-cloud` (choques resueltos) y mezcla limpia comprobada; lista para que Norexos 1 la mezcle y despliegue.
+- S-15 cerrado: el PDF de los informes de siempre trae encabezado de columnas y, en «Utilidad por producto», fila de total con su margen.
+- S-21 (nuevo, para la dueña): octubre cambió después de la auditoría porque FS-0000188 (22-oct, RD$6,000) se anuló el 5-nov por pedido de una cajera; no aparece la factura de reemplazo.
+- Producción al 7-nov: el exportador PDF/Excel nuevo ya está en vivo; los arreglos de esta rama todavía no.
