@@ -152,3 +152,10 @@ Efectivo +6 (sin explicar). Tarjeta +350 = envío Addison del cobro FS-425 (el +
 
 ### Cuadre del 7-nov (Lizbeth, caja b5538e0d)
 FS-471 corregida de efectivo a tarjeta; tarjeta cuadra exacta con el lote 008 GV (25,540); efectivo −100 (aceptado). Verificadas: FS-467, 468, 474, 480, 484, 485 (bancos corregidos en 474 y 485). Cardnet 5,240.17 = lote 161 del 6-nov. **Aclaración de lectura:** en el extracto de Banreservas la descripción va antes del monto; los 11,000 eran de Dayana Tejada (no Cardnet) y los nombres cuadran con las facturas del 6-nov. Quedan por verificar FS-466 ya cobrada en efectivo; FS-487 (ginette gomez 14,250) a crédito sin cobrar.
+
+### Decisiones de la dueña, 7-nov (noche)
+- **FS-441 liz mary: ANULADA** (la transferencia nunca llegó; la dueña cancela la venta). La unidad (Cinturilla corset S) volvió al inventario: si no se recupera, sacarla.
+- **Lizbeth:** los 2,500 de tarjeta del 4-nov (de más) y del 5-nov (de menos, FS-436) son el mismo cobro: **cuadra**. Queda **700 de tarjeta del 4-nov sin explicar** (la dueña tampoco sabe de qué son).
+- **FS-487 ginette gomez (14,250):** se queda como crédito sin cobrar.
+- **Pagos de GV de Clary** (Johanna 4,500, Mayelin 6,000, Paola 2,000): la dueña aún no lo ha revisado con ella; siguen pendientes.
+- **Addison: pagado.** Se cerraron los 66 envíos pendientes (RD$23,449.93) en el sistema. La memoria de envíos por pagar de arriba queda saldada.
