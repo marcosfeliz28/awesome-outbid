@@ -142,3 +142,8 @@ Efectivo +6 (sin explicar). Tarjeta +350 = envío Addison del cobro FS-425 (el +
 ### 7-nov
 - **FS-461 anulada** (duplicada de FS-462, dayana tejada 14,400; la FS-462 lleva el envío de 250). Queda por verificar la FS-462 contra el depósito de Dayana Tejada en Banreservas (extracto cortado).
 - **Miguel Antonio Gómez:** la dueña dice que ya había pagado antes: el depósito de 8,350 (Banreservas, 4-nov, sin factura) es de él; su única factura es la FS-464 (5,500 + 450 envío = 5,950, 6-nov, sin verificar). Pendiente aplicar: sobran 2,400; la dueña dice que le debía algo y «nos ganamos la otra parte». Falta confirmar el tratamiento.
+
+### Decisiones de la dueña, 7-nov
+- **Miguel Antonio Gómez:** el depósito de 8,350 (Banreservas, 4-nov) es de él y cubre su factura FS-464 (5,500 + 450 de envío). Se le cobró menos y la diferencia (2,400) se queda en la tienda. **Tachado de pendientes.** La dueña manda foto de la transferencia; con ella se verifica la FS-464.
+- **Cardnet y las transferencias con otro nombre:** la dueña manda fotos y se verifican con ellas.
+- **Regla (orden de la dueña):** una diferencia de efectivo de **100 pesos o menos** no se persigue ni se lista como pendiente. Aplica al efectivo de Lizbeth (−20, +50) y de Wendy (−6, −10, +10, −50).
