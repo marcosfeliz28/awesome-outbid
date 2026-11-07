@@ -84,3 +84,5 @@ LISTA: claude/gv-cierre-detalle 1a4c9bd7bd16b842edf0e6b54745ea9d10846061 (orden 
 LISTA: claude-pc/ia-medidor 0d176e79ab21293c8f5808d551857a189f0b96a8 (orden 116 punto 2, build, eslint y pruebas sin fallos propios; verify, windows-installer y render-images en verde; no desplegar)
 
 LISTA: claude-pc/ia-ventas-rescate 8954a099769cc484940f4e10f3dae200262a77e5 (orden 116 punto 2, build, eslint y pruebas sin fallos propios; verify, windows-installer y render-images en verde; no desplegar)
+
+LISTA: claude-pc/mcp-recomendados a6e009f9 (orden 118 punto 1, versiones fijas en docs; verify, windows-installer y render-images en verde; .mcp.json sigue ignorado por el repo, decisión pendiente de Nexora 1; no desplegar)

@@ -2287,3 +2287,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (7-nov, 3) — órdenes 118 y 119 nuevas (nexora-cloud 73e48bb9/ecbdb829): no ejecutables desde la nube
 - 118: la parte 1 ya la hizo otra sesión en claude-pc/mcp-recomendados (a6e009f9, versiones fijas en docs; su verify sigue en curso); los hooks guard-edit/format-edit aún no existen en nexora-cloud y no tengo Windows. 119: no hay llave de Anthropic en este entorno (no la pedí): avisado. OBSIDIAN_LUMINA_PROGRESO sin cambios.
 - CI: pc23, a1, b01 y lumina verdes; mcp-recomendados con verify en curso: LISTA NO escrita. Último hash visto de nexora-cloud: ecbdb829 (cabeza 655570eb). No desplegar.
+
+## Ciclo nube (7-nov, 4) — sin órdenes nuevas; mcp-recomendados ya verde: LISTA escrita
+- RESPUESTA solo cambió con resultados de 116–119 (escritos por la laptop, no órdenes nuevas); OBSIDIAN_LUMINA_PROGRESO sin cambios. Hooks guard-edit/format-edit ya aterrizaron en nexora-cloud, pero la revisión en Windows (orden 118 punto 2) no es posible desde la nube.
+- CI: pc23, a1, b01, lumina y mcp-recomendados (a6e009f9) con verify, windows-installer y render-images en verde: LISTA escrita para mcp-recomendados. Último hash visto de nexora-cloud: 1a42e1f3 (cabeza 1a42e1f3). No desplegar.
