@@ -651,3 +651,9 @@ Reglas: solo lectura salvo lo indicado; no despliegues, no mezcles en `nexora-cl
 4. **ChatGPT PC (si está encendido):** que lea `REPARTO_AUDITORIA_REPORTES_2NOV.md` y `ORDEN_CHATGPT_PC_AUDITORIA_PUNTO1_2NOV.md` y siga su cola (contra-auditoría de `docs/auditoria/reportes/HALLAZGOS_TOTAL.jsonl` y auditoría A–Z), en rama suya, sin desplegar ni mezclar.
 5. **NO hacer aún la orden 112 (plugin Codex):** requiere que la dueña haga el inicio de sesión en persona.
 Nota: Norexos 1 (nube) no puede escribirte por send_message hasta que la dueña apruebe la confianza de dispositivo; por eso la orden va por este archivo.
+
+## Orden 116 (N1, 7-nov) para Claude PC
+1. Revisar visualmente en iPhone 390 px (Playwright, sin tocar datos) la pantalla GV Caja tras el cierre: debe mostrar «el sistema registró / declaraste / diferencia» y la lista de recibos (commit 1a4c9bd7).
+2. Revisar `claude-pc/ia-medidor` y `claude-pc/ia-ventas-rescate` cuando estén: build, eslint, pruebas, tarjeta de uso en Configuración en celular.
+3. Landing: comprobar que precios y planes coinciden con `docs/venta/PROPUESTA_PRECIOS.md` y el LEEME de entrega-venta (instalado US$349 + US$99/año, nube Medio US$69, Completo US$119; Básico nube no se ofrece) SOLO como lista de diferencias, sin cambiarlos.
+Reporta aquí abajo. No desplegar.

@@ -25,3 +25,9 @@ Reglas fijas: solo código, CI y bases descartables; sin producción, Render, ba
 3. **Contra-auditoría de `docs/auditoria/reportes/HALLAZGOS_TOTAL.jsonl` (37 hallazgos) y su `RESUMEN.md`:** por cada hallazgo, ¿se confirma en el código actual? ¿el arreglo declarado existe en el commit que dice? ¿hay una cifra de dinero mal sincronizada entre reportes? Salida: `docs/auditoria/reportes/CONTRA_AUDITORIA_CHATGPT_PC.md` con tabla id → confirmado / no confirmado / ya corregido / nuevo, y severidad propia.
 4. **Auditoría A–Z (punto 1):** continúa `docs/coordinacion/ORDEN_CHATGPT_PC_AUDITORIA_PUNTO1_2NOV.md`; entrega `docs/auditoria/AUDITORIA_PUNTO1_2NOV.md` (aún no existe).
 5. **Prueba intermitente `tests/e2e/privacidad-sesion.spec.ts:155` (G9):** córrela 30 veces con `--repeat-each` y con CPU cargada en `nexora-cloud`; guarda la tasa de fallo y el mensaje exacto. No la arregles: un agente en la rama `claude-pc/flaky-g9` ya busca la causa; compara después con su arreglo.
+
+## Cola 7-nov (N1)
+1. Instalador de venta: bajar el `.exe` del CI `windows-installer` en verde del head de nexora-cloud y probarlo en Windows 11 limpio: instalar, abrir, crear dueña, vender, cerrar caja, respaldo, desinstalar/actualizar. Evidencia en `docs/validacion/instalador-7nov.md` (pasos, capturas, fallos).
+2. Revisar `docs/INSTALADOR.md` contra lo que de verdad pasa; corregir lo que no coincide (solo docs).
+3. Lista de lo que falta para vender el instalador (firma de código, aviso de SmartScreen, manual de 1 página).
+Sin desplegar ni tocar Render.

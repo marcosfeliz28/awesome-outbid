@@ -21,3 +21,9 @@ Ver `REPARTO_AUDITORIA_REPORTES_2NOV.md`: contra-auditoría con datos de prueba 
 
 ## 3-nov · Instalar MarkItDown en tu máquina
 `pip install "markitdown[all]"`; prueba `markitdown archivo.xlsx`. Úsalo para leer PDFs/Excel de reportes. Sin credenciales. Detalle: orden 114 en `RESPUESTA_CLAUDE_PC_27OCT.md`.
+
+## Cola 7-nov (N1, orden de la dueña: «úsame a ChatGPT Nube, ChatGPT PC y Claude PC»)
+1. Auditar contrato: leer `docs/venta/contrato/01..05` y `PUNTOS_PARA_ABOGADO.md`; verificar contra el código real cada afirmación (IA «no guarda consultas», respaldos, retención, permisos). Salida: `docs/venta/contrato/AUDITORIA_CONTRATO_7NOV.md` con cada desajuste y el texto corregido propuesto. No cambies precios.
+2. Auditar la rama `claude-pc/ia-ventas-rescate` cuando exista (seguridad-20 + aislamiento por empresa + rechazo de inyección).
+3. Auditar la rama `claude-pc/ia-medidor` (migración AiUsage, cálculo de costo, permisos de GET /ai/usage).
+Reporta en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`. Sin desplegar.
