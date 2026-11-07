@@ -79,6 +79,11 @@ import { CourierPayouts } from "./CourierPayouts";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
+  AssistantIcon,
+  AssistantPage,
+  loadAssistantStatus,
+} from "./AssistantPanel";
+import {
   Catalog,
   Inventory,
   Purchases,
@@ -281,6 +286,13 @@ const navigation = [
     permission: "sale:manage",
   },
   { id: "gv", label: "GV Makeup Studio", icon: Brush, permission: "gv:read" },
+  // Visible solo si la API tiene la llave de IA y la persona puede usarla.
+  {
+    id: "assistant",
+    label: "Preguntar a Norexos",
+    icon: AssistantIcon,
+    permission: "authenticated",
+  },
 ];
 // Caras del cubo de la entrada: lo que venden Grupo MacGen y GV Makeup
 // Studio, por grupo (dueña, 23-oct).
@@ -629,6 +641,12 @@ function Shell() {
     queryFn: () => api<any[]>("/alerts?status=new"),
     enabled: !!user && online && can(user.permissions, "alerts:write"),
   });
+  const assistant = useQuery({
+    queryKey: ["assistant-status"],
+    queryFn: loadAssistantStatus,
+    enabled: !!user && online,
+    staleTime: 60_000,
+  });
   const alertCount =
     alertBell.data?.filter((a) => a.status === "new").length ?? 0;
   const tablesOff = useRef<() => void>(undefined);
@@ -657,8 +675,10 @@ function Shell() {
   const menuButton = useRef<HTMLButtonElement>(null),
     sidebar = useRef<HTMLElement>(null),
     stayActive = useRef(() => {});
-  const allowed = navigation.filter(
-    (n) => user && can(user.permissions, n.permission),
+  const allowed = navigation.filter((n) =>
+    n.id === "assistant"
+      ? !!assistant.data?.enabled && assistant.data.canUse
+      : user && can(user.permissions, n.permission),
   );
   useRealtime();
   const go = (id: string) => {
@@ -957,6 +977,7 @@ function Shell() {
     merchandise: <Merchandise />,
     incentives: <IncentivesPage />,
     gv: <Gv />,
+    assistant: <AssistantPage remaining={assistant.data?.remaining} />,
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>

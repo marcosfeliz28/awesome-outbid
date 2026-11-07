@@ -7,4 +7,4 @@ Para poner precio a la IA que se vende. Rama `claude-pc/ia-medidor` (aún no des
 - **Precios:** SOLO en `apps/api/src/ai-prices.ts`. **Hoy están en null (TODO):** el costo sale null y la web dice «sin precio». Hay que cargar los precios reales (US$ por millón de tokens) y verificarlos en la página de precios de Anthropic. Los tokens ya quedan guardados; el costo de filas viejas no se recalcula.
 - **Consulta:** `GET /ai/usage?from=AAAA-MM-DD&to=AAAA-MM-DD` (por defecto, el mes en curso), solo administración (`*`). Devuelve totales por función, usuario y día (día de Santo Domingo).
 - **Web:** tarjeta «Uso y costo de IA» en Configuración (`apps/web/src/AiUsage.tsx`), solo administración.
-- **No mide aún:** la IA de ventas (no pasa por `extractAnthropic`); hay que llamar `recordAiUsage` donde se agregue. Costo de hosting: aparte.
+- **IA de ventas:** `feature = "ia_ventas"`, una fila por pregunta creada antes de llamar al modelo (sirve también de tope diario). Ver `IA_VENTAS.md`. Costo de hosting: aparte.

@@ -538,4 +538,21 @@ describe("IP del cliente detrás del proxy de confianza", () => {
     expect(trustedProxies(undefined)).toBe(DEFAULT_TRUSTED_PROXIES);
     expect(trustedProxies("  10.0.0.0/8 ")).toBe("10.0.0.0/8");
   });
+  it("IA de ventas: 6 por minuto por usuario, aunque abra otra sesión", () => {
+    const guard = new AuthenticatedRateLimitGuard(
+      new RequestRateLimitService(),
+    );
+    const ask = (sessionId: string, id = "u-ia") =>
+      context({
+        method: "POST",
+        path: "/api/assistant/ask",
+        actor: { sessionId, id },
+      });
+    for (let i = 0; i < REQUEST_RATE_LIMITS.assistantUser; i++)
+      expect(guard.canActivate(ask("s" + i))).toBe(true);
+    expect(() => guard.canActivate(ask("otra-sesion"))).toThrowError(
+      "Demasiados intentos",
+    );
+    expect(guard.canActivate(ask("s0", "otro-usuario"))).toBe(true);
+  });
 });
