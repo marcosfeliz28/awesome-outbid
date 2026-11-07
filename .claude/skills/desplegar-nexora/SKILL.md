@@ -3,7 +3,9 @@ name: desplegar-nexora
 description: Lista ejecutable para desplegar Nexora POS en Render (solo Norexos 1 / Claude nube). Úsalo cuando haya que desplegar API y web.
 disable-model-invocation: true
 ---
+
 # Desplegar Nexora (API primero, luego web)
+
 Solo Claude nube despliega, con las llaves de Render. Detalle de la noche y excepciones: skill `noche-autonoma`; lecciones: `aprendizajes-n1`.
 
 1. **SHA exacto.** `git fetch origin nexora-cloud`; anota el commit completo. Los 3 CI (`verify`, `windows-installer`, `render-images`) en verde EN ESE SHA: `https://api.github.com/repos/marcosfeliz28/awesome-outbid/commits/<SHA>/check-runs`. Cada push cancela el CI anterior. Si `verify` falla, mira qué prueba (nunca «es flaky» sin causa); relanza una sola vez.

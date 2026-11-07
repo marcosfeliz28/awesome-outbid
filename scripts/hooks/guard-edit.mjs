@@ -1,3 +1,4 @@
+import process from "node:process";
 // Hook PreToolUse (Edit|Write): bloquea editar migraciones ya existentes, el lockfile y archivos .env.
 // Lee el JSON del evento por stdin. Sale con código 2 (y mensaje en stderr) para bloquear.
 import { readFileSync } from "node:fs";
@@ -15,7 +16,9 @@ try {
 let abs = resolve(process.cwd(), file);
 try {
   abs = realpathSync(abs);
-} catch {}
+} catch {
+  // se ignora a propósito: el hook nunca debe romper el trabajo
+}
 const p = abs.replaceAll("\\", "/").toLowerCase();
 const block = (why) => {
   console.error(`Bloqueado por regla del repo: ${why}`);
@@ -23,16 +26,24 @@ const block = (why) => {
 };
 
 if (/(^|\/)\.env(\.[^/]*)?$/.test(p) && !p.endsWith(".env.example"))
-  block("no se editan archivos .env (los secretos van en Render, nunca en el repo).");
+  block(
+    "no se editan archivos .env (los secretos van en Render, nunca en el repo).",
+  );
 if (/(^|\/)pnpm-lock\.yaml$/.test(p))
   block("el lockfile se regenera con pnpm install, no a mano.");
 if (/apps\/api\/prisma\/migrations\/[^/]+\/migration\.sql$/.test(p)) {
   let tracked = false;
   try {
-    execFileSync("git", ["ls-files", "--error-unmatch", "--", abs], { stdio: "ignore" });
+    execFileSync("git", ["ls-files", "--error-unmatch", "--", abs], {
+      stdio: "ignore",
+    });
     tracked = true;
-  } catch {}
+  } catch {
+    // se ignora a propósito: el hook nunca debe romper el trabajo
+  }
   if (tracked)
-    block("las migraciones existentes no se reescriben; crea una migración nueva y aditiva.");
+    block(
+      "las migraciones existentes no se reescriben; crea una migración nueva y aditiva.",
+    );
 }
 process.exit(0);
