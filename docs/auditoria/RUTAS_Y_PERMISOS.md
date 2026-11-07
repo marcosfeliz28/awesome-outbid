@@ -1,14 +1,17 @@
 # Rutas de la API y sus permisos
 
-Generado por `scripts/rutas-permisos.mjs`. 199 rutas; 0 sin @Permit cerca del método (revisar).
+Generado por `scripts/rutas-permisos.mjs`. 202 rutas; 0 sin @Permit cerca del método (revisar).
 
 | ruta | método | permiso | archivo:línea |
 |---|---|---|---|
-| `/api/alert-rules` | GET | `*` | `apps/api/src/alerts.ts:920` |
-| `/api/alert-rules` | PUT | `*` | `apps/api/src/alerts.ts:923` |
-| `/api/alerts` | GET | `alerts:write` | `apps/api/src/alerts.ts:852` |
-| `/api/alerts/:id` | PATCH | `alerts:write` | `apps/api/src/alerts.ts:887` |
-| `/api/alerts/evaluate` | POST | `alerts:write` | `apps/api/src/alerts.ts:937` |
+| `/api/ai/usage` | GET | `*` | `apps/api/src/ai-usage.ts:108` |
+| `/api/alert-rules` | GET | `*` | `apps/api/src/alerts.ts:927` |
+| `/api/alert-rules` | PUT | `*` | `apps/api/src/alerts.ts:930` |
+| `/api/alerts` | GET | `alerts:write` | `apps/api/src/alerts.ts:859` |
+| `/api/alerts/:id` | PATCH | `alerts:write` | `apps/api/src/alerts.ts:894` |
+| `/api/alerts/evaluate` | POST | `alerts:write` | `apps/api/src/alerts.ts:944` |
+| `/api/assistant/ask` | POST | `authenticated` | `apps/api/src/assistant.ts:637` |
+| `/api/assistant/status` | GET | `authenticated` | `apps/api/src/assistant.ts:622` |
 | `/api/audit-log` | GET | `*` | `apps/api/src/admin.ts:1321` |
 | `/api/auth/change-password` | POST | `pública por diseño (@Public)` | `apps/api/src/auth.ts:512` |
 | `/api/auth/login` | POST | `pública por diseño (@Public)` | `apps/api/src/auth.ts:421` |
@@ -70,11 +73,11 @@ Generado por `scripts/rutas-permisos.mjs`. 199 rutas; 0 sin @Permit cerca del m�
 | `/api/gv/appointments/:id` | PATCH | `gv:write` | `apps/api/src/gv-citas.ts:412` |
 | `/api/gv/appointments/:id/payments` | POST | `gv:write` | `apps/api/src/gv-citas.ts:463` |
 | `/api/gv/banks` | GET | `gv:read` | `apps/api/src/gv.ts:483` |
-| `/api/gv/cash` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:65` |
-| `/api/gv/cash/:id/proof` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:78` |
-| `/api/gv/cash/close` | POST | `gv:write` | `apps/api/src/gv-caja.ts:123` |
-| `/api/gv/cash/current` | GET | `gv:read` | `apps/api/src/gv-caja.ts:40` |
-| `/api/gv/cash/open` | POST | `gv:write` | `apps/api/src/gv-caja.ts:96` |
+| `/api/gv/cash` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:93` |
+| `/api/gv/cash/:id/proof` | GET | `gv:reports` | `apps/api/src/gv-caja.ts:106` |
+| `/api/gv/cash/close` | POST | `gv:write` | `apps/api/src/gv-caja.ts:151` |
+| `/api/gv/cash/current` | GET | `gv:read` | `apps/api/src/gv-caja.ts:66` |
+| `/api/gv/cash/open` | POST | `gv:write` | `apps/api/src/gv-caja.ts:124` |
 | `/api/gv/catalog` | GET | `gv:read` | `apps/api/src/gv.ts:178` |
 | `/api/gv/courses` | GET | `gv:read` | `apps/api/src/gv.ts:184` |
 | `/api/gv/courses` | POST | `gv:write` | `apps/api/src/gv.ts:234` |
@@ -94,7 +97,7 @@ Generado por `scripts/rutas-permisos.mjs`. 199 rutas; 0 sin @Permit cerca del m�
 | `/api/gv/reports` | GET | `gv:reports` | `apps/api/src/gv.ts:617` |
 | `/api/gv/reports/export` | GET | `gv:reports` | `apps/api/src/gv.ts:776` |
 | `/api/gv/transfers/pending` | GET | `gv:read` | `apps/api/src/gv.ts:968` |
-| `/api/health/live` | GET | `pública por diseño (@Public)` | `apps/api/src/app.ts:55` |
+| `/api/health/live` | GET | `pública por diseño (@Public)` | `apps/api/src/app.ts:58` |
 | `/api/incentives` | GET | `sale:manage` | `apps/api/src/incentives.ts:743` |
 | `/api/incentives/close` | POST | `*` | `apps/api/src/incentives.ts:852` |
 | `/api/incentives/export.xlsx` | GET | `sale:manage` | `apps/api/src/incentives.ts:926` |
@@ -117,12 +120,12 @@ Generado por `scripts/rutas-permisos.mjs`. 199 rutas; 0 sin @Permit cerca del m�
 | `/api/inventory/transfers` | POST | `*` | `apps/api/src/warehouses.ts:112` |
 | `/api/inventory/warehouses` | GET | `catalog:read` | `apps/api/src/warehouses.ts:45` |
 | `/api/kits` | POST | `catalog:write` | `apps/api/src/catalog.ts:652` |
-| `/api/merchandise/attachments/:id` | GET | `inventory:write` | `apps/api/src/merchandise.ts:180` |
-| `/api/merchandise/import` | POST | `inventory:write` | `apps/api/src/merchandise.ts:195` |
-| `/api/merchandise/operations` | GET | `inventory:write` | `apps/api/src/merchandise.ts:332` |
-| `/api/merchandise/operations` | POST | `inventory:write` | `apps/api/src/merchandise.ts:343` |
-| `/api/merchandise/options` | GET | `inventory:write` | `apps/api/src/merchandise.ts:161` |
-| `/api/merchandise/profiles/:id` | GET | `inventory:write` | `apps/api/src/merchandise.ts:167` |
+| `/api/merchandise/attachments/:id` | GET | `inventory:write` | `apps/api/src/merchandise.ts:181` |
+| `/api/merchandise/import` | POST | `inventory:write` | `apps/api/src/merchandise.ts:196` |
+| `/api/merchandise/operations` | GET | `inventory:write` | `apps/api/src/merchandise.ts:335` |
+| `/api/merchandise/operations` | POST | `inventory:write` | `apps/api/src/merchandise.ts:346` |
+| `/api/merchandise/options` | GET | `inventory:write` | `apps/api/src/merchandise.ts:162` |
+| `/api/merchandise/profiles/:id` | GET | `inventory:write` | `apps/api/src/merchandise.ts:168` |
 | `/api/notifications/status` | GET | `*` | `apps/api/src/notifications.ts:1059` |
 | `/api/notifications/telegram/test` | POST | `*` | `apps/api/src/notifications.ts:1034` |
 | `/api/payments/:id/correct-transfer` | POST | `*` | `apps/api/src/sales.ts:3038` |
@@ -142,7 +145,7 @@ Generado por `scripts/rutas-permisos.mjs`. 199 rutas; 0 sin @Permit cerca del m�
 | `/api/promotions` | GET | `catalog:read` | `apps/api/src/admin.ts:1332` |
 | `/api/promotions` | POST | `promotions:write` | `apps/api/src/admin.ts:1340` |
 | `/api/promotions/:id` | PATCH | `promotions:write` | `apps/api/src/admin.ts:1386` |
-| `/api/promotions/clearance-candidates` | GET | `promotions:write` | `apps/api/src/alerts.ts:915` |
+| `/api/promotions/clearance-candidates` | GET | `promotions:write` | `apps/api/src/alerts.ts:922` |
 | `/api/purchase-orders` | GET | `purchase:write` | `apps/api/src/inventory.ts:952` |
 | `/api/purchase-orders` | POST | `purchase:write` | `apps/api/src/inventory.ts:964` |
 | `/api/purchase-orders/:id/document` | PATCH | `purchase:write` | `apps/api/src/inventory.ts:1013` |

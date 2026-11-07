@@ -76,6 +76,7 @@
       "resumen": "Este archivo: lista de documentos con título y resumen para búsqueda.",
       "palabras": ["índice", "búsqueda"]
     },
-    {"archivo": "MEDIDOR_IA.md", "titulo": "Medidor de uso y costo de IA", "resumen": "Tabla AiUsage, precios por modelo (null hasta cargarlos), GET /ai/usage solo admin y tarjeta en Configuración."}
+    {"archivo": "MEDIDOR_IA.md", "titulo": "Medidor de uso y costo de IA", "resumen": "Tabla AiUsage, precios por modelo (null hasta cargarlos), GET /ai/usage solo admin y tarjeta en Configuración."},
+    {"archivo": "IA_VENTAS.md", "titulo": "IA de ventas («Preguntar a Norexos»)", "resumen": "Asistente de solo lectura: herramientas, permisos, plan y tope por usuario/día (IA_VENTAS_PLAN), clave por variable de entorno, medidor ia_ventas y sin guardar consultas."}
   ]
 }
