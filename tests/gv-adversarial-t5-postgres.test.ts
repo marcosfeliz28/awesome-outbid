@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { withGvProof } from "./helpers-gv-proof";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -93,7 +94,7 @@ async function createEnrollment(
   );
 }
 
-const paymentBody = (
+const rawPaymentBody = (
   enrollmentId: string,
   extra: Record<string, unknown> = {},
 ) => ({
@@ -105,6 +106,10 @@ const paymentBody = (
   method: "efectivo",
   ...extra,
 });
+const paymentBody = (
+  enrollmentId: string,
+  extra: Record<string, unknown> = {},
+) => withGvProof(rawPaymentBody(enrollmentId, extra));
 
 const appointmentBody = (extra: Record<string, unknown> = {}) => ({
   operationId: randomUUID(),
@@ -160,9 +165,19 @@ beforeAll(async () => {
     gvUserId,
   );
   gv = await login(email, password);
+  // Cobrar exige caja GV abierta (5-nov): sin cajas ajenas y con una propia.
+  await db.gvCashSession.updateMany({
+    where: { closedAt: null },
+    data: { closedAt: new Date() },
+  });
+  expectStatus(await request("/gv/cash/open", gv, { openingAmount: 0 }), 201);
 }, 120_000);
 
 afterAll(async () => {
+  await db.gvCashSession.updateMany({
+    where: { userId: gvUserId, closedAt: null },
+    data: { closedAt: new Date() },
+  });
   if (gvUserId)
     await request("/users/" + gvUserId, admin, { active: false }, "PATCH");
   await db.$disconnect();
@@ -410,7 +425,10 @@ describe("T5 · permisos y estados cerrados", () => {
         name: `T5 Cerrada ${status} ${marker}`,
       });
       const enrollment = await createEnrollment(course.id);
-      const closing: Record<string, unknown> = { status };
+      const closing: Record<string, unknown> = {
+        status,
+        approverPin: "123456",
+      };
       if (status === "reembolsada") {
         expectStatus(
           await request(
@@ -445,7 +463,10 @@ describe("T5 · permisos y estados cerrados", () => {
         await request("/gv/appointments", gv, appointmentBody()),
         201,
       );
-      const closing: Record<string, unknown> = { status };
+      const closing: Record<string, unknown> = {
+        status,
+        approverPin: "123456",
+      };
       if (status === "reembolsada") {
         expectStatus(
           await request(`/gv/appointments/${appointment.id}/payments`, gv, {

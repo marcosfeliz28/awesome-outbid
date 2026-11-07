@@ -128,7 +128,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs:
       "Compara el mes que termina en la fecha final del reporte con el mes anterior.",
     paraQueSirve: "Para ver si este mes vende más o menos que el mes pasado.",
-    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -151,7 +151,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Compara el mes que termina en la fecha final del reporte con el mismo mes del año pasado.",
     paraQueSirve:
       "Para ver si el negocio crece frente al mismo mes del año anterior, sin que pesen las temporadas.",
-    comoSeLee: `Usa el mes de la fecha final del reporte. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -177,7 +177,10 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     comoSeLee: `Hay filas de tipo Día y filas de tipo Mes. ${NETO_VENTAS}`,
     columnas: {
       Tipo: c("Tipo", "Si la fila es un día o un mes completo."),
-      Período: c("Período", "La fecha del día, o el nombre del mes."),
+      Período: c(
+        "Período",
+        "La fecha del día (día/mes/año), o el nombre del mes.",
+      ),
       Facturas: c("Facturas", "Cuántas facturas hay en ese día o mes."),
       "Ventas netas": c(
         "Ventas netas",
@@ -269,8 +272,8 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Mes: c("Mes", "El mes del período."),
       Categoría: c("Categoría", "La categoría del producto."),
       Facturas: c(
-        "Facturas",
-        "Cuántas facturas incluyeron esa categoría ese mes.",
+        "Facturas que la incluyen",
+        "Cuántas facturas incluyeron esa categoría ese mes. Una factura con varias categorías cuenta en cada una, por eso esta columna no se suma hacia abajo.",
       ),
       Unidades: c(
         "Piezas",
@@ -293,7 +296,10 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     comoSeLee: `Los productos sin marca aparecen como Sin marca. ${NETO_VENTAS}`,
     columnas: {
       Marca: c("Marca", "El nombre de la marca del producto."),
-      Facturas: c("Facturas", "Cuántas facturas incluyeron esa marca."),
+      Facturas: c(
+        "Facturas que la incluyen",
+        "Cuántas facturas incluyeron esa marca. Una factura con varias marcas cuenta en cada una, por eso esta columna no se suma hacia abajo.",
+      ),
       Unidades: c(
         "Piezas",
         "Piezas vendidas de esa marca, menos las devueltas.",

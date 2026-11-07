@@ -364,7 +364,12 @@ export type InvoiceFile = { buffer: Buffer; mimetype: string };
 export async function extractAnthropic(
   file: InvoiceFile,
   apiKey: string,
-  options: { model?: string; fetch?: typeof fetch } = {},
+  options: {
+    model?: string;
+    fetch?: typeof fetch;
+    // Medidor de IA: recibe el uso de cada llamada (response.usage o null si falló).
+    onUsage?: (model: string, usage: any, ok: boolean) => void;
+  } = {},
 ): Promise<ExtractedInvoice & { skipped: number }> {
   const client = new Anthropic({
     apiKey,
@@ -392,10 +397,11 @@ export async function extractAnthropic(
             data,
           },
         };
+  const model = options.model || DEFAULT_INVOICE_MODEL;
   let response;
   try {
     response = await client.beta.messages.create({
-      model: options.model || DEFAULT_INVOICE_MODEL,
+      model,
       max_tokens: 16000,
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
@@ -418,6 +424,7 @@ export async function extractAnthropic(
       ],
     });
   } catch (error) {
+    options.onUsage?.(model, null, false);
     if (error instanceof Anthropic.AuthenticationError)
       bad("La clave de Anthropic no es válida. Revisa ANTHROPIC_API_KEY.");
     if (error instanceof Anthropic.RateLimitError)
@@ -428,6 +435,11 @@ export async function extractAnthropic(
       bad("Sin conexión con el servicio de lectura. Revisa el internet.");
     bad("No se pudo leer la factura. Intenta de nuevo o usa Excel/CSV.");
   }
+  options.onUsage?.(
+    model,
+    response.usage,
+    response.stop_reason !== "refusal" && response.stop_reason !== "max_tokens",
+  );
   if (response.stop_reason === "refusal")
     bad("No se pudo leer esta factura automáticamente. Usa Excel/CSV.");
   if (response.stop_reason === "max_tokens")

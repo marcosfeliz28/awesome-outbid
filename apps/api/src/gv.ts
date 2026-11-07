@@ -15,7 +15,7 @@ import {
 } from "@nestjs/common";
 import type { Response } from "express";
 import { Prisma } from "@prisma/client";
-import { can, d, z } from "@fitstore/shared";
+import { businessDate, can, d, z } from "@fitstore/shared";
 import {
   Actor,
   CurrentUser,
@@ -43,6 +43,8 @@ import {
   gvDay as day,
   gvImportPayment,
   gvPaymentInput,
+  gvProofFields,
+  PROOF_INFO,
   gvRefundFields,
   gvTotals,
   gvUserNames,
@@ -52,6 +54,8 @@ import {
   monedaDeCurso,
   catalogoOpciones,
   valorPesos,
+  approverPin,
+  gvAprobacionDuena,
 } from "./gv-money";
 import { GV_CATALOGO, gvIncentivosMes } from "./gv-incentives";
 
@@ -103,6 +107,19 @@ const enrollmentFields = {
 };
 // Ocupan cupo las inscritas que no cancelaron ni pasaron a personalizado.
 const OCCUPIES = new Set(["activa", "no_asistio"]);
+
+// PENDIENTE DE VISTO BUENO DE LA DUEÑA (4-nov): no se inscribe pasado el cupo.
+// Solo frena inscripciones nuevas o que ocupan un lugar más; lo ya inscrito no cambia.
+async function assertCupo(tx: any, courseId: string, branchId: string) {
+  const [course] = await tx.$queryRaw<
+    { capacity: number }[]
+  >`SELECT capacity FROM "GvCourse" WHERE id = ${courseId}::uuid AND "branchId" = ${branchId} FOR UPDATE`;
+  const used = await tx.gvEnrollment.count({
+    where: { courseId, status: { in: [...OCCUPIES] } },
+  });
+  if (course && used >= course.capacity)
+    bad(`El curso está lleno (${used} de ${course.capacity} cupos).`);
+}
 
 const importSchema = z.object({
   courses: z
@@ -274,7 +291,10 @@ export class GvController {
     const enrollments = await this.db.gvEnrollment.findMany({
       where: { courseId: course.id, branchId: actor.branchId },
       include: {
-        payments: { orderBy: [{ date: "asc" }, { createdAt: "asc" }] },
+        payments: {
+          orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+          include: { proof: PROOF_INFO },
+        },
       },
       orderBy: { clientName: "asc" },
     });
@@ -329,6 +349,8 @@ export class GvController {
           bad("La clave de la operación ya corresponde a otra inscripción.");
         return existing;
       }
+      if (OCCUPIES.has(data.status))
+        await assertCupo(tx, courseId, actor.branchId);
       const row = await tx.gvEnrollment.create({
         data: {
           ...data,
@@ -358,12 +380,22 @@ export class GvController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
+    const { approverPin: pin, ...data } = parse(
       z
-        .object({ courseId: uuid, ...enrollmentFields, ...gvRefundFields })
+        .object({
+          courseId: uuid,
+          ...enrollmentFields,
+          ...gvRefundFields,
+          approverPin,
+        })
         .partial(),
       body,
     );
+    // Devolver dinero lo aprueba la dueña (pendiente de su visto bueno).
+    const approvedBy =
+      data.status === "reembolsada"
+        ? await gvAprobacionDuena(this.db, actor, pin)
+        : null;
     // partial(): lo que no llega queda undefined (sin los valores por defecto
     // del alta) y Prisma no lo cambia.
     const target = data.courseId
@@ -379,6 +411,14 @@ export class GvController {
       );
       const { payments: _p, ...before } = locked;
       void _p;
+      // Subir la ocupación (otro curso, o volver de cancelada/personalizada).
+      const next = data.status ?? before.status;
+      const nextCourse = data.courseId ?? before.courseId;
+      if (
+        OCCUPIES.has(next) &&
+        (nextCourse !== before.courseId || !OCCUPIES.has(before.status))
+      )
+        await assertCupo(tx, nextCourse, actor.branchId);
       // Pasarla a otra fecha: el curso nuevo se cobra en la misma moneda que el actual
       // (los pagos ya registrados no se convierten).
       if (
@@ -397,7 +437,7 @@ export class GvController {
         "gv_enrollment",
         row.id,
         before,
-        row,
+        approvedBy ? { ...row, approvedBy } : row,
       );
       return row;
     });
@@ -413,6 +453,30 @@ export class GvController {
     return this.db.$transaction((tx) =>
       createGvPayment(tx, actor, "enrollment", enrollmentId, operationId, data),
     );
+  }
+
+  // Foto del voucher/comprobante de un pago: quien lo registró o quien verifica
+  // (gv:verify); nunca se envía a terceros ni se guarda en caché.
+  @Get("payments/:id/proof")
+  @Permit("gv:read")
+  async paymentProof(
+    @Param("id") id: string,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    const p = await this.db.gvPayment.findFirst({
+      where: { id: parse(uuid, id), branchId: actor.branchId },
+      include: { proof: true },
+    });
+    if (
+      !p ||
+      (p.createdBy !== actor.id && !can(actor.permissions, "gv:verify"))
+    )
+      denied();
+    if (!p.proof) bad("Este pago no tiene foto adjunta.");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    return res.type(p.proof.contentType).send(Buffer.from(p.proof.data));
   }
 
   // Lista de bancos y terminales para el modal de pago, por empresa.
@@ -433,11 +497,15 @@ export class GvController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const { reason } = parse(
-      z.object({ reason: z.string().trim().min(3).max(500) }),
+    const { reason, approverPin: pin } = parse(
+      z.object({
+        reason: z.string().trim().min(3).max(500),
+        approverPin,
+      }),
       body,
     );
     const paymentId = parse(uuid, id);
+    const approvedBy = await gvAprobacionDuena(this.db, actor, pin);
     return this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "GvPayment" WHERE id = ${paymentId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
       const before = await tx.gvPayment.findFirst({
@@ -463,15 +531,10 @@ export class GvController {
           rejectReason: "Anulado: " + reason,
         },
       });
-      await audit(
-        tx,
-        actor,
-        "gv_payment_void",
-        "gv_payment",
-        row.id,
-        before,
-        row,
-      );
+      await audit(tx, actor, "gv_payment_void", "gv_payment", row.id, before, {
+        ...row,
+        approvedBy,
+      });
       return row;
     });
   }
@@ -859,6 +922,49 @@ export class GvController {
     };
   }
 
+  // PENDIENTE DE VISTO BUENO DE LA DUEÑA (4-nov): avisos de GV. Abono viejo =
+  // inscripción activa con saldo cuyo último pago válido tiene más de 15 días.
+  @Get("alerts")
+  @Permit("gv:read")
+  async gvAlerts(@CurrentUser() actor: Actor) {
+    const today = Date.parse(businessDate(new Date()) + "T00:00:00Z");
+    const rows = await this.db.gvEnrollment.findMany({
+      where: { branchId: actor.branchId, status: { in: [...OCCUPIES] } },
+      include: {
+        course: { select: { name: true } },
+        payments: { where: { rejectedAt: null } },
+      },
+    });
+    const staleBalances = rows
+      .filter((e) => e.payments.length > 0)
+      .map((e) => {
+        const last = Math.max(...e.payments.map((p) => p.date.getTime()));
+        const t = gvTotals(
+          e.agreedPrice,
+          e.payments,
+          e,
+          monedaDeCurso(e.course.name),
+        );
+        return {
+          enrollmentId: e.id,
+          clientName: e.clientName,
+          course: e.course.name,
+          pending: t.pending,
+          daysSinceLastPayment: Math.floor((today - last) / 86400000),
+        };
+      })
+      .filter((x) => d(x.pending).gt(0) && x.daysSinceLastPayment > 15)
+      .sort((a, b) => b.daysSinceLastPayment - a.daysSinceLastPayment);
+    const open = await this.db.gvCashSession.findFirst({
+      where: { branchId: actor.branchId, closedAt: null },
+    });
+    return {
+      staleBalances,
+      cashOverdue:
+        !!open && businessDate(open.openedAt) < businessDate(new Date()),
+    };
+  }
+
   @Get("transfers/pending")
   @Permit("gv:read")
   async pendingTransfers(@CurrentUser() actor: Actor) {
@@ -877,6 +983,7 @@ export class GvController {
           },
         },
         appointment: { select: { clientName: true, service: true } },
+        proof: PROOF_INFO,
       },
       orderBy: [{ date: "asc" }, { createdAt: "asc" }],
     });
@@ -1110,7 +1217,7 @@ export function paymentView(
   p: any,
   name: (id: string | null | undefined) => string | null,
 ) {
-  const { createdBy, verifiedBy, rejectedBy, ...rest } = p;
+  const { createdBy, verifiedBy, rejectedBy, ...rest } = gvProofFields(p);
   return {
     ...rest,
     date: dayText(p.date),

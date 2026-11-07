@@ -21,3 +21,22 @@ Ver `REPARTO_AUDITORIA_REPORTES_2NOV.md`: contra-auditoría con datos de prueba 
 
 ## 3-nov · Instalar MarkItDown en tu máquina
 `pip install "markitdown[all]"`; prueba `markitdown archivo.xlsx`. Úsalo para leer PDFs/Excel de reportes. Sin credenciales. Detalle: orden 114 en `RESPUESTA_CLAUDE_PC_27OCT.md`.
+
+## Cola 7-nov (N1, orden de la dueña: «úsame a ChatGPT Nube, ChatGPT PC y Claude PC»)
+1. Auditar contrato: leer `docs/venta/contrato/01..05` y `PUNTOS_PARA_ABOGADO.md`; verificar contra el código real cada afirmación (IA «no guarda consultas», respaldos, retención, permisos). Salida: `docs/venta/contrato/AUDITORIA_CONTRATO_7NOV.md` con cada desajuste y el texto corregido propuesto. No cambies precios.
+2. Auditar la rama `claude-pc/ia-ventas-rescate` cuando exista (seguridad-20 + aislamiento por empresa + rechazo de inyección).
+3. Auditar la rama `claude-pc/ia-medidor` (migración AiUsage, cálculo de costo, permisos de GET /ai/usage).
+Reporta en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`. Sin desplegar.
+
+## Cola 7-nov (2) — N1 tras tu auditoría del contrato (gracias: buenas las 6 observaciones)
+1. **Aplica tus textos corregidos** en `docs/venta/contrato/01..05` (rama nueva `chatgpt-nube/contrato-correcciones`, solo docs). Ojo con el punto 1: la IA de ventas **ya está en nexora-cloud y desplegada, pero APAGADA** (dda476be; se enciende con ANTHROPIC_API_KEY + IA_VENTAS_PLAN). Redáctalo como «función opcional, activa solo si la Hoja de contratación lo indica». Puntos 2–6 tal como los propusiste. En 3 (supresión) deja los plazos como PENDIENTE y di claramente que hoy es procedimiento manual.
+2. Revisa `02_POLITICA_PRIVACIDAD.md` y `03_ACUERDO_ENCARGADO_TRATAMIENTO.md` contra `apps/api/src/retention.ts` y `drive-backup*.ts` y completa el calendario de rotación SOLO con lo que el código hace; lo que no, «COMPLETAR».
+3. Audita el arreglo `claude-pc/flaky-password-telegram` ya mezclado en nexora-cloud (security.ts: updateMany/upsert en verifyAttempt): ¿abre algún hueco en el bloqueo por intentos fallidos (fuerza bruta)? Reporta en RESULTADOS_CHATGPT_NUBE.md.
+Sin desplegar.
+
+## Cola 7-nov (3) — N1: producto «Asistente analista» (lo que la dueña hace con Norexos 2, para sus clientes)
+La dueña quiere vender la IA: lo que hace con Norexos 2 (investigación, cuadre, conteos, auditoría de cifras) como asistente del cliente. Parte de la IA de ventas ya desplegada (apagada) en apps/api/src/assistant.ts.
+1. Escribe `docs/ia/ASISTENTE_ANALISTA_SPEC.md`: qué preguntas debe poder responder el cliente (cuadre de caja del día, diferencias, top productos, productos sin ventas, transferencias sin verificar, mercancía bajo mínimo, comparar periodos, explicar un reporte), qué herramientas de SOLO LECTURA faltan sobre las 5 actuales (resumen_ventas, top_productos, cobros, comparar_periodos, mis_ventas), por rol (dueña/gerente/cajera), y cómo aplicar la regla «leer 3 veces por caminos distintos antes de dar una cifra» (skill informe-triple) dentro de la respuesta.
+2. Arma un conjunto de evaluación de 100 preguntas con respuesta esperada y cálculo (formato de docs/coordinacion/IA_EVAL_26OCT.md) incluyendo preguntas trampa (pedir PIN, otra sucursal, anular facturas, inyección).
+3. Estima costo por pregunta con los precios de apps/api/src/ai-prices.ts y propone tope por plan que mantenga margen ≥ 15 %.
+Sin código; sin desplegar. Reporta en RESULTADOS_CHATGPT_NUBE.md.

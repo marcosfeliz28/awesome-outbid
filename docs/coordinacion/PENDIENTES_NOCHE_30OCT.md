@@ -92,3 +92,47 @@ Norexos 7: terminado, sin tareas. Regla: antes de empezar algo, ver esta tabla; 
 
 ## 1-nov 16:55 UTC · Decisión de la dueña: dominio **norexos.net** (en vez de norexos.ai)
 Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.com` 11,17; `.ai` 80). Intentos de registro por API (x2) fallaron SIN cobrar: «No registrant contact provided and no default address book entry». Falta que la dueña deje un contacto **predeterminado** en `dash.cloudflare.com/<cuenta>/domains/registrations` (puede que ya exista el de `nexorapos.net` y solo haya que marcarlo como predeterminado) y confirme tarjeta en facturación; o que dé nombre, dirección, teléfono (+1…) para enviarlo en la solicitud. Tras registrar: DNS a la landing, certificado, `soporte@norexos.net` (Email Routing, como en nexorapos.net), 301 desde nexorapos.net. Landing: agente en `claude-pc/landing-norexos-net`. Se actualizan las menciones de norexos.ai en `docs/venta/` cuando el dominio exista.
+
+## 5-nov 04:50 UTC · Orden de la dueña (se fue a dormir): «procede a hacer todo lo que falte, venta y no venta, hasta mañana»
+- Agentes en marcha (sin desplegar): landing norexos.net (`claude-pc/landing-norexos-net`, session_01CjMpH79rw2VkFCZiqy8GaB), reportes bajos + HALLAZGOS_TOTAL (`claude-pc/aud-pendientes-bajos`, session_01CjMpH86z4UQ77hBJSbqkLp), control de GV (`claude-pc/gv-control-vendedora` 58212243, CI verde, esperando visto bueno).
+- NO se despliega nada que cambie caja, cobros, precios o inventario (GV caja/recibos/cupo/PIN) sin su respuesta a los 5 puntos de RESULTADOS_GV_CONTROL.md; sí docs, landing estática y reportes de solo texto con 3 CI verdes y 0 cajas (N2).
+- Esperan a la dueña: ganancia de octubre y devoluciones heredadas (dinero-seguridad-final, aud-sincronia), rol de la gerente de GV (A o B), regla de permiso `git push` de N2 (claude/bitacora-n2), vouchers de tarjeta (Lizbeth 17:03/17:06; Wendy FS-0000425), dominio/precios.
+
+## 5-nov · DESPLEGADO control de GV (1868b1b4; API 05:56 UTC, web 08:06 UTC)
+- Autorizado por la dueña («cerrar y aplicarle más control a GV; autorización de todo hasta las 6 AM»). 3 CI verdes en el SHA exacto; N2 confirmó sin cobros en curso; única caja abierta: 8a61d2c1 de la dueña (0 ventas) = excepción anotada.
+- Vivo: caja propia de GV (abrir/cerrar con arqueo ciego), recibo GV-0000001 por pago, bloqueo con caja del día anterior abierta, cupo bloqueado, PIN de la dueña para anular/devolver, alerta de abonos >15 días. Migración aditiva 202611040001. Verificado: health ok, /gv/cash/current 200, logs de error vacíos.
+- Defaults que la dueña puede cambiar: cobrar SIN caja GV abierta sigue permitido; reembolsos en efectivo aún no restan de la caja GV.
+- Landing norexos.net lista en su rama (881f6a5, CI verde), sin publicar: faltan planes/precios, buzón, destino app, dominio.
+- Levantamiento solo lectura: 82 transferencias sin verificar (RD$ 331,030), 561 productos bajo mínimo, 16 créditos por antigüedad, 37 descuadres, 6 ventas con margen bajo; 0 cajas abiertas salvo la de la dueña.
+
+## 5-nov 11:36 UTC · DESPLEGADO reportes de Ventas (0a17101b; API 11:25, web 11:35)
+- Solo exportación/texto: fila de total en PDF/Excel, fecha legible, «Facturas que la incluyen». Sin cambios de cifras. 3 CI verdes en el SHA; N2 sin cobros en curso (10:39 UTC). Verificado: health ok, logs vacíos, PDF de ventas-por-marca 200 con fila de total.
+- HALLAZGOS_TOTAL.jsonl y RESUMEN.md ya en docs/auditoria/reportes/: listos para la contra-auditoría de ChatGPT PC/nube.
+- Producción = 0a17101b (+ docs posteriores). Pendientes de la dueña sin cambio.
+
+## 6-nov 06:40 UTC · EN VIVO: GV exige caja abierta, foto de voucher y cierre diario (a3b1b19c)
+- Render: API (dep-dbmig66k1f9s73b3q200) y web (dep-dbmig6dg1s2s73f2uc40) con a3b1b19c desde 01:06 UTC (9:06 PM RD), disparados por API de Render (trigger «api»). Este turno solo lo VERIFICÓ: health ok, web 200, `/api/gv/cash/current` devuelve `{"open":false}` (arreglo de la pestaña «Caja GV»), 0 cajas abiertas, última venta 21:52 UTC del 5-nov, logs de error vacíos.
+- N2 no contestó la lectura previa pedida a las 02:11 y 02:37 UTC; lectura propia en solo lectura (/cash-sessions, /sales, /gv/cash) = sin cajas ni cobros. Anotado como excepción a la regla «comprobado por N2».
+- Falta por comprobar en navegador: modal de pago con tarjeta y cierre con foto de lote (primer día de uso de Clary), seguridad-20 puntos 8 y 10–15.
+
+## 7-nov 01:13 UTC — despliegue API+web (N1)
+- API desplegada con commit 1a4c9bd7 (3 CI verdes); web desplegada sobre 3743f7ec (solo 3 archivos de docs más que 1a4c9bd7, código idéntico).
+- Condiciones: 0 cajas tienda y 0 GV abiertas, 0 ventas/cobros en 15 min (lectura de N2 00:46 UTC, solo lectura; mis credenciales de lectura no estaban en ese contenedor y la BD no admite consulta externa).
+- Incluye: G9 closeOwn, vista de celular, rol gerente_gv, alerta GV que se apaga al cerrar, cierre de GV con «registrado / declarado / diferencia» y recibos.
+- Verificado en vivo: /api/health ok, web 200 con bundle nuevo, /gv/cash/current → {"open":false}, rol gerente_gv existe, sin errores en logs.
+- Quitar la nota de «excepción N2 no respondió» de 6-nov: N2 confirmó 0 cajas.
+- Abierto: claude-pc/ia-medidor (corrección 0d176e79, esperando CI), claude-pc/ia-ventas-rescate (en curso), colas 7-nov de ChatGPT Nube/PC y Claude PC.
+
+## 7-nov 06:40 UTC — medidor de IA en vivo (N1)
+- API y web desplegadas con 3606676a (medidor AiUsage + GET /ai/usage + tarjeta en Configuración). Migración aditiva 202611070001 aplicada.
+- CI: verify falló una vez en tests/password-account.test.ts («dos cambios simultáneos de la propia contraseña», esperaba 400/401 y llegó 404; ajena al medidor); al relanzar pasó. Vigilar: si reaparece, buscar la causa de carrera, no saltarla.
+- Condiciones: 0 cajas abiertas y GV sin caja (lectura propia 04:38 UTC; tienda cerrada de noche).
+- Verificado: /api/health ok, /api/ai/usage responde (aún sin filas), bundle con la tarjeta, /gv/cash/current {"open":false}, sin errores en logs.
+- Pendiente del medidor: precios de modelos en ai-prices.ts (hoy costo = null), medir IA de ventas (rama claude-pc/ia-ventas-rescate, CI verdes en 8954a099; falta auditarla).
+
+## 7-nov 14:40 UTC — IA de ventas desplegada, APAGADA (N1)
+- API desplegada 12:38 UTC con dda476be (0 cajas abiertas, 0 ventas desde 21:50 UTC del 6-nov; 3 CI verdes sobre ese SHA). Web desplegada 14:32 UTC (solo frontend; con cajas ya abiertas, sin reinicio de API).
+- Contiene: asistente «Preguntar a Norexos» (apps/api/src/assistant.ts) tras auditoría independiente de N1 (sin hallazgos altos) y correcciones H1–H6 (límite 6/min por usuario, máx 4 herramientas por ronda, rango ≤366 días, datos entre <datos>, errores genéricos, contrato 04 ajustado).
+- Verificado: /api/health ok, web 200 con el bundle nuevo, POST /assistant/ask sin plan/llave → 503 (apagada), sin errores en logs.
+- Para encenderla (solo la dueña): clave ANTHROPIC_API_KEY en Render (sync false) y IA_VENTAS_PLAN=medio|completo. Precios de modelos en ai-prices.ts siguen null (costo no calculado): pedido a ChatGPT Nube verificar en la página oficial.
+- Falla intermitente reincidente en CI: tests/password-account.test.ts («dos cambios simultáneos», 404 en vez de 400/401) y tests/telegram.test.ts (purga por tiempo). Pasan al relanzar. Pendiente: causa raíz de la carrera (no saltar).
