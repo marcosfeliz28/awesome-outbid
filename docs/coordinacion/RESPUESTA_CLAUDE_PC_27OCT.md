@@ -691,3 +691,8 @@ Pendiente en este bloque; ver abajo.
 
 ### Orden 119
 **BLOQUEADA:** no existe `ANTHROPIC_API_KEY` en el entorno. Según la orden, no la pedí ni la imprimí, y no ejecuté la evaluación contra la API real. Pendiente: que la dueña proporcione la llave de prueba en el entorno.
+
+### Orden 117 (resultado, 7-nov)
+- Plugin `claude-code-setup` confirmado en el catálogo (habilitado) y skill `claude-automation-recommender` disponible.
+- Recomendaciones escritas en `docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md` (sección «orden 117»), sin aplicar.
+- Aviso: hooks, subagentes y skills creados antes de esta orden siguen en el árbol de trabajo de la laptop, sin commit. Ver esa sección para revertirlos.
