@@ -114,3 +114,11 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Render: API (dep-dbmig66k1f9s73b3q200) y web (dep-dbmig6dg1s2s73f2uc40) con a3b1b19c desde 01:06 UTC (9:06 PM RD), disparados por API de Render (trigger «api»). Este turno solo lo VERIFICÓ: health ok, web 200, `/api/gv/cash/current` devuelve `{"open":false}` (arreglo de la pestaña «Caja GV»), 0 cajas abiertas, última venta 21:52 UTC del 5-nov, logs de error vacíos.
 - N2 no contestó la lectura previa pedida a las 02:11 y 02:37 UTC; lectura propia en solo lectura (/cash-sessions, /sales, /gv/cash) = sin cajas ni cobros. Anotado como excepción a la regla «comprobado por N2».
 - Falta por comprobar en navegador: modal de pago con tarjeta y cierre con foto de lote (primer día de uso de Clary), seguridad-20 puntos 8 y 10–15.
+
+## 7-nov 01:13 UTC — despliegue API+web (N1)
+- API desplegada con commit 1a4c9bd7 (3 CI verdes); web desplegada sobre 3743f7ec (solo 3 archivos de docs más que 1a4c9bd7, código idéntico).
+- Condiciones: 0 cajas tienda y 0 GV abiertas, 0 ventas/cobros en 15 min (lectura de N2 00:46 UTC, solo lectura; mis credenciales de lectura no estaban en ese contenedor y la BD no admite consulta externa).
+- Incluye: G9 closeOwn, vista de celular, rol gerente_gv, alerta GV que se apaga al cerrar, cierre de GV con «registrado / declarado / diferencia» y recibos.
+- Verificado en vivo: /api/health ok, web 200 con bundle nuevo, /gv/cash/current → {"open":false}, rol gerente_gv existe, sin errores en logs.
+- Quitar la nota de «excepción N2 no respondió» de 6-nov: N2 confirmó 0 cajas.
+- Abierto: claude-pc/ia-medidor (corrección 0d176e79, esperando CI), claude-pc/ia-ventas-rescate (en curso), colas 7-nov de ChatGPT Nube/PC y Claude PC.

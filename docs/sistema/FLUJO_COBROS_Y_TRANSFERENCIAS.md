@@ -44,7 +44,7 @@ Pasos exactos en `FLUJO_CAJA_POS.md` §5.1. Resumen:
 
 ### 3.3 Otras vías de cobro (solo administración `*`)
 
-- **Ventas › «Registrar abono»** en una venta con saldo (`apps/web/src/Management.tsx:3336`): ventana «Registrar pago de crédito / contraentrega · FS-…» (`:3716`) con «Monto del abono», «Método», banco/referencia o últimos 4/aprobación. API `POST /sales/:id/installments` (`apps/api/src/sales.ts:3756`). Exige caja abierta: «Abre tu caja para registrar abonos.» (`apps/web/src/Management.tsx:3325`).
+- **Ventas › «Registrar abono»** en una venta con saldo (`apps/web/src/Management.tsx:3341`): ventana «Registrar pago de crédito / contraentrega · FS-…» (`:3716`) con «Monto del abono», «Método», banco/referencia o últimos 4/aprobación. API `POST /sales/:id/installments` (`apps/api/src/sales.ts:3756`). Exige caja abierta: «Abre tu caja para registrar abonos.» (`apps/web/src/Management.tsx:3330`).
 - **Cobro de contraentrega cuando el mensajero trae el dinero**: `POST /sales/:id/cod-collections` (`apps/api/src/sales.ts:3768`); pide la referencia del voucher si es tarjeta.
 - **Cobro por persona** (varias ventas de un cliente a la vez): `POST /credit-accounts/:id/collections` (`apps/api/src/sales.ts:4083`, manejador `collectCustomerCredit` en `:4086`); usa `allocateCredit` (`apps/api/src/credit-allocation.ts:2`).
 - **Dueña (`*`)**: al registrar una transferencia se da por recibida y cierra el cobro al instante, solo indica el banco; el efectivo sin caja abierta queda como recibido por ella, fuera de cualquier caja (`apps/web/src/Tienda.tsx:947-949`, `:1098`, `:1216-1217`; API marca `OWNER_CASH_MARK`, `apps/api/src/sales.ts:4741`).
@@ -74,7 +74,7 @@ Dos caminos:
 5. Si el envío del mensajero explica la diferencia: «Usar RD$ X como envío» (`:321`) o «Editar envío».
 6. **«Rechazar»** una factura: «Motivo del rechazo» + «Confirmar rechazo» (`:359`).
 
-**B) Desde «Ventas»** abriendo la factura (ojo): por cada transferencia pendiente, botones **«Verificar»** (`apps/web/src/Management.tsx:3607`), **«Rechazar»** (`:3530`) y **«Corregir banco y referencia»** (`:3455`; bloque de transferencias en `:3445`).
+**B) Desde «Ventas»** abriendo la factura (ojo): por cada transferencia pendiente, botones **«Verificar»** (`apps/web/src/Management.tsx:3612`), **«Rechazar»** (`:3530`) y **«Corregir banco y referencia»** (`:3455`; bloque de transferencias en `:3445`).
 
 API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales.ts:2785`). Efecto:
 
@@ -85,14 +85,14 @@ API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales
 
 ### 4.3 Rechazar (el dinero no llegó)
 
-- Botón «Rechazar» → «Rechazar transferencia de RD$ …» con motivo (`apps/web/src/Management.tsx:3650`; textos de ayuda en `:3594-3596`). API `POST /payments/:id/reject` (`*`) (`apps/api/src/sales.ts:3111`).
+- Botón «Rechazar» → «Rechazar transferencia de RD$ …» con motivo (`apps/web/src/Management.tsx:3655`; textos de ayuda en `:3594-3596`). API `POST /payments/:id/reject` (`*`) (`apps/api/src/sales.ts:3111`).
 - Transferencia **de una venta**: la mercancía ya salió, así que ese importe **pasa a cuenta por cobrar del cliente** y sale del esperado de la caja; si la caja ya cerró, se recalcula (`sales.ts:3111` y siguientes; auditoría `rejected_after_close` en `:3207`). Si parte ya se devolvió y no se puede cobrar, crea la alerta `transfer_rejected_loss` (`:3173`).
-- Transferencia **de un abono**: no descuenta deuda ni entra a caja (`apps/web/src/Management.tsx:3654`).
+- Transferencia **de un abono**: no descuenta deuda ni entra a caja (`apps/web/src/Management.tsx:3659`).
 - Solo se rechaza una `pending_verification`.
 
 ### 4.4 Corregir banco y referencia
 
-- «Corregir banco y referencia» (`*`; pago `pending_verification` u `ok`): campos «Banco correcto», «Referencia correcta», «Motivo de la corrección» (`apps/web/src/Management.tsx:3699-3731`, etiqueta en `:3614`); no cambia importe ni estado y queda en la bitácora. API `POST /payments/:id/correct-transfer` (`apps/api/src/sales.ts:3038`). Si otra persona la corrigió antes: «Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.» (`apps/api/src/sales.ts:3080`).
+- «Corregir banco y referencia» (`*`; pago `pending_verification` u `ok`): campos «Banco correcto», «Referencia correcta», «Motivo de la corrección» (`apps/web/src/Management.tsx:3704-3736`, etiqueta en `:3614`); no cambia importe ni estado y queda en la bitácora. API `POST /payments/:id/correct-transfer` (`apps/api/src/sales.ts:3038`). Si otra persona la corrigió antes: «Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.» (`apps/api/src/sales.ts:3080`).
 
 ## 5. Cuando la caja ya cerró
 
@@ -110,7 +110,7 @@ Qué pasa y quién lo hace:
 
 ### 6.1 Desplegado: corregir el método de pago de una venta
 
-- Pantalla: **Ventas › abrir la factura (ojo) › panel «Corregir factura»** (solo si es vigente y tiene **máximo 7 días**) (`apps/web/src/Management.tsx:3409-3419`; `apps/web/src/SaleEditPanel.tsx:8-11`, `editableNow`, `EDIT_DAYS = 7`).
+- Pantalla: **Ventas › abrir la factura (ojo) › panel «Corregir factura»** (solo si es vigente y tiene **máximo 7 días**) (`apps/web/src/Management.tsx:3414-3424`; `apps/web/src/SaleEditPanel.tsx:8-11`, `editableNow`, `EDIT_DAYS = 7`).
 - Por cada pago de la factura: lista de métodos (Efectivo, Tarjeta, Transferencia, Contraentrega, Crédito) y botón **«Cambiar método de pago»** (`apps/web/src/SaleEditPanel.tsx:185`, envío en `:177`). Si el nuevo es Transferencia pide «Banco» y «Referencia».
 - API `POST /sales/:id/payments/:paymentId/correct-method` (`*`), con motivo (`apps/api/src/sales.ts:2198`, manejador `correctPaymentMethod`). Reglas: solo pagos **de la venta o cobros** (`entryType` `sale` o `installment`, `:2228-2230`); no en dólares; no rechazados. Un cobro (abono o contraentrega cobrada) solo se mueve **entre efectivo, tarjeta y transferencia**, y solo si hoy está en efectivo o tarjeta y en estado `ok`; nunca pasa a crédito ni a contraentrega (`:2235`). Si pasa a transferencia, la deuda vuelve hasta que se verifique (la cuenta deja de estar cerrada). Limitado a 7 días por `editableSale` (`apps/api/src/common.ts:879-891`). Ajusta el saldo, la comisión de tarjeta, el estado, la alerta y los incentivos, y si la caja ya cerró la recalcula. Auditoría `payment_method_corrected` (`:2371`).
 - Otras correcciones de la misma factura: «Cambiar vendedora» (`apps/web/src/SaleEditPanel.tsx:113`; API `POST sales/:id/seller`, `apps/api/src/sales.ts:2147`) y «Marcar «al por mayor»» (`SaleEditPanel.tsx:124`; API `POST sales/:id/mark-wholesale`, `apps/api/src/sales.ts:2098`), y el envío del mensajero (`apps/web/src/CourierFeeEditor.tsx:6`).

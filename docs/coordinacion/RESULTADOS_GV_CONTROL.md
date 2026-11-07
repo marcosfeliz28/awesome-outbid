@@ -53,3 +53,17 @@ Rama `claude-pc/gv-exigir-cierre` (base `nexora-cloud` 5-nov, `cc3bc69`). SHA de
 - La alerta de «caja abierta a las 10 PM» queda en Avisos hasta que alguien la resuelva (no se cierra sola al cerrar la caja).
 - Pagos hechos por la dueña sin caja no cuentan para la alerta de «día sin cierre».
 - Pagos y cierres ya existentes no se tocan: los pagos viejos con tarjeta/transferencia no tienen foto.
+
+---
+
+# Rol `gerente_gv` y alertas que se cierran solas (6-nov, Norexos 1, rama `claude-pc/gv-gerente-rol`)
+
+SHA: `c5e43a1e2e1d482baeab0af9b31fa9590dc9f763`. CI en verde para ese SHA (run 42224110836): `verify`, `windows-installer` y `render-images`. La prueba de migración que no corrió en el contenedor (falta libicu) sí se ejecutó en `verify`.
+
+- **A. Rol:** migración aditiva `202611060001_gv_gerente_rol` (INSERT … ON CONFLICT DO NOTHING; no asigna usuarios) y `permissions.gerente_gv` en shared = exactamente `gv:read`, `gv:reports`, `gv:verify`. Verificar sigue prohibido a quien registró la transferencia (`gv.ts:582`, solo `*` lo salta; el rol no tiene `*`).
+- **B. Alertas:** `resolveGvCashAlerts` se llama dentro de la transacción de cierre; resuelve la de 10 PM de esa caja y las de día sin cierre de los días con pagos de esa caja.
+- **C. Fotos:** documentado en `docs/sistema/GV.md` §14 (tabla `GvProof`, tope 2 MB, cálculo y consulta de espacio). Retención sin cambio.
+- **Pruebas:** `tests/gv-vigilante-api.test.ts` (nueva: cierre resuelve avisos; falla antes —función inexistente— y pasa después, en PostgreSQL 16 real). `tests/gv-gerente-rol-migration-postgres.test.ts` (rol exacto, idempotente, no pisa ediciones; registrada en `vitest.config.ts`): **escrita pero NO corrida aquí** — el initdb de `embedded-postgres` falla en este contenedor (falta `libicuuc.so.60`); lo corre el CI. La misma SQL se aplicó con `prisma migrate deploy` en un PostgreSQL 16 y dio `{gv:read,gv:reports,gv:verify}`.
+- **eslint y tsc** sin errores en lo tocado.
+- **Seguridad-20:** 3/9 sin ruta nueva (la existente lleva `@Permit("gv:write")`; el rol nuevo no lo tiene) · 5 el rol no ve costos ni MacGen (sin esos permisos) · 6 sin entradas nuevas · 16 migración solo aditiva, sin SQL concatenado; la actualización de alertas usa Prisma parametrizado · 1, 2, 18 sin secretos ni variables. NO COMPROBADO: 8, 10–15 (no cambia configuración ni dependencias).
+- **Pendiente de la dueña:** crear el usuario de la gerente con este rol. No se desplegó ni se tocó Render.

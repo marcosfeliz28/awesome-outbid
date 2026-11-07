@@ -783,6 +783,9 @@ export const permissions: Record<string, string[]> = {
   warehouse: ["catalog:read", "inventory:write", "purchase:write"],
   // GV Makeup Studio (dueña, 25-oct): sólo cursos, inscripciones y pagos de GV.
   gv: ["gv:read", "gv:write", "gv:reports"],
+  // Gerente de seguimiento de GV (dueña, 6-nov): ve, reporta y verifica
+  // transferencias; no cobra, no abre caja, no ve MacGen.
+  gerente_gv: ["gv:read", "gv:reports", "gv:verify"],
 };
 export const can = (grants: string[], permission: string) =>
   grants.includes("*") || grants.includes(permission);

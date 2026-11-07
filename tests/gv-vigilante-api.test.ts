@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { GvCajaVigilante } from "../apps/api/src/gv-vigilante";
+import { resolveGvCashAlerts } from "../apps/api/src/gv-caja";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -128,5 +129,40 @@ describe("GV · vigilante de la caja", () => {
     expect(row.message).toContain("sin cierre");
     // Repetir no duplica.
     expect((await service.run(at(today, "13:00:00"))).created).toEqual([]);
+  });
+
+  it("al cerrar la caja se resuelven sus avisos (10 PM y día sin cierre)", async () => {
+    const service = new GvCajaVigilante(db);
+    const d = day(80);
+    const s = await db.gvCashSession.create({
+      data: { branchId, userId, openingAmount: 0, openedAt: at(d, "09:00:00") },
+    });
+    await db.gvPayment.create({
+      data: {
+        branchId,
+        date: new Date(d),
+        amount: 100,
+        concept: "separo",
+        method: "efectivo",
+        createdBy: userId,
+        enrollmentId,
+        createdAt: at(d, "15:00:00"),
+        cashSessionId: s.id,
+      },
+    });
+    await service.run(at(d, "22:30:00"));
+    await service.run(at(day(82), "12:00:00"));
+    const nightKey = `gv-caja-noche:${s.id}:${d}`;
+    const dayKey = `gv-dia-sin-cierre:${branchId}:${d}`;
+    const status = async (key: string) =>
+      (await db.alert.findUnique({ where: { key } }))?.status;
+    expect(await status(nightKey)).toBe("new");
+    expect(await status(dayKey)).toBe("new");
+    await db.$transaction((tx: any) => resolveGvCashAlerts(tx, branchId, s.id));
+    expect(await status(nightKey)).toBe("resolved");
+    expect(await status(dayKey)).toBe("resolved");
+    // No se recrean al volver a correr el vigilante.
+    await service.run(at(day(83), "22:30:00"));
+    expect(await status(nightKey)).toBe("resolved");
   });
 });

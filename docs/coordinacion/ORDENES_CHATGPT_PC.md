@@ -17,3 +17,17 @@ Ver `REPARTO_AUDITORIA_REPORTES_2NOV.md`: impresión real, lectura 18–70 y la 
 
 ## 3-nov · Instalar MarkItDown en tu máquina
 `pip install "markitdown[all]"`; prueba `markitdown archivo.xlsx`. Úsalo para leer PDFs/Excel de reportes. Sin credenciales. Detalle: orden 114 en `RESPUESTA_CLAUDE_PC_27OCT.md`.
+
+## Cola 6-nov (Norexos 1 → ChatGPT PC) · entorno confirmado: Node, pnpm, PostgreSQL embebido, Graphify
+Reglas fijas: solo código, CI y bases descartables; sin producción, Render, base de la tienda, credenciales ni secretos; sin desplegar ni mezclar en `nexora-cloud`; una rama tuya por pieza (`chatgpt-pc/<pieza>`); no debilites ni saltes pruebas; cita archivo:línea y di lo que NO pudiste comprobar. Reporta cada pieza en `docs/coordinacion/RESULTADOS_CHATGPT.md` (rama, SHA, comando exacto, resultado). Fraseo de arranque si hace falta: «lee ORDENES_CHATGPT_PC.md y sigue tu cola».
+1. **Línea base completa con PostgreSQL embebido (tu ventaja: el contenedor de la nube no puede correr `initdb` como root y ahí fallan ~11 pruebas):** en `origin/nexora-cloud` corre la suite completa (`pnpm test` y las de integración con Postgres), anota qué pasa y qué falla, y repite en `claude-pc/movil-todo` y `claude-pc/landing-norexos-net`. Entrega una tabla rama → pasa/falla → prueba.
+2. **Pruebas nuevas de GV, en base descartable:** `tests/gv-caja-api.test.ts`, `tests/gv-vigilante-api.test.ts` y `tests/gv-modulo-api.test.ts` en `nexora-cloud` (caja GV obligatoria, foto de voucher, cierre con 3 montos). Intenta romperlas con casos adversarios (doble apertura, pago sin caja, foto falsa con tipo engañoso, cierre sin foto de lote con tarjeta, día anterior abierto). Solo reporta lo que logres romper, con la prueba que lo demuestra.
+3. **Contra-auditoría de `docs/auditoria/reportes/HALLAZGOS_TOTAL.jsonl` (37 hallazgos) y su `RESUMEN.md`:** por cada hallazgo, ¿se confirma en el código actual? ¿el arreglo declarado existe en el commit que dice? ¿hay una cifra de dinero mal sincronizada entre reportes? Salida: `docs/auditoria/reportes/CONTRA_AUDITORIA_CHATGPT_PC.md` con tabla id → confirmado / no confirmado / ya corregido / nuevo, y severidad propia.
+4. **Auditoría A–Z (punto 1):** continúa `docs/coordinacion/ORDEN_CHATGPT_PC_AUDITORIA_PUNTO1_2NOV.md`; entrega `docs/auditoria/AUDITORIA_PUNTO1_2NOV.md` (aún no existe).
+5. **Prueba intermitente `tests/e2e/privacidad-sesion.spec.ts:155` (G9):** córrela 30 veces con `--repeat-each` y con CPU cargada en `nexora-cloud`; guarda la tasa de fallo y el mensaje exacto. No la arregles: un agente en la rama `claude-pc/flaky-g9` ya busca la causa; compara después con su arreglo.
+
+## Cola 7-nov (N1)
+1. Instalador de venta: bajar el `.exe` del CI `windows-installer` en verde del head de nexora-cloud y probarlo en Windows 11 limpio: instalar, abrir, crear dueña, vender, cerrar caja, respaldo, desinstalar/actualizar. Evidencia en `docs/validacion/instalador-7nov.md` (pasos, capturas, fallos).
+2. Revisar `docs/INSTALADOR.md` contra lo que de verdad pasa; corregir lo que no coincide (solo docs).
+3. Lista de lo que falta para vender el instalador (firma de código, aviso de SmartScreen, manual de 1 página).
+Sin desplegar ni tocar Render.
