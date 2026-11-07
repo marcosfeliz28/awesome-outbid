@@ -19,7 +19,12 @@ type Cash = {
 };
 type Closed = {
   differences: Record<"cash" | "card" | "transfer" | "total", string>;
-  receipts: { receiptNumber: string; method: string }[];
+  session: Record<string, string>;
+  receipts: {
+    receiptNumber: string;
+    method: string;
+    amountDop: string;
+  }[];
 };
 type Alerts = {
   cashOverdue: boolean;
@@ -180,12 +185,29 @@ export function GvCaja() {
       {result && (
         <div className="gv-card">
           <h3>Cierre hecho · {result.receipts.length} recibo(s)</h3>
-          {(["cash", "card", "transfer"] as const).map((k) => (
+          {(
+            [
+              ["cash", "Cash"],
+              ["card", "Card"],
+              ["transfer", "Transfer"],
+            ] as const
+          ).map(([k, n]) => (
             <p key={k}>
-              {LABEL[k]}: diferencia{" "}
-              {formatMoney(Number(result.differences[k]))}
+              {LABEL[k]}: el sistema registró{" "}
+              {formatMoney(Number(result.session[`expected${n}`] ?? 0))} · tú
+              declaraste{" "}
+              {formatMoney(Number(result.session[`counted${n}`] ?? 0))} ·
+              diferencia {formatMoney(Number(result.differences[k]))}
             </p>
           ))}
+          <ul>
+            {result.receipts.map((r) => (
+              <li key={r.receiptNumber}>
+                {r.receiptNumber} · {r.method} ·{" "}
+                {formatMoney(Number(r.amountDop))}
+              </li>
+            ))}
+          </ul>
           <p>
             <strong>
               Diferencia total: {formatMoney(Number(result.differences.total))}
