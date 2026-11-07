@@ -84,6 +84,7 @@ import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
+import { AiUsageCard } from "./AiUsage";
 import { InventoryImportButton } from "./InventoryImport";
 import {
   applyPendingSaleReprice,
@@ -4378,6 +4379,7 @@ export function Configuration() {
             <StoreSettings />
             <TelegramNotices />
             <DriveBackupCard />
+            <AiUsageCard />
             <IncentiveRates />
             <CashierSurveySummary />
           </QueryState>

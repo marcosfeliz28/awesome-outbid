@@ -37,6 +37,7 @@ import {
   uuid,
 } from "./common";
 import { reserveAiInvoiceRead } from "./ai-daily-limit";
+import { recordAiUsage } from "./ai-usage";
 import { assertCodesFree, explainCodeConflict } from "./catalog";
 import {
   checkDamage,
@@ -263,6 +264,8 @@ export class MerchandiseController {
       await reserveAiInvoiceRead(this.db, actor);
       extracted = await extractAnthropic(file, process.env.ANTHROPIC_API_KEY, {
         model: process.env.ANTHROPIC_MODEL || DEFAULT_INVOICE_MODEL,
+        onUsage: (model, usage, ok) =>
+          void recordAiUsage(this.db, actor, "factura", model, usage, ok),
       });
     }
     const variants = await this.db.variant.findMany({
