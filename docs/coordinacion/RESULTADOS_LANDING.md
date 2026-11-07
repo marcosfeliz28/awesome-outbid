@@ -21,3 +21,12 @@ Código verificado: `881f6a5`. Run 41969507184 en verde: `verify`, `windows-inst
 - Soporte: la FAQ en inglés ya no promete soporte en inglés («Support is currently provided in Spanish»).
 - El marcador `DECIDE-DUEÑA` suma: disponibilidad («hoy») y si habrá soporte en inglés.
 - Nota: `verify` falló una vez en `ebcb245` (e2e `privacidad-sesion G9`, intermitente) y pasó al repetirlo.
+
+## Decisiones de Norexos 1 (la dueña delegó) aplicadas
+- Planes: solo «Próximamente», sin precios (la propuesta sin aprobar está en `docs/venta/PROPUESTA_PRECIOS.md`; ChatGPT PC prepara la versión con precios en otra rama).
+- Contacto: quitados todos los `mailto:soporte@norexos.net` (botón del hero, sección Planes, FAQ y pie): no se confirma que el buzón exista. No hay formulario ni WhatsApp.
+- Botón «Entrar a la aplicación» (`app.norexos.net`) quitado; sin prueba gratis. En su lugar: «Programa piloto: 60 días con instalación incluida. Próximamente.» (sin precio ni fecha).
+- Soporte: ES y EN dicen que el soporte es en español y que el canal se anunciará.
+- Sin «hoy» ni «disponible ya».
+- G9 ya está resuelto en `nexora-cloud`: se mezcló esa rama aquí.
+- El marcador `DECIDE-DUEÑA` queda con: precios, canal de contacto, botón de acceso/prueba gratis, frase del piloto, disponibilidad y soporte en inglés. Dominio y publicación: la dueña.
