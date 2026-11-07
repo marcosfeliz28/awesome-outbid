@@ -43,6 +43,15 @@ async function bootstrap() {
   // La importación de GV (sólo «*») trae el Excel completo en JSON: su propio
   // límite, por debajo del de Nginx (5 MB). El resto sigue en 100 kb.
   app.use("/api/gv/import", jsonBodyParser({ limit: "4mb" }));
+  // Pagos y cierre de caja de GV traen la foto del voucher (máx. 2 MB) en base64.
+  app.use(
+    [
+      "/api/gv/payments",
+      "/api/gv/cash/close",
+      /^\/api\/gv\/appointments\/[^/]+\/payments$/,
+    ],
+    jsonBodyParser({ limit: "4mb" }),
+  );
   app.use(jsonBodyParser({ limit: "100kb" }));
   app.use(cookieParser());
   app.enableCors({

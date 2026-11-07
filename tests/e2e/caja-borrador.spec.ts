@@ -203,6 +203,12 @@ test("N2: un carrito abandonado no evita el bloqueo por inactividad y se conserv
 }) => {
   test.setTimeout(90000);
   await page.clock.install();
+  // Al bloquear, el cierre limpia también las cachés del navegador. Aquí eso
+  // no termina nunca, como en un equipo lento: la recarga para volver a entrar
+  // llega en medio del cierre (así falló en CI, b3fdf49).
+  await page.addInitScript(() => {
+    CacheStorage.prototype.keys = () => new Promise(() => {});
+  });
   const { headers } = await ownerApi(request);
   const sku = code("4");
   const name = "Faja E2E abandono " + sku;

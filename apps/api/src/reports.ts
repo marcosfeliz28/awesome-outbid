@@ -76,6 +76,38 @@ const TITULOS: Record<string, string> = {
   customers: "Mejores clientes",
   purchases: "Compras y cuentas por pagar",
 };
+// Reportes de Dinero que no miden ventas netas (cuadres, abonos, anuladas…).
+const NOT_NET_SALES = [
+  "descuadres",
+  "entradas-cuenta",
+  "diferencias-cuadre",
+  "anulaciones",
+  "devoluciones-producto",
+  "envios-mensajero",
+];
+
+// PDF de los informes de siempre: encabezado de columnas una vez y filas con
+// sus valores (antes cada fila repetía «Campo: valor»). Total solo donde sumar
+// tiene sentido (utilidad por producto), con el margen de ese total.
+export function pdfLines(rows: Record<string, unknown>[], withTotal: boolean) {
+  if (!rows.length) return ["Sin datos en este período."];
+  const keys = Object.keys(rows[0]);
+  const lines = [
+    keys.join(" | "),
+    ...rows.map((r) => keys.map((k) => String(r[k] ?? "")).join(" | ")),
+  ];
+  if (withTotal) {
+    const sum = (k: string) =>
+      money(rows.reduce((t, r) => t.plus(Number(r[k]) || 0), d(0)));
+    const total: Record<string, unknown> = { [keys[0]]: "Total" };
+    for (const k of ["Ventas", "Costo", "Unidades", "Utilidad"])
+      if (keys.includes(k)) total[k] = sum(k);
+    if (keys.includes("Margen"))
+      total.Margen = margin(total.Ventas as number, total.Costo as number);
+    lines.push(keys.map((k) => String(total[k] ?? "")).join(" | "));
+  }
+  return lines;
+}
 
 export function dateRange(query: Record<string, string>) {
   const from = query.from
@@ -899,7 +931,9 @@ export class ReportsController {
           from: range40.gte,
           to: range40.lte,
           printedAt: new Date(),
-          note: "Ventas netas: facturas vigentes menos devoluciones.",
+          note: NOT_NET_SALES.includes(name)
+            ? ""
+            : "Ventas netas: facturas vigentes menos devoluciones.",
           rows: await r40.run(this.db, actor, range40, query),
         },
         query.format,
@@ -1511,12 +1545,7 @@ export class ReportsController {
             }),
         )
         .moveDown();
-      for (const row of rows)
-        doc.text(
-          Object.entries(row)
-            .map(([k, v]) => k + ": " + v)
-            .join(" | "),
-        );
+      for (const line of pdfLines(rows, name === "profit")) doc.text(line);
       doc.end();
       return;
     }
@@ -1934,13 +1963,12 @@ async function sendListing(
           }),
       )
       .moveDown();
-    for await (const rows of batches())
-      for (const row of rows)
-        doc.text(
-          Object.entries(row)
-            .map(([k, v]) => k + ": " + v)
-            .join(" | "),
-        );
+    let first = true;
+    for await (const rows of batches()) {
+      const lines = pdfLines(rows, false);
+      for (const line of first ? lines : lines.slice(1)) doc.text(line);
+      first = false;
+    }
     doc.end();
   } catch (error) {
     // La descarga ya empezó: se corta para que no quede un archivo a medias

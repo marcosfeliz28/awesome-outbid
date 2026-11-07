@@ -632,3 +632,73 @@ La dueña pidió instalarlo. Con ella presente (el login es suyo):
 3. Prueba mínima de solo lectura: pídele a Codex que describa en 3 líneas `docs/sistema/mapa/LEEME.md`. No le pidas cambiar código ni darle datos de la tienda.
 4. Reglas: Codex nunca recibe credenciales de Render, base de datos ni producción; todo lo que produzca pasa por Norexos 1 y los 3 CI antes de mezclar. Anota en `.claude/skills/herramientas-evaluadas/SKILL.md` una fila (herramienta, fecha, instaló Claude PC, resultado de la prueba) y empuja a `claude-pc/prueba-acceso` o a la rama que uses para docs.
 5. Si algún comando falla o pide permisos raros, no insistas: anota el error exacto y sigue con la cola normal.
+
+## Orden 113 (2-nov, Norexos 1, por orden de la dueña) · verificación visual de reportes en vivo
+Ver `REPARTO_AUDITORIA_REPORTES_2NOV.md` (sección Claude PC). Con la dueña presente.
+
+## Orden 114 (3-nov, Norexos 1, por orden de la dueña) · instalar MarkItDown (Microsoft) en la laptop
+Convierte PDF, Word, Excel, PowerPoint e imágenes a Markdown (útil para que las IA lean los reportes PDF/Excel).
+1. En la terminal de la laptop: `pip install "markitdown[all]"` (mejor dentro de un entorno virtual). Comprueba con `markitdown --version`.
+2. Prueba de solo lectura con un archivo de muestra (por ejemplo un reporte exportado): `markitdown archivo.xlsx`. Nunca con credenciales ni datos que no sean de la tienda ya exportados.
+3. Si falla, anota el error exacto y sigue con la cola normal. Anota el resultado en `RESPUESTA_CLAUDE_PC_27OCT.md`.
+Ya instalado en el entorno de Norexos 1 (nube, v0.1.7–0.1.9).
+
+## Orden 115 (6-nov, Norexos 1) · Claude PC ya conectada: trabajo en cola, en este orden
+Reglas: solo lectura salvo lo indicado; no despliegues, no mezcles en `nexora-cloud`, no toques Render/claves/base de datos; nunca escribas ni pegues contraseñas; reporta cada pieza en este archivo (sección «Resultado orden 115») con rama/SHA.
+1. **MarkItDown (orden 114):** `pip install "markitdown[all]"` (mejor en entorno virtual); `markitdown --version`; prueba con un PDF/Excel de reporte exportado.
+2. **Revisión de ramas pendientes de mezcla, sin corregir:** `claude-pc/movil-todo` (tablas en tarjetas para celular: en un navegador real a 390 px, Productos/Inventario/Clientes/Ventas sin desbordar; escritorio ≥1366 px idéntico) y `claude-pc/landing-norexos-net` (landing estática ES/EN: sin promesas sin respaldo ni precios; auditoría de ChatGPT nube en la rama `nexora-chatgpt-nube`, commit d25b2a24, `docs/coordinacion/RESULTADOS_AUDITORIA_LANDING.md`). Hallazgos con archivo:línea y severidad.
+3. **Orden 113 (verificación visual de 8 reportes en vivo):** solo si `NEXORA_CLAUDE_USER`/`NEXORA_CLAUDE_PASSWORD` están en el entorno (no los imprimas); capturas en `docs/auditoria/reportes/visual/` en tu rama `claude-pc/visual-reportes`. Si faltan, sáltala y anótalo.
+4. **ChatGPT PC (si está encendido):** que lea `REPARTO_AUDITORIA_REPORTES_2NOV.md` y `ORDEN_CHATGPT_PC_AUDITORIA_PUNTO1_2NOV.md` y siga su cola (contra-auditoría de `docs/auditoria/reportes/HALLAZGOS_TOTAL.jsonl` y auditoría A–Z), en rama suya, sin desplegar ni mezclar.
+5. **NO hacer aún la orden 112 (plugin Codex):** requiere que la dueña haga el inicio de sesión en persona.
+Nota: Norexos 1 (nube) no puede escribirte por send_message hasta que la dueña apruebe la confianza de dispositivo; por eso la orden va por este archivo.
+
+## Orden 116 (N1, 7-nov) para Claude PC
+1. Revisar visualmente en iPhone 390 px (Playwright, sin tocar datos) la pantalla GV Caja tras el cierre: debe mostrar «el sistema registró / declaraste / diferencia» y la lista de recibos (commit 1a4c9bd7).
+2. Revisar `claude-pc/ia-medidor` y `claude-pc/ia-ventas-rescate` cuando estén: build, eslint, pruebas, tarjeta de uso en Configuración en celular.
+3. Landing: comprobar que precios y planes coinciden con `docs/venta/PROPUESTA_PRECIOS.md` y el LEEME de entrega-venta (instalado US$349 + US$99/año, nube Medio US$69, Completo US$119; Básico nube no se ofrece) SOLO como lista de diferencias, sin cambiarlos.
+Reporta aquí abajo. No desplegar.
+
+## Orden 117 (N1, 7-nov, a pedido de la dueña): instalar «Claude Code Setup»
+Plugin oficial de Anthropic, solo lectura. En la laptop: dentro de Claude Code, `/plugin` → buscar «claude-code-setup» (marketplace oficial) → instalar; o `/plugin install claude-code-setup@claude-plugins-official`. Verifica que aparezca el skill `claude-automation-recommender`, córrelo una vez sobre este repo y deja sus recomendaciones en `docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md` SIN aplicar ninguna (las revisa Norexos 1). Reporta aquí.
+
+## Orden 118 (N1, 7-nov) para Claude PC
+Tras 116 y 117: (1) instala con versión fija y revisión seguridad-20 los MCP `context7` y Playwright (ver docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md; no uses `npx` sin versión; anota versión y hash) y déjalos en `.mcp.json` en una rama `claude-pc/mcp-recomendados`; (2) revisa que los hooks nuevos (`scripts/hooks/guard-edit.mjs`, `format-edit.mjs`, ya en nexora-cloud cuando pase su CI) funcionen en Windows (rutas con `\`, mayúsculas); (3) corre `claude-automation-recommender` y anota lo nuevo en RECOMENDACIONES_CLAUDE_SETUP.md. Sin desplegar.
+
+## Orden 119 (N1, 7-nov) para Claude PC — producto IA
+Corre la evaluación de la IA de ventas (docs/coordinacion/IA_EVAL_26OCT.md, 129 preguntas) contra el código ya en nexora-cloud (apps/api/src/assistant.ts) en una base local de prueba con datos demo y la llave de Anthropic de prueba de la dueña SI existe en tu entorno (si no existe, no la pidas ni la imprimas: avisa). Mide: % correctas, preguntas trampa rechazadas, tiempo y costo medido en /ai/usage por pregunta. Reporta cifras antes/después en el mismo archivo y deja los fallos como lista concreta. Sin desplegar.
+
+## Resultado Claude PC · Órdenes 116–119 (7-nov-2026)
+
+### Orden 116
+1. **Visual GV Caja en iPhone 390 px: BLOQUEADA.** Faltan `NEXORA_CLAUDE_USER` y `NEXORA_CLAUDE_PASSWORD` en el entorno. No inventé credenciales ni las pedí. Pendiente: que la dueña las cargue en el entorno local y se repite.
+2. **`claude-pc/ia-medidor` y `claude-pc/ia-ventas-rescate`:** las dos ramas ya son antecesoras de `origin/nexora-cloud` (ia-medidor va 23 commits atrás, ia-ventas-rescate 21), así que su contenido está en nexora-cloud. Revisado en `655570eb`:
+   - Pruebas `ai-usage`, `assistant-unit`, `assistant-api` y `rate-limit-l1`: **46 de 46 pasan**.
+   - ESLint sobre `ai-usage.ts`, `ai-prices.ts`, `assistant.ts`, `rate-limit.ts`, `AssistantPanel.tsx` y `GvCaja.tsx`: sin errores.
+   - Typecheck: pasa en `claude-pc/ia-medidor` (`0d176e79`) tras `db:generate`. No lo corrí de nuevo sobre `655570eb`.
+   - Build, eslint completo y pruebas de `ia-ventas-rescate` por separado: no corridos.
+   - Tarjeta de uso en Configuración en celular: no revisada (depende del punto 1).
+3. **Landing vs. precios: no comparable con las fuentes de la orden.** `apps/landing` y el LEEME de entrega-venta no existen en `origin/nexora-cloud`. Lo que sí hay, `docs/venta/PROPUESTA_PRECIOS.md`, dice: Básico US$29, Medio US$59, Completo US$119, y la opción B usa US$69 con IA aparte. La orden cita US$349 instalado + US$99/año, nube Medio US$69, Completo US$119, y Básico nube no ofrecido. Diferencias:
+   - Medio: US$59 en la propuesta frente a US$69 en la orden.
+   - Básico: US$29 en la propuesta; la orden dice que no se ofrece en nube (la propuesta no lo distingue).
+   - Instalación: US$150/250/400 por plan en la propuesta, frente a US$349 en la orden.
+   - No cambié ningún precio.
+
+### Orden 117
+Pendiente en este bloque; ver abajo.
+
+### Orden 118
+Pendiente en este bloque; ver abajo.
+
+### Orden 119
+**BLOQUEADA:** no existe `ANTHROPIC_API_KEY` en el entorno. Según la orden, no la pedí ni la imprimí, y no ejecuté la evaluación contra la API real. Pendiente: que la dueña proporcione la llave de prueba en el entorno.
+
+### Orden 117 (resultado, 7-nov)
+- Plugin `claude-code-setup` confirmado en el catálogo (habilitado) y skill `claude-automation-recommender` disponible.
+- Recomendaciones escritas en `docs/coordinacion/RECOMENDACIONES_CLAUDE_SETUP.md` (sección «orden 117»), sin aplicar.
+- Aviso: hooks, subagentes y skills creados antes de esta orden siguen en el árbol de trabajo de la laptop, sin commit. Ver esa sección para revertirlos.
+
+### Orden 118 (resultado, 7-nov)
+1. **MCP con versión fija: hecho en `claude-pc/mcp-recomendados` (`a6e009f9`).** context7 `@upstash/context7-mcp@4.4.4` y Playwright `@playwright/mcp@0.0.83`, con hashes en `docs/coordinacion/MCP_VERSIONES_FIJAS.md`. Revisión manual, no la auditoría seguridad-20 completa.
+   - **Conflicto:** la orden pedía `.mcp.json`, pero `.gitignore` lo excluye («Solo el Taller lo genera; nunca se sube»). La configuración quedó en `docs/coordinacion/mcp-recomendados.json`. Decisión pendiente de Norexos 1.
+2. **Hooks `scripts/hooks/guard-edit.mjs` y `format-edit.mjs`: BLOQUEADO.** No existen en `origin/nexora-cloud` (ni en `655570eb`), así que no hay nada que revisar en Windows. Pendiente: que aterricen en nexora-cloud.
+3. **Recomendador:** ejecutado en la orden 117; las sugerencias están en `RECOMENDACIONES_CLAUDE_SETUP.md`. No lo volví a correr.

@@ -348,4 +348,65 @@ describe("motor de exportación de reportes", () => {
     expect(col(desc, "Descuento total")).toBe("moneda");
     expect(col(desc, "Aprobados por ella misma")).toBe("entero");
   });
+
+  it("reportes de Ventas: fila de total, sin sumar «Facturas» por marca/categoría", () => {
+    const m = (nombre: string) =>
+      construirModelo({
+        nombre,
+        guia: GUIA_REPORTES[nombre],
+        presentacion: PRESENTACION[nombre],
+        titulo: nombre,
+        filas: [
+          { Marca: "A", Facturas: 2, Unidades: 3, "Ventas netas": 100 },
+          { Marca: "B", Facturas: 2, Unidades: 4, "Ventas netas": 50 },
+        ] as any,
+        negocio: "T",
+        desde: "2026-10-01",
+        hasta: "2026-10-31",
+        generadoPor: "Ana",
+        emitido: "1 de noviembre de 2026",
+      }).secciones[0].totales;
+    expect(m("ventas-por-marca")).toEqual({ Unidades: 7, "Ventas netas": 150 });
+    expect(m("ventas-categoria-mes")).toEqual({
+      Unidades: 7,
+      "Ventas netas": 150,
+    });
+    expect(m("ranking-cajeras")).toMatchObject({ Facturas: 4 });
+    expect(m("ventas-por-hora")).toEqual({ Facturas: 4, "Ventas netas": 150 });
+    expect(
+      GUIA_REPORTES["ventas-por-marca"].columnas.Facturas.significa,
+    ).toMatch(/no se suma/);
+    expect(GUIA_REPORTES["ventas-mes-anterior"].comoSeLee).toMatch(/Desde/);
+  });
+});
+
+describe("PDF de los informes de siempre", () => {
+  it("encabezado una vez, filas con valores y total con margen en utilidad", async () => {
+    const { pdfLines } = await import("../apps/api/src/reports");
+    const rows = [
+      {
+        Producto: "A",
+        Ventas: 118,
+        Costo: 50,
+        Unidades: 1,
+        Utilidad: 68,
+        Margen: 57.63,
+      },
+      {
+        Producto: "B",
+        Ventas: 236,
+        Costo: 100,
+        Unidades: 2,
+        Utilidad: 136,
+        Margen: 57.63,
+      },
+    ];
+    const lines = pdfLines(rows, true);
+    expect(lines[0]).toBe(
+      "Producto | Ventas | Costo | Unidades | Utilidad | Margen",
+    );
+    expect(lines[1]).toBe("A | 118 | 50 | 1 | 68 | 57.63");
+    expect(lines.at(-1)).toBe("Total | 354 | 150 | 3 | 204 | 57.63");
+    expect(pdfLines([], false)).toEqual(["Sin datos en este período."]);
+  });
 });

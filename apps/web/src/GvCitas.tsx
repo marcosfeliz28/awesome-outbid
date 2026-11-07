@@ -6,6 +6,7 @@ import { Badge, Button, Modal } from "@fitstore/ui";
 import { businessDate, can, formatMoney } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { QueryState, toast } from "./helpers";
+import { GvCajaGuardNotice, GvProofField, useGvCajaGuard } from "./GvProof";
 
 type Payment = {
   id: string;
@@ -245,6 +246,7 @@ function AppointmentForm({
     venue: a?.venue ?? "",
     people: a?.people ? String(a.people) : "",
     refundAmount: "",
+    approverPin: "",
     refundDate: businessDate(),
   });
   // «Reembolsada» se registra una vez, con monto y fecha (GV-13).
@@ -260,11 +262,15 @@ function AppointmentForm({
     setError("");
     try {
       const wedding = form.service === "boda";
-      const { refundAmount, refundDate, ...rest } = form;
+      const { refundAmount, refundDate, approverPin, ...rest } = form;
       const data = {
         ...rest,
         ...(refunding
-          ? { refundAmount: Number(refundAmount), refundDate }
+          ? {
+              refundAmount: Number(refundAmount),
+              refundDate,
+              ...(approverPin ? { approverPin } : {}),
+            }
           : {}),
         date: fromLocalInput(form.date),
         total: Number(form.total),
@@ -390,6 +396,17 @@ function AppointmentForm({
                 onChange={(e) => set("refundDate", e.target.value)}
               />
             </label>
+            <label className="field">
+              <span>PIN de la dueña (aprueba la devolución)</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={6}
+                value={form.approverPin}
+                onChange={(e) => set("approverPin", e.target.value)}
+              />
+            </label>
           </>
         )}
         <label className="field">
@@ -504,6 +521,9 @@ function AppointmentPaymentForm({
     bank: "",
     reference: "",
   });
+  const [proof, setProof] = useState("");
+  const guard = useGvCajaGuard();
+  const needsProof = form.method !== "efectivo";
   const terminals = useQuery({
     queryKey: ["gv-banks"],
     queryFn: () => api<{ terminals: string[] }>("/gv/banks"),
@@ -522,8 +542,11 @@ function AppointmentPaymentForm({
         bank: paymentBank(form.method, form.bank, terminals.data?.terminals),
         amount: Number(form.amount),
         operationId,
+        proof: needsProof ? proof : undefined,
+        cashlessReason: guard.noCash ? guard.reason : undefined,
       });
       await refresh(client);
+      await client.invalidateQueries({ queryKey: ["gv-cash"] });
       toast("Pago registrado.");
       onClose();
     } catch (cause: any) {
@@ -534,7 +557,7 @@ function AppointmentPaymentForm({
   };
   return (
     <Modal open onClose={onClose} title={"Pago de " + a.clientName}>
-      <p>Pendiente: {money(a.pending)}. Este pago no pasa por la caja.</p>
+      <p>Pendiente: {money(a.pending)}. Se cobra en tu caja de GV.</p>
       <form onSubmit={save} className="form-grid gv-form">
         <label className="field">
           <span>Fecha</span>
@@ -621,6 +644,18 @@ function AppointmentPaymentForm({
             </label>
           </>
         )}
+        {needsProof && (
+          <GvProofField
+            label={
+              form.method === "tarjeta"
+                ? "Foto del voucher de la tarjeta (obligatoria)"
+                : "Foto del comprobante de la transferencia (obligatoria)"
+            }
+            value={proof}
+            onChange={setProof}
+          />
+        )}
+        <GvCajaGuardNotice guard={guard} />
         {error && (
           <p className="form-error full" role="alert">
             {error}
@@ -630,7 +665,7 @@ function AppointmentPaymentForm({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button disabled={busy}>
+          <Button disabled={busy || guard.blocked || (needsProof && !proof)}>
             {busy ? "Guardando…" : "Registrar pago"}
           </Button>
         </div>

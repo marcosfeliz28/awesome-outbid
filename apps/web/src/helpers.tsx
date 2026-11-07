@@ -124,6 +124,13 @@ function Toast({
     </div>
   );
 }
+// Cada aviso cierra sólo el suyo: el temporizador de uno anterior puede
+// vencer antes de que React lo desmonte y borraba el aviso nuevo (así se
+// perdía «Sesión cerrada por inactividad.», G9).
+export const closeOwn =
+  (id: number) =>
+  <T extends { id: number }>(current: T | null) =>
+    current?.id === id ? null : current;
 // Dos lugares: un error y un aviso informativo. Un aviso informativo ya no
 // tapa un error que la cajera todavía no leyó (05-M2).
 export function Toasts() {
@@ -150,14 +157,18 @@ export function Toasts() {
   return (
     <>
       {error && (
-        <Toast key={error.id} notice={error} onClose={() => setError(null)} />
+        <Toast
+          key={error.id}
+          notice={error}
+          onClose={() => setError(closeOwn(error.id))}
+        />
       )}
       {info && (
         <Toast
           key={info.id}
           notice={info}
           stacked={!!error}
-          onClose={() => setInfo(null)}
+          onClose={() => setInfo(closeOwn(info.id))}
         />
       )}
     </>

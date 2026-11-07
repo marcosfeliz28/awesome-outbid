@@ -22,6 +22,7 @@ import { AdminController } from "./admin";
 import { CashController } from "./cash";
 import { ReportsController } from "./reports";
 import { CashierSurveyController } from "./cashier-survey";
+import { AiUsageController } from "./ai-usage";
 import { IncomeReportController } from "./income-report";
 import { FormalReportController } from "./formal-report";
 import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
@@ -30,6 +31,7 @@ import { OfflineSaleReviewController } from "./offline-sale-review";
 import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
 import { CreditReminderService } from "./credit-reminder";
+import { GvCajaVigilante } from "./gv-vigilante";
 import { RetentionWorker } from "./retention";
 import { UsdRateWorker } from "./usd-rate";
 import {
@@ -44,6 +46,8 @@ import {
 import { SecurityMaintenance } from "./security";
 import { GvController } from "./gv";
 import { GvCitasController } from "./gv-citas";
+import { GvCajaController } from "./gv-caja";
+import { AssistantController } from "./assistant";
 
 @Controller()
 export class HealthController {
@@ -86,6 +90,7 @@ export function createAppModule(secret: string) {
       FormalReportController,
       ReportsController,
       CashierSurveyController,
+      AiUsageController,
       AlertsController,
       OfflineSalesController,
       OfflineSaleReviewController,
@@ -94,12 +99,15 @@ export function createAppModule(secret: string) {
       DriveBackupController,
       GvController,
       GvCitasController,
+      GvCajaController,
+      AssistantController,
     ],
     providers: [
       Database,
       AlertEngine,
       NotificationWorker,
       CreditReminderService,
+      GvCajaVigilante,
       DriveBackupService,
       DriveBackupWorker,
       RetentionWorker,
