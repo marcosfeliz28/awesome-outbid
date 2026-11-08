@@ -159,3 +159,7 @@ FS-471 corregida de efectivo a tarjeta; tarjeta cuadra exacta con el lote 008 GV
 - **FS-487 ginette gomez (14,250):** se queda como crédito sin cobrar.
 - **Pagos de GV de Clary** (Johanna 4,500, Mayelin 6,000, Paola 2,000): la dueña aún no lo ha revisado con ella; siguen pendientes.
 - **Addison: pagado.** Se cerraron los 66 envíos pendientes (RD$23,449.93) en el sistema. La memoria de envíos por pagar de arriba queda saldada.
+
+### Costos faltantes (8-nov)
+- **PRD-001 brochas del curso:** costo puesto en 700 por la dueña (antes 0). Las 28 facturas del 8-nov (28,000) quedaron con costo 0: la ganancia de hoy en el tablero está inflada en 19,600 (real ≈ 15,999, no 35,599).
+- **Pendientes de costo:** Mota 1988 (precio 100, 2 vendidas, costo 0) y CUR-001 curso grupal (1 vendido, costo 0). 70 productos activos con costo 0 y precio 0 (sin ventas): completar al ponerles precio.
