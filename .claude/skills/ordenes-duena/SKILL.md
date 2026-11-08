@@ -88,3 +88,6 @@ Margen ≥ 15 % sin restar ITBIS · no tocar precios por una oferta · verificar
 
 ## Lo que no puedo hacer → Norexos 1 (orden de la dueña, 30-oct-2026)
 Todo lo de software que Mercancía no pueda hacer (código, pruebas, CI, mezclar, desplegar, errores de pantalla de GV o de la web) se manda a Norexos 1 (`send_message` a la sesión padre) con rama y SHA, y se le dice a la dueña que se mandó. Siempre, sin esperar a que lo pida.
+
+## Regla: no vender sin costo (orden de la dueña, 8-nov-2026)
+Claude (Norexos 2) **no crea ninguna factura** de un producto cuyo costo (`costAvg`) sea 0 o esté vacío. Antes de cada `POST /sales`, leer el costo de cada variante; si falta, parar, avisar a la dueña con la lista de lo que falta y pedirle el costo. Cuando ella lo dé, ponerlo (`PATCH /variants/:id`) y recién vender. Al crear un producto nuevo se pide el costo en ese momento. Cada mes (y al pedirlo) se entrega la lista de productos sin costo y el informe de márgenes del mes anterior y del actual.
