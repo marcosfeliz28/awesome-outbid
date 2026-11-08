@@ -991,7 +991,10 @@ export class SalesController {
             ),
           ),
         ];
-        if (noCost.length && !offline)
+        // Bandera de Configuración, apagada hasta que se carguen los costos.
+        const blockNoCost =
+          noCost.length > 0 && config?.blockZeroCostSales === true;
+        if (blockNoCost && !offline)
           bad(`${NO_COST_MESSAGE}. Producto: ${noCost.join(", ")}.`);
         const total = money(
           lines.reduce((a, l) => a.plus(l.totals.total), d(0)),
@@ -1303,7 +1306,7 @@ export class SalesController {
             where: { id: sale.id },
             data: { costTotal: money(booked) },
           });
-        if (noCost.length) {
+        if (blockNoCost) {
           await tx.alert.create({
             data: {
               key: "zero-cost-sale:" + sale.id,
@@ -2235,6 +2238,125 @@ export class SalesController {
         sellerName: seller.name,
       };
     }, MONEY_TRANSACTION);
+  }
+
+  // Recálculo de costos (dueña, 8-nov), solo lectura: ventas vigentes con
+  // líneas a costo 0 de variantes que ya tienen costo, con el costo actual de
+  // la variante como propuesta. Margen = (total − costo) / total, sin restar
+  // ITBIS. Aplicar es aparte (POST sales/:id/items/:itemId/cost, con PIN).
+  @Get("reports/cost-recalc")
+  @Permit("profit:read")
+  async costRecalc(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    if (actor.role === "seller") denied();
+    const q = parse(
+      z.object({
+        variantId: uuid.optional(),
+        from: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+        to: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+      }),
+      query,
+    );
+    // Santo Domingo no cambia de hora: UTC−4 todo el año.
+    const at = (day: string, time: string) => new Date(`${day}T${time}-04:00`);
+    const items = await this.db.saleItem.findMany({
+      where: {
+        unitCost: { lte: 0 },
+        ...(q.variantId ? { variantId: q.variantId } : {}),
+        variant: { costAvg: { gt: 0 }, product: { unit: { not: "servicio" } } },
+        sale: {
+          branchId: actor.branchId,
+          status: "completed",
+          createdAt: {
+            ...(q.from ? { gte: at(q.from, "00:00:00") } : {}),
+            ...(q.to ? { lte: at(q.to, "23:59:59.999") } : {}),
+          },
+        },
+      },
+      include: {
+        sale: true,
+        variant: { include: { product: { select: { name: true } } } },
+      },
+      orderBy: [{ sale: { createdAt: "asc" } }, { id: "asc" }],
+    });
+    const margin = (total: number, cost: number) =>
+      total > 0 ? money(d(total).minus(cost).div(total).times(100)) : null;
+    const sales = new Map<string, any>();
+    for (const i of items) {
+      const allocations = Array.isArray(i.stockAllocations)
+        ? (i.stockAllocations as any[])
+        : [];
+      const applicable =
+        d(i.returnedQty).lte(0) &&
+        allocations.length <= 1 &&
+        !allocations.some((a) => a?.variantId && a.variantId !== i.variantId);
+      const proposed = d(i.variant.costAvg);
+      const delta = applicable
+        ? d(money(proposed.times(i.qty))).minus(
+            money(d(i.unitCost).times(i.qty)),
+          )
+        : d(0);
+      const row = sales.get(i.saleId) ?? {
+        saleId: i.saleId,
+        number: i.sale.number,
+        createdAt: i.sale.createdAt,
+        total: Number(i.sale.total),
+        costTotal: Number(i.sale.costTotal),
+        delta: d(0),
+        lines: [] as any[],
+      };
+      row.delta = row.delta.plus(delta);
+      row.lines.push({
+        itemId: i.id,
+        variantId: i.variantId,
+        sku: i.variant.sku,
+        name: i.variant.product.name,
+        qty: Number(i.qty),
+        unitCost: Number(i.unitCost),
+        proposedUnitCost: Number(proposed),
+        costChange: Number(money(delta)),
+        // Combos y líneas con devolución no se corrigen con la vía auditada.
+        applicable,
+      });
+      sales.set(i.saleId, row);
+    }
+    const rows = [...sales.values()].map(({ delta, ...r }) => {
+      const after = money(d(r.costTotal).plus(delta));
+      return {
+        ...r,
+        costTotalAfter: after,
+        profit: Number(money(d(r.total).minus(r.costTotal))),
+        profitAfter: Number(money(d(r.total).minus(after))),
+        margin: margin(r.total, r.costTotal),
+        marginAfter: margin(r.total, after),
+      };
+    });
+    const sum = (key: string) =>
+      money(rows.reduce((a, r: any) => a.plus(r[key]), d(0)));
+    const total = sum("total"),
+      costTotal = sum("costTotal"),
+      costTotalAfter = sum("costTotalAfter");
+    return {
+      sales: rows,
+      totals: {
+        invoices: rows.length,
+        total,
+        costTotal,
+        costTotalAfter,
+        profit: Number(money(d(total).minus(costTotal))),
+        profitAfter: Number(money(d(total).minus(costTotalAfter))),
+        margin: margin(total, costTotal),
+        marginAfter: margin(total, costTotalAfter),
+      },
+    };
   }
 
   // Corrección del costo de una línea ya vendida (dueña, 8-nov): solo

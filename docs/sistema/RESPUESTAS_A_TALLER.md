@@ -39,7 +39,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 ## 4. ¿Elige cuenta/banco en transferencia o tarjeta? ¿Cuál es el nombre visible?
 
-- **Transferencia:** sí. Campo **«Cuenta donde cayó»**, una **lista desplegable** («Elige la cuenta…») con las cuentas que la administración cargó en Configuración › «Cuentas de banco para transferencias (una por línea)». Si esa lista está vacía, se escribe el banco a mano. Además **«Referencia»** (obligatoria) (`apps/web/src/POS.tsx:2776-2816`; lista en `:2023`; campo de Configuración `apps/web/src/Management.tsx:4126-4134`). En la base el valor se guarda en `Payment.bank` (`apps/api/prisma/schema.prisma` modelo `Payment`) y el servidor exige banco y referencia (`apps/api/src/sales.ts:1018-1019`).
+- **Transferencia:** sí. Campo **«Cuenta donde cayó»**, una **lista desplegable** («Elige la cuenta…») con las cuentas que la administración cargó en Configuración › «Cuentas de banco para transferencias (una por línea)». Si esa lista está vacía, se escribe el banco a mano. Además **«Referencia»** (obligatoria) (`apps/web/src/POS.tsx:2776-2816`; lista en `:2023`; campo de Configuración `apps/web/src/Management.tsx:4126-4134`). En la base el valor se guarda en `Payment.bank` (`apps/api/prisma/schema.prisma` modelo `Payment`) y el servidor exige banco y referencia (`apps/api/src/sales.ts:1021-1022`).
 - **Tarjeta:** pide **«Últimos 4 dígitos»**, **«Número de aprobación»**, **«Marca»** (Visa/Mastercard/Amex) y **«Tipo de tarjeta»** (Crédito/Débito); y, si Configuración tiene lista de «Terminales de tarjeta», un campo **«Terminal»** obligatorio («Elige el terminal…») (`apps/web/src/POS.tsx:2705-2775`, lista `:2024`). El terminal elegido se guarda también en `bank` (`:1970-1971`).
 - **Los nombres de los bancos y terminales** (lo que ve la cajera en la lista) **no están en el código**: son datos de Configuración. NO ENCONTRADO en el código; hay que mirar Configuración › Negocio y reglas › Editar configuración, o `GET /settings` entrando con `entrar.py`. (En GV se agrupan en «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis»: `apps/web/src/Gv.tsx:941-954`.)
 
@@ -47,9 +47,9 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 ## 5. La nota de crédito: ¿se imprime, cómo y dónde?
 
-- Una nota de crédito nace al **devolver** una venta con método de reembolso **«Nota de crédito»** (Ventas › fila › **«Devolver»**, solo `sale:manage`, con caja propia abierta) (`apps/web/src/Management.tsx:3315-3337`, `:3639-3690`). El número de la devolución es **NC-000000** (`apps/api/src/sales.ts:3541`).
+- Una nota de crédito nace al **devolver** una venta con método de reembolso **«Nota de crédito»** (Ventas › fila › **«Devolver»**, solo `sale:manage`, con caja propia abierta) (`apps/web/src/Management.tsx:3315-3337`, `:3639-3690`). El número de la devolución es **NC-000000** (`apps/api/src/sales.ts:3663`).
 - **No se imprime sola al devolver.** Se imprime a mano: **Ventas** › abrir la venta (ícono del ojo) › botón **«Imprimir nota NC-…»** (solo `sale:manage`) (`apps/web/src/Management.tsx:3433-3447`).
-- Lo que sale es un **PDF tamaño A4** (no ticket térmico): «Nota de crédito · NC-…», «Nota interna de crédito · no fiscal», fecha, importe, saldo, motivo y el **«Código para presentar en caja»** (32 caracteres) con las condiciones de uso (`apps/api/src/sales.ts:3660-3713`, ruta `GET /returns/:id/credit-note.pdf`). Se descarga y se imprime desde el visor de PDF.
+- Lo que sale es un **PDF tamaño A4** (no ticket térmico): «Nota de crédito · NC-…», «Nota interna de crédito · no fiscal», fecha, importe, saldo, motivo y el **«Código para presentar en caja»** (32 caracteres) con las condiciones de uso (`apps/api/src/sales.ts:3782-3835`, ruta `GET /returns/:id/credit-note.pdf`). Se descarga y se imprime desde el visor de PDF.
 - Para usarla después: en el cobro, método **Nota de crédito**, escribir el código y elegir la nota (`apps/web/src/POS.tsx:2610-2654`). Si la cajera no escribe el código, necesita el PIN de un gerente (`:1872-1884`).
 
 ---
@@ -57,7 +57,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 ## 6. Al finalizar la venta, ¿el comprobante se genera/imprime solo? ¿Cuál es el paso exacto?
 
 - **Se genera solo** en el momento de «Finalizar venta»: aparece la ventana **«¡Una venta más, una meta más cerca!»** con el total, el número **FS-0000123**, el aviso «Venta registrada» y el cambio (`apps/web/src/POS.tsx:2336-2379`). El recibo ya está armado en esa ventana (`:2431-2433`, `InvoicePrint`).
-- **Se imprime solo únicamente si** en Configuración está activa la opción **«Imprimir el recibo automáticamente al cobrar»** (`apps/web/src/Management.tsx:4060-4061`; `apps/web/src/POS.tsx:2267-2268`). De fábrica está **apagada** (`apps/api/src/admin.ts:123`, `default(false)`). **DUDOSO:** no se sabe si la dueña la activó en producción; se ve en Configuración.
+- **Se imprime solo únicamente si** en Configuración está activa la opción **«Imprimir el recibo automáticamente al cobrar»** (`apps/web/src/Management.tsx:4060-4061`; `apps/web/src/POS.tsx:2267-2268`). De fábrica está **apagada** (`apps/api/src/admin.ts:125`, `default(false)`). **DUDOSO:** no se sabe si la dueña la activó en producción; se ve en Configuración.
 - Si está apagada, el paso exacto es: en esa ventana pulsar **«Imprimir recibo»** (`:2381-2384`), que abre el diálogo de impresión del navegador (`window.print()`). También hay **«Recibo PDF»**, **«WhatsApp»**, **«Correo»** y **«Nueva venta»** (`:2385-2430`).
 - El recibo es **«DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL»**; no lleva NCF salvo que la venta ya lo traiga y el modo sea electrónico (`apps/web/src/Prints.tsx:509-510`, `:546-553`). Ancho 80 o 58 mm según Configuración (`apps/api/src/admin.ts:91`).
 - Para reimprimir luego: menú **Ventas** › ícono de descarga (PDF) de la fila (`apps/web/src/Management.tsx:3272-3282`).

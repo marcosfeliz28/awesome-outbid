@@ -62,7 +62,8 @@ let owner = "",
   noCost: any,
   withCost: any,
   service: any,
-  settings: any;
+  settings: any,
+  flagOffSaleId = "";
 const userIds: string[] = [];
 const productIds: string[] = [];
 
@@ -171,9 +172,37 @@ afterAll(async () => {
 });
 
 describe("venta sin costo", () => {
-  it("en línea rechaza el producto sin costo con el mensaje exacto y no toca stock ni caja", async () => {
+  it("con la bandera apagada (por defecto) la venta sin costo pasa como hoy", async () => {
+    expect(settings.blockZeroCostSales).toBe(false);
+    const sold = await call("/sales", sale(noCost.id, 100), cashier.token);
+    expect(sold.status).toBe(201);
+    flagOffSaleId = sold.body.id;
+    expect(
+      await db.alert.count({
+        where: { key: "zero-cost-sale:" + sold.body.id },
+      }),
+    ).toBe(0);
+    // Se enciende la bandera; un guardado sin la clave (PWA vieja) la conserva.
+    await ok(
+      "/settings",
+      { ...settings, allowOfflineSales: true, blockZeroCostSales: true },
+      owner,
+      "PUT",
+    );
+    const { blockZeroCostSales: omitted, ...older } = settings;
+    void omitted;
+    await ok("/settings", { ...older, allowOfflineSales: true }, owner, "PUT");
+    expect((await ok("/settings", undefined, owner)).blockZeroCostSales).toBe(
+      true,
+    );
+  });
+
+  it("con la bandera encendida rechaza el producto sin costo con el mensaje exacto y no toca stock ni caja", async () => {
     const before = await db.variant.findUniqueOrThrow({
       where: { id: noCost.id },
+    });
+    const salesBefore = await db.sale.count({
+      where: { cashSessionId: cashier.session.id },
     });
     const r = await call("/sales", sale(noCost.id, 100), cashier.token);
     expect(r.status).toBe(400);
@@ -185,7 +214,7 @@ describe("venta sin costo", () => {
     expect(Number(after.stock)).toBe(Number(before.stock));
     expect(
       await db.sale.count({ where: { cashSessionId: cashier.session.id } }),
-    ).toBe(0);
+    ).toBe(salesBefore);
   });
 
   it("vende normal con costo y el servicio sin inventario sí pasa con costo 0", async () => {
@@ -204,7 +233,7 @@ describe("venta sin costo", () => {
     expect(ids).not.toContain(withCost.id);
     expect(ids).not.toContain(service.id);
     expect(list.items.find((i: any) => i.variantId === noCost.id).stock).toBe(
-      10,
+      9, // 10 de entrada menos la venta con la bandera apagada
     );
     expect(list.withStock).toBeLessThanOrEqual(list.total);
     expect(
@@ -259,7 +288,7 @@ describe("venta sin costo", () => {
     await ok(
       "/cash-sessions/" + cashier.session.id + "/close",
       {
-        countedCash: 900,
+        countedCash: 1000,
         countedCard: 0,
         countedTransfer: 0,
         notes: "QA sin costo",
@@ -352,5 +381,51 @@ describe("venta sin costo", () => {
         })
       )?.status,
     ).toBe("resolved");
+  });
+
+  it("recálculo de costos: solo lectura, con el costo ya cargado propone el efecto por factura y total", async () => {
+    // La dueña carga el costo de la variante (simulado).
+    await db.variant.update({
+      where: { id: noCost.id },
+      data: { costAvg: 30 },
+    });
+    const path = "/reports/cost-recalc?variantId=" + noCost.id;
+    expect((await call(path, undefined, cashier.token)).status).toBe(403);
+    expect((await call(path, undefined, manager)).status).toBe(200);
+    const report = await ok(path, undefined, owner);
+    // La factura sin conexión ya corregida no aparece; la de bandera apagada sí.
+    expect(report.sales.map((r: any) => r.saleId)).toEqual([flagOffSaleId]);
+    expect(report.sales[0]).toMatchObject({
+      total: 100,
+      costTotal: 0,
+      costTotalAfter: 30,
+      profit: 100,
+      profitAfter: 70,
+      margin: 100,
+      marginAfter: 70,
+    });
+    expect(report.sales[0].lines[0]).toMatchObject({
+      unitCost: 0,
+      proposedUnitCost: 30,
+      costChange: 30,
+      applicable: true,
+    });
+    expect(report.totals).toMatchObject({
+      invoices: 1,
+      total: 100,
+      costTotalAfter: 30,
+      marginAfter: 70,
+    });
+    // No aplica nada.
+    const saved = await db.sale.findUniqueOrThrow({
+      where: { id: flagOffSaleId },
+    });
+    expect(Number(saved.costTotal)).toBe(0);
+    // Período sin ventas: vacío.
+    const empty = await ok(path + "&from=2099-01-01", undefined, owner);
+    expect(empty.totals.invoices).toBe(0);
+    expect(
+      (await call("/reports/cost-recalc?from=ayer", undefined, owner)).status,
+    ).toBe(400);
   });
 });

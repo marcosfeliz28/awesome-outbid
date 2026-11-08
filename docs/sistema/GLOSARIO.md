@@ -2,7 +2,7 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su cita; los que son jerga de la dueña sin cita en el código se marcan «uso interno».
 
-**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:3947`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3346`).
+**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:4069`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3346`).
 
 **Aprobar con PIN / PIN de gerente** — Código de 6 dígitos de un usuario con `sale:manage` que autoriza una operación de riesgo (descuento grande, crédito grande, descuadre, vale…). No puede ser el de quien pide, salvo la dueña (`apps/api/src/security.ts:81-136`). Ver `ROLES_Y_PERMISOS.md` §5.
 
@@ -22,7 +22,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Conteo** — Contar físicamente la existencia. En el sistema: Inventario › «Contar» crea un conteo pendiente que un gerente aprueba con «Aprobar ajuste» (`apps/web/src/Management.tsx:961`, `:1007`). Los conteos contra el sistema se verifican **4 veces** (`CLAUDE.md` punto 6).
 
-**Consumidor final** — Cliente genérico para ventas sin datos; si existe en la lista, sale primero al elegir cliente (`apps/web/src/POS.tsx:360-377`). Las facturas deben identificar a una persona o empresa (`requireCustomer`, `apps/api/src/admin.ts:121-123`). También es el tipo B02.
+**Consumidor final** — Cliente genérico para ventas sin datos; si existe en la lista, sale primero al elegir cliente (`apps/web/src/POS.tsx:360-377`). Las facturas deben identificar a una persona o empresa (`requireCustomer`, `apps/api/src/admin.ts:123-125`). También es el tipo B02.
 
 **Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2770`, `:1798-1802`).
 
@@ -46,7 +46,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **En espera** — Carrito guardado para seguir después (F8). **Cotizar** lo guarda como cotización. Ambos son `Quote` (`apps/web/src/POS.tsx:456-488`).
 
-**Factura (venta)** — En la tienda, «factura» es el número de una **venta** al cliente. **FS-0000123** (siete dígitos) es el número de venta (`apps/api/src/sales.ts:1136`). Ojo: el recibo dice «documento no fiscal»; no es factura fiscal (`apps/web/src/Prints.tsx:508-510`). La **factura del proveedor** (la que llega con la mercancía) es otra cosa: `supplierInvoice`.
+**Factura (venta)** — En la tienda, «factura» es el número de una **venta** al cliente. **FS-0000123** (siete dígitos) es el número de venta (`apps/api/src/sales.ts:1139`). Ojo: el recibo dice «documento no fiscal»; no es factura fiscal (`apps/web/src/Prints.tsx:508-510`). La **factura del proveedor** (la que llega con la mercancía) es otra cosa: `supplierInvoice`.
 
 **FEFO** — «Primero vence, primero sale»: la venta descuenta primero del lote que vence antes (`apps/api/src/inventory.ts:571`, texto «Venta FEFO»).
 
@@ -68,9 +68,9 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:73-80`) y tipo de ajuste en Inventario (`Management.tsx:1054`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:674-681`).
 
-**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3541`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3482`).
+**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3663`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3482`).
 
-**NCF / e-CF** — Número de comprobante fiscal (DGII, República Dominicana). **Este sistema no lo emite**: los recibos son internos y solo se puede preparar la solicitud (`apps/web/src/Prints.tsx:508`; `apps/web/src/Management.tsx:4304-4312`). El «NCF del proveedor» sí se guarda en las compras (`apps/web/src/Purchases.tsx:90-100`).
+**NCF / e-CF** — Número de comprobante fiscal (DGII, República Dominicana). **Este sistema no lo emite**: los recibos son internos y solo se puede preparar la solicitud (`apps/web/src/Prints.tsx:508`; `apps/web/src/Management.tsx:4310-4318`). El «NCF del proveedor» sí se guarda en las compras (`apps/web/src/Purchases.tsx:90-100`).
 
 **Norexos / Nexora POS** — Norexos es el nombre nuevo del producto (plan maestro); el código aún muestra «Nexora POS» hasta que se haga el cambio de marca (etapa E1) (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:1`, `:11`; `apps/web/src/App.tsx:1226`).
 

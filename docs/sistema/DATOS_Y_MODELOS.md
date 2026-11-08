@@ -32,7 +32,7 @@ Convenciones: dinero en `Decimal(14,2)` (centavos exactos, nunca decimales flota
 | `InventoryCount`                     | Conteo físico (`items` JSON).                                                       | `status`: `pending` → `applied`                                                                                                                                                                                 | `:661`         |
 | `Promotion`                          | Oferta automática que aplica la caja (no cambia el precio).                         | `type`: `percent`, `amount`, `special_price`, `nxm`, `second_half`; `scope` (variante, producto, categoría o marca), `startsAt`/`endsAt`, `isClearance`                                                         | `:750`         |
 
-**Tipos de movimiento de kardex** (`InventoryMovement.type`) que escribe el código: `sale` (venta; `apps/api/src/sales.ts:1208`), `void` (anulación; `sales.ts:2714`), `return` y `return_waste` (devolución al stock o a merma; `sales.ts:3429`, `:3250`), `purchase` (recepción de compra; `apps/api/src/inventory.ts:1319`), `count` (conteo aplicado; `inventory.ts:450`, `:1648`), `adjustment`/`waste`/`supplier_return` (ajustes manuales; `inventory.ts:851`, tipos en `Management.tsx:1054`), `transfer_out` y `transfer_in` (`apps/api/src/warehouses.ts:326-358`). Las entradas y salidas de la pantalla «Mercancía» las guarda `apps/api/src/merchandise.ts:346` con el motivo elegido. DUDOSO: no se enumeró cada literal de `type`; confirmar con `grep -rn "stockChange(" apps/api/src` antes de citar uno nuevo.
+**Tipos de movimiento de kardex** (`InventoryMovement.type`) que escribe el código: `sale` (venta; `apps/api/src/sales.ts:1211`), `void` (anulación; `sales.ts:2836`), `return` y `return_waste` (devolución al stock o a merma; `sales.ts:3551`, `:3250`), `purchase` (recepción de compra; `apps/api/src/inventory.ts:1319`), `count` (conteo aplicado; `inventory.ts:450`, `:1648`), `adjustment`/`waste`/`supplier_return` (ajustes manuales; `inventory.ts:851`, tipos en `Management.tsx:1054`), `transfer_out` y `transfer_in` (`apps/api/src/warehouses.ts:326-358`). Las entradas y salidas de la pantalla «Mercancía» las guarda `apps/api/src/merchandise.ts:346` con el motivo elegido. DUDOSO: no se enumeró cada literal de `type`; confirmar con `grep -rn "stockChange(" apps/api/src` antes de citar uno nuevo.
 
 ## 3. Clientes y ventas
 
@@ -63,12 +63,12 @@ Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emit
   - **`pending_verification`** — **transferencia que nadie ha comprobado en el banco** (venta o abono).
   - **`rejected`** — transferencia que no llegó; no cuenta en caja ni descuenta deuda.
   - **`pending`** — deuda por cobrar (el pago `cod`/`credit` de una venta a crédito).
-    Fuente: `apps/api/src/sales.ts:1394-1400`, `:2263-2270`, `:4424-4429`.
+    Fuente: `apps/api/src/sales.ts:1397-1403`, `:2263-2270`, `:4424-4429`.
 - **`entryType`** (de dónde viene el pago):
   - **`sale`** — pago hecho **al vender**.
-  - **`installment`** — **abono o cobro posterior** de un crédito/contraentrega (`sales.ts:3947`).
-    Un abono `pending_verification` no descuenta `Sale.creditBalance` hasta verificarse (`sales.ts:4621-4631`, `:2775-2790`).
-- Otros campos: `amount` (lo **aplicado** a la venta, ya sin cambio), `tendered` (lo **entregado** por el cliente), `change` (vuelto en pesos), `bank` (cuenta o terminal), `reference`, `cardBrand`/`cardLast4`/`approvalCode`/`cardType`, `feeAmount` (comisión de tarjeta: `cardFeePercent`, 2.5 % si no hay configuración, `sales.ts:1416-1422`), `proofUrl` (foto de evidencia), `receivedById` (quién recibió un cobro), `currency`/`amountUsd`/`usdRate` (dólares), `cashSessionId` (a qué caja pertenece), `creditNoteId`.
+  - **`installment`** — **abono o cobro posterior** de un crédito/contraentrega (`sales.ts:4069`).
+    Un abono `pending_verification` no descuenta `Sale.creditBalance` hasta verificarse (`sales.ts:4743-4753`, `:2775-2790`).
+- Otros campos: `amount` (lo **aplicado** a la venta, ya sin cambio), `tendered` (lo **entregado** por el cliente), `change` (vuelto en pesos), `bank` (cuenta o terminal), `reference`, `cardBrand`/`cardLast4`/`approvalCode`/`cardType`, `feeAmount` (comisión de tarjeta: `cardFeePercent`, 2.5 % si no hay configuración, `sales.ts:1419-1425`), `proofUrl` (foto de evidencia), `receivedById` (quién recibió un cobro), `currency`/`amountUsd`/`usdRate` (dólares), `cashSessionId` (a qué caja pertenece), `creditNoteId`.
 
 ## 5. Caja
 

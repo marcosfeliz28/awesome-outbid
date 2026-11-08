@@ -4279,6 +4279,12 @@ export function Configuration() {
       help: "Desactivado evita vender la misma última unidad desde dos equipos sin conexión: dos laptops offline no pueden reservarla entre sí. Actívalo sólo si aceptas revisar conflictos al reconectar.",
       type: "checkbox",
     },
+    {
+      key: "blockZeroCostSales",
+      label: "No vender productos sin costo",
+      help: "Activado, la caja rechaza un producto con costo 0 hasta que administración lo complete (los servicios sí se venden). Revisa antes Inventario › Productos sin costo.",
+      type: "checkbox",
+    },
     requiredNumber(
       "unusualDiscountPercent",
       "Alerta de descuento inusual (%)",
@@ -4521,6 +4527,7 @@ export function Configuration() {
             autoPrintReceipt: !!query.data?.autoPrintReceipt,
             requireCustomer: query.data?.requireCustomer === true,
             allowOfflineSales: query.data?.allowOfflineSales === true,
+            blockZeroCostSales: query.data?.blockZeroCostSales === true,
             usdRate: query.data?.usdRate ?? "",
             eurRate: query.data?.eurRate ?? "",
             transferAccounts: (query.data?.transferAccounts ?? []).join("\n"),

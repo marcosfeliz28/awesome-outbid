@@ -66,7 +66,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1045-1075`):
 
 - **Etiqueta:** «Solicitudes de anulación». **Permiso:** `sale:write`. **Componente:** `apps/web/src/VoidRequests.tsx:15`.
 - **Qué hace:** lista (filtro Pendientes/Todas/Aprobadas/Rechazadas/Canceladas, `:45-54`). La administración ve «Aprobar y anular» y «Rechazar» (`:123-136`); la cajera solo puede cancelar su propia solicitud (`:137-155`).
-- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2110`, `POST void-requests/:id/approve`).
+- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2113`, `POST void-requests/:id/approve`).
 
 ## Conciliar transferencias
 
@@ -104,11 +104,11 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1045-1075`):
 
 ## Gastos
 
-- **Etiqueta:** «Gastos». **Permiso:** `expense:write`. **Componente:** `Expenses`, `apps/web/src/Management.tsx:1386`. Título: «Tus gastos, sin sorpresas» (`:1395`). Botón «Registrar gasto» (`:1400`), presupuesto mensual por categoría (`:1404-1430`). API: `apps/api/src/admin.ts:643-737`.
+- **Etiqueta:** «Gastos». **Permiso:** `expense:write`. **Componente:** `Expenses`, `apps/web/src/Management.tsx:1386`. Título: «Tus gastos, sin sorpresas» (`:1395`). Botón «Registrar gasto» (`:1400`), presupuesto mensual por categoría (`:1404-1430`). API: `apps/api/src/admin.ts:645-739`.
 
 ## Clientes
 
-- **Etiqueta:** «Clientes». **Permiso:** `customers:write`. **Componente:** `Customers`, `apps/web/src/Management.tsx:2285`. Título: «Personas que vuelven a elegirte» (`:2304`). Botón «Nuevo cliente». Teléfono, cédula y correo completos solo para `sale:manage` o `customers:erase` (el resto los ve enmascarados) (`apps/api/src/common.ts:276-281`). Anonimizar un cliente requiere `customers:erase` (`apps/api/src/admin.ts:351-352`).
+- **Etiqueta:** «Clientes». **Permiso:** `customers:write`. **Componente:** `Customers`, `apps/web/src/Management.tsx:2285`. Título: «Personas que vuelven a elegirte» (`:2304`). Botón «Nuevo cliente». Teléfono, cédula y correo completos solo para `sale:manage` o `customers:erase` (el resto los ve enmascarados) (`apps/api/src/common.ts:276-281`). Anonimizar un cliente requiere `customers:erase` (`apps/api/src/admin.ts:353-354`).
 
 ## Promociones
 
@@ -126,7 +126,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1045-1075`):
 
 ## Alertas
 
-- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3081`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1431-1451`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:515`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:919-922`).
+- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3081`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1434-1454`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:515`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:919-922`).
 
 ## Incentivos
 
@@ -142,11 +142,11 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1045-1075`):
 
 - **Etiqueta:** «Configuración» (botón al fondo del menú, `sale:manage`). **Componente:** `apps/web/src/Management.tsx:4065`. Título «A la medida de tu negocio» (`:4150`).
 - **Pestañas** (`:4155-4158`):
-  - **Negocio y reglas:** datos del negocio, «Editar configuración» (descuento vendedor 10 %, margen bajo 15 %, devolución, tasa del dólar, cuentas de banco para transferencias, terminales de tarjeta, imprimir el recibo automáticamente, ventas sin conexión, ventas a crédito, preparación de NCF, ITBIS incluido: `:4026-4141`), cajas y cajeros (`apps/web/src/Tienda.tsx:1240-1372`), avisos por Telegram, respaldo a Drive, tasas de incentivos y encuesta de caja (`:4223-4227`).
+  - **Negocio y reglas:** datos del negocio, «Editar configuración» (descuento vendedor 10 %, margen bajo 15 %, devolución, tasa del dólar, cuentas de banco para transferencias, terminales de tarjeta, imprimir el recibo automáticamente, ventas sin conexión, «No vender productos sin costo» (apagado por defecto; aún no desplegado, ver `VENTA_SIN_COSTO.md`), ventas a crédito, preparación de NCF, ITBIS incluido: `:4026-4141`), cajas y cajeros (`apps/web/src/Tienda.tsx:1240-1372`), avisos por Telegram, respaldo a Drive, tasas de incentivos y encuesta de caja (`:4223-4227`).
   - **Usuarios y permisos:** «Crear usuario», Editar, «Restablecer contraseña», Activar/Desactivar y «Permisos por rol» (`:4230-4310`).
   - **Bitácora:** registro de acciones (`:4312-4335`).
   - **Equipos:** aprobar o revocar equipos (`:4171`).
-- **Ojo:** guardar la configuración (`PUT /settings`) y administrar usuarios/roles exigen `*` en la API (`apps/api/src/admin.ts:839-840`, `:1024`, `:1056`, `:1296-1300`), aunque el botón de Configuración lo vea un gerente (`sale:manage`). DUDOSO: qué ve exactamente un gerente que no es `*` al abrir cada pestaña; no se probó.
+- **Ojo:** guardar la configuración (`PUT /settings`) y administrar usuarios/roles exigen `*` en la API (`apps/api/src/admin.ts:842-843`, `:1024`, `:1056`, `:1296-1300`), aunque el botón de Configuración lo vea un gerente (`sale:manage`). DUDOSO: qué ve exactamente un gerente que no es `*` al abrir cada pestaña; no se probó.
 
 ## Usuarios
 
