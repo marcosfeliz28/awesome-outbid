@@ -42,6 +42,7 @@ import {
   RECEIVABLE_SHIFT_LIMIT,
   businessDate,
   daysSince,
+  isService,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -623,6 +624,8 @@ import {
 // valor por defecto de Prisma (5 s) una devolución bajo carga fallaba con
 // P2028 mientras la venta, con 20 s, terminaba (prueba de carga R5).
 export const MONEY_TRANSACTION = { timeout: 20000 };
+export const NO_COST_MESSAGE =
+  "Este producto no tiene costo: pídele a la administración que lo complete";
 @Controller()
 export class SalesController {
   constructor(@Inject(Database) private db: Database) {}
@@ -971,6 +974,25 @@ export class SalesController {
             promotionName,
           };
         });
+        // Venta sin costo (dueña, 8-nov): un costo 0 inflaba la ganancia del
+        // tablero. Los servicios no llevan inventario ni costo. Una venta sin
+        // conexión ya se cobró: entra y queda marcada para corregir su costo.
+        const noCost = [
+          ...new Set(
+            lines.flatMap(({ variant, kit }) =>
+              (kit.length
+                ? kit.map((c) => variants.get(c.componentVariantId)!)
+                : [variant]
+              )
+                .filter(
+                  (v) => !isService(v.product) && !d(v.costAvg ?? 0).gt(0),
+                )
+                .map((v) => v.product.name as string),
+            ),
+          ),
+        ];
+        if (noCost.length && !offline)
+          bad(`${NO_COST_MESSAGE}. Producto: ${noCost.join(", ")}.`);
         const total = money(
           lines.reduce((a, l) => a.plus(l.totals.total), d(0)),
         );
@@ -1281,6 +1303,30 @@ export class SalesController {
             where: { id: sale.id },
             data: { costTotal: money(booked) },
           });
+        if (noCost.length) {
+          await tx.alert.create({
+            data: {
+              key: "zero-cost-sale:" + sale.id,
+              type: "zero_cost_sale",
+              severity: "high",
+              entityId: sale.id,
+              branchId: actor.branchId,
+              message: `La factura ${sale.number} (sin conexión) entró con productos sin costo: ${noCost.join(", ")}. Corrige el costo en la factura para que la ganancia sea real.`,
+            },
+          });
+          await audit(
+            tx,
+            actor,
+            "sale_zero_cost_accepted",
+            "sale",
+            sale.id,
+            undefined,
+            {
+              number: sale.number,
+              products: noCost,
+            },
+          );
+        }
         if (capturedAt && capturedAt < new Date())
           await audit(
             tx,
@@ -2187,6 +2233,151 @@ export class SalesController {
         number: sale.number,
         sellerId: seller.id,
         sellerName: seller.name,
+      };
+    }, MONEY_TRANSACTION);
+  }
+
+  // Corrección del costo de una línea ya vendida (dueña, 8-nov): solo
+  // administración con PIN de gerencia y motivo. Cambia el costo (y con él la
+  // ganancia de los reportes); nunca totales, pagos ni el efectivo de la caja.
+  @Post("sales/:id/items/:itemId/cost")
+  @HttpCode(200)
+  @RequireTerminal()
+  @Permit("*")
+  async correctItemCost(
+    @Param("id") id: string,
+    @Param("itemId") itemIdParam: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const saleId = parse(uuid, id);
+    const itemId = parse(uuid, itemIdParam);
+    const data = parse(
+      z.object({
+        unitCost: moneyAmount(1000000),
+        reason: z.string().trim().min(8).max(500),
+        managerPin: z.string().regex(/^\d{4,6}$/),
+      }),
+      body,
+    );
+    const approvedBy = await managerPinApproval(
+      this.db,
+      actor,
+      data.managerPin,
+    );
+    return moneyDb(this.db).$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid AND "branchId"=${actor.branchId} FOR UPDATE`;
+      const sale = await tx.sale.findFirst({
+        where: { id: saleId, branchId: actor.branchId },
+        include: { items: true },
+      });
+      if (!sale) bad("Venta no encontrada.");
+      if (sale.status !== "completed")
+        bad("Solo se corrige el costo de una venta vigente.");
+      const item = sale.items.find((i) => i.id === itemId);
+      if (!item) bad("Línea no encontrada en esta venta.");
+      const allocations = Array.isArray(item.stockAllocations)
+        ? (item.stockAllocations as any[])
+        : [];
+      // shortcut: un combo reparte su costo entre componentes; se corrige el
+      // costo del componente y se vuelve a facturar si hace falta.
+      if (
+        allocations.length > 1 ||
+        allocations.some((a) => a?.variantId && a.variantId !== item.variantId)
+      )
+        bad("El costo de un combo no se corrige desde aquí.");
+      // Una devolución ya guardó su propio costo; cambiar la venta lo descuadra.
+      if (d(item.returnedQty).gt(0))
+        bad(
+          "Esta línea tiene devoluciones: su costo no se corrige desde aquí.",
+        );
+      const before = d(item.unitCost);
+      const after = d(data.unitCost);
+      // Reintento con el mismo costo: sin cambios ni otra línea en la bitácora.
+      if (before.eq(after))
+        return {
+          number: sale.number,
+          itemId: item.id,
+          unitCostBefore: Number(before),
+          unitCost: Number(before),
+          costTotal: Number(sale.costTotal),
+          profitChange: 0,
+        };
+      const delta = d(money(after.times(item.qty))).minus(
+        money(before.times(item.qty)),
+      );
+      const costTotal = money(d(sale.costTotal).plus(delta));
+      await tx.saleItem.update({
+        where: { id: item.id },
+        data: {
+          unitCost: money(after),
+          stockAllocations: json(
+            allocations.map((a) => ({ ...a, unitCost: Number(money(after)) })),
+          ),
+        },
+      });
+      await tx.sale.update({ where: { id: sale.id }, data: { costTotal } });
+      // El kárdex de la salida queda con el mismo costo que la factura, salvo
+      // que otra línea (o un combo) de la venta saque la misma variante: sus
+      // movimientos no se distinguen y se dejan como están.
+      const shared = sale.items.some(
+        (o) =>
+          o.id !== item.id &&
+          ((o.variantId === item.variantId && o.lotId === item.lotId) ||
+            (Array.isArray(o.stockAllocations) &&
+              (o.stockAllocations as any[]).some(
+                (a) => a?.variantId === item.variantId,
+              ))),
+      );
+      if (!shared)
+        await tx.inventoryMovement.updateMany({
+          where: {
+            refId: sale.id,
+            type: "sale",
+            variantId: item.variantId,
+            lotId: item.lotId,
+          },
+          data: { unitCost: money(after) },
+        });
+      // Los servicios llevan costo 0 a propósito: no mantienen el aviso abierto.
+      const pending = await tx.saleItem.count({
+        where: {
+          saleId: sale.id,
+          unitCost: { lte: 0 },
+          variant: { product: { unit: { not: "servicio" } } },
+        },
+      });
+      if (!pending)
+        await tx.alert.updateMany({
+          where: { key: "zero-cost-sale:" + sale.id },
+          data: { status: "resolved" },
+        });
+      await audit(
+        tx,
+        actor,
+        "sale_item_cost_corrected",
+        "sale",
+        sale.id,
+        { itemId: item.id, unitCost: before, costTotal: sale.costTotal },
+        {
+          number: sale.number,
+          itemId: item.id,
+          variantId: item.variantId,
+          qty: item.qty,
+          unitCost: money(after),
+          costTotal,
+          profitChange: money(delta.negated()),
+          approvedBy,
+          reason: data.reason,
+        },
+      );
+      return {
+        number: sale.number,
+        itemId: item.id,
+        unitCostBefore: Number(before),
+        unitCost: Number(money(after)),
+        costTotal: Number(costTotal),
+        profitChange: Number(money(delta.negated())),
       };
     }, MONEY_TRANSACTION);
   }

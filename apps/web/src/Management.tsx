@@ -54,6 +54,7 @@ import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { CourierFeeEditor } from "./CourierFeeEditor";
 import { SaleEditPanel, editableNow } from "./SaleEditPanel";
+import { SaleCostPanel, WithoutCostCard } from "./ZeroCost";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
 import { exportPath, exportFileName, type ExportFormat } from "./reportExport";
@@ -845,6 +846,9 @@ export function Inventory() {
         title="Cada unidad, bajo control"
         caption="El inventario correcto hace espacio para mejores decisiones."
       />
+      {user.role !== "seller" && can(user.permissions, "profit:read") && (
+        <WithoutCostCard />
+      )}
       <div className="panel">
         <label htmlFor="warehouse-view">Almacén</label>
         <select
@@ -1592,6 +1596,7 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   overstock: "Exceso de stock",
   unusual_discount: "Descuento inusual",
   sale_void_request: "Solicitud de anulación",
+  zero_cost_sale: "Venta sin costo",
 };
 const alertTypeLabel = (type: string) =>
   ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " ");
@@ -3427,6 +3432,17 @@ export function SalesHistory() {
                   setSelected({ ...selected, ...change });
                   void client.invalidateQueries({ queryKey: ["sales"] });
                   toast("Factura corregida.");
+                }}
+              />
+            )}
+            {can(user.permissions, "*") && selected.status === "completed" && (
+              <SaleCostPanel
+                key={"cost-" + selected.id}
+                sale={selected}
+                onSaved={() => {
+                  setSelected(null);
+                  void client.invalidateQueries({ queryKey: ["sales"] });
+                  toast("Costo corregido. La ganancia se recalculó.");
                 }}
               />
             )}

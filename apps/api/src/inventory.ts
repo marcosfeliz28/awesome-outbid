@@ -613,6 +613,41 @@ export class InventoryController {
       actor,
     );
   }
+  // Productos activos sin costo (dueña, 8-nov): no se pueden vender hasta
+  // completar el costo. Solo quien ve costos; nunca la vendedora.
+  @Get("inventory/without-cost")
+  @Permit("profit:read")
+  async withoutCost(@CurrentUser() actor: Actor) {
+    if (!seesCost(actor)) denied();
+    const rows = await this.db.variant.findMany({
+      where: {
+        branchId: actor.branchId,
+        active: true,
+        costAvg: { lte: 0 },
+        product: { active: true, unit: { not: "servicio" } },
+      },
+      select: {
+        id: true,
+        sku: true,
+        price: true,
+        stock: true,
+        product: { select: { id: true, name: true } },
+      },
+      orderBy: [{ stock: "desc" }, { sku: "asc" }],
+    });
+    return {
+      total: rows.length,
+      withStock: rows.filter((r) => d(r.stock).gt(0)).length,
+      items: rows.map((r) => ({
+        variantId: r.id,
+        productId: r.product.id,
+        name: r.product.name,
+        sku: r.sku,
+        price: Number(r.price),
+        stock: Number(r.stock),
+      })),
+    };
+  }
   @Get("inventory/movements")
   @Permit("catalog:read")
   async movements(
