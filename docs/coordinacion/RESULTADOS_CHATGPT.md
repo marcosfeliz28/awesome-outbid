@@ -156,6 +156,12 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - Qué pasó (pruebas que pasan y que fallan, con el texto exacto del error):
 - Qué falta o necesita decisión de la dueña:
 
+## 2026-11-08 · ChatGPT NUBE · `chatgpt-nube/asistente-analista`
+
+- **Qué hice:** escribí la especificación del Asistente analista, un conjunto determinista de 100 preguntas con respuesta/cálculo esperado y la estimación de costo/cuotas. El detalle y la autoauditoría están en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
+- **Qué pasó:** la comprobación previa falló porque no existían los tres entregables; después pasaron existencia, contenido, conteo de 100 IDs únicos, controles de seguridad y `git diff --check`. Después de instalar desde el lockfile y generar el cliente Prisma local (sin conectar una base), `pnpm check` pasó: 112 archivos/984 pruebas, 1 archivo/10 pruebas omitidos, typecheck, lint y builds verdes.
+- **Qué falta o necesita decisión de la dueña:** no hace falta una decisión para integrar estos documentos. Antes de implementar se necesitan costos no IA para certificar margen total y, después del piloto, mediciones reales de tokens/costo P95. Sin despliegue ni acceso a producción.
+
 ## 2026-10-15 · ChatGPT NUBE · `nexora-chatgpt-nube` · `ac3ba19`…`6634a1a`
 
 - **Qué hice:** pantalla «Conciliar transferencias» visible solo para administración. Endpoint de lectura `GET /payments/pending-transfers` con permiso `sale:manage`, filtrado por sucursal y fecha de República Dominicana. Agrupa BHD, Popular, Banreservas y otros; muestra factura, cliente, cajera, monto y referencia. Selección múltiple, total por banco, diferencia, verificación secuencial usando el endpoint existente y resultado por pago; rechazo con motivo mediante el endpoint existente. CSV con protección contra fórmulas. Corregí la prueba para usar la fecha real del pago (`9d5757c`) y el reinicio de totales al cambiar de fecha (`3ebd886`). No cambié `verify`, `reject`, importes, inventario ni producción.
