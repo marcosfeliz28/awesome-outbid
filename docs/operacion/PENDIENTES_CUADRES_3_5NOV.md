@@ -163,3 +163,13 @@ FS-471 corregida de efectivo a tarjeta; tarjeta cuadra exacta con el lote 008 GV
 ### Costos faltantes (8-nov)
 - **PRD-001 brochas del curso:** costo puesto en 700 por la dueña (antes 0). Las 28 facturas del 8-nov (28,000) quedaron con costo 0: la ganancia de hoy en el tablero está inflada en 19,600 (real ≈ 15,999, no 35,599).
 - **Pendientes de costo:** Mota 1988 (precio 100, 2 vendidas, costo 0) y CUR-001 curso grupal (1 vendido, costo 0). 70 productos activos con costo 0 y precio 0 (sin ventas): completar al ponerles precio.
+
+## Decisiones de la dueña, 8-nov (tarde)
+- Cajas 8-nov: caja de la dueña cerrada cuadrada (efectivo 3,010 confirmado por ella, tarjeta 34,200, lote 162 = 37,200 con FS-531). Caja de Lizbeth ya cerrada por ella (+1,780 efectivo, aprobado). Transferencias Banreservas y Popular cuadran por monto; BHD falta un depósito de 1,000 (FS-490/494/514).
+- Los 700 de tarjeta de Lizbeth (4-nov): declarados, se dejan para revisar el martes (11-nov) a dónde van.
+- FS-487 ginette gomez: crédito, se deja así (la dueña lo sabe).
+- Carnivor Shred 2 lb: sí salió; queda en 0, nada que registrar.
+- Incentivo de la Mota: RD$5 por unidad (aprobado). Falta configurarlo en el sistema.
+- Bloqueo de venta sin costo: PAUSADO hasta cuadrar todo (avisado a Norexos 1). El Excel de 69 productos sin costo se le reenvió; al devolverlo se cargan los costos.
+- FS-188: anulada (Lizbeth, 6,000 efectivo duplicada); Yisel Parra pagó 6,450 por Popular el 21-oct. No encontré la factura que la reemplaza.
+- Dayana Tejada: su factura es la FS-462 (FS-461 anulada); el depósito de 11,000 ya está identificado. Sin factura queda Attabeira Morales 3,650.
