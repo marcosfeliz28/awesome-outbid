@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@fitstore/ui";
 import { api } from "./api";
@@ -63,6 +63,7 @@ export function SaleCostPanel({
     items?: {
       id: string;
       qty: string | number;
+      unitPrice: string | number;
       unitCost?: string | number;
       returnedQty?: string | number;
       variant?: { product?: { name: string } | null } | null;
@@ -78,19 +79,36 @@ export function SaleCostPanel({
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Un identificador por línea: un reintento tras un corte no corrige dos veces.
+  const operations = useRef<Record<string, string>>({});
   if (!lines.length) return null;
-  const save = async (itemId: string) => {
+  const save = async (line: (typeof lines)[number]) => {
+    const itemId = line.id;
+    const cost = Number(costs[itemId]);
+    const abovePrice = cost > Number(line.unitPrice);
+    if (
+      abovePrice &&
+      !window.confirm(
+        "El costo es mayor que el precio de venta. ¿Confirmas que es correcto?",
+      )
+    )
+      return;
+    operations.current[itemId] ??= crypto.randomUUID();
     setBusy(true);
     setError("");
     try {
       await api(`/sales/${sale.id}/items/${itemId}/cost`, {
         method: "POST",
         body: JSON.stringify({
-          unitCost: Number(costs[itemId]),
+          unitCost: cost,
+          expectedUnitCost: Number(line.unitCost ?? 0),
+          operationId: operations.current[itemId],
+          ...(abovePrice ? { confirmAbovePrice: true } : {}),
           reason: reason.trim(),
           managerPin: pin,
         }),
       });
+      delete operations.current[itemId];
       onSaved();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No se pudo guardar.");
@@ -153,7 +171,7 @@ export function SaleCostPanel({
               reason.trim().length < 8 ||
               !/^\d{4,6}$/.test(pin)
             }
-            onClick={() => save(i.id)}
+            onClick={() => save(i)}
           >
             Guardar costo
           </Button>

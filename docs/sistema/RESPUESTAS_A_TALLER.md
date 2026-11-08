@@ -47,9 +47,9 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 ## 5. La nota de crédito: ¿se imprime, cómo y dónde?
 
-- Una nota de crédito nace al **devolver** una venta con método de reembolso **«Nota de crédito»** (Ventas › fila › **«Devolver»**, solo `sale:manage`, con caja propia abierta) (`apps/web/src/Management.tsx:3315-3337`, `:3639-3690`). El número de la devolución es **NC-000000** (`apps/api/src/sales.ts:3663`).
+- Una nota de crédito nace al **devolver** una venta con método de reembolso **«Nota de crédito»** (Ventas › fila › **«Devolver»**, solo `sale:manage`, con caja propia abierta) (`apps/web/src/Management.tsx:3315-3337`, `:3639-3690`). El número de la devolución es **NC-000000** (`apps/api/src/sales.ts:3697`).
 - **No se imprime sola al devolver.** Se imprime a mano: **Ventas** › abrir la venta (ícono del ojo) › botón **«Imprimir nota NC-…»** (solo `sale:manage`) (`apps/web/src/Management.tsx:3433-3447`).
-- Lo que sale es un **PDF tamaño A4** (no ticket térmico): «Nota de crédito · NC-…», «Nota interna de crédito · no fiscal», fecha, importe, saldo, motivo y el **«Código para presentar en caja»** (32 caracteres) con las condiciones de uso (`apps/api/src/sales.ts:3782-3835`, ruta `GET /returns/:id/credit-note.pdf`). Se descarga y se imprime desde el visor de PDF.
+- Lo que sale es un **PDF tamaño A4** (no ticket térmico): «Nota de crédito · NC-…», «Nota interna de crédito · no fiscal», fecha, importe, saldo, motivo y el **«Código para presentar en caja»** (32 caracteres) con las condiciones de uso (`apps/api/src/sales.ts:3816-3869`, ruta `GET /returns/:id/credit-note.pdf`). Se descarga y se imprime desde el visor de PDF.
 - Para usarla después: en el cobro, método **Nota de crédito**, escribir el código y elegir la nota (`apps/web/src/POS.tsx:2610-2654`). Si la cajera no escribe el código, necesita el PIN de un gerente (`:1872-1884`).
 
 ---

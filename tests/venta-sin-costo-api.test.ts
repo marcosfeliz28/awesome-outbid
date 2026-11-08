@@ -305,6 +305,8 @@ describe("venta sin costo", () => {
     const path = `/sales/${saved.id}/items/${item.id}/cost`;
     const body = {
       unitCost: 35,
+      expectedUnitCost: 0,
+      operationId: randomUUID(),
       reason: "Costo de la factura del proveedor",
       managerPin: OWNER_PIN,
     };
@@ -343,8 +345,39 @@ describe("venta sin costo", () => {
       costTotal: 35,
       profitChange: -35,
     });
-    // Repetir la misma corrección no cambia nada ni duplica la bitácora.
-    expect(await ok(path, body, owner)).toMatchObject({ profitChange: 0 });
+    // Repetir la misma operación devuelve lo hecho sin duplicar la bitácora.
+    expect(await ok(path, body, owner)).toMatchObject({
+      unitCost: 35,
+      profitChange: -35,
+    });
+    // Una línea ya costeada no se reescribe con un costo visto viejo.
+    expect(
+      (
+        await call(
+          path,
+          { ...body, unitCost: 40, operationId: randomUUID() },
+          owner,
+        )
+      ).status,
+    ).toBe(409);
+    // Tope de cordura sobre el precio de la línea (100).
+    const fresh = { ...body, expectedUnitCost: 35 };
+    expect(
+      (
+        await call(
+          path,
+          { ...fresh, unitCost: 600, operationId: randomUUID() },
+          owner,
+        )
+      ).status,
+    ).toBe(400);
+    const above = await call(
+      path,
+      { ...fresh, unitCost: 150, operationId: randomUUID() },
+      owner,
+    );
+    expect(above.status).toBe(400);
+    expect(above.body.message).toContain("mayor que el precio");
     expect(
       await db.auditLog.count({
         where: { action: "sale_item_cost_corrected", entityId: saved.id },
@@ -396,6 +429,7 @@ describe("venta sin costo", () => {
     // La factura sin conexión ya corregida no aparece; la de bandera apagada sí.
     expect(report.sales.map((r: any) => r.saleId)).toEqual([flagOffSaleId]);
     expect(report.sales[0]).toMatchObject({
+      hasReturns: false,
       total: 100,
       costTotal: 0,
       costTotalAfter: 30,
@@ -426,6 +460,10 @@ describe("venta sin costo", () => {
     expect(empty.totals.invoices).toBe(0);
     expect(
       (await call("/reports/cost-recalc?from=ayer", undefined, owner)).status,
+    ).toBe(400);
+    expect(
+      (await call("/reports/cost-recalc?to=2026-13-45", undefined, owner))
+        .status,
     ).toBe(400);
   });
 });

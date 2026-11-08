@@ -2251,17 +2251,19 @@ export class SalesController {
     @CurrentUser() actor: Actor,
   ) {
     if (actor.role === "seller") denied();
+    // Fecha real (2026-13-45 no): un Date inválido llegaba a Prisma como 500.
+    const day = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .refine((v) => {
+        const t = new Date(v + "T12:00:00Z");
+        return !isNaN(t.getTime()) && t.toISOString().slice(0, 10) === v;
+      }, "fecha no válida");
     const q = parse(
       z.object({
         variantId: uuid.optional(),
-        from: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .optional(),
-        to: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .optional(),
+        from: day.optional(),
+        to: day.optional(),
       }),
       query,
     );
@@ -2282,7 +2284,7 @@ export class SalesController {
         },
       },
       include: {
-        sale: true,
+        sale: { include: { _count: { select: { returns: true } } } },
         variant: { include: { product: { select: { name: true } } } },
       },
       orderBy: [{ sale: { createdAt: "asc" } }, { id: "asc" }],
@@ -2310,6 +2312,8 @@ export class SalesController {
         createdAt: i.sale.createdAt,
         total: Number(i.sale.total),
         costTotal: Number(i.sale.costTotal),
+        // La utilidad de la fila no descuenta devoluciones: se avisa aquí.
+        hasReturns: i.sale._count.returns > 0,
         delta: d(0),
         lines: [] as any[],
       };
@@ -2377,6 +2381,10 @@ export class SalesController {
     const data = parse(
       z.object({
         unitCost: moneyAmount(1000000),
+        // El costo que el administrador vio: si cambió, no se reescribe.
+        expectedUnitCost: z.number().nonnegative().max(1000000),
+        operationId: uuid,
+        confirmAbovePrice: z.boolean().optional(),
         reason: z.string().trim().min(8).max(500),
         managerPin: z.string().regex(/^\d{4,6}$/),
       }),
@@ -2388,6 +2396,28 @@ export class SalesController {
       data.managerPin,
     );
     return moneyDb(this.db).$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"item-cost:" + data.operationId}))::text AS locked`;
+      // Reintento de la misma operación: devuelve lo ya hecho, sin repetir.
+      const done = await tx.auditLog.findFirst({
+        where: {
+          action: "sale_item_cost_corrected",
+          branchId: actor.branchId,
+          after: { path: ["operationId"], equals: data.operationId },
+        },
+      });
+      if (done) {
+        const prior = done.after as any;
+        if (done.entityId !== saleId || prior.itemId !== itemId)
+          conflict("Este identificador de operación ya se usó en otra línea.");
+        return {
+          number: prior.number,
+          itemId,
+          unitCostBefore: Number((done.before as any)?.unitCost ?? 0),
+          unitCost: Number(prior.unitCost),
+          costTotal: Number(prior.costTotal),
+          profitChange: Number(prior.profitChange),
+        };
+      }
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid AND "branchId"=${actor.branchId} FOR UPDATE`;
       const sale = await tx.sale.findFirst({
         where: { id: saleId, branchId: actor.branchId },
@@ -2415,16 +2445,19 @@ export class SalesController {
         );
       const before = d(item.unitCost);
       const after = d(data.unitCost);
-      // Reintento con el mismo costo: sin cambios ni otra línea en la bitácora.
-      if (before.eq(after))
-        return {
-          number: sale.number,
-          itemId: item.id,
-          unitCostBefore: Number(before),
-          unitCost: Number(before),
-          costTotal: Number(sale.costTotal),
-          profitChange: 0,
-        };
+      // No se reescribe a gusto una línea ya costeada (regla de la dueña).
+      if (!before.eq(money(data.expectedUnitCost)))
+        conflict(
+          "El costo de esta línea cambió desde que lo viste. Vuelve a abrir la factura.",
+        );
+      if (before.eq(after)) bad("El costo nuevo es igual al actual.");
+      const price = d(item.unitPrice);
+      if (price.gt(0) && after.gt(price.times(5)))
+        bad("El costo es más de 5 veces el precio de venta: revisa el número.");
+      if (after.gt(price) && data.confirmAbovePrice !== true)
+        bad(
+          "El costo es mayor que el precio de venta. Confírmalo para guardarlo.",
+        );
       const delta = d(money(after.times(item.qty))).minus(
         money(before.times(item.qty)),
       );
@@ -2491,6 +2524,7 @@ export class SalesController {
           profitChange: money(delta.negated()),
           approvedBy,
           reason: data.reason,
+          operationId: data.operationId,
         },
       );
       return {
