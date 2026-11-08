@@ -22,8 +22,6 @@ const c = (nombreAmigable: string, significa: string): Explicacion => ({
 // Ventas netas: lo vendido menos lo devuelto de esa misma venta, por fecha de venta.
 const NETO_POR_VENTA =
   "Las devoluciones se restan en la fecha de la venta original.";
-const POR_CONFIRMAR_DEVOLUCION =
-  " Por confirmar: en este reporte las devoluciones se restan en la fecha en que se devolvieron, no en la de la venta.";
 
 // Lo que hay detrás de «Ventas netas» en los reportes de ventas: el total de la
 // factura (con ITBIS); el envío del mensajero va aparte y no entra.
@@ -384,8 +382,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para saber qué parte de las ventas se cobra en cada forma de pago, mes a mes.",
     comoSeLee:
-      "Las ventas se cuentan por mes de la venta. Las devoluciones se restan en el mes en que se devolvieron, y el reembolso se resta en la forma en que se devolvió el dinero. Un pago por transferencia rechazado cuenta como crédito." +
-      POR_CONFIRMAR_DEVOLUCION,
+      "Las ventas se cuentan por mes de la venta. Las devoluciones se restan en el mes de la venta original, y el reembolso en la forma en que se devolvió el dinero. Un pago por transferencia rechazado cuenta como crédito.",
     columnas: {
       Mes: c("Mes", "El mes del período."),
       ...MEZCLA,
@@ -409,8 +406,8 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver si una cajera da descuentos de más o aprueba descuentos sin que otra persona lo revise.",
     comoSeLee:
-      "El % compara el descuento total con sus ventas netas del período. Las devoluciones se restan en la fecha en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION +
+      "El % compara el descuento total con sus ventas netas del período. " +
+      NETO_POR_VENTA +
       " Aprobados por ella misma cuenta los descuentos que aprobó la propia cajera.",
     columnas: {
       Cajera: c("Cajera", "La persona que hizo la venta con descuento."),
@@ -441,8 +438,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Cuánto se vendió por mayor (a precio de mayoreo) y cuánto al detalle.",
     paraQueSirve: "Para ver cuánto pesa la venta por mayor en el negocio.",
     comoSeLee:
-      "Las ventas se suman por la fecha de la venta. Las devoluciones se restan en la fecha en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION,
+      "Las ventas se suman por la fecha de la venta. " + NETO_POR_VENTA,
     columnas: {
       Tipo: c("Tipo de venta", "Por mayor o detalle."),
       Facturas: c("Facturas", "Cuántas facturas de ese tipo hubo."),
@@ -1107,8 +1103,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
     paraQueSirve:
       "Para cuadrar el dinero que entró cada día con el banco, las terminales y las cajas.",
     comoSeLee:
-      "Cada fila es un día de negocio. Venta y cobro de crédito se cuentan por el día en que pasaron. Las devoluciones se restan en el día en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION +
+      "Cada fila es un día de negocio y muestra el movimiento de dinero de ese día. Venta y cobro de crédito se cuentan por el día en que pasaron. Las devoluciones se restan en el día en que se hicieron, porque ese día salió el dinero; por eso, si se devuelve algo vendido otro mes, este informe no coincide con los reportes de ventas, que la restan en el mes de la venta." +
       " Dinero que entró es lo que realmente llegó; Crédito generado no es dinero recibido. Abajo, el detalle lista cada cobro y reembolso, pero no las devoluciones completas.",
     columnas: DINERO_INGRESO_COLUMNAS,
   },
@@ -1118,8 +1113,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
     paraQueSirve:
       "Para revisar el cierre del período y dejar constancia de los controles de la tienda.",
     comoSeLee:
-      "Solo lo puede ver quien tiene permiso de ganancia y de ver el arqueo. Vendido neto es lo vendido menos las devoluciones; las devoluciones se restan en la fecha en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION +
+      "Solo lo puede ver quien tiene permiso de ganancia y de ver el arqueo. Vendido neto del resumen es lo vendido menos lo devuelto de esas mismas ventas (en el período de la venta original). La tabla por día muestra el dinero de cada día: ahí la devolución se resta el día en que se hizo." +
       " Margen se calcula como (venta menos costo) entre venta, sin restar el ITBIS." +
       FORMAL_TODOS_NOTA,
     columnas: {
@@ -1250,8 +1244,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
     paraQueSirve:
       "Para comparar meses y ver en qué época del año se vende más.",
     comoSeLee:
-      "Bruta es lo vendido de cada mes, con las devoluciones ya descontadas. Neta es la bruta menos el costo de la mercancía, sin restar el ITBIS ni los gastos; solo la ve quien tiene permiso de ganancia. Las devoluciones se restan en el mes en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION,
+      "Bruta es lo vendido de cada mes, con las devoluciones ya descontadas. Neta es la bruta menos el costo de la mercancía, sin restar el ITBIS ni los gastos; solo la ve quien tiene permiso de ganancia. Las devoluciones se restan en el mes de la venta original.",
     columnas: {
       "Ventas por mes": c(
         "Ventas por mes",

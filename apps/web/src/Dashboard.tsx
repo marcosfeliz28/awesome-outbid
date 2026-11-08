@@ -148,7 +148,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     {
       label: showProfit ? "Ganancia bruta" : "Inventario a la venta",
       value: formatMoney(
-        showProfit ? (data?.grossProfit ?? 0) : (data?.inventoryRetail ?? 0),
+        showProfit ? (data?.profit ?? 0) : (data?.inventoryRetail ?? 0),
       ),
       icon: TrendingUp,
       tone: "green",

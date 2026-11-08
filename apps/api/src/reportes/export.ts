@@ -244,11 +244,16 @@ const textoFecha = (v: Date | string) =>
 // Importe según el nombre y el significado de la columna. Cantidades, porcentajes
 // y días no cuentan como importe.
 const IMPORTE =
-  /RD\$|dinero|pesos|cobrad|vendid|costo|venta|saldo|ticket|utilidad|valor|monto|pagad|precio|reembols|efectivo|transferencia|tarjeta|crédito|contraentrega/i;
+  /RD\$|dinero|pesos|cobrad|vendid|costo|venta|saldo|ticket|utilidad|ganancia|descuento|valor|monto|pagad|precio|reembols|efectivo|transferencia|tarjeta|crédito|contraentrega/i;
 const NO_IMPORTE =
-  /%|cantidad|unidades|piezas|facturas|días|número|veces|porcentaje/i;
-const esImporte = (texto: string) =>
-  IMPORTE.test(texto) && !NO_IMPORTE.test(texto);
+  /%|cantidad|unidades|piezas|facturas|días|número|veces|porcentaje|cuánt[oa]s\b/i;
+// Manda el nombre de la columna: «Venta» es dinero aunque su explicación
+// diga «piezas» (sincronía 2-nov: salía sin RD$ y la gráfica tomaba «Costo»).
+const esImporte = (clave: string, significa = "") =>
+  !NO_IMPORTE.test(clave) &&
+  (IMPORTE.test(clave)
+    ? !/veces|^piezas|^cuánt[oa]s\b/i.test(significa)
+    : IMPORTE.test(significa) && !NO_IMPORTE.test(significa));
 
 function formatoDe(
   clave: string,
@@ -263,7 +268,7 @@ function formatoDe(
     .filter((v) => v !== null && v !== undefined);
   if (!valores.length || !valores.every((v) => typeof v === "number"))
     return "texto";
-  if (esImporte(clave + " " + (significa ?? ""))) return "moneda";
+  if (esImporte(clave, significa)) return "moneda";
   return valores.every((v) => Number.isInteger(v)) ? "entero" : "decimal";
 }
 

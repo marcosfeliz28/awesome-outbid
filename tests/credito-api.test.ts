@@ -766,6 +766,98 @@ describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día
     expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
   });
 
+  it("3z-sincronía: el formal resta la devolución en el mes de la venta y corta los créditos al cierre", async () => {
+    // Mes anterior y mes actual en hora de la tienda.
+    const thisMonth = bizDay(0).slice(0, 7);
+    const lastMonth = new Date(thisMonth + "-01T12:00:00-04:00");
+    lastMonth.setUTCDate(0);
+    const prev = lastMonth.toISOString().slice(0, 7);
+    const formal = (m: string) =>
+      ok(`/reports/formal?period=month&date=${m}`, owner);
+    const catSum = (f: any) =>
+      f.categories.reduce((t: number, c: any) => t + c.sold, 0);
+    // Venta a contraentrega del mes anterior, fuera de las cajas QA (el formal
+    // las excluye), y otra a contraentrega de este mes.
+    const old = (await sale(ana, 400, [{ method: "cod", amount: 400 }])).body;
+    await db.sale.update({
+      where: { id: old.id },
+      data: {
+        createdAt: new Date(prev + "-15T16:00:00Z"),
+        cashSessionId: null,
+      },
+    });
+    const now = (await sale(ana, 200, [{ method: "cod", amount: 200 }])).body;
+    await db.sale.update({
+      where: { id: now.id },
+      data: { cashSessionId: null },
+    });
+    const beforePrev = await formal(prev),
+      beforeNow = await formal(thisMonth);
+    // Reportes de dinero del mes de la venta y de este mes (opción A).
+    const prevRange = `from=${prev}-01&to=${lastMonth.toISOString().slice(0, 10)}`;
+    const nowRange = `from=${thisMonth}-01&to=${bizDay(0)}`;
+    const money = async (range: string) => {
+      const rows = (name: string) =>
+        ok(`/reports/${name}?${range}`, owner).then((r: any) => r.rows);
+      const mayor = await rows("por-mayor-detalle");
+      const formas = await rows("formas-pago-mes");
+      return {
+        returned: mayor.reduce((t: number, r: any) => t + r.Devoluciones, 0),
+        total: formas.reduce((t: number, r: any) => t + r.Total, 0),
+      };
+    };
+    const moneyPrev = await money(prevRange),
+      moneyNow = await money(nowRange);
+    const numbers = (f: any) => f.credits.open.map((c: any) => c.number);
+    expect(numbers(beforePrev)).toContain(old.number);
+    expect(numbers(beforePrev)).not.toContain(now.number);
+    expect(numbers(beforeNow)).toContain(now.number);
+    // Devolución hoy de 1 de 4 unidades de la venta del mes anterior.
+    const item = await db.saleItem.findFirst({ where: { saleId: old.id } });
+    const ret = await request("/returns", adminA.token, {
+      operationId: randomUUID(),
+      saleId: old.id,
+      cashSessionId: adminA.cash.id,
+      reason: "QA sincronía opción A",
+      refundMethod: "credit_note",
+      items: [{ saleItemId: item.id, qty: 1, restock: true }],
+    });
+    expect(ret.status, JSON.stringify(ret.body)).toBeLessThan(300);
+    await db.saleReturn.updateMany({
+      where: { saleId: old.id },
+      data: { cashSessionId: null },
+    });
+    const afterPrev = await formal(prev),
+      afterNow = await formal(thisMonth);
+    // Opción A: baja el mes de la venta, no el de la devolución.
+    expect(afterPrev.totals.sold).toBeCloseTo(beforePrev.totals.sold - 100, 2);
+    expect(afterNow.totals.sold).toBeCloseTo(beforeNow.totals.sold, 2);
+    // Las categorías suman lo mismo que el total vendido.
+    expect(catSum(afterPrev) - catSum(beforePrev)).toBeCloseTo(-100, 2);
+    // Dinero: la devolución baja el mes de la venta, no este mes.
+    const moneyPrevAfter = await money(prevRange),
+      moneyNowAfter = await money(nowRange);
+    expect(moneyPrevAfter.returned - moneyPrev.returned).toBeCloseTo(100, 2);
+    expect(moneyPrevAfter.total - moneyPrev.total).toBeCloseTo(-100, 2);
+    expect(moneyNowAfter.returned).toBeCloseTo(moneyNow.returned, 2);
+    expect(moneyNowAfter.total).toBeCloseTo(moneyNow.total, 2);
+    // Panel y «Utilidad por producto»: ganancia = venta − costo, sin restar
+    // ITBIS, y el margen sale de esa misma ganancia (S-01, S-02).
+    const panel = await ok(`/dashboard/summary?${prevRange}`, owner);
+    expect(panel.profit).toBeCloseTo(panel.revenue - panel.costTotal, 2);
+    if (panel.revenue)
+      expect(panel.margin).toBeCloseTo((panel.profit / panel.revenue) * 100, 1);
+    const profit = (await ok(`/reports/profit?${prevRange}`, owner)).rows;
+    for (const r of profit) {
+      expect(r.Utilidad).toBeCloseTo(r.Ventas - r.Costo, 2);
+      if (r.Ventas > 0)
+        expect(r.Margen).toBeCloseTo((r.Utilidad / r.Ventas) * 100, 1);
+    }
+    const sum = (k: string) =>
+      profit.reduce((t: number, r: any) => t + r[k], 0);
+    expect(sum("Ventas")).toBeCloseTo(panel.revenue, 1);
+  });
+
   it("3w: separa crédito antiguo y cobro actual; exporta CSV y Excel", async () => {
     const past = bizDay(3),
       current = bizDay(0);

@@ -2237,8 +2237,7 @@ describe("Alertas de negocio y consistencia contable", () => {
     ).toBeLessThanOrEqual(0.02);
     expect(
       Math.abs(
-        report.rows.reduce((sum, r) => sum + r.Utilidad, 0) -
-          dashboard.grossProfit,
+        report.rows.reduce((sum, r) => sum + r.Utilidad, 0) - dashboard.profit,
       ),
     ).toBeLessThanOrEqual(0.02);
   });
