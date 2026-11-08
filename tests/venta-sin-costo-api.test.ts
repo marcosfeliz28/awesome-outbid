@@ -48,7 +48,7 @@ async function enroll(token: string, owner: string) {
   const id = randomUUID();
   const t = await ok(
     "/terminals/register",
-    { id, name: "QA sin costo " + id.slice(0, 6), secret: "qa-sc-" + id },
+    { id, name: "QA SC " + id.slice(0, 6), secret: "qa-sc-" + id },
     token,
   );
   if (t.status === "pending")
@@ -90,7 +90,7 @@ beforeAll(async () => {
   const user = await ok(
     "/users",
     {
-      name: "QA Cajera sin costo",
+      name: "QA Cajera SC",
       email,
       password: TEMPORARY_CASHIER_PASSWORD,
       pin: "246813",
@@ -115,7 +115,7 @@ beforeAll(async () => {
       login.accessToken,
     ),
   };
-  customerId = (await ok("/customers", { name: "QA sin costo " + tag }, owner))
+  customerId = (await ok("/customers", { name: "QA cliente SC " + tag }, owner))
     .id;
   const categories = await ok("/categories", undefined, owner);
   const categoryId = categories.find((c: any) => c.name === "Fajas").id;
@@ -148,7 +148,7 @@ beforeAll(async () => {
     if (unit !== "servicio")
       await ok(
         "/inventory/adjustments",
-        { variantId: created.variants[0].id, qty: 10, reason: "QA sin costo" },
+        { variantId: created.variants[0].id, qty: 10, reason: "QA SC" },
         owner,
       );
     return created.variants[0];
@@ -291,7 +291,7 @@ describe("venta sin costo", () => {
         countedCash: 1000,
         countedCard: 0,
         countedTransfer: 0,
-        notes: "QA sin costo",
+        notes: "QA SC",
       },
       cashier.token,
     );
