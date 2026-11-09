@@ -22,13 +22,9 @@ Cumple la cláusula de terminación del contrato (auditoría del contrato,
    «que nada se pierda en 10 años»). Por eso los datos de un cliente dado de
    baja siguen dentro de los respaldos tomados antes de la supresión hasta 10
    años. El contrato debe decirlo así; no se borran de los respaldos uno por uno.
-
-## PENDIENTE (decide la dueña)
-
-- **Entrega:** propuesta, el cliente recibe una copia del paquete (carpeta) y
-  la clave por otro canal (llamada o WhatsApp, nunca junto al paquete);
-  Norexos guarda su copia y la clave en un lugar seguro 10 años. Falta que la
-  dueña confirme a quién se entrega y dónde se guarda.
+4. **Entrega (confirmada 9-nov):** el cliente recibe una copia del paquete
+   (carpeta) y la clave por otro canal (llamada o WhatsApp), nunca juntas.
+   Norexos guarda su copia del paquete y la clave en un lugar seguro 10 años.
 
 ## Antes de empezar
 
