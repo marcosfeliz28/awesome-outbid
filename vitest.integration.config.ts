@@ -37,6 +37,7 @@ export default defineConfig({
       "tests/calidad-dinero-api.test.ts",
       "tests/calidad-seguridad-api.test.ts",
       "tests/void-requests-api.test.ts",
+      "tests/venta-sin-costo-api.test.ts",
       "tests/reportes-ventas-api.test.ts",
       "tests/reportes-dinero-api.test.ts",
       "tests/reportes-margen-api.test.ts",

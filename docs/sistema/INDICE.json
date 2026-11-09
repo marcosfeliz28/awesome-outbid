@@ -77,6 +77,7 @@
       "palabras": ["índice", "búsqueda"]
     },
     {"archivo": "MEDIDOR_IA.md", "titulo": "Medidor de uso y costo de IA", "resumen": "Tabla AiUsage, precios por modelo (null hasta cargarlos), GET /ai/usage solo admin y tarjeta en Configuración."},
-    {"archivo": "IA_VENTAS.md", "titulo": "IA de ventas («Preguntar a Norexos»)", "resumen": "Asistente de solo lectura: herramientas, permisos, plan y tope por usuario/día (IA_VENTAS_PLAN), clave por variable de entorno, medidor ia_ventas y sin guardar consultas."}
+    {"archivo": "IA_VENTAS.md", "titulo": "IA de ventas («Preguntar a Norexos»)", "resumen": "Asistente de solo lectura: herramientas, permisos, plan y tope por usuario/día (IA_VENTAS_PLAN), clave por variable de entorno, medidor ia_ventas y sin guardar consultas."},
+    {"archivo": "VENTA_SIN_COSTO.md", "titulo": "Venta sin costo: bloqueo, lista y corrección", "resumen": "La caja no vende productos activos con costo 0 (salvo servicios); las ventas sin conexión entran marcadas; GET /inventory/without-cost; corrección del costo de una factura con PIN y bitácora. Aún no desplegado.", "palabras": ["costo 0", "sin costo", "unitCost", "corregir costo", "zero_cost_sale", "brochas"]}
   ]
 }
