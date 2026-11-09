@@ -103,10 +103,12 @@ español, y no encontré una promesa de soporte en inglés ni «disponible ya».
 terminó con código 0: typecheck y ESLint pasaron; **112 archivos de prueba
 pasaron y 1 se omitió; 989 pruebas pasaron y 10 se omitieron**; los builds de
 web y API pasaron. Vite emitió la advertencia no bloqueante ya conocida por un
-chunk mayor de 500 kB. Los tres trabajos de CI se anotarán aquí después del push
-del commit documental. No hay decisión necesaria para corregir las promesas 2,
-3 y 5; la dueña/contable deben decidir el tratamiento de impuestos del hallazgo
-1, y Windows debe validar el hallazgo 4.
+chunk mayor de 500 kB. En el commit `cc8a52a4`, la ejecución de CI
+[`42581356212`](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/42581356212)
+terminó con los tres trabajos verdes: `verify`, `windows-installer` y
+`render-images`. No hay decisión necesaria para corregir las promesas 2, 3 y 5;
+la dueña/contable deben decidir el tratamiento de impuestos del hallazgo 1, y
+Windows debe validar el hallazgo 4.
 
 ## 2026-11-08 · Asistente analista · `chatgpt-nube/asistente-analista`
 

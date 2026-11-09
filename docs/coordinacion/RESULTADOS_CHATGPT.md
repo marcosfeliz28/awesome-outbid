@@ -173,8 +173,9 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
   si los precios incluyen impuestos; el producto instalado requiere la prueba
   de Windows 11 y firma antes de venderse. Este commit documental no cambia ni
   despliega las ramas auditadas. `pnpm check` pasó: 112 archivos/989 pruebas,
-  con 1 archivo/10 pruebas omitidos, y typecheck, lint y builds verdes. Los tres
-  CI se completarán después de publicar el commit.
+  con 1 archivo/10 pruebas omitidos, y typecheck, lint y builds verdes. El
+  commit `cc8a52a4` terminó con `verify`, `windows-installer` y `render-images`
+  verdes en la ejecución `42581356212`.
 
 ## 2026-11-08 · ChatGPT NUBE · `chatgpt-nube/asistente-analista`
 
