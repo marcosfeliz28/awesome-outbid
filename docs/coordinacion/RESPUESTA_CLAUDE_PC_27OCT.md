@@ -702,3 +702,33 @@ Pendiente en este bloque; ver abajo.
    - **Conflicto:** la orden pedía `.mcp.json`, pero `.gitignore` lo excluye («Solo el Taller lo genera; nunca se sube»). La configuración quedó en `docs/coordinacion/mcp-recomendados.json`. Decisión pendiente de Norexos 1.
 2. **Hooks `scripts/hooks/guard-edit.mjs` y `format-edit.mjs`: BLOQUEADO.** No existen en `origin/nexora-cloud` (ni en `655570eb`), así que no hay nada que revisar en Windows. Pendiente: que aterricen en nexora-cloud.
 3. **Recomendador:** ejecutado en la orden 117; las sugerencias están en `RECOMENDACIONES_CLAUDE_SETUP.md`. No lo volví a correr.
+
+## Resultado Claude PC · Órdenes 116–119, segunda pasada (9-nov-2026, sobre `62d1b436`)
+
+### Orden 116
+1. **Visual GV Caja en iPhone 390 px: BLOQUEADA.** `NEXORA_CLAUDE_USER` y `NEXORA_CLAUDE_PASSWORD` siguen sin estar en el entorno. No los pedí ni los inventé.
+2. **IA de ventas:** `ai-usage`, `assistant-unit`, `assistant-api` y `rate-limit-l1` pasan **46 de 46** sobre `62d1b436`. Typecheck y lint de los archivos IA se verificaron antes en `0d176e79`; no repetidos sobre el head nuevo.
+3. **Landing (`apps/landing/precios.html`) vs. pedido de la orden:**
+   | Concepto | Landing | Orden 116 |
+   | --- | --- | --- |
+   | Instalado | US$149 pago único, renovación US$39/año | US$349 + US$99/año |
+   | Nube Medio | US$69/mes (1 sucursal, 5 cajas) | US$69 ✔ |
+   | Nube Completo | US$119/mes (3 sucursales, 10 cajas) | US$119 ✔ |
+   | Básico nube | no aparece | no se ofrece ✔ |
+   | IA de ventas | US$7/usuario/mes, 10 preguntas/día | no mencionado |
+   | Facturas IA | 20/mes incluidas, US$0.30 extra | no mencionado |
+   - Además, `docs/venta/PROPUESTA_PRECIOS.md` (Medio US$59) no coincide con la landing (Medio US$69). Pendiente de decisión de la dueña.
+   - No cambié precios.
+
+### Orden 117
+Hecha en la primera pasada (ver sección anterior). No se volvió a correr el recomendador.
+
+### Orden 118
+1. **MCP con versión fija:** hecho en `claude-pc/mcp-recomendados` (`a6e009f9`), con hashes en `docs/coordinacion/MCP_VERSIONES_FIJAS.md`. `.mcp.json` sigue excluido por `.gitignore`; la configuración está en `docs/coordinacion/mcp-recomendados.json`.
+2. **Hooks en Windows:**
+   - `guard-edit.mjs`: probado con rutas absolutas de Windows. Bloquea `.env` (incluido `.ENV.local`), `pnpm-lock.yaml` y una migración ya versionada. Permite `.env.example` y una migración nueva. Sin cambios.
+   - `format-edit.mjs`: **falla en silencio en Windows.** `execFileSync("pnpm")` no encuentra `pnpm.cmd` sin shell y el `catch` lo oculta, así que no formatea nada. Corregido en `claude-pc/hooks-windows` (`067a9124`): ahora llama a `node_modules/prettier/bin/prettier.cjs` con Node. Verificado con ruta absoluta: el archivo de prueba queda formateado. Pendiente: que N1 mezcle esa rama.
+3. **Recomendador:** ejecutado en la orden 117; sin cambios nuevos.
+
+### Orden 119
+**BLOQUEADA:** `ANTHROPIC_API_KEY` sigue sin estar en el entorno. No ejecuté la evaluación contra la API ni pedí la llave.
