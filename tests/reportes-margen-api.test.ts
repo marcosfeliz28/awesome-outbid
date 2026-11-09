@@ -297,11 +297,12 @@ describe("Reportes de margen", () => {
     expect(delta("Valor del inventario (costo)")).toBe(1120);
     const cogs = now["Costo de lo vendido"],
       value = now["Valor del inventario (costo)"];
-    expect(now["Costo vendido por día"]).toBeCloseTo(
-      cogs / now["Días del período"],
-      2,
-    );
-    expect(now["Inventario / costo vendido"]).toBeCloseTo(value / cogs, 2);
+    // La API redondea a centavos hacia arriba: en un empate exacto (x,xx5) la diferencia es
+    // 0,005 más ruido de coma flotante, y toBeCloseTo(…, 2) exige estrictamente menos.
+    const cents = (got: number, want: number) =>
+      expect(Math.abs(got - want)).toBeLessThanOrEqual(0.005 + 1e-9);
+    cents(now["Costo vendido por día"], cogs / now["Días del período"]);
+    cents(now["Inventario / costo vendido"], value / cogs);
   });
 
   it("precio promedio vendido vs precio de lista", async () => {
