@@ -77,7 +77,7 @@ Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emit
 | `CashSession`  | **Una caja** (de apertura a cierre) de **una persona**. | `userId`, `registerId` (equipo), `openingAmount`, `openedAt`, `closedAt` (nulo = abierta), `expectedCash/Card/Transfer`, `countedCash/Card/Transfer`, `differenceCash/Card/Transfer`, `difference`, `notes`, `closeDetails` (JSON del cuadre: denominaciones, vales, dólares, `delivered`/`left`, lote del verifón, aprobadores) | `:673` |
 | `CashMovement` | Entrada o salida de efectivo durante el turno.          | `type`: `in` o `out`, `amount`, `reason`, `operationId`                                                                                                                                                                                                                                                                          | `:704` |
 
-Reglas: una persona solo puede tener **una caja abierta** (índice único parcial, `apps/api/src/cash.ts:893-920`); el esperado se calcula, no se guarda hasta el cierre (`cash.ts:55-113`); las transferencias del cierre las suma el sistema (`cash.ts:1213`).
+Reglas: una persona solo puede tener **una caja abierta** (índice único parcial, `apps/api/src/cash.ts:897-924`); el esperado se calcula, no se guarda hasta el cierre (`cash.ts:55-113`); las transferencias del cierre las suma el sistema (`cash.ts:1217`).
 
 ## 6. Compras
 

@@ -12,7 +12,7 @@ Son **dos pasos en dos pantallas**:
 2. **Abrir la caja**: menú lateral › **Caja** › botón **«Abrir caja»** (o «Abrir mi caja» en el centro) › en la ventana **«Abrir mi caja»** escribe **«Efectivo inicial»** (el sistema sugiere lo que ella misma dejó al cerrar la última vez) › confirma (`apps/web/src/Management.tsx:1686-1690`, `:1738-1745`, `:2015-2055`). Si el fondo es menor que lo sugerido debe escribir **«Nota si el fondo es menor que el sugerido»** (`:2029-2039`).
 3. Desde el Punto de venta, si no hay caja abierta, aparece el enlace **«Abre tu caja para comenzar»** que lleva a Caja (`apps/web/src/POS.tsx:1218-1221`), y el estado dice «Caja sin abrir» → «Caja abierta» (`:1024-1028`). Intentar cobrar sin caja: «Abre tu caja antes de cobrar.» (`:523`).
 
-No hay "abrir POS" aparte: el Punto de venta se usa directamente, pero **no deja cobrar sin caja abierta**. Una persona solo puede tener una caja abierta (`apps/api/src/cash.ts:893-908`). Detalle: `FLUJO_CAJA_POS.md` §1.
+No hay "abrir POS" aparte: el Punto de venta se usa directamente, pero **no deja cobrar sin caja abierta**. Una persona solo puede tener una caja abierta (`apps/api/src/cash.ts:897-912`). Detalle: `FLUJO_CAJA_POS.md` §1.
 
 ---
 
