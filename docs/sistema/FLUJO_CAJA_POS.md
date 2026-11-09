@@ -128,7 +128,7 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 ## 8. Anulación
 
 - **Cajera:** en **Ventas**, solo sobre una venta suya completada y sin solicitud pendiente: **«Solicitar anulación»** → «Tipo de motivo» (Solicitud del cliente, Venta duplicada, Error de pago, Error de artículo, Otro) + «Explica el motivo» (`Management.tsx:3293-3308`, `:3555-3587`; API `apps/api/src/sales.ts:1866`).
-- **Administración (`*`):** en **Ventas** › **«Anular»** (si no tiene devoluciones ni abonos válidos) con motivo → «Sí, anular venta» (`Management.tsx:3313-3327`, `:3540-3554`; API `POST /sales/:id/void`, `apps/api/src/sales.ts:2369-2377`). O en **Solicitudes de anulación** › **«Aprobar y anular»** (`apps/web/src/VoidRequests.tsx:123-129`). Nadie aprueba su propia solicitud (`sales.ts:2085`, `:2404`).
+- **Administración (`*`):** en **Ventas** › **«Anular»** (si no tiene devoluciones ni abonos válidos) con motivo → «Sí, anular venta» (`Management.tsx:3313-3327`, `:3540-3554`; API `POST /sales/:id/void`, `apps/api/src/sales.ts:2373-2381`). O en **Solicitudes de anulación** › **«Aprobar y anular»** (`apps/web/src/VoidRequests.tsx:123-129`). Nadie aprueba su propia solicitud (`sales.ts:2085`, `:2404`).
 - Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:3607`; `sales.ts:2433-2445`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2426-2431`).
 
 ## 9. Movimientos de efectivo durante el día

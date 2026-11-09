@@ -518,6 +518,7 @@
   "sales.ts:701": "!receivableNeedsApproval(input.payments, setting?.data as any, manages);",
   "sales.ts:726": "// aquí. `closedCashReason` justifica que entre en una caja ya cerrada;",
   "sales.ts:785": "if (requestsDiscount && !normalizedInput.discountReason)",
+  "sales.ts:990": "if (!(total > 0))",
   "sales.ts:997": "} catch (e: any) {",
   "security.ts:116": "(m: any) =>",
   "Tienda.tsx:115": "{sessionId && onSwitch && (",
