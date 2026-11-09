@@ -6,6 +6,12 @@
 -- lecturas ni escrituras. Si una GV antigua en US$ por transferencia o tarjeta
 -- ya existe, la validación falla, la migración sigue y la restricción queda
 -- NOT VALID (protege lo nuevo); 202610220001 la deja registrada para revisar.
+--
+-- ADD CONSTRAINT pide un bloqueo exclusivo de la tabla. Con lock_timeout, si la
+-- tabla está ocupada la migración falla pronto y con mensaje (el despliegue se
+-- reintenta) en vez de dejar esperando a todas las cobranzas de GV detrás de ella.
+SET LOCAL lock_timeout = '5s';
+
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'gv_payment_usd_cash_only') THEN

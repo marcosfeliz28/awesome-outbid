@@ -7,6 +7,7 @@ export default defineConfig({
       "tests/gv-servicios-api.test.ts",
       "tests/desglose-suma-api.test.ts",
       "tests/devoluciones-heredadas-api.test.ts",
+      "tests/gv-pago-usd-heredado-api.test.ts",
       "tests/pagos-ajustes-api.test.ts",
       "tests/gv-modulo-api.test.ts",
       "tests/gv-caja-api.test.ts",

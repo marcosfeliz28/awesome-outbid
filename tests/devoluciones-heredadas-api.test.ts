@@ -8,6 +8,8 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
+import { exigirBaseLocal } from "./helpers-base-local";
+
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -15,6 +17,7 @@ requireApi("dotenv").config({
   path: fileURLToPath(new URL("../.env", import.meta.url)),
   quiet: true,
 });
+exigirBaseLocal();
 const { PrismaClient } = requireApi("@prisma/client");
 const db = new PrismaClient();
 
