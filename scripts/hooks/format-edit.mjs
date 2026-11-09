@@ -3,6 +3,8 @@ import process from "node:process";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve, relative, isAbsolute } from "node:path";
+// En Windows "pnpm" es pnpm.cmd: execFileSync sin shell no lo encuentra. Se llama a Prettier con Node.
+const prettier = resolve("node_modules/prettier/bin/prettier.cjs");
 try {
   const file = JSON.parse(readFileSync(0, "utf8"))?.tool_input?.file_path ?? "";
   const abs = resolve(process.cwd(), file);
@@ -15,7 +17,7 @@ try {
     /\.(ts|tsx|js|mjs|json|css|md)$/.test(rel) &&
     !/node_modules|pnpm-lock|migration\.sql/.test(rel)
   )
-    execFileSync("pnpm", ["exec", "prettier", "--write", "--", rel], {
+    execFileSync(process.execPath, [prettier, "--write", "--", rel], {
       stdio: "ignore",
       timeout: 20000,
     });
