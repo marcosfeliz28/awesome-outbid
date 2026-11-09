@@ -173,3 +173,6 @@ FS-471 corregida de efectivo a tarjeta; tarjeta cuadra exacta con el lote 008 GV
 - Bloqueo de venta sin costo: PAUSADO hasta cuadrar todo (avisado a Norexos 1). El Excel de 69 productos sin costo se le reenvió; al devolverlo se cargan los costos.
 - FS-188: anulada (Lizbeth, 6,000 efectivo duplicada); Yisel Parra pagó 6,450 por Popular el 21-oct. No encontré la factura que la reemplaza.
 - Dayana Tejada: su factura es la FS-462 (FS-461 anulada); el depósito de 11,000 ya está identificado. Sin factura queda Attabeira Morales 3,650.
+
+## Tarjeta de Lizbeth cobrada en el verifón de Génesis (orden de la dueña 9-nov)
+Desde el 30-oct al 8-nov, el verifón GV Makeup Estudio (cuenta Génesis) recibió lo de la caja de Lizbeth, cuando debió ir a MacGen. Total bruto según cajas cerradas: 172,370 (30-oct 14,720; 31-oct 22,320; 2-nov 15,520; 3-nov 15,820; 4-nov 16,750; 5-nov 2,500; 6-nov 9,600; 7-nov 25,540; 8-nov 49,600). Comisión Cardnet 3.85% ≈ 6,636; neto ≈ 165,734. Excluidos los cobros de contraentrega con tarjeta (Addison llevó el verifón de MacGen; ej. FS-413 2,500 y FS-415 3,300 del 5-nov, por confirmar). Diferencia sin explicar: sumando ventas del 30-oct salen 12,820, la caja dice 14,720 (1,900 de más en la caja). Si se cuenta desde el 29-oct, +18,950.
