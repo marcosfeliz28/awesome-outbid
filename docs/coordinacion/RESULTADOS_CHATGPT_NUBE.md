@@ -1,5 +1,47 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-09 · Auditoría del Asistente analista · `chatgpt-nube/auditoria-asistente-9nov`
+
+**Rama auditada:** `origin/claude-pc/asistente-analista` en `2558b4632042b72da8e6c441174c61655c3d8ddb`
+**Alcance:** contraste con `docs/ia/ASISTENTE_ANALISTA_SPEC.md`, `ASISTENTE_ANALISTA_EVAL_100.md` y `ASISTENTE_ANALISTA_COSTOS.md`; permisos por rol, sucursal, cierre ciego, doble lectura, medición y cuotas. Solo lectura sobre la rama objetivo.
+
+### Veredicto
+
+La ampliación conserva el aislamiento por sucursal y los permisos de las pantallas reutilizadas. La cajera recibe únicamente `mis_ventas` y sus propias cajas, sin esperado ni diferencia; administración conserva los controles `reports:read`, `sale:manage`, `catalog:read`, `cash:write` y `profit:read`. Las herramientas no aceptan empresa, sucursal ni usuario enviados por el modelo y no encontré una herramienta de escritura.
+
+No debe presentarse todavía como cumplimiento completo de la especificación ni como cuota comercial cerrada: el arnés obtiene **92/100**, pero la prueba queda verde aceptando expresamente los ocho errores; además, las cuotas vendidas por empresa y mes no son las que aplica este código.
+
+### Hallazgos
+
+| ID · gravedad | Evidencia | Impacto | Arreglo propuesto |
+|---|---|---|---|
+| ANA-01 · **Alta** | `tests/ia-analista-eval.test.ts:13-25,52-54`; salida del arnés: `precisión 92/100`, con fallos AA-005, 019, 020, 029, 035, 040, 043 y 044. El criterio 1 de `docs/ia/ASISTENTE_ANALISTA_SPEC.md:80-85` exige que pasen las 100. | El CI informa éxito aunque ocho respuestas esperadas no coinciden. Los errores mezclan cifras brutas y netas de devoluciones, ITBIS, unidades, rankings y formas de cobro; son cifras que la dueña puede usar para decidir. | Resolver primero la definición comercial de bruto/neto y corregir la especificación o las lecturas. Después cambiar la regresión para exigir `filas.every(f => f.pasa)` y no mantener una lista permitida de fallos. Si la definición aprobada es neta, actualizar los ocho casos y su cálculo esperado de forma explícita, no silenciarlos. |
+| ANA-02 · **Alta** | `apps/api/src/assistant.ts:38-46,99-105,1216-1246`: el plan `analista` permite 30 preguntas **por usuario y día** y US$0.40 **por usuario y día**. `docs/ia/ASISTENTE_ANALISTA_COSTOS.md:36-55` y `docs/coordinacion/ORDENES_24OCT_NOCHE_PRODUCTO.md` definen 100/250/600/1,500 preguntas **por plan y mes**, con paquetes mensuales. No hay consulta ni reserva mensual por empresa/plan en esta rama. | Un negocio Autoservicio con una sola persona puede reservar hasta unas 900 preguntas en un mes de 30 días frente a las 100 vendidas; con varias personas el consumo se multiplica. Por eso el margen ≥15 % y los paquetes no quedan protegidos por estos topes. | Reutilizar la cuota mensual de la empresa y sus paquetes como autoridad; reservar de forma atómica por empresa/mes y luego aplicar, si se desea, un límite diario secundario. Probar 100/101, reinicio de mes, paquete extra, dos usuarios simultáneos y dos sucursales de la misma empresa. El monto US$0.40, marcado PENDIENTE, no debe activarse como decisión comercial sin aprobación. |
+| ANA-03 · **Media** | `tests/ia-analista/casos.ts:456-505`: el arnés sin Anthropic inyecta de antemano las herramientas correctas de cada caso y la respuesta final es siempre `(respuesta simulada)`. `tests/ia-analista-eval.test.ts:47-54` declara 28/28 rechazos y 6/6 casos de prompt a partir de llamadas guionadas y presencia de texto en el prompt, no de la respuesta al usuario. | El 92/100 mide principalmente cálculos, esquemas y permisos del servidor. No demuestra que el asistente elija la herramienta correcta, rechace una inyección en su respuesta ni redacte la cifra esperada. El script real existe, pero requiere Anthropic y no corre en CI. | Separar el indicador en «backend determinista» y «respuesta del modelo». Mantener el arnés sin red para seguridad de herramientas, pero no llamarlo precisión de respuestas. Añadir fixtures deterministas de respuestas para validar el posprocesador y ejecutar el arnés real controlado antes del piloto, registrando acierto por selección, cifra y redacción sin guardar PII. |
+| ANA-04 · **Media** | `apps/api/src/assistant.ts:567-617,693-733,801-835` sí añade `verificacion` por dos lecturas a cuadre, cierres e inventario. En cambio `transferencias_pendientes` (`737-774`) calcula total y bancos desde la misma lista; `productos_sin_ventas` (`838-864`) usa una sola lectura; `explicar_reporte` (`866-890`) también. El prompt de `1061-1077` solo obliga a advertir cuando recibe `verificacion.cuadra=false`. | Algunas cifras nuevas pueden presentarse como confirmadas sin el control por dos caminos solicitado en la orden. Sumar la misma lista de dos maneras no es una lectura independiente. | Añadir una lectura de control independiente para cada total que se vaya a afirmar o devolver `verificacion` con lectura faltante y el aviso «No puedo confirmarlo con seguridad». Cubrir discrepancia, timeout y ausencia de una fuente en pruebas. |
+| ANA-05 · **Media** | `apps/api/src/assistant.ts:1228-1273`: la reserva serializa por usuario, pero crea la fila con costo nulo; el costo se escribe al terminar. Varias solicitudes consecutivas/concurrentes pueden reservar las 30 plazas mientras la suma visible sigue bajo US$0.40. Una solicitud también puede cruzar el tope porque se comprueba solo el gasto anterior. | El tope de costo no es un techo estricto y no basta para garantizar el presupuesto indicado. El exceso máximo crece con las solicitudes en vuelo. | Reservar un costo conservador por pregunta dentro de la transacción y reconciliarlo al finalizar, o limitar a una solicitud en vuelo por usuario hasta `settle`. Probar concurrencia en el borde del tope y una pregunta que lo cruza. |
+
+### Comprobaciones que pasaron
+
+- Aislamiento: `liveDeps` pasa siempre el `actor` autenticado a reportes, caja, transferencias e inventario; esos controladores filtran por `actor.branchId`. Los esquemas estrictos rechazan `branchId`, `sucursal`, `empresa`, `tenant`, `company`, `userId` y `usuario`.
+- Caja ciega: `CashController.sessionsFor` limita a `userId` cuando falta `sale:manage` y no calcula ni devuelve esperado/diferencia cuando `canViewCashExpected` es falso (`cash.ts:765-827`).
+- Ganancia/costo: las rutas de reportes conservan `profit:read`; la salida adicional se limpia para quien no puede verla. No encontré una reproducción de costo o ganancia expuestos a cajera.
+- Solo lectura: las diez herramientas ofrecidas son consultas; una herramienta desconocida o no autorizada se rechaza antes de acceder a datos.
+- Rama objetivo: los tres trabajos del commit auditado están verdes en la ejecución `42563256312`: `verify`, `windows-installer` y `render-images`.
+
+### Pruebas y límites
+
+- `pnpm install --frozen-lockfile`: pasó; 925 paquetes reutilizados desde el almacén local.
+- `pnpm db:generate`: pasó.
+- Arnés focal sin Anthropic: 31/31 pruebas técnicas verdes, pero la salida funcional fue **92/100**; el detalle exacto está en ANA-01.
+- `pnpm check`: código 0; typecheck y ESLint verdes; **113 archivos pasaron y 1 se omitió, 998 pruebas pasaron y 10 se omitieron**; builds web/API verdes. Vite emitió la advertencia conocida de un chunk mayor de 500 kB.
+- No se llamó a Anthropic ni se usó clave. No se comprobó calidad lingüística del modelo real, latencia P95 ni costo P95. No se usó producción, Render, credenciales ni la base de la tienda; no se desplegó ni se modificó la rama auditada.
+
+### Decisiones pendientes
+
+1. La dueña debe confirmar si las ocho respuestas se esperan brutas o netas después de devoluciones; no conviene que una prueba decida esa regla por sí sola.
+2. La dueña debe aprobar o rechazar el tope de US$0.40 por usuario/día. Antes de vender, el producto necesita una cuota mensual real por empresa que corresponda a 100/250/600/1,500 y paquetes.
+
 ## 2026-11-08 · Asistente analista · `chatgpt-nube/asistente-analista`
 
 - **Qué hice:** documenté el producto de IA analítica en `docs/ia/ASISTENTE_ANALISTA_SPEC.md`: ocho grupos de preguntas, las cinco herramientas actuales, seis lecturas faltantes, matriz de permisos para dueña/gerente/cajera y reconciliación obligatoria por tres caminos. Preparé `ASISTENTE_ANALISTA_EVAL_100.md` con exactamente 100 preguntas, respuestas y cálculos deterministas, incluidas trampas de PIN, otra empresa/sucursal, anulaciones, escrituras e inyección. En `ASISTENTE_ANALISTA_COSTOS.md` calculé cuatro escenarios con las tarifas implementadas en `ai-prices.ts` y conservé las cuotas vigentes de 100/250/600/1,500 preguntas.

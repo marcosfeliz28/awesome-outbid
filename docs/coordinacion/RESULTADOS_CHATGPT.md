@@ -2,6 +2,12 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-09 · ChatGPT NUBE · auditoría `claude-pc/asistente-analista`
+
+- **Qué hice:** audité el commit `2558b463` contra la especificación, las 100 preguntas, permisos, sucursal, caja ciega, doble lectura, costo y cuotas. El informe completo, con archivo:línea y arreglo propuesto, está en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
+- **Qué pasó:** aislamiento, permisos y cierre ciego se conservan. El arnés sin Anthropic produce 92/100, aunque su prueba acepta los ocho fallos y queda verde. También encontré que el código aplica 30 preguntas y US$0.40 por usuario/día, no las cuotas comerciales de 100/250/600/1,500 por empresa/mes. `pnpm check` pasó (113 archivos/998 pruebas, 1 archivo/10 pruebas omitidos; builds verdes). El commit auditado ya tenía sus tres CI verdes en la ejecución `42563256312`.
+- **Qué falta o necesita decisión:** definir bruto frente a neto para los ocho casos y aprobar el tope de costo. La corrección debe añadir cuota mensual atómica por empresa, no depender solo del límite diario por usuario. No se modificó la rama auditada, no se llamó a Anthropic y no hubo despliegue ni acceso a producción.
+
 ## 2026-11-07 · ChatGPT NUBE · `chatgpt-nube/contrato-correcciones` · correcciones técnicas del contrato
 
 - **Base y alcance:** rama creada desde `origin/nexora-cloud` `655570eba498eb3481901d671d38101c672749ba`. Solo se corrigieron los cinco borradores de `docs/venta/contrato/`; no se cambió código, precios, planes, credenciales, datos ni producción.
