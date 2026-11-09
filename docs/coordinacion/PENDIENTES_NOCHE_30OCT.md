@@ -151,3 +151,10 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Ambas con 3 CI verdes sobre el SHA exacto, avance directo (sin mezcla nueva). Agentes terminaron; cerrar sus sesiones.
 - Aprendido: si dos ramas de agentes tocan docs/sistema/CAMBIOS.md, la segunda queda atrás tras fusionar la primera; fusionar en serie y pedir una sola mezcla final al segundo agente.
 - Observación: procesos playwright-mcp de agentes consumían la RAM de la PC de la dueña; pedir a los agentes de PC cerrar su navegador de pruebas al terminar.
+
+## 9-nov 22:37 UTC — revisión de media hora (N1)
+- `confirm_repository_trust` FALLÓ con `[refused_log_too_long]` tras el "sí autorizo" de la dueña: la aprobación no se contó por exceso de historial en esta sesión. No puedo escribirle a sus sesiones de PC todavía; le informé y le di el camino de copiar-pegar como respaldo. Para activarlo de verdad se necesita una sesión NUEVA que vuelva a pedirlo.
+- `diseno-impacto` (PR #17, 1dbfd28d) quedó bloqueada pidiendo mezcla+despliegue: su base está 42 commits detrás de nexora-cloud (ya no es fast-forward, conflicto esperado en docs/sistema/CAMBIOS.md). Le pedí que remezcle origin/nexora-cloud, resuelva, un solo push y reporte el SHA final con los 3 CI verdes; yo decido mezcla/despliegue después. NO desplegado.
+- `asistente-analista` (9d419f30, eval 100/100, CI verde): pendiente de que la dueña apruebe el tope de US$0.40/usuario/día. No es bloqueo urgente, sigue en la lista.
+- Ramas `chatgpt-nube/calidad-9nov` y `chatgpt-pc` (si ya empezó) con las órdenes de brecha-competencia/auditoría de calidad: aún no reportan: revisar en el próximo ciclo.
+- Aprendido: cuando una sesión queda con `needs_action` de "¿mezclo y despliego?" sin que yo haya verificado que sigue siendo fast-forward, hay que comprobar `git merge-base --is-ancestor origin/nexora-cloud <sha-rama>` ANTES de responder; si falla, pedir remezcla al agente en vez de forzar.
