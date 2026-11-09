@@ -1,5 +1,48 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-09 · Auditoría de `claude-pc/diseno-impacto`
+
+**Rama de auditoría:** `chatgpt-nube/auditoria-diseno-impacto-9nov`
+
+**Entrega auditada:** `1dbfd28d8965c529b0fb6df9aaee42020c76d972`
+
+### Veredicto
+
+**No recomiendo mezclar la entrega sin corregir DI-01 a DI-04.** La capa visual no modifica `POS.tsx`, conserva F2/F4/F8/F12 y sus colores nuevos comprobados alcanzan AA. Sin embargo, el video identifica a Macgen/GV, «reducir movimiento» no detiene Recharts, el esqueleto deja vacío el estado accesible de carga y la rama cambia un contrato de la API de reportes. Además, la propia medición registra una pausa visible en CPU 4×.
+
+### Hallazgos
+
+1. **DI-01 · ALTA · El video promocional muestra identidad y contexto de la tienda.** En `docs/diseno/capturas/clips/promo-norexos-16x9.mp4`, aproximadamente 00:04, se leen «GRUPO MACGEN · GV MAKEUP STUDIO», «BIENVENIDA · MACGEN & GV» y la descripción de lo que vende Grupo MacGen/GV. Entre 00:08 y 00:16 también aparecen «Valeria Rivera», «Hola, Valeria», el país, cifras anuales y la opción «GV Makeup Studio». La versión vertical repite «Valeria». El generador inicia la sesión sembrada y graba el tablero real en `docs/diseno/capturas/clips/grabar-promo.cjs:102-160`; el nombre mostrado viene de `apps/api/prisma/seed.ts:115-126`. Aunque «Valeria Rivera» pertenece a la semilla y no se confirmó como persona real, **Macgen/GV sí identifica la operación para la que se construyó el sistema** y contradice la orden de que el promo no muestre datos de la tienda. **Arreglo propuesto:** grabar en una instancia exclusivamente comercial con empresa genérica «Tienda de demostración», usuarios ficticios inequívocos, menú sin GV/Macgen y cifras sintéticas; añadir una prueba que extraiga fotogramas/OCR y bloquee `Macgen|GV|Valeria|Grupo` antes de publicar.
+
+2. **DI-02 · MEDIA · «Reducir movimiento» deja activa la animación nativa de Recharts.** La pantalla promete «nada se mueve» en `apps/web/src/Management.tsx:4166-4169`, pero el `<Area>` de la demostración no define `isAnimationActive={false}` cuando la preferencia es `reduce` (`apps/web/src/Demo.tsx:70-89`). El propio documento reconoce la excepción en `docs/diseno/DIRECCION_VISUAL_IMPACTO.md:91-95`. La E2E titulada «no anima nada» solo consulta el velo CSS y una estrella (`tests/e2e/impacto.spec.ts:71-92`), no la animación SVG de Recharts, por lo que da un verde incompleto. **Arreglo propuesto:** propagar una consulta reactiva de `prefers-reduced-motion` a cada gráfica y desactivar su animación; ampliar la E2E para observar el path de Recharts antes y después de varios cuadros.
+
+3. **DI-03 · MEDIA · El modo Impacto elimina el mensaje accesible de carga.** `Loading` usa `role="status"` y el único texto «Cargando datos…» en `packages/ui/src/index.tsx:72-82`. Impacto aplica `display:none` a ese `span` y al SVG (`apps/web/src/impacto.css:123-140`), mientras el esqueleto restante es `aria-hidden`; el estado queda sin nombre para lector de pantalla. **Arreglo propuesto:** conservar «Cargando datos…» como `.sr-only` o añadir un texto equivalente no oculto del árbol accesible; cubrirlo con una prueba de nombre/estado accesible en modo Impacto.
+
+4. **DI-04 · MEDIA · La rama visual cambia un contrato de lógica/API fiscal.** `apps/api/src/reports.ts:1710-1714,1776-1788` transforma `fiscalStatus` de las claves estables `not_issued`/`issued` a «Sin emitir»/«Emitido» dentro del JSON de `/reports/sales`; la prueba añadida en `tests/api.test.ts` solo cubre `not_issued`. Esto no cambia montos, pero sí lógica de servidor y puede romper consumidores que esperen la clave, fuera del alcance visual solicitado. **Arreglo propuesto:** sacar este cambio a una rama funcional independiente y mantener una clave estable más una etiqueta traducida, o traducir únicamente en la representación Excel/PDF/UI; probar ambos estados y compatibilidad del JSON.
+
+5. **DI-05 · MEDIA · En CPU 4× Impacto registra tareas largas y un cuadro de 217 ms, pero la regresión solo exige el presupuesto a velocidad normal.** La evidencia de la propia rama muestra una tarea de 92 ms al abrir la demostración y dos de 74/68 ms al volver al resumen, con peor cuadro de 217 ms (`docs/diseno/DIRECCION_VISUAL_IMPACTO.md:73-83`). La prueba bloqueante no aplica throttling y solo rechaza tareas mayores de 50 ms en ese caso (`tests/e2e/impacto.spec.ts:95-154`). CLS desde el primer cuadro sí queda en 0. **Arreglo propuesto:** añadir un caso con CPU 4× y presupuesto explícito; en equipos lentos omitir View Transition/animación de gráficas o aplicar carga diferida a la demostración.
+
+### Comprobaciones sin hallazgo
+
+- **Caja/POS y teclas:** no hay cambios en `apps/web/src/POS.tsx`, `posKeyboard.ts` ni módulos de cobro. `withTransition` evita entrar o salir del POS; F2/F4/F8/F12 siguen en `POS.tsx`. El cambio de `Estado_fiscal` de DI-04 no altera dinero, ventas, caja o inventario.
+- **Contraste:** cálculo WCAG: aviso claro 6.37:1, aviso oscuro 7.28:1, violeta `#7c3aed` sobre blanco 5.70:1 y violeta claro `#a78bfa` sobre `#151b2b` 6.31:1. No encontré un par nuevo bajo 4.5:1.
+- **Teclado:** el interruptor es un `input[type=checkbox]` etiquetado y la E2E lo activa con Espacio. La ruta de demostración se abre con un enlace normal.
+- **Tamaño del bundle:** frente a `origin/nexora-cloud`, el JS principal pasó de 1,228,128 a 1,234,100 bytes (+5,972; +0.49 %) y CSS de 134.96 a 140.45 kB; el chunk de gráficas permaneció en 394.77 kB. No es un hallazgo por peso.
+- **Música:** los MP4 vigentes tienen pista AAC y `musica-promo.py` la genera por código; no encontré material de audio de terceros.
+
+### Pruebas, autoauditoría y límites
+
+- Inspeccioné el diff completo contra `origin/nexora-cloud`, extraje fotogramas de ambos MP4 y verifiqué metadatos: 1920×1080/35.4 s y 1080×1920/24.77 s, H.264 + AAC.
+- `tests/impacto.test.ts`: 9/9 en verde. Es una prueba estática útil, pero DI-02 demuestra que no cubre todo el movimiento real.
+- Build web de producción: verde. Comparé el peso con la misma base y dependencias.
+- La entrega auditada `1dbfd28d` tiene `verify`, `windows-installer` y `render-images` en verde en la ejecución 42565175883. Ese verde no invalida los hallazgos de alcance, accesibilidad o contenido del video.
+- `pnpm check` terminó con código 0 después de `pnpm db:generate`: typecheck y ESLint pasaron; **113 archivos de prueba pasaron y 1 se omitió; 998 pruebas pasaron y 10 se omitieron**; builds web/API correctos. Vite solo emitió la advertencia conocida de un chunk mayor de 500 kB.
+- No se modificó el código auditado, no se desplegó, no se accedió a Render, credenciales, producción ni a la base de la tienda.
+
+### Decisión recomendada
+
+Bloquear la publicación de los videos hasta DI-01. Corregir DI-02 y DI-03 antes de activar Impacto para clientes. Separar DI-04 en una entrega funcional con compatibilidad explícita. DI-05 puede resolverse con un umbral aprobado o degradación automática para equipos lentos.
+
 ## 2026-11-08 · Asistente analista · `chatgpt-nube/asistente-analista`
 
 - **Qué hice:** documenté el producto de IA analítica en `docs/ia/ASISTENTE_ANALISTA_SPEC.md`: ocho grupos de preguntas, las cinco herramientas actuales, seis lecturas faltantes, matriz de permisos para dueña/gerente/cajera y reconciliación obligatoria por tres caminos. Preparé `ASISTENTE_ANALISTA_EVAL_100.md` con exactamente 100 preguntas, respuestas y cálculos deterministas, incluidas trampas de PIN, otra empresa/sucursal, anulaciones, escrituras e inyección. En `ASISTENTE_ANALISTA_COSTOS.md` calculé cuatro escenarios con las tarifas implementadas en `ai-prices.ts` y conservé las cuotas vigentes de 100/250/600/1,500 preguntas.

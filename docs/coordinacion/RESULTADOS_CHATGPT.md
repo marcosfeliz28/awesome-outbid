@@ -148,6 +148,13 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
   - Corregir el mapeo de transferencias rechazadas en el reporte de cierre y definir idempotencia/reintentos de Resend.
   - Resultado entregado localmente; no hice `git push` ni PR porque la dueña aclaró que por ahora todo se trabaja en casa. El último commit local de código de prueba es `2902a03`; el documento queda en el siguiente commit local.
 
+## 2026-11-09 · ChatGPT NUBE · auditoría `claude-pc/diseno-impacto`
+
+- **Qué hice:** audité accesibilidad, teclado, movimiento reducido, aislamiento del POS/caja, lógica, rendimiento y los dos videos promocionales de la entrega `1dbfd28d`. El informe completo y la autoauditoría están en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
+- **Qué encontré:** 1 hallazgo alto y 4 medios. El promo muestra «Grupo Macgen · GV Makeup Studio», «Macgen & GV», la identidad sembrada «Valeria Rivera» y cifras del tablero; Recharts sigue animado con movimiento reducido; el esqueleto oculta el único mensaje accesible de carga; la rama visual cambia el contrato `Estado_fiscal` del API; y la medición declarada registra hasta 92 ms de tarea larga/217 ms de cuadro con CPU 4×. No encontré cambios en POS, F2/F4/F8/F12 o montos. Los contrastes nuevos comprobados superan 4.5:1.
+- **Pruebas:** `tests/impacto.test.ts` pasó 9/9; `pnpm check` pasó con 113 archivos/998 pruebas en verde y 1 archivo/10 pruebas omitidos; el JS principal aumentó 5,972 bytes (+0.49 %). La entrega auditada tiene `verify`, `windows-installer` y `render-images` en verde en la ejecución 42565175883. La validación final de esta rama documental se consigna en el informe y en el CI de su último commit.
+- **Qué falta:** regenerar los promos sobre una empresa totalmente genérica, completar movimiento reducido y estado accesible, separar el cambio fiscal, fijar un presupuesto para CPU lenta y corregir antes de mezclar. No se desplegó ni se tocó Render, producción, credenciales o la base de la tienda.
+
 ## Plantilla
 
 **Fecha · asistente (NUBE o PC) · rama · commit**
