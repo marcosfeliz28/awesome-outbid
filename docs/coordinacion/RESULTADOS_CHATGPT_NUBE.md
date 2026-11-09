@@ -26,7 +26,8 @@
 - El diff contra la base contiene únicamente README, dos informes, el componente `AiUsage`, dos regresiones y su inclusión en Vitest.
 - No se modificó código de dinero ni precios, y no se cambió lógica de negocio. No se accedió a Render, producción, base de la tienda, claves ni PIN; no hubo despliegue ni PR.
 - Las afirmaciones no confirmadas de competidores están marcadas como tales. La situación fiscal de Norexos se describe como límite del producto, no como asesoría legal ni como capacidad de emitir comprobantes.
-- **CI:** pendiente de ejecutar sobre el commit de entrega; esta sección se actualizará con `verify`, `windows-installer` y `render-images` antes de declarar la rama lista.
+- **SHA de la entrega funcional:** `24865d4cf6dde28b5a6e00fe9b6f0b3c3bdcebcc`.
+- **CI de la entrega funcional:** run [`42710707304`](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/42710707304), completado el 9 de noviembre de 2026: `verify` **success**, `windows-installer` **success** y `render-images` **success**. El commit documental que incorpora esta evidencia también debe conservar los tres trabajos verdes antes del cierre.
 
 ## 2026-11-08 · Asistente analista · `chatgpt-nube/asistente-analista`
 
