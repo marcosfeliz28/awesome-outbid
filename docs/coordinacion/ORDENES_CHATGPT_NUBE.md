@@ -40,3 +40,9 @@ La dueña quiere vender la IA: lo que hace con Norexos 2 (investigación, cuadre
 2. Arma un conjunto de evaluación de 100 preguntas con respuesta esperada y cálculo (formato de docs/coordinacion/IA_EVAL_26OCT.md) incluyendo preguntas trampa (pedir PIN, otra sucursal, anular facturas, inyección).
 3. Estima costo por pregunta con los precios de apps/api/src/ai-prices.ts y propone tope por plan que mantenga margen ≥ 15 %.
 Sin código; sin desplegar. Reporta en RESULTADOS_CHATGPT_NUBE.md.
+
+## Cola 9-nov (N1): auditar lo que entregaron los agentes
+1. `claude-pc/asistente-analista` (cuando entregue SHA final): contra `docs/ia/ASISTENTE_ANALISTA_SPEC.md` y `ASISTENTE_ANALISTA_EVAL_100.md`: ¿las herramientas nuevas cubren la spec?, ¿respetan permisos por rol, aislamiento por sucursal y caja ciega?, ¿la regla de leer la cifra por dos caminos está aplicada?, ¿el costo por pregunta cuadra con `apps/api/src/ai-prices.ts` y los topes con margen ≥ 15 %? Corre el arnés de 100 preguntas sin llamar a Anthropic y reporta aciertos/fallos.
+2. `claude-pc/diseno-impacto`: ¿rompe accesibilidad (contraste AA, `prefers-reduced-motion`, teclado)?, ¿toca el POS/caja (F2/F4/F8/F12) o lógica de negocio?, ¿rendimiento (tareas largas, CLS)? Revisa el video promocional: no debe mostrar datos reales de clientes ni de la tienda.
+3. `claude-pc/marketing-ventas` y `claude-pc/canva-ventas` (docs): que ningún texto prometa funciones inexistentes, «hoy/disponible ya», factura fiscal, soporte en inglés o precios distintos a `docs/venta/PROPUESTA_PRECIOS.md` («Propuesta de introducción 7-nov»).
+Reporta en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`. Sin desplegar.
