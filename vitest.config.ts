@@ -8,6 +8,7 @@ export default defineConfig({
     // dejar una prueba esperando hasta su timeout aunque aislada tarde segundos.
     maxWorkers: 4,
     include: [
+      "tests/calidad-documentacion-9nov.test.ts",
       "tests/docs-sistema-indice.test.ts",
       "tests/login-legible.test.ts",
       "tests/login-animacion.test.ts",
