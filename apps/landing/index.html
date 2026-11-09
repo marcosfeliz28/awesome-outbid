@@ -32,6 +32,39 @@
       content="#0b0f19"
       media="(prefers-color-scheme: dark)"
     />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://norexos.net/#org",
+            "name": "Norexos",
+            "url": "https://norexos.net/",
+            "logo": "https://norexos.net/icon.svg"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://norexos.net/#web",
+            "url": "https://norexos.net/",
+            "name": "Norexos",
+            "publisher": { "@id": "https://norexos.net/#org" },
+            "inLanguage": ["es-DO", "en"]
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Norexos",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web, Windows",
+            "url": "https://norexos.net/",
+            "inLanguage": "es-DO",
+            "description": "Punto de venta, cierre de caja ciego e inventario para tiendas dominicanas.",
+            "publisher": { "@id": "https://norexos.net/#org" }
+          }
+        ]
+      }
+    </script>
     <link rel="stylesheet" href="landing.css" />
   </head>
   <body>
@@ -63,11 +96,14 @@
           para la tienda dominicana. Funciona en el navegador; para vender sin
           internet puedes instalarlo en tu PC.
         </p>
-        <p class="sub"><strong>Programa piloto:</strong> 60 días con instalación incluida. Próximamente.</p>
+        <p class="sub">
+          <strong>Programa piloto:</strong> 60 días con instalación incluida.
+          Próximamente.
+        </p>
       </section>
 
-      <section id="beneficios" class="wrap">
-        <h2 class="section-title">Lo que hace por ti</h2>
+      <section id="beneficios" aria-labelledby="beneficios-t" class="wrap">
+        <h2 id="beneficios-t" class="section-title">Lo que hace por ti</h2>
         <p class="section-sub">
           Seis razones para mover tu tienda con Norexos.
         </p>
@@ -119,9 +155,9 @@
       </section>
 
       <!-- DECIDE-DUEÑA: planes y precios (propuesta sin aprobar en docs/venta/PROPUESTA_PRECIOS.md), canal de contacto (¿existe soporte@norexos.net, formulario o WhatsApp?), botón de acceso (app.norexos.net) y prueba gratis, frase «Programa piloto: 60 días con instalación incluida», disponibilidad y soporte en inglés -->
-      <section id="planes" class="alt">
+      <section id="planes" aria-labelledby="planes-t" class="alt">
         <div class="wrap">
-          <h2 class="section-title">Planes</h2>
+          <h2 id="planes-t" class="section-title">Planes</h2>
           <p class="section-sub">
             Próximamente. Los planes y sus precios se anunciarán aquí antes de
             cobrar nada.
@@ -129,8 +165,8 @@
         </div>
       </section>
 
-      <section id="preguntas" class="wrap">
-        <h2 class="section-title">Preguntas frecuentes</h2>
+      <section id="preguntas" aria-labelledby="preguntas-t" class="wrap">
+        <h2 id="preguntas-t" class="section-title">Preguntas frecuentes</h2>
         <div class="faq">
           <details open>
             <summary>¿Necesito instalar algo?</summary>
@@ -152,8 +188,17 @@
             <p>La caja sigue vendiendo sin conexión y sincroniza al volver.</p>
           </details>
           <details>
+            <summary>¿Norexos emite NCF o e-CF?</summary>
+            <p>
+              No. Norexos no emite comprobantes fiscales (NCF ni e-CF). Para eso
+              sigue usando el sistema que te indique tu contador o la DGII.
+            </p>
+          </details>
+          <details>
             <summary>¿Tiene soporte en español?</summary>
-            <p>El soporte es en español. El canal de contacto se anunciará aquí.</p>
+            <p>
+              El soporte es en español. El canal de contacto se anunciará aquí.
+            </p>
           </details>
         </div>
       </section>

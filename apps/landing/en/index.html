@@ -32,6 +32,39 @@
       content="#0b0f19"
       media="(prefers-color-scheme: dark)"
     />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://norexos.net/#org",
+            "name": "Norexos",
+            "url": "https://norexos.net/",
+            "logo": "https://norexos.net/icon.svg"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://norexos.net/#web",
+            "url": "https://norexos.net/",
+            "name": "Norexos",
+            "publisher": { "@id": "https://norexos.net/#org" },
+            "inLanguage": ["es-DO", "en"]
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Norexos",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web, Windows",
+            "url": "https://norexos.net/en/",
+            "inLanguage": "en",
+            "description": "Point of sale, blind cash count and inventory for Dominican stores.",
+            "publisher": { "@id": "https://norexos.net/#org" }
+          }
+        ]
+      }
+    </script>
     <link rel="stylesheet" href="../landing.css" />
   </head>
   <body>
@@ -56,19 +89,21 @@
         <h1>Your business, <span class="accent">in motion.</span></h1>
         <p class="lead">
           Norexos brings the register, inventory, customers and receipts
-          together in one place, so you close your day without the
-          headache.
+          together in one place, so you close your day without the headache.
         </p>
         <p class="sub">
           Point of sale, blind cash count, inventory and credit, built for
-          Dominican stores. It works in the browser; to sell offline you can install it on your
-          PC.
+          Dominican stores. It works in the browser; to sell offline you can
+          install it on your PC.
         </p>
-        <p class="sub"><strong>Pilot program:</strong> 60 days with installation included. Coming soon.</p>
+        <p class="sub">
+          <strong>Pilot program:</strong> 60 days with installation included.
+          Coming soon.
+        </p>
       </section>
 
-      <section id="benefits" class="wrap">
-        <h2 class="section-title">What it does for you</h2>
+      <section id="benefits" aria-labelledby="benefits-t" class="wrap">
+        <h2 id="benefits-t" class="section-title">What it does for you</h2>
         <p class="section-sub">Six reasons to move your store to Norexos.</p>
         <div class="benefits">
           <article class="benefit">
@@ -117,9 +152,9 @@
       </section>
 
       <!-- DECIDE-DUEÑA: plans and prices (unapproved proposal in docs/venta/PROPUESTA_PRECIOS.md), contact channel (does soporte@norexos.net, a form or WhatsApp exist?), access button (app.norexos.net) and free trial, the "Pilot program: 60 days with installation included" line, availability and English support -->
-      <section id="plans" class="alt">
+      <section id="plans" aria-labelledby="plans-t" class="alt">
         <div class="wrap">
-          <h2 class="section-title">Plans</h2>
+          <h2 id="plans-t" class="section-title">Plans</h2>
           <p class="section-sub">
             Coming soon. Plans and prices will be published here before anything
             is charged.
@@ -127,8 +162,10 @@
         </div>
       </section>
 
-      <section id="questions" class="wrap">
-        <h2 class="section-title">Frequently asked questions</h2>
+      <section id="questions" aria-labelledby="questions-t" class="wrap">
+        <h2 id="questions-t" class="section-title">
+          Frequently asked questions
+        </h2>
         <div class="faq">
           <details open>
             <summary>Do I need to install anything?</summary>
@@ -139,7 +176,9 @@
           </details>
           <details>
             <summary>Does it work for a single store?</summary>
-            <p>Yes. It handles a store and a warehouse (transfers between them).</p>
+            <p>
+              Yes. It handles a store and a warehouse (transfers between them).
+            </p>
           </details>
           <details>
             <summary>Can I sell on credit?</summary>
@@ -150,8 +189,18 @@
             <p>The register keeps selling offline and syncs when it is back.</p>
           </details>
           <details>
+            <summary>Does Norexos issue NCF or e-CF?</summary>
+            <p>
+              No. Norexos does not issue tax receipts (NCF or e-CF). For those,
+              keep using the system your accountant or the DGII indicates.
+            </p>
+          </details>
+          <details>
             <summary>Is support available?</summary>
-            <p>Support is provided in Spanish. The contact channel will be announced here.</p>
+            <p>
+              Support is provided in Spanish. The contact channel will be
+              announced here.
+            </p>
           </details>
         </div>
       </section>
