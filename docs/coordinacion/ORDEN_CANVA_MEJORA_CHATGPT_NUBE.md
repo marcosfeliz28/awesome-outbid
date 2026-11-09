@@ -24,3 +24,10 @@ Pedido de la dueña: «lo quiero de mejor calidad todo». Claude hizo un primer 
 ## Límites
 
 Sin cambiar precios ni cifras; sin credenciales; sin publicar ni compartir nada fuera de la cuenta de la dueña; no desplegar ni mezclar (solo Claude nube).
+
+## Dónde depositar (obligatorio; Claude lo busca cada 30 minutos)
+
+1. Rama: `chatgpt-nube/ventas-calidad` (créala desde `origin/claude-pc/canva-ventas`).
+2. Archivo de entrega: `docs/venta/canva/ENTREGA_CHATGPT.md`. Debe tener: enlaces nuevos de Canva (o rutas de las maquetas HTML/PDF), lista de lo que mejoraste, SHA y estado de los 3 CI (`verify`, `windows-installer`, `render-images`).
+3. Actualiza también `docs/venta/CANVA_ENLACES.md` con los enlaces nuevos.
+4. Empuja la rama. Mientras ese archivo no exista, Claude sigue preguntando; cuando exista, Claude verifica y avisa a la dueña.
