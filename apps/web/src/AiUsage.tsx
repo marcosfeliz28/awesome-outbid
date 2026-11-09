@@ -56,6 +56,29 @@ export function AiUsageCard() {
   return can(user.permissions, "*") ? <AiUsagePanel /> : null;
 }
 
+export function AiUsageFeedback({
+  loading,
+  error,
+}: {
+  loading: boolean;
+  error: boolean;
+}) {
+  return (
+    <>
+      {loading && (
+        <p role="status" aria-live="polite">
+          Cargando…
+        </p>
+      )}
+      {error && (
+        <p className="ai-error" role="alert">
+          No se pudo cargar el uso de IA.
+        </p>
+      )}
+    </>
+  );
+}
+
 function AiUsagePanel() {
   const q = useQuery({
     queryKey: ["ai-usage"],
@@ -65,8 +88,7 @@ function AiUsagePanel() {
   return (
     <section className="ai-usage-card">
       <h3>Uso y costo de IA</h3>
-      {q.isLoading && <p>Cargando…</p>}
-      {q.isError && <p className="ai-error">No se pudo cargar el uso de IA.</p>}
+      <AiUsageFeedback loading={q.isLoading} error={q.isError} />
       {d && (
         <>
           <p>
