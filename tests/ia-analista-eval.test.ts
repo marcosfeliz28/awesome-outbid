@@ -10,19 +10,9 @@ import {
   toolsFor,
 } from "../apps/api/src/assistant";
 
-// Huecos conocidos (8): la evaluación espera cifras BRUTAS y el sistema entrega
-// NETAS (facturas vigentes menos devoluciones, regla D-05 de la dueña). Ver
-// docs/sistema/IA_ANALISTA.md. Si uno de estos pasa o falla otro, la prueba avisa.
-const HUECOS = [
-  "AA-005",
-  "AA-019",
-  "AA-020",
-  "AA-029",
-  "AA-035",
-  "AA-040",
-  "AA-043",
-  "AA-044",
-];
+// Sin huecos: las 8 preguntas que pedían cifras brutas se comprueban en neto
+// (regla D-05); el bruto se deriva de neto + devoluciones. Ver docs/sistema/IA_ANALISTA.md.
+const HUECOS: string[] = [];
 
 describe("evaluación de 100 preguntas (sin Anthropic)", async () => {
   const filas = await evaluar();
@@ -49,7 +39,7 @@ describe("evaluación de 100 preguntas (sin Anthropic)", async () => {
       [],
     );
   });
-  it("solo fallan los huecos conocidos (cifras brutas)", () => {
+  it("no falla ninguna pregunta", () => {
     expect(filas.filter((f) => !f.pasa).map((f) => f.id)).toEqual(HUECOS);
   });
   it("los avisos del servidor llegan completos al modelo (no se recortan a 80)", () => {

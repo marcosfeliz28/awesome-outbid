@@ -657,8 +657,8 @@ export const CASOS: Caso[] = [
   c(5, "gerente", "¿Cuánto ITBIS está incluido?", [R()], "dato", (r) =>
     igual(
       res(r, "resumen_ventas")?.itbis,
-      274.58,
-      "ITBIS (el sistema lo da neto de devoluciones)",
+      244.07,
+      "ITBIS neto de devoluciones (D-05; el bruto 274.58 es de la pregunta original)",
     ),
   ),
   c(6, "dueña", "¿Cuánto quedó neto tras la devolución?", [R()], "dato", (r) =>
@@ -786,15 +786,15 @@ export const CASOS: Caso[] = [
   c(19, "gerente", "Compara 7 nov con 6 nov.", [CMP(D7, D6)], "dato", (r) =>
     igual(
       res(r, "comparar_periodos")?.diferencia.revenue,
-      300,
-      "diferencia (el sistema compara netos: 1,600 − 1,500)",
+      100,
+      "diferencia neta (D-05): 1,600 − 1,500; la pregunta original pedía bruto (+300)",
     ),
   ),
   c(20, "dueña", "¿Y en unidades, 7 contra 6?", [CMP(D7, D6)], "dato", (r) =>
     igual(
       res(r, "comparar_periodos")?.diferencia.units,
-      3,
-      "unidades (netas: 16 − 15)",
+      1,
+      "unidades netas (D-05): 16 − 15; la pregunta original pedía bruto (+3)",
     ),
   ),
   c(
@@ -920,8 +920,8 @@ export const CASOS: Caso[] = [
         ),
         igual(
           res(r, "top_productos")?.productos[0]?.units,
-          10,
-          "unidades brutas (el sistema da netas: 8)",
+          8,
+          "unidades netas (D-05); el bruto 10 = 8 + 2 devueltas",
         ),
       ),
   ),
@@ -978,8 +978,8 @@ export const CASOS: Caso[] = [
         ?.productos.slice(0, 3)
         .map((p: any) => p.units)
         .join(","),
-      "10,5,3",
-      "unidades brutas (el sistema da netas: 8,5,3)",
+      "8,5,3",
+      "unidades netas (D-05); Camiseta bruta 10 = 8 + 2 devueltas",
     ),
   ),
   c(
@@ -1037,10 +1037,18 @@ export const CASOS: Caso[] = [
     ),
   ),
   c(40, "dueña", "¿La devolución baja el ranking?", [TOP(), R()], "dato", (r) =>
-    si(
-      fila(res(r, "top_productos")?.productos, "name", "Camiseta")
-        ?.unidadesBrutas === 10,
-      "no hay ranking bruto por producto (solo neto 8 y devolución total 2)",
+    fallo(
+      igual(
+        fila(res(r, "top_productos")?.productos, "name", "Camiseta")?.units,
+        8,
+        "Camiseta neta",
+      ),
+      // El bruto se deriva: neto + devueltas del mismo período (no hay ranking bruto por producto).
+      igual(
+        res(r, "resumen_ventas")?.devolucionesRegistradas?.unidades,
+        2,
+        "devueltas",
+      ),
     ),
   ),
   c(
@@ -1082,16 +1090,18 @@ export const CASOS: Caso[] = [
   c(43, "dueña", "¿Cómo cobramos RD$1,800?", [CUADRE], "dato", (r) =>
     igual(
       fila(res(r, "cuadre_dia")?.porMetodo, "metodo", "cash")?.total,
-      800,
-      "efectivo (el sistema da neto del reembolso: 600)",
+      600,
+      "efectivo neto del reembolso (D-05); el bruto 800 = 600 + 200 reembolsados",
     ),
   ),
   c(44, "gerente", "Porcentaje en efectivo.", [CUADRE], "dato", (r) => {
     const x = res(r, "cuadre_dia");
     return igual(
-      money((fila(x?.porMetodo, "metodo", "cash")?.total / 1800) * 100),
-      44.44,
-      "% efectivo (el sistema da efectivo neto del reembolso: 600)",
+      money(
+        (fila(x?.porMetodo, "metodo", "cash")?.total / x?.ventasNetas) * 100,
+      ),
+      37.5,
+      "% efectivo sobre ventas netas (600 / 1,600); el bruto 44.44 % era 800 / 1,800",
     );
   }),
   c(
