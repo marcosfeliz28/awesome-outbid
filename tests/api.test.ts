@@ -12072,6 +12072,10 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
       Object.fromEntries(byPayment.rows.map((r: any) => [r.Método, r.Ventas])),
     ).toEqual({ cash: 100, card: 300, transfer: 100 });
     const sales = await ok("/reports/sales" + range, undefined, ownerToken);
+    // El estado fiscal sale en español, no con la clave de la base.
+    expect(new Set(sales.rows.map((r: any) => r.Estado_fiscal))).toEqual(
+      new Set(["Sin emitir"]),
+    );
     expect(total(sales.rows, "Total") - total(sales.rows, "Devoluciones")).toBe(
       500,
     );

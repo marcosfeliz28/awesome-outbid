@@ -1707,6 +1707,11 @@ export async function mySales(
 // de empezar la descarga.
 export const LISTINGS = ["sales", "kardex", "returns-discounts"];
 const EXPORT_BATCH = 1000;
+// Estado fiscal en español para el informe y sus descargas (la base guarda la clave).
+export const FISCAL_LABEL: Record<string, string> = {
+  not_issued: "Sin emitir",
+  issued: "Emitido",
+};
 type ListingPage = { take: number; skip?: number; cursor?: string };
 type Listing = {
   count: () => Promise<number>;
@@ -1779,7 +1784,7 @@ function listing(
             Saldo_crédito: Number(s.creditBalance),
             NCF: s.ncf ?? "",
             Tipo_NCF: s.ncfType ?? "",
-            Estado_fiscal: s.fiscalStatus,
+            Estado_fiscal: FISCAL_LABEL[s.fiscalStatus] ?? s.fiscalStatus,
             Devoluciones: money(returned.get(s.id) ?? 0),
           })),
         };
