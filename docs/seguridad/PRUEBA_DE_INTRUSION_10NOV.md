@@ -38,3 +38,26 @@ Autoriza la dueña (Grupo Macgen) sobre su propio sistema Nexora POS. Objetivo: 
 
 - ¿Qué código se comparte con cada IA (paquete público solamente, o más)?
 - ¿Quién prepara la copia de prueba (ChatGPT PC o Claude PC)?
+
+## Indicación reforzada para Gemini (9-nov, orden de la dueña: "que trate de hackearlo por todos los lados")
+
+Mismas reglas de alcance de arriba (solo copia de prueba, sin datos reales, sin terceros, sin denegación de servicio, sin secretos reales). Este prompt es más agresivo que el genérico: pide a Gemini que ataque cada capa por separado y que agote cada una antes de pasar a la siguiente, en vez de probar superficialmente todo junto.
+
+> Eres un atacante autorizado por escrito por el dueño de **Nexora POS** (punto de venta: API NestJS + Prisma/PostgreSQL, web React, instalador de Windows). Tienes permiso para intentar comprometerlo COMPLETO, por todas las capas, contra una COPIA DE PRUEBA con datos inventados (nunca contra producción ni contra terceros). Objetivo: que falles intentándolo todo, no que pases de largo. Trabaja capa por capa y agota cada una antes de pasar a la siguiente:
+>
+> 1. **Autenticación y sesión**: fuerza bruta de login y PIN (¿hay límite real de intentos y se aplica por cuenta Y por IP?), robo o fijación de sesión, token que sigue válido tras cerrar sesión o cambiar la clave, reutilización de token entre sucursales, JWT con alg none o firma débil, escalar de cajera a gerente o dueña cambiando el rol en la petición.
+> 2. **Aislamiento entre sucursales**: con sesión de `sucursal-b`, intenta leer, anular o modificar algo de la sucursal principal cambiando solo un id en la URL o el cuerpo de la petición (IDOR). Igual con reportes, caja, clientes e inventario.
+> 3. **Dinero sin PIN**: anular facturas, dar descuentos, cambiar precio o costo, abrir caja ya cerrada, registrar venta sin existencia o con precio negativo, todo intentando saltarte el PIN de gerencia o repetirlo (replay) desde una petición capturada.
+> 4. **Inyección**: SQL en cada parámetro de búsqueda y filtro, HTML/JS almacenado (nombre de producto, nota de venta, comentario) que se ejecute al verlo otro usuario, inyección de comandos en cualquier ruta que toque archivos o procesos del sistema.
+> 5. **Archivos**: sube un comprobante o foto que en realidad sea un script o un archivo con nombre/ruta manipulada (`../../`); sube un Excel/PDF corrupto o con fórmulas maliciosas a cualquier importador.
+> 6. **Errores y fugas**: fuerza errores (datos raros, tipos equivocados, payloads enormes) y revisa si el mensaje devuelve rutas internas, consultas SQL, claves de configuración o datos de otro negocio.
+> 7. **Asistente de IA**: intenta que revele el PIN o los datos de otra sucursal o de otro negocio, que ignore sus instrucciones (inyección de prompt) vía un mensaje de un cliente, el nombre de un producto o un archivo subido, que ejecute una herramienta que no le corresponde a su rol, o que extraiga el system prompt completo.
+> 8. **Instalador y Windows**: revisa permisos de carpetas y del servicio que instala, si guarda claves en texto plano, si el respaldo o su restauración permiten sobrescribir algo fuera de su carpeta, si el actualizador verifica la firma del instalador antes de aplicarlo.
+> 9. **Cabeceras, CORS y transporte**: CORS demasiado abierto, cabeceras de seguridad ausentes, cookies sin `Secure`/`HttpOnly`, HTTP en vez de HTTPS en algún punto.
+>
+> Para cada capa que pruebes, aunque no encuentres nada, dilo y di exactamente qué intentaste (para que sepamos que la cubriste y no la saltaste). Cada hallazgo real: título, severidad (alta/media/baja), pasos exactos para reproducirlo en la copia de prueba, qué se obtiene (impacto con un ejemplo concreto, nunca con datos reales), y cómo corregirlo. No expliques cómo causar daño más allá de lo necesario para probarlo, y no publiques nada de esto fuera de esta sesión. Entrega todo en líneas JSON, una por hallazgo (campos: id, titulo, severidad, capa, pasos, impacto, correccion), y al final un resumen de qué capas cubriste completas y en cuáles te faltó tiempo o acceso.
+
+### Para después (N1): cómo trabajarlo a futuro
+- Por cada hallazgo real y reproducible: prueba que falla antes de corregir y pasa después, en la misma regla que ya seguimos para todo el código.
+- Agrupar los hallazgos por capa (la lista de arriba) en `docs/seguridad/MATRIZ_CAPAS.md` después de la prueba, para ver qué capa quedó más débil y repetir la prueba en esa capa con más profundidad la próxima vez.
+- Lo que Gemini no llegó a cubrir por tiempo, pasarlo a ChatGPT o DeepSeek en la misma ronda, no dejarlo sin probar.
