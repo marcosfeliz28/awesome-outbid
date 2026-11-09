@@ -1,0 +1,69 @@
+{
+  "version": "2026-11-09",
+  "estado": "borrador v1 hecho por Claude; ChatGPT nube lo mejora (orden: docs/coordinacion/ORDEN_CANVA_MEJORA_CHATGPT_NUBE.md)",
+  "fuente_precios": "docs/venta/PROPUESTA_PRECIOS.md, sección «Propuesta de introducción 7-nov» (aprobada por la dueña)",
+  "canva": {
+    "presentacion": "https://canva.link/q6gjgg14b0dxm29",
+    "hoja_precios": "https://canva.link/tyisgiqwqweu1k3"
+  },
+  "precios_usd": {
+    "instalado_unico": 149,
+    "renovacion_anual": 39,
+    "ia_ventas_usuario_mes": 7,
+    "ia_preguntas_dia": 10,
+    "facturas_ia_incluidas_mes": 20,
+    "factura_ia_extra": 0.3,
+    "nube_medio_mes": 69,
+    "nube_completo_mes": 119,
+    "instalacion_carga_inventario": 75,
+    "piloto_dias": 60,
+    "tasa_referencia_rd": "~60 por US$ (confirmar tasa)"
+  },
+  "laminas": [
+    {
+      "n": 1,
+      "titulo": "Norexos: tu negocio, en movimiento",
+      "idea": "problema: la caja no cuadra, el inventario no coincide, los reportes se arman a mano"
+    },
+    {
+      "n": 2,
+      "titulo": "Qué hace Norexos",
+      "idea": "vender rápido, inventario, créditos y abonos, funciona en tu laptop"
+    },
+    {
+      "n": 3,
+      "titulo": "Caja y cierre sin descuadres",
+      "idea": "cierre ciego, diferencias con justificación, gerencia aprueba"
+    },
+    {
+      "n": 4,
+      "titulo": "Reportes en PDF e IA opcional",
+      "idea": "PDF imprimibles; IA de ventas y lectura de facturas opcionales, se activan cuando el dueño decida"
+    },
+    {
+      "n": 5,
+      "titulo": "Precios de introducción",
+      "idea": "todos los precios de «precios_usd»"
+    },
+    {
+      "n": 6,
+      "titulo": "Piloto de 60 días",
+      "idea": "instalación guiada, soporte en español, contacto"
+    }
+  ],
+  "reglas": [
+    "Norexos NO emite NCF ni e-CF: decirlo claro en nota pequeña",
+    "soporte en español; lenguaje simple para dueños de tiendas en República Dominicana",
+    "nada de «hoy» ni «disponible ya»; la IA es opcional y hoy está apagada hasta activarla",
+    "sin logos ni nombres de clientes inventados",
+    "no cambiar ningún precio ni inventar cifras; el margen mínimo 15 % no se toca",
+    "WhatsApp, correo y razón social quedan como [COMPLETAR] hasta que la dueña los dé"
+  ],
+  "pendientes_duena": [
+    "WhatsApp",
+    "correo",
+    "razón social",
+    "confirmar tasa RD$",
+    "kit de marca de Canva (no existe aún)"
+  ]
+}
