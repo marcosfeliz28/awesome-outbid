@@ -94,6 +94,8 @@ const configSchema = z.object({
   // En varias cajas desconectadas no existe una autoridad común que pueda
   // reservar la última unidad. Por seguridad se exige una decisión explícita.
   allowOfflineSales: z.boolean().default(false),
+  // Venta sin costo (8-nov): apagado hasta que la dueña cargue los costos.
+  blockZeroCostSales: z.boolean().default(false),
   allowCreditSales: z.boolean().default(false),
   creditApprovalThreshold: amount.default(1000),
   // Salidas de efectivo del turno que una cajera registra sin PIN de gerente
@@ -831,6 +833,7 @@ export class AdminController {
     return {
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
+      blockZeroCostSales: data.blockZeroCostSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
       requireCustomer: true,
@@ -846,6 +849,10 @@ export class AdminController {
       typeof body === "object" &&
       body !== null &&
       Object.prototype.hasOwnProperty.call(body, "allowOfflineSales");
+    const hasBlockZeroCost =
+      typeof body === "object" &&
+      body !== null &&
+      Object.prototype.hasOwnProperty.call(body, "blockZeroCostSales");
     const { logo, ...config } = parse(configSchema, body);
     if (logo) checkLogo(logo);
     return this.db.$transaction(async (tx) => {
@@ -861,6 +868,9 @@ export class AdminController {
         allowOfflineSales: hasOfflineSales
           ? config.allowOfflineSales
           : previous?.allowOfflineSales === true,
+        blockZeroCostSales: hasBlockZeroCost
+          ? config.blockZeroCostSales
+          : previous?.blockZeroCostSales === true,
         // Una PWA anterior no envía el límite: no se afloja ni se endurece.
         cashMovementApprovalLimit:
           config.cashMovementApprovalLimit ?? cashMovementLimit(previous),

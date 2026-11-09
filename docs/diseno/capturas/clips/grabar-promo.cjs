@@ -1,3 +1,4 @@
+/* eslint-disable -- script de grabación del promo (Node CommonJS), fuera de la app */
 // node promo.cjs <horizontal|vertical> — graba cuadros reales de la app (modo Impacto)
 // con CDP screencast y escribe frames/ + lista.txt para ffmpeg.
 const { chromium } = require("playwright");
@@ -56,10 +57,16 @@ const CSS = `
     frames.push({ file, t: metadata.timestamp });
     cdp.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
   });
-  const W = Math.round(vp.width * scale), H = Math.round(vp.height * scale);
+  const W = Math.round(vp.width * scale),
+    H = Math.round(vp.height * scale);
   const css = () => page.addStyleTag({ content: CSS }).catch(() => {});
   async function segment(ms, act) {
-    await cdp.send("Page.startScreencast", { format: "jpeg", quality: 92, maxWidth: W, maxHeight: H });
+    await cdp.send("Page.startScreencast", {
+      format: "jpeg",
+      quality: 92,
+      maxWidth: W,
+      maxHeight: H,
+    });
     const start = Date.now() / 1000;
     const work = act ? act() : Promise.resolve();
     await page.waitForTimeout(ms);
@@ -69,14 +76,18 @@ const CSS = `
     segments.push([start, end]);
   }
   const caption = (title, sub = "") =>
-    page.evaluate(([t, s]) => {
-      document.getElementById("promo-cap")?.remove();
-      const el = document.createElement("div");
-      el.id = "promo-cap";
-      el.innerHTML = t + (s ? `<small>${s}</small>` : "");
-      document.documentElement.append(el);
-    }, [title, sub]);
-  const noCaption = () => page.evaluate(() => document.getElementById("promo-cap")?.remove());
+    page.evaluate(
+      ([t, s]) => {
+        document.getElementById("promo-cap")?.remove();
+        const el = document.createElement("div");
+        el.id = "promo-cap";
+        el.innerHTML = t + (s ? `<small>${s}</small>` : "");
+        document.documentElement.append(el);
+      },
+      [title, sub],
+    );
+  const noCaption = () =>
+    page.evaluate(() => document.getElementById("promo-cap")?.remove());
   const card = (html) =>
     page.evaluate((h) => {
       document.querySelector(".promo-card")?.remove();
@@ -85,13 +96,16 @@ const CSS = `
       el.innerHTML = h;
       document.documentElement.append(el);
     }, html);
-  const noCard = () => page.evaluate(() => document.querySelector(".promo-card")?.remove());
+  const noCard = () =>
+    page.evaluate(() => document.querySelector(".promo-card")?.remove());
 
   await page.goto(BASE);
   await page.evaluate(() => document.fonts.ready);
   await css();
   // 1. Portada
-  await card(`<div class="logo">n</div><h1>Norexos</h1><p>Punto de venta e inventario${V ? "<br>" : " "}para tiendas con energía</p>`);
+  await card(
+    `<div class="logo">n</div><h1>Norexos</h1><p>Punto de venta e inventario${V ? "<br>" : " "}para tiendas con energía</p>`,
+  );
   await page.waitForTimeout(150);
   await segment(3200);
   await noCard();
@@ -99,8 +113,13 @@ const CSS = `
   await caption("Entra a tu tienda", "Seguro y en segundos");
   await segment(4200, async () => {
     await page.waitForTimeout(700);
-    await page.locator(".login-form-panel input").first().pressSequentially("admin@fitstore.demo", { delay: 45 });
-    await page.locator('input[type="password"]').pressSequentially("FitStore-Demo-2026!", { delay: 30 });
+    await page
+      .locator(".login-form-panel input")
+      .first()
+      .pressSequentially("admin@fitstore.demo", { delay: 45 });
+    await page
+      .locator('input[type="password"]')
+      .pressSequentially("FitStore-Demo-2026!", { delay: 30 });
   });
   // 3. Resumen
   await noCaption();
@@ -110,7 +129,10 @@ const CSS = `
   await page.waitForSelector(".kpi-card");
   await page.evaluate(() => (location.hash = "settings"));
   await page.waitForTimeout(800);
-  await caption("Todo tu negocio en una pantalla", "Ventas, cajas y alertas al día");
+  await caption(
+    "Todo tu negocio en una pantalla",
+    "Ventas, cajas y alertas al día",
+  );
   await segment(4800, async () => {
     if (V) await page.evaluate(() => (location.hash = "dashboard"));
     else await page.locator(".nav-item", { hasText: "Resumen" }).click();
@@ -121,9 +143,17 @@ const CSS = `
     await segment(5200, async () => {
       await page.locator(".nav-item", { hasText: "Reportes" }).click();
       await page.waitForTimeout(1800);
-      await page.locator(".report-group button:not(.report-group-title)").nth(2).click().catch(() => {});
+      await page
+        .locator(".report-group button:not(.report-group-title)")
+        .nth(2)
+        .click()
+        .catch(() => {});
       await page.waitForTimeout(1200);
-      await page.locator(".report-group button:not(.report-group-title)").nth(3).click().catch(() => {});
+      await page
+        .locator(".report-group button:not(.report-group-title)")
+        .nth(3)
+        .click()
+        .catch(() => {});
     });
   }
   // 5. Vitrina (demostración) en claro y luego oscuro
@@ -162,14 +192,23 @@ const CSS = `
     await segment(4800, async () => {
       const f = page.frameLocator("iframe");
       await page.waitForTimeout(1600);
-      await page.frames()[1]?.evaluate(() => window.scrollBy({ top: 600, behavior: "smooth" })).catch(() => {});
-      await f.locator("main").first().evaluate((m) => m.scrollBy({ top: 600, behavior: "smooth" })).catch(() => {});
+      await page
+        .frames()[1]
+        ?.evaluate(() => window.scrollBy({ top: 600, behavior: "smooth" }))
+        .catch(() => {});
+      await f
+        .locator("main")
+        .first()
+        .evaluate((m) => m.scrollBy({ top: 600, behavior: "smooth" }))
+        .catch(() => {});
     });
     await noCard();
   }
   // 7. Cierre
   await noCaption();
-  await card(`<div class="logo">n</div><h1>Norexos</h1><p>Tu negocio, en movimiento.</p><div class="chips"><span>Vende en segundos</span><span>Inventario al día</span><span>Decide con claridad</span></div>`);
+  await card(
+    `<div class="logo">n</div><h1>Norexos</h1><p>Tu negocio, en movimiento.</p><div class="chips"><span>Vende en segundos</span><span>Inventario al día</span><span>Decide con claridad</span></div>`,
+  );
   await page.waitForTimeout(100);
   await segment(4000);
   await browser.close();
@@ -187,5 +226,11 @@ const CSS = `
   }
   lines.push(lines[lines.length - 2]);
   fs.writeFileSync(path.join(out, "lista.txt"), lines.join("\n") + "\n");
-  console.log(mode, "cuadros", frames.length, "segmentos", segments.map(([s, e]) => (e - s).toFixed(1)).join(","));
+  console.log(
+    mode,
+    "cuadros",
+    frames.length,
+    "segmentos",
+    segments.map(([s, e]) => (e - s).toFixed(1)).join(","),
+  );
 })();

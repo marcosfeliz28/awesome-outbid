@@ -54,6 +54,7 @@ import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { CourierFeeEditor } from "./CourierFeeEditor";
 import { SaleEditPanel, editableNow } from "./SaleEditPanel";
+import { SaleCostPanel, WithoutCostCard } from "./ZeroCost";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
 import { exportPath, exportFileName, type ExportFormat } from "./reportExport";
@@ -846,6 +847,9 @@ export function Inventory() {
         title="Cada unidad, bajo control"
         caption="El inventario correcto hace espacio para mejores decisiones."
       />
+      {user.role !== "seller" && can(user.permissions, "profit:read") && (
+        <WithoutCostCard />
+      )}
       <div className="panel">
         <label htmlFor="warehouse-view">Almacén</label>
         <select
@@ -1593,6 +1597,7 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   overstock: "Exceso de stock",
   unusual_discount: "Descuento inusual",
   sale_void_request: "Solicitud de anulación",
+  zero_cost_sale: "Venta sin costo",
 };
 const alertTypeLabel = (type: string) =>
   ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " ");
@@ -3433,6 +3438,17 @@ export function SalesHistory() {
                 }}
               />
             )}
+            {can(user.permissions, "*") && selected.status === "completed" && (
+              <SaleCostPanel
+                key={"cost-" + selected.id}
+                sale={selected}
+                onSaved={() => {
+                  setSelected(null);
+                  void client.invalidateQueries({ queryKey: ["sales"] });
+                  toast("Costo corregido. La ganancia se recalculó.");
+                }}
+              />
+            )}
             {can(user.permissions, "sale:manage") && (
               <div className="panel">
                 <h3>Envío del mensajero</h3>
@@ -4295,6 +4311,12 @@ export function Configuration() {
       help: "Desactivado evita vender la misma última unidad desde dos equipos sin conexión: dos laptops offline no pueden reservarla entre sí. Actívalo sólo si aceptas revisar conflictos al reconectar.",
       type: "checkbox",
     },
+    {
+      key: "blockZeroCostSales",
+      label: "No vender productos sin costo",
+      help: "Activado, la caja rechaza un producto con costo 0 hasta que administración lo complete (los servicios sí se venden). Revisa antes Inventario › Productos sin costo.",
+      type: "checkbox",
+    },
     requiredNumber(
       "unusualDiscountPercent",
       "Alerta de descuento inusual (%)",
@@ -4540,6 +4562,7 @@ export function Configuration() {
             autoPrintReceipt: !!query.data?.autoPrintReceipt,
             requireCustomer: query.data?.requireCustomer === true,
             allowOfflineSales: query.data?.allowOfflineSales === true,
+            blockZeroCostSales: query.data?.blockZeroCostSales === true,
             usdRate: query.data?.usdRate ?? "",
             eurRate: query.data?.eurRate ?? "",
             transferAccounts: (query.data?.transferAccounts ?? []).join("\n"),

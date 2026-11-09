@@ -78,6 +78,8 @@ export const MANUAL_ALERT_TYPES = [
   // Caja GV abierta pasadas las 10 PM / día con pagos GV sin cierre (gv-vigilante.ts).
   "gv_cash_open_night",
   "gv_day_no_close",
+  // Venta sin conexión que entró con productos sin costo (sales.ts, 8-nov).
+  "zero_cost_sale",
 ];
 // Avisos que sólo ve la dueña («*»).
 export const OWNER_ONLY_ALERT_TYPES = [
@@ -87,6 +89,7 @@ export const OWNER_ONLY_ALERT_TYPES = [
   "card_batch_missing",
   "gv_cash_open_night",
   "gv_day_no_close",
+  "zero_cost_sale",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,
