@@ -156,6 +156,12 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - Qué pasó (pruebas que pasan y que fallan, con el texto exacto del error):
 - Qué falta o necesita decisión de la dueña:
 
+## 2026-11-09 · ChatGPT NUBE · `chatgpt-nube/auditoria-asistente-analista-9nov`
+
+- **Qué hice:** audité en solo lectura `origin/claude-pc/asistente-analista` (`2558b463`) contra la especificación y las 100 preguntas. Revisé herramientas, permisos, aislamiento por sucursal, caja ciega, doble lectura, costo y topes. El detalle con archivo:línea, gravedad y arreglos propuestos está en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
+- **Qué pasó:** seguridad de alcance, caja ciega y ocultación de costos están cubiertas. La ejecución sin Anthropic termina con código 0, pero funcionalmente acierta 92/100 porque la prueba permite ocho fallos conocidos. También faltan lecturas independientes en varias consultas, el cliente se pierde en transferencias y las cuotas comerciales no están implementadas. `tests/assistant-unit.test.ts` pasó 22/22. La integración directa no arrancó porque esperaba una API en `127.0.0.1:3001`; PostgreSQL/API queda para `verify`. En esta rama documental, `pnpm check` pasó con 112 archivos/989 pruebas aprobadas, 1 archivo/10 pruebas omitidas y builds correctos.
+- **Qué falta o necesita decisión de la dueña:** decidir la presentación separada de cifras brutas/netas y aprobar topes solo tras medir P95 y costo no IA. No se modificó código, desplegó ni accedió a Render, producción, credenciales o la base de la tienda.
+
 ## 2026-11-08 · ChatGPT NUBE · `chatgpt-nube/asistente-analista`
 
 - **Qué hice:** escribí la especificación del Asistente analista, un conjunto determinista de 100 preguntas con respuesta/cálculo esperado y la estimación de costo/cuotas. El detalle y la autoauditoría están en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
