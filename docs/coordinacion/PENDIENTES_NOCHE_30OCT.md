@@ -144,3 +144,10 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Observación: Render despliega el último commit de la rama aunque se pase commitId; confirmar siempre el commit en vivo con get_deploy.
 - Mezclada a nexora-cloud claude-pc/venta-sin-costo (bc1c95b9): bloqueo de venta sin costo APAGADO (blockZeroCostSales), lista /inventory/without-cost, recálculo /reports/cost-recalc (solo lectura), corrección auditada POST /sales/:id/items/:itemId/cost (PIN, expectedUnitCost, operationId). NO desplegada: esperar a que la dueña cargue costos y confirme.
 - Pendientes de la dueña: Excel de costos (69 productos, 52 con existencia), contacto para comprar norexos.net (US$11.86), clave del script de arranque (camino A o B), datos legales, abogado, 3–5 nombres para piloto.
+
+## 9-nov 14:40 UTC — mezclas sin desplegar
+- Mezclada a nexora-cloud claude-pc/instalador-ci-baja (62d1b436): baja de cliente con `main` protegida, piso fijo de 30 días, paquete verificado por SHA-256, credenciales fuera del paquete; migración aditiva 202611090001 (BranchTermination) NO aplicada hasta el despliegue.
+- Mezclada a nexora-cloud claude-pc/dinero-gv-usd-ajustes (cbd72c93; incluye devoluciones heredadas): GV en US$ solo efectivo (CHECK NOT VALID, 409 explicado para pagos antiguos), migración 202611010001 con lock_timeout. NO desplegada: falta cumplir las condiciones (cajas cerradas, sin ventas recientes, migraciones revisadas).
+- Ambas con 3 CI verdes sobre el SHA exacto, avance directo (sin mezcla nueva). Agentes terminaron; cerrar sus sesiones.
+- Aprendido: si dos ramas de agentes tocan docs/sistema/CAMBIOS.md, la segunda queda atrás tras fusionar la primera; fusionar en serie y pedir una sola mezcla final al segundo agente.
+- Observación: procesos playwright-mcp de agentes consumían la RAM de la PC de la dueña; pedir a los agentes de PC cerrar su navegador de pruebas al terminar.

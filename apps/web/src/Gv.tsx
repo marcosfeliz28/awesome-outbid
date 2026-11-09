@@ -897,7 +897,16 @@ function PaymentForm({
           <span>Método</span>
           <select
             value={form.method}
-            onChange={(e) => set("method", e.target.value)}
+            onChange={(e) =>
+              // El pago en US$ es solo en efectivo: al salir de efectivo vuelve a pesos.
+              setForm((f) => ({
+                ...f,
+                method: e.target.value,
+                ...(e.target.value !== "efectivo" && f.currency === "USD"
+                  ? { currency: "DOP", rate: "" }
+                  : {}),
+              }))
+            }
           >
             <Options map={METHODS} />
           </select>
@@ -909,8 +918,17 @@ function PaymentForm({
             onChange={(e) => set("currency", e.target.value)}
           >
             <option value="DOP">Pesos (RD$)</option>
-            <option value="USD">Dólares (US$)</option>
+            <option value="USD" disabled={form.method !== "efectivo"}>
+              Dólares (US$)
+              {form.method !== "efectivo" ? " — solo efectivo" : ""}
+            </option>
           </select>
+          {form.method !== "efectivo" && (
+            <small>
+              Los pagos en US$ son solo en efectivo. Para cobrar en dólares,
+              elige el método Efectivo.
+            </small>
+          )}
         </label>
         <label className="field">
           <span>

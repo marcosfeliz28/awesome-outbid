@@ -1300,6 +1300,20 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     );
   });
 
+  // El CI entrega el instalador como artefacto: solo en empujes a las ramas
+  // acordadas, 7 días, sin secretos ni firma.
+  it("compila el instalador en Windows y lo sube 7 días, sin secretos", () => {
+    const ci = read(".github/workflows/ci.yml");
+    const job = ci.slice(ci.indexOf("  windows-installer:"));
+    expect(job).toContain("instalador/build.ps1 -SinInstalarNSIS");
+    expect(job).toContain(
+      "github.event_name == 'push' && (github.ref == 'refs/heads/nexora-cloud' || startsWith(github.ref, 'refs/heads/claude-pc/') || startsWith(github.ref, 'refs/heads/chatgpt-'))",
+    );
+    expect(job).toContain("retention-days: 7");
+    expect(job).toContain(".exe.sha256.txt");
+    expect(job).not.toMatch(/secrets\.|signtool/i);
+  });
+
   // A4: el CI construye ambas imágenes (sin publicarlas) y las arranca como
   // en Render, terminando con post-deploy-check.mjs.
   it("construye las imágenes de Render y ejecuta la comprobación posterior", () => {

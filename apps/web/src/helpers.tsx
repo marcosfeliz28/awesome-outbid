@@ -358,7 +358,7 @@ export function FormModal({
                 inputMode={f.inputMode}
                 pattern={f.pattern}
                 title={f.title}
-                step={f.step || "0.01"}
+                step={f.step || (f.type === "number" ? "0.01" : undefined)}
                 value={values[f.key]}
                 onChange={(e) => changeField(f.key, e.target.value)}
               />

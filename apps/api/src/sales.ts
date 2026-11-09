@@ -489,6 +489,10 @@ export function usdCashPayments<
 >(payments: T[], configuredRate: unknown, offline = false): T[] {
   return payments.map((p) => {
     if (p.currency !== "USD") return p;
+    if (p.method !== "cash")
+      bad(
+        "Un pago en dólares sólo puede ser en efectivo: cambia el método a efectivo o cobra en pesos.",
+      );
     if (!(Number(configuredRate) > 0))
       bad(
         "No hay tasa del dólar en Configuración: no se puede cobrar en dólares. Pide a la administración que registre la tasa del día.",

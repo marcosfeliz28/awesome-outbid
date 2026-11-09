@@ -330,8 +330,9 @@ export const lineTotals = (
   const gross = d(qty).times(price);
   if (discountAmount < 0 || discountAmount > gross.toNumber())
     throw new Error("El descuento por monto supera el importe de la línea.");
+  // El descuento por línea nunca pasa de 100 %: el total no sale negativo.
   const discount = Decimal.max(
-    gross.times(discountPercent).div(100),
+    gross.times(Math.min(discountPercent, 100)).div(100),
     discountAmount,
   );
   const amount = gross.minus(discount);
@@ -1024,7 +1025,10 @@ const choice = (
   options: string[],
 ): SurveyQuestion => ({ id, text, kind: "choice", options });
 export const CASHIER_SURVEY: readonly SurveyQuestion[] = [
-  scale("cobro_rapido", "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)"),
+  scale(
+    "cobro_rapido",
+    "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+  ),
   yesno("cobro_pasos", "¿Cobrar te pide más pasos de los necesarios?"),
   scale("buscar_producto", "¿Qué tan fácil es encontrar un producto?"),
   choice("buscar_como", "¿Cómo buscas los productos casi siempre?", [

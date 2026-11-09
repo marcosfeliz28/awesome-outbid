@@ -78,7 +78,11 @@ beforeAll(async () => {
     data: { closedAt: new Date() },
   });
   cashSessionId = (
-    await call("/cash-sessions/open", token, { openingAmount: 0 })
+    await call("/cash-sessions/open", token, {
+      openingAmount: 0,
+      // Otra prueba pudo dejar un cierre del admin: abrir en 0 exige la nota (D-03).
+      openingNote: "QA: fondo de la prueba",
+    })
   ).body.id;
   customerId = (
     await call("/customers", token, { name: "QA desglose " + id.slice(0, 6) })
@@ -153,7 +157,12 @@ async function refund(saleBody: any, method: "cash" | "transfer") {
   return r.body;
 }
 
+// Pagos quitados a la venta huérfana: se devuelven al terminar para no descuadrar
+// la identidad ventas = cobros de las pruebas que corran después el mismo día.
+let orphanPayments: any[] = [];
 afterAll(async () => {
+  if (orphanPayments.length)
+    await db.payment.createMany({ data: orphanPayments });
   // Deja la caja cerrada: otras pruebas venden con el mismo administrador.
   await db.cashSession.update({
     where: { id: cashSessionId },
@@ -189,6 +198,9 @@ describe("desglose del mes: cobros = venta bruta con devoluciones (D-05)", () =>
     await refund(cash, "cash");
     // Venta sin fila de pago (importada): se quitan sus cobros en la base.
     const orphan = await sale("cash", 1);
+    orphanPayments = await db.payment.findMany({
+      where: { saleId: orphan.id },
+    });
     await db.payment.deleteMany({ where: { saleId: orphan.id } });
     const bd = (await call("/dashboard/breakdown?" + range, token)).body;
     const b1 = byMethod(bd);

@@ -50,3 +50,10 @@ Sin desplegar ni publicar.
 
 ### Punto 2 (instalador): paso previo, aclaración de N1 (7-nov)
 El CI NO publica el `.exe` (solo prueba). Hay que compilarlo en Windows 11: `git pull` de nexora-cloud, `pnpm install`, `pnpm instalador:compilar` → `instalador/dist/Nexora-POS-Setup-<versión>.exe`. Anota la versión, el tamaño y el SHA-256 (`Get-FileHash`) en docs/validacion/instalador-7nov.md y prueba ESE archivo en una máquina limpia (o máquina virtual). Si falta algo para compilar (herramienta, certificado), lista exactamente qué.
+
+## Cola 9-nov (2) — N1, orden de la dueña: mejorar la calidad de todo el software (tu parte: Windows real)
+Rama `chatgpt-pc/calidad-9nov`; sin desplegar y sin tocar la base de la tienda. Al terminar cada prueba **cierra los navegadores y procesos que abriste** (playwright, node, postgres de prueba): la PC de la dueña se quedó sin RAM por procesos que quedaron abiertos.
+1. **Instalador de punta a punta** en Windows 11 limpio o máquina virtual: compilar (`pnpm instalador:compilar`), instalar, entrar, vender, cerrar caja, hacer respaldo y restaurarlo, actualizar a una versión nueva y volver atrás. Registra versión, tamaño y SHA-256 en `docs/validacion/instalador-9nov.md`, con capturas y la lista exacta de lo que falló.
+2. **Recorrido de pantallas** a 1366 px y 390 px (teléfono) de cajera, gerente y dueña: lo que se vea cortado, lento, sin traducir o confuso, con captura. Mide la carga de las 5 pantallas más usadas. `docs/validacion/RECORRIDO_PANTALLAS_9NOV.md`.
+3. **Prueba de uso real sin conexión**: vender sin internet, volver a conectar y comprobar que no se duplica ni se pierde ninguna venta. Resultado en el mismo documento.
+Todo lo que encuentres va como lista priorizada; no arregles nada de dinero tú mismo.

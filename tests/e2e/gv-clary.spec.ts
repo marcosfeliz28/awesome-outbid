@@ -212,6 +212,24 @@ async function exerciseGv(
       page.getByRole("row", { name: new RegExp(client) }),
     ).toBeVisible();
 
+  // US$ solo efectivo: con transferencia (método por omisión) la opción de dólares
+  // queda desactivada y se explica; con efectivo se habilita.
+  await page
+    .getByRole("row", { name: new RegExp(fixture.clients[2]) })
+    .getByRole("button", { name: "Pago" })
+    .click();
+  const paymentDialog = page.getByRole("dialog", { name: /^Pago de / });
+  const usdOption = paymentDialog.locator('option[value="USD"]');
+  await expect(usdOption).toHaveAttribute("disabled", "");
+  await expect(
+    paymentDialog.getByText("Los pagos en US$ son solo en efectivo"),
+  ).toBeVisible();
+  await paymentDialog
+    .locator('select:has(option[value="efectivo"])')
+    .selectOption("efectivo");
+  await expect(usdOption).not.toHaveAttribute("disabled");
+  await paymentDialog.getByRole("button", { name: "Cancelar" }).click();
+
   // Clary marca asistencia y entrega del set desde la pantalla real.
   const secondRow = page.getByRole("row", {
     name: new RegExp(fixture.clients[1]),

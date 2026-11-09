@@ -66,7 +66,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
 
 - **Etiqueta:** «Solicitudes de anulación». **Permiso:** `sale:write`. **Componente:** `apps/web/src/VoidRequests.tsx:15`.
 - **Qué hace:** lista (filtro Pendientes/Todas/Aprobadas/Rechazadas/Canceladas, `:45-54`). La administración ve «Aprobar y anular» y «Rechazar» (`:123-136`); la cajera solo puede cancelar su propia solicitud (`:137-155`).
-- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2113`, `POST void-requests/:id/approve`).
+- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2117`, `POST void-requests/:id/approve`).
 
 ## Conciliar transferencias
 
@@ -126,11 +126,11 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
 
 ## Alertas
 
-- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3084`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1434-1454`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:515`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:919-922`).
+- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3084`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1438-1458`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:515`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:919-922`).
 
 ## Incentivos
 
-- **Etiqueta:** «Incentivos». **Permiso:** `sale:manage`. **Componente:** `IncentivesPage`, `apps/web/src/Incentives.tsx:287`. Reporte mensual por cajera; la administración (`*`) cierra el mes (`:306-318`, API `apps/api/src/incentives.ts:852`). La cajera ve el suyo en «Mis incentivos» dentro de Caja (`apps/api/src/incentives.ts:754`). Reglas: `docs/INCENTIVOS.md`.
+- **Etiqueta:** «Incentivos». **Permiso:** `sale:manage`. **Componente:** `IncentivesPage`, `apps/web/src/Incentives.tsx:287`. Reporte mensual por cajera; la administración (`*`) cierra el mes (`:306-318`, API `apps/api/src/incentives.ts:856`). La cajera ve el suyo en «Mis incentivos» dentro de Caja (`apps/api/src/incentives.ts:758`). Reglas: `docs/INCENTIVOS.md`.
 
 ## GV Makeup Studio
 

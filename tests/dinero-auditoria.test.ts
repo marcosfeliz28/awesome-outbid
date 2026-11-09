@@ -203,6 +203,17 @@ beforeAll(async () => {
 }, 120000);
 
 afterAll(async () => {
+  // Devoluciones heredadas (items vacíos) fabricadas aquí: /reports/profit no
+  // las ve por línea y el dashboard sí, así que descuadrarían la prueba de
+  // api.test.ts que corra después en el mismo día.
+  await db.saleReturn.deleteMany({
+    where: {
+      OR: [
+        { number: { startsWith: "NC-N3-" + suffix } },
+        { number: { startsWith: "NC-LEG-" + suffix } },
+      ],
+    },
+  });
   // Cajas abiertas de esta corrida: se cierran para no dejar equipos ocupados.
   const sessions = await db.cashSession.findMany({
     where: { userId: { in: created.users }, closedAt: null },
