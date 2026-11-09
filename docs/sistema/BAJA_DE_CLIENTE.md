@@ -8,10 +8,11 @@ desplegado (rama `claude-pc/instalador-ci-baja`).
 - `apps/api/src/baja.ts`: `alcance`, `conteos`, `exportar`, `terminar`,
   `suprimir`. Sin Nest ni endpoint.
 - `apps/api/scripts/baja-cliente.ts`: comando `pnpm --filter @fitstore/api baja
-estado|terminar|exportar|suprimir|descifrar`.
+estado|terminar|exportar|suprimir|descifrar` (suprimir pide `--paquete` y
+  `BAJA_CLAVE`).
 - Tabla `BranchTermination` (migración aditiva
   `202611090001_baja_cliente`): `branchId`, `terminatedAt`, `exportedAt`,
-  `exportSha256`, `suppressedAt`, `actaSha256`. Sin datos personales; la
+  `exportSha256`, `suppressedAt`, `actaSha256`, `actaTexto`. Sin datos personales; la
   supresión no la borra (es la constancia).
 - Prueba: `tests/baja-cliente-postgres.test.ts` (PostgreSQL real).
 
@@ -47,9 +48,19 @@ estado|terminar|exportar|suprimir|descifrar`.
 - **Bloqueo:** usuarios `active=false` con `authVersion+1` (el guard rechaza la
   sesión en la siguiente petición), tokens y sesiones borrados, terminales
   revocadas.
-- **Supresión:** frase `SUPRIMIR <branchId>` + fecha de hoy (Santo Domingo) +
-  días mínimos desde terminar (por defecto 30) + exportación posterior a
-  terminar. Idempotente: repetirla borra 0 filas y conserva el acta.
+- **Protegidas:** `main` fija en el código (`PROTEGIDAS_FIJAS`);
+  `BAJA_SUCURSALES_PROTEGIDAS` solo agrega. `alcance`, `conteos`, `terminar`,
+  `exportar` y `suprimir` la rechazan.
+- **Sin credenciales en el paquete:** `SENSIBLES` quita `User.passwordHash`,
+  `User.pinHash`, `RefreshToken.hash`, `Terminal.secretHash` y
+  `DriveBackup.refreshTokenEnc` del JSON exportado.
+- **Supresión:** frase `SUPRIMIR <branchId>` y fecha de hoy escritas en la
+  consola (el CLI se niega sin TTY) + piso fijo `DIAS_MINIMOS` = 30 (el
+  parámetro solo lo sube) + exportación posterior a terminar + paquete
+  verificado (`verificarPaquete`: SHA-256 del manifiesto registrado, de cada
+  `.enc` y de su contenido, filas). En la transacción, filas actuales y
+  borradas deben ser las del manifiesto. Con `suppressedAt` ya puesto no vuelve
+  a borrar: devuelve el acta guardada si no hay filas, o se niega si las hay.
 
 ## No probado / límites
 

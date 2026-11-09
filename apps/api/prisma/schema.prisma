@@ -1288,5 +1288,6 @@ model BranchTermination {
   exportSha256 String?
   suppressedAt DateTime?
   actaSha256   String?
+  actaTexto    String?
   updatedAt    DateTime  @default(now()) @updatedAt
 }

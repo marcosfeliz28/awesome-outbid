@@ -4,16 +4,17 @@
 //   pnpm --filter @fitstore/api baja estado    --sucursal <id>
 //   pnpm --filter @fitstore/api baja terminar  --sucursal <id>
 //   pnpm --filter @fitstore/api baja exportar  --sucursal <id> --salida <carpeta>   (BAJA_CLAVE)
-//   pnpm --filter @fitstore/api baja suprimir  --sucursal <id> --fecha AAAA-MM-DD --acta <archivo>
-//                                              (BAJA_CONFIRMAR="SUPRIMIR <id>", BAJA_DIAS_MINIMOS)
+//   pnpm --filter @fitstore/api baja suprimir  --sucursal <id> --paquete <carpeta> --acta <archivo>
+//                                              (BAJA_CLAVE; pide la frase y la fecha en la consola)
 //   pnpm --filter @fitstore/api baja descifrar --archivo <Tabla.jsonl.enc> --salida <Tabla.jsonl>   (BAJA_CLAVE)
 import { createReadStream, createWriteStream } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
+import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
 import { config } from "dotenv";
 import { PrismaClient } from "@prisma/client";
-import { conteos, exportar, suprimir, terminar } from "../src/baja";
+import { conteos, exportar, frase, suprimir, terminar } from "../src/baja";
 import { createDecryptStream } from "../src/drive-backup-core";
 
 config({ path: "../../.env", quiet: true });
@@ -24,7 +25,7 @@ async function main() {
     options: {
       sucursal: { type: "string" },
       salida: { type: "string" },
-      fecha: { type: "string" },
+      paquete: { type: "string" },
       acta: { type: "string" },
       archivo: { type: "string" },
     },
@@ -69,19 +70,38 @@ async function main() {
       );
       console.log(`SHA-256 del manifiesto: ${r.paqueteSha256}`);
     } else if (comando === "suprimir") {
+      if (!values.paquete)
+        throw new Error("Falta --paquete <carpeta de la exportación>.");
       if (!values.acta)
         throw new Error("Falta --acta <archivo> para guardar el acta.");
-      const dias = Number(process.env.BAJA_DIAS_MINIMOS ?? 30);
-      const r = await suprimir(db, branchId, {
-        confirmacion: process.env.BAJA_CONFIRMAR ?? "",
-        fecha: values.fecha ?? "",
-        diasMinimos: dias,
+      // Confirmación doble escrita por una persona: sin consola, no se suprime.
+      if (!process.stdin.isTTY)
+        throw new Error("suprimir solo se confirma escribiendo en la consola.");
+      const rl = createInterface({
+        input: process.stdin,
+        output: process.stdout,
       });
-      if (r.actaTexto)
-        await writeFile(values.acta, r.actaTexto, { flag: "wx" });
+      const confirmacion = (
+        await rl.question(
+          `Para borrar TODO de «${branchId}» escribe: ${frase(branchId)}\n> `,
+        )
+      ).trim();
+      const fecha = (
+        await rl.question("Escribe la fecha de hoy (AAAA-MM-DD)\n> ")
+      ).trim();
+      rl.close();
+      const r = await suprimir(db, branchId, {
+        confirmacion,
+        fecha,
+        carpeta: values.paquete,
+        clave: process.env.BAJA_CLAVE ?? "",
+        // Solo sube el piso de 30 días.
+        diasMinimos: Number(process.env.BAJA_DIAS_MINIMOS ?? 30),
+      });
+      await writeFile(values.acta, r.actaTexto, { flag: "wx" });
       console.log(
         r.yaSuprimida
-          ? "Ya estaba suprimida; se repitió el borrado (0 filas esperadas)."
+          ? `Ya estaba suprimida; no se borró nada. Acta guardada en ${values.acta}.`
           : `Suprimida. Acta en ${values.acta}.`,
       );
       console.log(JSON.stringify(r.borradas, null, 2));

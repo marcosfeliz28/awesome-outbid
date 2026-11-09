@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -53,6 +53,14 @@ const urlFor = (db: string) => {
 
 beforeAll(async () => {
   const external = process.env.NEXORA_TEST_PG_URL;
+  // Esta prueba borra datos: solo contra un servidor local o el embebido.
+  if (
+    external &&
+    !["127.0.0.1", "localhost", "[::1]"].includes(new URL(external).hostname)
+  )
+    throw new Error(
+      "NEXORA_TEST_PG_URL debe ser local para la prueba de baja.",
+    );
   if (external) adminUrl = external;
   else {
     const dataDir = await mkdtemp(join(tmpdir(), "nexora-baja-db-"));
@@ -294,8 +302,42 @@ describe("baja de cliente", () => {
     expect(pos("VariantStock")).toBeLessThan(pos("Variant"));
   });
 
-  it("exporta, termina y suprime sólo la sucursal indicada; idempotente", async () => {
+  it("«main» (y las agregadas por variable) están protegidas en cada operación", async () => {
     const baja = await import("../apps/api/src/baja");
+    await sembrar("main");
+    const antes = await huella();
+    const dir = await mkdtemp(join(tmpdir(), "nexora-baja-paquete-"));
+    try {
+      const ops = [
+        () => baja.alcance(prisma, "main"),
+        () => baja.conteos(prisma, "main"),
+        () => baja.terminar(prisma, "main"),
+        () => baja.exportar(prisma, "main", dir, CLAVE),
+        () =>
+          baja.suprimir(prisma, "main", {
+            confirmacion: "SUPRIMIR main",
+            fecha: baja.hoy(),
+            carpeta: dir,
+            clave: CLAVE,
+          }),
+      ];
+      for (const op of ops) await expect(op()).rejects.toThrow(/protegida/);
+      // La variable solo agrega: no puede quitar «main».
+      expect(baja.protegidas("")).toContain("main");
+      expect(baja.protegidas("otra, x")).toEqual(["main", "otra", "x"]);
+      process.env.BAJA_SUCURSALES_PROTEGIDAS = "otra";
+      await expect(baja.terminar(prisma, "otra")).rejects.toThrow(/protegida/);
+      delete process.env.BAJA_SUCURSALES_PROTEGIDAS;
+    } finally {
+      delete process.env.BAJA_SUCURSALES_PROTEGIDAS;
+      await rm(dir, { recursive: true, force: true });
+    }
+    expect(await huella()).toEqual(antes);
+  });
+
+  it("exporta sin credenciales, termina y suprime sólo la sucursal indicada; idempotente", async () => {
+    const baja = await import("../apps/api/src/baja");
+    const { createHash } = await import("node:crypto");
     await sembrar("cliente-a");
     const antesOtra = await baja.conteos(prisma, "otra");
     const contA = await baja.conteos(prisma, "cliente-a");
@@ -327,23 +369,24 @@ describe("baja de cliente", () => {
       (await prisma.user.findFirst({ where: { branchId: "otra" } })).active,
     ).toBe(true);
 
-    // Suprimir antes de exportar: no.
-    const t1 = new Date("2026-03-01T15:00:00Z");
-    const ok = {
-      confirmacion: "SUPRIMIR cliente-a",
-      fecha: baja.hoy(t1),
-      diasMinimos: 30,
-      now: t1,
-    };
-    await expect(baja.suprimir(prisma, "cliente-a", ok)).rejects.toThrow(
-      /exportación/,
-    );
-
-    // (1) exportar: cada archivo descifrado tiene las filas del manifiesto,
-    // que son las de la base.
-    const conteoTrasTerminar = await baja.conteos(prisma, "cliente-a");
     const dir = await mkdtemp(join(tmpdir(), "nexora-baja-paquete-"));
     try {
+      // Suprimir antes de exportar: no.
+      const t1 = new Date("2026-03-01T15:00:00Z");
+      const ok = {
+        confirmacion: "SUPRIMIR cliente-a",
+        fecha: baja.hoy(t1),
+        carpeta: dir,
+        clave: CLAVE,
+        now: t1,
+      };
+      await expect(baja.suprimir(prisma, "cliente-a", ok)).rejects.toThrow(
+        /exportación/,
+      );
+
+      // (1) exportar: cada archivo descifrado tiene las filas del manifiesto,
+      // que son las de la base; sin columnas de credenciales.
+      const conteoTrasTerminar = await baja.conteos(prisma, "cliente-a");
       const { manifiesto } = await baja.exportar(
         prisma,
         "cliente-a",
@@ -357,15 +400,28 @@ describe("baja de cliente", () => {
         ),
       ).toEqual(conteoTrasTerminar);
       for (const t of manifiesto.tablas) {
+        const cifrado = await readFile(join(dir, t.archivo));
+        expect(createHash("sha256").update(cifrado).digest("hex")).toBe(
+          t.sha256Cifrado,
+        );
         const texto = await descifrar(join(dir, t.archivo));
         const lineas = texto.split("\n").filter(Boolean);
         expect(lineas.length, t.tabla).toBe(t.filas);
         for (const l of lineas) expect(JSON.parse(l)).toBeTypeOf("object");
-        const { createHash } = await import("node:crypto");
         expect(createHash("sha256").update(texto).digest("hex")).toBe(
           t.sha256Contenido,
         );
       }
+      const usuario = JSON.parse(
+        (await descifrar(join(dir, "User.jsonl.enc"))).trim(),
+      );
+      expect(usuario.email).toBe("cajera-cliente-a@prueba.local");
+      expect(usuario).not.toHaveProperty("passwordHash");
+      expect(usuario).not.toHaveProperty("pinHash");
+      const terminal = JSON.parse(
+        (await descifrar(join(dir, "Terminal.jsonl.enc"))).trim(),
+      );
+      expect(terminal).not.toHaveProperty("secretHash");
       const ventas = (await descifrar(join(dir, "Sale.jsonl.enc"))).trim();
       expect(JSON.parse(ventas).number).toBe("S-cliente-a");
       // Nada de otra sucursal en el paquete ni datos en claro.
@@ -377,69 +433,139 @@ describe("baja de cliente", () => {
       await expect(
         baja.exportar(prisma, "cliente-a", dir, "corta", new Date()),
       ).rejects.toThrow(/BAJA_CLAVE/);
+
+      // Confirmaciones y plazo: el piso de 30 días no se baja.
+      await expect(
+        baja.suprimir(prisma, "cliente-a", {
+          ...ok,
+          confirmacion: "SUPRIMIR otra",
+        }),
+      ).rejects.toThrow(/exactamente/);
+      await expect(
+        baja.suprimir(prisma, "cliente-a", { ...ok, fecha: "2026-02-28" }),
+      ).rejects.toThrow(/hoy/);
+      await expect(
+        baja.suprimir(prisma, "cliente-a", { ...ok, diasMinimos: 60 }),
+      ).rejects.toThrow(/Faltan días/);
+      const t20 = new Date("2026-01-30T15:00:00Z");
+      await expect(
+        baja.suprimir(prisma, "cliente-a", {
+          ...ok,
+          now: t20,
+          fecha: baja.hoy(t20),
+          diasMinimos: 0,
+        }),
+      ).rejects.toThrow(/el mínimo es 30/);
+      await expect(
+        baja.suprimir(prisma, "cliente-a", { ...ok, clave: CLAVE + "x" }),
+      ).rejects.toThrow(/clave incorrecta/);
+
+      // (3) suprimir: la otra sucursal y las tablas globales quedan idénticas.
+      const globalesAntes = await huella(
+        Object.keys(contA).concat("BranchTermination"),
+      );
+      const r = await baja.suprimir(prisma, "cliente-a", ok);
+      expect(r.yaSuprimida).toBe(false);
+      expect(r.borradas).toEqual(conteoTrasTerminar);
+      expect(
+        Object.values(await baja.conteos(prisma, "cliente-a")).every(
+          (n) => n === 0,
+        ),
+      ).toBe(true);
+      expect(await baja.conteos(prisma, "otra")).toEqual(antesOtra);
+      expect(
+        await huella(Object.keys(contA).concat("BranchTermination")),
+      ).toEqual(globalesAntes);
+      // Acta sin datos personales, guardada con su huella.
+      expect(r.actaTexto).not.toMatch(/cajera|Cliente cliente-a|@/i);
+      const est = await prisma.branchTermination.findUnique({
+        where: { branchId: "cliente-a" },
+      });
+      expect(est.actaTexto).toBe(r.actaTexto);
+      expect(est.actaSha256).toBe(
+        createHash("sha256").update(r.actaTexto).digest("hex"),
+      );
+
+      // Idempotente: repetir no borra nada y devuelve la misma acta.
+      const r2 = await baja.suprimir(prisma, "cliente-a", ok);
+      expect(r2.yaSuprimida).toBe(true);
+      expect(r2.actaTexto).toBe(r.actaTexto);
+      expect(await baja.conteos(prisma, "otra")).toEqual(antesOtra);
+      await expect(baja.terminar(prisma, "cliente-a")).rejects.toThrow(
+        /suprimida/,
+      );
+
+      // branchId reutilizado tras la supresión: no se vuelve a borrar.
+      await prisma.settings.create({ data: { id: "cliente-a", data: {} } });
+      await expect(baja.suprimir(prisma, "cliente-a", ok)).rejects.toThrow(
+        /filas nuevas/,
+      );
+      expect(await prisma.settings.count({ where: { id: "cliente-a" } })).toBe(
+        1,
+      );
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  }, 120_000);
 
-    // Confirmaciones y plazo.
-    await expect(
-      baja.suprimir(prisma, "cliente-a", {
-        ...ok,
-        confirmacion: "SUPRIMIR otra",
-      }),
-    ).rejects.toThrow(/exactamente/);
-    await expect(
-      baja.suprimir(prisma, "cliente-a", { ...ok, fecha: "2026-02-28" }),
-    ).rejects.toThrow(/hoy/);
-    await expect(
-      baja.suprimir(prisma, "cliente-a", { ...ok, diasMinimos: 60 }),
-    ).rejects.toThrow(/Faltan días/);
-
-    // (3) suprimir: la otra sucursal y las tablas globales quedan idénticas.
-    const huellaOtra = async () => {
-      const r: Record<string, number> = await baja.conteos(prisma, "otra");
-      return r;
-    };
-    const globalesAntes = await huella(
-      Object.keys(contA).concat("BranchTermination"),
-    );
-    const r = await baja.suprimir(prisma, "cliente-a", ok);
-    expect(r.yaSuprimida).toBe(false);
-    expect(r.borradas).toEqual(conteoTrasTerminar);
-    expect(
-      Object.values(await baja.conteos(prisma, "cliente-a")).every(
-        (n) => n === 0,
-      ),
-    ).toBe(true);
-    expect(await huellaOtra()).toEqual(antesOtra);
-    expect(
-      await huella(Object.keys(contA).concat("BranchTermination")),
-    ).toEqual(globalesAntes);
-    // Acta sin datos personales y su huella guardada.
-    expect(r.actaTexto).not.toMatch(/cajera|Cliente cliente-a|@/i);
-    const est = await prisma.branchTermination.findUnique({
-      where: { branchId: "cliente-a" },
-    });
-    const { createHash } = await import("node:crypto");
-    expect(est.actaSha256).toBe(
-      createHash("sha256").update(r.actaTexto!).digest("hex"),
-    );
-
-    // Idempotente: repetir no borra nada más ni cambia el acta.
-    const r2 = await baja.suprimir(prisma, "cliente-a", ok);
-    expect(r2.yaSuprimida).toBe(true);
-    expect(Object.values(r2.borradas).every((n) => n === 0)).toBe(true);
-    expect(
-      (
-        await prisma.branchTermination.findUnique({
-          where: { branchId: "cliente-a" },
-        })
-      ).actaSha256,
-    ).toBe(est.actaSha256);
-    expect(await huellaOtra()).toEqual(antesOtra);
-    await expect(baja.terminar(prisma, "cliente-a")).rejects.toThrow(
-      /suprimida/,
-    );
+  it("no borra nada si el paquete está dañado o hay filas nuevas tras exportar", async () => {
+    const baja = await import("../apps/api/src/baja");
+    await sembrar("cliente-c");
+    await baja.terminar(prisma, "cliente-c", new Date("2026-01-01T12:00:00Z"));
+    const dir = await mkdtemp(join(tmpdir(), "nexora-baja-paquete-"));
+    try {
+      await baja.exportar(
+        prisma,
+        "cliente-c",
+        dir,
+        CLAVE,
+        new Date("2026-01-02T12:00:00Z"),
+      );
+      const now = new Date("2026-05-01T12:00:00Z");
+      const ok = {
+        confirmacion: "SUPRIMIR cliente-c",
+        fecha: baja.hoy(now),
+        carpeta: dir,
+        clave: CLAVE,
+        now,
+      };
+      const antes = await huella();
+      // Archivo cifrado alterado.
+      const ruta = join(dir, "Sale.jsonl.enc");
+      const original = await readFile(ruta);
+      const roto = Buffer.from(original);
+      roto[roto.length - 1] ^= 1;
+      await writeFile(ruta, roto);
+      await expect(baja.suprimir(prisma, "cliente-c", ok)).rejects.toThrow(
+        /modificado/,
+      );
+      await writeFile(ruta, original);
+      // Archivo faltante.
+      await rm(join(dir, "Payment.jsonl.enc"));
+      await expect(baja.suprimir(prisma, "cliente-c", ok)).rejects.toThrow(
+        /Falta Payment/,
+      );
+      expect(await huella()).toEqual(antes);
+      // Fila nueva después de exportar (paquete íntegro): tampoco.
+      await rm(dir, { recursive: true, force: true });
+      await baja.exportar(
+        prisma,
+        "cliente-c",
+        dir,
+        CLAVE,
+        new Date("2026-01-03T12:00:00Z"),
+      );
+      await prisma.counter.create({
+        data: { key: "return:cliente-c", value: 1 },
+      });
+      const antes2 = await huella();
+      await expect(baja.suprimir(prisma, "cliente-c", ok)).rejects.toThrow(
+        /cambiaron después de exportar/,
+      );
+      expect(await huella()).toEqual(antes2);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   }, 120_000);
 
   it("no borra nada si una fila de otra sucursal apunta a la que se suprime", async () => {
@@ -463,23 +589,27 @@ describe("baja de cliente", () => {
     const now = new Date("2026-05-01T12:00:00Z");
     await baja.terminar(prisma, "cliente-b", new Date("2026-01-01T12:00:00Z"));
     const dir = await mkdtemp(join(tmpdir(), "nexora-baja-paquete-"));
-    await baja.exportar(
-      prisma,
-      "cliente-b",
-      dir,
-      CLAVE,
-      new Date("2026-01-02T12:00:00Z"),
-    );
-    await rm(dir, { recursive: true, force: true });
-    const antes = await huella();
-    const intento = baja.suprimir(prisma, "cliente-b", {
-      confirmacion: "SUPRIMIR cliente-b",
-      fecha: baja.hoy(now),
-      diasMinimos: 30,
-      now,
-    });
-    await expect(intento).rejects.toThrow(/No se borró nada/);
-    expect(await huella()).toEqual(antes);
+    try {
+      await baja.exportar(
+        prisma,
+        "cliente-b",
+        dir,
+        CLAVE,
+        new Date("2026-01-02T12:00:00Z"),
+      );
+      const antes = await huella();
+      const intento = baja.suprimir(prisma, "cliente-b", {
+        confirmacion: "SUPRIMIR cliente-b",
+        fecha: baja.hoy(now),
+        carpeta: dir,
+        clave: CLAVE,
+        now,
+      });
+      await expect(intento).rejects.toThrow(/No se borró nada/);
+      expect(await huella()).toEqual(antes);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   }, 120_000);
 
   it("rechaza una sucursal que no existe", async () => {

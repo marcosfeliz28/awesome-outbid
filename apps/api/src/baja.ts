@@ -8,7 +8,7 @@
 // así nadie suprime a medias tras agregar un modelo.
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -16,6 +16,7 @@ import { Prisma } from "@prisma/client";
 import {
   MIN_PASSPHRASE,
   TIME_ZONE,
+  createDecryptStream,
   createEncryptStream,
 } from "./drive-backup-core";
 import { weakSecretReason } from "./secret-strength";
@@ -74,10 +75,45 @@ const ident = (t: string) => {
 
 export type Alcance = { tabla: string; donde: Sql }[];
 
+/**
+ * Sucursales que el comando nunca toca. «main» es el negocio de la dueña y
+ * está fijo en el código; BAJA_SUCURSALES_PROTEGIDAS (lista con comas) solo
+ * AGREGA otras, no puede quitar ninguna.
+ */
+export const PROTEGIDAS_FIJAS = ["main"] as const;
+export function protegidas(env = process.env.BAJA_SUCURSALES_PROTEGIDAS) {
+  const extra = (env ?? "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+  return [...new Set([...PROTEGIDAS_FIJAS, ...extra])];
+}
+export function noProtegida(branchId: string) {
+  if (protegidas().includes(branchId))
+    throw new Error(
+      `La sucursal «${branchId}» está protegida: la baja no la toca.`,
+    );
+}
+
+/**
+ * Columnas con credenciales que NO salen en el paquete: el cliente recibe sus
+ * datos de negocio, no contraseñas, PIN ni secretos (sí se suprimen).
+ */
+export const SENSIBLES: Record<string, string[]> = {
+  User: ["passwordHash", "pinHash"],
+  RefreshToken: ["hash"],
+  Terminal: ["secretHash"],
+  DriveBackup: ["refreshTokenEnc"],
+};
+
+/** Plazo mínimo fijo entre terminar y suprimir (decisión de la dueña, 9-nov). */
+export const DIAS_MINIMOS = 30;
+
 /** Tablas de la sucursal en orden de borrado (hijas antes que padres). */
 export async function alcance(db: any, branchId: string): Promise<Alcance> {
   if (!branchId || branchId.length > 100)
     throw new Error("Indica la sucursal (branchId).");
+  noProtegida(branchId);
   const tablas: { t: string; b: boolean }[] = await db.$queryRaw`
     SELECT t.table_name AS t,
            EXISTS (SELECT 1 FROM information_schema.columns c
@@ -159,6 +195,7 @@ export const hoy = (now = new Date()) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(now);
 
 async function existe(db: any, branchId: string) {
+  noProtegida(branchId);
   const [{ n }] = await db.$queryRaw`
     SELECT (SELECT count(*) FROM "User" WHERE "branchId" = ${branchId})
          + (SELECT count(*) FROM "Settings" WHERE id = ${branchId})
@@ -180,11 +217,20 @@ export function validarClave(clave: string | undefined) {
   return c;
 }
 
+async function descifrar(archivo: string, clave: string) {
+  const partes: Buffer[] = [];
+  const flujo = Readable.from([await readFile(archivo)]).pipe(
+    createDecryptStream(clave),
+  );
+  for await (const p of flujo) partes.push(p as Buffer);
+  return Buffer.concat(partes);
+}
+
 /**
  * (1) Exporta la sucursal a `carpeta`: un <Tabla>.jsonl.enc por tabla (una fila
- * JSON por línea, cifrado NXBK: se abre con scripts/decrypt-backup.mjs) y un
- * manifiesto.json en claro con conteos y SHA-256, sin datos personales.
- * Lectura en una sola instantánea (REPEATABLE READ, sólo lectura).
+ * JSON por línea, cifrado NXBK) y un manifiesto.json en claro con filas y
+ * SHA-256 del contenido y del archivo cifrado, sin datos personales. Sin las
+ * columnas de SENSIBLES. Lectura en una sola instantánea (REPEATABLE READ).
  */
 export async function exportar(
   db: any,
@@ -203,10 +249,12 @@ export async function exportar(
       for (const { tabla, donde } of [...lista].sort((a, b) =>
         a.tabla.localeCompare(b.tabla),
       )) {
+        const quitar = SENSIBLES[tabla] ?? [];
         // shortcut: la tabla entera en memoria; basta para una tienda (base de
         // 1 GB). Si un cliente crece, pasar a cursor por lotes.
         const rows: { j: string }[] = await tx.$queryRaw`
-          SELECT row_to_json(t)::text AS j FROM ${ident(tabla)} t WHERE ${donde} ORDER BY 1`;
+          SELECT (to_jsonb(t) - ${quitar}::text[])::text AS j
+            FROM ${ident(tabla)} t WHERE ${donde} ORDER BY 1`;
         const plano = Buffer.from(rows.map((r) => r.j + "\n").join(""), "utf8");
         const archivo = `${tabla}.jsonl.enc`;
         await pipeline(
@@ -219,6 +267,8 @@ export async function exportar(
           filas: rows.length,
           archivo,
           sha256Contenido: sha256(plano),
+          sha256Cifrado: sha256(await readFile(join(carpeta, archivo))),
+          columnasExcluidas: quitar,
         });
       }
       return out;
@@ -294,12 +344,67 @@ export async function terminar(db: any, branchId: string, now = new Date()) {
 export const frase = (branchId: string) => `SUPRIMIR ${branchId}`;
 
 /**
- * (3) Suprime los datos de la sucursal. Exige: terminada hace `diasMinimos`
- * días o más, exportada después de terminar, `confirmacion` = «SUPRIMIR
- * <branchId>» y `fecha` = hoy (zona de la tienda). Todo en una transacción:
- * si algo falla (p. ej. una fila de OTRA sucursal apunta a ésta) no se borra
- * nada. Devuelve el acta (sin datos personales) y deja su SHA-256 en
- * BranchTermination.
+ * Abre el paquete y lo compara con lo guardado al exportar: SHA-256 del
+ * manifiesto, de cada archivo cifrado y de su contenido, y filas por archivo.
+ * Devuelve las filas por tabla del manifiesto.
+ */
+export async function verificarPaquete(
+  carpeta: string,
+  clave: string,
+  branchId: string,
+  exportSha256: string | null,
+) {
+  let texto: string;
+  try {
+    texto = await readFile(join(carpeta, "manifiesto.json"), "utf8");
+  } catch {
+    throw new Error(
+      "No se encontró manifiesto.json en la carpeta del paquete.",
+    );
+  }
+  if (sha256(texto) !== exportSha256)
+    throw new Error(
+      "El manifiesto no es el de la última exportación registrada.",
+    );
+  const m = JSON.parse(texto);
+  if (m.sucursal !== branchId)
+    throw new Error("El paquete es de otra sucursal.");
+  const filas: Record<string, number> = {};
+  for (const t of m.tablas) {
+    const ruta = join(carpeta, String(t.archivo));
+    let cifrado: Buffer;
+    try {
+      cifrado = await readFile(ruta);
+    } catch {
+      throw new Error(`Falta ${t.archivo} en el paquete.`);
+    }
+    if (sha256(cifrado) !== t.sha256Cifrado)
+      throw new Error(`${t.archivo} fue modificado (SHA-256 distinto).`);
+    let plano: Buffer;
+    try {
+      plano = await descifrar(ruta, clave);
+    } catch {
+      throw new Error(
+        `${t.archivo} no se puede abrir: clave incorrecta o archivo dañado.`,
+      );
+    }
+    const lineas = plano.toString("utf8").split("\n").filter(Boolean).length;
+    if (sha256(plano) !== t.sha256Contenido || lineas !== t.filas)
+      throw new Error(`${t.archivo} no coincide con el manifiesto.`);
+    filas[t.tabla] = t.filas;
+  }
+  return filas;
+}
+
+/**
+ * (3) Suprime los datos de la sucursal. Exige: terminada hace DIAS_MINIMOS
+ * días o más (diasMinimos solo puede subir el piso), exportada después de
+ * terminar, el paquete presente y abierto con su clave, `confirmacion` =
+ * «SUPRIMIR <branchId>» y `fecha` = hoy (zona de la tienda), ambas escritas
+ * por una persona (scripts/baja-cliente.ts). Todo en una transacción; si las
+ * filas actuales o las borradas no son exactamente las del paquete, o una
+ * llave cruza a otra sucursal, no se borra nada. El acta (sin datos
+ * personales) queda en BranchTermination.
  */
 export async function suprimir(
   db: any,
@@ -307,20 +412,41 @@ export async function suprimir(
   opciones: {
     confirmacion: string;
     fecha: string;
-    diasMinimos: number;
+    carpeta: string;
+    clave: string;
+    diasMinimos?: number;
     now?: Date;
   },
 ) {
   const now = opciones.now ?? new Date();
+  noProtegida(branchId);
   if (opciones.confirmacion !== frase(branchId))
     throw new Error(`Confirma escribiendo exactamente «${frase(branchId)}».`);
   if (opciones.fecha !== hoy(now))
     throw new Error(`La fecha de confirmación debe ser hoy (${hoy(now)}).`);
-  if (!Number.isInteger(opciones.diasMinimos) || opciones.diasMinimos < 0)
-    throw new Error("Días mínimos inválidos.");
+  const pedido = Number(opciones.diasMinimos ?? DIAS_MINIMOS);
+  const minimo = Math.max(
+    DIAS_MINIMOS,
+    Number.isFinite(pedido) ? pedido : DIAS_MINIMOS,
+  );
   const estado = await db.branchTermination.findUnique({
     where: { branchId },
   });
+  if (estado?.suppressedAt) {
+    // Nunca se vuelve a borrar: un branchId reutilizado pasa otra vez por
+    // terminar y exportar con otra constancia.
+    const restantes = await conteos(db, branchId);
+    const total = Object.values(restantes).reduce((s, n) => s + n, 0);
+    if (total > 0)
+      throw new Error(
+        `La sucursal ya fue suprimida el ${estado.suppressedAt.toISOString()} y tiene ${total} filas nuevas. No se borró nada: revisar a mano.`,
+      );
+    return {
+      yaSuprimida: true,
+      borradas: restantes,
+      actaTexto: estado.actaTexto as string,
+    };
+  }
   if (!estado?.terminatedAt)
     throw new Error("Primero hay que terminar la sucursal (comando terminar).");
   if (!estado.exportedAt || estado.exportedAt < estado.terminatedAt)
@@ -328,20 +454,46 @@ export async function suprimir(
       "Falta una exportación hecha después de terminar (comando exportar).",
     );
   const dias = (now.getTime() - estado.terminatedAt.getTime()) / 86_400_000;
-  if (dias < opciones.diasMinimos)
+  if (dias < minimo)
     throw new Error(
-      `Faltan días: terminada hace ${Math.floor(dias)}; el mínimo es ${opciones.diasMinimos}.`,
+      `Faltan días: terminada hace ${Math.floor(dias)}; el mínimo es ${minimo}.`,
     );
+  const esperadas = await verificarPaquete(
+    opciones.carpeta,
+    opciones.clave,
+    branchId,
+    estado.exportSha256,
+  );
   return db.$transaction(
     async (tx: any) => {
       const lista = await alcance(tx, branchId);
+      const actuales: Record<string, number> = {};
+      for (const { tabla, donde } of lista) {
+        const [{ n }] =
+          await tx.$queryRaw`SELECT count(*)::int AS n FROM ${ident(tabla)} WHERE ${donde}`;
+        actuales[tabla] = Number(n);
+      }
+      const distintas = (a: Record<string, number>) =>
+        [...new Set([...Object.keys(a), ...Object.keys(esperadas)])]
+          .filter((t) => (a[t] ?? 0) !== (esperadas[t] ?? 0))
+          .map((t) => `${t}: ${a[t] ?? 0} ≠ ${esperadas[t] ?? 0}`);
+      const cambios = distintas(actuales);
+      if (cambios.length)
+        throw new Error(
+          `Los datos cambiaron después de exportar (${cambios.join("; ")}). No se borró nada: exportar de nuevo.`,
+        );
       await sinReferenciasAjenas(tx, lista);
       const borradas: Record<string, number> = {};
       for (const { tabla, donde } of lista)
         borradas[tabla] = Number(
           await tx.$executeRaw`DELETE FROM ${ident(tabla)} WHERE ${donde}`,
         );
-      if (estado.suppressedAt) return { yaSuprimida: true, borradas };
+      // Una fila que entró entre el conteo y el borrado no está en el paquete.
+      const tarde = distintas(borradas);
+      if (tarde.length)
+        throw new Error(
+          `Entraron filas durante la supresión (${tarde.join("; ")}). No se borró nada: exportar de nuevo.`,
+        );
       const acta = {
         formato: "nexora-acta-supresion-1",
         sucursal: branchId,
@@ -353,12 +505,12 @@ export async function suprimir(
         totalFilasBorradas: Object.values(borradas).reduce((s, n) => s + n, 0),
         tablasGlobalesConservadas: [...GLOBALES],
       };
-      const texto = JSON.stringify(acta, null, 2) + "\n";
+      const actaTexto = JSON.stringify(acta, null, 2) + "\n";
       await tx.branchTermination.update({
         where: { branchId },
-        data: { suppressedAt: now, actaSha256: sha256(texto) },
+        data: { suppressedAt: now, actaSha256: sha256(actaTexto), actaTexto },
       });
-      return { yaSuprimida: false, borradas, acta, actaTexto: texto };
+      return { yaSuprimida: false, borradas, acta, actaTexto };
     },
     { timeout: 600_000, maxWait: 30_000 },
   );

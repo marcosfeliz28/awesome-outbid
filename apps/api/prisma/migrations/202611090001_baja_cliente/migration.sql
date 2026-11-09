@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS "BranchTermination" (
   "updatedAt" timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "BranchTermination_pkey" PRIMARY KEY ("branchId")
 );
+-- Texto del acta (sin datos personales), para devolverla al repetir el comando.
+ALTER TABLE "BranchTermination" ADD COLUMN IF NOT EXISTS "actaTexto" text;

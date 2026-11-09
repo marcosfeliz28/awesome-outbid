@@ -29,7 +29,9 @@ Cumple la cláusula de terminación del contrato (auditoría del contrato,
 ## Antes de empezar
 
 - Confirma con la dueña, por escrito, **qué sucursal** (`branchId`) se da de
-  baja y que no es la propia (la de la dueña es `main`).
+  baja. La de la dueña (`main`) está **protegida en el código**: ninguna
+  operación la toca. `BAJA_SUCURSALES_PROTEGIDAS` (lista con comas) agrega
+  otras protegidas; no puede quitar `main`.
 - Mira el estado y los conteos (solo lee):
 
 ```bash
@@ -55,8 +57,13 @@ pnpm baja exportar --sucursal <branchId> --salida /ruta/segura/baja-<branchId>-A
 ```
 
 - Crea un `<Tabla>.jsonl.enc` por tabla (una fila JSON por línea, cifrado
-  AES-256-GCM) y `manifiesto.json` en claro con tablas, filas y SHA-256 (sin
-  datos personales). Imprime el SHA-256 del manifiesto: anótalo.
+  AES-256-GCM) y `manifiesto.json` en claro con tablas, filas y SHA-256 del
+  contenido y del archivo cifrado (sin datos personales). Imprime el SHA-256
+  del manifiesto: anótalo.
+- El cliente recibe sus **datos de negocio, no credenciales**: el paquete no
+  lleva contraseñas ni PIN (`passwordHash`, `pinHash`), hashes de tokens ni
+  secretos de terminales o de Drive (lista `SENSIBLES` en `baja.ts`). Esas
+  columnas sí se borran al suprimir.
 - `BAJA_CLAVE` debe tener 32 caracteres o más y no ser simple. **No la
   imprimas ni la pegues en chats.** Entrégala por un canal distinto del
   paquete.
@@ -67,26 +74,36 @@ pnpm baja exportar --sucursal <branchId> --salida /ruta/segura/baja-<branchId>-A
 - Comprueba: cada archivo descifrado tiene tantas líneas como dice el
   manifiesto.
 
-## Paso 3 · Suprimir (con confirmación doble y fecha)
+## Paso 3 · Suprimir (con confirmación doble escrita y fecha)
 
-Pasados los 30 días, guardado el paquete (decisión 2) y solo con la confirmación de la dueña:
+Pasados los 30 días, guardado el paquete (decisión 2) y solo con la
+confirmación de la dueña:
 
 ```bash
-BAJA_CONFIRMAR="SUPRIMIR <branchId>" BAJA_DIAS_MINIMOS=30 \
-  pnpm baja suprimir --sucursal <branchId> --fecha <hoy AAAA-MM-DD> --acta /ruta/segura/acta-<branchId>.json
+BAJA_CLAVE=<la del paquete> \
+  pnpm baja suprimir --sucursal <branchId> --paquete /ruta/segura/baja-<branchId>-AAAA-MM-DD --acta /ruta/segura/acta-<branchId>.json
 ```
 
-- Confirmación doble: la frase exacta `SUPRIMIR <branchId>` y la fecha de hoy
-  (zona de Santo Domingo). Si algo no coincide, no hace nada.
-- Exige que la sucursal esté terminada hace los días mínimos y exportada
-  después de terminar.
+- El comando **pregunta en la consola** y una persona escribe la frase exacta
+  `SUPRIMIR <branchId>` y luego la fecha de hoy (zona de Santo Domingo). Sin
+  consola (un script, una tubería) se niega. Si algo no coincide, no hace nada.
+- Piso fijo de **30 días** desde terminar, en el código. `BAJA_DIAS_MINIMOS`
+  solo lo sube (p. ej. 60); un valor menor se ignora.
+- Exige la exportación hecha después de terminar y **abre el paquete**: el
+  manifiesto debe ser el registrado, cada archivo debe tener su SHA-256 y
+  abrirse con la clave, con las filas del manifiesto. Si falta un archivo,
+  está dañado o la clave es otra, no borra nada.
+- Dentro de la misma transacción compara las filas actuales con las del
+  paquete, y después las borradas: si entró algo después de exportar, no borra
+  nada y pide exportar de nuevo.
 - Antes de borrar comprueba que ninguna fila de **otra** sucursal apunta a
   ésta ni al revés; si hay, se detiene sin borrar nada y dice dónde.
 - Todo ocurre en una transacción: o se borra todo lo de la sucursal o nada.
 - Escribe el **acta de supresión** (JSON sin datos personales: fechas, SHA-256
-  del paquete, filas borradas por tabla) y guarda su SHA-256 en la base
-  (`BranchTermination`). Repetir el comando no borra nada más ni cambia el
-  acta.
+  del paquete, filas borradas por tabla) y la guarda, con su SHA-256, en la
+  base (`BranchTermination`). Repetir el comando no borra nada y devuelve la
+  misma acta. Si después de suprimir aparecen datos nuevos con ese mismo
+  `branchId`, el comando se niega a borrarlos: hay que revisarlo a mano.
 - No toca las tablas compartidas por todas las sucursales (roles, marcas,
   categorías de gasto, reglas de alerta) ni los intentos de ingreso, que la
   purga automática borra a los 2/30 días.
