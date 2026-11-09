@@ -78,6 +78,7 @@ export default defineConfig({
       "tests/datos-unit.test.ts",
       "tests/datos-integridad-postgres.test.ts",
       "tests/retencion-seguridad-postgres.test.ts",
+      "tests/baja-cliente-postgres.test.ts",
       "tests/accessibility-contract.test.ts",
       "tests/variant-code-unique-postgres.test.ts",
       "tests/reports-memory-postgres.test.ts",

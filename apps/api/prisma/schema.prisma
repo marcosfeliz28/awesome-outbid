@@ -1278,3 +1278,16 @@ model AiUsage {
 
   @@index([branchId, createdAt])
 }
+
+// Baja de cliente (scripts/baja-cliente.ts, src/baja.ts). Constancia sin datos
+// personales; la supresión no la borra.
+model BranchTermination {
+  branchId     String    @id
+  terminatedAt DateTime?
+  exportedAt   DateTime?
+  exportSha256 String?
+  suppressedAt DateTime?
+  actaSha256   String?
+  actaTexto    String?
+  updatedAt    DateTime  @default(now()) @updatedAt
+}
