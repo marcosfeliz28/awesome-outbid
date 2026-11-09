@@ -14,7 +14,11 @@ Autoriza la dueña (Grupo Macgen) sobre su propio sistema Nexora POS. Objetivo: 
 ## Qué se les entrega
 
 - El **paquete de auditoría de solo código público** (sin claves, sin datos, sin `.env`) y la lista de pantallas/rutas: `docs/auditoria/RUTAS_Y_PERMISOS.md`, `docs/sistema/ROLES_Y_PERMISOS.md`, `docs/auditoria/SEGURIDAD_20_PUNTOS.md`.
-- Decisión de la dueña: **enviar código a servicios de terceros (OpenAI, Google, DeepSeek) es su decisión.** DeepSeek es de una empresa china y su servicio en línea puede conservar lo que se le pegue; recomendación: darle solo el paquete público y las rutas, no el código completo, o correrlo localmente si ella prefiere.
+- **Para Gemini específicamente (orden de la dueña, 9-nov):** además de los 3 documentos anteriores, se le entregan dos archivos reales de código (copias en `docs/seguridad/paquete-gemini/`, revisados sin claves/secretos/credenciales reales — solo nombres de campo como `passwordHash`/`secretHash`), para que cruce los documentos contra las validaciones reales:
+  - `docs/seguridad/paquete-gemini/common.ts` (copia de `apps/api/src/common.ts`): el `AuthGuard` real (verificación de JWT, sesión, bloqueo de cuentas, timeout) y los helpers de permisos (`can`, `Permit`, `Public`, `scoped`, enmascarado de PII).
+  - `docs/seguridad/paquete-gemini/schema.prisma` (copia de `apps/api/prisma/schema.prisma`): el esquema completo de datos (roles, permisos, usuarios, sesiones, sucursales, relaciones).
+  - Pedirle a Gemini explícitamente: señalar cualquier contradicción entre lo que dicen RUTAS_Y_PERMISOS.md/ROLES_Y_PERMISOS.md y lo que el `AuthGuard`/schema realmente exigen (permiso faltante, chequeo que no corresponde al rol, campo sin la restricción que el doc promete, aislamiento de sucursal no reforzado en el esquema).
+- Decisión de la dueña: **enviar código a servicios de terceros (OpenAI, Google, DeepSeek) es su decisión.** DeepSeek es de una empresa china y su servicio en línea puede conservar lo que se le pegue; recomendación: darle solo el paquete público y las rutas, no el código completo, o correrlo localmente si ella prefiere. Para ChatGPT y DeepSeek se mantiene el paquete de solo documentos (sin los 2 archivos de código), salvo que la dueña ordene lo mismo para ellos.
 
 ## Cómo se prepara la copia de prueba (lo hacen ChatGPT PC o Claude PC en la laptop)
 

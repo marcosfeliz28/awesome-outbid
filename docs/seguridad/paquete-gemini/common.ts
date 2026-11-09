@@ -1,0 +1,895 @@
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  Inject,
+  createParamDecorator,
+  SetMetadata,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { JwtService } from "@nestjs/jwt";
+import { PrismaClient } from "@prisma/client";
+import { databaseUrlWithPool } from "./database-pool";
+import { can, moneyAmount, stockQty, z, ZodError } from "@fitstore/shared";
+import type { Request, Response } from "express";
+import { captureApiException } from "./monitoring";
+import { isSerializationConflict } from "./inventory-resilience";
+import {
+  constraintConflictMessage,
+  constraintViolation,
+  databaseUnavailable,
+  isDatabaseUnavailable,
+  isDeadlock,
+} from "./database-errors";
+import {
+  ACTIVITY_WRITE_INTERVAL_MS,
+  sessionActivityGraceMs,
+} from "./session-activity";
+import { clientIp } from "./rate-limit";
+import { checkDatabaseTimeZone } from "./database-timezone";
+
+@Injectable()
+export class Database extends PrismaClient {
+  // Pool explícito (connection_limit, pool_timeout): ver database-pool.ts.
+  constructor() {
+    const url = databaseUrlWithPool(process.env.DATABASE_URL);
+    super(url ? { datasources: { db: { url } } } : undefined);
+  }
+  async onModuleInit() {
+    await this.$connect();
+    // D-B7: avisa (sin impedir el arranque) si la sesión no está en UTC.
+    await checkDatabaseTimeZone(this);
+  }
+  async onModuleDestroy() {
+    await this.$disconnect();
+  }
+}
+export type Actor = {
+  id: string;
+  sessionId?: string;
+  terminalId?: string;
+  terminalApproved?: boolean;
+  // IP del cliente según el proxy de confianza (clientIp); sólo para la
+  // bitácora (AuditLog.ip) y los contadores de intentos.
+  ip?: string;
+  name: string;
+  username?: string | null;
+  email: string;
+  role: string;
+  permissions: string[];
+  branchId: string;
+};
+export type ActorRequest = Request & { actor: Actor };
+// Una misma política protege todos los caminos que pueden revelar el arqueo:
+// caja, reportes genéricos y alertas. `reports:read`/`alerts:write` por sí solos
+// no autorizan a conocer los importes esperados ni sus diferencias.
+export const canViewCashExpected = (actor: Actor) =>
+  can(actor.permissions, "profit:read") ||
+  can(actor.permissions, "sale:manage");
+export const CurrentUser = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext) =>
+    ctx.switchToHttp().getRequest<ActorRequest>().actor,
+);
+// "authenticated" declara rutas cuya autorización por recurso se comprueba
+// dentro del controlador (por ejemplo, caja dueña o gerente).
+export const Permit = (permission: string) =>
+  SetMetadata("permission", permission);
+export const Public = () => SetMetadata("public", true);
+// Rutas que mueven inventario o dinero: exigen un equipo registrado, aprobado
+// por un gerente y no revocado (Configuración › Equipos).
+export const RequireTerminal = () => SetMetadata("terminal", true);
+export function bad(message: string): never {
+  throw new HttpException(message, 400);
+}
+export function denied(
+  message = "No tienes permiso para realizar esta acción.",
+): never {
+  throw new HttpException(message, 403);
+}
+// SEC-03 / A2-01: el cambio rápido de usuario con PIN solo mantiene o baja
+// privilegios: cada permiso del destino debe tenerlo ya quien cambia. También
+// la gerencia: un gerente no puede pasar a una cuenta de administración.
+export const canSwitchUserTo = (actor: string[], target: string[]) =>
+  target.every((p) => can(actor, p));
+export function conflict(message: string): never {
+  throw new HttpException(message, 409);
+}
+// N-M1: gerencia descartó esta venta sin conexión; si la caja la reenvía, el
+// servidor la rechaza siempre igual (idempotente) y nunca crea la venta.
+export class OfflineSaleDiscardedError extends HttpException {
+  constructor() {
+    super(
+      "Gerencia descartó esta venta sin conexión; no se registrará. Elimínala de la cola de la caja.",
+      409,
+    );
+  }
+}
+// Mensajes de validación en español y con nombres de campo comprensibles.
+const FIELD_NAMES: Record<string, string> = {
+  lines: "línea",
+  items: "línea",
+  payments: "pago",
+  variants: "variante",
+  qty: "cantidad",
+  unitCost: "costo unitario",
+  cost: "costo",
+  costAvg: "costo",
+  price: "precio",
+  amount: "monto",
+  name: "nombre",
+  email: "correo",
+  password: "contraseña",
+  pin: "PIN",
+  managerPin: "PIN del gerente",
+  reason: "motivo",
+  description: "descripción",
+  code: "código",
+  barcode: "código de barras",
+  sku: "SKU",
+  expiryDate: "vencimiento",
+  lotNumber: "lote",
+  openingAmount: "efectivo inicial",
+  countedCash: "efectivo contado",
+  countedCard: "tarjetas contadas",
+  countedTransfer: "transferencias contadas",
+  customerId: "cliente",
+  categoryId: "categoría",
+  supplierId: "proveedor",
+  total: "total",
+  freight: "flete",
+  taxes: "impuestos",
+  offlineUuid: "identificador de la operación",
+  id: "identificador",
+  cashSessionId: "caja",
+  variantId: "producto",
+  productId: "producto",
+  saleId: "venta",
+  saleItemId: "artículo vendido",
+  globalDiscount: "descuento global",
+  discountPercent: "descuento %",
+  discountAmount: "descuento",
+  method: "forma de pago",
+  reference: "referencia",
+  bank: "banco",
+  approvalCode: "número de aprobación",
+  cardLast4: "últimos 4 dígitos",
+  expectedTotal: "total esperado",
+  phone: "teléfono",
+  legalId: "cédula/RNC",
+  creditLimit: "límite de crédito",
+  stock: "existencias",
+  minStock: "stock mínimo",
+  maxStock: "stock máximo",
+  attributes: "atributos",
+  mapping: "columnas",
+};
+export function fieldLabel(path: (string | number)[]) {
+  const parts: string[] = [];
+  for (const p of path) {
+    if (typeof p === "number") {
+      if (parts.length) parts[parts.length - 1] += " " + (p + 1);
+      else parts.push("elemento " + (p + 1));
+    } else parts.push(FIELD_NAMES[p] ?? p);
+  }
+  return parts.join(" · ") || "datos";
+}
+z.setErrorMap((issue, ctx) => {
+  switch (issue.code) {
+    case "invalid_type":
+      if (issue.received === "undefined" || issue.received === "null")
+        return { message: "es obligatorio" };
+      return {
+        message:
+          issue.expected === "number"
+            ? "debe ser un número"
+            : issue.expected === "string"
+              ? "debe ser texto"
+              : "tiene un formato inválido",
+      };
+    case "too_small":
+      return {
+        message:
+          issue.type === "string"
+            ? `debe tener al menos ${issue.minimum} caracteres`
+            : issue.type === "array"
+              ? `debe tener al menos ${issue.minimum} elemento(s)`
+              : issue.inclusive
+                ? `debe ser mayor o igual a ${issue.minimum}`
+                : `debe ser mayor que ${issue.minimum}`,
+      };
+    case "too_big":
+      return {
+        message:
+          issue.type === "string"
+            ? `admite como máximo ${issue.maximum} caracteres`
+            : issue.type === "array"
+              ? `admite como máximo ${issue.maximum} elementos`
+              : `debe ser como máximo ${issue.maximum}`,
+      };
+    case "invalid_string":
+      return { message: "tiene un formato inválido" };
+    case "invalid_enum_value":
+      return { message: "no es una opción válida" };
+    case "invalid_date":
+      return { message: "no es una fecha válida" };
+    default:
+      return { message: ctx.defaultError };
+  }
+});
+// Reconoce el error de validación por su forma y no sólo por instanceof: así
+// sigue siendo 400 aunque otro paquete cargue una copia distinta de zod (R4-08).
+const isZodError = (e: any): e is ZodError =>
+  e instanceof ZodError ||
+  (e?.name === "ZodError" &&
+    Array.isArray(e.issues) &&
+    e.issues.every((i: any) => Array.isArray(i?.path)));
+export const parse = <T extends z.ZodTypeAny>(
+  schema: T,
+  input: unknown,
+): z.infer<T> => schema.parse(input);
+// PostgreSQL acepta un UUID en mayúsculas y lo guarda en minúsculas: se
+// normaliza al validar para que toda comparación con ids de la base (por
+// ejemplo, «¿es mi propia cuenta?») vea el mismo texto.
+export const uuid = z
+  .string()
+  .uuid()
+  .transform((value) => value.toLowerCase());
+// Importes de dinero: como máximo 2 decimales, porque terminan en Decimal(14,2)
+// y un tercer decimal hacía que orden y recepción no cuadraran (R9-A04).
+export const amount = moneyAmount(100000000, true);
+export const cost = moneyAmount(1000000);
+// Cantidades físicas (no dinero): hasta 3 decimales, como las existencias.
+export const positive = z.number().positive().max(1000000);
+// Toda cantidad que mueve o reserva existencias usa esta validación (R4-03).
+export const qty = stockQty();
+export const reason = z.string().trim().min(3).max(1000);
+export const json = (value: unknown) => JSON.parse(JSON.stringify(value));
+export const scoped = (actor: Actor) => ({ branchId: actor.branchId });
+// Toda operación que vaya a asociar una venta o cotización a un cliente toma
+// el mismo bloqueo que la anonimización. El segundo en llegar relee el estado:
+// así nunca puede recrear PII después de que el borrado fue confirmado.
+export async function lockActiveCustomer(
+  tx: any,
+  actor: Actor,
+  customerId: string,
+) {
+  await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
+  const customer = await tx.customer.findFirst({
+    where: {
+      id: customerId,
+      branchId: actor.branchId,
+      active: true,
+      anonymizedAt: null,
+    },
+  });
+  if (!customer)
+    conflict("El cliente fue anonimizado o ya no está disponible.");
+  return customer;
+}
+
+// SEC-05 (Ley 172-13, minimización): la caja necesita elegir al cliente por
+// su nombre para vender, no su cédula/RNC, teléfono ni su gasto histórico.
+// Sólo gerencia (sale:manage), quien puede borrar clientes (customers:erase)
+// y la administración ven estos datos completos. Esta función es la única
+// que decide cómo sale un cliente en cualquier respuesta de la API.
+export const canViewCustomerPii = (actor: Actor) =>
+  can(actor.permissions, "sale:manage") ||
+  can(actor.permissions, "customers:erase");
+export const PII_MASK = "•";
+/** Deja ver sólo los últimos 3 caracteres: «•••••••123». */
+export function maskTail(value: string | null | undefined, visible = 3) {
+  if (value === null || value === undefined || value === "") return value;
+  const clean = String(value).replace(/[\s\-().]/g, "");
+  return (
+    PII_MASK.repeat(7) + (clean.length > visible ? clean.slice(-visible) : "")
+  );
+}
+/** «m•••@dominio.com»: identifica el buzón sin revelarlo. */
+export function maskEmail(value: string | null | undefined) {
+  if (value === null || value === undefined || value === "") return value;
+  const at = value.lastIndexOf("@");
+  if (at < 1) return PII_MASK.repeat(3);
+  return value[0] + PII_MASK.repeat(3) + value.slice(at);
+}
+/** Un valor enmascarado devuelto tal cual por un formulario no es un dato nuevo. */
+export const isMaskedPii = (value: unknown) =>
+  typeof value === "string" && value.includes(PII_MASK);
+const CUSTOMER_HISTORY_FIELDS = ["totalSpent", "purchases", "lastPurchase"];
+export function customerForActor<T>(customer: T, actor: Actor): T {
+  if (!customer || typeof customer !== "object" || canViewCustomerPii(actor))
+    return customer;
+  const out: Record<string, unknown> = { ...(customer as any) };
+  for (const key of CUSTOMER_HISTORY_FIELDS) delete out[key];
+  if ("phone" in out) out.phone = maskTail(out.phone as string);
+  if ("legalId" in out) out.legalId = maskTail(out.legalId as string);
+  if ("email" in out) out.email = maskEmail(out.email as string);
+  return out as T;
+}
+
+// La bitácora nunca guarda imágenes (auditoría 03, A2): verificar o rechazar
+// un abono registraba la fila Payment completa con la foto del comprobante
+// (data URL base64), que quedaba para siempre aunque se anonimizara al
+// cliente. Cualquier data URL de imagen se reemplaza por un marcador.
+const IMAGE_DATA_URL = /^data:image\/[^;,]+;base64,/i;
+export function withoutImages(value: unknown): unknown {
+  if (typeof value === "string")
+    return IMAGE_DATA_URL.test(value) ? "(imagen)" : value;
+  if (Array.isArray(value)) return value.map(withoutImages);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nested]) => [
+        key,
+        withoutImages(nested),
+      ]),
+    );
+  return value;
+}
+export const audit = (
+  db: any,
+  actor: Actor,
+  action: string,
+  entity: string,
+  entityId: string,
+  before?: unknown,
+  after?: unknown,
+) =>
+  db.auditLog.create({
+    data: {
+      userId: actor.id,
+      terminalId: actor.terminalId,
+      ip: actor.ip,
+      action,
+      entity,
+      entityId,
+      branchId: actor.branchId,
+      ...(before === undefined ? {} : { before: withoutImages(json(before)) }),
+      ...(after === undefined ? {} : { after: withoutImages(json(after)) }),
+    },
+  });
+// Tipo real de una imagen por sus primeros bytes: no se guarda otra cosa
+// como logo ni como foto de evidencia.
+export function imageType(bytes: Buffer) {
+  if (bytes.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex")))
+    return "png";
+  if (bytes.subarray(0, 3).equals(Buffer.from("ffd8ff", "hex"))) return "jpeg";
+  if (bytes.subarray(0, 4).toString("latin1") === "GIF8") return "gif";
+  if (
+    bytes.subarray(0, 4).toString("latin1") === "RIFF" &&
+    bytes.subarray(8, 12).toString("latin1") === "WEBP"
+  )
+    return "webp";
+  return null;
+}
+export function safe<T>(value: T, actor: Actor): T {
+  // La vendedora nunca ve costos aunque su rol reciba profit:read, igual que
+  // seesCost (inventory.ts) y los informes de utilidad (reports.ts).
+  if (actor.role !== "seller" && can(actor.permissions, "profit:read"))
+    return json(value);
+
+  // Lista blanca deliberada para respuestas operativas. Antes se eliminaban
+  // sólo nombres conocidos de costos; una columna nueva (por ejemplo,
+  // `wasteCostTotal`) podía llegar a la caja hasta que alguien la añadiera a
+  // la lista negra. Ahora todo campo nuevo queda privado por omisión.
+  const publicFields = new Set([
+    // Estructura y paginación.
+    "id",
+    "items",
+    "lines",
+    "variants",
+    "variant",
+    "product",
+    "category",
+    "lots",
+    "movements",
+    "receipts",
+    "order",
+    "supplier",
+    "payments",
+    "returns",
+    "sale",
+    "alerts",
+    "total",
+    "page",
+    "limit",
+    // Identificadores que los clientes usan para navegar o relacionar filas.
+    "branchId",
+    "productId",
+    "categoryId",
+    "supplierId",
+    "variantId",
+    "lotId",
+    "refId",
+    "userId",
+    "saleId",
+    "sellerId",
+    "customerId",
+    "cashSessionId",
+    "discountApprovedBy",
+    "voidedBy",
+    "creditNoteId",
+    "returnId",
+    "itemId",
+    "orderId",
+    "operationId",
+    "attachmentId",
+    "entityId",
+    "sessionId",
+    "terminalId",
+    "roleId",
+    "createdBy",
+    // Fechas públicas conocidas; una fecha futura no se publica por accidente.
+    "createdAt",
+    "updatedAt",
+    "expiryDate",
+    "expectedDate",
+    "creditDueDate",
+    "invoiceDate",
+    "startsAt",
+    "endsAt",
+    "openedAt",
+    "closedAt",
+    // Identidad y presentación de catálogo/inventario.
+    "name",
+    "number",
+    "sku",
+    "barcode",
+    "attributes",
+    "brand",
+    "description",
+    "imageUrl",
+    "color",
+    "unit",
+    "location",
+    "active",
+    "isKit",
+    "requiresLot",
+    "requiresExpiry",
+    "price",
+    "taxRate",
+    "minStock",
+    "maxStock",
+    "stock",
+    "homeStock",
+    "totalStock",
+    "warehouseStocks",
+    "warehouse",
+    "warehouseId",
+    "sellable",
+    "kind",
+    "home",
+    "store",
+    "expiredStock",
+    "sellableStock",
+    "allowNegativeStock",
+    "qty",
+    "receivedQty",
+    "damagedQty",
+    "damageReason",
+    "balanceAfter",
+    "lotNumber",
+    "lotNumberNormalized",
+    // Ventas, cobros y devoluciones: importes cobrados no son costo/utilidad.
+    "status",
+    "type",
+    "subtotal",
+    "discount",
+    "discountTotal",
+    "discountReason",
+    "discountRule",
+    "discountApprovedName",
+    "discountApprovedRole",
+    "tax",
+    "taxTotal",
+    "taxIncluded",
+    "lineTotal",
+    "unitPrice",
+    "returnedQty",
+    "creditBalance",
+    "ncf",
+    "ncfType",
+    "recipientLegalId",
+    "fiscalStatus",
+    "notes",
+    "voidedReason",
+    "method",
+    "amount",
+    "tendered",
+    "change",
+    "bank",
+    "reference",
+    "cardBrand",
+    "cardLast4",
+    "approvalCode",
+    "cardType",
+    "entryType",
+    "hasProof",
+    "proofContentType",
+    "proofBytes",
+    "reason",
+    "refundAmount",
+    "refundMethod",
+    "restock",
+    // Compras y documentos, conservando cantidades pero nunca sus costos.
+    "supplierInvoice",
+    "supplierNcf",
+    "paymentType",
+    "creditDays",
+    "supplierName",
+    "supplierLegalId",
+    "orderNumber",
+    "userName",
+    "paymentLabel",
+    // Resumen operativo sin costo, utilidad, margen, capital ni comisiones.
+    "revenue",
+    "previousYearRevenue",
+    "yearOverYear",
+    "peakHours",
+    "netSales",
+    "expenses",
+    "invoices",
+    "ticketAverage",
+    "trend",
+    "inventoryRetail",
+    "daily",
+    "top",
+    "categories",
+    "topByCategory",
+    "byUnits",
+    "byAmount",
+    "sellers",
+    "from",
+    "to",
+    "day",
+    "hour",
+    "units",
+    // Unidades dañadas de una recepción: cantidad, no costo (Compras).
+    "damagedUnits",
+    "value",
+    "severity",
+    "message",
+    "key",
+    // Encabezados públicos de exportes/reportes en español.
+    "Fecha",
+    "Factura",
+    "NCF",
+    "Producto",
+    "Cantidad",
+    "Precio",
+    "Descuento",
+    "ITBIS",
+    "Total",
+    "Cajero",
+    "Cliente",
+    "Método",
+    "Referencia",
+    "Estado",
+    "Motivo",
+    "Detalle",
+    "Tipo",
+    "Categoría",
+    "Unidades",
+    "Ventas",
+    "Devoluciones",
+    "Neto",
+    "SKU",
+    "Stock",
+    "Sugerido",
+    "Lote",
+    "Vencimiento",
+    "Descripción",
+    "Usuario",
+    "Saldo_crédito",
+    "Tipo_NCF",
+    "Estado_fiscal",
+    "Mes_Producto",
+    "Vendedor",
+    "Cobros_de_crédito",
+    "Clasificación",
+    "Evento",
+    "Saldo",
+    // Informe «cash»: sólo llega a quien canViewCashExpected autoriza
+    // (profit:read o sale:manage); sin estas columnas quedaba vacío.
+    "Esperado",
+    "Contado",
+    "Diferencia_efectivo",
+    "Diferencia_tarjeta",
+    "Diferencia_transferencia",
+  ]);
+  const publicKey = (key: string) => publicFields.has(key);
+  const financialKey = (key: string) =>
+    /(?:cost|costo|margin|margen|capital|profit|utilidad|wholesale|fee|valor)/i.test(
+      key,
+    );
+  const sanitizeAttributes = (v: any): any =>
+    Array.isArray(v)
+      ? v.map(sanitizeAttributes)
+      : v && typeof v === "object"
+        ? Object.fromEntries(
+            Object.entries(v)
+              .filter(([key]) => !financialKey(key))
+              .map(([key, item]) => [key, sanitizeAttributes(item)]),
+          )
+        : v;
+  const sanitize = (v: any, container?: string): any => {
+    if (Array.isArray(v)) return v.map((item) => sanitize(item, container));
+    if (!v || typeof v !== "object") return v;
+    // Los atributos de variantes/categorías son definidos por la tienda; sus
+    // claves (Color, Talla, etc.) no son columnas del servidor ni importes.
+    if (container === "attributes") return sanitizeAttributes(v);
+    const procurementRecord =
+      Object.hasOwn(v, "supplierId") &&
+      ["expectedDate", "freight", "supplierInvoice", "goods", "orderId"].some(
+        (key) => Object.hasOwn(v, key),
+      );
+    return Object.fromEntries(
+      Object.entries(v)
+        .filter(
+          ([key]) => publicKey(key) && !(procurementRecord && key === "total"),
+        )
+        .map(([key, item]) => [key, sanitize(item, key)]),
+    );
+  };
+  return sanitize(json(value));
+}
+@Injectable()
+export class AuthGuard implements CanActivate {
+  constructor(
+    @Inject(Database) private db: Database,
+    @Inject(JwtService) private jwt: JwtService,
+    @Inject(Reflector) private reflector: Reflector,
+  ) {}
+  async canActivate(context: ExecutionContext) {
+    if (
+      this.reflector.getAllAndOverride("public", [
+        context.getHandler(),
+        context.getClass(),
+      ])
+    )
+      return true;
+    const req = context.switchToHttp().getRequest<ActorRequest>();
+    try {
+      const token = req.headers.authorization?.replace(/^Bearer /, "");
+      if (!token) throw new Error();
+      const payload = this.jwt.verify(token);
+      if (payload.type !== "access") throw new Error();
+      const user = await this.db.user.findUnique({
+        where: { id: payload.sub },
+        include: { role: true },
+      });
+      // El bloqueo por contraseñas erróneas sólo impide iniciar sesión: si
+      // cerrara las sesiones abiertas, cualquiera que conozca el correo
+      // dejaría la caja sin cobrar (R9-seguridad-1).
+      if (!user?.active || user.mustChangePassword) throw new Error();
+      if (payload.version !== user.authVersion || !payload.sid)
+        throw new Error();
+      const settings = await this.db.settings.findUnique({
+        where: { id: user.branchId },
+      });
+      const now = Date.now();
+      const timeout =
+        Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000;
+      const cutoff = new Date(now - timeout - sessionActivityGraceMs(timeout));
+      const session = await this.db.authSession.findUnique({
+        where: { id: payload.sid },
+      });
+      if (!session || session.userId !== user.id) throw new Error();
+      if (session.lastActivityAt < cutoff) throw new Error();
+      // La actividad se escribe como mucho una vez por intervalo: escribir en
+      // cada petición bloqueaba la fila de la sesión bajo carga.
+      if (
+        now - session.lastActivityAt.getTime() >=
+        sessionActivityGraceMs(timeout)
+      ) {
+        const touched = await this.db.authSession.updateMany({
+          where: {
+            id: payload.sid,
+            userId: user.id,
+            lastActivityAt: { gte: cutoff },
+          },
+          data: { lastActivityAt: new Date(now) },
+        });
+        if (!touched.count) throw new Error();
+      }
+      let terminalApproved = false;
+      if (session?.terminalId) {
+        const terminal = await this.db.terminal.findUnique({
+          where: { id: session.terminalId },
+        });
+        if (
+          !terminal ||
+          terminal.revokedAt ||
+          terminal.branchId !== user.branchId
+        )
+          throw new Error();
+        if (
+          terminal.lastUserId !== user.id ||
+          now - terminal.lastActivityAt.getTime() >= ACTIVITY_WRITE_INTERVAL_MS
+        )
+          await this.db.terminal.update({
+            where: { id: terminal.id },
+            data: { lastActivityAt: new Date(now), lastUserId: user.id },
+          });
+        // Un equipo sin secreto (anterior a la ronda 4) nunca opera.
+        terminalApproved = !!terminal.approvedAt && !!terminal.secretHash;
+      }
+      req.actor = {
+        ip: clientIp(req),
+        sessionId: payload.sid,
+        terminalId: session?.terminalId ?? undefined,
+        terminalApproved,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role.name,
+        permissions: user.role.permissions,
+        branchId: user.branchId,
+      };
+    } catch (error) {
+      // Un fallo de la base (pool lleno, tiempo agotado, conexión) no dice
+      // nada de la sesión: 503 para que la web reintente sin cerrarla.
+      if (isDatabaseUnavailable(error)) throw databaseUnavailable();
+      throw new HttpException("Inicia sesión para continuar.", 401);
+    }
+    const permission = this.reflector.getAllAndOverride<string>("permission", [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    // Seguridad (dueña, 23-oct): ruta sin permiso declarado = denegada.
+    if (
+      !permission ||
+      (permission !== "authenticated" &&
+        !can(req.actor.permissions, permission))
+    )
+      denied();
+    if (
+      this.reflector.getAllAndOverride("terminal", [
+        context.getHandler(),
+        context.getClass(),
+      ])
+    ) {
+      if (!req.actor.terminalId)
+        throw new HttpException(
+          {
+            code: "TERMINAL_REQUIRED",
+            message:
+              "Este equipo no está registrado. Recarga la página para registrarlo.",
+          },
+          403,
+        );
+      if (!req.actor.terminalApproved)
+        throw new HttpException(
+          {
+            code: "TERMINAL_PENDING",
+            message:
+              "Este equipo espera aprobación de un gerente (Configuración › Equipos o PIN de gerente en este equipo).",
+          },
+          403,
+        );
+    }
+    return true;
+  }
+}
+@Catch()
+export class ApiExceptionFilter implements ExceptionFilter {
+  catch(exception: any, host: ArgumentsHost) {
+    const http = host.switchToHttp();
+    const res = http.getResponse<Response>();
+    const req = http.getRequest<Request>();
+    let status = 500,
+      code: string | undefined,
+      message = "No se pudo completar la operación. Intenta de nuevo.";
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const response = exception.getResponse();
+      message =
+        typeof response === "string"
+          ? response
+          : String((response as any).message);
+      if (typeof response === "object" && (response as any).code)
+        code = String((response as any).code);
+    } else if (isZodError(exception)) {
+      status = 400;
+      message =
+        "Revisa los campos: " +
+        exception.issues
+          .slice(0, 5)
+          .map((i) => fieldLabel(i.path) + " " + i.message)
+          .join("; ") +
+        ".";
+    } else if (exception?.code === "P2002") {
+      status = 409;
+      message = "Ya existe un registro con esos datos.";
+    } else if (exception?.code === "P2025") {
+      status = 404;
+      message = "El registro no existe.";
+    } else if (constraintViolation(exception)) {
+      // 23514/23503 sobre una fila antigua que viola una restricción NOT VALID
+      // (o un dato nuevo que la viola): conflicto explicado, no 500 genérico.
+      // Va antes de «base no disponible»: Prisma lo entrega como error
+      // desconocido, el mismo tipo que usa una conexión cortada.
+      status = 409;
+      code = "CONSTRAINT_VIOLATION";
+      message = constraintConflictMessage(constraintViolation(exception)!);
+    } else if (isSerializationConflict(exception) || isDeadlock(exception)) {
+      status = 409;
+      message = "Otra operación modificó estos datos. Reintenta.";
+    } else if (isDatabaseUnavailable(exception)) {
+      // P1001/P1017/P2024/P2028…: pool lleno, transacción vencida o conexión
+      // cortada a mitad de petición. Reintentable, igual que en AuthGuard.
+      const unavailable = databaseUnavailable().getResponse() as {
+        code: string;
+        message: string;
+      };
+      status = 503;
+      code = unavailable.code;
+      message = unavailable.message;
+    }
+    if (status === 503 && code === "DB_UNAVAILABLE")
+      res.setHeader("Retry-After", "5");
+    if (status >= 500) {
+      const path = String(req.path ?? "")
+        .split(/[?#]/, 1)[0]
+        .replace(/^\/api(?=\/)/i, "")
+        .toLowerCase();
+      const area =
+        path.startsWith("/sales/") || path === "/sales"
+          ? "sales"
+          : path.startsWith("/cash-sessions/") || path === "/cash-sessions"
+            ? "cash"
+            : "api";
+      captureApiException(exception, area);
+    }
+    if (status === 500) console.error(exception);
+    res
+      .status(status)
+      .json({ statusCode: status, message, ...(code ? { code } : {}) });
+  }
+}
+
+/**
+ * Un error que no es de negocio (regla, permiso o conflicto de datos que el
+ * cliente puede corregir) sino de programación o de infraestructura. La
+ * sincronización offline lo devuelve como conflicto igual que a los demás, pero
+ * éste además se registra (consola y Sentry) para que alguien reciba el stack.
+ */
+export function isUnexpectedError(error: any): boolean {
+  if (error instanceof HttpException) return error.getStatus() >= 500;
+  if (error?.code === "P2025" || error?.code === "P2002") return false;
+  return !(isSerializationConflict(error) || isDeadlock(error));
+}
+
+export function safeErrorMessage(error: any): string {
+  if (error instanceof HttpException) {
+    const response = error.getResponse();
+    return typeof response === "string"
+      ? response
+      : "Revisa los datos de la operación.";
+  }
+  if (error?.code === "P2025")
+    return "El registro no existe o ya no está disponible.";
+  if (error?.code === "P2002") return "Ya existe un registro con esos datos.";
+  if (isSerializationConflict(error) || isDeadlock(error))
+    return "Otra operación modificó estos datos. Reintenta.";
+  return "No se pudo completar la operación. Revisa la venta e intenta de nuevo.";
+}
+
+// Ediciones de factura de la administración (orden 18-oct): solo ventas
+// vigentes y hasta 7 días después de hechas. Bloquea la venta.
+export const EDIT_DAYS = 7;
+export async function editableSale(tx: any, saleId: string, actor: Actor) {
+  await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid FOR UPDATE`;
+  const sale = await tx.sale.findFirst({
+    where: { id: saleId, branchId: actor.branchId },
+    include: { cashSession: { select: { closedAt: true } } },
+  });
+  if (!sale) bad("Venta no encontrada.");
+  if (sale.status !== "completed")
+    bad("Solo se puede editar una venta vigente.");
+  if (Date.now() - new Date(sale.createdAt).getTime() > EDIT_DAYS * 86400000)
+    bad("Solo se puede editar una factura hasta 7 días después de la venta.");
+  return sale;
+}
