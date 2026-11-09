@@ -2,7 +2,7 @@ Borrador generado por IA. Revisión por un abogado dominicano colegiado antes de
 
 # Términos de uso de la IA de ventas de Norexos («Preguntar a Norexos»)
 
-Estado: borrador del 31-oct-2026; corregido técnicamente el 7-nov-2026 para que coincida con el código desplegado. Anexo D del contrato de servicio SaaS Norexos. Redactado para proteger a la proveedora. Siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07; L126 = Ley 126-02. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
+Estado: borrador del 31-oct-2026; corregido técnicamente el 7-nov-2026 para que coincida con el código desplegado y el 9-nov-2026 para el plan analista (rama `claude-pc/asistente-analista`, aún no desplegado). Anexo D del contrato de servicio SaaS Norexos. Redactado para proteger a la proveedora. Siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07; L126 = Ley 126-02. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
 
 ## 0. Base técnica de las afirmaciones de este documento
 
@@ -12,7 +12,7 @@ Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó d
 
 1.1. La IA de ventas es una función **opcional**. Solo queda activa para el cliente cuando la Hoja de contratación la identifica como incluida y el Servicio tiene configurados el proveedor y el plan correspondiente. Los topes y precios aplicables son los de esa Hoja; mientras no se aprueben y firmen, siguen **PENDIENTES**. Permite escribir una pregunta en lenguaje natural sobre las ventas del negocio y recibir una respuesta corta.
 
-1.2. Funciona con herramientas **de solo lectura** (resumen de ventas, productos más vendidos, cobros por método y banco, comparación de períodos y ventas propias de la cajera). No hay herramienta que escriba o cambie datos; si se le pide cambiar un precio, una existencia o una venta, responde que no puede.
+1.2. Funciona con herramientas **de solo lectura** (resumen de ventas, productos más vendidos, cobros por método y banco, comparación de períodos y ventas propias de la cajera). Con el plan **analista** se suman, también de solo lectura: cuadre de ventas del día, cierres de caja, transferencias pendientes de verificar, inventario bajo el mínimo, productos sin ventas y explicación de reportes; antes de dar un total compara dos lecturas independientes y, si no coinciden o falta una, lo dice en vez de elegir una cifra. No hay herramienta que escriba o cambie datos; si se le pide cambiar un precio, una existencia, una venta, verificar una transferencia o un cierre, responde que no puede. [Estado: plan analista en rama, aún no desplegado.]
 
 1.3. Usa un modelo de inteligencia artificial de un tercero (Anthropic; modelo económico configurable). El proveedor es un subencargado (Anexo III de `03_ACUERDO_ENCARGADO_TRATAMIENTO.md`).
 
@@ -20,7 +20,7 @@ Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó d
 
 2.1. **Norexos no persiste el texto de las preguntas ni el de las respuestas en su base funcional.** Cada pregunta es independiente: no hay memoria ni historial entre preguntas (la pantalla no reenvía historial y la API solo acepta la pregunta). La retención en registros técnicos del alojamiento o del proveedor de IA es **NO CONFIRMADA**.
 
-2.2. Lo único que se guarda es **una fila de uso por pregunta** (tabla `AiUsage`): usuario, sucursal, fecha y hora, modelo, tokens, costo estimado y si salió bien, sin texto. Sirve para aplicar el tope diario y medir costos. No se encontró en el código de la rama una escritura del texto de la pregunta o la respuesta en la base, en la bitácora ni en un registro de peticiones (prueba automática `tests/assistant-api.test.ts`).
+2.2. Lo único que se guarda es **una fila de uso por pregunta** (tabla `AiUsage`, función `ia_ventas` o, en el plan analista, `ia_analista`): usuario, sucursal, fecha y hora, modelo, tokens, costo estimado y si salió bien, sin texto. Sirve para aplicar el tope diario y medir costos. No se encontró en el código de la rama una escritura del texto de la pregunta o la respuesta en la base, en la bitácora ni en un registro de peticiones (prueba automática `tests/assistant-api.test.ts`).
 
 2.3. **Lo que sí sucede fuera de Norexos:** para responder, la pregunta y las cifras que las herramientas devuelven en ese momento se envían al proveedor de IA. El sistema no detecta ni elimina automáticamente datos personales, contraseñas, números de tarjeta u otros secretos que el usuario escriba en la pregunta antes de transmitirla; el usuario no debe incluirlos. La proveedora no controla cuánto tiempo el proveedor los conserva ni si los usa para otros fines: **NO VERIFICADO**, depende de sus términos.
 
@@ -30,7 +30,7 @@ Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó d
 
 ## 3. Qué datos ve la IA
 
-3.1. Solo **cifras agregadas** (totales, hasta diez productos, bancos o métodos de cobro), nunca filas de ventas, ni contraseñas, PIN, datos de tarjeta o tokens. Única excepción: a la cajera, «mis ventas» le puede devolver su **última venta propia** (número de factura, total y hora) y su producto más vendido del período. Los nombres de productos y bancos se envían recortados y marcados como datos.
+3.1. Solo **cifras agregadas** (totales, hasta diez productos, bancos o métodos de cobro), nunca contraseñas, PIN, datos de tarjeta, tokens ni datos personales de clientes. Excepciones: a la cajera, «mis ventas» le puede devolver su **última venta propia** (número de factura, total y hora) y su producto más vendido del período, y «cierres de caja» sus propias cajas con lo contado, sin esperado ni diferencia. En el plan analista, además: hasta 20 transferencias pendientes (fecha, número de factura, banco, monto y referencia, sin nombre del cliente), cajas con el nombre del usuario que la abrió y sus montos para quien ve el arqueo, hasta 30 productos con existencia y mínimo, y hasta 10 filas de un reporte que el usuario ya puede abrir. Los textos (productos, bancos, referencias) se envían recortados y marcados como datos.
 
 3.2. Los permisos se aplican en el servidor **antes** de llamar a la IA: sin permiso de reportes y sin ser cajera, la función no responde. Costo, ganancia y margen solo se muestran a quien tenga el permiso `profit:read`. La cajera solo ve sus propias ventas, sin costos y sin totales de la tienda.
 
@@ -38,7 +38,7 @@ Lo que este documento dice sobre el funcionamiento de la IA de ventas se tomó d
 
 ## 4. Límites
 
-4.1. **Tope diario:** según el plan (10 o 30) y nunca más de 30 preguntas por día por usuario (día de negocio en `America/Santo_Domingo`). Al llegar al tope la función avisa y no llama a la IA.
+4.1. **Tope diario:** según el plan (medio 10, completo 30, analista 30) y nunca más de 30 preguntas por día por usuario (día de negocio en `America/Santo_Domingo`). En el plan analista, además, un tope de costo estimado de US$0.40 por usuario y día (PENDIENTE de aprobar). Al llegar a cualquiera de los dos la función avisa y no llama a la IA.
 
 4.2. Máximo de 600 tokens por respuesta, tiempo máximo de 20 segundos, hasta 4 llamadas al modelo y 3 rondas de herramientas por pregunta, hasta 4 consultas por ronda, rangos de fechas de hasta 366 días y hasta 6 preguntas por minuto por usuario.
 

@@ -6,7 +6,9 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import {
   ask,
+  liveDeps,
   usageStore,
+  IA_ANALISTA_FEATURE,
   IA_VENTAS_FEATURE,
   type AssistantDeps,
 } from "../apps/api/src/assistant";
@@ -451,5 +453,96 @@ describe("sin texto guardado y tope por contador", () => {
     expect(seen[0].tools.map((t: any) => t.name)).toEqual(["mis_ventas"]);
     expect(await rows(cajera.id)).toHaveLength(1);
     await db.aiUsage.deleteMany({ where: mine(cajera.id) });
+  });
+});
+
+// Plan analista con las lecturas REALES (liveDeps = las mismas del controlador):
+// cada doble lectura cuadra con los datos de la semilla y la cajera queda en cierre ciego.
+describe("plan analista contra la base real", () => {
+  const run = async (actor: any, calls: { name: string; input: any }[]) => {
+    const create = async (p: any) =>
+      p.messages.length === 1
+        ? {
+            content: calls.map((c, i) => ({
+              type: "tool_use",
+              id: "a" + i,
+              ...c,
+            })),
+            usage: { input_tokens: 1, output_tokens: 1 },
+          }
+        : {
+            content: [{ type: "text", text: "ok" }],
+            usage: { input_tokens: 1, output_tokens: 1 },
+          };
+    const reserved: any[] = [];
+    const r = await ask(actor, "[test-analista] cuadre", {
+      client: { create },
+      ...liveDeps(db),
+      usage: {
+        reserve: async (...a: any[]) => (
+          reserved.push(a[3]),
+          { id: "q", used: 1 }
+        ),
+        settle: async () => {},
+      },
+      limit: DAILY_LIMIT,
+      plan: "analista",
+    } as AssistantDeps);
+    return { used: r.used as any[], reserved };
+  };
+  it("cuadre, resumen e inventario: las dos lecturas cuadran", async () => {
+    const { used, reserved } = await run(admin, [
+      { name: "cuadre_dia", input: { periodo: "mes" } },
+      { name: "resumen_ventas", input: { periodo: "mes" } },
+      { name: "inventario_bajo", input: {} },
+      { name: "cierres_caja", input: { periodo: "mes" } },
+    ]);
+    expect(reserved[0].feature).toBe(IA_ANALISTA_FEATURE);
+    for (const u of used) {
+      expect(u.error).toBeUndefined();
+      expect(u.result.verificacion.cuadra).toBe(true);
+    }
+    const c = used[0].result;
+    expect(c.verificacion.lecturas.desgloseVentas).toBe(c.ventasNetas);
+    const more = await run(admin, [
+      { name: "transferencias_pendientes", input: {} },
+      { name: "productos_sin_ventas", input: { dias: 30 } },
+      {
+        name: "explicar_reporte",
+        input: { reporte: "formas-pago-mes", periodo: "mes" },
+      },
+    ]);
+    for (const u of more.used) expect(u.error).toBeUndefined();
+    const pend = await db.payment.count({
+      where: {
+        method: "transfer",
+        status: "pending_verification",
+        sale: { branchId: admin.branchId },
+      },
+    });
+    expect(more.used[0].result.cantidad).toBe(pend);
+  });
+  it("la cajera: solo sus cajas, sin esperado ni diferencia; el resto se rechaza", async () => {
+    const seller = await db.user.findFirst({
+      where: { email: "vendedor@fitstore.demo" },
+    });
+    const cajera: any = {
+      id: seller!.id,
+      role: "seller",
+      permissions: ["catalog:read", "sale:write", "cash:write"],
+      branchId: seller!.branchId ?? "main",
+    };
+    const { used } = await run(cajera, [
+      { name: "cierres_caja", input: { periodo: "mes" } },
+      { name: "cuadre_dia", input: {} },
+      { name: "transferencias_pendientes", input: {} },
+      { name: "inventario_bajo", input: {} },
+    ]);
+    expect(used[0].error).toBeUndefined();
+    const text = JSON.stringify(used[0].result.cajas);
+    for (const k of ["esperado", "diferencia", "expected", "difference"])
+      expect(text).not.toContain(k);
+    for (const c of used[0].result.cajas) expect(c.usuario).toBe(seller!.name);
+    for (const u of used.slice(1)) expect(u.error).toMatch(/permiso/);
   });
 });

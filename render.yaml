@@ -71,7 +71,7 @@ services:
         generateValue: true
       - key: ANTHROPIC_MODEL
         value: claude-opus-5-5
-      # IA de ventas: modelo económico; IA_VENTAS_PLAN vacío = apagada (medio | completo | main:completo,…).
+      # IA de ventas: modelo económico; IA_VENTAS_PLAN vacío = apagada (medio | completo | analista | main:completo,…).
       - key: ASSISTANT_MODEL
         value: claude-haiku-5-5
       - key: IA_VENTAS_PLAN

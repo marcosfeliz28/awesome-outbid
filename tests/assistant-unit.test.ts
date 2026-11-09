@@ -163,7 +163,9 @@ describe("límites", () => {
     expect(r.limited).toBeFalsy();
     expect(create).toHaveBeenCalled();
     // solo usuario y tope: ni texto de la pregunta ni de la respuesta
-    expect(deps.usage.reserve).toHaveBeenCalledWith(admin, DAILY_LIMIT, NOW);
+    expect(deps.usage.reserve).toHaveBeenCalledWith(admin, DAILY_LIMIT, NOW, {
+      feature: "ia_ventas",
+    });
     expect(
       JSON.stringify(vi.mocked(deps.usage.settle).mock.calls),
     ).not.toContain("hola");
@@ -219,7 +221,7 @@ describe("solo lectura", () => {
 
 describe("plan y tope (un solo lugar)", () => {
   it("Medio 10, Completo 30, sin plan 0", () => {
-    expect(IA_VENTAS_TOPES).toEqual({ medio: 10, completo: 30 });
+    expect(IA_VENTAS_TOPES).toEqual({ medio: 10, completo: 30, analista: 30 });
     expect(dailyLimit("main", {} as any)).toBe(0);
     expect(dailyLimit("main", { IA_VENTAS_PLAN: "medio" } as any)).toBe(10);
     expect(dailyLimit("main", { IA_VENTAS_PLAN: "Completo" } as any)).toBe(30);
@@ -243,7 +245,12 @@ describe("plan y tope (un solo lugar)", () => {
   it("Medio: la pregunta 11 no llama a la IA", async () => {
     const { create, deps } = setup([], 10);
     const r = await ask(admin, "hola", { ...deps, limit: 10 });
-    expect(deps.usage.reserve).toHaveBeenCalledWith(admin, 10, NOW);
+    expect(deps.usage.reserve).toHaveBeenCalledWith(
+      admin,
+      10,
+      NOW,
+      expect.objectContaining({ feature: "ia_ventas" }),
+    );
     expect(create).not.toHaveBeenCalled();
     expect(r).toMatchObject({ limited: true, remaining: 0 });
     expect(r.answer).toContain("10");

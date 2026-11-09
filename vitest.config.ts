@@ -121,6 +121,7 @@ export default defineConfig({
       "tests/avisos-propios.test.ts",
       "tests/intentos-borrados.test.ts",
       "tests/assistant-unit.test.ts",
+      "tests/ia-analista-eval.test.ts",
     ],
   },
 });
