@@ -1383,6 +1383,11 @@ export class ReportsController {
         // reconstruido con todas las devoluciones de la venta, también las de
         // otros períodos. Se calcula al leer, así que es idempotente.
         const histories = new Map<string, ReturnType<typeof replayReturns>>();
+        // Devoluciones heredadas sin líneas (items vacío): no se ven por línea,
+        // pero el dashboard sí las descuenta; van en una fila propia (igual que
+        // el desglose del mes) para que Ventas, Costo y Utilidad cuadren.
+        let legacyTotal = d(0),
+          legacyCost = d(0);
         for (let cursor: string | undefined; ;) {
           const page = await this.db.saleReturn.findMany({
             where: {
@@ -1396,6 +1401,8 @@ export class ReportsController {
               id: true,
               saleId: true,
               items: true,
+              total: true,
+              costTotal: true,
               sale: {
                 select: {
                   costTotal: true,
@@ -1418,6 +1425,10 @@ export class ReportsController {
               histories.get(returned.saleId) ??
               replayReturns(returned.sale, returned.sale.returns);
             histories.set(returned.saleId, history);
+            if (Array.isArray(returned.items) && !returned.items.length) {
+              legacyTotal = legacyTotal.plus(returned.total);
+              legacyCost = legacyCost.plus(returned.costTotal);
+            }
             (returned.items as any[]).forEach((part, n) => {
               const found = history.parts.get(returned.id + "#" + n);
               const line = found
@@ -1456,6 +1467,20 @@ export class ReportsController {
           if (page.length < RETURN_BATCH) break;
           cursor = page[page.length - 1].id;
         }
+        // Sin categoría: con filtro de categoría no aplica. Y «abc» no clasifica restas.
+        if (
+          name === "profit" &&
+          !query.categoryId &&
+          (!legacyTotal.isZero() || !legacyCost.isZero())
+        )
+          grouped.set("legacy-returns", {
+            Producto: "Devoluciones sin detalle",
+            Categoría: "—",
+            Ventas: d(0),
+            gross: legacyTotal.negated(),
+            Costo: legacyCost.negated(),
+            Unidades: 0,
+          });
         rows = [...grouped.values()].map(({ gross, ...i }) => {
           // Regla de la dueña (#8): venta con ITBIS, utilidad = venta − costo y
           // margen sobre esa venta, como «Margen por producto» y el panel.
