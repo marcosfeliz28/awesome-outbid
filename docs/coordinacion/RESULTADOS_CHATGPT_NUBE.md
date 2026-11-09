@@ -1,5 +1,33 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-09 · Cola 9-nov (2): brecha, calidad y arreglos seguros
+
+**Rama:** `chatgpt-nube/calidad-9nov`
+
+**Base:** `origin/nexora-cloud` en `b249c6e4`
+
+**Commits funcionales:** `15171d14`, `fe367152`, `2ec41bb3`, `f3ed3a4e`
+
+### Entregas
+
+- `docs/venta/BRECHA_COMPETENCIA.md`: comparación verificable contra Alegra, Odoo, Loyverse y Vendty; estado de 17 capacidades; fuentes y fecha de consulta; brechas con estimación de esfuerzo y las cinco prioridades. Los costos son estimaciones de planificación claramente rotuladas, no precios de Norexos.
+- `docs/calidad/AUDITORIA_CALIDAD_9NOV.md`: 13 hallazgos con archivo y línea, gravedad, riesgo y corrección propuesta; incluye tamaño, duplicación, tipos, errores, accesibilidad, rendimiento, pruebas, documentación y deuda técnica.
+- Dos arreglos acotados: README vigente de Norexos con límite fiscal explícito y anuncios accesibles para carga/error del medidor de IA. No cambian cálculos, cobros, ventas, caja, inventario, permisos ni datos.
+
+### Regresión y verificación local
+
+- README, antes del arreglo: **2 fallos de 2** porque no existían la identificación vigente de Norexos ni la sección `Desarrollo local`; después: **2/2 pasan** en `tests/calidad-documentacion-9nov.test.ts`.
+- Accesibilidad, antes del arreglo: **2 fallos de 2** porque `AiUsageFeedback` no existía; después: **2/2 pasan** renderizando el componente real en `tests/calidad-accesibilidad-9nov.test.tsx`.
+- La primera verificación del worktree falló porque el cliente Prisma no estaba generado (`Property 'customer' does not exist on type 'Database'`). `pnpm db:generate` lo generó desde el esquema, sin conectarse a una base ni ejecutar migraciones.
+- `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **117 archivos de prueba pasaron y 1 se omitió; 1,022 pruebas pasaron y 10 se omitieron**; los builds web y API pasaron. Vite mantuvo la advertencia no bloqueante conocida sobre un chunk mayor de 500 kB.
+
+### Autoauditoría y límites
+
+- El diff contra la base contiene únicamente README, dos informes, el componente `AiUsage`, dos regresiones y su inclusión en Vitest.
+- No se modificó código de dinero ni precios, y no se cambió lógica de negocio. No se accedió a Render, producción, base de la tienda, claves ni PIN; no hubo despliegue ni PR.
+- Las afirmaciones no confirmadas de competidores están marcadas como tales. La situación fiscal de Norexos se describe como límite del producto, no como asesoría legal ni como capacidad de emitir comprobantes.
+- **CI:** pendiente de ejecutar sobre el commit de entrega; esta sección se actualizará con `verify`, `windows-installer` y `render-images` antes de declarar la rama lista.
+
 ## 2026-11-08 · Asistente analista · `chatgpt-nube/asistente-analista`
 
 - **Qué hice:** documenté el producto de IA analítica en `docs/ia/ASISTENTE_ANALISTA_SPEC.md`: ocho grupos de preguntas, las cinco herramientas actuales, seis lecturas faltantes, matriz de permisos para dueña/gerente/cajera y reconciliación obligatoria por tres caminos. Preparé `ASISTENTE_ANALISTA_EVAL_100.md` con exactamente 100 preguntas, respuestas y cálculos deterministas, incluidas trampas de PIN, otra empresa/sucursal, anulaciones, escrituras e inyección. En `ASISTENTE_ANALISTA_COSTOS.md` calculé cuatro escenarios con las tarifas implementadas en `ai-prices.ts` y conservé las cuotas vigentes de 100/250/600/1,500 preguntas.
