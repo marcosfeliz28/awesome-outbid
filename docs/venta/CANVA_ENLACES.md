@@ -7,6 +7,17 @@ Ambos diseños están en la cuenta de la dueña, **privados**: no se publicaron 
 | Presentación de 6 láminas «Norexos: tu negocio, en movimiento» | https://canva.link/q6gjgg14b0dxm29 |
 | Hoja de precios de una página (A4 vertical, imprimible)        | https://canva.link/tyisgiqwqweu1k3 |
 
+## Mejora de calidad · ChatGPT Nube (9-nov-2026)
+
+Este entorno no tiene acceso autorizado a la cuenta de Canva. Siguiendo la alternativa de la orden, la mejora se entrega como archivos editables e imprimibles dentro del repositorio:
+
+| Pieza | Editable | PDF |
+| --- | --- | --- |
+| Presentación de 6 láminas | `docs/venta/canva/PRESENTACION_VENTAS.html` | `docs/venta/canva/PRESENTACION_VENTAS.pdf` |
+| Hoja de precios A4 | `docs/venta/canva/HOJA_PRECIOS_A4.html` | `docs/venta/canva/HOJA_PRECIOS_A4.pdf` |
+
+Los enlaces privados originales se conservan arriba sin cambios. No se publicaron ni compartieron diseños nuevos fuera de la cuenta de la dueña.
+
 ## Pendiente de la dueña
 
 - Completar `[COMPLETAR]`: WhatsApp, correo y razón social (lámina 6 y pie de la hoja).

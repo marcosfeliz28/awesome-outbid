@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Norexos · Presentación de ventas</title>
+    <style>
+      :root {
+        --ink: #12233f;
+        --navy: #102a43;
+        --blue: #1f6feb;
+        --sky: #eaf3ff;
+        --orange: #f26b38;
+        --mint: #13a88a;
+        --paper: #f7f9fc;
+        --line: #ccd8e5;
+        --muted: #52657a;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: #dfe6ef; color: var(--ink); font-family: Inter, "Segoe UI", Arial, sans-serif; }
+      body { display: grid; gap: 24px; justify-content: center; padding: 24px; }
+      .slide { width: 13.333in; height: 7.5in; background: white; overflow: hidden; position: relative; display: grid; grid-template-columns: 1.08fr .92fr; padding: .62in .68in .52in; break-after: page; page-break-after: always; }
+      .slide::before { content: ""; position: absolute; width: 3.2in; height: 3.2in; border-radius: 50%; right: -1.45in; top: -1.65in; background: var(--sky); }
+      .slide:last-child { break-after: auto; page-break-after: auto; }
+      .brand { position: absolute; left: .68in; top: .34in; display: flex; align-items: center; gap: 9px; font-weight: 800; letter-spacing: .02em; }
+      .mark { width: 26px; height: 26px; border-radius: 8px; background: var(--navy); position: relative; transform: rotate(8deg); }
+      .mark::after { content: ""; position: absolute; width: 9px; height: 9px; border-radius: 3px; right: 4px; top: 4px; background: var(--orange); }
+      .page { position: absolute; right: .68in; bottom: .28in; color: var(--muted); font-size: 12px; font-weight: 700; }
+      .copy { align-self: center; padding-right: .55in; z-index: 1; }
+      .eyebrow { color: var(--blue); text-transform: uppercase; letter-spacing: .13em; font-size: 12px; font-weight: 800; margin: 0 0 16px; }
+      h1, h2 { color: var(--navy); letter-spacing: -.04em; line-height: 1.04; margin: 0; }
+      h1 { font-size: 48px; max-width: 6.2in; }
+      h2 { font-size: 39px; max-width: 5.6in; }
+      .lead { color: var(--muted); font-size: 20px; line-height: 1.45; margin: 22px 0 0; max-width: 5.6in; }
+      .accent { color: var(--orange); }
+      .visual { align-self: center; justify-self: stretch; z-index: 1; }
+      .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 26px; padding: 26px; box-shadow: 0 20px 55px rgba(16, 42, 67, .13); }
+      .window { background: white; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+      .window-head { height: 34px; background: var(--navy); display: flex; align-items: center; gap: 6px; padding: 0 13px; }
+      .dot { width: 7px; height: 7px; border-radius: 50%; background: white; opacity: .6; }
+      .window-body { padding: 22px; }
+      .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .kpi { min-height: 72px; border: 1px solid var(--line); border-radius: 13px; padding: 11px; }
+      .kpi b { display: block; font-size: 21px; margin-top: 8px; }
+      .bar { height: 9px; border-radius: 9px; background: var(--sky); overflow: hidden; margin-top: 15px; }
+      .bar i { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
+      .pills { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 25px; }
+      .pill { border: 1px solid var(--line); border-radius: 999px; padding: 9px 13px; font-size: 13px; font-weight: 700; background: white; }
+      .features { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .feature { background: white; border: 1px solid var(--line); border-radius: 18px; padding: 18px; min-height: 122px; }
+      .icon { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; color: white; background: var(--blue); font-size: 18px; font-weight: 900; margin-bottom: 11px; }
+      .feature:nth-child(2) .icon { background: var(--orange); }
+      .feature:nth-child(3) .icon { background: var(--mint); }
+      .feature:nth-child(4) .icon { background: var(--navy); }
+      .feature b { display: block; font-size: 17px; margin-bottom: 6px; }
+      .feature span { color: var(--muted); font-size: 13px; line-height: 1.35; }
+      .steps { display: grid; gap: 16px; }
+      .step { display: grid; grid-template-columns: 46px 1fr; align-items: center; gap: 14px; background: white; border: 1px solid var(--line); border-radius: 16px; padding: 15px; }
+      .step strong { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--sky); color: var(--blue); }
+      .step b { display: block; margin-bottom: 4px; }
+      .step span { color: var(--muted); font-size: 13px; }
+      .badge { display: inline-flex; margin-top: 20px; padding: 9px 13px; border-radius: 10px; background: #e7f7f3; color: #087761; font-size: 13px; font-weight: 800; }
+      .report { display: grid; grid-template-columns: 1fr .88fr; gap: 13px; }
+      .paper { background: white; border: 1px solid var(--line); border-radius: 14px; padding: 17px; min-height: 260px; transform: rotate(-2deg); }
+      .paper h3 { margin: 0 0 18px; font-size: 15px; }
+      .line { height: 8px; border-radius: 5px; background: #e3eaf2; margin: 10px 0; }
+      .line.short { width: 64%; }
+      .assistant { border-radius: 18px; background: var(--navy); color: white; padding: 20px; align-self: end; }
+      .assistant small { color: #bcd2e8; }
+      .assistant p { line-height: 1.4; font-size: 14px; }
+      .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .price { border: 1px solid var(--line); border-radius: 16px; background: white; padding: 16px; min-height: 106px; }
+      .price.hero { border: 2px solid var(--blue); }
+      .price b { display: block; font-size: 14px; }
+      .price strong { display: block; color: var(--navy); font-size: 25px; margin: 7px 0 3px; }
+      .price span { color: var(--muted); font-size: 11px; line-height: 1.25; display: block; }
+      .fine { font-size: 11px; color: var(--muted); line-height: 1.35; margin-top: 14px; }
+      .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .moment { border-top: 4px solid var(--blue); border-radius: 5px 5px 15px 15px; background: white; padding: 16px; min-height: 145px; }
+      .moment:nth-child(2) { border-color: var(--mint); }
+      .moment:nth-child(3) { border-color: var(--orange); }
+      .moment strong { font-size: 24px; color: var(--navy); }
+      .moment b { display: block; margin: 10px 0 6px; }
+      .moment span { color: var(--muted); font-size: 12px; line-height: 1.35; }
+      .cta { margin-top: 22px; display: inline-block; background: var(--orange); color: white; padding: 13px 19px; border-radius: 12px; font-weight: 800; }
+      @media print {
+        @page { size: 13.333in 7.5in; margin: 0; }
+        body { display: block; padding: 0; background: white; }
+        .slide { margin: 0; box-shadow: none; }
+      }
+      @media screen and (max-width: 900px) {
+        body { padding: 8px; }
+        .slide { transform-origin: top left; zoom: .48; }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="slide">
+      <div class="brand"><i class="mark"></i>NOREXOS</div>
+      <div class="copy">
+        <p class="eyebrow">Punto de venta para tu negocio</p>
+        <h1>Tu negocio,<br /><span class="accent">en movimiento.</span></h1>
+        <p class="lead">Caja, inventario y reportes en un solo lugar, para trabajar con más orden y menos cuentas a mano.</p>
+        <div class="pills"><span class="pill">Caja</span><span class="pill">Inventario</span><span class="pill">Créditos</span><span class="pill">Reportes</span></div>
+      </div>
+      <div class="visual panel">
+        <div class="window">
+          <div class="window-head"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+          <div class="window-body">
+            <div class="kpis"><div class="kpi"><small>Ventas</small><b>Orden</b></div><div class="kpi"><small>Stock</small><b>Control</b></div><div class="kpi"><small>Caja</small><b>Claridad</b></div></div>
+            <div class="bar"><i style="width: 78%"></i></div><div class="bar"><i style="width: 54%;background:var(--mint)"></i></div><div class="bar"><i style="width: 68%;background:var(--orange)"></i></div>
+          </div>
+        </div>
+      </div>
+      <span class="page">01 / 06</span>
+    </section>
+
+    <section class="slide">
+      <div class="brand"><i class="mark"></i>NOREXOS</div>
+      <div class="copy">
+        <p class="eyebrow">Todo conectado</p>
+        <h2>Lo esencial para vender y llevar el control.</h2>
+        <p class="lead">Funciona en la laptop del negocio y organiza el trabajo diario sin obligarte a depender de una libreta.</p>
+      </div>
+      <div class="visual panel features">
+        <div class="feature"><i class="icon">01</i><b>Vende rápido</b><span>Busca por nombre o código y registra el cobro.</span></div>
+        <div class="feature"><i class="icon">02</i><b>Inventario al día</b><span>Cada venta descuenta existencias y deja trazabilidad.</span></div>
+        <div class="feature"><i class="icon">03</i><b>Créditos y abonos</b><span>Consulta lo pendiente y registra cada pago.</span></div>
+        <div class="feature"><i class="icon">04</i><b>En tu laptop</b><span>Opción instalada para operar en el local.</span></div>
+      </div>
+      <span class="page">02 / 06</span>
+    </section>
+
+    <section class="slide">
+      <div class="brand"><i class="mark"></i>NOREXOS</div>
+      <div class="copy">
+        <p class="eyebrow">Caja y cierre</p>
+        <h2>Cuenta primero.<br />Compara después.</h2>
+        <p class="lead">La cajera declara lo contado sin ver el monto esperado. Si hay diferencia, queda visible para revisión y justificación.</p>
+        <span class="badge">Cierre ciego para un cuadre más confiable</span>
+      </div>
+      <div class="visual panel steps">
+        <div class="step"><strong>1</strong><div><b>La cajera cuenta</b><span>Registra efectivo, tarjeta y transferencia.</span></div></div>
+        <div class="step"><strong>2</strong><div><b>El sistema compara</b><span>Muestra faltante, sobrante o cuadre.</span></div></div>
+        <div class="step"><strong>3</strong><div><b>Gerencia revisa</b><span>La diferencia queda explicada y trazable.</span></div></div>
+      </div>
+      <span class="page">03 / 06</span>
+    </section>
+
+    <section class="slide">
+      <div class="brand"><i class="mark"></i>NOREXOS</div>
+      <div class="copy">
+        <p class="eyebrow">Información útil</p>
+        <h2>Reportes claros.<br />IA cuando tú decidas.</h2>
+        <p class="lead">Consulta reportes imprimibles en PDF. La IA de ventas y la lectura de facturas son opciones separadas: solo se activan si las contratas.</p>
+        <p class="fine">La IA es opcional y permanece apagada hasta su activación. No modifica ventas ni inventario por sí sola.</p>
+      </div>
+      <div class="visual panel report">
+        <div class="paper"><h3>Reporte del negocio</h3><div class="line"></div><div class="line short"></div><div class="line"></div><div class="line short"></div><div class="bar"><i style="width: 70%"></i></div><div class="bar"><i style="width: 43%;background:var(--mint)"></i></div></div>
+        <div class="assistant"><small>Asistente opcional</small><p>“Muéstrame las ventas y explícame la diferencia de caja.”</p><b>Respuesta basada en los datos autorizados.</b></div>
+      </div>
+      <span class="page">04 / 06</span>
+    </section>
+
+    <section class="slide">
+      <div class="brand"><i class="mark"></i>NOREXOS</div>
+      <div class="copy">
+        <p class="eyebrow">Precios de introducción</p>
+        <h2>Elige cómo quieres trabajar.</h2>
+        <p class="lead">Instalado en tu laptop o alojado en la nube. Los extras se contratan solo si los necesitas.</p>
+        <p class="fine">Referencia aproximada: RD$60 por US$; confirmar la tasa antes de cobrar.</p>
+      </div>
+      <div class="visual panel price-grid">
+        <div class="price hero"><b>Instalado</b><strong>US$149</strong><span>Pago único · 1 sucursal · hasta 3 cajas. Renovación opcional US$39/año.</span></div>
+        <div class="price"><b>Nube Medio</b><strong>US$69/mes</strong><span>1 sucursal · 5 cajas.</span></div>
+        <div class="price"><b>Nube Completo</b><strong>US$119/mes</strong><span>Hasta 3 sucursales · 10 cajas.</span></div>
+        <div class="price"><b>IA de ventas</b><strong>US$7</strong><span>Por usuario/mes · 10 preguntas al día · 20 facturas IA/mes; extra US$0.30.</span></div>
+        <div class="price" style="grid-column:1/-1;min-height:75px"><b>Instalación y carga de inventario</b><strong style="display:inline;font-size:22px">US$75</strong><span style="display:inline;margin-left:10px">Opcional · una laptop.</span></div>
+      </div>
+      <span class="page">05 / 06</span>
+    </section>
+
+    <section class="slide">
+      <div class="brand"><i class="mark"></i>NOREXOS</div>
+      <div class="copy">
+        <p class="eyebrow">Piloto acompañado</p>
+        <h2>60 días para probarlo en tu operación.</h2>
+        <p class="lead">Instalación guiada, soporte en español y seguimiento para conocer qué funciona y qué falta.</p>
+        <span class="cta">Solicitar el piloto</span>
+        <p class="fine">WhatsApp: [COMPLETAR] · Correo: [COMPLETAR]<br />Razón social: [COMPLETAR]</p>
+      </div>
+      <div class="visual panel timeline">
+        <div class="moment"><strong>01</strong><b>Instalación</b><span>Configuración guiada en la laptop del negocio.</span></div>
+        <div class="moment"><strong>30</strong><b>Acompañamiento</b><span>Revisión de dudas y uso en la operación real.</span></div>
+        <div class="moment"><strong>60</strong><b>Decisión</b><span>Evaluación del piloto antes de contratar.</span></div>
+        <p class="fine" style="grid-column:1/-1">Norexos no emite NCF ni e-CF. Si el negocio necesita facturación fiscal electrónica integrada, esta versión no cubre ese requisito.</p>
+      </div>
+      <span class="page">06 / 06</span>
+    </section>
+  </body>
+</html>

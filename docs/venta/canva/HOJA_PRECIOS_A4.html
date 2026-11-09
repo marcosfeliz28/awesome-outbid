@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Norexos · Precios de introducción</title>
+    <style>
+      :root { --ink:#12233f; --navy:#102a43; --blue:#1f6feb; --orange:#f26b38; --soft:#eef4fb; --line:#bccbdd; --muted:#50657a; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: #dfe6ef; color: var(--ink); font-family: Inter, "Segoe UI", Arial, sans-serif; }
+      .page { width: 210mm; min-height: 297mm; margin: 16px auto; background: white; padding: 18mm 16mm 20mm; position: relative; }
+      header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--navy); padding-bottom: 8mm; }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 850; letter-spacing: .04em; }
+      .mark { width: 30px; height: 30px; border-radius: 9px; background: var(--navy); position: relative; transform: rotate(8deg); }
+      .mark::after { content:""; position:absolute; width:10px; height:10px; border-radius:3px; top:5px; right:5px; background:var(--orange); }
+      .tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--blue); }
+      h1 { font-size: 32px; letter-spacing: -.035em; margin: 12mm 0 3mm; color: var(--navy); }
+      .intro { font-size: 14px; line-height: 1.5; color: var(--muted); margin: 0 0 8mm; max-width: 150mm; }
+      table { border-collapse: separate; border-spacing: 0; width: 100%; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 11.5px; }
+      th { background: var(--navy); color: white; text-align: left; padding: 10px 11px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+      td { padding: 10px 11px; vertical-align: top; border-bottom: 1px solid var(--line); line-height: 1.35; }
+      tr:last-child td { border-bottom: 0; }
+      tbody tr:nth-child(even) { background: var(--soft); }
+      td:first-child { width: 30%; font-weight: 800; color: var(--navy); }
+      td:nth-child(2) { width: 23%; font-weight: 800; white-space: nowrap; }
+      .included { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 8mm; }
+      .included div { border: 1px solid var(--line); border-radius: 10px; padding: 10px; min-height: 58px; }
+      .included b { display: block; color: var(--navy); font-size: 11px; margin-bottom: 4px; }
+      .included span { color: var(--muted); font-size: 10px; line-height: 1.3; }
+      .pilot { margin-top: 8mm; background: var(--navy); color: white; border-radius: 12px; padding: 12px 15px; display: flex; align-items: center; gap: 15px; }
+      .pilot strong { font-size: 24px; white-space: nowrap; }
+      .pilot span { font-size: 11px; line-height: 1.35; color: #d9e7f4; }
+      .notes { margin-top: 7mm; display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; font-size: 9.5px; line-height: 1.45; color: var(--muted); }
+      footer { position: absolute; left: 16mm; right: 16mm; bottom: 9mm; border-top: 1px solid var(--line); padding-top: 4mm; display: flex; justify-content: space-between; font-size: 9px; color: var(--muted); }
+      @media print {
+        @page { size: A4 portrait; margin: 0; }
+        html, body { background: white; }
+        .page { margin: 0; min-height: 297mm; }
+      }
+      @media print and (monochrome) {
+        :root { --navy:#111; --blue:#222; --orange:#444; --soft:#f1f1f1; --line:#777; --muted:#333; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header><div class="brand"><i class="mark"></i>NOREXOS</div><div class="tag">Precios de introducción</div></header>
+      <h1>Una opción para cada forma de trabajar.</h1>
+      <p class="intro">Punto de venta, inventario, créditos y reportes para negocios pequeños y medianos. Elige la versión instalada o la nube; agrega IA solo si la necesitas.</p>
+      <table aria-label="Precios de introducción de Norexos">
+        <thead><tr><th>Opción</th><th>Precio</th><th>Incluye</th></tr></thead>
+        <tbody>
+          <tr><td>Instalado</td><td>US$149 único</td><td>1 sucursal, hasta 3 cajas, instalado en la laptop. Primer año de actualizaciones y soporte. Renovación opcional: US$39/año.</td></tr>
+          <tr><td>Nube Medio</td><td>US$69/mes</td><td>1 sucursal y hasta 5 cajas, con alojamiento dedicado.</td></tr>
+          <tr><td>Nube Completo</td><td>US$119/mes</td><td>Hasta 3 sucursales y 10 cajas, con alojamiento dedicado.</td></tr>
+          <tr><td>IA de ventas</td><td>US$7/usuario/mes</td><td>10 preguntas por día. Incluye 20 lecturas de facturas con IA al mes.</td></tr>
+          <tr><td>Factura IA adicional</td><td>US$0.30 c/u</td><td>Se cobra por cada lectura después de las 20 incluidas.</td></tr>
+          <tr><td>Instalación + inventario</td><td>US$75</td><td>Servicio opcional para una laptop.</td></tr>
+        </tbody>
+      </table>
+      <section class="included" aria-label="Características principales">
+        <div><b>Caja e inventario</b><span>Ventas, existencias y movimientos conectados.</span></div>
+        <div><b>Cierre ciego</b><span>La cajera cuenta antes de ver la diferencia.</span></div>
+        <div><b>Reportes PDF</b><span>Información clara para revisar e imprimir.</span></div>
+      </section>
+      <section class="pilot"><strong>60 días</strong><span>Piloto sin costo para 2–3 negocios seleccionados, con instalación guiada y seguimiento. Sujeto a acuerdo previo.</span></section>
+      <section class="notes">
+        <div><b>Moneda:</b> precios en US$. Referencia aproximada de RD$60 por US$; confirmar la tasa antes de cobrar. La opción Nube Básico no se ofrece.</div>
+        <div><b>Importante:</b> Norexos no emite NCF ni e-CF. La IA es opcional y permanece apagada hasta contratarla y activarla.</div>
+      </section>
+      <footer><span>WhatsApp: [COMPLETAR] · Correo: [COMPLETAR]</span><span>Razón social: [COMPLETAR]</span></footer>
+    </main>
+  </body>
+</html>
