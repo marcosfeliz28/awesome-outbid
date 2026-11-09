@@ -35,6 +35,7 @@ describe("E1 · credenciales sin enumeración", () => {
       authAttempt: {
         upsert: async () => ({ failedAttempts: 0, lockedUntil: null }),
         update: async () => ({}),
+        updateMany: async () => ({ count: 1 }),
       },
       $transaction: async (run: (tx: any) => unknown): Promise<unknown> =>
         run(db),

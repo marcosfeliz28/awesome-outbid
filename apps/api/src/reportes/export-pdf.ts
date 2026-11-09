@@ -46,6 +46,8 @@ export function renderPdf(
       const { count } = doc.bufferedPageRange();
       for (let i = 1; i < count; i++) {
         doc.switchToPage(i);
+        // El pie va debajo del margen: sin esto pdfkit abre una página en blanco.
+        doc.page.margins.bottom = 0;
         doc
           .font("Helvetica")
           .fontSize(7.5)
@@ -265,7 +267,26 @@ function seccion(
     return;
   }
 
-  const anchos = anchosDe(sec.columnas);
+  const celdas = sec.filas.map((f) =>
+    sec.columnas.map((c) =>
+      c.formato === "texto"
+        ? String(f[c.clave] ?? "")
+        : fmt(f[c.clave], c.formato),
+    ),
+  );
+  const total = sec.totales
+    ? sec.columnas.map((c, i) =>
+        i === 0
+          ? "Total"
+          : c.clave in sec.totales!
+            ? fmt(sec.totales![c.clave], c.formato)
+            : "",
+      )
+    : null;
+  const { anchos, letra } = anchosDe(doc, sec.columnas, [
+    ...celdas,
+    ...(total ? [total] : []),
+  ]);
   const cabecera = () => {
     asegura(HH + 20);
     let x = ML;
@@ -274,7 +295,7 @@ function seccion(
       doc
         .fillColor(INK)
         .font("Helvetica-Bold")
-        .fontSize(7.5)
+        .fontSize(letra)
         .text(c.etiqueta, x + 3, getY() + 3, {
           width: anchos[i] - 6,
           height: HH - 4,
@@ -308,7 +329,7 @@ function seccion(
       doc
         .fillColor(INK)
         .font(negrita ? "Helvetica-Bold" : "Helvetica")
-        .fontSize(7.5)
+        .fontSize(letra)
         .text(valores[i] ?? "", x + 3, getY() + 4, {
           width: anchos[i] - 6,
           height: RH - 4,
@@ -321,45 +342,48 @@ function seccion(
   };
 
   cabecera();
-  sec.filas.forEach((f, n) =>
-    fila(
-      sec.columnas.map((c) =>
-        c.formato === "texto"
-          ? String(f[c.clave] ?? "")
-          : fmt(f[c.clave], c.formato),
-      ),
-      false,
-      n % 2 ? ZEBRA : undefined,
-    ),
-  );
-  if (sec.totales) {
-    fila(
-      sec.columnas.map((c, i) =>
-        i === 0
-          ? "Total"
-          : c.clave in sec.totales!
-            ? fmt(sec.totales![c.clave], c.formato)
-            : "",
-      ),
-      true,
-      undefined,
-      true,
-    );
-  }
+  celdas.forEach((v, n) => fila(v, false, n % 2 ? ZEBRA : undefined));
+  if (total) fila(total, true, undefined, true);
   setY(getY() + 10);
 }
 
-function anchosDe(cols: Columna[]) {
-  const numericas = cols.filter((c) => c.formato !== "texto").length;
-  const textos = cols.length - numericas;
-  const num = Math.max(numericas, 1);
-  // Un importe «RD$ 100,000.00» necesita unos 66 pt a 7.5 pt de letra.
-  const anchoNum =
-    textos === 0 ? CW / num : Math.max(66, Math.min(78, (CW * 0.5) / num));
-  const restante = CW - anchoNum * numericas;
-  return cols.map((c) =>
-    c.formato === "texto" ? restante / Math.max(textos, 1) : anchoNum,
-  );
+// Cada columna numérica mide lo que ocupa su cifra más larga; las de texto se
+// reparten el resto. Si no cabe en la hoja, se achica la letra: nunca «RD$...».
+function anchosDe(doc: PDFKit.PDFDocument, cols: Columna[], filas: string[][]) {
+  const LETRA = 7.5;
+  const TEXTO_MIN = 60;
+  doc.font("Helvetica-Bold").fontSize(LETRA);
+  // La cifra más larga y la palabra más larga del encabezado (no se parte).
+  const mide = (i: number) =>
+    Math.max(
+      40,
+      ...filas.map((f) => doc.widthOfString(f[i] ?? "") + 8),
+      ...cols[i].etiqueta.split(/[\s/]+/).map((w) => doc.widthOfString(w) + 8),
+    );
+  const necesita = cols.map((c, i) => (c.formato === "texto" ? 0 : mide(i)));
+  const numericas = necesita.reduce((a, b) => a + b, 0);
+  const textos = cols.filter((c) => c.formato === "texto").length;
+  const pide = numericas + TEXTO_MIN * textos;
+  if (pide > CW) {
+    const k = CW / pide;
+    return {
+      anchos: cols.map(
+        (c, i) => (c.formato === "texto" ? TEXTO_MIN : necesita[i]) * k,
+      ),
+      letra: LETRA * k,
+    };
+  }
+  const sobra = CW - numericas;
+  return {
+    anchos: cols.map((c, i) =>
+      textos
+        ? c.formato === "texto"
+          ? sobra / textos
+          : necesita[i]
+        : necesita[i] + sobra / cols.length,
+    ),
+    letra: LETRA,
+  };
 }
 
 // Gráfica vectorial: barras, líneas o pastel, con título, ejes rotulados y leyenda.

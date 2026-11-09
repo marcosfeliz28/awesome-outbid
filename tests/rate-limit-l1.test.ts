@@ -101,6 +101,7 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
       authAttempt: {
         upsert: vi.fn(async () => ({ failedAttempts: 0, lockedUntil: null })),
         update: vi.fn(async () => ({})),
+        updateMany: vi.fn(async () => ({ count: 1 })),
       },
       $transaction: async (run: (tx: any) => unknown): Promise<unknown> =>
         run(db),
@@ -315,6 +316,7 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
           lockedUntil: null,
         })),
         update: vi.fn(async () => ({})),
+        updateMany: vi.fn(async () => ({ count: 1 })),
       },
       authSession: {
         create: vi.fn(async () => ({
@@ -537,5 +539,22 @@ describe("IP del cliente detrás del proxy de confianza", () => {
     expect(clientIp({ ip: undefined })).toBe("desconocida");
     expect(trustedProxies(undefined)).toBe(DEFAULT_TRUSTED_PROXIES);
     expect(trustedProxies("  10.0.0.0/8 ")).toBe("10.0.0.0/8");
+  });
+  it("IA de ventas: 6 por minuto por usuario, aunque abra otra sesión", () => {
+    const guard = new AuthenticatedRateLimitGuard(
+      new RequestRateLimitService(),
+    );
+    const ask = (sessionId: string, id = "u-ia") =>
+      context({
+        method: "POST",
+        path: "/api/assistant/ask",
+        actor: { sessionId, id },
+      });
+    for (let i = 0; i < REQUEST_RATE_LIMITS.assistantUser; i++)
+      expect(guard.canActivate(ask("s" + i))).toBe(true);
+    expect(() => guard.canActivate(ask("otra-sesion"))).toThrowError(
+      "Demasiados intentos",
+    );
+    expect(guard.canActivate(ask("s0", "otro-usuario"))).toBe(true);
   });
 });

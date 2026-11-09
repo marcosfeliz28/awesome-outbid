@@ -53,6 +53,62 @@ import { renderPdf } from "./reportes/export-pdf";
 import { GUIA_REPORTES } from "./reportes/guia";
 import { renderXlsx } from "./reportes/export-xlsx";
 
+// Títulos en español de los PDF de los informes de siempre (salía «profit»),
+// los mismos de la pantalla de Reportes.
+const TITULOS: Record<string, string> = {
+  sales: "Ventas detalladas",
+  "monthly-consumption": "Consumo mensual",
+  profit: "Utilidad por producto",
+  "inventory-value": "Inventario valorizado",
+  kardex: "Kardex",
+  "low-stock": "Stock bajo y reposición",
+  "no-movement": "Productos sin movimiento",
+  expiring: "Lotes próximos a vencer",
+  abc: "Clasificación ABC",
+  expenses: "Gastos y presupuesto",
+  "income-statement": "Estado de resultados",
+  cash: "Cierres y diferencias",
+  "by-seller": "Ventas por vendedor",
+  "by-payment": "Ventas por método de pago",
+  "ventas-categoria-forma-pago":
+    "Ventas por categoría y forma de pago (% y monto)",
+  "returns-discounts": "Devoluciones y descuentos",
+  customers: "Mejores clientes",
+  purchases: "Compras y cuentas por pagar",
+};
+// Reportes de Dinero que no miden ventas netas (cuadres, abonos, anuladas…).
+const NOT_NET_SALES = [
+  "descuadres",
+  "entradas-cuenta",
+  "diferencias-cuadre",
+  "anulaciones",
+  "devoluciones-producto",
+  "envios-mensajero",
+];
+
+// PDF de los informes de siempre: encabezado de columnas una vez y filas con
+// sus valores (antes cada fila repetía «Campo: valor»). Total solo donde sumar
+// tiene sentido (utilidad por producto), con el margen de ese total.
+export function pdfLines(rows: Record<string, unknown>[], withTotal: boolean) {
+  if (!rows.length) return ["Sin datos en este período."];
+  const keys = Object.keys(rows[0]);
+  const lines = [
+    keys.join(" | "),
+    ...rows.map((r) => keys.map((k) => String(r[k] ?? "")).join(" | ")),
+  ];
+  if (withTotal) {
+    const sum = (k: string) =>
+      money(rows.reduce((t, r) => t.plus(Number(r[k]) || 0), d(0)));
+    const total: Record<string, unknown> = { [keys[0]]: "Total" };
+    for (const k of ["Ventas", "Costo", "Unidades", "Utilidad"])
+      if (keys.includes(k)) total[k] = sum(k);
+    if (keys.includes("Margen"))
+      total.Margen = margin(total.Ventas as number, total.Costo as number);
+    lines.push(keys.map((k) => String(total[k] ?? "")).join(" | "));
+  }
+  return lines;
+}
+
 export function dateRange(query: Record<string, string>) {
   const from = query.from
     ? new Date(query.from + "T00:00:00-04:00")
@@ -512,7 +568,10 @@ export class ReportsController {
         netSales: net,
         tax,
         costTotal: cost,
+        // Fiscal: ventas sin ITBIS − costo (estado de resultados).
         grossProfit: money(d(net).minus(cost)),
+        // Regla de la dueña: ventas con ITBIS − costo; va con `margin` (S-01).
+        profit: money(d(revenue).minus(cost)),
         expenses: expense,
         // M-5: lo que salió del inventario sin venta también es pérdida.
         inventoryLoss,
@@ -872,7 +931,9 @@ export class ReportsController {
           from: range40.gte,
           to: range40.lte,
           printedAt: new Date(),
-          note: "Ventas netas: facturas vigentes menos devoluciones.",
+          note: NOT_NET_SALES.includes(name)
+            ? ""
+            : "Ventas netas: facturas vigentes menos devoluciones.",
           rows: await r40.run(this.db, actor, range40, query),
         },
         query.format,
@@ -997,7 +1058,10 @@ export class ReportsController {
       rows = [
         { Concepto: "Ventas sin ITBIS", Monto: summary.netSales },
         { Concepto: "Costo de lo vendido", Monto: summary.costTotal },
-        { Concepto: "Ganancia bruta", Monto: summary.grossProfit },
+        {
+          Concepto: "Ganancia bruta (ventas sin ITBIS − costo)",
+          Monto: summary.grossProfit,
+        },
         { Concepto: "Gastos", Monto: summary.expenses },
         { Concepto: "Comisiones bancarias", Monto: summary.fees },
         {
@@ -1393,16 +1457,17 @@ export class ReportsController {
           cursor = page[page.length - 1].id;
         }
         rows = [...grouped.values()].map(({ gross, ...i }) => {
-          const Ventas = money(i.Ventas),
+          // Regla de la dueña (#8): venta con ITBIS, utilidad = venta − costo y
+          // margen sobre esa venta, como «Margen por producto» y el panel.
+          // Antes Ventas/Utilidad iban sin ITBIS y el margen no cuadraba (S-02).
+          const Ventas = money(gross ?? 0),
             Costo = money(i.Costo);
           return {
             ...i,
             Ventas,
             Costo,
             Utilidad: money(d(Ventas).minus(Costo)),
-            // Ventas y Utilidad son sin ITBIS (cuadran con el estado de
-            // resultados); el margen es el de la dueña, sobre lo cobrado (#8).
-            Margen: margin(money(gross ?? 0), Costo),
+            Margen: margin(Ventas, Costo),
           };
         });
         if (name === "abc")
@@ -1468,7 +1533,7 @@ export class ReportsController {
       doc.pipe(res);
       doc
         .fontSize(18)
-        .text("Nexora POS · " + name)
+        .text("Nexora POS · " + (TITULOS[name] ?? name))
         .fontSize(9)
         .text(
           range.gte.toLocaleDateString("en-CA", {
@@ -1480,12 +1545,7 @@ export class ReportsController {
             }),
         )
         .moveDown();
-      for (const row of rows)
-        doc.text(
-          Object.entries(row)
-            .map(([k, v]) => k + ": " + v)
-            .join(" | "),
-        );
+      for (const line of pdfLines(rows, name === "profit")) doc.text(line);
       doc.end();
       return;
     }
@@ -1891,7 +1951,7 @@ async function sendListing(
     doc.pipe(res);
     doc
       .fontSize(18)
-      .text("Nexora POS · " + name)
+      .text("Nexora POS · " + (TITULOS[name] ?? name))
       .fontSize(9)
       .text(
         range.gte.toLocaleDateString("en-CA", {
@@ -1903,13 +1963,12 @@ async function sendListing(
           }),
       )
       .moveDown();
-    for await (const rows of batches())
-      for (const row of rows)
-        doc.text(
-          Object.entries(row)
-            .map(([k, v]) => k + ": " + v)
-            .join(" | "),
-        );
+    let first = true;
+    for await (const rows of batches()) {
+      const lines = pdfLines(rows, false);
+      for (const line of first ? lines : lines.slice(1)) doc.text(line);
+      first = false;
+    }
     doc.end();
   } catch (error) {
     // La descarga ya empezó: se corta para que no quede un archivo a medias

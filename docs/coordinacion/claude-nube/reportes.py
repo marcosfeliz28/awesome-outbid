@@ -20,7 +20,7 @@ DESC_VENDEDOR = 0.10      # el vendedor no debe pasar de 10 % sin aprobación
 DESC_ALTO = 0.30          # cualquier descuento ≥ 30 % se revisa siempre
 HORA_ABRE, HORA_CIERRA = 8, 21
 RUIDO = {"low_stock", "out_of_stock", "receivable", "credit_reminder"}  # avisos operativos, no anomalías
-TOK = open("/tmp/nexora_tok").read().strip()
+TOK = open("/tmp/nexora_tok").read().strip() if os.path.exists("/tmp/nexora_tok") else ""
 
 
 def api(path):
@@ -35,6 +35,12 @@ def api(path):
 
 def local(ts):
     return dt.datetime.fromisoformat(ts.replace("Z", "+00:00")) - dt.timedelta(hours=4)
+
+
+# En español sin depender del locale del equipo (salía «Saturday … October»).
+DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+MESES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
+         "septiembre", "octubre", "noviembre", "diciembre"]
 
 
 def rd(x):
@@ -93,11 +99,19 @@ def cajas_del_dia(dia, hasta=None):
 METODO = {"cash": "Efectivo", "card": "Tarjeta", "transfer": "Transferencia", "cod": "Crédito", "credit": "Crédito"}
 
 
+def neto(i):
+    """Lo vendido de la línea menos su parte devuelta."""
+    return f(i["lineTotal"]) * (1 - f(i.get("returnedQty")) / f(i["qty"])) if f(i["qty"]) else 0.0
+
+
 def resumen(ventas, usr, cat):
     act = [s for s in ventas if s["status"] != "voided"]
     anu = [s for s in ventas if s["status"] == "voided"]
-    r = {"act": act, "anu": anu, "vendido": sum(f(s["total"]) for s in act),
-         "costo": sum(f(s["costTotal"]) for s in act), "pend": sum(f(s["creditBalance"]) for s in act)}
+    # Opción A (dueña, 1-nov), como el dashboard: lo devuelto se resta en el período de la venta.
+    dev = lambda s, k: sum(f(x.get(k)) for x in s.get("returns") or [])
+    r = {"act": act, "anu": anu, "vendido": sum(f(s["total"]) - dev(s, "total") for s in act),
+         "costo": sum(f(s["costTotal"]) - dev(s, "costTotal") for s in act), "pend": sum(f(s["creditBalance"]) for s in act),
+         "devuelto": sum(dev(s, "total") for s in act)}
     r["ganancia"] = r["vendido"] - r["costo"]
     met, por_u, por_c = collections.Counter(), collections.defaultdict(collections.Counter), collections.Counter()
     for s in act:
@@ -106,13 +120,14 @@ def resumen(ventas, usr, cat):
         por_u[u]["total"] += f(s["total"])
         por_u[u]["credito"] += f(s["creditBalance"])
         for p in s["payments"]:
-            if p["entryType"] != "sale" or p["status"] in ("voided", "rejected"):
+            if p["entryType"] != "sale" or p["status"] == "voided":
                 continue
-            m = METODO.get(p["method"], p["method"])
+            # Transferencia rechazada: no se cobró, quedó a crédito (como el dashboard).
+            m = "Crédito" if p["status"] == "rejected" else METODO.get(p["method"], p["method"])
             met[m] += f(p["amount"])
             por_u[u][m] += f(p["amount"])
         for i in s["items"]:
-            por_c[cat.get(i["variantId"], ("Sin categoría",))[0]] += f(i["lineTotal"])
+            por_c[cat.get(i["variantId"], ("Sin categoría",))[0]] += neto(i)
     r.update(met=met, por_u=por_u, por_c=por_c)
     r["cobrado"] = sum(v for k, v in met.items() if k != "Crédito")
     return r
@@ -295,12 +310,14 @@ def diario(dia, salida="."):
     fecha = dt.date.fromisoformat(dia)
     out = os.path.join(salida, f"CIERRE-DIARIO-{dia}.pdf")
     doc = SimpleDocTemplate(out, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm, topMargin=14 * mm, bottomMargin=16 * mm, title=f"Cierre diario {dia}", author="Grupo Macgen")
-    el = cabecera("Reporte de cierre diario", f"{fecha:%A %d} de {fecha:%B de %Y} · generado con los datos del sistema Nexora POS")
-    el += [kpis([(rd(r["vendido"]), "VENDIDO (activas)"), (rd(r["cobrado"]), "COBRADO"), (rd(r["pend"]), "PENDIENTE A CRÉDITO"), (rd(r["ganancia"]), "GANANCIA")]),
+    el = cabecera("Reporte de cierre diario", f"{DIAS[fecha.weekday()].capitalize()} {fecha.day} de {MESES[fecha.month]} de {fecha.year} · generado con los datos del sistema Nexora POS")
+    el += [kpis([(rd(r["vendido"]), "VENDIDO (activas)"), (rd(r["cobrado"]), "COBRADO DE LO VENDIDO"), (rd(r["pend"]), "PENDIENTE A CRÉDITO"), (rd(r["ganancia"]), "GANANCIA")]),
            Spacer(1, 3), Paragraph(f"{len(r['act'])} facturas activas · {len(r['anu'])} anuladas. Ganancia = precio − costo, sin descontar ITBIS.", E["sm"])]
     el += alerta_descuadre(cajas, usr)
     el += [Paragraph("1. Ventas por forma de pago", E["h2"])]
-    d = [["Forma de pago", "Monto"]] + [[k, rd(v)] for k, v in r["met"].items()] + [["Total vendido", rd(r["vendido"])]]
+    d = [["Forma de pago", "Monto"]] + [[k, rd(v)] for k, v in r["met"].items()]
+    d += [["Devoluciones", rd(-r["devuelto"])]] if r["devuelto"] else []
+    d += [["Total vendido", rd(r["vendido"])]]
     el += [tabla(d, [120 * mm, 58 * mm], [1], True), Paragraph("Banco = tarjeta + transferencia. Efectivo: ver «Cajas». El crédito es dinero por cobrar, no recibido.", E["sm"])]
     el += [Paragraph("2. Ventas por categoría", E["h2"])]
     tc = sum(r["por_c"].values()) or 1
@@ -361,7 +378,7 @@ def mensual(mes, salida="."):
     prod = collections.Counter()
     for s in R["act"]:
         for i in s["items"]:
-            prod[cat.get(i["variantId"], ("", "?"))[1][:38]] += f(i["lineTotal"])
+            prod[cat.get(i["variantId"], ("", "?"))[1][:38]] += neto(i)
     os.makedirs(salida, exist_ok=True)
     azul, dorado = "#1F2A44", "#B8924A"
 
@@ -377,9 +394,9 @@ def mensual(mes, salida="."):
     _, _, E = estilos()
     out = os.path.join(salida, f"REPORTE-MENSUAL-{mes}.pdf")
     doc = SimpleDocTemplate(out, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm, topMargin=14 * mm, bottomMargin=16 * mm, title=f"Reporte mensual {mes}")
-    el = cabecera("Reporte mensual", f"{calendar.month_name[m]} {y} · ventas, ganancias y resultados")
-    el += [kpis([(rd(R["vendido"]), "VENDIDO"), (rd(R["cobrado"]), "COBRADO"), (rd(R["pend"]), "POR COBRAR"), (rd(R["ganancia"]), "GANANCIA BRUTA")]),
-           Paragraph(f"{len(R['act'])} facturas · {len(R['anu'])} anuladas ({sum(f(s['total']) for s in R['anu']):,.0f} RD$). Ganancia bruta = precio − costo, sin ITBIS; no incluye gastos.", E["sm"])]
+    el = cabecera("Reporte mensual", f"{MESES[m].capitalize()} {y} · ventas, ganancias y resultados")
+    el += [kpis([(rd(R["vendido"]), "VENDIDO"), (rd(R["cobrado"]), "COBRADO DE LO VENDIDO"), (rd(R["pend"]), "POR COBRAR DE ESTE MES"), (rd(R["ganancia"]), "GANANCIA BRUTA")]),
+           Paragraph(f"{len(R['act'])} facturas · {len(R['anu'])} anuladas ({sum(f(s['total']) for s in R['anu']):,.0f} RD$). Vendido = facturas menos devoluciones. Ganancia bruta = precio − costo, sin restar ITBIS; no incluye gastos. Cobrado de lo vendido no incluye abonos de créditos viejos (ver informe formal, «Dinero ingresado»). Por cobrar = saldo de hoy de las facturas de este mes.", E["sm"])]
     el += alerta_descuadre(cajas_del_dia(dias[0][0], dias[-1][0]) if dias else [], usr, solo_pendientes=True)
     for g in (g1, g2, g3, g4):
         el += [Image(g, width=170 * mm, height=70 * mm)]
@@ -405,7 +422,7 @@ def semanal(fin, salida="."):
     out = os.path.join(salida, f"REPORTE-SEMANAL-{dias[0]}-a-{fin}.pdf")
     doc = SimpleDocTemplate(out, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm, topMargin=14 * mm, bottomMargin=16 * mm, title=f"Reporte semanal {fin}")
     el = cabecera("Reporte semanal", f"Del {dias[0]} al {fin} · ventas, cajas y descuadres")
-    el += [kpis([(rd(R["vendido"]), "VENDIDO"), (rd(R["cobrado"]), "COBRADO"), (rd(R["pend"]), "POR COBRAR"), (rd(R["ganancia"]), "GANANCIA")])]
+    el += [kpis([(rd(R["vendido"]), "VENDIDO"), (rd(R["cobrado"]), "COBRADO DE LO VENDIDO"), (rd(R["pend"]), "POR COBRAR DE ESTE MES"), (rd(R["ganancia"]), "GANANCIA")])]
     el += alerta_descuadre(cajas_del_dia(dias[0], fin), usr, solo_pendientes=True)
     el += [Paragraph("Por usuario", E["h2"]),
            tabla([["Usuario", "Facturas", "Vendido", "A crédito"]] + [[u, int(c["n"]), rd(c["total"]), rd(c["credito"])] for u, c in R["por_u"].items()], [60 * mm, 25 * mm, 45 * mm, 48 * mm], [1, 2, 3])]

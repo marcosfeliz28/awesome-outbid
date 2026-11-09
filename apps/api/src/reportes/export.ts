@@ -73,6 +73,15 @@ export type Modelo = {
 
 // Presentación de los reportes que la necesitan. Verificada contra su `run`.
 export const PRESENTACION: Record<string, Presentacion> = {
+  // Fila de total en PDF y Excel (hallazgo ventas-08). «Facturas» no se suma en
+  // marca/categoría: una factura con 2 marcas cuenta en ambas (ventas-05).
+  // unidades-por-factura ya trae su propia fila final de promedio y total.
+  "ventas-por-hora": { totales: ["Facturas", "Ventas netas"] },
+  "ventas-por-dia-semana": { totales: ["Facturas", "Ventas netas"] },
+  "ranking-cajeras": { totales: ["Facturas", "Unidades", "Ventas netas"] },
+  "top-clientes": { totales: ["Facturas", "Ventas netas"] },
+  "ventas-categoria-mes": { totales: ["Unidades", "Ventas netas"] },
+  "ventas-por-marca": { totales: ["Unidades", "Ventas netas"] },
   "ticket-promedio": {
     moneda: ["Ventas netas", "Ticket promedio"],
     esResumen: (f) => f.Tipo === "Mes",
@@ -235,11 +244,16 @@ const textoFecha = (v: Date | string) =>
 // Importe según el nombre y el significado de la columna. Cantidades, porcentajes
 // y días no cuentan como importe.
 const IMPORTE =
-  /RD\$|dinero|pesos|cobrad|vendid|costo|venta|saldo|ticket|utilidad|valor|monto|pagad|precio|reembols|efectivo|transferencia|tarjeta|crédito|contraentrega/i;
+  /RD\$|dinero|pesos|cobrad|vendid|costo|venta|saldo|ticket|utilidad|ganancia|descuento|valor|monto|pagad|precio|reembols|efectivo|transferencia|tarjeta|crédito|contraentrega/i;
 const NO_IMPORTE =
-  /%|cantidad|unidades|piezas|facturas|días|número|veces|porcentaje/i;
-const esImporte = (texto: string) =>
-  IMPORTE.test(texto) && !NO_IMPORTE.test(texto);
+  /%|cantidad|unidades|piezas|facturas|días|número|veces|porcentaje|cuánt[oa]s\b/i;
+// Manda el nombre de la columna: «Venta» es dinero aunque su explicación
+// diga «piezas» (sincronía 2-nov: salía sin RD$ y la gráfica tomaba «Costo»).
+const esImporte = (clave: string, significa = "") =>
+  !NO_IMPORTE.test(clave) &&
+  (IMPORTE.test(clave)
+    ? !/veces|^piezas|^cuánt[oa]s\b/i.test(significa)
+    : IMPORTE.test(significa) && !NO_IMPORTE.test(significa));
 
 function formatoDe(
   clave: string,
@@ -254,7 +268,7 @@ function formatoDe(
     .filter((v) => v !== null && v !== undefined);
   if (!valores.length || !valores.every((v) => typeof v === "number"))
     return "texto";
-  if (esImporte(clave + " " + (significa ?? ""))) return "moneda";
+  if (esImporte(clave, significa)) return "moneda";
   return valores.every((v) => Number.isInteger(v)) ? "entero" : "decimal";
 }
 

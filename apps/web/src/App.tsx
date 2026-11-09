@@ -14,7 +14,8 @@ import {
   friendlyPasswordChangeError,
   type PasswordPolicy,
 } from "./passwordChange";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { watchTables } from "./mobileTables";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -77,6 +78,11 @@ import { TransferReconciliation } from "./TransferReconciliation";
 import { CourierPayouts } from "./CourierPayouts";
 import { POS } from "./POS";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
+import {
+  AssistantIcon,
+  AssistantPage,
+  loadAssistantStatus,
+} from "./AssistantPanel";
 import {
   Catalog,
   Inventory,
@@ -280,6 +286,13 @@ const navigation = [
     permission: "sale:manage",
   },
   { id: "gv", label: "GV Makeup Studio", icon: Brush, permission: "gv:read" },
+  // Visible solo si la API tiene la llave de IA y la persona puede usarla.
+  {
+    id: "assistant",
+    label: "Preguntar a Norexos",
+    icon: AssistantIcon,
+    permission: "authenticated",
+  },
 ];
 // Caras del cubo de la entrada: lo que venden Grupo MacGen y GV Makeup
 // Studio, por grupo (dueña, 23-oct).
@@ -628,8 +641,19 @@ function Shell() {
     queryFn: () => api<any[]>("/alerts?status=new"),
     enabled: !!user && online && can(user.permissions, "alerts:write"),
   });
+  const assistant = useQuery({
+    queryKey: ["assistant-status"],
+    queryFn: loadAssistantStatus,
+    enabled: !!user && online,
+    staleTime: 60_000,
+  });
   const alertCount =
     alertBell.data?.filter((a) => a.status === "new").length ?? 0;
+  const tablesOff = useRef<() => void>(undefined);
+  const mainRef = useCallback((el: HTMLElement | null) => {
+    tablesOff.current?.();
+    tablesOff.current = el ? watchTables(el) : undefined;
+  }, []);
   const [ready, setReady] = useState(false),
     [page, setPage] = useState(location.hash.slice(1) || "dashboard"),
     [menu, setMenu] = useState(false),
@@ -651,8 +675,10 @@ function Shell() {
   const menuButton = useRef<HTMLButtonElement>(null),
     sidebar = useRef<HTMLElement>(null),
     stayActive = useRef(() => {});
-  const allowed = navigation.filter(
-    (n) => user && can(user.permissions, n.permission),
+  const allowed = navigation.filter((n) =>
+    n.id === "assistant"
+      ? !!assistant.data?.enabled && assistant.data.canUse
+      : user && can(user.permissions, n.permission),
   );
   useRealtime();
   const go = (id: string) => {
@@ -951,6 +977,7 @@ function Shell() {
     merchandise: <Merchandise />,
     incentives: <IncentivesPage />,
     gv: <Gv />,
+    assistant: <AssistantPage remaining={assistant.data?.remaining} />,
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
@@ -1192,7 +1219,10 @@ function Shell() {
             )}
           </div>
         </header>
-        <main className={`main-content ${page === "pos" ? "pos-content" : ""}`}>
+        <main
+          ref={mainRef}
+          className={`main-content ${page === "pos" ? "pos-content" : ""}`}
+        >
           <DeviceGate />
           {pages[page.split("?")[0]] || <Dashboard go={go} />}
         </main>

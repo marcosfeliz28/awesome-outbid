@@ -168,7 +168,7 @@ export const dinero: Record<string, ReportDef> = {
     title: "Formas de pago por mes",
     group: "Dinero",
     // D-05 como «by-payment»: lo cobrado de las facturas del mes (transferencia
-    // rechazada = crédito, N-4) menos lo devuelto en el mes: el reembolso con su
+    // rechazada = crédito, N-4) menos lo devuelto de esas facturas (opción A): el reembolso con su
     // método y lo que redujo la deuda con el crédito/contraentrega de la venta.
     async run(db, actor, range) {
       await openCashGuard(db, actor);
@@ -177,14 +177,14 @@ export const dinero: Record<string, ReportDef> = {
           FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId"
           WHERE ${sold(actor, range)} AND p."entryType" <> 'installment' GROUP BY 1, 2
         UNION ALL
-        SELECT ${month(Prisma.sql`r."createdAt"`)}, r."refundMethod", -SUM(r."refundAmount")
+        SELECT ${month(Prisma.sql`s."createdAt"`)}, r."refundMethod", -SUM(r."refundAmount")
           FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId"
-          WHERE ${returned(actor, range)} AND s.status = 'completed' AND r."refundAmount" > 0 GROUP BY 1, 2
+          WHERE ${sold(actor, range)} AND r."refundAmount" > 0 GROUP BY 1, 2
         UNION ALL
         SELECT mes, method, -SUM(debt) FROM (
-          SELECT ${month(Prisma.sql`r."createdAt"`)} AS mes, COALESCE((SELECT p.method FROM "Payment" p WHERE p."saleId" = r."saleId" AND p."entryType" <> 'installment' AND p.method IN ('credit', 'cod') LIMIT 1), 'credit') AS method, r.total - r."refundAmount" AS debt
+          SELECT ${month(Prisma.sql`s."createdAt"`)} AS mes, COALESCE((SELECT p.method FROM "Payment" p WHERE p."saleId" = r."saleId" AND p."entryType" <> 'installment' AND p.method IN ('credit', 'cod') LIMIT 1), 'credit') AS method, r.total - r."refundAmount" AS debt
             FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId"
-            WHERE ${returned(actor, range)} AND s.status = 'completed' AND r.total > r."refundAmount") x
+            WHERE ${sold(actor, range)} AND r.total > r."refundAmount") x
           GROUP BY 1, 2`;
       return mix(rows, ["Mes"]).sort((a, b) =>
         String(a.Mes).localeCompare(String(b.Mes)),
@@ -218,13 +218,13 @@ export const dinero: Record<string, ReportDef> = {
   "descuentos-cajera": {
     title: "Descuentos dados por cajera",
     group: "Dinero",
-    // % sobre su venta neta del período (facturas menos devoluciones, D-05).
+    // % sobre su venta neta del período (facturas menos sus devoluciones, opción A).
     async run(db, actor, range) {
       const rows: any[] = await db.$queryRaw`
         WITH v AS (SELECT s."sellerId" AS uid, COUNT(*) FILTER (WHERE s."discountTotal" > 0) AS n, SUM(s."discountTotal") AS disc, COUNT(*) FILTER (WHERE s."discountTotal" > 0 AND s."discountApprovedBy" = s."sellerId") AS own, SUM(s.total) AS sales
           FROM "Sale" s WHERE ${sold(actor, range)} GROUP BY 1),
         d AS (SELECT s."sellerId" AS uid, SUM(r.total) AS ret
-          FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${returned(actor, range)} AND s.status = 'completed' GROUP BY 1)
+          FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${sold(actor, range)} GROUP BY 1)
         SELECT COALESCE(u.name, v.uid::text) AS name, v.n, v.disc, v.own, v.sales - COALESCE(d.ret, 0) AS net
           FROM v LEFT JOIN d ON d.uid = v.uid LEFT JOIN "User" u ON u.id = v.uid
           WHERE v.n > 0 ORDER BY v.disc DESC`;
@@ -244,7 +244,7 @@ export const dinero: Record<string, ReportDef> = {
     async run(db, actor, range) {
       const rows: any[] = await db.$queryRaw`
         WITH v AS (SELECT s.wholesale, COUNT(*) AS n, SUM(s.total) AS sales FROM "Sale" s WHERE ${sold(actor, range)} GROUP BY 1),
-        d AS (SELECT s.wholesale, SUM(r.total) AS ret FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${returned(actor, range)} AND s.status = 'completed' GROUP BY 1)
+        d AS (SELECT s.wholesale, SUM(r.total) AS ret FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${sold(actor, range)} GROUP BY 1)
         SELECT w.wholesale, COALESCE(v.n, 0) AS n, COALESCE(v.sales, 0) AS sales, COALESCE(d.ret, 0) AS ret
           FROM (VALUES (true), (false)) w(wholesale) LEFT JOIN v ON v.wholesale = w.wholesale LEFT JOIN d ON d.wholesale = w.wholesale`;
       const all = rows.reduce((a, r) => a + Number(r.sales) - Number(r.ret), 0);

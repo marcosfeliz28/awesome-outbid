@@ -536,6 +536,7 @@ export function safe<T>(value: T, actor: Actor): T {
     "inventoryRetail",
     "daily",
     "top",
+    "categories",
     "topByCategory",
     "byUnits",
     "byAmount",

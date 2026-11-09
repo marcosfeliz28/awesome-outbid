@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
+import { withGvProof } from "./helpers-gv-proof";
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
 );
@@ -92,6 +93,12 @@ beforeAll(async () => {
   });
   gvUserId = user.id;
   gv = await login(email, "FitStore-QA-2026!", "FitStore-QA-Nueva-2026!");
+  // Cobrar exige caja GV abierta (5-nov): sin cajas de otras corridas y con una propia.
+  await db.gvCashSession.updateMany({
+    where: { closedAt: null },
+    data: { closedAt: new Date() },
+  });
+  await ok("/gv/cash/open", gv, { openingAmount: 0 });
 }, 120000);
 
 afterAll(async () => {
@@ -105,11 +112,15 @@ afterAll(async () => {
     select: { id: true },
   });
   const ids = courses.map((c: any) => c.id);
+  await db.gvProof.deleteMany({
+    where: { payment: { enrollment: { courseId: { in: ids } } } },
+  });
   await db.gvPayment.deleteMany({
     where: { enrollment: { courseId: { in: ids } } },
   });
   await db.gvEnrollment.deleteMany({ where: { courseId: { in: ids } } });
   await db.gvCourse.deleteMany({ where: { id: { in: ids } } });
+  await db.gvCashSession.deleteMany({ where: { userId: gvUserId } });
   if (gvUserId)
     await db.user.update({ where: { id: gvUserId }, data: { active: false } });
   await db.$disconnect();
@@ -166,14 +177,15 @@ const enroll = (courseId: string, agreedPrice: number, name = "QA") =>
     clientName: name + " " + suffix,
     agreedPrice,
   });
-const payBody = (enrollmentId: string, extra: Record<string, unknown>) => ({
-  operationId: randomUUID(),
-  enrollmentId,
-  date: "2026-10-26",
-  concept: "separo",
-  method: "efectivo",
-  ...extra,
-});
+const payBody = (enrollmentId: string, extra: Record<string, unknown>) =>
+  withGvProof({
+    operationId: randomUUID(),
+    enrollmentId,
+    date: "2026-10-26",
+    concept: "separo",
+    method: "efectivo",
+    ...extra,
+  });
 const transferBody = (enrollmentId: string, amount: number) =>
   payBody(enrollmentId, {
     amount,
@@ -197,10 +209,15 @@ describe("GV · banco de lista y anular pago", () => {
     expect(paid.concept).toBe("completo");
     // Sin razón no se anula; con razón, sí, y deja de contar.
     expect(
-      (await request("/gv/payments/" + paid.id + "/void", gv, {})).status,
+      (
+        await request("/gv/payments/" + paid.id + "/void", gv, {
+          approverPin: "123456",
+        })
+      ).status,
     ).toBe(400);
     const voided = await ok("/gv/payments/" + paid.id + "/void", gv, {
       reason: "Monto mal escrito",
+      approverPin: "123456",
     });
     expect(voided.rejectedAt).toBeTruthy();
     const detail = await ok("/gv/courses/" + course.id, gv);
@@ -272,6 +289,7 @@ describe("GV · anular un pago ya verificado", () => {
     await ok(`/gv/payments/${paid.id}/review`, admin, { verified: true });
     const voided = await ok("/gv/payments/" + paid.id + "/void", gv, {
       reason: "Cambio al 15 de noviembre",
+      approverPin: "123456",
     });
     expect(voided.rejectedAt).toBeTruthy();
     expect(voided.verified).toBe(false);
@@ -483,7 +501,12 @@ describe("GV · cursos, inscripciones y pagos", () => {
     await ok("/gv/payments", gv, payBody(e.id, { amount: 2000 }));
     const late = await ok("/gv/payments", gv, transferBody(e.id, 100));
     const patch = (data: unknown) =>
-      request("/gv/enrollments/" + e.id, gv, data, "PATCH");
+      request(
+        "/gv/enrollments/" + e.id,
+        gv,
+        { approverPin: "123456", ...(data as object) },
+        "PATCH",
+      );
     expect((await patch({ status: "reembolsada" })).status).toBe(400);
     expect(
       (
@@ -829,7 +852,12 @@ describe("GV · auditoría de Claude PC", () => {
     await ok(
       "/gv/enrollments/" + e.id,
       gv,
-      { status: "reembolsada", refundAmount: 800, refundDate: "2026-10-26" },
+      {
+        status: "reembolsada",
+        refundAmount: 800,
+        refundDate: "2026-10-26",
+        approverPin: "123456",
+      },
       "PATCH",
     );
     const reopen = structuredClone(base);

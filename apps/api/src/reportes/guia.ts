@@ -22,8 +22,10 @@ const c = (nombreAmigable: string, significa: string): Explicacion => ({
 // Ventas netas: lo vendido menos lo devuelto de esa misma venta, por fecha de venta.
 const NETO_POR_VENTA =
   "Las devoluciones se restan en la fecha de la venta original.";
-const POR_CONFIRMAR_DEVOLUCION =
-  " Por confirmar: en este reporte las devoluciones se restan en la fecha en que se devolvieron, no en la de la venta.";
+
+// Lo que hay detrás de «Ventas netas» en los reportes de ventas: el total de la
+// factura (con ITBIS); el envío del mensajero va aparte y no entra.
+const NETO_VENTAS = `${NETO_POR_VENTA} Incluye el ITBIS; no incluye el envío, que se cobra aparte.`;
 
 // Mismas columnas de mezcla de pagos (formas-pago-mes y formas-pago-categoria).
 const MEZCLA: Record<string, Explicacion> = {
@@ -67,11 +69,11 @@ const MARGEN_COLUMNAS: Record<string, Explicacion> = {
   ),
   Utilidad: c(
     "Ganancia",
-    "Venta menos costo. Es lo que queda antes de pagar gastos.",
+    "Venta menos costo, antes de pagar gastos. Ej.: vendes RD$ 200 algo que costó RD$ 150; la ganancia es RD$ 50.",
   ),
   "Margen %": c(
     "Margen %",
-    "De cada 100 pesos de venta, cuántos quedan de ganancia: (precio menos costo) dividido entre precio. No se resta el ITBIS.",
+    "De cada 100 pesos de venta, cuántos quedan de ganancia. Se calcula (precio menos costo) ÷ precio, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %.",
   ),
 };
 
@@ -81,7 +83,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Cuántas ventas y cuánto dinero entra en cada hora del día.",
     paraQueSirve:
       "Para saber en qué horas hay más clientes y ponerle más gente a caja.",
-    comoSeLee: `Cada fila es una hora (hora de Santo Domingo). ${NETO_POR_VENTA}`,
+    comoSeLee: `Cada fila es una hora (hora de Santo Domingo). ${NETO_VENTAS}`,
     columnas: {
       Hora: c("Hora", "La hora del día, de 00:00 a 23:00."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en esa hora."),
@@ -99,7 +101,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Ventas agrupadas por día de la semana (lunes a domingo).",
     paraQueSirve:
       "Para ver qué días de la semana venden más y planear personal y compras.",
-    comoSeLee: `Compara todos los lunes del período, todos los martes, etc. ${NETO_POR_VENTA}`,
+    comoSeLee: `Compara todos los lunes del período, todos los martes, etc. ${NETO_VENTAS}`,
     columnas: {
       Día: c("Día", "Día de la semana."),
       Facturas: c(
@@ -124,7 +126,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs:
       "Compara el mes que termina en la fecha final del reporte con el mes anterior.",
     paraQueSirve: "Para ver si este mes vende más o menos que el mes pasado.",
-    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango. ${NETO_POR_VENTA} El cambio % solo aparece en el mes actual.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -147,7 +149,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Compara el mes que termina en la fecha final del reporte con el mismo mes del año pasado.",
     paraQueSirve:
       "Para ver si el negocio crece frente al mismo mes del año anterior, sin que pesen las temporadas.",
-    comoSeLee: `Usa el mes de la fecha final del reporte. ${NETO_POR_VENTA} El cambio % solo aparece en el mes actual.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -170,10 +172,13 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Cuánto gasta en promedio un cliente por factura, día por día y mes por mes.",
     paraQueSirve:
       "Para saber si la gente compra más o menos cada vez que viene.",
-    comoSeLee: `Hay filas de tipo Día y filas de tipo Mes. ${NETO_POR_VENTA}`,
+    comoSeLee: `Hay filas de tipo Día y filas de tipo Mes. ${NETO_VENTAS}`,
     columnas: {
       Tipo: c("Tipo", "Si la fila es un día o un mes completo."),
-      Período: c("Período", "La fecha del día, o el nombre del mes."),
+      Período: c(
+        "Período",
+        "La fecha del día (día/mes/año), o el nombre del mes.",
+      ),
       Facturas: c("Facturas", "Cuántas facturas hay en ese día o mes."),
       "Ventas netas": c(
         "Ventas netas",
@@ -181,7 +186,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       ),
       "Ticket promedio": c(
         "Ticket promedio",
-        "Lo vendido dividido entre las facturas.",
+        "Lo vendido dividido entre las facturas. Ej.: RD$ 10,000 en 4 facturas = ticket de RD$ 2,500.",
       ),
     },
   },
@@ -189,7 +194,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Cuántas piezas lleva cada cliente por factura, agrupado en rangos.",
     paraQueSirve:
       "Para ver si la gente compra una sola cosa o varias, y si conviene ofrecer combos.",
-    comoSeLee: `Cada fila es un rango de piezas. Devuelta completa significa que la factura quedó en cero piezas por devoluciones. La última fila da el promedio de piezas por factura. ${NETO_POR_VENTA}`,
+    comoSeLee: `Cada fila es un rango de piezas. Devuelta completa significa que la factura quedó en cero piezas por devoluciones. La última fila da el promedio de piezas por factura. ${NETO_VENTAS}`,
     columnas: {
       Unidades: c(
         "Piezas por factura",
@@ -210,7 +215,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Las cajeras ordenadas de la que más vendió a la que menos vendió.",
     paraQueSirve:
       "Para reconocer el trabajo de cada cajera y ver quién necesita apoyo.",
-    comoSeLee: `El puesto 1 es la cajera con más ventas netas del período. ${NETO_POR_VENTA}`,
+    comoSeLee: `El puesto 1 es la cajera con más ventas netas del período. ${NETO_VENTAS}`,
     columnas: {
       Puesto: c("Puesto", "El lugar de la cajera en el ranking."),
       Cajera: c(
@@ -237,7 +242,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Los 20 clientes que más compraron en el período.",
     paraQueSirve:
       "Para cuidar a los mejores clientes y darles atención especial.",
-    comoSeLee: `Ordenado por ventas netas. ${NETO_POR_VENTA} El porcentaje se calcula sobre todas las ventas del período, no solo sobre estos 20.`,
+    comoSeLee: `Ordenado por ventas netas. ${NETO_VENTAS} El porcentaje se calcula sobre todas las ventas del período, no solo sobre estos 20.`,
     columnas: {
       Puesto: c("Puesto", "El lugar del cliente en el ranking, del 1 al 20."),
       Cliente: c("Cliente", "Nombre del cliente."),
@@ -258,15 +263,15 @@ export const GUIA_REPORTES: Record<string, Guia> = {
   },
   "ventas-categoria-mes": {
     queEs:
-      "Las ventas de cada categoría (suplementos, ropa, etc.) mes por mes.",
+      "Las ventas de cada categoría (suplementos, maquillaje, fajas, etc.) mes por mes.",
     paraQueSirve: "Para ver qué categorías crecen o bajan con el tiempo.",
-    comoSeLee: `Cada fila es una categoría en un mes. ${NETO_POR_VENTA} El % del mes muestra qué parte de las ventas de ese mes fue de esa categoría.`,
+    comoSeLee: `Cada fila es una categoría en un mes. ${NETO_VENTAS} El % del mes muestra qué parte de las ventas de ese mes fue de esa categoría.`,
     columnas: {
       Mes: c("Mes", "El mes del período."),
       Categoría: c("Categoría", "La categoría del producto."),
       Facturas: c(
-        "Facturas",
-        "Cuántas facturas incluyeron esa categoría ese mes.",
+        "Facturas que la incluyen",
+        "Cuántas facturas incluyeron esa categoría ese mes. Una factura con varias categorías cuenta en cada una, por eso esta columna no se suma hacia abajo.",
       ),
       Unidades: c(
         "Piezas",
@@ -286,10 +291,13 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs: "Las ventas de cada marca, de la que más vende a la que menos.",
     paraQueSirve:
       "Para decidir qué marcas comprar más y cuáles conviene reducir.",
-    comoSeLee: `Los productos sin marca aparecen como Sin marca. ${NETO_POR_VENTA}`,
+    comoSeLee: `Los productos sin marca aparecen como Sin marca. ${NETO_VENTAS}`,
     columnas: {
       Marca: c("Marca", "El nombre de la marca del producto."),
-      Facturas: c("Facturas", "Cuántas facturas incluyeron esa marca."),
+      Facturas: c(
+        "Facturas que la incluyen",
+        "Cuántas facturas incluyeron esa marca. Una factura con varias marcas cuenta en cada una, por eso esta columna no se suma hacia abajo.",
+      ),
       Unidades: c(
         "Piezas",
         "Piezas vendidas de esa marca, menos las devueltas.",
@@ -374,8 +382,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para saber qué parte de las ventas se cobra en cada forma de pago, mes a mes.",
     comoSeLee:
-      "Las ventas se cuentan por mes de la venta. Las devoluciones se restan en el mes en que se devolvieron, y el reembolso se resta en la forma en que se devolvió el dinero. Un pago por transferencia rechazado cuenta como crédito." +
-      POR_CONFIRMAR_DEVOLUCION,
+      "Las ventas se cuentan por mes de la venta. Las devoluciones se restan en el mes de la venta original, y el reembolso en la forma en que se devolvió el dinero. Un pago por transferencia rechazado cuenta como crédito.",
     columnas: {
       Mes: c("Mes", "El mes del período."),
       ...MEZCLA,
@@ -399,8 +406,8 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver si una cajera da descuentos de más o aprueba descuentos sin que otra persona lo revise.",
     comoSeLee:
-      "El % compara el descuento total con sus ventas netas del período. Las devoluciones se restan en la fecha en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION +
+      "El % compara el descuento total con sus ventas netas del período. " +
+      NETO_POR_VENTA +
       " Aprobados por ella misma cuenta los descuentos que aprobó la propia cajera.",
     columnas: {
       Cajera: c("Cajera", "La persona que hizo la venta con descuento."),
@@ -431,8 +438,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Cuánto se vendió por mayor (a precio de mayoreo) y cuánto al detalle.",
     paraQueSirve: "Para ver cuánto pesa la venta por mayor en el negocio.",
     comoSeLee:
-      "Las ventas se suman por la fecha de la venta. Las devoluciones se restan en la fecha en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION,
+      "Las ventas se suman por la fecha de la venta. " + NETO_POR_VENTA,
     columnas: {
       Tipo: c("Tipo de venta", "Por mayor o detalle."),
       Facturas: c("Facturas", "Cuántas facturas de ese tipo hubo."),
@@ -608,7 +614,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Utilidad: c("Ganancia", "Venta menos costo."),
       "Margen %": c(
         "Margen %",
-        "De cada 100 pesos de venta, cuántos quedan de ganancia. No se resta el ITBIS.",
+        "De cada 100 pesos de venta, cuántos quedan de ganancia, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %, o sea 25 de cada 100.",
       ),
     },
   },
@@ -622,10 +628,13 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Facturas: c("Facturas", "Cuántas facturas tuvo el mes."),
       Venta: c("Venta", "Lo cobrado en el mes, menos devoluciones."),
       Costo: c("Costo", "Lo que costó la mercancía vendida ese mes."),
-      Utilidad: c("Ganancia bruta", "Venta menos costo. No descuenta gastos."),
+      Utilidad: c(
+        "Ganancia bruta",
+        "Venta menos costo. No descuenta gastos. Ej.: venta RD$ 200 − costo RD$ 150 = ganancia RD$ 50.",
+      ),
       "Margen %": c(
         "Margen %",
-        "De cada 100 pesos de venta, cuántos quedan de ganancia. No se resta el ITBIS.",
+        "De cada 100 pesos de venta, cuántos quedan de ganancia, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %, o sea 25 de cada 100.",
       ),
     },
   },
@@ -691,11 +700,11 @@ export const GUIA_REPORTES: Record<string, Guia> = {
   // ---------------- INVENTARIO ----------------
   "rotacion-producto": {
     queEs:
-      "Cuántas veces rotó cada producto en el período: vendidas frente al inventario que hubo.",
+      "Qué tan rápido se mueve cada producto: cuántas veces se vendió lo que había en existencia durante el período.",
     paraQueSirve:
       "Para ver qué productos se mueven rápido y cuáles se quedan quietos.",
     comoSeLee:
-      "El stock cuenta Tienda más Casa. El stock inicial y final se calculan a partir del stock actual, quitando los movimientos posteriores. Rotación es vendidas dividido entre el stock promedio: más alto significa que el producto se mueve más rápido.",
+      "El stock cuenta Tienda más Casa. El stock inicial y final se calculan a partir del stock actual, quitando los movimientos posteriores. Rotación es vendidas dividido entre el stock promedio: más alto significa que el producto se mueve más rápido. Si la existencia al inicio sale en 0, es porque la mercancía entró al sistema dentro del mismo período; en ese caso el promedio es la mitad de lo que hay hoy y la rotación sale más alta de lo real. Compara mejor con un período donde la mercancía ya estaba cargada.",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -718,7 +727,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       ),
       Rotación: c(
         "Rotación",
-        "Cuántas veces se vendió el inventario promedio. Vacío si no hubo inventario.",
+        "Cuántas veces se vendió el inventario promedio. Ej.: tenías 10 en promedio y vendiste 30; rotación 3 (se vendió tres veces lo que había). Más alto = se mueve más rápido. Vacío si no hubo inventario.",
       ),
     },
   },
@@ -728,7 +737,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para saber qué productos se van a acabar pronto y cuándo hay que comprar.",
     comoSeLee:
-      "La venta diaria es lo vendido en el período dividido entre los días del período. Días restantes es el stock total dividido entre la venta diaria. Ordenado de menos a más días.",
+      "La venta diaria es lo vendido en el período dividido entre los días del período. Días restantes es el stock total dividido entre la venta diaria. Ordenado de menos a más días. Solo salen los productos que se vendieron en el período; los que no se vendieron no aparecen aquí (búscalos en «Sin movimiento»).",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -756,7 +765,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver qué productos están quietos y decidir si hay que rebajarlos o dejar de comprarlos.",
     comoSeLee:
-      "Los días sin vender se cuentan desde la última venta hasta la fecha final del reporte. Si nunca se vendió, se cuentan desde que se creó el producto. Nunca en Última venta significa que no tiene ventas.",
+      "Los días sin vender se cuentan desde la última venta hasta la fecha final del reporte. Si nunca se vendió, se cuentan desde que se creó el producto. Nunca en Última venta significa que no tiene ventas. Si la lista sale vacía es buena señal: ningún producto con existencia lleva 30 días o más sin venderse (o el producto es más nuevo que 30 días).",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -779,7 +788,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Los productos cuya existencia en la tienda ya está en el mínimo o por debajo.",
     paraQueSirve: "Para saber qué comprar o reponer hoy.",
     comoSeLee:
-      "Es la existencia de hoy, no la del período. Faltan es cuántas piezas faltan para llegar al mínimo.",
+      "Es la existencia de hoy, no la del período. Faltan es cuántas piezas faltan en la Tienda para llegar al mínimo; 0 quiere decir que está justo en el mínimo. La Casa no se suma: si hay piezas en Casa, se pueden pasar a la Tienda antes de comprar.",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -809,11 +818,11 @@ export const GUIA_REPORTES: Record<string, Guia> = {
   },
   "perdidas-conteo": {
     queEs:
-      "La mercancía que salió sin venderse por mes: mermas, ajustes de conteo y salidas.",
+      "La mercancía que salió del inventario sin venderse, por mes: lo que se corrigió al contar y lo que de verdad se perdió o salió.",
     paraQueSirve:
       "Para ver cuánta mercancía se pierde y si son errores de conteo o pérdidas reales.",
     comoSeLee:
-      "Corrección de conteo es un ajuste que corrigió el sistema al contar; no es una pérdida del mes. Salida real es mermas, desperdicios, devoluciones a proveedor y salidas de mercancía. Valor a costo es el costo de esas piezas.",
+      "Solo la «Salida real» es dinero perdido en el mes. «Corrección de conteo» es ordenar el sistema para que coincida con lo que hay en los estantes: no se suma como pérdida (por eso no baja la ganancia neta) y puede ser grande cuando se está arreglando el inventario. Solo aparecen las salidas; las piezas que se encontraron de más no se restan aquí. Salida real es mermas, desperdicios, devoluciones a proveedor y salidas de mercancía. Valor a costo es el costo de esas piezas.",
     columnas: {
       Mes: c("Mes", "El mes del movimiento."),
       Tipo: c(
@@ -1094,8 +1103,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
     paraQueSirve:
       "Para cuadrar el dinero que entró cada día con el banco, las terminales y las cajas.",
     comoSeLee:
-      "Cada fila es un día de negocio. Venta y cobro de crédito se cuentan por el día en que pasaron. Las devoluciones se restan en el día en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION +
+      "Cada fila es un día de negocio y muestra el movimiento de dinero de ese día. Venta y cobro de crédito se cuentan por el día en que pasaron. Las devoluciones se restan en el día en que se hicieron, porque ese día salió el dinero; por eso, si se devuelve algo vendido otro mes, este informe no coincide con los reportes de ventas, que la restan en el mes de la venta." +
       " Dinero que entró es lo que realmente llegó; Crédito generado no es dinero recibido. Abajo, el detalle lista cada cobro y reembolso, pero no las devoluciones completas.",
     columnas: DINERO_INGRESO_COLUMNAS,
   },
@@ -1105,8 +1113,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
     paraQueSirve:
       "Para revisar el cierre del período y dejar constancia de los controles de la tienda.",
     comoSeLee:
-      "Solo lo puede ver quien tiene permiso de ganancia y de ver el arqueo. Vendido neto es lo vendido menos las devoluciones; las devoluciones se restan en la fecha en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION +
+      "Solo lo puede ver quien tiene permiso de ganancia y de ver el arqueo. Vendido neto del resumen es lo vendido menos lo devuelto de esas mismas ventas (en el período de la venta original). La tabla por día muestra el dinero de cada día: ahí la devolución se resta el día en que se hizo." +
       " Margen se calcula como (venta menos costo) entre venta, sin restar el ITBIS." +
       FORMAL_TODOS_NOTA,
     columnas: {
@@ -1181,7 +1188,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       ),
       "Margen promedio": c(
         "Margen promedio",
-        "De cada 100 pesos de venta, cuántos quedan de ganancia. No se resta el ITBIS.",
+        "De cada 100 pesos de venta, cuántos quedan de ganancia, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %, o sea 25 de cada 100.",
       ),
       "Promedio por día": c(
         "Promedio por día",
@@ -1189,7 +1196,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       ),
       "Promedio por venta": c(
         "Promedio por venta",
-        "Lo vendido dividido entre las facturas.",
+        "Lo vendido dividido entre las facturas. Ej.: RD$ 10,000 en 4 facturas = RD$ 2,500 por venta.",
       ),
       "Unidades vendidas": c(
         "Piezas vendidas",
@@ -1201,7 +1208,7 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       Ganancia: c("Ganancia", "Venta menos costo de esa categoría o producto."),
       "Margen %": c(
         "Margen %",
-        "De cada 100 pesos de venta, cuántos quedan de ganancia. No se resta el ITBIS.",
+        "De cada 100 pesos de venta, cuántos quedan de ganancia, sin restar el ITBIS. Ej.: vendes RD$ 200 algo que costó RD$ 150; (200 − 150) ÷ 200 = 25 %, o sea 25 de cada 100.",
       ),
       "Forma de pago": c(
         "Forma de pago",
@@ -1237,8 +1244,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
     paraQueSirve:
       "Para comparar meses y ver en qué época del año se vende más.",
     comoSeLee:
-      "Bruta es lo vendido de cada mes, con las devoluciones ya descontadas. Neta es la bruta menos el costo de la mercancía, sin restar el ITBIS ni los gastos; solo la ve quien tiene permiso de ganancia. Las devoluciones se restan en el mes en que se devolvieron." +
-      POR_CONFIRMAR_DEVOLUCION,
+      "Bruta es lo vendido de cada mes, con las devoluciones ya descontadas. Neta es la bruta menos el costo de la mercancía, sin restar el ITBIS ni los gastos; solo la ve quien tiene permiso de ganancia. Las devoluciones se restan en el mes de la venta original.",
     columnas: {
       "Ventas por mes": c(
         "Ventas por mes",
@@ -1250,7 +1256,7 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
       ),
       Neta: c(
         "Neta",
-        "Bruta menos costo de la mercancía, sin restar ITBIS ni gastos. Solo con permiso de ganancia.",
+        "Bruta menos costo de la mercancía, sin restar ITBIS ni gastos. Solo con permiso de ganancia. Ej.: bruta RD$ 300,000 − costo RD$ 200,000 = neta RD$ 100,000.",
       ),
       Ventas: c("Ventas", "Cuántas facturas se hicieron en el mes."),
     },

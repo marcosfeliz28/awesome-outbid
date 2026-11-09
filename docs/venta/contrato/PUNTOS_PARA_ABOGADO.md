@@ -41,3 +41,16 @@ Lista corta para que la revisión sea rápida y barata. Cada punto remite a los 
 
 19. Tasa del ITBIS: el texto publicado del CT art. 345 prevé 16 % desde 2015 sujeto a condición; el sistema usa 18 %. Que el contador lo confirme antes de poner precios con impuesto.
 20. Retenciones de ITBIS e ISR cuando el cliente es agente de retención (norma general 02-05 y modificaciones): NO VERIFICADO.
+
+## Contrato 06 (licencia de software instalado, 7-nov-2026)
+
+21. **Licencia perpetua por equipo/sucursal y cuota anual opcional** (`06` cl. 2, 3 y 5): ¿se ajusta a la ley dominicana como licencia de uso y no como venta? Protección del programa, prohibición de ingeniería inversa y reventa: Ley 65-00, NO VERIFICADO. ¿Es válido limitar la copia de seguridad y la ingeniería inversa más allá de lo que la ley permita (cl. 8.3 y 8.4)?
+22. **Dejar de pagar la cuota no bloquea el uso** (`06` cl. 3.5 y 17.3). ¿Puede la proveedora bloquear técnicamente una licencia perpetua ya pagada si hubiera clave de activación (cl. 9.2)? Hoy el instalador no la exige.
+23. **Respaldos a cargo del cliente** (`06` cl. 7 y 18.2): ¿basta la cláusula para excluir la responsabilidad por pérdida de datos cuando no hay copia externa, y que el cliente firme haber leído la cl. 7 (Anexo A)?
+24. **Acceso remoto de soporte** (`06` cl. 12): ¿la proveedora actúa como encargada solo durante la sesión? ¿Basta la autorización por sesión y el registro, o se necesita firmar `03` como anexo? El anexo de subencargados de `03` fue escrito para la nube. Plazo de conservación del registro de accesos: PENDIENTE.
+25. **Transferencia a un proveedor de IA en el extranjero desde un equipo del cliente** (`06` cl. 13; L172 art. 80 y 28): ¿quién debe informar y obtener autorización de los titulares, el cliente o la proveedora? Retención y entrenamiento del proveedor: NO VERIFICADO. La IA de ventas aún no está integrada en `nexora-cloud` (auditoría 7-nov).
+26. **Garantía de funcionamiento de 90 días y devolución del pago único** (`06` cl. 4.4 y 15.2): ¿es suficiente remedio exclusivo? ¿Rige el plazo si el cliente no instala en un equipo que cumpla los requisitos?
+27. **Sin garantía de disponibilidad** (`06` cl. 15.1): ¿es válido frente a un cliente que pagó una licencia y dependa del software para cobrar? Revisar también el tope de 12 meses (cl. 18.1), que se calcula sobre lo pagado por licencia y cuota.
+28. **Precios, cuota anual, soporte, horario y jurisdicción**: todos PENDIENTES. Cifras de referencia en la «Propuesta de introducción 7-nov» de `PROPUESTA_PRECIOS.md` (rama `nexora-cloud`): instalado US$149 único, US$39 al año de renovación, IA US$7 por usuario al mes. Las decide la dueña.
+29. **Venta o traspaso del negocio del cliente** (`06` cl. 3.4): la licencia es intransferible sin permiso. ¿Es válida y oponible esa restricción?
+30. **Desinstalación y datos del cliente** (`06` cl. 17.4 y 7.6): al terminar, los datos quedan en el equipo del cliente. ¿La proveedora tiene algún deber de supresión o conservación? Aviso de brechas: NO VERIFICADO (ver punto 11).

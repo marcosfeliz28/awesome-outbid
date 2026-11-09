@@ -84,6 +84,7 @@ import "./passwordChange.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
+import { AiUsageCard } from "./AiUsage";
 import { InventoryImportButton } from "./InventoryImport";
 import {
   applyPendingSaleReprice,
@@ -128,7 +129,7 @@ function DataTable({
   return rows.length ? (
     <>
       {/* G12: con desplazamiento horizontal, la tabla se recorre con teclado. */}
-      <div className="table-wrap" tabIndex={0}>
+      <div className="table-wrap table-cards" tabIndex={0}>
         <table>
           <thead>
             <tr>
@@ -143,7 +144,11 @@ function DataTable({
             {rows.slice((page - 1) * 20, page * 20).map((r, index) => (
               <tr key={r.id || r.sku || index}>
                 {columns.map((c) => (
-                  <td key={c.label} className={c.className}>
+                  <td
+                    key={c.label}
+                    className={c.className}
+                    data-label={c.label}
+                  >
                     {c.render(r)}
                   </td>
                 ))}
@@ -1571,6 +1576,8 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   offline_conflict: "Venta sin conexión",
   receivable: "Por cobrar",
   credit_reminder: "Créditos por cobrar",
+  gv_cash_open_night: "Caja GV abierta de noche",
+  gv_day_no_close: "Día de GV sin cierre",
   cash_difference: "Diferencia de caja",
   return_waste: "Merma por devolución",
   expense_budget: "Presupuesto de gastos",
@@ -3022,6 +3029,12 @@ export function Reports() {
               </label>
               <Badge tone="violet">{total} registros</Badge>
             </div>
+            {report.startsWith("ventas-mes-") && (
+              <p className="muted">
+                Compara el mes de la fecha «Hasta»; la fecha «Desde» no cambia
+                el resultado.
+              </p>
+            )}
             {pages > 1 && (
               <div className="pagination">
                 <span>
@@ -4366,6 +4379,7 @@ export function Configuration() {
             <StoreSettings />
             <TelegramNotices />
             <DriveBackupCard />
+            <AiUsageCard />
             <IncentiveRates />
             <CashierSurveySummary />
           </QueryState>

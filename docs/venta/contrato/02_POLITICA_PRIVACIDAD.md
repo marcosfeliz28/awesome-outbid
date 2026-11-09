@@ -2,7 +2,7 @@ Borrador generado por IA. Revisión por un abogado dominicano colegiado antes de
 
 # Política de privacidad y tratamiento de datos de Norexos
 
-Estado: borrador del 31-oct-2026. Forma parte del contrato de servicio SaaS (`01_CONTRATO_SERVICIO_SAAS.md`, cláusula 10). Redactada para proteger a la proveedora. Clave de siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07; L126 = Ley 126-02. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
+Estado: borrador del 31-oct-2026, corregido técnicamente el 7-nov-2026. Forma parte del contrato de servicio SaaS (`01_CONTRATO_SERVICIO_SAAS.md`, cláusula 10). Redactada para proteger a la proveedora. Clave de siglas: CC = Código Civil; CT = Código Tributario; L172 = Ley 172-13; L53 = Ley 53-07; L126 = Ley 126-02. «verificado» = artículo leído en la fuente de `FUENTES_LEGALES.md`.
 
 ## 1. Quién es quién
 
@@ -27,7 +27,7 @@ Según el esquema de la base de datos (`docs/sistema/DATOS_Y_MODELOS.md`; no se 
 | Gastos e incentivos  | gastos, incentivos de cajeras, cierres                                                                                                                                            | empleados               |
 | GV (módulo opcional) | cursos, inscripciones (nombre, teléfono, Instagram, pagos), citas de maquillaje (servicio, artistas, datos de boda), interesadas                                                  | alumnas y clientas      |
 | Configuración        | nombre del negocio, tasa del dólar, cuentas de banco del negocio, reglas, ajustes                                                                                                 | el negocio              |
-| IA de ventas         | solo un contador diario por usuario (cantidad de preguntas, tokens y costo estimado). **No el texto de las preguntas ni de las respuestas**                                       | usuarios                |
+| IA de ventas         | una fila de uso por pregunta: usuario, sucursal, fecha y hora, función, modelo, tokens, costo estimado y estado. **No el texto de las preguntas ni de las respuestas**            | usuarios                |
 
 El sistema **no debe usarse** para guardar datos de salud, creencias, afiliación sindical ni vida sexual, números completos de tarjeta ni códigos de seguridad. Si el cliente los registra por su cuenta, él responde por ello. [Fundamento: L172 art. 76, verificado: esos datos solo se tratan con consentimiento expreso y por escrito]
 
@@ -47,9 +47,9 @@ Para dar el servicio (ventas, caja, inventario, reportes), separar los datos de 
 
 ## 5. Inteligencia artificial
 
-5.1. **IA de ventas («Preguntar a Norexos»).** Es de solo lectura y no tiene memoria entre preguntas. Cada pregunta viaja al proveedor de IA junto con las cifras agregadas que las herramientas de lectura devuelven en ese momento (totales, cobros por método y banco, hasta diez productos más vendidos); no se envían filas de ventas ni contraseñas, PIN, datos de tarjeta o tokens. **Norexos no guarda el texto de las preguntas ni de las respuestas**; guarda solo el contador diario del usuario. Fuente: diseño y código de la rama `claude/ia-ventas-linea` (commit `62720b17`, 30-oct-2026), notas `docs/coordinacion/ESTADO_T33.md` y `T33_DISENO.md`. Esa rama no estaba mezclada en `nexora-cloud` el 31-oct-2026; esta afirmación vale cuando lo desplegado coincida con ese código.
+5.1. **IA de ventas («Preguntar a Norexos»).** La función ya forma parte del Servicio, pero está apagada mientras no se configure el proveedor y el plan; para un cliente solo queda activa si su Hoja de contratación la incluye. Es de solo lectura y no tiene memoria entre preguntas. Cada pregunta viaja al proveedor de IA junto con las cifras que las herramientas de lectura devuelven en ese momento. Los permisos, la empresa y los parámetros de las herramientas se validan en el servidor. **Norexos no persiste el texto de las preguntas ni de las respuestas en su base funcional**; guarda una fila de uso por pregunta con usuario, sucursal, fecha y hora, función, modelo, tokens, costo estimado y estado.
 
-5.2. El proveedor de IA recibe el texto de la pregunta y las cifras para poder responder. **Cuánto tiempo los conserva y si los usa para entrenar es: NO VERIFICADO** (depende de los términos del proveedor, que no se leyeron); la proveedora no lo promete.
+5.2. El proveedor de IA recibe el texto de la pregunta y las cifras para poder responder. El sistema no detecta ni elimina automáticamente datos personales, contraseñas u otros secretos que el usuario escriba en la pregunta antes de transmitirla; el usuario no debe incluirlos. Una instrucción manipuladora puede llegar al proveedor, aunque las validaciones del servidor impiden que autorice herramientas inventadas, escritura o acceso a otra empresa. **Cuánto tiempo el proveedor conserva esos datos y si los usa para entrenar es: NO VERIFICADO**; la proveedora no lo promete.
 
 5.3. **Lectura de facturas con IA** (si está activada): se envía la imagen o PDF completo de la factura del proveedor; pueden aparecer datos personales. El sistema sí conserva el borrador y el adjunto. Retención en el proveedor de IA: NO VERIFICADO. [Fuente: `docs/legal/REGISTRO_TERCEROS.md`]
 
@@ -94,13 +94,15 @@ Los servidores y varios subencargados están fuera de la República Dominicana. 
 
 ## 10. Cuánto tiempo se conservan los datos
 
-10.1. Mientras el contrato esté vigente, y hasta [30] días después de terminar para que el cliente exporte; luego se suprimen en un máximo de [60] días, salvo copias de respaldo que se eliminan por rotación (PENDIENTE: confirmar el calendario real de rotación) y datos que la ley obligue a guardar. Cancelado un dato, se bloquea y solo se conserva a disposición de las autoridades por el plazo de prescripción de las responsabilidades del tratamiento. [Fundamento: L172 art. 15, verificado]
+10.1. Mientras el contrato esté vigente, y hasta [30] días después de terminar para que el cliente exporte (**PENDIENTE**). Luego la proveedora aplica un procedimiento manual documentado de bloqueo y supresión en un máximo de [60] días (**PENDIENTE**), salvo datos que la ley obligue a conservar. El sistema no ejecuta hoy una supresión automática por empresa al terminar el contrato; antes de firmar deben aprobarse el plazo, la persona responsable y la prueba del procedimiento. Cancelado un dato, se bloquea y solo se conserva a disposición de las autoridades por el plazo de prescripción de las responsabilidades del tratamiento. [Fundamento: L172 art. 15, verificado]
 
-10.2. Purgas técnicas automáticas que describe el repositorio: determinados registros de seguridad de más de 400 días, eventos de más de 48 horas, avisos de más de 30 días, intentos de autenticación antiguos y tokens vencidos; la IP del registro activo se borra a los 90 días; las copias de seguridad anteriores pueden conservarla hasta su eliminación. [Fuente: `docs/legal/POLITICA_PRIVACIDAD.md` citando `apps/api/src/retention.ts` y `security.ts`; vigencia en producción: no se inspeccionó]
+10.2. Purgas técnicas automáticas que describe el repositorio: eventos de tiempo real de más de 48 horas; avisos enviados, fallidos o pendientes de más de 30 días; intentos de usuarios inexistentes de más de 48 horas y los demás intentos de más de 30 días, siempre que no sigan bloqueados; tokens vencidos hace más de 24 horas; acciones de seguridad de la bitácora de más de 400 días; y adjuntos de facturas huérfanos de más de 14 días. Las ventas, pagos, operaciones de mercancía y el resto de la bitácora de dinero no se purgan por este proceso. Estas purgas técnicas no sustituyen el procedimiento de terminación de 10.1. [Fuente: `apps/api/src/retention.ts`; vigencia en producción: no se inspeccionó]
 
-10.3. Conservación fiscal. La obligación de conservar libros, registros y comprobantes diez años es del cliente, no de la proveedora. [Fundamento: CT art. 50 letra h, verificado]
+10.3. Si Google Drive está configurado y conectado, el Servicio intenta un respaldo diario cifrado a las 03:30, hora de Santo Domingo, con hasta tres intentos en el día y aviso si pasan 36 horas sin una copia correcta. La rotación implementada conserva la copia más reciente de cada uno de los 365 días más recientes con respaldo y la primera copia de cada uno de los 120 meses más recientes con respaldo. Solo rota archivos reconocidos como respaldos de Norexos. Sin conexión activa no se promete una copia externa. [Fuente: `apps/api/src/drive-backup-core.ts` y `drive-backup.ts`]
 
-10.4. Conservación de tráfico. Si la proveedora fuera «proveedor de servicios» en el sentido de la L53, debe conservar datos de tráfico, conexión y acceso un mínimo de 90 días. [Fundamento: L53 art. 56, verificado; su aplicación a un proveedor de software: ABOGADO]
+10.4. Conservación fiscal. La obligación de conservar libros, registros y comprobantes diez años es del cliente, no de la proveedora. [Fundamento: CT art. 50 letra h, verificado]
+
+10.5. Conservación de tráfico. Si la proveedora fuera «proveedor de servicios» en el sentido de la L53, debe conservar datos de tráfico, conexión y acceso un mínimo de 90 días. [Fundamento: L53 art. 56, verificado; su aplicación a un proveedor de software: ABOGADO]
 
 ## 11. Cookies y almacenamiento en el navegador
 

@@ -1,0 +1,339 @@
+/* landing.css — página pública de Norexos (norexos.net). Estilo Obsidian Lumina.
+   Claro por defecto; oscuro con prefers-color-scheme o data-theme="dark".
+   Sin CDN, sin fuentes externas. Contraste AA (≥ 4.5:1), foco visible,
+   prefers-reduced-motion respetado. Sin cifras de precios: van en la sección Planes cuando se aprueben. */
+
+:root {
+  --bg: #fafaf9;
+  --surface: #f1f0ee;
+  --surface-2: #ffffff;
+  --text: #1a1d26;
+  --muted: #4b5563;
+  --border: #d6d3cc;
+  --primary: #5b3fc4;
+  --primary-hover: #4a2fa8;
+  --on-primary: #ffffff;
+  --accent: #5b3fc4;
+  --eyebrow: #92400e;
+  --focus: #5b3fc4;
+  --shadow: 0 8px 24px rgba(26, 29, 38, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0f19;
+    --surface: #111726;
+    --surface-2: #151b2b;
+    --text: #e2e8f0;
+    --muted: #9ba6ba;
+    --border: #293247;
+    --primary: #a78bfa;
+    --primary-hover: #b89bff;
+    --on-primary: #0b0f19;
+    --accent: #c4b5fd;
+    --eyebrow: #f59e0b;
+    --focus: #a78bfa;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0f19;
+  --surface: #111726;
+  --surface-2: #151b2b;
+  --text: #e2e8f0;
+  --muted: #9ba6ba;
+  --border: #293247;
+  --primary: #a78bfa;
+  --primary-hover: #b89bff;
+  --on-primary: #0b0f19;
+  --accent: #c4b5fd;
+  --eyebrow: #f59e0b;
+  --focus: #a78bfa;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+
+a {
+  color: var(--primary);
+}
+a:hover {
+  color: var(--primary-hover);
+}
+
+a:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.skip {
+  position: absolute;
+  left: 16px;
+  top: -48px;
+  background: var(--primary);
+  color: var(--on-primary);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  z-index: 20;
+}
+.skip:focus {
+  top: 12px;
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+header {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.logo {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.nav-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.nav-links a {
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+.nav-links a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.hero {
+  padding: 72px 16px 56px;
+  text-align: center;
+}
+.eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--eyebrow);
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+.hero h1 {
+  font-size: clamp(34px, 6vw, 60px);
+  line-height: 1.08;
+  margin: 0 0 20px;
+  letter-spacing: -0.02em;
+}
+.accent {
+  color: var(--accent);
+}
+.lead {
+  color: var(--text);
+  font-size: 18px;
+  max-width: 640px;
+  margin: 0 auto 14px;
+}
+.sub {
+  color: var(--muted);
+  max-width: 640px;
+  margin: 0 auto 28px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 2px solid transparent;
+  text-decoration: none;
+  margin: 4px;
+  min-height: 48px;
+}
+.btn:hover {
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.btn-primary:hover {
+  background: var(--primary-hover);
+  color: var(--on-primary);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-ghost:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+
+section {
+  padding: 56px 0;
+}
+section.alt {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.section-title {
+  font-size: clamp(26px, 4vw, 36px);
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+.section-sub {
+  color: var(--muted);
+  max-width: 620px;
+  margin: 0 0 32px;
+}
+
+.benefits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.benefit {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.benefit h3 {
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+.benefit p {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0;
+}
+
+.faq {
+  max-width: 760px;
+}
+.faq details {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+.faq summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.faq details p {
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.foot-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+.foot-links a {
+  color: var(--muted);
+}
+.foot-links a:hover {
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .benefits {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .benefits {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    padding: 48px 16px 40px;
+  }
+  .nav-links {
+    gap: 12px;
+    font-size: 13px;
+  }
+  .btn {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
