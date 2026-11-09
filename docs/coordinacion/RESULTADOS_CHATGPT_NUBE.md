@@ -1,5 +1,113 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-09 · Auditoría de marketing y Canva · `chatgpt-nube/auditoria-marketing-9nov`
+
+### Alcance y veredicto
+
+Audité en solo lectura `origin/claude-pc/marketing-ventas` (`28fa9236`) y
+`origin/claude-pc/canva-ventas` (`1ba486fd`) contra
+`docs/venta/PROPUESTA_PRECIOS.md:42-64` («Propuesta de introducción 7-nov») y
+contra el comportamiento que existe en `origin/nexora-cloud` (`d927b2a8`).
+También leí directamente el texto de los dos diseños privados enlazados desde
+`CANVA_ENLACES.md`; no edité ni publiqué los diseños.
+
+**Resultado: no deben usarse todavía como material comercial sin corregir cinco
+afirmaciones.** Los importes sí coinciden con la propuesta aprobada; las piezas
+dicen correctamente que Norexos no emite NCF/e-CF y que el soporte es en
+español, y no encontré una promesa de soporte en inglés ni «disponible ya».
+
+### Hallazgos
+
+1. **ALTO · El precio cambia al decir que no incluye impuestos.**
+   `docs/venta/marketing/PROPUESTA_COMERCIAL.md:28` añade «No incluyen
+   impuestos», pero la propuesta aprobada (`PROPUESTA_PRECIOS.md:42-64`) no
+   decide eso. Si se suma ITBIS u otro impuesto, el total cobrado deja de ser el
+   precio anunciado. **Arreglo propuesto:** quitar esa frase hasta que la dueña y
+   su contable decidan si los precios son finales o antes de impuestos; después,
+   reflejar la decisión también en la fuente oficial de precios.
+2. **ALTO · Canva garantiza un resultado que el sistema no puede garantizar.**
+   La presentación visible dice «Caja y cierre sin descuadres»; su fuente está
+   en `docs/venta/canva/CONTENIDO_VENTAS.json:34-36`. Norexos registra y exige
+   justificar diferencias, pero no puede impedir que exista un descuadre.
+   **Arreglo propuesto:** «Cierre ciego con diferencias identificadas» o «Caja y
+   cierre bajo control».
+3. **MEDIO · La venta sin internet se anuncia sin sus límites.**
+   `MENSAJES_PRIMER_CONTACTO.md:13`, `PLAN_CONTENIDO_30_DIAS.md:24` y
+   `PROPUESTA_COMERCIAL.md:7` dicen que la caja sigue vendiendo sin internet.
+   En el producto solo ocurre si administración activa `allowOfflineSales`
+   (`apps/web/src/POS.tsx:2142-2160`); además, crédito, contraentrega, nota de
+   crédito y aprobaciones por PIN requieren conexión (`POS.tsx:2162-2184`).
+   **Arreglo propuesto:** «Puede registrar ventas de contado sin internet cuando
+   el modo sin conexión está habilitado; créditos y aprobaciones requieren
+   conexión».
+4. **MEDIO · Se vende como lista una instalación que aún no terminó la prueba
+   real obligatoria.** `PROPUESTA_COMERCIAL.md:19-20` y ambos diseños de Canva
+   presentan el producto instalado en laptop. El código del instalador existe,
+   pero `docs/INSTALADOR.md:628-641` deja pendientes la construcción del `.exe`,
+   instalación/reinicio en Windows 11, venta sin internet, restauración,
+   actualización, reinstalación y firma Authenticode. **Arreglo propuesto:** no
+   entregar la oferta instalada hasta pasar esa lista; mientras tanto marcarla
+   «piloto sujeto a validación técnica en la laptop».
+5. **MEDIO · Promesa de velocidad sin prueba.** La presentación de Canva dice
+   «Vende en segundos» y `PLAN_CONTENIDO_30_DIAS.md:21` propone «cajera cobrando
+   en segundos». No hay una medición o umbral de rendimiento que respalde esa
+   afirmación. **Arreglo propuesto:** «Busca por nombre o código y cobra desde la
+   misma pantalla».
+6. **BAJO · Estado interno de precios desactualizado.** Los comentarios de
+   `apps/landing/index.html:157` y `apps/landing/en/index.html:154` todavía dicen
+   que la propuesta no está aprobada, aunque `PROPUESTA_PRECIOS.md:44` registra
+   aprobación del 7-nov. No lo ve el cliente, pero puede inducir a una edición
+   posterior equivocada. **Arreglo propuesto:** actualizar el comentario sin
+   publicar precios hasta la decisión correspondiente.
+
+### Comprobaciones que pasaron
+
+- Los diez valores de `CONTENIDO_VENTAS.json:9-20` coinciden con
+  `PROPUESTA_PRECIOS.md:53-63`: US$149, US$39/año, US$7/usuario/mes, 10
+  preguntas/día, 20 lecturas incluidas, US$0.30 extra, US$69/mes, US$119/mes,
+  US$75 y piloto de 60 días; la tasa RD$60/US$ está marcada como referencia por
+  confirmar.
+- Los dos diseños y la propuesta comercial dicen «no emite NCF ni e-CF»; no
+  prometen factura fiscal.
+- La página en inglés aclara que el soporte se presta en español
+  (`apps/landing/en/index.html:198-202`); no encontré soporte en inglés.
+- El texto visible extraído de Canva no contiene «hoy» ni «disponible ya». La IA
+  figura como opcional y activable por decisión del negocio, coherente con el
+  apagado y los topes de `apps/api/src/assistant.ts:656-675`.
+- El JSON de contenido es sintácticamente válido y los dos enlaces de Canva
+  resuelven a diseños existentes.
+
+### Evidencia, autoauditoría y límites
+
+- Comandos reproducibles: `git diff --name-status origin/nexora-cloud...HEAD`,
+  búsquedas `rg` de promesas/precios y comparación de los valores JSON con la
+  sección aprobada. La auditoría es de solo lectura: no corresponde una prueba
+  que pase después de corregir porque, por orden, no modifiqué las ramas
+  auditadas. Las búsquedas reproducen los cinco textos objetados antes de su
+  corrección.
+- Revisé por separado precios, fiscalidad, idioma de soporte, disponibilidad,
+  IA, modo sin conexión y estado del instalador. Volví a contrastar cada
+  hallazgo con código o documento fuente y descarté como problemas las funciones
+  que sí existen: recibo impreso/PDF/WhatsApp/correo, alertas de existencias y
+  vencimiento, exportación PDF y herramientas de IA opcionales.
+- El conector de Canva permitió leer todo el texto visible, pero esta auditoría
+  no certifica imágenes, logos, contraste, márgenes de impresión ni tipografía;
+  eso requiere exportar/renderizar las piezas o abrirlas visualmente. Tampoco se
+  probaron Windows 11, impresora, lector, Android o iPhone.
+- No se cambió código funcional, precio, diseño, Render, producción, base ni
+  credenciales; no hubo despliegue.
+
+### Estado de pruebas y CI
+
+`pnpm install --frozen-lockfile` y `pnpm db:generate` pasaron. `pnpm check`
+terminó con código 0: typecheck y ESLint pasaron; **112 archivos de prueba
+pasaron y 1 se omitió; 989 pruebas pasaron y 10 se omitieron**; los builds de
+web y API pasaron. Vite emitió la advertencia no bloqueante ya conocida por un
+chunk mayor de 500 kB. Los tres trabajos de CI se anotarán aquí después del push
+del commit documental. No hay decisión necesaria para corregir las promesas 2,
+3 y 5; la dueña/contable deben decidir el tratamiento de impuestos del hallazgo
+1, y Windows debe validar el hallazgo 4.
+
 ## 2026-11-08 · Asistente analista · `chatgpt-nube/asistente-analista`
 
 - **Qué hice:** documenté el producto de IA analítica en `docs/ia/ASISTENTE_ANALISTA_SPEC.md`: ocho grupos de preguntas, las cinco herramientas actuales, seis lecturas faltantes, matriz de permisos para dueña/gerente/cajera y reconciliación obligatoria por tres caminos. Preparé `ASISTENTE_ANALISTA_EVAL_100.md` con exactamente 100 preguntas, respuestas y cálculos deterministas, incluidas trampas de PIN, otra empresa/sucursal, anulaciones, escrituras e inyección. En `ASISTENTE_ANALISTA_COSTOS.md` calculé cuatro escenarios con las tarifas implementadas en `ai-prices.ts` y conservé las cuotas vigentes de 100/250/600/1,500 preguntas.

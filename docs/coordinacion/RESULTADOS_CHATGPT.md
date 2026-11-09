@@ -156,6 +156,26 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - Qué pasó (pruebas que pasan y que fallan, con el texto exacto del error):
 - Qué falta o necesita decisión de la dueña:
 
+## 2026-11-09 · ChatGPT NUBE · `chatgpt-nube/auditoria-marketing-9nov`
+
+- **Qué hice:** audité en solo lectura las ramas
+  `claude-pc/marketing-ventas` (`28fa9236`) y `claude-pc/canva-ventas`
+  (`1ba486fd`), incluido el texto visible de los dos diseños privados de Canva.
+  El informe completo, con archivo:línea, gravedad, evidencia y arreglo
+  propuesto, está en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
+- **Qué pasó:** los precios coinciden con la propuesta aprobada del 7-nov y no
+  se promete NCF/e-CF ni soporte en inglés. Encontré dos hallazgos altos (precio
+  presentado sin impuestos sin aprobación y «cierre sin descuadres»), tres
+  medios (modo sin conexión sin límites, instalador ofertado antes de la prueba
+  real de Windows y «vende en segundos») y uno bajo (comentario de aprobación
+  desactualizado).
+- **Qué falta o necesita decisión de la dueña:** el contable/dueña deben decidir
+  si los precios incluyen impuestos; el producto instalado requiere la prueba
+  de Windows 11 y firma antes de venderse. Este commit documental no cambia ni
+  despliega las ramas auditadas. `pnpm check` pasó: 112 archivos/989 pruebas,
+  con 1 archivo/10 pruebas omitidos, y typecheck, lint y builds verdes. Los tres
+  CI se completarán después de publicar el commit.
+
 ## 2026-11-08 · ChatGPT NUBE · `chatgpt-nube/asistente-analista`
 
 - **Qué hice:** escribí la especificación del Asistente analista, un conjunto determinista de 100 preguntas con respuesta/cálculo esperado y la estimación de costo/cuotas. El detalle y la autoauditoría están en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
