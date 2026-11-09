@@ -136,3 +136,11 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Verificado: /api/health ok, web 200 con el bundle nuevo, POST /assistant/ask sin plan/llave → 503 (apagada), sin errores en logs.
 - Para encenderla (solo la dueña): clave ANTHROPIC_API_KEY en Render (sync false) y IA_VENTAS_PLAN=medio|completo. Precios de modelos en ai-prices.ts siguen null (costo no calculado): pedido a ChatGPT Nube verificar en la página oficial.
 - Falla intermitente reincidente en CI: tests/password-account.test.ts («dos cambios simultáneos», 404 en vez de 400/401) y tests/telegram.test.ts (purga por tiempo). Pasan al relanzar. Pendiente: causa raíz de la carrera (no saltar).
+
+## 9-nov 01:37 UTC — ganancia con ITBIS en vivo + rama de costos mezclada (N1)
+- API y web desplegadas con 467de531 (3 CI verdes; 0 cajas abiertas, última venta 17:48 UTC del 8-nov). Incluye aud-sincronia (ganancia con ITBIS según regla de la dueña, autorizada el 8-nov), landing (sin publicar), docs de ChatGPT Nube y auditoría de contraseñas.
+- Verificado en vivo (dashboard/summary octubre): revenue 1,459,804.50 − costTotal 775,914.04 = profit 683,890.46 (margen 46.85 %); grossProfit fiscal sin ITBIS 461,208.47 se conserva en el estado de resultados. Health ok, web 200, /ai/usage responde, sin errores en logs.
+- Avisar a la contable: la ganancia del panel (con ITBIS) ya no es la fiscal.
+- Observación: Render despliega el último commit de la rama aunque se pase commitId; confirmar siempre el commit en vivo con get_deploy.
+- Mezclada a nexora-cloud claude-pc/venta-sin-costo (bc1c95b9): bloqueo de venta sin costo APAGADO (blockZeroCostSales), lista /inventory/without-cost, recálculo /reports/cost-recalc (solo lectura), corrección auditada POST /sales/:id/items/:itemId/cost (PIN, expectedUnitCost, operationId). NO desplegada: esperar a que la dueña cargue costos y confirme.
+- Pendientes de la dueña: Excel de costos (69 productos, 52 con existencia), contacto para comprar norexos.net (US$11.86), clave del script de arranque (camino A o B), datos legales, abogado, 3–5 nombres para piloto.
