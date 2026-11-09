@@ -85,6 +85,9 @@ Lectura: a velocidad normal Impacto no produce tareas largas. El peor cuadro de 
 ## Capturas y clips
 Antes (modo estándar) y después (Impacto), claro y oscuro, escritorio 1440×900 e iPhone 390×844, en `docs/diseno/capturas/antes-*.webp` y `despues-*.webp` (login, dashboard, reports, inventory, settings y demo). Clips: `docs/diseno/capturas/clips/impacto-escritorio.webm` (entrada → resumen → reportes → tema oscuro → demostración) e `impacto-iphone.webm`.
 
+## Video promocional
+`docs/diseno/capturas/clips/promo-norexos-16x9.mp4` (35 s, 1920×1080) y `promo-norexos-9x16.mp4` (25 s, 1080×1920, para Reels/TikTok/WhatsApp): grabaciones reales de la app en modo Impacto (entrada, resumen, reportes, demostración, tema oscuro, celular) con títulos en la tipografía y colores de la marca. Sin música. Se rehacen con `grabar-promo.cjs` (Playwright + captura CDP + ffmpeg) sobre la base de prueba sembrada. No se usó Higgsfield: la cuenta tenía 0 créditos (≈96 por escena de 8 s).
+
 ## No comprobado
 - Laptop lenta real de la tienda (solo CPU emulada 4× en Chromium) y Safari/iPhone real: Safari 18+ trae View Transitions; en versiones viejas el cambio es directo (sin efecto), no se probó en un equipo.
 - Firefox: sin View Transitions en versiones viejas → cambio directo; no se probó.
