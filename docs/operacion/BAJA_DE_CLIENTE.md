@@ -9,24 +9,26 @@ corresponde (Render u otra). Detalle técnico: `docs/sistema/BAJA_DE_CLIENTE.md`
 Cumple la cláusula de terminación del contrato (auditoría del contrato,
 7-nov-2026, punto 3): «exportación, bloqueo y supresión a los 30/60 días».
 
-## PENDIENTE (decide la dueña, con abogado o contador)
+## Decisiones de la dueña (9-nov-2026)
 
-1. **Plazos.** ¿Cuántos días después de terminar se suprime? El comando exige
-   por defecto **30 días** desde «terminar» (`BAJA_DIAS_MINIMOS`). Si el
-   contrato dice 60, usar `BAJA_DIAS_MINIMOS=60`. Hasta que la dueña lo fije,
-   el contrato debe decir PENDIENTE.
-2. **Qué se conserva por ley.** El comando borra **todo** lo de la sucursal,
-   ventas, pagos y bitácora incluidos. Si la ley (p. ej. el Código Tributario,
-   que habla de 10 años) obliga a conservar ventas y pagos, la propuesta es
-   conservar **el paquete cifrado de exportación** (no la base) durante ese
-   plazo, guardado fuera del servidor, y dejarlo escrito en el contrato. Hasta
-   que el contador lo confirme, **no se suprime a ningún cliente real**.
-3. **Respaldos.** Los respaldos diarios cifrados (Drive) tomados antes de la
-   supresión siguen conteniendo los datos hasta que la rotación los elimine.
-   El contrato debe decir el plazo real de esa rotación (punto 4 de la
-   auditoría del contrato).
-4. **A quién se entrega el paquete y la clave**, por qué canal, y quién guarda
-   la clave (nunca en el mismo mensaje que el paquete).
+1. **Plazo: 30 días** desde «terminar» hasta «suprimir» (`BAJA_DIAS_MINIMOS=30`,
+   el valor por defecto del comando).
+2. **Guardar todo.** Antes de suprimir, el paquete cifrado completo (todas las
+   tablas de la sucursal) se conserva **10 años** fuera del servidor, junto con
+   el acta. La base de datos sí se suprime; lo que queda es el paquete.
+3. **Respaldos (rotación real, `apps/api/src/drive-backup-core.ts`,
+   `retentionPlan`):** cada respaldo de Drive es la base completa y se guardan
+   365 diarios + 1 por mes durante 120 meses (orden de la dueña del 20-oct:
+   «que nada se pierda en 10 años»). Por eso los datos de un cliente dado de
+   baja siguen dentro de los respaldos tomados antes de la supresión hasta 10
+   años. El contrato debe decirlo así; no se borran de los respaldos uno por uno.
+
+## PENDIENTE (decide la dueña)
+
+- **Entrega:** propuesta, el cliente recibe una copia del paquete (carpeta) y
+  la clave por otro canal (llamada o WhatsApp, nunca junto al paquete);
+  Norexos guarda su copia y la clave en un lugar seguro 10 años. Falta que la
+  dueña confirme a quién se entrega y dónde se guarda.
 
 ## Antes de empezar
 
@@ -71,7 +73,7 @@ pnpm baja exportar --sucursal <branchId> --salida /ruta/segura/baja-<branchId>-A
 
 ## Paso 3 · Suprimir (con confirmación doble y fecha)
 
-Pasado el plazo (PENDIENTE 1), y solo con la confirmación de la dueña:
+Pasados los 30 días, guardado el paquete (decisión 2) y solo con la confirmación de la dueña:
 
 ```bash
 BAJA_CONFIRMAR="SUPRIMIR <branchId>" BAJA_DIAS_MINIMOS=30 \

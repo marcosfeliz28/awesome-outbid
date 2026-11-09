@@ -56,5 +56,6 @@ estado|terminar|exportar|suprimir|descifrar`.
 - No se ejecutó contra Render ni contra datos reales.
 - La exportación carga cada tabla en memoria (suficiente para una tienda;
   marcado `shortcut` en el código).
-- Plazos y conservación legal: PENDIENTES de la dueña (ver el documento de
-  operación).
+- Decisiones de la dueña (9-nov): 30 días; se guarda el paquete completo 10
+  años; los respaldos de Drive (365 diarios + 120 mensuales) siguen con los
+  datos hasta 10 años. Pendiente: a quién se entrega el paquete y la clave.
