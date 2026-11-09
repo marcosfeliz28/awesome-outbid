@@ -4,11 +4,11 @@
 
 **Rama de auditoría:** `chatgpt-nube/auditoria-diseno-impacto-9nov`
 
-**Entrega auditada:** `1dbfd28d8965c529b0fb6df9aaee42020c76d972`
+**Entrega auditada:** `426aa6a56c2a9f74a7a3760838e00ceade7a066d`
 
 ### Veredicto
 
-**No recomiendo mezclar la entrega sin corregir DI-01 a DI-04.** La capa visual no modifica `POS.tsx`, conserva F2/F4/F8/F12 y sus colores nuevos comprobados alcanzan AA. Sin embargo, el video identifica a Macgen/GV, «reducir movimiento» no detiene Recharts, el esqueleto deja vacío el estado accesible de carga y la rama cambia un contrato de la API de reportes. Además, la propia medición registra una pausa visible en CPU 4×.
+**No recomiendo mezclar la entrega sin corregir DI-01 a DI-04.** La capa visual no modifica `POS.tsx`, conserva F2/F4/F8/F12 y sus colores nuevos comprobados alcanzan AA. Sin embargo, el último commit publicado no pasa `verify`, el video identifica a Macgen/GV, «reducir movimiento» no detiene Recharts y el esqueleto deja vacío el estado accesible de carga. Además, la propia medición registra una pausa visible en CPU 4×.
 
 ### Hallazgos
 
@@ -18,30 +18,30 @@
 
 3. **DI-03 · MEDIA · El modo Impacto elimina el mensaje accesible de carga.** `Loading` usa `role="status"` y el único texto «Cargando datos…» en `packages/ui/src/index.tsx:72-82`. Impacto aplica `display:none` a ese `span` y al SVG (`apps/web/src/impacto.css:123-140`), mientras el esqueleto restante es `aria-hidden`; el estado queda sin nombre para lector de pantalla. **Arreglo propuesto:** conservar «Cargando datos…» como `.sr-only` o añadir un texto equivalente no oculto del árbol accesible; cubrirlo con una prueba de nombre/estado accesible en modo Impacto.
 
-4. **DI-04 · MEDIA · La rama visual cambia un contrato de lógica/API fiscal.** `apps/api/src/reports.ts:1710-1714,1776-1788` transforma `fiscalStatus` de las claves estables `not_issued`/`issued` a «Sin emitir»/«Emitido» dentro del JSON de `/reports/sales`; la prueba añadida en `tests/api.test.ts` solo cubre `not_issued`. Esto no cambia montos, pero sí lógica de servidor y puede romper consumidores que esperen la clave, fuera del alcance visual solicitado. **Arreglo propuesto:** sacar este cambio a una rama funcional independiente y mantener una clave estable más una etiqueta traducida, o traducir únicamente en la representación Excel/PDF/UI; probar ambos estados y compatibilidad del JSON.
+4. **DI-04 · ALTA · El último commit publicado tiene `verify` rojo por 30 errores de ESLint.** La ejecución 42560797904 falla en `pnpm check`: `docs/diseno/capturas/clips/grabar-promo.cjs:3-190` usa CommonJS y globales de Node/navegador sin una configuración de lint aplicable (`@typescript-eslint/no-require-imports` y `no-undef` sobre `require`, `process`, `__dirname`, `localStorage`, `Buffer`, `document`, `location`, `window` y `console`). `windows-installer` y `render-images` sí pasan. **Arreglo propuesto:** convertir el generador a un módulo/configuración ya admitidos por el repositorio o declarar de forma acotada el entorno del script y formatearlo; volver a ejecutar los tres trabajos en el mismo SHA corregido. No corresponde ignorar el archivo globalmente sin justificar qué reglas dejan de aplicar.
 
 5. **DI-05 · MEDIA · En CPU 4× Impacto registra tareas largas y un cuadro de 217 ms, pero la regresión solo exige el presupuesto a velocidad normal.** La evidencia de la propia rama muestra una tarea de 92 ms al abrir la demostración y dos de 74/68 ms al volver al resumen, con peor cuadro de 217 ms (`docs/diseno/DIRECCION_VISUAL_IMPACTO.md:73-83`). La prueba bloqueante no aplica throttling y solo rechaza tareas mayores de 50 ms en ese caso (`tests/e2e/impacto.spec.ts:95-154`). CLS desde el primer cuadro sí queda en 0. **Arreglo propuesto:** añadir un caso con CPU 4× y presupuesto explícito; en equipos lentos omitir View Transition/animación de gráficas o aplicar carga diferida a la demostración.
 
 ### Comprobaciones sin hallazgo
 
-- **Caja/POS y teclas:** no hay cambios en `apps/web/src/POS.tsx`, `posKeyboard.ts` ni módulos de cobro. `withTransition` evita entrar o salir del POS; F2/F4/F8/F12 siguen en `POS.tsx`. El cambio de `Estado_fiscal` de DI-04 no altera dinero, ventas, caja o inventario.
+- **Caja/POS y teclas:** no hay cambios en `apps/web/src/POS.tsx`, `posKeyboard.ts` ni módulos de cobro. `withTransition` evita entrar o salir del POS; F2/F4/F8/F12 siguen en `POS.tsx`. No encontré cambios de dinero, ventas, caja o inventario en los commits propios de Impacto.
 - **Contraste:** cálculo WCAG: aviso claro 6.37:1, aviso oscuro 7.28:1, violeta `#7c3aed` sobre blanco 5.70:1 y violeta claro `#a78bfa` sobre `#151b2b` 6.31:1. No encontré un par nuevo bajo 4.5:1.
 - **Teclado:** el interruptor es un `input[type=checkbox]` etiquetado y la E2E lo activa con Espacio. La ruta de demostración se abre con un enlace normal.
 - **Tamaño del bundle:** frente a `origin/nexora-cloud`, el JS principal pasó de 1,228,128 a 1,234,100 bytes (+5,972; +0.49 %) y CSS de 134.96 a 140.45 kB; el chunk de gráficas permaneció en 394.77 kB. No es un hallazgo por peso.
-- **Música:** los MP4 vigentes tienen pista AAC y `musica-promo.py` la genera por código; no encontré material de audio de terceros.
+- **Terceros:** los dos MP4 auditados solo contienen video H.264, sin pista de audio; no encontré música, imágenes o clips de terceros dentro de esos archivos.
 
 ### Pruebas, autoauditoría y límites
 
-- Inspeccioné el diff completo contra `origin/nexora-cloud`, extraje fotogramas de ambos MP4 y verifiqué metadatos: 1920×1080/35.4 s y 1080×1920/24.77 s, H.264 + AAC.
+- Inspeccioné los tres commits propios de la entrega, extraje fotogramas de ambos MP4 y verifiqué metadatos: 1920×1080/35.4 s y 1080×1920/24.77 s, H.264 y sin audio.
 - `tests/impacto.test.ts`: 9/9 en verde. Es una prueba estática útil, pero DI-02 demuestra que no cubre todo el movimiento real.
 - Build web de producción: verde. Comparé el peso con la misma base y dependencias.
-- La entrega auditada `1dbfd28d` tiene `verify`, `windows-installer` y `render-images` en verde en la ejecución 42565175883. Ese verde no invalida los hallazgos de alcance, accesibilidad o contenido del video.
-- `pnpm check` terminó con código 0 después de `pnpm db:generate`: typecheck y ESLint pasaron; **113 archivos de prueba pasaron y 1 se omitió; 998 pruebas pasaron y 10 se omitieron**; builds web/API correctos. Vite solo emitió la advertencia conocida de un chunk mayor de 500 kB.
+- La entrega auditada `426aa6a5` tiene `windows-installer` y `render-images` verdes, pero `verify` rojo en la [ejecución 42560797904](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/42560797904). El texto local y remoto coincide: `✖ 30 problems (30 errors, 0 warnings)` en `grabar-promo.cjs` durante ESLint.
+- `tests/impacto.test.ts` pasó **9/9**. `pnpm lint` reprodujo los mismos **30 errores**; por eso `pnpm check` no puede considerarse verde en este SHA. No se relajó ninguna prueba ni regla.
 - No se modificó el código auditado, no se desplegó, no se accedió a Render, credenciales, producción ni a la base de la tienda.
 
 ### Decisión recomendada
 
-Bloquear la publicación de los videos hasta DI-01. Corregir DI-02 y DI-03 antes de activar Impacto para clientes. Separar DI-04 en una entrega funcional con compatibilidad explícita. DI-05 puede resolverse con un umbral aprobado o degradación automática para equipos lentos.
+Bloquear la publicación de los videos hasta DI-01 y la mezcla completa hasta DI-04. Corregir DI-02 y DI-03 antes de activar Impacto para clientes. DI-05 puede resolverse con un umbral aprobado o degradación automática para equipos lentos.
 
 ## 2026-11-08 · Asistente analista · `chatgpt-nube/asistente-analista`
 
