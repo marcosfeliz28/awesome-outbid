@@ -759,6 +759,10 @@ export class CashController {
   @Get()
   @Permit("cash:write")
   async sessions(@CurrentUser() actor: Actor) {
+    return this.sessionsFor(actor);
+  }
+  // closedIn: solo las cerradas en ese rango y sin tope (lo usa el asistente analista).
+  async sessionsFor(actor: Actor, closedIn?: { gte: Date; lte: Date }) {
     const showExpected = canViewCashExpected(actor);
     const scope = {
       branchId: actor.branchId,
@@ -771,9 +775,9 @@ export class CashController {
       orderBy: { openedAt: "desc" },
     });
     const closed = await this.db.cashSession.findMany({
-      where: { ...scope, closedAt: { not: null } },
+      where: { ...scope, closedAt: closedIn ?? { not: null } },
       orderBy: { openedAt: "desc" },
-      take: CLOSED_SESSIONS_LIMIT,
+      ...(closedIn ? {} : { take: CLOSED_SESSIONS_LIMIT }),
     });
     const sessions = [...open, ...closed].sort(
       (a, b) => b.openedAt.getTime() - a.openedAt.getTime(),

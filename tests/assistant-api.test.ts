@@ -13,7 +13,7 @@ import {
   type AssistantDeps,
 } from "../apps/api/src/assistant";
 import { Database } from "../apps/api/src/common";
-import { ReportsController, mySales } from "../apps/api/src/reports";
+import { ReportsController, dateRange, mySales } from "../apps/api/src/reports";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -491,17 +491,60 @@ describe("plan analista contra la base real", () => {
     return { used: r.used as any[], reserved };
   };
   it("cuadre, resumen e inventario: las dos lecturas cuadran", async () => {
-    const { used, reserved } = await run(admin, [
-      { name: "cuadre_dia", input: { periodo: "mes" } },
-      { name: "resumen_ventas", input: { periodo: "mes" } },
-      { name: "inventario_bajo", input: {} },
-      { name: "cierres_caja", input: { periodo: "mes" } },
-    ]);
-    expect(reserved[0].feature).toBe(IA_ANALISTA_FEATURE);
-    for (const u of used) {
-      expect(u.error).toBeUndefined();
-      expect(u.result.verificacion.cuadra).toBe(true);
+    // Otros archivos de prueba escriben en la misma base a la vez: si entre las
+    // dos lecturas entró una venta o un cierre, se vuelve a leer (hasta 3 veces).
+    // Ventas completadas sin ningún pago registrado (datos que dejan otras
+    // pruebas): el desglose las cuenta y las formas de cobro no. Es una
+    // diferencia de verdad y el asistente debe decir que no cuadra por ese monto.
+    const sinPago = async (range: { from: string; to: string }) => {
+      const r = dateRange(range);
+      const [x] = await db.$queryRaw<{ t: unknown }[]>`
+        SELECT COALESCE(SUM(s.total), 0) AS t FROM "Sale" s
+        WHERE s."branchId" = ${admin.branchId} AND s.status = 'completed'
+          AND s."createdAt" >= ${r.gte} AND s."createdAt" <= ${r.lte}
+          AND NOT EXISTS (SELECT 1 FROM "Payment" p WHERE p."saleId" = s.id AND p."entryType" <> 'installment')`;
+      return Number(x.t);
+    };
+    const ok = async (u: any) => {
+      const v = u.result?.verificacion;
+      if (u.tool !== "cuadre_dia") return !!v?.cuadra;
+      const gap = await sinPago(u.result.range);
+      return gap === 0
+        ? v?.cuadra === true
+        : v?.cuadra === false && Math.abs(v.diferencia - gap) < 0.005;
+    };
+    let used: any[] = [],
+      reserved: any[] = [];
+    let todas: boolean[] = [];
+    for (let i = 0; i < 3; i++) {
+      ({ used, reserved } = await run(admin, [
+        { name: "cuadre_dia", input: { periodo: "mes" } },
+        { name: "resumen_ventas", input: { periodo: "mes" } },
+        { name: "inventario_bajo", input: {} },
+        { name: "cierres_caja", input: { periodo: "mes" } },
+      ]));
+      todas = await Promise.all(used.map(ok));
+      if (todas.every(Boolean)) break;
     }
+    expect(reserved[0].feature).toBe(IA_ANALISTA_FEATURE);
+    // Sin el tope de 100 de la pantalla: todos los cierres del mes.
+    const cierres = used[3].result;
+    const enBase = await db.cashSession.count({
+      where: {
+        branchId: admin.branchId,
+        closedAt: dateRange(cierres.range),
+      },
+    });
+    expect(
+      cierres.cajas.filter((c: any) => c.estado === "cerrada").length,
+    ).toBe(enBase);
+    used.forEach((u, i) => {
+      expect(u.error).toBeUndefined();
+      expect(
+        todas[i],
+        `${u.tool}: ${JSON.stringify(u.result.verificacion)}`,
+      ).toBe(true);
+    });
     const c = used[0].result;
     expect(c.verificacion.lecturas.desgloseVentas).toBe(c.ventasNetas);
     const more = await run(admin, [

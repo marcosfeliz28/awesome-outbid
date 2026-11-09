@@ -24,7 +24,7 @@ import {
   canViewCashExpected,
   denied,
 } from "./common";
-import { ReportsController, mySales } from "./reports";
+import { ReportsController, dateRange, mySales } from "./reports";
 import { GUIA_REPORTES } from "./reportes/guia";
 import { CashController } from "./cash";
 import { SalesController } from "./sales";
@@ -350,7 +350,10 @@ export type AssistantDeps = {
     query: Record<string, string>,
   ) => Promise<{ title?: string; rows: any[] }>; // GET /reports/:name
   guide?: (actor: Actor, name: string) => any; // GET /reportes/:name/guia
-  cashSessions?: (actor: Actor) => Promise<any[]>; // GET /cash-sessions
+  cashSessions?: (
+    actor: Actor,
+    range?: { from: string; to: string },
+  ) => Promise<any[]>; // GET /cash-sessions (con rango: todas las cerradas en él)
   pendingTransfers?: (actor: Actor, date?: string) => Promise<any[]>; // GET /payments/pending-transfers
   stock?: (actor: Actor) => Promise<any[]>; // GET /inventory/stock
   usage: {
@@ -619,7 +622,7 @@ async function analystTool(
     const range = rangeOf(todayIfEmpty(input), now);
     const seeExpected = canViewCashExpected(actor);
     const day = (v: any) => (v ? businessDate(new Date(v)) : null);
-    const all = await need(deps.cashSessions)(actor);
+    const all = await need(deps.cashSessions)(actor, range);
     // Abiertas abiertas hasta el fin del rango; cerradas por fecha de cierre (como «diferencias-cuadre»).
     const rows = all.filter((s) =>
       s.closedAt
@@ -1295,7 +1298,8 @@ export function liveDeps(db: Database) {
       return out;
     },
     guide: (a, name) => reports.reportGuide(name, a),
-    cashSessions: (a) => cash.sessions(a),
+    cashSessions: (a, r) =>
+      r ? cash.sessionsFor(a, dateRange(r)) : cash.sessions(a),
     pendingTransfers: (a, date) =>
       sales.pendingTransfers(a, date ? { date } : {}),
     stock: (a) => inventory.stock(a),
