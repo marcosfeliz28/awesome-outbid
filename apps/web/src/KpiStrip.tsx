@@ -4,6 +4,7 @@ import { can } from "@fitstore/shared";
 import { api, useStore } from "./api";
 import { buildKpis } from "./kpiStripModel";
 import { today } from "./helpers";
+import { CountUp } from "./impacto";
 
 // Día de negocio que se actualiza solo (copia de useBusinessDay de ExecutiveDashboard).
 function useBusinessDay() {
@@ -37,7 +38,9 @@ export function KpiStrip() {
       {kpis.map((k) => (
         <article key={k.key} className="kpi-strip-card">
           <h2>{k.label}</h2>
-          <strong className="amount">{k.value}</strong>
+          <strong className="amount">
+            <CountUp text={k.value} />
+          </strong>
           <small>{k.note}</small>
         </article>
       ))}

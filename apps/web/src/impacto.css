@@ -1,0 +1,298 @@
+/* Capa «Modo visual: Impacto» (9-nov-2026). Todo cuelga de
+   :root[data-visual="impacto"] y nunca de .pos-shell: la caja no cambia.
+   Movimiento: solo transform y opacity; tokens de packages/ui/src/tokens.css.
+   prefers-reduced-motion apaga todo lo de este archivo (bloque final).
+   Dirección: docs/diseno/DIRECCION_VISUAL_IMPACTO.md. */
+
+/* Tokens propios de la vitrina: solo para lo que se luce (cifras y gráficas). */
+:root {
+  --nx-dur-cuenta: 640ms;
+  --nx-dur-dibujo: 720ms;
+  --nx-dur-brillo: 1400ms;
+  --nx-dur-flota: 3200ms;
+  --nx-dur-aurora: 18000ms;
+  --nx-ease-entrada: cubic-bezier(0.16, 1, 0.3, 1);
+  --nx-prof-1: 0 1px 2px #1b213414, 0 6px 18px -6px #5b21b61f;
+  --nx-prof-2: 0 2px 4px #1b21341a, 0 18px 40px -12px #5b21b638;
+}
+:root[data-theme="dark"] {
+  --nx-prof-1: 0 1px 2px #0008, 0 8px 22px -8px #000c;
+  --nx-prof-2: 0 2px 6px #000a, 0 22px 48px -14px #000e;
+}
+
+/* Profundidad: tarjetas y paneles con sombra en capas (estática, sin animar). */
+:root[data-visual="impacto"]
+  .app-shell:not(.pos-shell)
+  :is(.panel, .kpi-card, .kpi-strip-card) {
+  box-shadow: var(--nx-prof-1);
+}
+:root[data-visual="impacto"]
+  .app-shell:not(.pos-shell)
+  :is(.kpi-card, .kpi-strip-card):hover {
+  box-shadow: var(--nx-prof-2);
+}
+
+/* Pestañas y filtros: barra que crece bajo la opción activa; el botón cede al pulsar. */
+:root[data-visual="impacto"] .app-shell:not(.pos-shell) .tabs button {
+  position: relative;
+  transition: transform var(--nx-dur-fast) var(--nx-ease-out);
+}
+:root[data-visual="impacto"] .app-shell:not(.pos-shell) .tabs button::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--primary);
+  transform: scaleX(0);
+  transition: transform var(--nx-dur-base) var(--nx-ease-out);
+}
+:root[data-visual="impacto"]
+  .app-shell:not(.pos-shell)
+  .tabs
+  button.active::after {
+  transform: scaleX(1);
+}
+:root[data-visual="impacto"]
+  .app-shell:not(.pos-shell)
+  :is(.tabs button, .report-group button):active {
+  transform: scale(0.97);
+}
+
+/* Cambio de vista (View Transitions): solo el contenido; menú y barra quietos. */
+:root[data-visual="impacto"] .app-shell:not(.pos-shell) .main-content {
+  view-transition-name: nx-vista;
+}
+/* Solo se fotografía el contenido: menos trabajo que capturar toda la página. */
+:root[data-visual="impacto"] {
+  view-transition-name: none;
+}
+::view-transition-old(nx-vista) {
+  animation: impacto-salida var(--nx-dur-fast) var(--nx-ease-out) both;
+}
+::view-transition-new(nx-vista) {
+  animation: impacto-entrada var(--nx-dur-base) var(--nx-ease-out) both;
+}
+@keyframes impacto-salida {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes impacto-entrada {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Gráficas que se dibujan: un velo del color del panel se retira de izquierda a derecha. */
+:root[data-visual="impacto"]
+  .app-shell:not(.pos-shell)
+  .recharts-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--surface);
+  transform-origin: right;
+  pointer-events: none;
+  animation: impacto-velo var(--nx-dur-dibujo) var(--nx-ease-entrada) both;
+}
+@keyframes impacto-velo {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Cifras que cuentan (CountUp): el texto final reserva el ancho. */
+.count-stack {
+  display: inline-grid;
+}
+.count-stack > * {
+  grid-area: 1 / 1;
+  font-variant-numeric: tabular-nums;
+}
+.count-ghost {
+  visibility: hidden;
+}
+
+/* Carga: esqueletos con un solo brillo en lugar de la rueda. */
+.loading-skeleton {
+  display: none;
+}
+:root[data-visual="impacto"] .app-shell:not(.pos-shell) .loading {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 22px;
+}
+:root[data-visual="impacto"]
+  .app-shell:not(.pos-shell)
+  .loading
+  > :is(svg, span:not(.sr-only)) {
+  display: none;
+}
+:root[data-visual="impacto"] .app-shell:not(.pos-shell) .loading-skeleton {
+  display: grid;
+  gap: 12px;
+}
+.loading-skeleton i {
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--nx-esqueleto);
+  position: relative;
+  overflow: hidden;
+}
+.loading-skeleton i:nth-child(1) {
+  height: 22px;
+  width: 40%;
+}
+.loading-skeleton i:nth-child(3) {
+  width: 85%;
+}
+.loading-skeleton i:nth-child(4) {
+  width: 60%;
+}
+.loading-skeleton i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, #ffffff73, transparent);
+  transform: translateX(-100%);
+  animation: impacto-brillo var(--nx-dur-brillo) var(--nx-ease-out) infinite;
+}
+:root[data-theme="dark"] .loading-skeleton i::after {
+  background: linear-gradient(90deg, transparent, #ffffff14, transparent);
+}
+@keyframes impacto-brillo {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Estados vacíos ilustrados: caja con destellos que flotan. */
+.empty-art {
+  display: none;
+}
+:root[data-visual="impacto"] .app-shell:not(.pos-shell) .empty .empty-orbit {
+  display: none;
+}
+:root[data-visual="impacto"] .app-shell:not(.pos-shell) .empty-art {
+  display: block;
+  width: 120px;
+  height: 96px;
+  margin: 0 auto 16px;
+  color: var(--primary);
+}
+.empty-art .flota {
+  animation: impacto-flota var(--nx-dur-flota) ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.empty-art .flota.b {
+  animation-delay: calc(var(--nx-dur-flota) / -2);
+}
+@keyframes impacto-flota {
+  to {
+    transform: translateY(-6px) rotate(12deg);
+  }
+}
+
+/* Entrada: aurora que respira detrás de la marca (capa propia, solo transform). */
+:root[data-visual="impacto"] .login-page::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(38% 30% at 30% 35%, #8b5cf640, transparent 70%),
+    radial-gradient(30% 26% at 70% 65%, #22d3ee2e, transparent 70%),
+    radial-gradient(26% 22% at 60% 20%, #e879f92e, transparent 70%);
+  pointer-events: none;
+  will-change: transform;
+  animation: impacto-aurora var(--nx-dur-aurora) ease-in-out infinite alternate;
+}
+@keyframes impacto-aurora {
+  to {
+    transform: translate3d(4%, -3%, 0) rotate(8deg) scale(1.08);
+  }
+}
+
+/* Demostración: aviso fijo de datos de ejemplo. */
+.demo-banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  border: 1px solid var(--nx-alerta-texto);
+  background: var(--nx-alerta-fondo);
+  color: var(--nx-alerta-texto);
+  font-weight: 600;
+}
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+.demo-grid .panel {
+  padding: 0 0 18px;
+}
+.demo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 22px;
+  display: grid;
+  gap: 10px;
+}
+.demo-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.visual-switch {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  max-width: 640px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-visual="impacto"]
+    .app-shell:not(.pos-shell)
+    :is(.tabs button, .tabs button::after),
+  :root[data-visual="impacto"]
+    .app-shell:not(.pos-shell)
+    .recharts-wrapper::after,
+  .loading-skeleton i::after,
+  .empty-art .flota,
+  :root[data-visual="impacto"] .login-page::before {
+    animation: none;
+    transition: none;
+  }
+  :root[data-visual="impacto"]
+    .app-shell:not(.pos-shell)
+    .recharts-wrapper::after {
+    display: none;
+  }
+  ::view-transition-old(nx-vista),
+  ::view-transition-new(nx-vista) {
+    animation: none;
+  }
+}
+.visual-switch .check-field {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  font-weight: var(--fw-label);
+}
+.visual-switch .check-field input {
+  width: 22px;
+  height: 22px;
+}

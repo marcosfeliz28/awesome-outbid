@@ -31,6 +31,7 @@ import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
 import { KpiStrip } from "./KpiStrip";
+import { CountUp } from "./impacto";
 import { kpiStripVisible } from "./kpiStripModel";
 
 const dayBefore = (date: string) =>
@@ -355,7 +356,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   <m.icon size={19} />
                 </div>
               </div>
-              <strong>{m.value}</strong>
+              <strong>
+                <CountUp text={m.value} />
+              </strong>
               <div className="kpi-note">
                 {m.trend !== undefined && (
                   <span

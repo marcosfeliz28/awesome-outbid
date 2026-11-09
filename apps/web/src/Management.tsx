@@ -85,6 +85,7 @@ import { IncentiveRates, MyIncentives } from "./Incentives";
 import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
 import { AiUsageCard } from "./AiUsage";
+import { readVisual, setVisual, withTransition } from "./impacto";
 import { InventoryImportButton } from "./InventoryImport";
 import {
   applyPendingSaleReprice,
@@ -2928,11 +2929,13 @@ export function Reports() {
                   list.map(({ id, name }) => (
                     <button
                       key={id}
-                      onClick={() => {
-                        setReport(id);
-                        setOpenGroup(group);
-                        setPage(1);
-                      }}
+                      onClick={() =>
+                        withTransition(() => {
+                          setReport(id);
+                          setOpenGroup(group);
+                          setPage(1);
+                        })
+                      }
                       className={report === id ? "active" : ""}
                     >
                       <FileText size={17} />
@@ -4138,6 +4141,35 @@ function ResetPassword({
     </Modal>
   );
 }
+// Modo visual por equipo (localStorage): la caja de este equipo no cambia.
+function VisualModeSwitch() {
+  const [on, setOn] = useState(() => readVisual() === "impacto");
+  return (
+    <div className="visual-switch">
+      <h2>Modo visual: Impacto</h2>
+      <p>
+        Más movimiento y profundidad en la entrada, el resumen, los reportes y
+        la administración de este equipo. El punto de venta no cambia y nada se
+        mueve si el equipo pide «reducir movimiento».
+      </p>
+      <label className="check-field">
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(e) => {
+            setVisual(e.target.checked ? "impacto" : "estandar");
+            setOn(e.target.checked);
+          }}
+        />
+        <span>Activar el modo Impacto en este equipo</span>
+      </label>
+      <p>
+        <a href="#demo">Abrir la demostración</a> (datos de ejemplo, no son de
+        tu negocio).
+      </p>
+    </div>
+  );
+}
 export function Configuration() {
   const user = useStore((s) => s.user)!;
   const query = useQuery({
@@ -4312,6 +4344,7 @@ export function Configuration() {
           ["users", "Usuarios y permisos"],
           ["audit", "Bitácora"],
           ["equipment", "Equipos"],
+          ["appearance", "Apariencia"],
         ].map(([id, label]) => (
           <button
             className={tab === id ? "active" : ""}
@@ -4325,6 +4358,8 @@ export function Configuration() {
       <div className="panel">
         {tab === "equipment" ? (
           <Equipment />
+        ) : tab === "appearance" ? (
+          <VisualModeSwitch />
         ) : tab === "business" ? (
           <QueryState query={query}>
             <div className="settings-summary">

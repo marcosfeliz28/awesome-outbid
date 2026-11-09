@@ -77,6 +77,8 @@ import { VoidRequests } from "./VoidRequests";
 import { TransferReconciliation } from "./TransferReconciliation";
 import { CourierPayouts } from "./CourierPayouts";
 import { POS } from "./POS";
+import { withTransition } from "./impacto";
+import { Demo } from "./Demo";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import {
   AssistantIcon,
@@ -681,12 +683,16 @@ function Shell() {
       : user && can(user.permissions, n.permission),
   );
   useRealtime();
-  const go = (id: string) => {
-    location.hash = id;
-    setPage(id);
-    setMenu(false);
-    setCommands(false);
-  };
+  const go = (id: string) =>
+    withTransition(
+      () => {
+        location.hash = id;
+        setPage(id);
+        setMenu(false);
+        setCommands(false);
+      },
+      id === "pos" || page === "pos",
+    );
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -765,7 +771,9 @@ function Shell() {
       !(pantalla === "settings" && can(user.permissions, "sale:manage")) &&
       // El desglose del mes se abre desde el panel anual; lo ve quien tiene reportes.
       !(pantalla === "month-report" && can(user.permissions, "reports:read")) &&
-      !(page === "styles" && SHOW_STYLE_GUIDE)
+      !(page === "styles" && SHOW_STYLE_GUIDE) &&
+      // Demostración (datos de ejemplo) solo para el administrador.
+      !(page === "demo" && can(user.permissions, "*"))
     )
       go(allowed[0]?.id || "products");
   }, [user, page]);
@@ -978,6 +986,7 @@ function Shell() {
     incentives: <IncentivesPage />,
     gv: <Gv />,
     assistant: <AssistantPage remaining={assistant.data?.remaining} />,
+    ...(can(user.permissions, "*") ? { demo: <Demo /> } : {}),
   };
   return (
     <div className={`app-shell ${page === "pos" ? "pos-shell" : ""}`}>
@@ -1096,7 +1105,11 @@ function Shell() {
               </span>
               <strong>
                 {current?.label ||
-                  (page === "styles" ? "Guía de estilos" : "Configuración")}
+                  (page === "styles"
+                    ? "Guía de estilos"
+                    : page === "demo"
+                      ? "Demostración"
+                      : "Configuración")}
               </strong>
             </span>
           </div>
@@ -1135,7 +1148,13 @@ function Shell() {
             </button>
             <button
               className="icon-button"
-              onClick={toggleTheme}
+              onClick={() =>
+                withTransition(() => {
+                  toggleTheme();
+                  document.documentElement.dataset.theme =
+                    useStore.getState().theme;
+                })
+              }
               aria-label={
                 theme === "light" ? "Activar modo oscuro" : "Activar modo claro"
               }
