@@ -42,6 +42,7 @@ No se editaron los diseños de Canva porque este entorno no tiene acceso autoriz
 ## Entrega técnica
 
 - **Rama:** `chatgpt-nube/ventas-calidad`
-- **SHA:** se completará después de crear el commit de la entrega.
-- **CI:** se completará después del push (`verify`, `windows-installer`, `render-images`).
+- **SHA de la entrega gráfica:** `3836f41fe96919d13ee96542d6296576c052aa4d`
+- **Pruebas locales:** PDF de presentación con 6 páginas de 960 × 540 pt; hoja de precios con 1 página A4; extracción de texto confirmó todos los precios, los 60 días y la advertencia NCF/e-CF; ambos HTML sin recursos HTTP externos; `git diff --check` pasó.
+- **CI:** se comprobará en el último commit después del push (`verify`, `windows-installer`, `render-images`).
 - **Límites:** falta una prueba física de impresión y una revisión en un teléfono real. No se desplegó, no se tocó Render, producción, credenciales ni la base de la tienda.
