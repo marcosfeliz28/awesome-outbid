@@ -133,3 +133,41 @@ jobs:
       - run: node -e "if(process.platform!=='win32') process.exit(1)"
       - run: pnpm exec vitest run tests/portabilidad.test.ts --reporter=verbose
       - run: pnpm instalador:validar
+      # Entrega el .exe (sin firma de código) como artefacto, solo en empujes a
+      # nexora-cloud, claude-pc/* y chatgpt-*/*. Corre en paralelo con verify
+      # (~35 min), así que no alarga el total. Sin secretos. Firma pendiente:
+      # instalador/README.md, «Compilado en CI y firma de código».
+      - name: Instalar NSIS si falta (Chocolatey del runner)
+        id: nsis
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/nexora-cloud' || startsWith(github.ref, 'refs/heads/claude-pc/') || startsWith(github.ref, 'refs/heads/chatgpt-'))
+        shell: pwsh
+        run: |
+          $nsis = @("${env:ProgramFiles(x86)}\NSIS\makensis.exe", "$env:ProgramFiles\NSIS\makensis.exe") | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+          if (-not $nsis) {
+            choco install nsis --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "No se pudo instalar NSIS con Chocolatey." }
+          }
+      - name: Compilar el instalador (sin firma)
+        id: exe
+        if: steps.nsis.outcome == 'success'
+        timeout-minutes: 30
+        shell: pwsh
+        run: |
+          $version = (Get-Content -LiteralPath instalador/VERSION -Raw).Trim()
+          powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -SinInstalarNSIS
+          if ($LASTEXITCODE -ne 0) { throw "La compilación del instalador falló ($LASTEXITCODE)." }
+          $name = "Nexora-POS-Setup-$version.exe"
+          $hash = (Get-FileHash -LiteralPath "instalador/dist/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash *$name" | Set-Content -LiteralPath "instalador/dist/$name.sha256.txt" -Encoding ascii
+          "SHA-256 de ${name}: $hash"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: steps.exe.outcome == 'success'
+        with:
+          name: Nexora-POS-Setup-${{ steps.exe.outputs.version }}
+          path: |
+            instalador/dist/Nexora-POS-Setup-${{ steps.exe.outputs.version }}.exe
+            instalador/dist/Nexora-POS-Setup-${{ steps.exe.outputs.version }}.exe.sha256.txt
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

@@ -1,0 +1,102 @@
+# Baja de cliente: exportar, bloquear y suprimir
+
+Procedimiento para cuando una empresa (una sucursal, `branchId`) termina su
+contrato. Lo ejecuta **solo Claude (nube) o la persona administradora del
+servidor**, con el comando de administración; **no hay botón ni endpoint**. Se
+corre desde una copia del repositorio con `DATABASE_URL` de la base que
+corresponde (Render u otra). Detalle técnico: `docs/sistema/BAJA_DE_CLIENTE.md`.
+
+Cumple la cláusula de terminación del contrato (auditoría del contrato,
+7-nov-2026, punto 3): «exportación, bloqueo y supresión a los 30/60 días».
+
+## PENDIENTE (decide la dueña, con abogado o contador)
+
+1. **Plazos.** ¿Cuántos días después de terminar se suprime? El comando exige
+   por defecto **30 días** desde «terminar» (`BAJA_DIAS_MINIMOS`). Si el
+   contrato dice 60, usar `BAJA_DIAS_MINIMOS=60`. Hasta que la dueña lo fije,
+   el contrato debe decir PENDIENTE.
+2. **Qué se conserva por ley.** El comando borra **todo** lo de la sucursal,
+   ventas, pagos y bitácora incluidos. Si la ley (p. ej. el Código Tributario,
+   que habla de 10 años) obliga a conservar ventas y pagos, la propuesta es
+   conservar **el paquete cifrado de exportación** (no la base) durante ese
+   plazo, guardado fuera del servidor, y dejarlo escrito en el contrato. Hasta
+   que el contador lo confirme, **no se suprime a ningún cliente real**.
+3. **Respaldos.** Los respaldos diarios cifrados (Drive) tomados antes de la
+   supresión siguen conteniendo los datos hasta que la rotación los elimine.
+   El contrato debe decir el plazo real de esa rotación (punto 4 de la
+   auditoría del contrato).
+4. **A quién se entrega el paquete y la clave**, por qué canal, y quién guarda
+   la clave (nunca en el mismo mensaje que el paquete).
+
+## Antes de empezar
+
+- Confirma con la dueña, por escrito, **qué sucursal** (`branchId`) se da de
+  baja y que no es la propia (la de la dueña es `main`).
+- Mira el estado y los conteos (solo lee):
+
+```bash
+cd apps/api
+pnpm baja estado --sucursal <branchId>
+```
+
+## Paso 1 · Terminar (bloquear el ingreso)
+
+```bash
+pnpm baja terminar --sucursal <branchId>
+```
+
+Deja todos los usuarios de esa sucursal inactivos (las sesiones abiertas se
+cortan en la siguiente petición), borra sus tokens y sesiones y revoca sus
+terminales. Guarda la fecha de terminación. Repetirlo no cambia la fecha.
+
+## Paso 2 · Exportar (paquete cifrado)
+
+```bash
+export BAJA_CLAVE="$(node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))')"
+pnpm baja exportar --sucursal <branchId> --salida /ruta/segura/baja-<branchId>-AAAA-MM-DD
+```
+
+- Crea un `<Tabla>.jsonl.enc` por tabla (una fila JSON por línea, cifrado
+  AES-256-GCM) y `manifiesto.json` en claro con tablas, filas y SHA-256 (sin
+  datos personales). Imprime el SHA-256 del manifiesto: anótalo.
+- `BAJA_CLAVE` debe tener 32 caracteres o más y no ser simple. **No la
+  imprimas ni la pegues en chats.** Entrégala por un canal distinto del
+  paquete.
+- La exportación debe hacerse **después** de terminar; si se hizo antes, se
+  repite (en una carpeta nueva). El paso 3 lo exige.
+- Para abrir un archivo: `pnpm baja descifrar --archivo Sale.jsonl.enc --salida Sale.jsonl`
+  (con la misma `BAJA_CLAVE`).
+- Comprueba: cada archivo descifrado tiene tantas líneas como dice el
+  manifiesto.
+
+## Paso 3 · Suprimir (con confirmación doble y fecha)
+
+Pasado el plazo (PENDIENTE 1), y solo con la confirmación de la dueña:
+
+```bash
+BAJA_CONFIRMAR="SUPRIMIR <branchId>" BAJA_DIAS_MINIMOS=30 \
+  pnpm baja suprimir --sucursal <branchId> --fecha <hoy AAAA-MM-DD> --acta /ruta/segura/acta-<branchId>.json
+```
+
+- Confirmación doble: la frase exacta `SUPRIMIR <branchId>` y la fecha de hoy
+  (zona de Santo Domingo). Si algo no coincide, no hace nada.
+- Exige que la sucursal esté terminada hace los días mínimos y exportada
+  después de terminar.
+- Antes de borrar comprueba que ninguna fila de **otra** sucursal apunta a
+  ésta ni al revés; si hay, se detiene sin borrar nada y dice dónde.
+- Todo ocurre en una transacción: o se borra todo lo de la sucursal o nada.
+- Escribe el **acta de supresión** (JSON sin datos personales: fechas, SHA-256
+  del paquete, filas borradas por tabla) y guarda su SHA-256 en la base
+  (`BranchTermination`). Repetir el comando no borra nada más ni cambia el
+  acta.
+- No toca las tablas compartidas por todas las sucursales (roles, marcas,
+  categorías de gasto, reglas de alerta) ni los intentos de ingreso, que la
+  purga automática borra a los 2/30 días.
+
+## Después
+
+- `pnpm baja estado --sucursal <branchId>`: todas las filas en 0 y
+  `suppressedAt` con fecha.
+- Guarda el acta y el SHA-256 del paquete en el expediente del cliente.
+- Anota en `docs/operacion/PENDIENTES-DUENA.md` que el cliente quedó dado de
+  baja y la fecha.
