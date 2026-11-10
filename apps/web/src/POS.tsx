@@ -863,8 +863,14 @@ export function POS({ go }: { go: (page: string) => void }) {
     typeof window !== "undefined" &&
     !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
   const startVoiceSearch = () => {
-    if (listening) {
-      recognition.current?.stop();
+    // recognition.current, no el estado listening: listening se pone en
+    // true dentro de onstart (asíncrono), así que un doble clic rápido
+    // (pantalla táctil) lo vería en false dos veces y arrancaría dos
+    // reconocimientos a la vez, dejando el micrófono abierto sin que nadie
+    // lo pueda apagar. recognition.current se asigna de una vez, antes de
+    // iniciar, así que ya corta el segundo clic.
+    if (recognition.current) {
+      recognition.current.stop();
       return;
     }
     const Recognition =
@@ -877,9 +883,22 @@ export function POS({ go }: { go: (page: string) => void }) {
     r.interimResults = false;
     r.maxAlternatives = 1;
     r.onstart = () => setListening(true);
-    r.onend = () => setListening(false);
-    r.onerror = () => {
+    r.onend = () => {
+      recognition.current = null;
       setListening(false);
+    };
+    r.onerror = (e: any) => {
+      // "aborted": el propio botón lo detuvo (clic de apagar); no es un
+      // error, no avisar nada. "not-allowed"/"service-not-allowed": sin
+      // permiso de micrófono, distinto de "no te entendí" (nunca escuchó).
+      if (e?.error === "aborted") return;
+      if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+        say(
+          "Sin permiso de micrófono: dalo en el navegador e intenta otra vez.",
+          true,
+        );
+        return;
+      }
       say("No se entendió, intenta de nuevo o escribe el nombre.", true);
     };
     r.onresult = (e: any) => {
