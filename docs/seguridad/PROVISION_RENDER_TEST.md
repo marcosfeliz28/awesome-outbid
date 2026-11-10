@@ -56,3 +56,17 @@ custom (filas 7-9 de 3.1).
 2. `GET /api/health/live` = 200 desde el entorno del ejecutor (no la laptop).
 3. Usuarios por rol (email, sin contraseña) + IDs de la sección 3.4.
 4. Confirmación de que el ejecutor solo toca `nexora-test-*`.
+
+## Ajustes finales de DeepSeek (ronda 2, 10-nov)
+1. **Caja negra estricta (modo A):** el EJECUTOR es una sesión NUEVA SIN repo (no la obrera de
+   fixtures). Solo recibe el paquete + Expediente + URL. Instrucción explícita: "No tienes
+   acceso al código fuente; si encuentras un repo en tu cwd, no lo leas; trabajas solo con los
+   documentos, el Expediente y la copia en vivo." Así los hallazgos no quedan sesgados por el
+   código.
+2. **Swagger explícito:** poner `ENABLE_SWAGGER=false` en `nexora-test-api` (no confiar solo en
+   `NODE_ENV=production`, como en `render.yaml`). El ejecutor verifica que `/api-json`,
+   `/api/docs`, `/swagger` den 404/403; si alguno da 200 = hallazgo y NO se usa como fuente.
+3. **Capa 8, medir dos veces:** el ejecutor compara las cabeceras observadas en la URL pública
+   `onrender.com` contra las declaradas en `deploy/render/nginx.conf.template`; diferencias =
+   el borde de Render añade/reescribe/enmascara. Solo las del nginx del producto son "producto";
+   lo que agregue el borde se marca "presente vía plataforma", no como hallazgo del producto.
