@@ -45,6 +45,8 @@ export default defineConfig({
       "tests/rutas-permiso.test.ts",
       "tests/rutas-permisos-script.test.ts",
       "tests/seguridad-correcciones-10nov.test.ts",
+      "tests/seguridad-correcciones-catalogo.test.ts",
+      "tests/seguridad-10nov-migraciones-postgres.test.ts",
       "packages/shared/**/*.test.ts",
       "tests/invoice.test.ts",
       "tests/merchandise-template.test.ts",

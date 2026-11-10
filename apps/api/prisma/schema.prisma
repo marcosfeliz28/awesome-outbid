@@ -72,8 +72,11 @@ model Category {
 }
 
 model Brand {
-  id   String @id @default(uuid()) @db.Uuid
-  name String @unique
+  id       String @id @default(uuid()) @db.Uuid
+  name     String
+  branchId String @default("main")
+
+  @@unique([branchId, name])
 }
 
 model Supplier {

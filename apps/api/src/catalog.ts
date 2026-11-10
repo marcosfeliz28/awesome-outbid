@@ -243,8 +243,11 @@ export class CatalogController {
   }
   @Get("categories")
   @Permit("catalog:read")
-  categories() {
-    return this.db.category.findMany({ orderBy: { createdAt: "asc" } });
+  categories(@CurrentUser() actor: Actor) {
+    return this.db.category.findMany({
+      where: { branchId: actor.branchId },
+      orderBy: { createdAt: "asc" },
+    });
   }
   @Post("categories")
   @Permit("catalog:write")
@@ -260,14 +263,17 @@ export class CatalogController {
   }
   @Get("brands")
   @Permit("catalog:read")
-  brands() {
-    return this.db.brand.findMany();
+  brands(@CurrentUser() actor: Actor) {
+    return this.db.brand.findMany({ where: { branchId: actor.branchId } });
   }
   @Post("brands")
   @Permit("catalog:write")
-  brand(@Body() body: unknown) {
+  brand(@Body() body: unknown, @CurrentUser() actor: Actor) {
     return this.db.brand.create({
-      data: parse(z.object({ name: z.string().min(2).max(80) }), body),
+      data: {
+        ...parse(z.object({ name: z.string().min(2).max(80) }), body),
+        branchId: actor.branchId,
+      },
     });
   }
   @Get("products")
