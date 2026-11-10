@@ -39,7 +39,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 ## 4. ¿Elige cuenta/banco en transferencia o tarjeta? ¿Cuál es el nombre visible?
 
-- **Transferencia:** sí. Campo **«Cuenta donde cayó»**, una **lista desplegable** («Elige la cuenta…») con las cuentas que la administración cargó en Configuración › «Cuentas de banco para transferencias (una por línea)». Si esa lista está vacía, se escribe el banco a mano. Además **«Referencia»** (obligatoria) (`apps/web/src/POS.tsx:2776-2816`; lista en `:2023`; campo de Configuración `apps/web/src/Management.tsx:4129-4137`). En la base el valor se guarda en `Payment.bank` (`apps/api/prisma/schema.prisma` modelo `Payment`) y el servidor exige banco y referencia (`apps/api/src/sales.ts:1025-1026`).
+- **Transferencia:** sí. Campo **«Cuenta donde cayó»**, una **lista desplegable** («Elige la cuenta…») con las cuentas que la administración cargó en Configuración › «Cuentas de banco para transferencias (una por línea)». Si esa lista está vacía, se escribe el banco a mano. Además **«Referencia»** (obligatoria) (`apps/web/src/POS.tsx:2776-2816`; lista en `:2023`; campo de Configuración `apps/web/src/Management.tsx:4129-4137`). En la base el valor se guarda en `Payment.bank` (`apps/api/prisma/schema.prisma` modelo `Payment`) y el servidor exige banco y referencia (`apps/api/src/sales.ts:1026-1027`).
 - **Tarjeta:** pide **«Últimos 4 dígitos»**, **«Número de aprobación»**, **«Marca»** (Visa/Mastercard/Amex) y **«Tipo de tarjeta»** (Crédito/Débito); y, si Configuración tiene lista de «Terminales de tarjeta», un campo **«Terminal»** obligatorio («Elige el terminal…») (`apps/web/src/POS.tsx:2705-2775`, lista `:2024`). El terminal elegido se guarda también en `bank` (`:1970-1971`).
 - **Los nombres de los bancos y terminales** (lo que ve la cajera en la lista) **no están en el código**: son datos de Configuración. NO ENCONTRADO en el código; hay que mirar Configuración › Negocio y reglas › Editar configuración, o `GET /settings` entrando con `entrar.py`. (En GV se agrupan en «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis»: `apps/web/src/Gv.tsx:959-972`.)
 
@@ -47,9 +47,9 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 ## 5. La nota de crédito: ¿se imprime, cómo y dónde?
 
-- Una nota de crédito nace al **devolver** una venta con método de reembolso **«Nota de crédito»** (Ventas › fila › **«Devolver»**, solo `sale:manage`, con caja propia abierta) (`apps/web/src/Management.tsx:3318-3340`, `:3639-3690`). El número de la devolución es **NC-000000** (`apps/api/src/sales.ts:3701`).
+- Una nota de crédito nace al **devolver** una venta con método de reembolso **«Nota de crédito»** (Ventas › fila › **«Devolver»**, solo `sale:manage`, con caja propia abierta) (`apps/web/src/Management.tsx:3318-3340`, `:3639-3690`). El número de la devolución es **NC-000000** (`apps/api/src/sales.ts:3702`).
 - **No se imprime sola al devolver.** Se imprime a mano: **Ventas** › abrir la venta (ícono del ojo) › botón **«Imprimir nota NC-…»** (solo `sale:manage`) (`apps/web/src/Management.tsx:3436-3450`).
-- Lo que sale es un **PDF tamaño A4** (no ticket térmico): «Nota de crédito · NC-…», «Nota interna de crédito · no fiscal», fecha, importe, saldo, motivo y el **«Código para presentar en caja»** (32 caracteres) con las condiciones de uso (`apps/api/src/sales.ts:3820-3873`, ruta `GET /returns/:id/credit-note.pdf`). Se descarga y se imprime desde el visor de PDF.
+- Lo que sale es un **PDF tamaño A4** (no ticket térmico): «Nota de crédito · NC-…», «Nota interna de crédito · no fiscal», fecha, importe, saldo, motivo y el **«Código para presentar en caja»** (32 caracteres) con las condiciones de uso (`apps/api/src/sales.ts:3821-3874`, ruta `GET /returns/:id/credit-note.pdf`). Se descarga y se imprime desde el visor de PDF.
 - Para usarla después: en el cobro, método **Nota de crédito**, escribir el código y elegir la nota (`apps/web/src/POS.tsx:2610-2654`). Si la cajera no escribe el código, necesita el PIN de un gerente (`:1872-1884`).
 
 ---

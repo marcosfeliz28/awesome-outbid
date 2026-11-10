@@ -1310,7 +1310,7 @@ Nodes (5): _atomic_write_json(), _converted_palace(), _default_comp_entry(), Enc
 
 ### Community 176 - "Community 176"
 Cohesion: 0.20
-Nodes (16): PERMISOS.md (inventario de @Permit, incompleto), Permiso customers:erase (1 uso, admin.ts:354), Advertencia: lista de permisos de inventario no completa, Permiso reports:read (9 usos), Permiso * (40 usos, administracion), ROLES.md (roles y permisos del producto), Rol admin (permiso *), Rol manager (15 permisos, incluye profit:read y customers:erase) (+8 more)
+Nodes (16): PERMISOS.md (inventario de @Permit, incompleto), Permiso customers:erase (1 uso, admin.ts:382), Advertencia: lista de permisos de inventario no completa, Permiso reports:read (9 usos), Permiso * (40 usos, administracion), ROLES.md (roles y permisos del producto), Rol admin (permiso *), Rol manager (15 permisos, incluye profit:read y customers:erase) (+8 more)
 
 ### Community 177 - "Community 177"
 Cohesion: 0.13

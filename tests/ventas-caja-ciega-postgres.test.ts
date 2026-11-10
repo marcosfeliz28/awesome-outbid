@@ -72,7 +72,7 @@ const byNumber = (rows: any[], n: string) =>
   rows.find((s: any) => s.number === n);
 // receipt.pdf de una venta; el texto sale de los streams de PDFKit.
 const receiptText = async (actor: any, number: string) => {
-  const s = await db.sale.findUniqueOrThrow({ where: { number } });
+  const s = await db.sale.findFirstOrThrow({ where: { number } });
   const res: any = new PassThrough();
   res.setHeader = () => undefined;
   const chunks: Buffer[] = [];
@@ -204,7 +204,7 @@ beforeAll(async () => {
     createdAt: new Date(Date.now() - 3 * 864e5),
   });
   // Solicitudes de anulación de la caja abierta y de la cerrada.
-  const old = await db.sale.findUniqueOrThrow({ where: { number: "QA-1" } });
+  const old = await db.sale.findFirstOrThrow({ where: { number: "QA-1" } });
   for (const saleId of [open.id, old.id])
     await db.saleVoidRequest.create({
       data: {
