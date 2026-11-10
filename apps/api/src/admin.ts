@@ -144,6 +144,34 @@ const configSchema = z.object({
     .optional(),
   cardTerminals: z.array(z.string().trim().min(3).max(80)).max(20).optional(),
 });
+// Lo que leen el POS y los recibos (apps/web POS.tsx, Tienda.tsx, Prints.tsx y
+// las reglas de crédito de @fitstore/shared). Quien no gestiona ventas no ve más.
+const POS_SETTINGS_KEYS = [
+  "name",
+  "legalId",
+  "address",
+  "phone",
+  "phone2",
+  "branchName",
+  "logo",
+  "currency",
+  "taxIncluded",
+  "sellerDiscountLimit",
+  "lowMargin",
+  "returnDays",
+  "receiptWidth",
+  "allowNegativeStock",
+  "allowOfflineSales",
+  "allowCreditSales",
+  "creditApprovalThreshold",
+  "receivableShiftLimit",
+  "ncfMode",
+  "autoPrintReceipt",
+  "usdRate",
+  "eurRate",
+  "transferAccounts",
+  "cardTerminals",
+];
 const cashMovementLimit = (data: Record<string, unknown> | undefined) =>
   typeof data?.cashMovementApprovalLimit === "number"
     ? data.cashMovementApprovalLimit
@@ -830,7 +858,7 @@ export class AdminController {
     ).data as Record<string, unknown>;
     // Instalaciones anteriores no tienen esta clave. El cliente y cualquier
     // integración reciben siempre el valor efectivo seguro, no undefined.
-    return {
+    const full = {
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
       blockZeroCostSales: data.blockZeroCostSales === true,
@@ -838,6 +866,13 @@ export class AdminController {
       receivableShiftLimit: receivableShiftLimit(data),
       requireCustomer: true,
     };
+    if (can(actor.permissions, "sale:manage")) return full;
+    return Object.fromEntries(
+      POS_SETTINGS_KEYS.filter((k) => k in full).map((k) => [
+        k,
+        (full as Record<string, unknown>)[k],
+      ]),
+    );
   }
   @Put("settings")
   @Permit("*")
