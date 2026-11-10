@@ -33,6 +33,7 @@ import {
   Volume2,
   VolumeX,
   MessageCircleQuestion,
+  Mic,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import {
@@ -221,6 +222,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       legalId: "",
     }),
     [camera, setCamera] = useState(false),
+    [listening, setListening] = useState(false),
     // 05-M2: el aviso «elige el cliente» va dentro de la ventana del cliente;
     // como aviso flotante tapaba su título.
     [pickerHint, setPickerHint] = useState(""),
@@ -233,6 +235,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     );
   const search = useRef<HTMLInputElement>(null);
   const cartList = useRef<HTMLDivElement>(null);
+  const recognition = useRef<any>(null);
   // 05-N1: el error de un escaneo se quita al abrir cualquier ventana, al
   // teclear en el buscador y al salir de la caja.
   const windowOpen =
@@ -852,6 +855,43 @@ export function POS({ go }: { go: (page: string) => void }) {
     );
   };
   const enter = () => enterText(q);
+  // Búsqueda por voz: dicta el nombre del producto y queda escrito en el
+  // buscador, con las mismas sugerencias por palabras sueltas de siempre
+  // (el micrófono solo llena el cuadro; no agrega nada solo). Botón oculto
+  // si el navegador no tiene reconocimiento de voz (Web Speech API).
+  const voiceSearchSupported =
+    typeof window !== "undefined" &&
+    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  const startVoiceSearch = () => {
+    if (listening) {
+      recognition.current?.stop();
+      return;
+    }
+    const Recognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (!Recognition) return;
+    const r = new Recognition();
+    recognition.current = r;
+    r.lang = "es-DO";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    r.onstart = () => setListening(true);
+    r.onend = () => setListening(false);
+    r.onerror = () => {
+      setListening(false);
+      say("No se entendió, intenta de nuevo o escribe el nombre.", true);
+    };
+    r.onresult = (e: any) => {
+      const text = e.results?.[0]?.[0]?.transcript as string | undefined;
+      if (text) {
+        setQ(text);
+        requestAnimationFrame(() => search.current?.focus());
+      }
+    };
+    r.start();
+  };
+  useEffect(() => () => recognition.current?.stop(), []);
   // Cuando termina la descarga se procesa la cola, en orden.
   // useLayoutEffect: corre antes de que el navegador entregue otra tecla, así
   // un Enter justo al llegar el catálogo no agrega el producto dos veces.
@@ -915,6 +955,20 @@ export function POS({ go }: { go: (page: string) => void }) {
                 enter();
               }}
             />
+            {voiceSearchSupported && (
+              <button
+                type="button"
+                className={"pos-mic" + (listening ? " listening" : "")}
+                aria-label={
+                  listening ? "Escuchando…" : "Buscar por voz"
+                }
+                aria-pressed={listening}
+                title={listening ? "Escuchando…" : "Buscar por voz"}
+                onClick={startVoiceSearch}
+              >
+                <Mic size={18} />
+              </button>
+            )}
             <kbd>F2</kbd>
           </div>
           <div className="heading-actions">
