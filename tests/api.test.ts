@@ -6188,8 +6188,8 @@ describe("Ronda 9 · revisión · dinero", () => {
     expect(restricted.status).toBe(403);
     expect(
       cents(
-        amount(adminAfter, "cash", "Ventas") -
-          amount(adminBefore, "cash", "Ventas"),
+        amount(adminAfter, "Efectivo", "Ventas") -
+          amount(adminBefore, "Efectivo", "Ventas"),
       ),
     ).toBe(731);
   });
@@ -6206,10 +6206,10 @@ describe("Ronda 9 · revisión · dinero", () => {
           rows.find((r: any) => r.Método === method)?.[column] ?? 0;
         const summary = await dashboard();
         return {
-          creditSales: at("credit", "Ventas"),
-          cashSales: at("cash", "Ventas"),
-          cashCollected: at("cash", "Cobros_de_crédito"),
-          cardCollected: at("card", "Cobros_de_crédito"),
+          creditSales: at("Crédito", "Ventas"),
+          cashSales: at("Efectivo", "Ventas"),
+          cashCollected: at("Efectivo", "Cobros_de_crédito"),
+          cardCollected: at("Tarjeta", "Cobros_de_crédito"),
           salesColumn: rows.reduce(
             (s: number, r: any) => s + (r.Ventas ?? 0),
             0,
@@ -12070,7 +12070,7 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
     expect(total(byPayment.rows, "Ventas")).toBe(500);
     expect(
       Object.fromEntries(byPayment.rows.map((r: any) => [r.Método, r.Ventas])),
-    ).toEqual({ cash: 100, card: 300, transfer: 100 });
+    ).toEqual({ Efectivo: 100, Tarjeta: 300, Transferencia: 100 });
     const sales = await ok("/reports/sales" + range, undefined, ownerToken);
     // El estado fiscal sale en español, no con la clave de la base.
     expect(new Set(sales.rows.map((r: any) => r.Estado_fiscal))).toEqual(
