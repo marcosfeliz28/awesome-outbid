@@ -314,7 +314,7 @@ model Customer {
 
 model Sale {
   id                     String       @id @default(uuid()) @db.Uuid
-  number                 String       @unique
+  number                 String
   status                 String       @default("completed")
   offlineUuid            String       @unique @db.Uuid
   requestHash            String       @default("")
@@ -382,6 +382,7 @@ model Sale {
   @@index([sellerId, createdAt])
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([cashSessionId])
+  @@unique([branchId, number])
 }
 
 model SaleVoidRequest {
@@ -515,7 +516,7 @@ model SaleReturn {
   id             String   @id @default(uuid()) @db.Uuid
   saleId         String   @db.Uuid
   sale           Sale     @relation(fields: [saleId], references: [id])
-  number         String   @unique
+  number         String
   reason         String
   total          Decimal  @db.Decimal(14, 2)
   taxTotal       Decimal  @db.Decimal(14, 2)
@@ -540,6 +541,7 @@ model SaleReturn {
   // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
   @@index([saleId])
   @@index([cashSessionId])
+  @@unique([branchId, number])
 }
 
 model CreditNote {

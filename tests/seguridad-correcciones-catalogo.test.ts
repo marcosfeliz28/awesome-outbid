@@ -46,7 +46,12 @@ describe("GET /settings: lista blanca para quien no tiene sale:manage", () => {
       settings: { findUniqueOrThrow: vi.fn().mockResolvedValue({ data }) },
     };
     const ctrl = new (AdminController as any)(db);
-    return ctrl.settings({ ...actor, role: "seller", permissions, branchId: "main" });
+    return ctrl.settings({
+      ...actor,
+      role: "seller",
+      permissions,
+      branchId: "main",
+    });
   };
   it("la cajera conserva lo del POS y pierde el resto", async () => {
     const out = await call(["catalog:read", "sale:write"]);

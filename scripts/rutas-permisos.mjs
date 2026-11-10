@@ -11,7 +11,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const VERBO = /@(Get|Post|Patch|Put|Delete)\(\s*(?:"([^"]*)"|\[([^\]]*)\])?\s*\)/;
+const VERBO =
+  /@(Get|Post|Patch|Put|Delete)\(\s*(?:"([^"]*)"|\[([^\]]*)\])?\s*\)/;
 const PERMIT = /@Permit\(([^)]+)\)/;
 // Un cierre de bloque o la cabecera del método marcan el límite del grupo de decoradores.
 const LIMITE = /^\s*\}|\)\s*\{/;
@@ -108,10 +109,10 @@ const lineas = [
   "",
 ];
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-mkdirSync(join(raiz, "docs/auditoria"), { recursive: true });
-writeFileSync(
-  join(raiz, "docs/auditoria/RUTAS_Y_PERMISOS.md"),
-  lineas.join("\n"),
-);
-console.log(`rutas=${filas.length} sinPermiso=${sinPermiso}`);
+  mkdirSync(join(raiz, "docs/auditoria"), { recursive: true });
+  writeFileSync(
+    join(raiz, "docs/auditoria/RUTAS_Y_PERMISOS.md"),
+    lineas.join("\n"),
+  );
+  console.log(`rutas=${filas.length} sinPermiso=${sinPermiso}`);
 }

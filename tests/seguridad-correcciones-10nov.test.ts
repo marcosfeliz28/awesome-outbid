@@ -44,3 +44,20 @@ describe("editableSale(): bloqueo por sucursal", () => {
     expect(values).toContain("otra");
   });
 });
+
+import { documentNumber } from "../apps/api/src/common";
+
+describe("documentNumber(): numeración por sucursal", () => {
+  it("main conserva el formato exacto de siempre", () => {
+    expect(documentNumber("FS", "main", 1)).toBe("FS-0000001");
+    expect(documentNumber("FS", "main", 1234567)).toBe("FS-1234567");
+    expect(documentNumber("NC", "main", 42)).toBe("NC-000042");
+  });
+  it("otra sucursal con el mismo contador da un número distinto al de main", () => {
+    const otra = documentNumber("FS", "sucursal2", 1);
+    expect(otra).toBe("FS-SAL2-0000001");
+    expect(otra).not.toBe(documentNumber("FS", "main", 1));
+    expect(documentNumber("NC", "sucursal2", 1)).toBe("NC-SAL2-000001");
+    expect(documentNumber("FS", "sucursal3", 1)).not.toBe(otra);
+  });
+});

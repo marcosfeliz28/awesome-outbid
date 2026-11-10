@@ -886,6 +886,25 @@ export function safeErrorMessage(error: any): string {
 // Ediciones de factura de la administración (orden 18-oct): solo ventas
 // vigentes y hasta 7 días después de hechas. Bloquea la venta.
 export const EDIT_DAYS = 7;
+
+// Número de factura (FS) o devolución (NC). "main" (la tienda en vivo) conserva
+// el formato impreso de siempre; otra sucursal lleva un prefijo corto para que
+// su número nunca se confunda con el de otra.
+// shortcut: prefijo = últimos 4 caracteres alfanuméricos de branchId; si dos
+// sucursales los comparten, solo se parecen en pantalla (la base las separa por branchId).
+export function documentNumber(
+  kind: "FS" | "NC",
+  branchId: string,
+  value: number,
+) {
+  const digits = String(value).padStart(kind === "FS" ? 7 : 6, "0");
+  if (branchId === "main") return `${kind}-${digits}`;
+  const prefix = branchId
+    .replace(/[^A-Za-z0-9]/g, "")
+    .slice(-4)
+    .toUpperCase();
+  return `${kind}-${prefix}-${digits}`;
+}
 export async function editableSale(tx: any, saleId: string, actor: Actor) {
   await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
   const sale = await tx.sale.findFirst({

@@ -59,6 +59,7 @@ import {
   conflict,
   denied,
   editableSale,
+  documentNumber,
   json,
   safeErrorMessage,
   isUnexpectedError,
@@ -1146,7 +1147,7 @@ export class SalesController {
             : "cashier_limit";
         const sale = await tx.sale.create({
           data: {
-            number: "FS-" + String(counter.value).padStart(7, "0"),
+            number: documentNumber("FS", actor.branchId, counter.value),
             offlineUuid: input.offlineUuid,
             requestHash,
             customerId: input.customerId,
@@ -3924,7 +3925,7 @@ export class SalesController {
       const row = await tx.saleReturn.create({
         data: {
           saleId: sale.id,
-          number: "NC-" + String(counter.value).padStart(6, "0"),
+          number: documentNumber("NC", actor.branchId, counter.value),
           reason: data.reason,
           total: money(total),
           taxTotal: money(tax),
