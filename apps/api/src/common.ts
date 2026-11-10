@@ -625,10 +625,16 @@ export function safe<T>(value: T, actor: Actor): T {
       ["expectedDate", "freight", "supplierInvoice", "goods", "orderId"].some(
         (key) => Object.hasOwn(v, key),
       );
+    // SupplierPayment solo trae supplierId + amount; un pago de venta trae saleId.
+    const supplierPayment =
+      Object.hasOwn(v, "supplierId") && !Object.hasOwn(v, "saleId");
     return Object.fromEntries(
       Object.entries(v)
         .filter(
-          ([key]) => publicKey(key) && !(procurementRecord && key === "total"),
+          ([key]) =>
+            publicKey(key) &&
+            !(procurementRecord && key === "total") &&
+            !(supplierPayment && key === "amount"),
         )
         .map(([key, item]) => [key, sanitize(item, key)]),
     );
@@ -881,7 +887,7 @@ export function safeErrorMessage(error: any): string {
 // vigentes y hasta 7 días después de hechas. Bloquea la venta.
 export const EDIT_DAYS = 7;
 export async function editableSale(tx: any, saleId: string, actor: Actor) {
-  await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid FOR UPDATE`;
+  await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
   const sale = await tx.sale.findFirst({
     where: { id: saleId, branchId: actor.branchId },
     include: { cashSession: { select: { closedAt: true } } },
