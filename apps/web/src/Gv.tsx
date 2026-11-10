@@ -25,6 +25,9 @@ type Payment = {
   rejectReason: string | null;
   createdByName: string | null;
   verifiedByName: string | null;
+  currency: string;
+  rate: string | null;
+  amountDop: string | null;
 };
 type Enrollment = {
   id: string;
@@ -89,6 +92,22 @@ const CLOSED = new Set(["cancelada", "reembolsada"]);
 const money = (value: string | number) => (
   <span className="gv-money">{formatMoney(value)}</span>
 );
+// Un pago en USD guarda su monto en dólares en `amount`; mostrarlo con
+// formatMoney (que siempre antepone "RD$") lo hace leer como si fuera pesos.
+const paymentAmount = (p: Payment) =>
+  p.currency === "USD" ? (
+    <span className="gv-money">
+      US$ {Number(p.amount).toLocaleString("es-DO", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}
+      {p.rate && p.amountDop
+        ? ` × ${p.rate} = ${formatMoney(p.amountDop)}`
+        : ""}
+    </span>
+  ) : (
+    money(p.amount)
+  );
 const dateText = (value: string) =>
   new Date(value + "T12:00:00").toLocaleDateString("es-DO", {
     day: "numeric",
@@ -770,7 +789,7 @@ function PaymentList({ enrollment }: { enrollment: Enrollment }) {
             {p.reference && " · Ref. " + p.reference}
           </span>
           <span>
-            {money(p.amount)}{" "}
+            {paymentAmount(p)}{" "}
             {p.rejectedAt ? (
               <Badge tone="danger">Rechazado</Badge>
             ) : p.verified ? (
