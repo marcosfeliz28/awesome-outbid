@@ -76,7 +76,15 @@ async function bootstrap() {
     SwaggerModule.setup("api/docs", app, document);
   }
   app.enableShutdownHooks();
-  await app.listen(Number(process.env.PORT || 3001), "0.0.0.0");
+  // Producción (Render) y el instalador de Windows necesitan "0.0.0.0" para
+  // que el proxy/servicio del sistema alcance la API; no cambiar el default.
+  // API_HOST es solo para copias de prueba locales (10-nov, aviso de Claude
+  // PC): fijarla a "127.0.0.1" evita que otro equipo de la misma red LAN
+  // alcance la copia mientras se hacen pruebas de seguridad.
+  await app.listen(
+    Number(process.env.PORT || 3001),
+    process.env.API_HOST?.trim() || "0.0.0.0",
+  );
 }
 bootstrap().catch((error) => {
   captureApiException(error, "startup");

@@ -4,20 +4,20 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 
 ## 1. Qué es
 
-- GV es la **empresa hermana** de Grupo MacGen: cursos de maquillaje, citas de maquillaje y prospectos («interesadas»). La pantalla dice: «Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta.» (`apps/web/src/Gv.tsx:124-127`). Es un **registro de seguimiento**, no factura ni caja (`apps/web/src/Gv.tsx:1-2`).
+- GV es la **empresa hermana** de Grupo MacGen: cursos de maquillaje, citas de maquillaje y prospectos («interesadas»). La pantalla dice: «Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta.» (`apps/web/src/Gv.tsx:143-146`). Es un **registro de seguimiento**, no factura ni caja (`apps/web/src/Gv.tsx:1-2`).
 - Los **productos** que se venden en los cursos (sets de brochas, Amave) siguen siendo ventas de MacGen en el **Punto de venta**; hay una categoría con color propio rosado para GV en la caja (`apps/web/src/POS.tsx:1545-1550`) y los servicios se venden sin existencia (unidad «servicio», `packages/shared/src/index.ts` `isService`). GV solo lleva el curso y los servicios en su módulo.
-- Los cobros de GV caen en las cuentas de Génesis, según la dueña (`docs/coordinacion/MODULO-GV.md:3`). En la pantalla de pago, el banco se escoge de la lista de Configuración agrupada en «Grupo Génesis» y «Grupo Macgen»: los nombres que contienen «génesis» van al primer grupo, el resto al segundo (`apps/web/src/Gv.tsx:951-972`; `apps/api/src/gv-money.ts:164-176`). Es la misma lista de «Cuentas de banco para transferencias» y «Terminales de tarjeta» de Configuración.
+- Los cobros de GV caen en las cuentas de Génesis, según la dueña (`docs/coordinacion/MODULO-GV.md:3`). En la pantalla de pago, el banco se escoge de la lista de Configuración agrupada en «Grupo Génesis» y «Grupo Macgen»: los nombres que contienen «génesis» van al primer grupo, el resto al segundo (`apps/web/src/Gv.tsx:970-991`; `apps/api/src/gv-money.ts:164-176`). Es la misma lista de «Cuentas de banco para transferencias» y «Terminales de tarjeta» de Configuración.
 - Comprobantes fiscales de GV (RNC): la dueña los dejó para después (`docs/coordinacion/MODULO-GV.md:54`). No hay NCF en GV.
 
 ## 2. Dónde está en el menú y cómo se llama cada sección
 
-- Ítem del menú: **«GV Makeup Studio»**, permiso `gv:read` (`apps/web/src/App.tsx:290`). Título dentro de la pantalla: **«Cursos y cobros»**, antetítulo «GV MAKEUP STUDIO» (`apps/web/src/Gv.tsx:123-124`).
-- **Pestañas internas** (`apps/web/src/Gv.tsx:131-176`):
+- Ítem del menú: **«GV Makeup Studio»**, permiso `gv:read` (`apps/web/src/App.tsx:290`). Título dentro de la pantalla: **«Cursos y cobros»**, antetítulo «GV MAKEUP STUDIO» (`apps/web/src/Gv.tsx:142-143`).
+- **Pestañas internas** (`apps/web/src/Gv.tsx:150-195`):
 
 | Pestaña (etiqueta exacta) | Qué es                                                                                                                                                                  | Permiso para verla                 |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | **Cursos**                | Lista de cursos y, al abrir uno, sus inscripciones.                                                                                                                     | `gv:read`                          |
-| **Citas**                 | Citas de maquillaje (servicios). **Este es el nombre de la sección de citas** (`Gv.tsx:147`); el componente se llama `GvAppointments` (`apps/web/src/GvCitas.tsx:126`). | `gv:read`                          |
+| **Citas**                 | Citas de maquillaje (servicios). **Este es el nombre de la sección de citas** (`Gv.tsx:166`); el componente se llama `GvAppointments` (`apps/web/src/GvCitas.tsx:126`). | `gv:read`                          |
 | **Interesadas**           | Prospectos (`apps/web/src/GvInteresadas.tsx`).                                                                                                                          | `gv:read`                          |
 | **Por verificar**         | Transferencias de GV pendientes de verificar.                                                                                                                           | `gv:read` (verificar: `gv:verify`) |
 | **Reportes**              | Ingresos y pendientes.                                                                                                                                                  | `gv:reports`                       |
@@ -26,7 +26,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 
 ## 3. Cursos
 
-- Lista de tarjetas: nombre, tipo · fecha, «N / cupo inscritas · precio», «Pagado … · Pendiente …» (`Gv.tsx:214-232`). Botón **«Nuevo curso»** (`:199`).
+- Lista de tarjetas: nombre, tipo · fecha, «N / cupo inscritas · precio», «Pagado … · Pendiente …» (`Gv.tsx:233-251`). Botón **«Nuevo curso»** (`:199`).
 - Formulario «Nuevo curso» / «Editar curso» (`:276-342`): **Nombre**, **Tipo** (Automaquillaje, Brazilian, Personalizado, Otro), **Fecha** (editable: así se «cambia la fecha»), **Precio (RD$)**, **Cupo**, **Activo**.
 - **Cupo:** se muestra «inscritas / cupo»; ocupan cupo las inscritas con estado Activa o No asistió (`apps/api/src/gv.ts:108-109`, `:181`). En el código revisado **no hay validación que bloquee** inscribir pasado el cupo (solo se cuenta); la decisión D1 «bloquear o avisar» está pendiente de la dueña (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:23`).
 - Al abrir un curso: botones **«← Cursos»**, **«Editar curso»**, **«Nueva inscripción»** (`:363-372`).
@@ -34,7 +34,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 
 ## 4. Inscripciones (tabla del curso)
 
-**Sí, la tabla muestra PRECIO, PAGADO y PENDIENTE.** Columnas exactas, en este orden (`apps/web/src/Gv.tsx:434-442`):
+**Sí, la tabla muestra PRECIO, PAGADO y PENDIENTE.** Columnas exactas, en este orden (`apps/web/src/Gv.tsx:453-461`):
 
 `CLIENTA` · `TELÉFONO` · `PRECIO` · `PAGADO` · `PENDIENTE` · `ESTADO` · `ASISTIÓ` · `SET` · (acciones)
 
@@ -51,16 +51,16 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 
 ## 5. Pagos y conceptos de pago
 
-- Se registran con el botón **«Pago»** de la inscripción o de la cita: ventana **«Pago de <clienta>»** (`Gv.tsx:866`, `apps/web/src/GvCitas.tsx:559`) con **Fecha**, **Monto (RD$)**, **Concepto**, **Método** y, según el método, **Banco** (transferencia) o **Terminal** (tarjeta) y **Referencia**.
-- **Conceptos** (exactos, `Gv.tsx:75-82`, `GvCitas.tsx:61-68`): **Separo**, **Pago completo**, **Restante**, **Segundo pago**, **Tercer pago**, **Otro**. En la base: `separo | completo | restante | segundo | tercero | otro` (`apps/api/src/gv-money.ts:16-23`).
-- **Métodos** (`Gv.tsx:83-87`): **Efectivo**, **Transferencia**, **Tarjeta**.
+- Se registran con el botón **«Pago»** de la inscripción o de la cita: ventana **«Pago de <clienta>»** (`Gv.tsx:885`, `apps/web/src/GvCitas.tsx:559`) con **Fecha**, **Monto (RD$)**, **Concepto**, **Método** y, según el método, **Banco** (transferencia) o **Terminal** (tarjeta) y **Referencia**.
+- **Conceptos** (exactos, `Gv.tsx:78-85`, `GvCitas.tsx:61-68`): **Separo**, **Pago completo**, **Restante**, **Segundo pago**, **Tercer pago**, **Otro**. En la base: `separo | completo | restante | segundo | tercero | otro` (`apps/api/src/gv-money.ts:16-23`).
+- **Métodos** (`Gv.tsx:86-90`): **Efectivo**, **Transferencia**, **Tarjeta**.
   - Efectivo: no pide banco.
-  - Transferencia: **Banco** (lista) y **Referencia** obligatorios (`apps/web/src/Gv.tsx:897-923`; API: «es obligatorio / es obligatoria en una transferencia», `apps/api/src/gv-money.ts:192-210`).
-  - Tarjeta: **no pide banco**. Muestra **Terminal** (la lista de «Terminales de tarjeta» de Configuración si tiene valores; si está vacía, el valor fijo «Terminal GV») y **Referencia** obligatoria (aprobación, lote o voucher) (`apps/web/src/Gv.tsx:978-1008`; API: `cardDetails` y la terminal de la lista, `apps/api/src/gv-money.ts:214-230`). El dinero de tarjeta se registra en el **área GV / Grupo Génesis**, sin cuenta de banco (respuesta de la dueña): la API guarda `destination = "gv"` en el pago (columna opcional, nula en efectivo y transferencia) y, si no llega terminal, `bank = "Terminal GV"`. No se inventó nombre de terminal ni de cuenta.
-- **Estados de un pago**: `Verificado` (insignia verde), `Por verificar` (amarilla) o `Rechazado` (roja) (`Gv.tsx:773-781`). **Efectivo y tarjeta quedan verificados al registrarse; la transferencia queda por verificar** hasta que gerencia/administración la verifique (`docs/coordinacion/MODULO-GV.md:74`; esquema `apps/api/prisma/schema.prisma` modelo `GvPayment`, campo `verified`).
+  - Transferencia: **Banco** (lista) y **Referencia** obligatorios (`apps/web/src/Gv.tsx:916-942`; API: «es obligatorio / es obligatoria en una transferencia», `apps/api/src/gv-money.ts:192-210`).
+  - Tarjeta: **no pide banco**. Muestra **Terminal** (la lista de «Terminales de tarjeta» de Configuración si tiene valores; si está vacía, el valor fijo «Terminal GV») y **Referencia** obligatoria (aprobación, lote o voucher) (`apps/web/src/Gv.tsx:997-1027`; API: `cardDetails` y la terminal de la lista, `apps/api/src/gv-money.ts:214-230`). El dinero de tarjeta se registra en el **área GV / Grupo Génesis**, sin cuenta de banco (respuesta de la dueña): la API guarda `destination = "gv"` en el pago (columna opcional, nula en efectivo y transferencia) y, si no llega terminal, `bank = "Terminal GV"`. No se inventó nombre de terminal ni de cuenta.
+- **Estados de un pago**: `Verificado` (insignia verde), `Por verificar` (amarilla) o `Rechazado` (roja) (`Gv.tsx:792-799`). **Efectivo y tarjeta quedan verificados al registrarse; la transferencia queda por verificar** hasta que gerencia/administración la verifique (`docs/coordinacion/MODULO-GV.md:74`; esquema `apps/api/prisma/schema.prisma` modelo `GvPayment`, campo `verified`).
 - **Reglas de dinero** (`apps/api/src/gv-money.ts:1-8`): lo pagado cuenta solo lo verificado; «por verificar» va aparte; **ningún cobro puede superar el total** (contando lo por verificar) y el total no baja de lo cobrado; cancelada o reembolsada no aceptan pagos.
-- **Anular un pago** (botón **«Anular»**, con motivo de mínimo 3 letras, quien tenga `gv:write`): deja de contar, queda en auditoría y se registra el correcto con un pago nuevo (`Gv.tsx:743-757`, `:677-686`; API `POST /gv/payments/:id/void`, `apps/api/src/gv.ts:493-544`). No se anula en una inscripción reembolsada (`gv.ts:524`).
-- **Verificar o rechazar** (pestaña **«Por verificar»**, botones **«Verificar»** / **«Rechazar»**, el rechazo pide motivo): solo `gv:verify` (administración y gerencia), nunca quien registró el pago salvo `*`, solo transferencias pendientes y una sola vez (`Gv.tsx:1055`; API `POST /gv/payments/:id/review`, `apps/api/src/gv.ts:545-616`, mensajes `:472-492`). Lista: `GET /gv/transfers/pending` (`gv.ts:968`). Esta pantalla muestra «No hay transferencias por verificar.» si está vacía (`Gv.tsx:1111`).
+- **Anular un pago** (botón **«Anular»**, con motivo de mínimo 3 letras, quien tenga `gv:write`): deja de contar, queda en auditoría y se registra el correcto con un pago nuevo (`Gv.tsx:762-776`, `:677-686`; API `POST /gv/payments/:id/void`, `apps/api/src/gv.ts:493-544`). No se anula en una inscripción reembolsada (`gv.ts:524`).
+- **Verificar o rechazar** (pestaña **«Por verificar»**, botones **«Verificar»** / **«Rechazar»**, el rechazo pide motivo): solo `gv:verify` (administración y gerencia), nunca quien registró el pago salvo `*`, solo transferencias pendientes y una sola vez (`Gv.tsx:1074`; API `POST /gv/payments/:id/review`, `apps/api/src/gv.ts:545-616`, mensajes `:472-492`). Lista: `GET /gv/transfers/pending` (`gv.ts:968`). Esta pantalla muestra «No hay transferencias por verificar.» si está vacía (`Gv.tsx:1130`).
 
 ## 6. Citas (pestaña «Citas»)
 
@@ -76,7 +76,7 @@ Pestaña **«Interesadas»** (`Gv.tsx:151-158`, `apps/web/src/GvInteresadas.tsx:
 
 ## 8. Reportes (pestaña «Reportes», `gv:reports`)
 
-Filtros **Desde** / **Hasta** (`Gv.tsx:1153-1161`). Secciones (`:970-1037`): **Ingresos** (verificado, reembolsos, neto y por verificar), tablas **Por día**, **Por método**, **Por banco**, **Por empleada**; **«Ocupación y pendientes por curso»** (columnas CURSO, INSCRITAS, ASISTIERON, SETS, PAGADO, PENDIENTE); y **«Pendientes por clienta»**. API `GET /gv/reports` (`apps/api/src/gv.ts:617-758`).
+Filtros **Desde** / **Hasta** (`Gv.tsx:1172-1180`). Secciones (`:970-1037`): **Ingresos** (verificado, reembolsos, neto y por verificar), tablas **Por día**, **Por método**, **Por banco**, **Por empleada**; **«Ocupación y pendientes por curso»** (columnas CURSO, INSCRITAS, ASISTIERON, SETS, PAGADO, PENDIENTE); y **«Pendientes por clienta»**. API `GET /gv/reports` (`apps/api/src/gv.ts:617-758`).
 
 ## 9. Quién puede qué en GV
 

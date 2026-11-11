@@ -25,7 +25,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 15  | **Reportes**                 | `reports:read`                                          | `Reports` (`apps/web/src/Management.tsx:2855`)                           | 271                |
 | 16  | **Alertas**                  | `alerts:write`                                          | `Alerts` (`apps/web/src/Management.tsx:3084`)                            | 275                |
 | 17  | **Incentivos**               | `sale:manage`                                           | `IncentivesPage` (`apps/web/src/Incentives.tsx:287`)                     | 278                |
-| 18  | **GV Makeup Studio**         | `gv:read`                                               | `Gv` (`apps/web/src/Gv.tsx:113`)                                         | 282                |
+| 18  | **GV Makeup Studio**         | `gv:read`                                               | `Gv` (`apps/web/src/Gv.tsx:132`)                                         | 282                |
 | 19  | **Preguntar a Norexos**      | `reports:read` o cajera, con `ANTHROPIC_API_KEY` y plan | `AssistantPage` (`apps/web/src/AssistantPanel.tsx`) — ver `IA_VENTAS.md` | —                  |
 
 Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
@@ -134,8 +134,8 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
 
 ## GV Makeup Studio
 
-- **Etiqueta:** «GV Makeup Studio». **Permiso:** `gv:read`. **Componente:** `Gv`, `apps/web/src/Gv.tsx:113`. Título en pantalla: «Cursos y cobros» (`:122`).
-- **Pestañas internas:** «Cursos», «Citas», «Interesadas», «Por verificar» y «Reportes» (esta última solo con `gv:reports`) (`apps/web/src/Gv.tsx:131-176`).
+- **Etiqueta:** «GV Makeup Studio». **Permiso:** `gv:read`. **Componente:** `Gv`, `apps/web/src/Gv.tsx:132`. Título en pantalla: «Cursos y cobros» (`:122`).
+- **Pestañas internas:** «Cursos», «Citas», «Interesadas», «Por verificar» y «Reportes» (esta última solo con `gv:reports`) (`apps/web/src/Gv.tsx:150-195`).
 - Detalle completo: `GV.md`.
 
 ## Configuración (lo que el equipo llama «gestión»)
