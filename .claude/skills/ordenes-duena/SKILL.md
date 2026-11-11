@@ -91,3 +91,6 @@ Todo lo de software que Mercancía no pueda hacer (código, pruebas, CI, mezclar
 
 ## Regla: no vender sin costo (orden de la dueña, 8-nov-2026)
 Claude (Norexos 2) **no crea ninguna factura** de un producto cuyo costo (`costAvg`) sea 0 o esté vacío. Antes de cada `POST /sales`, leer el costo de cada variante; si falta, parar, avisar a la dueña con la lista de lo que falta y pedirle el costo. Cuando ella lo dé, ponerlo (`PATCH /variants/:id`) y recién vender. Al crear un producto nuevo se pide el costo en ese momento. Cada mes (y al pedirlo) se entrega la lista de productos sin costo y el informe de márgenes del mes anterior y del actual.
+
+## Regla: Jade y Wendy comparten el mismo Verifone (orden de la dueña, 11-nov-2026)
+Cada una cuadra **su propia caja**: efectivo, transferencias y tarjeta facturada son independientes (lo de una no se mezcla con la otra). Pero el **voucher/lote** del Verifone es uno solo para las dos. Al cuadrar tarjeta: **total del voucher = tarjeta de la caja de Jade + tarjeta de la caja de Wendy** del mismo día y lote. Una diferencia en tarjeta se busca entre las dos cajas antes de marcarla como faltante. Ambas cierran su caja con su propio monto de tarjeta y el mismo número de lote.
