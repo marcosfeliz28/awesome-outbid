@@ -114,9 +114,9 @@ Nota (pendiente de comprobar en vivo): el botón «Configuración» lo ve un ger
 
 | Situación                                                                                                                              | Cita                                                                    |
 | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Descuento mayor al «Descuento máximo del vendedor (%)» (10 % de fábrica)                                                               | `POS.tsx:1866-1871`; `sales.ts:628-712`                                 |
+| Descuento mayor al «Descuento máximo del vendedor (%)» (10 % de fábrica)                                                               | `POS.tsx:1939-1944`; `sales.ts:628-712`                                 |
 | Crédito/contraentrega sobre el umbral (RD$ 1,000), deuda del cliente, tope del turno (RD$ 3,000) o ventas a crédito deshabilitadas     | `packages/shared/src/index.ts:404-445`                                  |
-| Pagar con nota de crédito sin escribir su código impreso                                                                               | `POS.tsx:1872-1884`; `sales.ts:699-701`                                 |
+| Pagar con nota de crédito sin escribir su código impreso                                                                               | `POS.tsx:1945-1957`; `sales.ts:699-701`                                 |
 | Salida de efectivo del turno sobre el límite (RD$ 1,000 de fábrica)                                                                    | `apps/api/src/cash.ts:975-1013`, `:1010`                                |
 | Cerrar la caja con descuadre de tarjeta, efectivo o dólares (cajera, o gerente cerrando SU caja); desde el 2.º intento fallido siempre | `cash.ts:1248-1300`                                                     |
 | Cerrar con «Vale de caja» (PIN de **otro** gerente)                                                                                    | `cash.ts:1139-1165`                                                     |
