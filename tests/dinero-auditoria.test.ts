@@ -873,12 +873,11 @@ describe("Auditoría 01 · dinero", () => {
     const sold = (report: any, method: string) =>
       Number(report.rows.find((r: any) => r.Método === method)?.Ventas ?? 0);
     expect(
-      sold(afterReport, "transfer") - sold(midReport, "transfer"),
+      sold(afterReport, "Transferencia") - sold(midReport, "Transferencia"),
     ).toBeCloseTo(-700, 2);
-    expect(sold(afterReport, "credit") - sold(midReport, "credit")).toBeCloseTo(
-      700,
-      2,
-    );
+    expect(
+      sold(afterReport, "Crédito") - sold(midReport, "Crédito"),
+    ).toBeCloseTo(700, 2);
     // El informe de cierre por forma de pago tampoco la cuenta como cobrada.
     const closeReport = await ok(
       "/reports/venta-por-forma-pago?cashSessionId=" + c.cash.id,

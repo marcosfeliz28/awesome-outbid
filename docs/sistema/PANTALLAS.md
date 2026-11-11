@@ -10,7 +10,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | --- | ---------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------ |
 | 1   | **Mercancía**                | `inventory:write`                                       | `Merchandise` (`apps/web/src/Merchandise.tsx:279`)                       | 197                |
 | 2   | **Resumen**                  | `reports:read`                                          | `Dashboard` (`apps/web/src/Dashboard.tsx:108`)                           | 203                |
-| 3   | **Punto de venta**           | `sale:write`                                            | `POS` (`apps/web/src/POS.tsx:193`)                                       | 209                |
+| 3   | **Punto de venta**           | `sale:write`                                            | `POS` (`apps/web/src/POS.tsx:194`)                                       | 209                |
 | 4   | **Ventas**                   | `sale:write`                                            | `SalesHistory` (`apps/web/src/Management.tsx:3206`)                      | 213                |
 | 5   | **Solicitudes de anulación** | `sale:write`                                            | `VoidRequests` (`apps/web/src/VoidRequests.tsx:15`)                      | 216                |
 | 6   | **Conciliar transferencias** | `*`                                                     | `TransferReconciliation` (`apps/web/src/TransferReconciliation.tsx:28`)  | 222                |
@@ -43,7 +43,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
 
 ## Punto de venta (Caja registradora)
 
-- **Etiqueta:** «Punto de venta». **Permiso:** `sale:write`. **Componente:** `apps/web/src/POS.tsx:193`.
+- **Etiqueta:** «Punto de venta». **Permiso:** `sale:write`. **Componente:** `apps/web/src/POS.tsx:194`.
 - **Qué hace:** catálogo de tarjetas a la izquierda, carrito «Venta actual» a la derecha, botón «Cobrar».
 - **Flujo corto:** abrir caja (pantalla «Caja») → elegir cliente → un clic en la tarjeta del producto (o escanear/buscar) → descuentos si aplican → «Cobrar» → «Agregar pago» → «Finalizar venta» → «Imprimir recibo».
 - Detalle completo: `FLUJO_CAJA_POS.md`.
@@ -77,7 +77,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
 ## Envíos del mensajero
 
 - **Etiqueta:** «Envíos del mensajero». **Permiso:** `*`. **Componente:** `apps/web/src/CourierPayouts.tsx:26`.
-- **Qué hace:** lista los envíos pendientes de pago al mensajero («Pendientes», `:175`), se seleccionan y se pulsa «Marcar como pagado» (`:219-226`); «Historial de pagados» (`:230`). El envío va aparte del total de la venta: no es venta, ganancia ni ITBIS (`apps/web/src/POS.tsx:2894-2898`).
+- **Qué hace:** lista los envíos pendientes de pago al mensajero («Pendientes», `:175`), se seleccionan y se pulsa «Marcar como pagado» (`:219-226`); «Historial de pagados» (`:230`). El envío va aparte del total de la venta: no es venta, ganancia ni ITBIS (`apps/web/src/POS.tsx:2967-2971`).
 
 ## Productos
 
@@ -112,12 +112,12 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
 
 ## Promociones
 
-- **Etiqueta:** «Promociones». **Permiso:** `promotions:write`. **Componente:** `Promotions`, `apps/web/src/Management.tsx:2445`. Título: «Dale una nueva oportunidad» (`:2451`). Pestañas «Candidatos a liquidación» y «Mis promociones» (`:2475-2485`); botón «Nueva promoción». Tipos de promoción que entiende la caja: porcentaje, monto, precio especial, NxM y segunda a mitad (`apps/web/src/POS.tsx:117-146`). **La caja aplica el descuento; no se cambia el precio del producto.**
+- **Etiqueta:** «Promociones». **Permiso:** `promotions:write`. **Componente:** `Promotions`, `apps/web/src/Management.tsx:2445`. Título: «Dale una nueva oportunidad» (`:2451`). Pestañas «Candidatos a liquidación» y «Mis promociones» (`:2475-2485`); botón «Nueva promoción». Tipos de promoción que entiende la caja: porcentaje, monto, precio especial, NxM y segunda a mitad (`apps/web/src/POS.tsx:118-147`). **La caja aplica el descuento; no se cambia el precio del producto.**
 
 ## Reportes
 
 - **Etiqueta:** «Reportes». **Permiso:** `reports:read`. **Componente:** `Reports`, `apps/web/src/Management.tsx:2855`. Título: «Los números cuentan tu historia» (`:2861`).
-- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:2911`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:785`; carpeta `apps/api/src/reportes/`).
+- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:2911`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:786`; carpeta `apps/api/src/reportes/`).
 
 ## Resumen
 

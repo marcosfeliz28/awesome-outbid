@@ -8,7 +8,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Arqueo / «Cerrar y arquear»** — Contar el dinero de la caja y compararlo con lo que el sistema espera (`apps/web/src/Management.tsx:1707`).
 
-**B01 / B02** — Tipos de comprobante fiscal que se pueden _solicitar_ si la «Preparación de NCF» está activa: B01 «Crédito fiscal» (pide RNC o cédula) y B02 «Consumidor final». El sistema solo prepara la solicitud; no emite el comprobante (`apps/web/src/POS.tsx:2580-2608`).
+**B01 / B02** — Tipos de comprobante fiscal que se pueden _solicitar_ si la «Preparación de NCF» está activa: B01 «Crédito fiscal» (pide RNC o cédula) y B02 «Consumidor final». El sistema solo prepara la solicitud; no emite el comprobante (`apps/web/src/POS.tsx:2653-2681`).
 
 **Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:258`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
 
@@ -22,9 +22,9 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Conteo** — Contar físicamente la existencia. En el sistema: Inventario › «Contar» crea un conteo pendiente que un gerente aprueba con «Aprobar ajuste» (`apps/web/src/Management.tsx:962`, `:1007`). Los conteos contra el sistema se verifican **4 veces** (`CLAUDE.md` punto 6).
 
-**Consumidor final** — Cliente genérico para ventas sin datos; si existe en la lista, sale primero al elegir cliente (`apps/web/src/POS.tsx:360-377`). Las facturas deben identificar a una persona o empresa (`requireCustomer`, `apps/api/src/admin.ts:123-125`). También es el tipo B02.
+**Consumidor final** — Cliente genérico para ventas sin datos; si existe en la lista, sale primero al elegir cliente (`apps/web/src/POS.tsx:363-380`). Las facturas deben identificar a una persona o empresa (`requireCustomer`, `apps/api/src/admin.ts:123-125`). También es el tipo B02.
 
-**Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2770`, `:1798-1802`).
+**Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2843`, `:1798-1802`).
 
 **Costo promedio (`costAvg`)** — Costo de una variante, recalculado en cada entrada (`apps/api/prisma/schema.prisma:120-135`). Con él se calcula el margen.
 
@@ -34,17 +34,17 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Datáfono / verifón / lote del verifón** — Terminal de tarjeta. «Cerrar el lote» antes de cerrar la caja para que los cobros caigan al día siguiente; el número de lote es obligatorio si hubo tarjeta (`apps/web/src/Tienda.tsx:329-332`, `:399-412`; `apps/api/src/cash.ts:1196-1210`).
 
-**Descuento** — Rebaja a una línea (% o RD$) o global (%). Siempre con motivo; sobre el límite del vendedor pide PIN. La caja aplica el mayor entre el descuento manual y el de la promoción (`apps/web/src/POS.tsx:340-353`).
+**Descuento** — Rebaja a una línea (% o RD$) o global (%). Siempre con motivo; sobre el límite del vendedor pide PIN. La caja aplica el mayor entre el descuento manual y el de la promoción (`apps/web/src/POS.tsx:343-356`).
 
 **Dueña** — Marcos/Grupo MacGen, usuaria con permiso `*` (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:2`). Sus órdenes fechadas están en `CLAUDE.md` y en `.claude/skills/comunicacion/SKILL.md`.
 
 **Entregado / Dejado en caja** — Al cerrar: «Entregado» es el efectivo que se le da a la dueña; «Dejado en caja» es lo que queda y será el fondo sugerido de la próxima apertura (`apps/web/src/Tienda.tsx:413-424`; `packages/shared/src/index.ts:688-701`).
 
-**Envío / mensajero** — Cobro del envío que paga el cliente junto con la transferencia o la tarjeta. Va **aparte** del total (no es venta, ganancia ni ITBIS) y se le paga luego al mensajero (por defecto «Addison») en «Envíos del mensajero» (`apps/web/src/POS.tsx:2857-2902`; `apps/web/src/CourierPayouts.tsx:26`; `packages/shared/src/index.ts` `courierCharge`).
+**Envío / mensajero** — Cobro del envío que paga el cliente junto con la transferencia o la tarjeta. Va **aparte** del total (no es venta, ganancia ni ITBIS) y se le paga luego al mensajero (por defecto «Addison») en «Envíos del mensajero» (`apps/web/src/POS.tsx:2930-2975`; `apps/web/src/CourierPayouts.tsx:26`; `packages/shared/src/index.ts` `courierCharge`).
 
 **Equipo / terminal** — Computadora registrada. Un equipo nuevo necesita aprobación de un gerente (`apps/web/src/realtime.tsx:515-518`).
 
-**En espera** — Carrito guardado para seguir después (F8). **Cotizar** lo guarda como cotización. Ambos son `Quote` (`apps/web/src/POS.tsx:456-488`).
+**En espera** — Carrito guardado para seguir después (F8). **Cotizar** lo guarda como cotización. Ambos son `Quote` (`apps/web/src/POS.tsx:459-491`).
 
 **Factura (venta)** — En la tienda, «factura» es el número de una **venta** al cliente. **FS-0000123** (siete dígitos) es el número de venta (`apps/api/src/sales.ts:1143`). Ojo: el recibo dice «documento no fiscal»; no es factura fiscal (`apps/web/src/Prints.tsx:508-510`). La **factura del proveedor** (la que llega con la mercancía) es otra cosa: `supplierInvoice`.
 
@@ -58,7 +58,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **GV / GV Makeup Studio** — Empresa hermana de cursos y servicios de maquillaje. Ver `GV.md`.
 
-**ITBIS** — Impuesto a la transferencia de bienes y servicios (18 %). Por defecto los precios **incluyen ITBIS** (`taxIncluded`); en el recibo y la caja sale «ITBIS incluido» (`apps/web/src/POS.tsx:1209-1213`; `apps/api/prisma/schema.prisma:104`). **El margen NO resta el ITBIS** (`packages/shared/src/index.ts:484-487`).
+**ITBIS** — Impuesto a la transferencia de bienes y servicios (18 %). Por defecto los precios **incluyen ITBIS** (`taxIncluded`); en el recibo y la caja sale «ITBIS incluido» (`apps/web/src/POS.tsx:1207-1211`; `apps/api/prisma/schema.prisma:104`). **El margen NO resta el ITBIS** (`packages/shared/src/index.ts:484-487`).
 
 **Kardex** — Historial de movimientos de una variante (`InventoryMovement`); se abre con el ícono del ojo en Inventario (`apps/web/src/Management.tsx:768`).
 
@@ -76,7 +76,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Nexora-cloud / producto-nexora** — Ramas: la primera es la tienda en vivo; la segunda el producto multiempresa. Ver `README.md` §5.
 
-**Offline / sin conexión** — Vender sin internet solo si la configuración lo permite; la venta queda en el equipo y se sincroniza (`apps/web/src/POS.tsx:2146-2207`; `apps/api/src/admin.ts:96`).
+**Offline / sin conexión** — Vender sin internet solo si la configuración lo permite; la venta queda en el equipo y se sincroniza (`apps/web/src/POS.tsx:2219-2280`; `apps/api/src/admin.ts:96`).
 
 **Oferta / promoción** — Descuento automático que aplica la caja; no cambia el precio del producto. Pantalla «Promociones» (`apps/web/src/Management.tsx:2445`).
 
@@ -92,7 +92,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Sesiones (equipo de trabajo)** — Uso interno: Norexos 1 (decide y despliega), Norexos 2 «Mercancía», Norexos 3 «Taller» (navegador, visual), Norexos 4 «Revisor», Norexos 5 «Director de proyecto», Claude PC (laptop/modelo local) (`.claude/skills/comunicacion/SKILL.md:8`; `docs/proyecto/PLAN_MAESTRO_NOREXOS.md:2`).
 
-**SKU / código de barras** — Códigos únicos de cada variante; la caja busca por ambos sin distinguir mayúsculas (`apps/web/src/POS.tsx:714-731`; `apps/api/prisma/schema.prisma:120-130`).
+**SKU / código de barras** — Códigos únicos de cada variante; la caja busca por ambos sin distinguir mayúsculas (`apps/web/src/POS.tsx:717-734`; `apps/api/prisma/schema.prisma:120-130`).
 
 **Solicitud de anulación** — Pedido de una cajera para anular su venta; la aprueba la administración (`apps/web/src/Management.tsx:3342`, `apps/web/src/VoidRequests.tsx:15`).
 

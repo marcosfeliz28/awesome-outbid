@@ -39,6 +39,7 @@ import {
   audit,
 } from "./common";
 import { alertForActor, OWNER_ONLY_ALERT_TYPES } from "./alerts";
+import { METHOD_LABEL } from "./notifications";
 import { REPORTES } from "./reportes";
 import {
   PRESENTACION,
@@ -1258,7 +1259,8 @@ export class ReportsController {
           );
         rows = [...methods]
           .map(([method, m]) => ({
-            Método: method,
+            // Etiqueta en español solo para mostrar; la base guarda la clave.
+            Método: METHOD_LABEL[method] ?? method,
             Ventas: money(m.sold),
             Cobros_de_crédito: money(m.collected),
           }))
