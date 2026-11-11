@@ -33,6 +33,7 @@ import {
   loadCatalog,
   useStore,
   download,
+  printPdf,
   DOWNLOAD_FAILED,
   localDB,
   syncSales,
@@ -3334,6 +3335,17 @@ export function SalesHistory() {
                       aria-label={"PDF de " + s.number}
                     >
                       <Download size={18} />
+                    </button>
+                    <button
+                      onClick={() =>
+                        printPdf("/sales/" + s.id + "/receipt.pdf").catch(
+                          (e) => toast(e.message, true),
+                        )
+                      }
+                      aria-label={"Reimprimir " + s.number}
+                      title="Reimprimir"
+                    >
+                      <Printer size={18} />
                     </button>
                     {can(user.permissions, "*") &&
                       s.status === "completed" &&

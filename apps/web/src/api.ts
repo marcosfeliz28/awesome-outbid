@@ -579,8 +579,20 @@ export async function download(
   retry = true,
   timeoutMs = DOWNLOAD_TIMEOUT_MS,
 ) {
-  // El tope cubre solo los encabezados: al llegar la respuesta se suelta, para
-  // que un archivo grande que se transmite despacio no se corte a mitad.
+  const blob = await fetchBlob(path, retry, timeoutMs);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+async function fetchBlob(
+  path: string,
+  retry: boolean,
+  timeoutMs: number,
+): Promise<Blob> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let response: Response;
@@ -595,24 +607,39 @@ export async function download(
   }
   if (response.status === 401 && retry) {
     await refreshSession();
-    return download(path, filename, false, timeoutMs);
+    return fetchBlob(path, false, timeoutMs);
   }
   if (!response.ok) {
-    // Un 400 dice qué cambiar (por ejemplo, un período que supera el máximo
-    // exportable); cualquier otro fallo, el aviso genérico.
     const body =
       response.status === 400 ? await response.json().catch(() => null) : null;
     throw new Error(
       typeof body?.message === "string" ? body.message : DOWNLOAD_FAILED,
     );
   }
-  const blob = await response.blob();
+  return response.blob();
+}
+
+// Para reimprimir: abre el PDF en una pestaña nueva en vez de forzar la
+// descarga a disco, para no obligar a buscarlo luego en Descargas. La
+// pestaña abre primero en blanco (clic síncrono, evita el bloqueador de
+// ventanas emergentes) y se navega al blob una vez descargado.
+export async function printPdf(path: string, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
+  const win = window.open("", "_blank");
+  let blob: Blob;
+  try {
+    blob = await fetchBlob(path, true, timeoutMs);
+  } catch (e) {
+    win?.close();
+    throw e;
+  }
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  if (!win) {
+    // Bloqueado por el navegador: igual se puede ver/imprimir en esta pestaña.
+    window.location.href = url;
+    return;
+  }
+  win.location.href = url;
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 let goodsSync: Promise<void> | null = null;
