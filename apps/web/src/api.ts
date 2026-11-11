@@ -579,20 +579,8 @@ export async function download(
   retry = true,
   timeoutMs = DOWNLOAD_TIMEOUT_MS,
 ) {
-  const blob = await fetchBlob(path, retry, timeoutMs);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-}
-
-async function fetchBlob(
-  path: string,
-  retry: boolean,
-  timeoutMs: number,
-): Promise<Blob> {
+  // El tope cubre solo los encabezados: al llegar la respuesta se suelta, para
+  // que un archivo grande que se transmite despacio no se corte a mitad.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let response: Response;
@@ -607,31 +595,65 @@ async function fetchBlob(
   }
   if (response.status === 401 && retry) {
     await refreshSession();
-    return fetchBlob(path, false, timeoutMs);
+    return download(path, filename, false, timeoutMs);
   }
   if (!response.ok) {
+    // Un 400 dice qué cambiar (por ejemplo, un período que supera el máximo
+    // exportable); cualquier otro fallo, el aviso genérico.
     const body =
       response.status === 400 ? await response.json().catch(() => null) : null;
     throw new Error(
       typeof body?.message === "string" ? body.message : DOWNLOAD_FAILED,
     );
   }
-  return response.blob();
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 // Para reimprimir: abre el PDF en una pestaña nueva en vez de forzar la
 // descarga a disco, para no obligar a buscarlo luego en Descargas. La
 // pestaña abre primero en blanco (clic síncrono, evita el bloqueador de
-// ventanas emergentes) y se navega al blob una vez descargado.
-export async function printPdf(path: string, timeoutMs = DOWNLOAD_TIMEOUT_MS) {
+// ventanas emergentes) y se navega al blob una vez descargado. Mismo tope de
+// encabezados y de un solo reintento tras refrescar sesión que download().
+export async function printPdf(
+  path: string,
+  retry = true,
+  timeoutMs = DOWNLOAD_TIMEOUT_MS,
+) {
   const win = window.open("", "_blank");
-  let blob: Blob;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response;
   try {
-    blob = await fetchBlob(path, true, timeoutMs);
+    response = await fetch("/api" + path, {
+      headers: { Authorization: "Bearer " + useStore.getState().token },
+      credentials: "include",
+      signal: controller.signal,
+    });
   } catch (e) {
     win?.close();
     throw e;
+  } finally {
+    clearTimeout(timer);
   }
+  if (response.status === 401 && retry) {
+    await refreshSession();
+    return printPdf(path, false, timeoutMs);
+  }
+  if (!response.ok) {
+    win?.close();
+    const body =
+      response.status === 400 ? await response.json().catch(() => null) : null;
+    throw new Error(
+      typeof body?.message === "string" ? body.message : DOWNLOAD_FAILED,
+    );
+  }
+  const blob = await response.blob();
   const url = URL.createObjectURL(blob);
   if (!win) {
     // Bloqueado por el navegador: igual se puede ver/imprimir en esta pestaña.
