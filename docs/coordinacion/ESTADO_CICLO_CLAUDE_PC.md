@@ -2295,3 +2295,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (12-nov, 1) — orden 120 nueva (nexora-cloud c892d09b): 2e hecha, el resto no es ejecutable desde la nube
 - Hecho: claude-pc/cola-salida-externa c8b9d1c2 (`--salida-externa` con pruebas 0/1/`..` y revisión de teléfonos, correos, claves y dinero; 24 pruebas verdes en local; CI en curso: LISTA NO escrita). No hecho: pegar textos en ChatGPT (sin acceso), correr la cola con Ollama (no hay Ollama aquí), puntos 3 y 4 (sin clave ni celular). OBSIDIAN_LUMINA_PROGRESO sin cambios.
 - CI: pc23, a1, b01 y lumina verdes. Último hash visto de nexora-cloud: c892d09b. No desplegar.
+
+## Ciclo nube (12-nov, 2) — sin órdenes nuevas; verify de cola-salida-externa estaba en rojo (eslint): arreglado
+- RESPUESTA y OBSIDIAN_LUMINA_PROGRESO sin cambios desde c892d09b. El verify de c8b9d1c2 falló por eslint (globals de Node en scripts/cola-local y `sep` sin uso): commit fab202d5 en claude-pc/cola-salida-externa (24 pruebas verdes en local; eslint no corre aquí por la versión de Node). render-images y windows-installer verdes; verify en curso: LISTA NO escrita.
+- CI: pc23, a1, b01 y lumina verdes. Último hash visto de nexora-cloud: 8a830937 (RESPUESTA/OBSIDIAN sin cambios desde c892d09b). No desplegar.
