@@ -1,5 +1,65 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-12 · D12 · contenido de ayuda por rol
+
+- **Rama y base:** `chatgpt-nube/ayuda-contenido-12nov`, creada desde `origin/nexora-cloud` `8a83093723a884f7edb017d2f0916b371f556227`. La implementación está en `6a809cd700c59b1bd7eddf6f2b4a24cb4300a8e7`.
+- **Paso 0:** comprobé las fuentes vigentes completas: `MANUAL-CAJERO.md`, `MANUAL-CAJERA-PREGUNTAS.md`, `EXPLICACION_DUENA.md` y las 30 respuestas de `QuickQuestions.tsx`. La base no contenía `docs/ayuda/` ni `docs/ayuda/borradores-local/`; por tanto, no había un borrador local que reutilizar o revisar.
+- **Entrega D12:** añadí 18 páginas independientes en `docs/ayuda/`: 12 para cajera, 3 para gerente y 3 para dueña. Todas tienen `titulo`, `rol`, `pantalla` y `palabras_clave`, entre uno y seis pasos, y una línea «Si algo sale mal:». Conservé la corrección integrada de C5-1: para crédito se exige elegir un cliente; no se afirma que «Consumidor final» esté prohibido.
+- **Regresión documental:** en la base, `test "$(git ls-tree -r --name-only origin/nexora-cloud docs/ayuda | wc -l)" -ge 1` terminó con código 1 porque había 0 páginas. Después, el validador de metadatos, roles, cantidad de pasos y manejo de errores pasó sobre las 18 páginas. `git diff --check` también pasó.
+- **Control completo:** `pnpm check` terminó con código 0. Typecheck y ESLint pasaron; 116 archivos de prueba pasaron y uno se omitió; 1,028 pruebas pasaron y 10 se omitieron; los builds web y API pasaron. Vite solo emitió la advertencia conocida de un chunk mayor de 500 kB.
+- **Autoauditoría:** cada paso numerado tiene 20 palabras o menos. Contrasté los botones operativos con la interfaz actual: abrir/cerrar caja, guardar cliente, finalizar venta, solicitar anulación y resolver ventas sin conexión coinciden. El diff de implementación solo añade contenido bajo `docs/ayuda/`; no modifica `apps/**`, `tests/e2e/**`, dinero, permisos ni API.
+- **Límites:** no abrí la interfaz ni ejecuté pruebas E2E; esta pieza es contenido y `tests/e2e/**` pertenece a Claude nube. No pude revisar borradores de la IA local porque no existen en la base publicada. No desplegué, mezclé ni abrí PR; no toqué Render, producción, la base de la tienda ni credenciales. Los tres CI se comprobarán sobre el SHA final después del único push permitido.
+
+### Corrección solicitada por Norexos 1
+
+- **Commit correctivo:** `f7e2fedf8f6f6f3ab0ec1b039751defb054938c7`, sobre la base actualizada `origin/nexora-cloud` `b6de76a4df69a5f9f44c96f288c6a320de98aef0`.
+- **Crédito:** eliminé la aprobación obligatoria y dejé la condición real: gerencia solo escribe su PIN cuando el sistema lo pide. También eliminé de esta página la frase discutida sobre internet; el flujo queda alineado con la pregunta rápida implementada.
+- **Depuración:** quité la frase de relleno de la autorización con PIN y retiré instrucciones operativas que no podía vincular con código, como borrar un teléfono con herramientas externas o hacer una restauración mensual.
+- **Regresión:** antes de corregir, la búsqueda de frases prohibidas encontró tres coincidencias (`Confirma el acuerdo con gerencia`, `no tramites crédito sin internet` y `Comprueba el resultado antes`). Después, el mismo control no encuentra ninguna. El validador D12 vuelve a comprobar metadatos, roles, 1–6 pasos y la línea de error en las 18 páginas.
+- **Control completo de la corrección:** `pnpm check` terminó con código 0. Typecheck y ESLint pasaron; 116 archivos de prueba pasaron y uno se omitió; 1,028 pruebas pasaron y 10 se omitieron; los builds web y API pasaron. Vite solo emitió la advertencia conocida de un chunk mayor de 500 kB.
+- **Autoauditoría:** revisé el diff completo contra la base actualizada y comprobé cada rango de la tabla contra un archivo existente. La corrección modifica únicamente once páginas de ayuda y este informe; no cambia `apps/**`, `tests/e2e/**`, dinero, precios, permisos ni API. No hubo despliegue ni acceso a Render, producción, la base de la tienda o credenciales.
+
+#### Evidencia página → paso → código
+
+La revisión se amplió a las 18 páginas publicadas, aunque la orden menciona 14. Los rangos agrupados cubren todos los pasos numerados de cada página.
+
+| Página | Paso(s) | Respaldo en código |
+|---|---:|---|
+| `cajera/abrir-caja` | 1 | `apps/web/src/App.tsx:470-528` |
+| `cajera/abrir-caja` | 2–5 | `apps/web/src/Management.tsx:1688-1759`, `apps/web/src/Management.tsx:2030-2068` |
+| `cajera/cerrar-caja` | 1 | `apps/web/src/Management.tsx:1708`, `apps/web/src/pendingSales.ts:382-396` |
+| `cajera/cerrar-caja` | 2–6 | `apps/web/src/Tienda.tsx:329-367`, `apps/web/src/Tienda.tsx:389-467` |
+| `cajera/cobrar-venta` | 1 | `apps/web/src/POS.tsx:1297-1306` |
+| `cajera/cobrar-venta` | 2–6 | `apps/web/src/POS.tsx:2730-3013` |
+| `cajera/escanear-con-camara` | 1–2 | `apps/web/src/POS.tsx:993-1028` |
+| `cajera/escanear-con-camara` | 3–4 | `apps/web/src/POS.tsx:3045-3072` |
+| `cajera/pedir-devolucion` | 1–5 | `apps/web/src/QuickQuestions.tsx:531-536`, `apps/web/src/Management.tsx:3388-3409`, `apps/web/src/Management.tsx:3828-3868` |
+| `cajera/poner-venta-en-espera` | 1–3 | `apps/web/src/POS.tsx:457-485`, `apps/web/src/POS.tsx:1308-1312` |
+| `cajera/poner-venta-en-espera` | 4–5 | `apps/web/src/QuickQuestions.tsx:555-560` |
+| `cajera/preparar-venta` | 1–3 | `apps/web/src/POS.tsx:963-1082`, `apps/web/src/POS.tsx:1127-1289`, `apps/web/src/POS.tsx:1360-1380` |
+| `cajera/preparar-venta` | 4–6 | `apps/web/src/POS.tsx:1106-1122`, `apps/web/src/POS.tsx:1435-1549`, `apps/web/src/POS.tsx:1281-1289` |
+| `cajera/respuesta-perdida-al-cobrar` | 1–5 | `apps/web/src/POS.tsx:2197-2212` |
+| `cajera/solicitar-anulacion` | 1–2 | `apps/web/src/Management.tsx:3372-3386` |
+| `cajera/solicitar-anulacion` | 3–6 | `apps/web/src/Management.tsx:3685-3715`, `apps/web/src/QuickQuestions.tsx:547-552` |
+| `cajera/trabajar-sin-conexion` | 1–2 | `apps/web/src/offlinePolicy.ts:3-12`, `apps/web/src/POS.tsx:2232-2252` |
+| `cajera/trabajar-sin-conexion` | 3–6 | `apps/web/src/Management.tsx:1765-1923`, `apps/web/src/pendingSales.ts:382-396` |
+| `cajera/usar-preguntas-y-encuesta` | 1–2 | `apps/web/src/POS.tsx:993-1001`, `apps/web/src/QuickQuestions.tsx:665-716` |
+| `cajera/usar-preguntas-y-encuesta` | 3–5 | `apps/web/src/QuickQuestions.tsx:588-660`, `apps/web/src/QuickQuestions.tsx:707-713` |
+| `cajera/vender-a-credito` | 1–2 | `apps/web/src/POS.tsx:1106-1122`, `apps/web/src/QuickQuestions.tsx:539-544` |
+| `cajera/vender-a-credito` | 3–4 | `apps/web/src/POS.tsx:1939-1960`, `apps/web/src/POS.tsx:2348-2360`, `apps/web/src/POS.tsx:2563-2621` |
+| `gerente/autorizar-con-pin` | 1–3 | `apps/web/src/POS.tsx:1939-1960`, `apps/web/src/POS.tsx:2348-2360`, `apps/web/src/Tienda.tsx:218-225` |
+| `gerente/procesar-devolucion` | 1–4 | `apps/web/src/Management.tsx:3388-3409`, `apps/web/src/Management.tsx:3828-3868` |
+| `gerente/procesar-devolucion` | 5–6 | `apps/api/src/sales.ts:3678-3696`, `apps/api/src/sales.ts:3783-3966` |
+| `gerente/resolver-venta-sin-conexion` | 1–3 | `apps/web/src/pendingSales.ts:293-313`, `apps/web/src/Management.tsx:1765-1923` |
+| `gerente/resolver-venta-sin-conexion` | 4–6 | `apps/web/src/pendingSales.ts:316-379` |
+| `duena/desactivar-usuaria` | 1–3 | `apps/web/src/Management.tsx:4375-4389`, `apps/web/src/Management.tsx:4455-4516`, `apps/web/src/Management.tsx:4608-4638` |
+| `duena/desactivar-usuaria` | 4 | `apps/web/src/realtime.tsx:294-463`, `apps/api/src/realtime.ts:415-430` |
+| `duena/equipo-robado` | 1 | `apps/web/src/Management.tsx:4491-4516`, `apps/api/src/admin.ts:1121-1219` |
+| `duena/equipo-robado` | 2 | `apps/web/src/realtime.tsx:442-463`, `apps/api/src/realtime.ts:415-430` |
+| `duena/equipo-robado` | 3 | `apps/web/src/Management.tsx:4045-4165` |
+| `duena/revisar-respaldos` | 1–2 | `apps/web/src/DriveBackup.tsx:154-166`, `apps/web/src/DriveBackup.tsx:203-249` |
+| `duena/revisar-respaldos` | 3–4 | `apps/web/src/DriveBackup.tsx:128-138`, `apps/web/src/DriveBackup.tsx:254-266` |
+
 ## 2026-11-12 · Mejoras C5-1 · textos y ayuda
 
 - **Rama y base:** `chatgpt-nube/ayuda-textos-12nov`, rebasada sin conflictos sobre `origin/nexora-cloud` `6bfa1aadd2443a4e45487cae61b2f74c19877822`. El commit de implementación es `ca514001ad75e21d49a1ba32dd81509de961458e`.
