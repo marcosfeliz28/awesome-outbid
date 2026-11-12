@@ -2311,3 +2311,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (12-nov, 5) — sin órdenes nuevas; CI de salida-revision-2 en verde: LISTA escrita
 - RESPUESTA y OBSIDIAN_LUMINA_PROGRESO sin cambios desde b6de76a4 (cabeza de nexora-cloud). claude-pc/salida-revision-2 c02b71df: verify, windows-installer y render-images en verde (orden 122). Orden 120 sigue pendiente (sin Ollama aquí).
 - Último hash visto de nexora-cloud: b6de76a4. No desplegar.
+
+## Ciclo nube (12-nov, 6) — orden 123 nueva (nexora-cloud 8759919d): BLOQUEADA, no hay Ollama en la nube
+- Orden 123 (cola de IA local en claude-pc/ayuda-local-12nov) pide `ollama list` con qwen-optimizado/qwen2.5-coder; Ollama no está instalado aquí, así que según el paso 2 se anota y se para (sin rama ni commits). Necesita que Claude PC local la ejecute. OBSIDIAN_LUMINA_PROGRESO sin cambios.
+- CI: pc23, a1, b01, lumina, salida-revision-2 y cola-salida-externa verdes; LISTA ya escritas. Último hash visto de nexora-cloud: 880dd415. No desplegar.
