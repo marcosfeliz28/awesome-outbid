@@ -60,3 +60,12 @@ Todo lo que encuentres va como lista priorizada; no arregles nada de dinero tú 
 
 ## Cola 12-nov (N1, orden de la dueña): mejoras de uso e IA
 Ver `ORDEN_CHATGPT_PC_MEJORAS_12NOV.md` (pieza 1: línea base de pantallas antes de las mejoras) y `REPARTO_MEJORAS_12NOV.md`. Reporta en `RESULTADOS_CHATGPT.md`. Cierra los navegadores y procesos que abras al terminar cada prueba.
+
+## Cola 12-nov (2) — N1: instalación limpia y comprobación de C6/C15
+Rama `chatgpt-pc/instalacion-limpia-12nov`; sin desplegar, sin Render, sin gastar. Cierra navegadores y procesos al terminar cada prueba.
+1. **Instalación gráfica limpia en Windows 10 u 11 sin Node ni el repositorio** (VM o PC limpia): instalar el `.exe` del CI de `nexora-cloud` (HEAD actual), entrar, vender, cerrar caja, hacer respaldo y restaurarlo. Anota versión, tamaño, SHA-256, tiempos y si Windows avisó de «editor desconocido» (firma). Esto NO se sustituye con el smoke de GitHub.
+2. **C6:** solicita una anulación como cajera con pago en efectivo; debe decir «Efectivo», no `cash`. Captura.
+3. **C15:** con existencia 1, intenta aumentar a 2; el aviso debe decir producto y cuántas quedan. Captura.
+4. C14 sigue bloqueada sin webcam física: no la repitas.
+5. La revisión D12 local queda sin publicar hasta que Marcos autorice.
+Reporta en `RESULTADOS_CHATGPT.md`.

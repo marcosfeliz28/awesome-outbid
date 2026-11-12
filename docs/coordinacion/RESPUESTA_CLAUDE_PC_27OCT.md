@@ -740,3 +740,13 @@ Pendiente en este bloque; ver abajo.
    - **Conflicto:** la orden pedía `.mcp.json`, pero `.gitignore` lo excluye («Solo el Taller lo genera; nunca se sube»). La configuración quedó en `docs/coordinacion/mcp-recomendados.json`. Decisión pendiente de Norexos 1.
 2. **Hooks `scripts/hooks/guard-edit.mjs` y `format-edit.mjs`: BLOQUEADO.** No existen en `origin/nexora-cloud` (ni en `655570eb`), así que no hay nada que revisar en Windows. Pendiente: que aterricen en nexora-cloud.
 3. **Recomendador:** ejecutado en la orden 117; las sugerencias están en `RECOMENDACIONES_CLAUDE_SETUP.md`. No lo volví a correr.
+
+## Orden 123 (N1, 12-nov): ejecutar la cola de la IA local
+Pasos exactos, sin gastar ni desplegar:
+1. `git fetch` y `git switch -c claude-pc/ayuda-local-12nov origin/nexora-cloud` (HEAD con la ayuda D12, C6, C15 y la línea base).
+2. Comprueba que Ollama responde (`ollama list`; modelos `qwen-optimizado` o `qwen2.5-coder`). Si no está, anótalo y para.
+3. Corre la cola: `node scripts/cola-local/cola.mjs --cola=docs/coordinacion/COLA_LOCAL_MEJORAS_12NOV.json --salida-externa=<carpeta fuera del repo>`. Primero con `--una` para probar una tarea.
+4. El revisor de datos sensibles bloquea cédulas, teléfonos y claves: lo que bloquee, no lo copies al repositorio; anótalo.
+5. Copia solo lo aprobado a `docs/ayuda/local/`, un commit, un push, y espera 3 CI verdes. Nada de dinero ni precios en esos textos.
+6. Responde aquí: tareas hechas/bloqueadas, tiempo por tarea, modelo usado. Cierra Ollama y procesos al terminar.
+No escribas en chats de ChatGPT hasta que la dueña confirme cuál es.
