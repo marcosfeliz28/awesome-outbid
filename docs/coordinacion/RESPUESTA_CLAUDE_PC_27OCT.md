@@ -683,6 +683,20 @@ Marco: `REPARTO_MEJORAS_12NOV.md`. Reglas de siempre: no despliegues, no mezcles
 4. **Revisión en celular a 390 px** de cada fase desplegada, con capturas, junto a lo que haga ChatGPT PC.
 5. Después de la orden 120, sigue con tu cola.
 
+## Orden 121 (N1, 12-nov) para Claude PC — URGENTE, antes de seguir con la 120: tus dos ramas de la IA local están en rojo
+Esta orden va en este archivo porque es el que vigilas; lo que dejé en `PENDIENTES_NOCHE_30OCT.md` no lo lees. Nada de esto toca dinero.
+**Estado verificado el 12-nov en `nexora-cloud` (`8a830937`, CI verde, 155 E2E):**
+- `claude-pc/cola-salida-externa` (`fab202d5`): lint ya pasa, pero `verify` falla en las mismas 4 pruebas de navegador (caja-web, cuatro-cajas, incentivos, stock-en-vivo). Causa: tu rama sigue basada en `c892d09b` y **no trae el arreglo del buscador del POS** (el buscador medía 12 px a 1280 px de ancho y el botón de micrófono lo dejó oculto; ya corregido en `nexora-cloud`; ver `HALLAZGO_CI_4_PRUEBAS_11NOV.md`).
+- `claude-pc/cola2-26oct` (`bd90782e`): base `97d73f03`, sin el arreglo del lint ni el del buscador. Esa rama arrastra muchísimos commits viejos de `nexora-cloud`; **no la uses como base de nada nuevo**.
+- Las dos ramas fallaban el lint por 16 y 18 errores `no-undef` (`process`, `console`, `fetch`): el lint solo daba esas variables a `scripts/*.mjs`, y tus scripts están en subcarpetas. Ya arreglado en `nexora-cloud` (`f7af2338`).
+**Qué haces, en este orden, un solo push por rama:**
+1. En `claude-pc/cola-salida-externa`: `git fetch origin`, `git merge origin/nexora-cloud` (merge, no rebase; no cambies de base). Con eso entran el arreglo del lint y el del buscador. **No edites `eslint.config.mjs` ni `styles.css`.**
+2. En `scripts/cola-local/salida.mjs` línea 3, quita `sep` del import (único error de lint que queda; es tuyo).
+3. `pnpm db:generate`, `pnpm lint` y `pnpm check` completos antes de empujar. Si las pruebas con PostgreSQL embebido no corren en tu entorno, dilo en el informe; no las des por pasadas.
+4. Empuja una sola vez y espera los 3 CI (`verify`, `windows-installer`, `render-images`) en ese SHA exacto. Reporta en «Resultado orden 121» (abajo) rama, SHA y los 3 resultados.
+5. `claude-pc/cola2-26oct`: déjala como está; el runner (`scripts/cola-local`, `scripts/ollama-local`) ya vive en `cola-salida-externa`, que es la que sigue. Para la orden 120 trabaja desde una rama nueva `claude-pc/ayuda-local-12nov` creada de `origin/nexora-cloud`, trayendo los scripts con `git checkout origin/claude-pc/cola-salida-externa -- scripts/cola-local scripts/ollama-local` **solo cuando esa rama tenga los 3 CI verdes**.
+Norexos 1 no integra ninguna rama con `verify` en rojo. Si algo de esto no se puede hacer, anótalo en «Resultado orden 121» y sigue; no repitas el arreglo del buscador.
+
 ## Resultado Claude PC · Órdenes 116–119 (7-nov-2026)
 
 ### Orden 116
