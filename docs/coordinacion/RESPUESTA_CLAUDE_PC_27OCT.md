@@ -758,3 +758,14 @@ No escribas en chats de ChatGPT hasta que la dueña confirme cuál es.
 - **Prueba inicial (`--una`):** se ejecutó la cola indicada con una carpeta de salida fuera del repositorio. `M12-ayuda-cajera-s1` quedó **BLOQUEADA**: `Ollama respondió HTTP 500`. Comprobación mínima posterior del modelo respondió `OK`, por lo que el bloqueo está en la llamada de la cola y no demuestra que Ollama esté ausente.
 - **Datos sensibles:** no se aprobó ni copió ningún texto; por tanto no entró material sensible al repositorio ni se modificó dinero o precios.
 - **Cierre:** se cerraron los procesos de Ollama iniciados para esta comprobación. Pendiente: corregir o diagnosticar el HTTP 500 y repetir `--una` antes de procesar el resto de tareas.
+
+### Informe Claude PC · Orden 123 (12-nov, final)
+
+- **Rama y commits:** `claude-pc/ayuda-local-12nov`. Contenido aprobado en `687bfa4d` (cinco guías). Este informe va en un commit posterior; no reemplaza el bloque de `7d62fbb9`, que quedó superado por lo siguiente.
+- **Modelo y tiempo:** `qwen-optimizado` (9.0 GB). Ocho tareas, de 65 s a 263 s cada una; unos 17 min en total, más un reintento de s1 que dio HTTP 500 la primera vez.
+- **Hechas y subidas (5):** s1, s2, s4, s6, s8, a `docs/ayuda/local/`. Verificadas contra su manual de entrada; cabecera de borrador sin verificar y sin meta-texto del modelo.
+- **Bloqueadas por el revisor de datos sensibles (no subidas, por cifras de dinero):** s3 y s7.
+- **Excluida por error de contenido (no subida):** s5. El borrador decía que el cajero abre la caja de devolución; el manual dice que lo hace gerencia.
+- **CI de `687bfa4d`:** `verify`, `render-images` y `windows-installer`, los tres en verde.
+- **Pendiente:** reformular s3, s5 y s7 sin cifras de dinero y con el rol correcto. Revisión humana de las cinco guías antes de usarlas en la tienda.
+- **Cierre:** Ollama, la API local (3001) y PostgreSQL (5452) detenidos.
