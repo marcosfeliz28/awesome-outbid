@@ -6,7 +6,7 @@ Alcance acordado con la dueña (8-nov): **por ahora no se bloquea ninguna venta*
 
 ## 1. Bloqueo de venta (apagado por defecto)
 
-- Configuración › «No vender productos sin costo» (`blockZeroCostSales`, `apps/api/src/admin.ts:98`, `apps/web/src/Management.tsx:4315`). Por defecto **apagado**. Un guardado de Configuración desde una pantalla vieja que no manda la clave conserva el valor guardado.
+- Configuración › «No vender productos sin costo» (`blockZeroCostSales`, `apps/api/src/admin.ts:98`, `apps/web/src/Management.tsx:4327`). Por defecto **apagado**. Un guardado de Configuración desde una pantalla vieja que no manda la clave conserva el valor guardado.
 - Encendido, la caja no vende una variante activa con `costAvg` 0. Mensaje: «Este producto no tiene costo: pídele a la administración que lo complete. Producto: <nombre>.» (`apps/api/src/sales.ts:631-632`, `:995-999`).
 - Todo camino que crea una venta pasa por `SalesController.complete` (`POST /sales`, `POST /sales/sync` y la revisión de ventas sin conexión `apps/api/src/offline-sale-review.ts:253`). No hay otra escritura de `Sale`/`SaleItem` (GV cobra cursos y servicios en sus propias tablas).
 - Combos: se mira el costo de cada componente.
@@ -24,7 +24,7 @@ Alcance acordado con la dueña (8-nov): **por ahora no se bloquea ninguna venta*
 ## 2. Lista de productos sin costo
 
 - `GET /inventory/without-cost` (`apps/api/src/inventory.ts:620`). Permiso `profit:read` y nunca la vendedora (403). Solo la sucursal de quien pregunta. Devuelve `total`, `withStock` e `items` (nombre, SKU, precio, existencia), primero los que tienen existencia. Excluye servicios e inactivos.
-- Pantalla: tarjeta «Productos sin costo» arriba de Inventario, solo si hay alguno (`apps/web/src/ZeroCost.tsx:20`, `apps/web/src/Management.tsx:851`). Lista simple, cabe a 390 px. El costo se completa en Productos (un cambio de costo a mano ya deja aviso `cost_change`).
+- Pantalla: tarjeta «Productos sin costo» arriba de Inventario, solo si hay alguno (`apps/web/src/ZeroCost.tsx:20`, `apps/web/src/Management.tsx:852`). Lista simple, cabe a 390 px. El costo se completa en Productos (un cambio de costo a mano ya deja aviso `cost_change`).
 
 ## 3. Recálculo de costos (solo lectura)
 
@@ -43,7 +43,7 @@ Alcance acordado con la dueña (8-nov): **por ahora no se bloquea ninguna venta*
 - No toca: total, impuestos, descuentos, pagos, saldo, incentivos ni el efectivo esperado de la caja (sale de los pagos, `apps/api/src/cash.ts:55`). Probado con la caja cerrada.
 - Bitácora `sale_item_cost_corrected`: quién (`userId`, equipo, IP), cuándo, antes (costo, costTotal) → después (costo, costTotal, cambio de ganancia, quién aprobó el PIN, motivo).
 - No se corrige aquí: líneas de combo ni líneas con devolución (su devolución ya guardó el costo; cambiarlo descuadra) (`sales.ts:2444`, `:2414`).
-- Pantalla: Ventas › ojo › panel «Costo pendiente» (solo `*`, ventas vigentes, solo líneas con costo 0) (`apps/web/src/Management.tsx:3442`).
+- Pantalla: Ventas › ojo › panel «Costo pendiente» (solo `*`, ventas vigentes, solo líneas con costo 0) (`apps/web/src/Management.tsx:3454`).
 - Efecto en reportes: baja la ganancia/margen de esa venta en todo lo que usa `Sale.costTotal` o `SaleItem.unitCost` (Resumen, informes, utilidad por producto, rentabilidad de la caja). La rentabilidad que muestra una caja cerrada también se recalcula, porque se calcula al consultarla; su efectivo no cambia.
 - Acción directa con PIN (como «corregir método de pago») y no solicitud con aprobación: solo administración puede iniciarla, así que no hay una segunda persona que apruebe.
 

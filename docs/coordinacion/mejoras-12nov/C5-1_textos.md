@@ -43,3 +43,9 @@ No se modificó `apps/web/src/QuickQuestions.tsx`. Claude nube debe sustituir ú
 - No ejecuté las pruebas de navegador ni abrí la interfaz; `tests/e2e/**` es propiedad de Claude nube.
 - No comprobé producción, Render, la base de la tienda ni configuraciones reales de terminales de tarjeta.
 - Las capturas existentes no se regeneraron; ChatGPT PC valida la pantalla después del despliegue.
+
+## Aplicado en `QuickQuestions.tsx` por Norexos 1 (12-nov)
+- Líneas 527 y 551: aplicadas con los textos de la tabla, con las comillas «» que usa el archivo. Verificado contra la pantalla: «Cerrar y arquear» (`Management.tsx:1708`), «Tarjeta declarada» y «Cerrar caja e imprimir cuadre» (`Tienda.tsx:394`, `466`), «Solicitar anulación» y «Tipo de motivo» (`Management.tsx:3385`, `3691`).
+- **Línea 543, corregida y no aplicada tal cual:** la tabla proponía «no sirve “Consumidor final”». El código no lo respalda: no existe un cliente «Consumidor final» predeterminado (`POS.tsx:1487` dice «si existe»; `B02 · Consumidor final` de `POS.tsx:2663` es un tipo de comprobante) y la API solo exige que haya un cliente para el crédito (`sales.ts:1081`). Texto aplicado: «Elige primero el cliente (F4): sin cliente no se puede vender a crédito. Al cobrar toca «Crédito». Si el sistema pide aprobación, llama a gerencia para su PIN. El crédito no es dinero cobrado.»
+- Consecuencia para C1 («Consumidor final» por defecto): hoy **no hay** cliente genérico en el código; habría que crearlo, y eso se suma a la decisión pendiente de la dueña.
+

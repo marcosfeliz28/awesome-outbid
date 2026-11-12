@@ -16,8 +16,8 @@ Lista y razones: `LEVANTAMIENTO_MEJORAS_IA_12NOV.md`. Reparto: `REPARTO_MEJORAS_
 ## Fase 1 — pantalla, sin IA en uso y sin dinero
 | Cód. | Mejora | Criterio de aceptación (lo que ChatGPT PC comprueba en pantalla) | Estado |
 |---|---|---|---|
-| C1 | «Consumidor final» por defecto y seguir al cobro | Con el carrito lleno y sin elegir cliente, F12 llega a cobrar sin pasos extra; la venta queda con el cliente genérico; si se elige cliente, todo igual que hoy. Paso 0: confirmar que existe el cliente genérico y por qué se exige cliente. | espera dueña |
-| C5-1 | Ayuda igual a la pantalla | Ningún texto de `QuickQuestions.tsx` ni de los manuales contradice la pantalla (lista de la pieza 2 de ChatGPT nube). | pendiente |
+| C1 | «Consumidor final» por defecto y seguir al cobro | Con el carrito lleno y sin elegir cliente, F12 llega a cobrar sin pasos extra; la venta queda con el cliente genérico; si se elige cliente, todo igual que hoy. Paso 0 (hecho 12-nov): **no existe** cliente genérico en el código; habría que crearlo, y la API solo exige un cliente para el crédito. | espera dueña |
+| C5-1 | Ayuda igual a la pantalla | Ningún texto de `QuickQuestions.tsx` ni de los manuales contradice la pantalla (lista de la pieza 2 de ChatGPT nube). | hecha en `nexora-cloud` (falta CI del SHA final y validar en pantalla) |
 | C6 | Sin claves internas a la cajera | En Solicitudes de anulación, Ventas, el asistente y el error de cámara no aparece `cash`, `cod`, «SKU», «Datos usados: mis_ventas» ni texto del navegador. | pendiente |
 | C11 | Confirmar o deshacer igual en todos lados | Quitar una línea se puede deshacer; recuperar una venta en espera y cancelar una solicitud piden confirmación con el diálogo propio. | pendiente |
 | C12 | Títulos directos | Los títulos de adorno pasan a nombre de tarea (Caja, Ventas, Clientes, Recibo). Paso 0: buscar si la dueña pidió ese tono. | espera dueña |
