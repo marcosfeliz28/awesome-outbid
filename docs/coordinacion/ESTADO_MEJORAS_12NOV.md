@@ -7,7 +7,11 @@ Lista y razones: `LEVANTAMIENTO_MEJORAS_IA_12NOV.md`. Reparto: `REPARTO_MEJORAS_
 **Cómo empieza cada mejora (Claude nube):** Paso 0, abrir los archivos que cita el levantamiento y confirmar que siguen igual; después una especificación corta en `docs/coordinacion/mejoras-12nov/<código>.md` (comportamiento actual con archivo:línea, cambio exacto con textos, pruebas que lo cubren, pruebas existentes que podrían romperse) y recién entonces el código. Rama `mejora/<código>-<nombre>`, `pnpm check` completo, un solo push, revisión independiente del diff antes de empujar.
 
 ## Bloqueo general
-Las 4 pruebas de navegador que fallan desde el 11-nov (`ORDEN_CHATGPT_NUBE_MEJORAS_12NOV.md`, pieza 1) impiden tener los 3 CI verdes. **Hasta que se resuelvan se puede construir y revisar, pero no desplegar.**
+**Resuelto el 12-nov (pendiente del CI del merge):** las 4 pruebas de navegador rojas tenían una causa de diseño (el buscador del POS se comprimía a 0 px en monitores de caja ≤ 1400 px; ver `HALLAZGO_CI_4_PRUEBAS_11NOV.md`, corregido). ChatGPT nube lo arregló en `chatgpt-nube/fix-e2e-12nov` (`8022a736`, 3 CI verdes) y Norexos 1 lo integró en `58bcc133`. Antes de desplegar cualquier cosa hacen falta los 3 CI verdes sobre el SHA final de `nexora-cloud`, 0 cajas abiertas y la prueba real en Windows. **CI verde no certifica una venta**: la prueba real del instalador (Windows-Smoke) sigue pendiente a cargo de ChatGPT PC.
+
+## Pendiente de coordinar
+- El chat «ChatGPT PC» no aparece con ese nombre en la barra lateral de ChatGPT: Claude PC no escribe en ningún chat hasta que la dueña confirme cuál es; no se confunde con Claude PC.
+- Pieza 1 de `ORDEN_CHATGPT_NUBE_MEJORAS_12NOV.md`: **cumplida**; su hipótesis de fecha de la orden no fue la causa. Queda su pieza 2 en adelante.
 
 ## Fase 1 — pantalla, sin IA en uso y sin dinero
 | Cód. | Mejora | Criterio de aceptación (lo que ChatGPT PC comprueba en pantalla) | Estado |

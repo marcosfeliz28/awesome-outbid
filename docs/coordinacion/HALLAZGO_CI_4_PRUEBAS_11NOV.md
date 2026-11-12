@@ -1,6 +1,22 @@
-# CI rojo en 4 pruebas e2e desde el 11-nov — NO es de la búsqueda por voz (dd111de4/0497c5ce)
+# CI rojo en 4 pruebas e2e desde el 11-nov — CORREGIDO 12-nov: SÍ lo disparó la búsqueda por voz (dd111de4/0497c5ce) sobre un defecto que ya existía
 
-**Estado: confirmado, no asignado a nadie todavía, sin corregir.**
+> **Corrección de Norexos 1 (12-nov).** Este informe decía lo contrario. Estaba equivocado y queda el texto original más abajo solo como registro.
+>
+> **Lo que se comprobó el 12-nov** (mismo archivo de prueba `tests/e2e/pos-pantalla.spec.ts` con la aserción nueva de ChatGPT nube, sin su arreglo de CSS, en una base limpia, compilando la web en cada commit):
+> - En `e475f2e7` (sin micrófono) el campo «Buscar productos» del POS mide **12 px** a 1280×720 y 40 px a 1366×768: ya estaba casi cerrado, pero Playwright lo da por visible, por eso las pruebas pasaban.
+> - En `0497c5ce` (con el botón de micrófono dentro de la fila del buscador) el campo queda **oculto** a 1280×720: es el síntoma exacto de las 4 pruebas rojas.
+> - Conclusión: el defecto de diseño era anterior (la barra lateral, el carrito y las acciones dejaban casi sin ancho al buscador); el botón de micrófono, unos 26 px más en esa fila, lo llevó a 0.
+> - **Por qué me equivoqué:** concluí «falla igual sin mi código» tras repetir las pruebas sobre `e475f2e7`, pero la web que sirve `vite preview` sale de `apps/web/dist` y no se vuelve a compilar al cambiar de commit: probé dos veces la misma compilación. Regla nueva: al comparar commits, recompilar la web y comprobar que la compilación cambió (por ejemplo, buscar `pos-mic` en `dist/assets/*.css`).
+> - **Efecto en la tienda real: ninguno.** La tienda corre desde el 8-nov (`467de531`), antes del micrófono. Pero sí tiene el buscador estrecho en monitores de caja (≤ 1400 px).
+> - **Arreglo:** `chatgpt-nube/fix-e2e-12nov` (`11e7f77c`, `6e770d8f`, CI verde en `8022a736`: 155/155 E2E): a 901–1400 px el buscador pasa a una segunda fila completa y en pantallas bajas las miniaturas se compactan; la prueba nueva exige un campo visible de al menos 120 px. Integrado en `nexora-cloud` en `58bcc133`. Auditado por Norexos 1 el 12-nov: solo CSS y una aserción; no toca dinero.
+> - La búsqueda por voz **no** necesita cambios.
+
+---
+
+## Informe original del 11-nov (sustituido por la corrección de arriba)
+
+
+**Estado (11-nov, ya no vigente): confirmado, no asignado, sin corregir.**
 
 ## Qué pasó
 Audité `feat(pos): busqueda de productos por voz` (dd111de4) y su fix
