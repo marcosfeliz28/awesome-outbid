@@ -53,3 +53,6 @@ Trabaja en una rama nueva `chatgpt-nube/calidad-9nov`, solo documentos y pruebas
 2. **Auditoría de calidad del código** (`docs/calidad/AUDITORIA_CALIDAD_9NOV.md`): recorre `apps/api/src`, `apps/web/src`, `packages/shared`. Lista por severidad: pruebas faltantes en rutas de dinero, archivos demasiado grandes, código duplicado, manejo de errores que devuelve 500 en vez de mensaje claro, textos sin traducir, accesibilidad (contraste AA, teclado, `prefers-reduced-motion`), rendimiento de pantallas con listas largas. Cada hallazgo con archivo:línea, riesgo y arreglo propuesto (sin aplicarlo si toca dinero).
 3. **Arreglos seguros** (puedes aplicarlos en tu rama, cada uno con prueba): textos, accesibilidad, mensajes de error claros, documentación desactualizada. Un commit por tema. Corre `pnpm check` antes de empujar y reporta SHA con los 3 CI verdes.
 Reporta en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
+
+## Cola 12-nov (N1, orden de la dueña): mejoras de uso e IA
+Ver `ORDEN_CHATGPT_NUBE_MEJORAS_12NOV.md` (pieza 1 urgente: causa raíz de 4 pruebas de navegador que bloquean los despliegues) y `REPARTO_MEJORAS_12NOV.md`. Reporta en `RESULTADOS_CHATGPT_NUBE.md`.

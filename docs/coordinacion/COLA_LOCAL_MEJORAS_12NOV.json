@@ -1,0 +1,85 @@
+{
+  "descripcion": "Cola del modelo local, mejoras 12-nov (Norexos 1). D12: guía de ayuda para la cajera, una sección por tarea, entrada <= 4,000 caracteres. Todo borrador sin verificar: lo revisa Claude PC y luego una persona. Salidas solo en docs/. Usar con: node scripts/cola-local/cola.mjs --cola=docs/coordinacion/COLA_LOCAL_MEJORAS_12NOV.json",
+  "tareas": [
+    {
+      "id": "M12-ayuda-cajera-s1",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto, tuteo cercano. Usa SOLO lo que dice el texto de entrada: no inventes pasos, botones, cifras ni funciones; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, promesas de seguridad o ganancias; el producto se llama Norexos. NO escribas conteos de caracteres o palabras. Reescribe la sección de abajo como una guía para una cajera nueva: título corto, máximo 6 pasos numerados, una idea por frase (máximo 20 palabras por frase), y al final una línea «Si algo sale mal:» con lo que dice el texto. No cambies los nombres de botones ni pantallas.",
+      "entradas": [
+        "docs/diseno/entradas-local/manual-cajero-s1.md"
+      ],
+      "salida": "docs/ayuda/borradores-local/cajera-s1.md"
+    },
+    {
+      "id": "M12-ayuda-cajera-s2",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto, tuteo cercano. Usa SOLO lo que dice el texto de entrada: no inventes pasos, botones, cifras ni funciones; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, promesas de seguridad o ganancias; el producto se llama Norexos. NO escribas conteos de caracteres o palabras. Reescribe la sección de abajo como una guía para una cajera nueva: título corto, máximo 6 pasos numerados, una idea por frase (máximo 20 palabras por frase), y al final una línea «Si algo sale mal:» con lo que dice el texto. No cambies los nombres de botones ni pantallas.",
+      "entradas": [
+        "docs/diseno/entradas-local/manual-cajero-s2.md"
+      ],
+      "salida": "docs/ayuda/borradores-local/cajera-s2.md"
+    },
+    {
+      "id": "M12-ayuda-cajera-s3",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto, tuteo cercano. Usa SOLO lo que dice el texto de entrada: no inventes pasos, botones, cifras ni funciones; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, promesas de seguridad o ganancias; el producto se llama Norexos. NO escribas conteos de caracteres o palabras. Reescribe la sección de abajo como una guía para una cajera nueva: título corto, máximo 6 pasos numerados, una idea por frase (máximo 20 palabras por frase), y al final una línea «Si algo sale mal:» con lo que dice el texto. No cambies los nombres de botones ni pantallas.",
+      "entradas": [
+        "docs/diseno/entradas-local/manual-cajero-s3.md"
+      ],
+      "salida": "docs/ayuda/borradores-local/cajera-s3.md"
+    },
+    {
+      "id": "M12-ayuda-cajera-s4",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto, tuteo cercano. Usa SOLO lo que dice el texto de entrada: no inventes pasos, botones, cifras ni funciones; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, promesas de seguridad o ganancias; el producto se llama Norexos. NO escribas conteos de caracteres o palabras. Reescribe la sección de abajo como una guía para una cajera nueva: título corto, máximo 6 pasos numerados, una idea por frase (máximo 20 palabras por frase), y al final una línea «Si algo sale mal:» con lo que dice el texto. No cambies los nombres de botones ni pantallas.",
+      "entradas": [
+        "docs/diseno/entradas-local/manual-cajero-s4.md"
+      ],
+      "salida": "docs/ayuda/borradores-local/cajera-s4.md"
+    },
+    {
+      "id": "M12-ayuda-cajera-s5",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto, tuteo cercano. Usa SOLO lo que dice el texto de entrada: no inventes pasos, botones, cifras ni funciones; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, promesas de seguridad o ganancias; el producto se llama Norexos. NO escribas conteos de caracteres o palabras. Reescribe la sección de abajo como una guía para una cajera nueva: título corto, máximo 6 pasos numerados, una idea por frase (máximo 20 palabras por frase), y al final una línea «Si algo sale mal:» con lo que dice el texto. No cambies los nombres de botones ni pantallas.",
+      "entradas": [
+        "docs/diseno/entradas-local/manual-cajero-s5.md"
+      ],
+      "salida": "docs/ayuda/borradores-local/cajera-s5.md"
+    },
+    {
+      "id": "M12-ayuda-cajera-s6",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto, tuteo cercano. Usa SOLO lo que dice el texto de entrada: no inventes pasos, botones, cifras ni funciones; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, promesas de seguridad o ganancias; el producto se llama Norexos. NO escribas conteos de caracteres o palabras. Reescribe la sección de abajo como una guía para una cajera nueva: título corto, máximo 6 pasos numerados, una idea por frase (máximo 20 palabras por frase), y al final una línea «Si algo sale mal:» con lo que dice el texto. No cambies los nombres de botones ni pantallas.",
+      "entradas": [
+        "docs/diseno/entradas-local/manual-cajero-s6.md"
+      ],
+      "salida": "docs/ayuda/borradores-local/cajera-s6.md"
+    },
+    {
+      "id": "M12-ayuda-cajera-s7",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto, tuteo cercano. Usa SOLO lo que dice el texto de entrada: no inventes pasos, botones, cifras ni funciones; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, promesas de seguridad o ganancias; el producto se llama Norexos. NO escribas conteos de caracteres o palabras. Reescribe la sección de abajo como una guía para una cajera nueva: título corto, máximo 6 pasos numerados, una idea por frase (máximo 20 palabras por frase), y al final una línea «Si algo sale mal:» con lo que dice el texto. No cambies los nombres de botones ni pantallas.",
+      "entradas": [
+        "docs/diseno/entradas-local/manual-cajero-s7.md"
+      ],
+      "salida": "docs/ayuda/borradores-local/cajera-s7.md"
+    },
+    {
+      "id": "M12-ayuda-cajera-s8",
+      "modelo": "qwen-optimizado",
+      "maxTokens": 1200,
+      "instrucciones": "Borrador sin verificar, hecho por modelo local. Español de República Dominicana, claro y corto, tuteo cercano. Usa SOLO lo que dice el texto de entrada: no inventes pasos, botones, cifras ni funciones; si falta un dato escribe [FALTA DATO]. Prohibido: e-CF, DGII, promesas de seguridad o ganancias; el producto se llama Norexos. NO escribas conteos de caracteres o palabras. Reescribe la sección de abajo como una guía para una cajera nueva: título corto, máximo 6 pasos numerados, una idea por frase (máximo 20 palabras por frase), y al final una línea «Si algo sale mal:» con lo que dice el texto. No cambies los nombres de botones ni pantallas.",
+      "entradas": [
+        "docs/diseno/entradas-local/manual-cajero-s8.md"
+      ],
+      "salida": "docs/ayuda/borradores-local/cajera-s8.md"
+    }
+  ]
+}

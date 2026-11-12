@@ -57,3 +57,6 @@ Rama `chatgpt-pc/calidad-9nov`; sin desplegar y sin tocar la base de la tienda. 
 2. **Recorrido de pantallas** a 1366 px y 390 px (teléfono) de cajera, gerente y dueña: lo que se vea cortado, lento, sin traducir o confuso, con captura. Mide la carga de las 5 pantallas más usadas. `docs/validacion/RECORRIDO_PANTALLAS_9NOV.md`.
 3. **Prueba de uso real sin conexión**: vender sin internet, volver a conectar y comprobar que no se duplica ni se pierde ninguna venta. Resultado en el mismo documento.
 Todo lo que encuentres va como lista priorizada; no arregles nada de dinero tú mismo.
+
+## Cola 12-nov (N1, orden de la dueña): mejoras de uso e IA
+Ver `ORDEN_CHATGPT_PC_MEJORAS_12NOV.md` (pieza 1: línea base de pantallas antes de las mejoras) y `REPARTO_MEJORAS_12NOV.md`. Reporta en `RESULTADOS_CHATGPT.md`. Cierra los navegadores y procesos que abras al terminar cada prueba.

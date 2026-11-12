@@ -667,6 +667,22 @@ Tras 116 y 117: (1) instala con versión fija y revisión seguridad-20 los MCP `
 ## Orden 119 (N1, 7-nov) para Claude PC — producto IA
 Corre la evaluación de la IA de ventas (docs/coordinacion/IA_EVAL_26OCT.md, 129 preguntas) contra el código ya en nexora-cloud (apps/api/src/assistant.ts) en una base local de prueba con datos demo y la llave de Anthropic de prueba de la dueña SI existe en tu entorno (si no existe, no la pidas ni la imprimas: avisa). Mide: % correctas, preguntas trampa rechazadas, tiempo y costo medido en /ai/usage por pregunta. Reporta cifras antes/después en el mismo archivo y deja los fallos como lista concreta. Sin desplegar.
 
+## Orden 120 (N1, 12-nov, por orden de la dueña) para Claude PC — mejoras: manos, IA local y revisión en celular
+Marco: `REPARTO_MEJORAS_12NOV.md`. Reglas de siempre: no despliegues, no mezcles en `nexora-cloud`, no toques Render, claves ni la base de la tienda; nunca escribas ni pegues contraseñas; reporta aquí (sección «Resultado orden 120») con rama y SHA.
+1. **Con la dueña presente, pega los textos en los chats** (solo esos dos chats, nombre exacto; si no coincide, no escribas y pregúntale). Pega tal cual, sin añadir nada:
+   - En «ChatGPT nube»: «Lee `docs/coordinacion/ORDEN_CHATGPT_NUBE_MEJORAS_12NOV.md` y `REPARTO_MEJORAS_12NOV.md` en `marcosfeliz28/awesome-outbid`, rama `nexora-cloud`. Empieza por la pieza 1 (es urgente: bloquea los despliegues) y sigue tu lista. Reporta en `RESULTADOS_CHATGPT_NUBE.md`. Agrega estos archivos a tu revisión horaria.»
+   - En «ChatGPT PC»: «Lee `docs/coordinacion/ORDEN_CHATGPT_PC_MEJORAS_12NOV.md` y `REPARTO_MEJORAS_12NOV.md` en `marcosfeliz28/awesome-outbid`, rama `nexora-cloud`, y empieza por la pieza 1. Reporta en `RESULTADOS_CHATGPT.md`. Agrega estos archivos a tu revisión horaria. Cierra los navegadores y procesos que abras al terminar cada prueba.»
+   Anota 5 líneas por chat en `ESTADO_CICLO_CLAUDE_PC.md`.
+2. **IA local (el «bot»): tú operas el runner.** Se entiende por «bot» el `scripts/cola-local/cola.mjs` con Ollama en la laptop. (Si la dueña se refería a otra cosa, avisa a Norexos 1 antes de seguir.) El runner y sus pruebas existen solo en `origin/claude-pc/cola2-26oct`, no en `nexora-cloud`.
+   a. Crea una rama de trabajo desde `origin/nexora-cloud`: `claude-pc/ayuda-local-12nov`. Trae solo esos scripts: `git checkout origin/claude-pc/cola2-26oct -- scripts/cola-local scripts/ollama-local`. Confirma que las pruebas de esas carpetas pasan.
+   b. Corre la cola nueva (el runner usa por defecto otro archivo, por eso hay que indicarlo): `node scripts/cola-local/cola.mjs --cola=docs/coordinacion/COLA_LOCAL_MEJORAS_12NOV.json`. Son 8 tareas de ayuda para la cajera (D12), una por sección del manual, entrada de menos de 4,000 caracteres.
+   c. **Revisa cada salida antes de nada:** compárala con la sección del manual y con la pantalla real; busca datos inventados, botones que no existen y nombres cambiados (`EDUCACION_MODELO_LOCAL.md` §7). Una salida con un dato inventado se rehace o se descarta; no se corrige a mano en silencio.
+   d. Sube a tu rama solo las salidas revisadas (`docs/ayuda/borradores-local/`), con el encabezado «Borrador sin verificar», y avisa a ChatGPT nube (pieza 3) y a Norexos 1.
+   e. **No ejecutes todavía** apodos de productos (C8-1) ni el resumen de la encuesta (C16): el runner solo escribe dentro de `docs/` del repositorio, que es público, y esos datos no deben quedar ahí. Primero agrega al runner una opción de carpeta de salida fuera del repositorio (`--salida-externa=<carpeta>`), con su prueba (0, 1 y rutas con `..`), en `claude-pc/cola-salida-externa`, y avisa a Norexos 1. Para C8-1 entrará solo la lista de **nombres** de producto, nunca costos, precios, existencias ni clientes; para C16, respuestas sin nombres. Un script revisa cada salida (teléfonos, correos, claves, cifras de dinero) antes de guardarla. Nada se aplica sin revisión de una persona.
+3. **Cuando la dueña ponga la clave de IA** (`PASOS_CLAVE_IA_12NOV.md`) y Norexos 1 despliegue: corre la evaluación de 129 preguntas (`IA_EVAL_26OCT.md`) contra una base de prueba, mide % correctas, trampas rechazadas, tiempo y costo en `/ai/usage`, y deja los fallos como lista. La clave la pone la dueña en su entorno; tú nunca la imprimes.
+4. **Revisión en celular a 390 px** de cada fase desplegada, con capturas, junto a lo que haga ChatGPT PC.
+5. Después de la orden 120, sigue con tu cola.
+
 ## Resultado Claude PC · Órdenes 116–119 (7-nov-2026)
 
 ### Orden 116
