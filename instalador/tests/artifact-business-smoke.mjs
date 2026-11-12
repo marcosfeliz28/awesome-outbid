@@ -1,3 +1,4 @@
+/* global fetch: readonly, AbortSignal: readonly, process: readonly, console: readonly */
 // Solo API local de una instalacion descartable en GitHub Windows.
 import { readFile } from "node:fs/promises";
 import { randomUUID, randomBytes } from "node:crypto";
