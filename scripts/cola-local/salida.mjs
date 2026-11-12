@@ -1,6 +1,6 @@
 // Salida externa del runner: guarda fuera del repositorio (que es público) y revisa
 // cada salida antes de guardarla. Orden 120, punto 2e.
-import { resolve, basename, relative, isAbsolute, sep } from "node:path";
+import { resolve, basename, relative, isAbsolute } from "node:path";
 import { validarSalida } from "../ollama-local/tarea.mjs";
 
 const tieneDosPuntos = (ruta) => ruta.split(/[\\/]+/).includes("..");
