@@ -1172,7 +1172,11 @@ export function POS({ go }: { go: (page: string) => void }) {
                               !i.product.category.requiresLot)
                           )
                             updateQty(i.variant.id, i.qty + 1);
-                          else toast("Stock insuficiente.", true);
+                          else
+                            toast(
+                              `Stock insuficiente: de ${i.product.name} solo quedan ${available(i.variant.stock, i.product)}.`,
+                              true,
+                            );
                         }}
                       >
                         <Plus size={12} />

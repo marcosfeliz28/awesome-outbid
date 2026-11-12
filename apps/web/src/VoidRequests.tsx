@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { METHOD_LABEL } from "./Prints";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Badge, Modal } from "@fitstore/ui";
 import { can, formatMoney } from "@fitstore/shared";
@@ -97,7 +98,8 @@ export function VoidRequests() {
                   <ul>
                     {row.sale.payments.map((payment: any, index: number) => (
                       <li key={index}>
-                        {payment.method} · {formatMoney(payment.amount)}
+                        {METHOD_LABEL[payment.method] ?? payment.method} ·{" "}
+                        {formatMoney(payment.amount)}
                       </li>
                     ))}
                   </ul>
