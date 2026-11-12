@@ -33,6 +33,10 @@ Sin dinero: C9, C4-1, C8-1 (apodos de producto, lista elaborada con la IA local 
 ## Fase 3 — IA en uso (requiere la clave)
 D2 (asistente analista), C7, C5-2, D3-2, D4-2, C8-2, C16, D12, y con sí de la dueña C4-2, D6, D10-3. Estado: `espera clave`; D12 ya tiene borradores de ayuda en preparación con la IA local, sin costo.
 
+## IA local y ayuda (12-nov)
+- Runner de la IA local con carpeta de salida externa y revisión de datos: integrado en `nexora-cloud` (`632baf70`). Cola de la ayuda de la cajera lista; falta que Claude PC la ejecute (Orden 122).
+- D12 (ayuda dentro del sistema): contenido en revisión por Norexos 1; ver `ORDENES_CHATGPT_NUBE.md`. Aún no está conectado a la aplicación.
+
 ## Decisiones de la dueña pendientes
 1. Plan `medio` o `completo` y tope de US$0.40 por usuaria al día del analista.
 2. Cuáles de las mejoras que tocan dinero sí y cuáles no (C2, C3, C4-2, C10, D6, D8, D10-3).

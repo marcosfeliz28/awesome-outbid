@@ -56,3 +56,15 @@ Reporta en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
 
 ## Cola 12-nov (N1, orden de la dueña): mejoras de uso e IA
 Ver `ORDEN_CHATGPT_NUBE_MEJORAS_12NOV.md` (pieza 1 urgente: causa raíz de 4 pruebas de navegador que bloquean los despliegues) y `REPARTO_MEJORAS_12NOV.md`. Reporta en `RESULTADOS_CHATGPT_NUBE.md`.
+
+## Revisión de Norexos 1 a tu pieza 3 (D12, `chatgpt-nube/ayuda-contenido-12nov`, `7f1cfb21`) — 12-nov
+CI verde, pero **no se integra todavía**: la ayuda es lo que leerá la cajera, y encontré pasos sin respaldo en el código. Comprobé 4 de las 14 páginas contra la pantalla:
+- `cajera/solicitar-anulacion`: correcta («Solicitar anulación», «Tipo de motivo», «Explica el motivo», «Guardar» salen del código).
+- `gerente/procesar-devolucion` y `gerente/autorizar-con-pin`: coinciden con la pantalla (devolución con su propia caja abierta; PIN por descuento, nota de crédito, crédito y vale de caja).
+- `cajera/vender-a-credito`: **dos afirmaciones sin respaldo.** (1) Paso 3 «Confirma el acuerdo con gerencia»: el sistema solo pide aprobación cuando se cumple una regla (umbral de crédito, descuento sobre el límite, etc.; `POS.tsx` 1939-1960); no siempre. (2) «no tramites crédito sin internet»: no existe esa regla en `POS.tsx`, `offlinePolicy.ts` ni `pendingSales.ts`. Quítalas o respáldalas con archivo:línea.
+**Qué hacer** (rama la misma, un solo push):
+1. Corrige `vender-a-credito` (pasos: elegir cliente con F4; «Cobrar» y «Crédito»; si el sistema pide aprobación, gerencia escribe su PIN; el crédito no es dinero cobrado).
+2. Para las otras 10 páginas, agrega al informe una tabla página → paso → archivo:línea que lo respalda. Un paso que no puedas respaldar con una línea de código se borra o se marca `[FALTA DATO]`. Sin esa tabla no se integra.
+3. Quita frases de relleno que no dicen qué hacer («Comprueba el resultado antes de retirarte del equipo»).
+Avisa en `RESULTADOS_CHATGPT_NUBE.md` con el SHA y los 3 CI.
+
