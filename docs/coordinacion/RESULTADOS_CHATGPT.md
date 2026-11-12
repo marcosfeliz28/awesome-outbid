@@ -156,6 +156,15 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - Qué pasó (pruebas que pasan y que fallan, con el texto exacto del error):
 - Qué falta o necesita decisión de la dueña:
 
+## 2026-11-12 · ChatGPT NUBE · `chatgpt-nube/fix-e2e-12nov` · `11e7f77c`
+
+- **Qué hice:** corregí la causa común de los cuatro E2E rojos de `verify` en `b217f7ff`. A 1280 px, la barra lateral, el carrito y las acciones comprimían el campo «Buscar productos» hasta 0 px. En 901–1400 px la búsqueda ahora ocupa una segunda fila; en monitores de poca altura las miniaturas se compactan para conservar catálogo y «Cobrar» completos. Añadí una regresión que exige que el campo sea visible y mida al menos 120 px en 1280, 1366, 1536 y 1024 px.
+- **Prueba que falló antes:** el caso nuevo de `tests/e2e/pos-pantalla.spec.ts` falló en 1280×720 con `Expected: visible`, `Received: hidden` para `getByLabel('Buscar productos')`. Era el mismo síntoma de `caja-web`, `cuatro-cajas`, `incentivos` y `stock-en-vivo`.
+- **Pruebas después:** `pos-pantalla.spec.ts` pasó **16/16**; las cuatro suites afectadas pasaron **16/16**; la repetición focal pasó **5/5**; `pnpm check` pasó con typecheck, ESLint, **116 archivos/1,027 pruebas** y builds web/API verdes (1 archivo/10 pruebas omitidos por condiciones existentes). `git diff --check` pasó.
+- **Autoauditoría:** el commit solo cambia CSS responsivo y una aserción E2E. No cambia ventas, caja, precios, dinero, inventario, permisos, API, migraciones ni datos. Verifiqué que no haya desborde horizontal, que catálogo/carrito permanezcan visibles y que «Cobrar» siga dentro de la ventana. No se accedió a producción, Render, credenciales o la base de la tienda.
+- **CI y artefacto:** pendiente publicar el commit documental y comprobar `verify`, `windows-installer` y `render-images` sobre el último SHA. No se certifica Windows-Smoke desde Linux. El artefacto anterior de `b217f7ff` fue `Nexora-POS-Setup-0.1.1-prueba` (141,754,605 bytes); el artefacto exacto del nuevo SHA se anotará al terminar su CI.
+- **Bloqueo actual:** ninguno para publicar y ejecutar CI. La prueba real del instalador en Windows queda en el carril de ChatGPT PC/PC MarcosFeliz.
+
 ## 2026-11-08 · ChatGPT NUBE · `chatgpt-nube/asistente-analista`
 
 - **Qué hice:** escribí la especificación del Asistente analista, un conjunto determinista de 100 preguntas con respuesta/cálculo esperado y la estimación de costo/cuotas. El detalle y la autoauditoría están en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`.
