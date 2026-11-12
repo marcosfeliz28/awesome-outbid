@@ -2307,3 +2307,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (12-nov, 4) — orden 122 nueva (nexora-cloud b6de76a4): mejoras al revisor hechas en salida-revision-2, CI en curso: LISTA NO escrita
 - Hecho: claude-pc/salida-revision-2 c02b71df (revisión siempre activa, «dinero» solo avisa hacia docs/, reglas de cédula y teléfono de 10 dígitos; prueba falló antes y 26 pruebas pasan con `node --test`; lint/check no corren aquí por Node 22). No hecho: orden 120 (cola con Ollama; no hay Ollama aquí), pendiente en claude-pc/ayuda-local-12nov. OBSIDIAN_LUMINA_PROGRESO sin cambios.
 - CI: pc23, a1, b01 y lumina verdes; c02b71df en curso. Último hash visto de nexora-cloud: b6de76a4. No desplegar.
+
+## Ciclo nube (12-nov, 5) — sin órdenes nuevas; CI de salida-revision-2 en verde: LISTA escrita
+- RESPUESTA y OBSIDIAN_LUMINA_PROGRESO sin cambios desde b6de76a4 (cabeza de nexora-cloud). claude-pc/salida-revision-2 c02b71df: verify, windows-installer y render-images en verde (orden 122). Orden 120 sigue pendiente (sin Ollama aquí).
+- Último hash visto de nexora-cloud: b6de76a4. No desplegar.

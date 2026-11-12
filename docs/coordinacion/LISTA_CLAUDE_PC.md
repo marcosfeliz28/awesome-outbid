@@ -87,3 +87,4 @@ LISTA: claude-pc/ia-ventas-rescate 8954a099769cc484940f4e10f3dae200262a77e5 (ord
 
 LISTA: claude-pc/mcp-recomendados a6e009f9 (orden 118 punto 1, versiones fijas en docs; verify, windows-installer y render-images en verde; .mcp.json sigue ignorado por el repo, decisión pendiente de Nexora 1; no desplegar)
 LISTA: claude-pc/cola-salida-externa 632baf70
+LISTA: claude-pc/salida-revision-2 c02b71df
