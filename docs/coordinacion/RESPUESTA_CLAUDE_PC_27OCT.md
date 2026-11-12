@@ -750,3 +750,11 @@ Pasos exactos, sin gastar ni desplegar:
 5. Copia solo lo aprobado a `docs/ayuda/local/`, un commit, un push, y espera 3 CI verdes. Nada de dinero ni precios en esos textos.
 6. Responde aquí: tareas hechas/bloqueadas, tiempo por tarea, modelo usado. Cierra Ollama y procesos al terminar.
 No escribas en chats de ChatGPT hasta que la dueña confirme cuál es.
+
+### Ejecución ChatGPT PC · 12-nov
+
+- **Rama/base:** `claude-pc/ayuda-local-12nov`, creada desde `origin/nexora-cloud` (`880dd415ae2736b4ca90c8206f4a2f781a7700e4`).
+- **Modelo y preparación:** `ollama list` respondió; se seleccionó `qwen-optimizado:latest`. Preparación y comprobación: aproximadamente 1 minuto.
+- **Prueba inicial (`--una`):** se ejecutó la cola indicada con una carpeta de salida fuera del repositorio. `M12-ayuda-cajera-s1` quedó **BLOQUEADA**: `Ollama respondió HTTP 500`. Comprobación mínima posterior del modelo respondió `OK`, por lo que el bloqueo está en la llamada de la cola y no demuestra que Ollama esté ausente.
+- **Datos sensibles:** no se aprobó ni copió ningún texto; por tanto no entró material sensible al repositorio ni se modificó dinero o precios.
+- **Cierre:** se cerraron los procesos de Ollama iniciados para esta comprobación. Pendiente: corregir o diagnosticar el HTTP 500 y repetir `--una` antes de procesar el resto de tareas.
