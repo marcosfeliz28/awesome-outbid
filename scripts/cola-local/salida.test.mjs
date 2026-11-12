@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
-import { resolverSalida, revisarSensible } from "./salida.mjs";
+import { resolverSalida, revisarSensible, evaluarSalida } from "./salida.mjs";
 
 const REPO = resolve("/repo");
 
@@ -37,4 +37,20 @@ test("revisión: detecta teléfonos, correos, claves y cifras de dinero", () => 
 
 test("revisión: texto limpio pasa", () => {
   assert.deepEqual(revisarSensible("Apodos: Arroz Selecto, Aceite Girasol 1L"), []);
+});
+
+test("orden 122: cédula dominicana y teléfono de 10 dígitos seguidos", () => {
+  assert.deepEqual(revisarSensible("Cédula 001-1234567-8"), ["cédula"]);
+  assert.deepEqual(revisarSensible("Whatsapp 8095551234"), ["teléfono"]);
+  assert.deepEqual(revisarSensible("Whatsapp 8295551234 y 8495551234"), ["teléfono"]);
+  assert.deepEqual(revisarSensible("Código 18095551234567 y lote 7095551234"), []);
+});
+
+test("orden 122: evaluarSalida revisa siempre; el dinero solo avisa si va a docs/", () => {
+  const aDocs = evaluarSalida("Muestra RD$ 0.00 en caja", false);
+  assert.deepEqual(aDocs, { bloquear: [], avisar: ["dinero"] });
+  assert.deepEqual(evaluarSalida("Muestra RD$ 0.00 en caja", true), { bloquear: ["dinero"], avisar: [] });
+  assert.deepEqual(evaluarSalida("Llame al 809-555-1234 o RD$ 5", false), { bloquear: ["teléfono"], avisar: ["dinero"] });
+  assert.deepEqual(evaluarSalida("Cédula 001-1234567-8", false).bloquear, ["cédula"]);
+  assert.deepEqual(evaluarSalida("Abra la caja y toque Cobrar", false), { bloquear: [], avisar: [] });
 });

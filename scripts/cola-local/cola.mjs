@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { ejecutar } from "../ollama-local/tarea.mjs";
-import { resolverSalida, revisarSensible } from "./salida.mjs";
+import { resolverSalida, evaluarSalida } from "./salida.mjs";
 
 export const LIMITE_ENTRADA = 6000;
 
@@ -65,10 +65,9 @@ async function main() {
     writeFileSync(rutaEstado, JSON.stringify(estado, null, 2), "utf8");
     try {
       const { texto, segundos } = await ejecutar({ encargo: construirEncargo(tarea, leer, contexto), maxTokens: tarea.maxTokens ?? 2500, modelo: tarea.modelo });
-      if (externa !== undefined) {
-        const hallazgos = revisarSensible(texto);
-        if (hallazgos.length) throw new Error(`salida con datos sensibles (${hallazgos.join(", ")}); no se guardó`);
-      }
+      const { bloquear, avisar } = evaluarSalida(texto, externa !== undefined);
+      if (bloquear.length) throw new Error(`salida con datos sensibles (${bloquear.join(", ")}); no se guardó`);
+      if (avisar.length) console.warn(`[${tarea.id}] aviso: revisa a mano (${avisar.join(", ")}) antes de integrar`);
       mkdirSync(dirname(salida), { recursive: true });
       writeFileSync(salida, texto, "utf8");
       estado = registrar(estado, tarea.id, { estado: "hecha", segundos });
