@@ -12,6 +12,7 @@
 
 ### Corrección solicitada por Norexos 1
 
+- **Commit correctivo:** `f7e2fedf8f6f6f3ab0ec1b039751defb054938c7`, sobre la base actualizada `origin/nexora-cloud` `b6de76a4df69a5f9f44c96f288c6a320de98aef0`.
 - **Crédito:** eliminé la aprobación obligatoria y dejé la condición real: gerencia solo escribe su PIN cuando el sistema lo pide. También eliminé de esta página la frase discutida sobre internet; el flujo queda alineado con la pregunta rápida implementada.
 - **Depuración:** quité la frase de relleno de la autorización con PIN y retiré instrucciones operativas que no podía vincular con código, como borrar un teléfono con herramientas externas o hacer una restauración mensual.
 - **Regresión:** antes de corregir, la búsqueda de frases prohibidas encontró tres coincidencias (`Confirma el acuerdo con gerencia`, `no tramites crédito sin internet` y `Comprueba el resultado antes`). Después, el mismo control no encuentra ninguna. El validador D12 vuelve a comprobar metadatos, roles, 1–6 pasos y la línea de error en las 18 páginas.
