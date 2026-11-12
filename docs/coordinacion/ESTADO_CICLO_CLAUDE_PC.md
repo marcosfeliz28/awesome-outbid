@@ -2291,3 +2291,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (7-nov, 4) — sin órdenes nuevas; mcp-recomendados ya verde: LISTA escrita
 - RESPUESTA solo cambió con resultados de 116–119 (escritos por la laptop, no órdenes nuevas); OBSIDIAN_LUMINA_PROGRESO sin cambios. Hooks guard-edit/format-edit ya aterrizaron en nexora-cloud, pero la revisión en Windows (orden 118 punto 2) no es posible desde la nube.
 - CI: pc23, a1, b01, lumina y mcp-recomendados (a6e009f9) con verify, windows-installer y render-images en verde: LISTA escrita para mcp-recomendados. Último hash visto de nexora-cloud: 1a42e1f3 (cabeza 1a42e1f3). No desplegar.
+
+## Ciclo nube (12-nov, 1) — orden 120 nueva (nexora-cloud c892d09b): 2e hecha, el resto no es ejecutable desde la nube
+- Hecho: claude-pc/cola-salida-externa c8b9d1c2 (`--salida-externa` con pruebas 0/1/`..` y revisión de teléfonos, correos, claves y dinero; 24 pruebas verdes en local; CI en curso: LISTA NO escrita). No hecho: pegar textos en ChatGPT (sin acceso), correr la cola con Ollama (no hay Ollama aquí), puntos 3 y 4 (sin clave ni celular). OBSIDIAN_LUMINA_PROGRESO sin cambios.
+- CI: pc23, a1, b01 y lumina verdes. Último hash visto de nexora-cloud: c892d09b. No desplegar.
