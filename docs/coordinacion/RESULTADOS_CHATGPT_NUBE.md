@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-12 · Reconciliación D12 tras actualización de órdenes
+
+- **Base revisada:** `origin/nexora-cloud` `880dd415ae2736b4ca90c8206f4a2f781a7700e4`.
+- **Estado de D12:** la pieza ya está terminada e integrada. La entrega final de `chatgpt-nube/ayuda-contenido-12nov` fue `67744cb9578052044e6138276029e2ef54899c95`; su contenido quedó incorporado en `nexora-cloud` mediante `a251637415a031b888d4d95ed4546586c1417dbe`.
+- **Cola vigente:** `ORDENES_CHATGPT_NUBE.md` no contiene una pieza posterior a D12. `DONDE_PONER_TODO_12NOV.md` confirma que ChatGPT Nube ya tiene su pieza D12. No se inventó ni duplicó trabajo.
+- **Revisión local de ChatGPT PC:** no se publicó, copió ni incorporó. Queda en espera de autorización expresa de Marcos, como ordenan las instrucciones actuales.
+- **Regresión documental:** antes de este informe, la búsqueda exacta del encabezado «Reconciliación D12 tras actualización de órdenes» no encontró coincidencias y terminó con código 1. Después del cambio, el control encuentra este registro; también se verificaron las 18 páginas de ayuda integradas y la ausencia de las tres frases descartadas durante la corrección de D12.
+- **Autoauditoría:** el cambio solo actualiza este archivo de coordinación. No modifica `apps/**`, `tests/e2e/**`, dinero, precios, Render, producción, la base de la tienda ni credenciales; no mezcla ni despliega nada.
+- **Rama de reporte:** `chatgpt-nube/reconciliacion-d12-12nov` (SHA final pendiente de fijar antes del único push).
+
 ## 2026-11-12 · D12 · contenido de ayuda por rol
 
 - **Rama y base:** `chatgpt-nube/ayuda-contenido-12nov`, creada desde `origin/nexora-cloud` `8a83093723a884f7edb017d2f0916b371f556227`. La implementación está en `6a809cd700c59b1bd7eddf6f2b4a24cb4300a8e7`.
