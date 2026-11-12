@@ -6151,7 +6151,7 @@ td strong {
 /* Poca altura (monitores 16:9 con escala 125–150 %): el cobro sin desplazarse. */
 @media (min-width: 901px) and (max-height: 800px) {
   .product-image {
-    aspect-ratio: 3 / 2;
+    aspect-ratio: 16 / 9;
   }
   .cart-heading {
     padding: 8px 16px;
