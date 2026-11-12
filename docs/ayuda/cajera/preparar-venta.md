@@ -12,4 +12,4 @@ palabras_clave: [buscar producto, carrito, cliente]
 5. Si no existe, pulsa **Nuevo cliente aquí mismo** y guarda su nombre.
 6. Revisa el total antes de cobrar.
 
-Si algo sale mal: prueba menos palabras; si el producto no aparece, avisa a gerencia.
+Si algo sale mal: busca por código o usa menos palabras.

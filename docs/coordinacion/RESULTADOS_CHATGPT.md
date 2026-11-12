@@ -2,6 +2,13 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-12 · ChatGPT NUBE · corrección D12 de ayuda por rol
+
+- **Alcance:** corregí en `chatgpt-nube/ayuda-contenido-12nov` la entrega D12 revisada por Norexos 1. La aprobación de crédito ahora es condicional, desapareció el relleno señalado y se retiraron instrucciones sin respaldo demostrable.
+- **Evidencia:** `RESULTADOS_CHATGPT_NUBE.md` contiene la matriz de las 18 páginas, todos sus pasos y los rangos `archivo:línea` que los sustentan.
+- **Pruebas:** la regresión de las tres frases rechazadas, el contrato de las 18 páginas y `git diff --check` pasaron. `pnpm check` terminó con código 0: 116 archivos y 1,028 pruebas pasaron; uno y 10, respectivamente, se omitieron por condiciones existentes; ambos builds terminaron correctamente.
+- **Límites:** solo se modificaron documentos. No se desplegó ni se tocó Render, producción, la base de la tienda, credenciales, dinero o precios. El SHA publicado y los tres CI se anotarán al cerrar la entrega.
+
 ## 2026-11-07 · ChatGPT NUBE · `chatgpt-nube/contrato-correcciones` · correcciones técnicas del contrato
 
 - **Base y alcance:** rama creada desde `origin/nexora-cloud` `655570eba498eb3481901d671d38101c672749ba`. Solo se corrigieron los cinco borradores de `docs/venta/contrato/`; no se cambió código, precios, planes, credenciales, datos ni producción.

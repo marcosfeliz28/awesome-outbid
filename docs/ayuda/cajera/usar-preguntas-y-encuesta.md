@@ -11,4 +11,4 @@ palabras_clave: [preguntas rápidas, encuesta, ayuda]
 4. Contesta lo que ocurre normalmente, sin claves ni datos privados.
 5. Pulsa **Guardar respuestas** al terminar.
 
-Si algo sale mal: si no entiendes una pregunta, pide ayuda antes de guardar.
+Si algo sale mal: pulsa **Otra pregunta** para volver a la lista sin guardar la encuesta.

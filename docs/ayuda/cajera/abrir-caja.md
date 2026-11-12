@@ -11,4 +11,4 @@ palabras_clave: [abrir caja, fondo inicial, efectivo]
 4. Escribe el monto y pulsa **Guardar**.
 5. Si el fondo es menor que el sugerido, explica la diferencia en la nota.
 
-Si algo sale mal: si ya existe una caja abierta, no abras otra y llama a gerencia.
+Si algo sale mal: si ya existe una caja abierta, usa esa caja y no abras otra.

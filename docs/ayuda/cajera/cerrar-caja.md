@@ -12,4 +12,4 @@ palabras_clave: [cerrar caja, arqueo, efectivo, tarjeta declarada]
 5. Marca **Confirmo que conté efectivo y tarjeta**.
 6. Pulsa **Cerrar caja e imprimir cuadre** una sola vez.
 
-Si algo sale mal: no cambies conteos; sincroniza pendientes y pide ayuda a gerencia.
+Si algo sale mal: no cambies conteos; sincroniza o resuelve las ventas pendientes antes de cerrar.
