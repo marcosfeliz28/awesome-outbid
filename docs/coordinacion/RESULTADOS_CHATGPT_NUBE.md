@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-12 · Mejoras C5-1 · textos y ayuda
+
+- **Rama y base:** `chatgpt-nube/ayuda-textos-12nov`, rebasada sin conflictos sobre `origin/nexora-cloud` `6bfa1aadd2443a4e45487cae61b2f74c19877822`. El commit de implementación es `ca514001ad75e21d49a1ba32dd81509de961458e`.
+- **Pieza 1 conciliada, no repetida:** el arreglo original `chatgpt-nube/fix-e2e-12nov` (`8022a736`, run `43158775690`, tres CI verdes) ya está integrado por contenido en la base. La integración reescribió los SHA durante el rebase. Norexos 1 conserva la revisión e integración. Windows-Smoke continúa pendiente y no se declara certificado.
+- **C5-1:** comparé las 30 respuestas de Preguntas rápidas, las ocho secciones del manual de caja y las 30 preguntas de la encuesta contra la interfaz actual. Corregí cinco discrepancias en los dos manuales. Documenté tres cambios exactos para `QuickQuestions.tsx` sin tocar `apps/**`, porque ese archivo pertenece a Claude nube. El detalle completo está en `docs/coordinacion/mejoras-12nov/C5-1_textos.md`.
+- **Regresión antes/después:** antes del cambio, `vitest run tests/accessibility-contract.test.ts -t 'C5-1'` falló porque el manual no contenía `El fondo menor no requiere PIN`. Después pasó 1/1. La comprobación conjunta de `accessibility-contract` y `compliance` pasó 40 pruebas y omitió una.
+- **Control final tras actualizar la base:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; 116 archivos de prueba pasaron y uno se omitió; 1,028 pruebas pasaron y 10 se omitieron; los builds web y API pasaron. Vite solo emitió la advertencia conocida de un chunk mayor de 500 kB.
+- **Autoauditoría:** el control completo detectó que mi primer título de la sección de anulación rompía un contrato documental existente. Conservé el encabezado `solo administración` y actualicé debajo el flujo real de solicitud. Las pruebas afectadas pasaron después. Revisé el diff final: solo contiene los dos manuales, la tabla C5-1, una regresión textual y este informe; no contiene `apps/**` ni `tests/e2e/**`.
+- **Límites:** no abrí la interfaz ni ejecuté E2E de navegador. No desplegué, no mezclé, no abrí PR y no toqué Render, producción, la base de la tienda ni credenciales. Los tres CI se comprobarán sobre el SHA final después del único push permitido.
+
 ## 2026-11-08 · Asistente analista · `chatgpt-nube/asistente-analista`
 
 - **Qué hice:** documenté el producto de IA analítica en `docs/ia/ASISTENTE_ANALISTA_SPEC.md`: ocho grupos de preguntas, las cinco herramientas actuales, seis lecturas faltantes, matriz de permisos para dueña/gerente/cajera y reconciliación obligatoria por tres caminos. Preparé `ASISTENTE_ANALISTA_EVAL_100.md` con exactamente 100 preguntas, respuestas y cálculos deterministas, incluidas trampas de PIN, otra empresa/sucursal, anulaciones, escrituras e inyección. En `ASISTENTE_ANALISTA_COSTOS.md` calculé cuatro escenarios con las tarifas implementadas en `ai-prices.ts` y conservé las cuotas vigentes de 100/250/600/1,500 preguntas.

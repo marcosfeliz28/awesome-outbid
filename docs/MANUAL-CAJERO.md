@@ -8,7 +8,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 
 1. Escribe tu usuario y contraseña. Si pide cambiarla, completa las cinco reglas y confirma tu nueva clave; no la compartas. Para cambiarla otro día, abre el menú de tu nombre (arriba a la derecha) → **Cambiar mi contraseña**. Si la olvidaste, pide a la administración **Restablecer contraseña**. Si solo quedó bloqueada por intentos fallidos y la recuerdas, espera 15 minutos o pide lo mismo a la administración.
 2. En **Caja**, pulsa **Abrir mi caja** y cuenta el efectivo físico que recibes como fondo inicial.
-3. Escribe el monto y **Guardar**. Si es menor que el fondo sugerido, explica la diferencia y pide al gerente su PIN cuando se solicite.
+3. Escribe el monto y pulsa **Guardar**. Si es menor que el sugerido, explica la diferencia en la nota. El fondo menor no requiere PIN.
 4. Si ya existe caja abierta, no la abras otra vez: revisa Caja y llama a gerencia. Cada persona usa su usuario y equipo aprobado.
 
 ![Abrir caja y registrar el fondo](capturas/manual/01-abrir-caja.png)
@@ -33,7 +33,7 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 ## 3. Cobrar, descuento y PIN
 
 1. Pulsa **Cobrar** (F12). Elige **Efectivo**, **Tarjeta** o **Transferencia**, indica monto y **Agregar pago**.
-2. En efectivo escribe lo recibido y entrega el cambio indicado. En tarjeta, solo últimos cuatro dígitos y aprobación; en transferencia, banco y referencia.
+2. En efectivo escribe lo recibido y entrega el cambio indicado. En tarjeta completa los campos visibles: últimos cuatro dígitos, aprobación, marca, terminal si aparece y tipo. En transferencia escribe la cuenta y la referencia.
 3. Para pago mixto, agrega cada método hasta que Pendiente sea RD$ 0.00. Pulsa **Finalizar venta** una sola vez y espera confirmación.
 4. En **Crédito / contraentrega**, identifica al cliente y confirma el acuerdo con gerencia. El saldo pendiente no es efectivo cobrado. Si pide **PIN del gerente para aprobar la venta**, el gerente lo escribe personalmente.
 5. Un descuento sobre tu autorización requiere motivo y PIN de gerente. No dividas facturas para evitar controles. Administración (Marcos o Génesis) registra y verifica luego los abonos del crédito.
@@ -74,15 +74,18 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 
 ## 6. Anular: solo administración (Marcos o Génesis)
 
-1. Avisa a Marcos o Génesis con número de comprobante y motivo del error.
-2. Con su cuenta autorizada, ellos buscan la venta en **Ventas**, pulsan **Anular** y confirman el motivo.
-3. No borres ni repitas la operación mientras se revisa. La anulación conserva la historia y revierte inventario según corresponda.
-4. Si ya tiene devoluciones o abonos, administración determina el procedimiento correcto; no fuerces la anulación. El rol gerente no ve **Anular**: no es una falla.
-5. Si la caja original ya cerró y la venta tuvo efectivo, el administrador necesita su propia caja abierta, con efectivo suficiente, para entregar el reembolso y anular. Si el sistema pide abrir caja, no es un error: registra esa salida en el turno que reembolsa y conserva el cierre anterior. Cuando no coinciden esas dos condiciones, la anulación no exige esa caja de reembolso. **Devolver** también requiere caja abierta.
+1. En **Ventas**, busca una venta hecha por ti y pulsa **Solicitar anulación**.
+2. Elige el **Tipo de motivo**, completa **Explica el motivo** y pulsa **Guardar**.
+3. Consulta el estado en **Solicitudes de anulación**. Puedes cancelar una solicitud pendiente.
+4. Administración revisa la solicitud y decide si aprueba o rechaza. No repitas la venta mientras espera.
+5. Solo administración puede pulsar **Anular** directamente. El rol gerente no ve ese botón.
+6. Si hubo devoluciones o abonos, administración determina el procedimiento. No fuerces la anulación.
+7. Si la caja original cerró y hubo efectivo, administración necesita caja abierta y efectivo suficiente para reembolsar.
+8. **Devolver** también requiere una caja abierta de la persona autorizada.
 
 ![Confirmación de anulación en una cuenta de administración](capturas/manual/06-anulacion-admin.png)
 
-**Tu usuario de cajera no anula ventas.** No pidas ni uses la contraseña de un administrador.
+**Tu usuario de cajera solicita la anulación, pero no la aprueba.** No pidas ni uses la contraseña de administración.
 
 <div class="manual-page-break" style="break-after: page; page-break-after: always;"></div>
 
@@ -104,7 +107,9 @@ Una tarea por página. **Datos ficticios** en las capturas de la aplicación loc
 ## 8. Sin internet o respuesta perdida
 
 1. Si antes del cobro el indicador de la barra superior dice **Sin conexión** (en vez de **En línea**; en el celular solo se ve el ícono de wifi tachado), espera a que vuelva a decir **En línea**. Si tu tienda lo permite, puedes vender en efectivo sin internet: la venta queda guardada en el equipo y el indicador dice **Sin conexión · 1** (el número son las ventas por enviar). Las ventas offline están desactivadas por defecto; solo administración puede habilitarlas en **Configuración → Negocio y reglas → Editar configuración → «Permitir ventas sin conexión»** y asumir revisión posterior.
-2. Si ya pulsaste Finalizar y no llegó respuesta, **no vuelvas a cobrar**: la operación puede estar registrada.
+2. Lee el mensaje que aparece después de perder la respuesta.
+   - Si dice **pendiente de confirmación**, no cobres otra vez. El sistema comprobará la venta cuando vuelva la conexión.
+   - Si dice que no sabe si quedó registrada, conserva el carrito. Al volver la conexión, pulsa **Finalizar venta** otra vez con los mismos pagos.
 3. Al volver internet las ventas se envían solas. Revisa **Caja > Ventas guardadas en este dispositivo** (también se ve sin internet): **Pendiente** espera conexión; pulsa **Sincronizar** si quieres enviarlas ya.
 4. Si dice **Requiere revisión**, la fila explica qué pasó y qué hacer. Conserva el dispositivo y sus datos: no borres el navegador ni reinstales la app.
    - **Falta inventario:** gerencia ajusta el inventario y tú pulsas **Reintentar**.

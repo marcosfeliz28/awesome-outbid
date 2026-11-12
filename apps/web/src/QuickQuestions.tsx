@@ -524,7 +524,7 @@ export const QUICK_QUESTIONS: Question[] = [
     group: "Cómo se hace",
     text: "¿Cómo cierro la caja?",
     answer: help(
-      "Ve a Caja y pulsa cerrar. Cuenta el efectivo sin ver el esperado y escríbelo, igual la tarjeta y la transferencia. Si hay diferencia, explica por qué; si te piden PIN, llama a gerencia. Imprime el cuadre.",
+      "Ve a Caja y pulsa «Cerrar y arquear». Cuenta el efectivo sin ver el esperado y escríbelo; escribe también la «Tarjeta declarada». Las transferencias las suma el sistema. Si hay diferencia, explica por qué; si te piden PIN, llama a gerencia. Pulsa «Cerrar caja e imprimir cuadre».",
     ),
   },
   {
@@ -540,7 +540,7 @@ export const QUICK_QUESTIONS: Question[] = [
     group: "Cómo se hace",
     text: "¿Cómo vendo a crédito?",
     answer: help(
-      "Elige el cliente (no sirve «Cliente de mostrador»). Al cobrar toca «Crédito». Si el sistema pide aprobación, llama a gerencia para su PIN. El crédito no es dinero cobrado.",
+      "Elige primero el cliente (F4): sin cliente no se puede vender a crédito. Al cobrar toca «Crédito». Si el sistema pide aprobación, llama a gerencia para su PIN. El crédito no es dinero cobrado.",
     ),
   },
   {
@@ -548,7 +548,7 @@ export const QUICK_QUESTIONS: Question[] = [
     group: "Cómo se hace",
     text: "¿Cómo pido una anulación?",
     answer: help(
-      "En Ventas busca la factura y usa «Solicitud de anulación» con el motivo. Gerencia la revisa y la aprueba o la rechaza. No cambies la factura a mano.",
+      "En Ventas busca tu factura y pulsa «Solicitar anulación». Elige el tipo de motivo y explícalo. Administración la aprueba o la rechaza. No cambies la factura a mano ni repitas la venta mientras espera.",
     ),
   },
   {

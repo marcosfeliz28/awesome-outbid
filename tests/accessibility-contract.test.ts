@@ -124,6 +124,31 @@ describe("Textos que dicen lo que funciona hoy", () => {
       "si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente.",
     );
   });
+  it("C5-1: los manuales dicen lo mismo que las pantallas de caja", () => {
+    const manual = read("docs/MANUAL-CAJERO.md");
+    const preguntas = read("docs/MANUAL-CAJERA-PREGUNTAS.md");
+
+    expect(manual).toContain("El fondo menor no requiere PIN");
+    expect(manual).not.toContain(
+      "pide al gerente su PIN cuando se solicite",
+    );
+    expect(manual).toContain(
+      "últimos cuatro dígitos, aprobación, marca, terminal si aparece y tipo",
+    );
+    expect(manual).toContain("pulsa **Solicitar anulación**");
+    expect(manual).toContain("**Tipo de motivo**");
+    expect(manual).toContain("**Explica el motivo**");
+    expect(manual).toContain("**Solicitudes de anulación**");
+    expect(manual).not.toContain(
+      "Avisa a Marcos o Génesis con número de comprobante",
+    );
+    expect(manual).toContain("pendiente de confirmación");
+    expect(manual).toContain(
+      "pulsa **Finalizar venta** otra vez con los mismos pagos",
+    );
+    expect(preguntas).toContain("Necesidad de ayuda");
+    expect(preguntas).not.toContain("Asistente con IA");
+  });
   it("el bloqueo de cuenta ofrece lo que existe: esperar o «Restablecer contraseña»", () => {
     const auth = read("apps/api/src/auth.ts");
     expect(auth).not.toContain(
