@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-12 · D12 · contenido de ayuda por rol
+
+- **Rama y base:** `chatgpt-nube/ayuda-contenido-12nov`, creada desde `origin/nexora-cloud` `8a83093723a884f7edb017d2f0916b371f556227`. La implementación está en `6a809cd700c59b1bd7eddf6f2b4a24cb4300a8e7`.
+- **Paso 0:** comprobé las fuentes vigentes completas: `MANUAL-CAJERO.md`, `MANUAL-CAJERA-PREGUNTAS.md`, `EXPLICACION_DUENA.md` y las 30 respuestas de `QuickQuestions.tsx`. La base no contenía `docs/ayuda/` ni `docs/ayuda/borradores-local/`; por tanto, no había un borrador local que reutilizar o revisar.
+- **Entrega D12:** añadí 18 páginas independientes en `docs/ayuda/`: 12 para cajera, 3 para gerente y 3 para dueña. Todas tienen `titulo`, `rol`, `pantalla` y `palabras_clave`, entre uno y seis pasos, y una línea «Si algo sale mal:». Conservé la corrección integrada de C5-1: para crédito se exige elegir un cliente; no se afirma que «Consumidor final» esté prohibido.
+- **Regresión documental:** en la base, `test "$(git ls-tree -r --name-only origin/nexora-cloud docs/ayuda | wc -l)" -ge 1` terminó con código 1 porque había 0 páginas. Después, el validador de metadatos, roles, cantidad de pasos y manejo de errores pasó sobre las 18 páginas. `git diff --check` también pasó.
+- **Control completo:** `pnpm check` terminó con código 0. Typecheck y ESLint pasaron; 116 archivos de prueba pasaron y uno se omitió; 1,028 pruebas pasaron y 10 se omitieron; los builds web y API pasaron. Vite solo emitió la advertencia conocida de un chunk mayor de 500 kB.
+- **Autoauditoría:** cada paso numerado tiene 20 palabras o menos. Contrasté los botones operativos con la interfaz actual: abrir/cerrar caja, guardar cliente, finalizar venta, solicitar anulación y resolver ventas sin conexión coinciden. El diff de implementación solo añade contenido bajo `docs/ayuda/`; no modifica `apps/**`, `tests/e2e/**`, dinero, permisos ni API.
+- **Límites:** no abrí la interfaz ni ejecuté pruebas E2E; esta pieza es contenido y `tests/e2e/**` pertenece a Claude nube. No pude revisar borradores de la IA local porque no existen en la base publicada. No desplegué, mezclé ni abrí PR; no toqué Render, producción, la base de la tienda ni credenciales. Los tres CI se comprobarán sobre el SHA final después del único push permitido.
+
 ## 2026-11-12 · Mejoras C5-1 · textos y ayuda
 
 - **Rama y base:** `chatgpt-nube/ayuda-textos-12nov`, rebasada sin conflictos sobre `origin/nexora-cloud` `6bfa1aadd2443a4e45487cae61b2f74c19877822`. El commit de implementación es `ca514001ad75e21d49a1ba32dd81509de961458e`.
