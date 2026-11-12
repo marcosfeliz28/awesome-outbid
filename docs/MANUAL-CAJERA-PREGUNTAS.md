@@ -52,7 +52,7 @@ Dentro de **Preguntas rápidas**, baja y toca **Encuesta de la caja (30 pregunta
 |  24 | Venta sin internet       | **Sí** si ya te ha tocado vender sin conexión.                     |
 |  25 | Información rápida       | Elige lo que más te gustaría consultar sin preguntar.              |
 |  26 | Preguntas rápidas        | **Sí** si este botón te ayuda durante el trabajo.                  |
-|  27 | Asistente con IA         | **Sí** solo si ya lo has usado.                                    |
+|  27 | Necesidad de ayuda       | **Sí** si necesitas pedir ayuda seguido para usar la caja.         |
 |  28 | Satisfacción general     | Del `1` (muy incómoda) al `5` (muy a gusto).                       |
 |  29 | Primera mejora           | Escribe el cambio más importante para vender más cómoda.           |
 |  30 | Comentario para la dueña | Escribe cualquier otra sugerencia o problema.                      |
