@@ -49,3 +49,19 @@ Dadas por ella en este chat, no por mensaje de otra sesión:
 - **Tope del asistente analista: US$0.40 por usuaria al día, aceptado.** Máximo US$12 al mes por usuaria (30 días). La función `claude-pc/asistente-analista` sigue sin mezclar: falta auditarla.
 - **Cambios que tocan dinero: C2, C3, C4-2, C10, D6, D8, D10-3 autorizados, uno por uno.** Reglas: sin cambiar totales, impuestos, descuentos ni la forma en que se guardan los pagos; una rama y un push por código; Paso 0 contra el código; pruebas completas y 3 CI verdes; ChatGPT PC los comprueba en pantalla; **ninguno se despliega** sin la prueba de Windows y sin avisarle.
 - Orden: C1 → C2 → C3 → C10 → D8 → D6 → C4-2 → D10-3.
+
+## Reparto actualizado (12-nov, noche, Norexos 1; sin gastos ni despliegue, nada mezclado en esta revisión)
+Verificado en las ramas, no en mensajes:
+| Área | Estado real | Pieza vigente (exclusiva) | Entrega |
+|---|---|---|---|
+| **Claude PC nativo** | `claude-pc/ayuda-local-12nov` (`0963547f`): 5 guías aprobadas con 3 CI verdes; s3 y s7 bloqueadas por el revisor (cifras de dinero); s5 excluida por rol equivocado | Cierre de la Orden 123 y lint rojo de `claude-pc/cola2-26oct` (16 no-undef en scripts de cola/Ollama). **Nadie más toca esos scripts** | Reformular s3, s5 y s7 sin cifras y con el rol correcto; cola2 con lint verde y 3 CI |
+| **ChatGPT PC** | `chatgpt-pc/instalacion-limpia-12nov` (`2d817d0a`): la VM limpia no arrancó (ISO de Windows dañado); sin capturas C6/C15 (falta `@zxing/library` en su PC) | Instalación limpia + C6/C15 | ISO reparado, instalación de punta a punta con versión, tamaño, SHA-256 y tiempos; capturas. **Sigue siendo lo que bloquea el despliegue** |
+| **ChatGPT nube** | D12 cerrada y reconciliada (`e40f3925`, 3 CI verdes); D12 local sigue sin publicar | Nueva (abajo) | Informe en `RESULTADOS_CHATGPT_NUBE.md` |
+| **Norexos 1** | Auditando `claude-pc/asistente-analista` (tope US$0.40 ya está en el código); C1 y siguientes en cola | Auditoría de arquitectura, luego C1 → C2 → C3 | Hallazgos aquí; nada se mezcla sin aviso |
+
+**Tareas nuevas para ChatGPT nube (solo textos y documentos):**
+1. Verificar las 5 guías de `docs/ayuda/local/` de la rama `claude-pc/ayuda-local-12nov` contra el código y las pantallas: tabla paso → archivo:línea, como en D12. No editar esa rama; entregar las correcciones como lista.
+2. Escribir los criterios de aceptación en pantalla de C1, C2, C3 y C10 (qué ve la cajera antes y después), para que ChatGPT PC los compruebe cuando se construyan. Sin cambiar reglas de dinero.
+3. Revisar que el contrato `docs/venta/contrato/04_TERMINOS_USO_IA_VENTAS.md` de la rama del asistente analista no contradiga el tope de US$0.40 por usuaria al día.
+
+**Dependencias:** despliegue ← instalación limpia aprobada + 0 cajas + 3 CI verdes; asistente analista ← auditoría + fusión con `nexora-cloud` (108 commits de retraso); clave de IA ← la dueña, «Save only».
