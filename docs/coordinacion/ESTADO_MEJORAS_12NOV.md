@@ -42,3 +42,10 @@ D2 (asistente analista), C7, C5-2, D3-2, D4-2, C8-2, C16, D12, y con sí de la d
 2. Cuáles de las mejoras que tocan dinero sí y cuáles no (C2, C3, C4-2, C10, D6, D8, D10-3).
 3. C1 («Consumidor final» por defecto) y C12 (títulos directos).
 4. Ella pone la clave en Render con «Save only» (pasos en `PASOS_CLAVE_IA_12NOV.md`).
+
+## Autorizaciones directas de la dueña (12-nov, tarde)
+Dadas por ella en este chat, no por mensaje de otra sesión:
+- **Clave de IA en Render: esta noche, la pone ella** con «Save only» (`PASOS_CLAVE_IA_12NOV.md`). Norexos 1 despliega solo con 0 cajas, 3 CI verdes y la prueba de Windows.
+- **Tope del asistente analista: US$0.40 por usuaria al día, aceptado.** Máximo US$12 al mes por usuaria (30 días). La función `claude-pc/asistente-analista` sigue sin mezclar: falta auditarla.
+- **Cambios que tocan dinero: C2, C3, C4-2, C10, D6, D8, D10-3 autorizados, uno por uno.** Reglas: sin cambiar totales, impuestos, descuentos ni la forma en que se guardan los pagos; una rama y un push por código; Paso 0 contra el código; pruebas completas y 3 CI verdes; ChatGPT PC los comprueba en pantalla; **ninguno se despliega** sin la prueba de Windows y sin avisarle.
+- Orden: C1 → C2 → C3 → C10 → D8 → D6 → C4-2 → D10-3.
