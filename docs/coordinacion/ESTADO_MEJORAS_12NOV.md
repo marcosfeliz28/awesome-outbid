@@ -65,3 +65,13 @@ Verificado en las ramas, no en mensajes:
 3. Revisar que el contrato `docs/venta/contrato/04_TERMINOS_USO_IA_VENTAS.md` de la rama del asistente analista no contradiga el tope de US$0.40 por usuaria al día.
 
 **Dependencias:** despliegue ← instalación limpia aprobada + 0 cajas + 3 CI verdes; asistente analista ← auditoría + fusión con `nexora-cloud` (108 commits de retraso); clave de IA ← la dueña, «Save only».
+
+## Auditoría del asistente analista (`claude-pc/asistente-analista`, 9d419f30), 12-nov noche
+Lectura de diff por revisor de dinero (no ejecutó pruebas ni probó con base real). **Veredicto: se puede mezclar; ningún hallazgo bloquea.** Solo lectura confirmada (6 herramientas sin escritura, salvo la fila del medidor `AiUsage`); `sessionsFor` sin cambio con rango vacío; permisos reutilizan los de los reportes.
+Antes de activar el plan `analista` en producción:
+1. (media) Si `ASSISTANT_MODEL` apunta a un modelo que no esté en `ai-prices.ts`, `costUsd` queda nulo y el tope de US$0.40 no salta. Con el modelo por defecto `claude-haiku-5-5` sí está en la tabla (verificado por N1). Acción: fallar cerrado (negar) si no hay precio.
+2. (media) El tope es blando: se revisa antes de la pregunta y una pregunta puede hacer hasta 4 llamadas al modelo. Pasarse unos centavos es posible.
+3. (media) Preguntas simultáneas de la misma usuaria pasan con el mismo gasto acumulado hasta que se liquida el costo; el exceso queda acotado por las 30 preguntas diarias. No probado con carga.
+4. (baja) El monto 0.4 dice «PENDIENTE de aprobar por la dueña» en el código; **ya lo aprobó el 12-nov**: actualizar el comentario al mezclar.
+5. Pendiente de revisar: que todo reporte con columnas de costo tenga la marca `margin` (la limpieza por nombre `strip` no cubre las columnas en español).
+Falta para mezclar: fusionar `nexora-cloud` (108 commits de retraso), 3 CI verdes y revisión de seguridad. No se activa sin la clave y el plan puestos por la dueña.
