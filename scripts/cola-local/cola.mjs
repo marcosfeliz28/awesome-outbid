@@ -1,9 +1,10 @@
 // Cola de tareas para el modelo local: toma la siguiente tarea pendiente, arma el encargo
 // con archivos del repo y guarda la salida en docs/. Estado en disco: se retoma tras un corte.
-// Uso: node scripts/cola-local/cola.mjs [--una] [--cola=docs/coordinacion/COLA_LOCAL_ACTIVA.json]
+// Uso: node scripts/cola-local/cola.mjs [--una] [--cola=docs/coordinacion/COLA_LOCAL_ACTIVA.json] [--salida-externa=<carpeta fuera del repo>]
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { ejecutar, validarSalida } from "../ollama-local/tarea.mjs";
+import { ejecutar } from "../ollama-local/tarea.mjs";
+import { resolverSalida, revisarSensible } from "./salida.mjs";
 
 export const LIMITE_ENTRADA = 6000;
 
@@ -43,6 +44,7 @@ async function main() {
   const args = process.argv.slice(2);
   const rutaCola = args.find((a) => a.startsWith("--cola="))?.slice(7) ?? "docs/coordinacion/COLA_LOCAL_ACTIVA.json";
   const rutaEstado = rutaCola.replace(/\.json$/, "_ESTADO.json");
+  const externa = args.find((a) => a.startsWith("--salida-externa="))?.slice(17);
   const una = args.includes("--una");
   const cola = JSON.parse(readFileSync(rutaCola, "utf8"));
   const leer = (ruta) => readFileSync(ruta, "utf8");
@@ -57,12 +59,16 @@ async function main() {
     let estado = cargarEstado(rutaEstado);
     const tarea = siguienteTarea(cola, estado);
     if (!tarea) return console.log("Cola vacía: no hay tareas pendientes.");
-    const salida = validarSalida(tarea.salida);
+    const salida = resolverSalida(tarea.salida, externa);
     estado = registrar(estado, tarea.id, { estado: "en curso" });
     mkdirSync(dirname(rutaEstado), { recursive: true });
     writeFileSync(rutaEstado, JSON.stringify(estado, null, 2), "utf8");
     try {
       const { texto, segundos } = await ejecutar({ encargo: construirEncargo(tarea, leer, contexto), maxTokens: tarea.maxTokens ?? 2500, modelo: tarea.modelo });
+      if (externa !== undefined) {
+        const hallazgos = revisarSensible(texto);
+        if (hallazgos.length) throw new Error(`salida con datos sensibles (${hallazgos.join(", ")}); no se guardó`);
+      }
       mkdirSync(dirname(salida), { recursive: true });
       writeFileSync(salida, texto, "utf8");
       estado = registrar(estado, tarea.id, { estado: "hecha", segundos });
