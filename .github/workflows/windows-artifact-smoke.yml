@@ -1,0 +1,58 @@
+name: Norexos Windows artifact smoke
+on:
+  push:
+    branches: [qa/windows-smoke-c02-12nov]
+    paths:
+      - .github/workflows/windows-artifact-smoke.yml
+      - instalador/tests/Run-ArtifactSmoke.ps1
+      - instalador/tests/artifact-business-smoke.mjs
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: windows-artifact-smoke-c02
+  cancel-in-progress: false
+jobs:
+  smoke:
+    if: github.repository == 'marcosfeliz28/awesome-outbid' && github.event.repository.private == false
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Comprobar coste cero y descargar el artefacto aprobado
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:RUNNER_OS -ne 'Windows') { throw 'Solo runner Windows estandar de GitHub.' }
+          $repo = gh api repos/marcosfeliz28/awesome-outbid | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $repo.private -ne $false -or $repo.visibility -ne 'public') { throw 'No se ha demostrado coste cero: repositorio no publico.' }
+          $artifact = gh api repos/marcosfeliz28/awesome-outbid/actions/artifacts/13945863721 | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $artifact.expired -or $artifact.workflow_run.head_sha -ne 'c02b71df631e2e8faae51d9136108f594f1fc75f') { throw 'Artefacto no valido para esta aprobacion.' }
+          if ($artifact.name -ne 'Nexora-POS-Setup-0.1.1-prueba' -or $artifact.workflow_run.id -ne 43219767992) { throw 'Identidad de artefacto inesperada.' }
+          $out = Join-Path $env:RUNNER_TEMP 'norexos-approved-artifact'
+          New-Item -ItemType Directory -Path $out -ErrorAction Stop | Out-Null
+          gh run download 43219767992 --repo marcosfeliz28/awesome-outbid --name Nexora-POS-Setup-0.1.1-prueba --dir $out
+          if ($LASTEXITCODE -ne 0) { throw 'No se pudo descargar el artefacto aprobado.' }
+          $exe = Join-Path $out 'Nexora-POS-Setup-0.1.1-prueba.exe'
+          $hash = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne 'a52bbade983f6a5ff935b980e50e58dfd25d060fa225cb4e8204679a8ec547ee') { throw 'El SHA256 no coincide; no se ejecuta.' }
+          Write-Output "EXE aprobado verificado: $hash"
+          Write-Output 'Runner estandar, repositorio publico, este job no sube artefactos ni usa cache, sin compras ni despliegue.'
+          "NOREXOS_SMOKE_SETUP=$exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Validar sintaxis PowerShell 5.1 y JavaScript antes de instalar
+        shell: powershell
+        run: |
+          $tokens = $null; $errors = $null
+          [void][Management.Automation.Language.Parser]::ParseFile((Join-Path $pwd 'instalador/tests/Run-ArtifactSmoke.ps1'), [ref]$tokens, [ref]$errors)
+          if ($errors.Count) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }
+          node --check instalador/tests/artifact-business-smoke.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Instalacion, inicio, venta, cierre y respaldo restaurado
+        shell: powershell
+        run: |
+          & ./instalador/tests/Run-ArtifactSmoke.ps1 -SetupPath $env:NOREXOS_SMOKE_SETUP
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
