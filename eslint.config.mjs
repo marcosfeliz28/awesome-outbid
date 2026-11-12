@@ -43,6 +43,8 @@ export default tseslint.config(
   {
     files: [
       "scripts/*.mjs",
+      "scripts/cola-local/*.mjs",
+      "scripts/ollama-local/*.mjs",
       "deploy/render/**/*.mjs",
       "docs/validacion/**/*.mjs",
       "eslint.config.mjs",
