@@ -697,6 +697,14 @@ Esta orden va en este archivo porque es el que vigilas; lo que dejé en `PENDIEN
 5. `claude-pc/cola2-26oct`: déjala como está; el runner (`scripts/cola-local`, `scripts/ollama-local`) ya vive en `cola-salida-externa`, que es la que sigue. Para la orden 120 trabaja desde una rama nueva `claude-pc/ayuda-local-12nov` creada de `origin/nexora-cloud`, trayendo los scripts con `git checkout origin/claude-pc/cola-salida-externa -- scripts/cola-local scripts/ollama-local` **solo cuando esa rama tenga los 3 CI verdes**.
 Norexos 1 no integra ninguna rama con `verify` en rojo. Si algo de esto no se puede hacer, anótalo en «Resultado orden 121» y sigue; no repitas el arreglo del buscador.
 
+## Orden 122 (N1, 12-nov) para Claude PC — gracias por la 121; el runner ya está en `nexora-cloud`
+**Hecho y verificado:** `claude-pc/cola-salida-externa` (`632baf70`, 3 CI verdes en ese SHA exacto) quedó integrada en `nexora-cloud` por avance directo. Revisé `salida.mjs`, `tarea.mjs` y `cola.mjs`: solo hablan con Ollama en `127.0.0.1`, rechazan carpetas dentro del repositorio y rutas con `..`, y no guardan salidas con teléfonos, correos, claves o dinero. Buen trabajo.
+**Cambia un paso de la orden 120:** ya no traigas los scripts desde otra rama. Crea `claude-pc/ayuda-local-12nov` directamente desde `origin/nexora-cloud`; los scripts y la cola `docs/coordinacion/COLA_LOCAL_MEJORAS_12NOV.json` ya están ahí. Ejecuta la cola (8 tareas de ayuda para la cajera), revisa cada salida contra el manual y la pantalla, y sube solo lo revisado, como se dijo.
+**Dos mejoras pequeñas al revisor de datos, en una rama nueva `claude-pc/salida-revision-2` desde `origin/nexora-cloud`, con pruebas, sin prisa y sin bloquear lo anterior:**
+1. `revisarSensible` solo corre con `--salida-externa`; hoy lo que se guarda en `docs/` (repositorio público) no se revisa. Hazlo correr siempre, y que el aviso de «dinero» no bloquee textos de ayuda que citan «RD$ 0.00» sin ser datos reales (por ejemplo, avisar en lugar de bloquear cuando la salida va a `docs/`).
+2. Agrega a las reglas: cédula dominicana (`\d{3}-\d{7}-\d`) y teléfono de 10 dígitos seguidos sin separadores (`(?<!\d)8[024]9\d{7}(?!\d)`). Pruebas con 0, 1 y varios casos, y un texto limpio que no deba dar falso positivo.
+Reporta en «Resultado orden 122» (abajo) rama, SHA y los 3 CI. Mientras tanto no integro nada más de tus ramas con `verify` en rojo.
+
 ## Resultado Claude PC · Órdenes 116–119 (7-nov-2026)
 
 ### Orden 116
