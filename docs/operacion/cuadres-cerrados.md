@@ -14,3 +14,4 @@
 | 13-nov | FS-569 Marielqui 1,450 | Cobrado en caja (Addison pagó 1,500, dejó 50). |
 | 13-nov | FS-570 angela bello 9,450 | Completivo de un pago que ya nos hicieron (dueña). Verificada. |
 | 13-nov | FS-547 olfi 4,300; FS-548 davelys 3,750; FS-553 marcos 5,500 | Cayeron en cuentas de Génesis (dueña). Verificadas. Cuentan para lo de Génesis → MacGen. |
+| 13-nov | FS-568 Ana Michelle | Cobro registrado por Claude (administración, sin caja): transferencia 2,600 Banreservas 5237 ref 243460062575; depósito 3,050 (envío 250 según chat; 200 de más = mensajero). Saldo 0. |
