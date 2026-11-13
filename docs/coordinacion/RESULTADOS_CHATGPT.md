@@ -2,6 +2,13 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-13 · ChatGPT NUBE · especificaciones de la primera tanda
+
+- **Base y asignación:** `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560`; cola nueva `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`; rama `chatgpt-nube/espec-tanda1-13nov`.
+- **Resultado:** `docs/coordinacion/espec-tanda1/` contiene diez páginas y una tabla de construcción/dependencias. Las siete piezas autorizadas tienen cambio mínimo y regresión futura concreta; EST-02, COM-04 y el aviso COM-03 permanecen en diseño porque afectan promociones, totales o decisiones de precio y requieren confirmación de la dueña.
+- **Comprobaciones:** el control antes/después pasó sobre los 11 Markdown y los diez IDs; `tests/docs-sistema-citas.test.ts` pasó 4/4; Prettier pasó sobre las once especificaciones y `git diff --check` pasó sobre el diff completo. Tras `pnpm db:generate`, `pnpm check` pasó con 116 archivos/1,028 pruebas verdes, un archivo/10 pruebas omitidos por condiciones existentes y ambos builds verdes.
+- **Autoauditoría:** solo documentos de especificación e informes; citas contra archivos existentes; sin código, pruebas E2E, dinero, precios, mezcla, PR, despliegue, Render, producción, base de tienda o credenciales. El SHA final y los tres trabajos de CI se verificarán después del único push.
+
 ## 2026-11-13 · ChatGPT PC · consulta de diseño y facilidad de uso
 
 - **Base y rama:** `origin/nexora-cloud` `4fef4d550fc465f2285876fa84ed55e6a6501c5f`; `chatgpt-pc/consulta-mejoras-13nov`. Solo documentos y capturas; sin código ni despliegue.

@@ -1,5 +1,16 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-13 · especificaciones de construcción de la primera tanda
+
+- **Orden, base y rama:** nueva cola `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`, ejecutada desde `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560` en `chatgpt-nube/espec-tanda1-13nov`.
+- **Entrega:** diez especificaciones y una tabla de orden/dependencias en `docs/coordinacion/espec-tanda1/`. Las siete autorizadas son DIS-01, EST-03, COM-08, COM-03 (indicador), MOD-08, DIS-02 y EFI-01. EST-02, COM-04 y COM-03 (aviso) quedan expresamente en diseño hasta que la dueña confirme las decisiones que afectan descuentos, totales o precios.
+- **Contrato de cada pieza:** archivos/funciones con líneas de la base, cambio mínimo, regresión nueva que debe fallar antes y pasar después, pruebas existentes que leen las fuentes, casos límite y marcha atrás. No se añadieron hoy esas pruebas porque la orden limita esta rama a documentos y prohíbe construir las mejoras.
+- **Regresión documental:** antes no existía `docs/coordinacion/espec-tanda1/`; después el control exige 11 Markdown, los diez IDs y lenguaje antes/después en las diez piezas. `tests/docs-sistema-citas.test.ts` pasó 4/4; Prettier pasó sobre las once especificaciones y `git diff --check` pasó sobre el diff completo.
+- **Control completo local:** después de generar solo el cliente Prisma local, `pnpm check` terminó con código 0: typecheck y ESLint pasaron; 116 archivos de prueba y 1,028 pruebas pasaron; uno y 10, respectivamente, quedaron omitidos; ambos builds terminaron correctamente. Vite solo emitió la advertencia conocida de un chunk mayor de 500 kB.
+- **Incidencia de preparación:** el primer `pnpm check` se detuvo porque el worktree nuevo no tenía Prisma generado; el primer error fue `apps/api/src/admin.ts(255,37): Property 'customer' does not exist on type 'Database'`. `pnpm db:generate` lo resolvió sin conectar ni migrar una base.
+- **Autoauditoría:** el diff funcional está limitado a documentos de especificación y ambos informes. Las citas apuntan a archivos existentes; se separaron las siete construcciones autorizadas de las tres decisiones de dinero; no se copiaron parches ni código completo. No hubo mezcla, PR, despliegue ni acceso a Render, producción, base de tienda o credenciales.
+- **Publicación y CI:** esta sección pertenece al único commit que se publicará. El SHA final y los estados `verify`, `windows-installer` y `render-images` se comprobarán en GitHub sobre ese mismo SHA, sin añadir un commit posterior solo para autorreferenciarlo.
+
 ## 2026-11-13 · consulta independiente de 82 mejoras
 
 - **Orden y base:** `CONSULTA_MEJORAS_CHATGPT_13NOV.md`, evaluada desde `origin/nexora-cloud` `1fe0c99968ae9dff5fa91da6248ff787a1543896`.
