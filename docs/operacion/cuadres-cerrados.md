@@ -12,3 +12,4 @@
 | 13-nov | Wendy −60 (11-nov) | Bajo 100, no se persigue. |
 | 13-nov | FS-568 Ana Michelle (3,050 a Banreservas 5237, ref 243460062575) | Crédito cerrado por la tienda. |
 | 13-nov | FS-569 Marielqui 1,450 | Cobrado en caja (Addison pagó 1,500, dejó 50). |
+| 13-nov | FS-570 angela bello 9,450 | Completivo de un pago que ya nos hicieron (dueña). Verificada. |
