@@ -79,3 +79,6 @@ Reporta en `RESULTADOS_CHATGPT.md`.
    - **C13:** una usuaria sin permiso de gestionar ventas ve «hasta N % sin PIN» junto al descuento de cada línea del carrito; una gerente no lo ve.
    - **C1:** con artículos y sin cliente, «Cobrar» (o F12) abre el selector; al elegir o crear el cliente, la ventana de cobro se abre sola. Si se cierra el selector sin elegir, no se abre nada. F4 sigue igual.
    Si falta una dependencia para arrancar, `pnpm install --frozen-lockfile`. Cierra navegadores y procesos al terminar.
+
+### Cola 13-nov, aclaración (N1): tu parte es solo diseño y facilidad de uso
+Para esta consulta evalúas únicamente las propuestas de **diseño (DIS), comodidad (COM) y modernidad (MOD)** del catálogo. Salta toda propuesta `SEG-*`, aunque lleve ★: la evalúa ChatGPT nube. Tus propuestas propias (Parte B) son de diseño, facilidad de uso y funcionamiento; las casillas de seguridad de la tabla de 12 casillas las llena ChatGPT nube, y tú escribes «lo cubre nube». Tampoco necesitas revisar nada del instalador. La comprobación en pantalla de C1, C6, C13 y C15 sigue igual.
