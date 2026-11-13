@@ -17,65 +17,83 @@ Base: 1fe0c99968ae9dff5fa91da6248ff787a1543896
 
 | ID | Evidencia | Veredicto | Impacto | Esfuerzo | Riesgo | Dinero | Certeza | Pantalla |
 |---|---|---|---:|---|---|---|---|---|
-| EST-01 | corregida | apoyo con cambios | 5 | G | alto | no | comprobado | no |
-| EST-02 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado | no |
-| EST-03 | confirmada | apoyo con cambios | 4 | P | medio | no | comprobado | no |
-| EST-04 | confirmada | falta un dato | 4 | M | alto | sí | comprobado | no |
-| EST-05 | confirmada | apoyo con cambios | 3 | G | alto | no | comprobado | no |
-| EST-06 | confirmada | apoyo con cambios | 3 | G | medio | no | comprobado | no |
-| EST-07 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado | no |
-| EST-08 | corregida | apoyo con cambios | 4 | M | medio | no | comprobado | no |
-| EST-09 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado | no |
-| EST-10 | confirmada | apoyo con cambios | 4 | G | alto | sí | comprobado | no |
-| EST-11 | confirmada | apoyo con cambios | 4 | M | alto | no | comprobado | no |
-| EST-12 | confirmada | apoyo con cambios | 4 | M | alto | sí | comprobado | no |
-| EST-13 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado | no |
-| EST-14 | corregida | apoyo con cambios | 5 | M | alto | sí | comprobado | no |
-| EST-15 | confirmada | apoyo con cambios | 5 | G | alto | no | comprobado | no |
-| EST-16 | corregida | apoyo con cambios | 5 | G | alto | sí | comprobado | no |
-| EST-17 | confirmada | apoyo con cambios | 4 | P | alto | sí | comprobado | no |
-| EST-18 | corregida | apoyo con cambios | 3 | G | alto | no | comprobado | no |
-| EST-19 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado | no |
-| EST-20 | corregida | apoyo con cambios | 4 | G | alto | no | comprobado | no |
-| EST-21 | confirmada | apoyo con cambios | 5 | G | alto | sí | comprobado | no |
-| DIS-01 | confirmada | apoyo con cambios | 4 | P | bajo | no | comprobado | no |
-| COM-01 | confirmada | apoyo con cambios | 4 | M | medio | no | comprobado | no |
-| COM-02 | confirmada | apoyo con cambios | 5 | M | alto | no | comprobado | no |
-| COM-03 | confirmada | apoyo con cambios | 4 | P | medio | sí | comprobado | no |
-| SEG-01 | confirmada | apoyo con cambios | 5 | G | alto | no | comprobado | no |
-| SEG-02 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado | no |
-| SEG-03 | confirmada | apoyo con cambios | 4 | M | medio | no | comprobado | no |
-| SEG-04 | confirmada | apoyo con cambios | 5 | G | alto | no | comprobado | no |
-| SEG-05 | confirmada | apoyo con cambios | 5 | M | alto | no | comprobado | no |
-| SEG-06 | corregida | apoyo con cambios | 4 | M | medio | no | comprobado | no |
-| SEG-07 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado | no |
-| SEG-08 | confirmada | apoyo con cambios | 5 | P | medio | no | comprobado | no |
-| SEG-09 | confirmada | apoyo con cambios | 5 | M | medio | no | deducido | no |
-| SEG-10 | confirmada | no la haría | 2 | G | alto | no | comprobado | no |
-| SEG-11 | corregida | apoyo con cambios | 3 | P | bajo | no | deducido | no |
-| SEG-12 | confirmada | apoyo con cambios | 4 | P | bajo | no | comprobado | no |
-| SEG-13 | confirmada | apoyo con cambios | 5 | M | alto | no | comprobado | no |
-| SEG-14 | corregida | apoyo con cambios | 5 | M | alto | no | comprobado | no |
-| SEG-15 | confirmada | apoyo | 4 | P | medio | no | comprobado | no |
-| SEG-16 | confirmada | apoyo con cambios | 4 | G | alto | no | deducido | no |
-| SEG-17 | confirmada | apoyo con cambios | 5 | G | alto | sí | comprobado | no |
-| SEG-18 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado | no |
-| EFI-01 | confirmada | apoyo | 5 | P | medio | no | comprobado | no |
-| EFI-02 | confirmada | apoyo | 3 | P | medio | no | comprobado | no |
-| EFI-03 | corregida | apoyo con cambios | 3 | M | medio | no | comprobado | no |
-| EFI-04 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado | no |
-| EFI-05 | confirmada | apoyo con cambios | 3 | M | alto | no | deducido | no |
-| EFI-06 | confirmada | apoyo con cambios | 3 | M | alto | no | deducido | no |
-| EFI-07 | confirmada | apoyo con cambios | 3 | M | alto | no | comprobado | no |
-| EFI-08 | confirmada | apoyo con cambios | 2 | P | alto | no | deducido | no |
-| EFI-09 | confirmada | apoyo con cambios | 3 | M | alto | sí | comprobado | no |
-| EFI-10 | confirmada | apoyo | 4 | M | medio | no | comprobado | no |
-| EFI-11 | confirmada | apoyo con cambios | 3 | P | medio | no | deducido | no |
-| EFI-12 | confirmada | apoyo con cambios | 4 | M | alto | sí | comprobado | no |
-| MOD-01 | confirmada | apoyo con cambios | 3 | G | medio | no | deducido | no |
-| MOD-05 | confirmada | apoyo con cambios | 4 | M | alto | no | comprobado | no |
-| MOD-06 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado | no |
-| MOD-07 | confirmada | apoyo con cambios | 3 | P | bajo | no | comprobado | no |
+| EST-01 | corregida | apoyo con cambios | 5 | G | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-02 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-03 | confirmada | apoyo con cambios | 4 | P | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-04 | confirmada | falta un dato | 4 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-05 | confirmada | apoyo con cambios | 3 | G | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-06 | confirmada | apoyo con cambios | 3 | G | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-07 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-08 | corregida | apoyo con cambios | 4 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-09 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-10 | confirmada | apoyo con cambios | 4 | G | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-11 | confirmada | apoyo con cambios | 4 | M | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-12 | confirmada | apoyo con cambios | 4 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-13 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-14 | corregida | apoyo con cambios | 5 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-15 | confirmada | apoyo con cambios | 5 | G | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-16 | corregida | apoyo con cambios | 5 | G | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-17 | confirmada | apoyo con cambios | 4 | P | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EST-18 | corregida | apoyo con cambios | 3 | G | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-19 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-20 | confirmada | apoyo con cambios | 4 | G | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| EST-21 | confirmada | apoyo con cambios | 5 | G | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| DIS-01 | confirmada | apoyo con cambios | 4 | P | bajo | no | comprobado (lo abrí o lo ejecuté) | no |
+| COM-01 | confirmada | apoyo con cambios | 4 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| COM-02 | confirmada | apoyo con cambios | 5 | M | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| COM-03 | confirmada | apoyo con cambios | 4 | P | medio | sí | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-01 | confirmada | apoyo con cambios | 5 | G | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-02 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-03 | confirmada | apoyo con cambios | 4 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-04 | confirmada | apoyo con cambios | 5 | G | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-05 | confirmada | apoyo con cambios | 5 | M | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-06 | corregida | apoyo con cambios | 4 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-07 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-08 | confirmada | apoyo con cambios | 5 | P | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-09 | confirmada | apoyo con cambios | 5 | M | medio | no | deducido (lo razono del código) | no |
+| SEG-10 | confirmada | no la haría | 2 | G | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-11 | corregida | apoyo con cambios | 3 | P | bajo | no | deducido (lo razono del código) | no |
+| SEG-12 | confirmada | apoyo con cambios | 4 | P | bajo | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-13 | confirmada | apoyo con cambios | 5 | M | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-14 | corregida | apoyo con cambios | 5 | M | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-15 | confirmada | apoyo | 4 | P | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-16 | confirmada | apoyo con cambios | 4 | G | alto | no | deducido (lo razono del código) | no |
+| SEG-17 | confirmada | apoyo con cambios | 5 | G | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| SEG-18 | confirmada | apoyo con cambios | 5 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EFI-01 | confirmada | apoyo | 5 | P | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EFI-02 | confirmada | apoyo | 3 | P | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EFI-03 | corregida | apoyo con cambios | 3 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EFI-04 | corregida | apoyo con cambios | 3 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EFI-05 | confirmada | apoyo con cambios | 3 | M | alto | no | deducido (lo razono del código) | no |
+| EFI-06 | confirmada | apoyo con cambios | 3 | M | alto | no | deducido (lo razono del código) | no |
+| EFI-07 | confirmada | apoyo con cambios | 3 | M | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| EFI-08 | confirmada | apoyo con cambios | 2 | P | alto | no | deducido (lo razono del código) | no |
+| EFI-09 | confirmada | apoyo con cambios | 3 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| EFI-10 | confirmada | apoyo | 4 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| EFI-11 | confirmada | apoyo con cambios | 3 | P | medio | no | deducido (lo razono del código) | no |
+| EFI-12 | confirmada | apoyo con cambios | 4 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | no |
+| MOD-01 | confirmada | apoyo con cambios | 3 | G | medio | no | deducido (lo razono del código) | no |
+| MOD-05 | confirmada | apoyo con cambios | 4 | M | alto | no | comprobado (lo abrí o lo ejecuté) | no |
+| MOD-06 | confirmada | apoyo con cambios | 3 | M | medio | no | comprobado (lo abrí o lo ejecuté) | no |
+| MOD-07 | confirmada | apoyo con cambios | 3 | P | bajo | no | comprobado (lo abrí o lo ejecuté) | no |
+
+### Comandos usados para reproducir cifras
+
+```bash
+git rev-list --left-right --count origin/producto-nexora...origin/nexora-cloud
+git grep -hE '@(Get|Post|Patch|Put)\(' 1fe0c999 -- apps/api/src/sales.ts | wc -l
+git grep -hE '\b(bad|conflict|denied)\(' 1fe0c999 -- apps/api/src | sed -E 's/.*\b(bad|conflict|denied)\(.*/\1/' | sort | uniq -c
+git grep -n -E '@Permit\("\*"\)' 1fe0c999 -- apps/api/src | wc -l
+git grep -n 'settings\.findUnique' 1fe0c999 -- apps/api/src | wc -l
+git grep -hE '@(Get|Post|Patch|Put)\(' 1fe0c999 -- apps/api/src | wc -l
+git log -200 --no-merges --format='%H' 1fe0c999 | while read s; do files=$(git diff-tree --no-commit-id --name-only -r "$s"); test -n "$files" && ! printf '%s\n' "$files" | rg -qv '^(docs/|\.claude/|[^/]+\.md$)' && echo "$s"; done | wc -l
+total=$(find tests packages/shared -type f \( -name '*.test.ts' -o -name '*.test.tsx' \) | wc -l); integration=$(rg -c '^\s+"tests/.*\.test\.ts",?$' vitest.integration.config.ts); echo "unit=$((total-integration)) integration=$integration"
+find tests/e2e -name '*.spec.ts' | wc -l; rg -h '\btest\(' tests/e2e -g '*.spec.ts' | wc -l
+git grep -n 'invalidateQueries' 1fe0c999 -- apps/web/src | wc -l; git grep -n 'invalidateQueries()' 1fe0c999 -- apps/web/src | wc -l
+git grep -hE '@(Post|Patch|Put|Delete)\(' 1fe0c999 -- apps/api/src | wc -l
+```
+
+Los conteos documentados son, respectivamente: 443/826 commits exclusivos; 34 rutas en `sales.ts`; 384/37/47 errores (468); 44 permisos totales; 33 lecturas de configuración; 206 rutas API; 107 commits solo documentales entre los últimos 200 sin mezclas; 117 archivos unitarios y 45 de integración; 34 specs y 135 llamadas textuales a `test()` en Playwright; 82 invalidaciones, 29 globales; y 109 rutas mutantes. Son conteos de la Base evaluada, no tiempos de ejecución.
 
 ## Fichas
 
@@ -251,7 +269,7 @@ Base: 1fe0c99968ae9dff5fa91da6248ff787a1543896
 - **Certeza:** comprobado (lo abrí o lo ejecuté).
 
 ### EST-20 · Contratos de respuesta por ruta en packages/shared en vez de la lista global de safe()
-- **Evidencia:** corregida. `safe()` admite 212 nombres y se usa 33 veces; hay 204 decoradores de ruta, no 206.
+- **Evidencia:** confirmada. `safe()` admite 212 nombres y se usa 33 veces; la Base contiene 206 decoradores de ruta.
 - **Veredicto:** apoyo con cambios.
 - **Impacto:** 4 · **Esfuerzo:** G · **Riesgo:** alto · **Toca dinero:** no · **Visto en pantalla:** no
 - **Respuesta a la pregunta del catálogo:** Validaría primero dinero y privacidad; no intentaría las 204 rutas a la vez.
@@ -494,7 +512,7 @@ Base: 1fe0c99968ae9dff5fa91da6248ff787a1543896
 - **Certeza:** comprobado (lo abrí o lo ejecuté).
 
 ### EFI-04 · verify corre todo en fila: unidad, integración y 34 archivos de navegador uno por uno
-- **Evidencia:** confirmada. Hay 116 archivos unitarios, 46 integración, 34 specs/130 casos; integración y navegador van sin paralelismo.
+- **Evidencia:** corregida. En la Base hay 117 archivos unitarios, 45 de integración, 34 specs y 135 llamadas textuales a `test()`; integración y navegador van sin paralelismo.
 - **Veredicto:** apoyo con cambios.
 - **Impacto:** 3 · **Esfuerzo:** M · **Riesgo:** medio · **Toca dinero:** no · **Visto en pantalla:** no
 - **Respuesta a la pregunta del catálogo:** Medir cinco CI antes de fragmentar; separar etapas y luego shardear si navegador domina.
@@ -521,7 +539,7 @@ Base: 1fe0c99968ae9dff5fa91da6248ff787a1543896
 - **Certeza:** deducido (lo razono del código).
 
 ### EFI-07 · Cada petición hace cuatro lecturas seguidas a la base solo para comprobar la sesión
-- **Evidencia:** confirmada. El guardia hace lecturas separadas de usuario, rol, sesión, ajustes y equipo.
+- **Evidencia:** confirmada. El guardia hace cuatro viajes: usuario con su rol, sesión, ajustes y equipo.
 - **Veredicto:** apoyo con cambios.
 - **Impacto:** 3 · **Esfuerzo:** M · **Riesgo:** alto · **Toca dinero:** no · **Visto en pantalla:** no
 - **Respuesta a la pregunta del catálogo:** Una consulta SQL consolidada, sin cachear revocación o sesión.
@@ -612,18 +630,65 @@ Base: 1fe0c99968ae9dff5fa91da6248ff787a1543896
 
 ## A fondo
 
-Las órdenes detalladas se reservan para diez propuestas cuyo beneficio justifica construcción posterior: EST-02, EST-04, EST-14, EST-16, EST-21, SEG-01, SEG-07, SEG-14, SEG-18 y EFI-01.
+### EST-02 · Cálculo único de promociones y descuentos
 
-1. **EST-02.** Congelar primero la tabla de promociones y redondeos; mover la función pura a shared; cambiar API, POS y cola uno por uno; mantener mensajes y contrato. Sin migración. Comprobar tabla monetaria, venta online/offline y rollback reponiendo las funciones anteriores.
-2. **EST-04.** Decidir con contabilidad si se anotará un NCF externo o se usarán secuencias. Añadir estado y unicidad sin llamarlo facturación electrónica; migración aditiva y reversible. Comprobar B01/B02, repetidos, PDF y Excel.
-3. **EST-14.** Inventariar primero cada texto/valor de tienda en API, web, PDF, pruebas y producto. Parametrizar identidad y series antes del primer documento; no convertir GV en módulo sin cliente. Comprobar dos negocios ficticios y rollback por configuración.
-4. **EST-16.** Corregir de inmediato la oferta a una sucursal. La construcción real exige entidad Branch, catálogo empresarial, usuarios/equipos/cajas por local, traspasos y reportes consolidados. Migración gradual; nunca activar el cupo antes del recorrido completo.
-5. **EST-21.** Crear tabla aditiva, reconstruir conflictos históricos, escribir en tabla y bitácora durante una versión y leer con fallback. Comprobar concurrencia, descarte, alerta borrada y UUID legado; rollback mantiene bitácora.
-6. **SEG-01.** Enrolar TOTP solo para cuentas privilegiadas, entregar recuperación de un uso y exigir desafío antes de la sesión completa en equipo nuevo. Auditar alta, revocación y recuperación; desplegar primero optativo y revertir el requisito, no los secretos.
-7. **SEG-07.** Reutilizar el patrón de operación idempotente con UUID, hash y respuesta original. La web lo envía siempre y clientes previos transicionan. Comprobar doble POST, misma clave con cuerpo distinto y caída tras commit.
-8. **SEG-14.** Reutilizar NXBK, generar clave fuerte exportable y proteger la copia automática local con el sistema operativo. Aceptar temporalmente formatos viejos y exigir restauración de prueba; rollback conserva el lector anterior.
-9. **SEG-18.** Definir representación canónica por versión y vectores de prueba congelados. Guardar versión/hash en servidor y cola; aceptar legado más de 48 horas. Comprobar cada campo monetario, orden y cliente antiguo.
-10. **EFI-01.** Instrumentar las solicitudes después de una venta; quitar solo invalidaciones de productos/clientes y conservar eventos de stock. Sin migración. Comprobar red, carrito, crédito, offline y reversión inmediata de las claves invalidadas.
+**Orden propuesto.** Primero congelar como vectores las promociones, redondeos y combinaciones online/offline actuales. Después crear la función pura en `packages/shared`, migrar primero la cola local, luego la vista previa del POS y por último la autoridad del servidor. `apps/api/src/sales.ts`, `apps/web/src/POS.tsx` y `apps/web/src/pendingSales.ts` son los consumidores; no se cambia la forma de guardar promociones ni hace falta migración de datos.
+
+**Comprobación y marcha atrás.** La tabla monetaria debe producir los mismos centavos, nombres y totales; en pantalla se compara carrito, cobro y recibo con venta en línea y sin conexión. La API sigue rechazando un total obsoleto. Si difiere un caso, se vuelve a las funciones anteriores porque el esquema y los datos no cambiaron; la extracción no debe mezclarse con reglas nuevas de lote.
+
+### EST-14 · Identidad de tienda fuera del producto
+
+**Orden propuesto.** Crear primero un inventario verificable de marca, prefijos, mensajería y textos en API, web, PDF, reportes y pruebas. Definir configuración neutral para el producto antes de tocar la tienda. El trabajo abarca `sales.ts`, `courier.ts`, `formal-report.ts`, `receipt-pdf.ts`, documentos y pruebas de marca. El prefijo se fija antes del primer documento; cambiarlo después exige una serie nueva, no editar ventas existentes. GV permanece fuera de la edición vendible hasta existir un contrato real.
+
+**Comprobación y marcha atrás.** Compilar dos negocios ficticios y comprobar que factura, devolución, recibo y reporte usan solo su identidad. No necesita detener la tienda: la migración es aditiva y los valores actuales se cargan como configuración inicial. La reversión conserva esos valores y vuelve a leerlos desde la ubicación anterior; nunca se renumeran documentos.
+
+### EST-16 · Sucursales reales o promesa corregida
+
+**Orden propuesto.** La primera acción es documental: ofrecer una sucursal mientras no exista el recorrido completo. Construir después una entidad `Branch`, catálogo empresarial, existencias/almacenes, equipos, cajas y usuarios por local, traspasos y reportes individuales/consolidados. El alcance cruza esquema Prisma, catálogo, inventario, caja, permisos y reportes; no cabe en una rama de interfaz.
+
+**Migración y seguridad.** La sucursal actual se convierte en la inicial para cada empresa; el backfill se valida antes de exigir la nueva clave. Se despliega lectura compatible, luego doble escritura y finalmente obligatoriedad, sin detener ventas. En pantalla se prueban dos locales con catálogo común y caja/stock separados. Si falla, el feature flag mantiene una sucursal y el modelo aditivo se conserva sin activar cupos múltiples.
+
+### EST-21 · Estado propio para conflictos offline
+
+**Orden propuesto.** Añadir `OfflineSaleConflict` como tabla de estado actual, reconstruir desde AuditLog/Alert y marcar cualquier historia incompleta como pendiente. Durante una versión, `sales.ts`, `offline-sales.ts` y `offline-sale-review.ts` escriben tabla y bitácora; las lecturas usan tabla con fallback legado. Alert solo notifica y borrarla no resuelve nada.
+
+**Comprobación y marcha atrás.** Backfill, doble envío, descarte concurrente, alerta eliminada, UUID antiguo y resultado entregado deben conservar una sola resolución. La pantalla de revisión muestra los mismos conflictos antes/después. La migración es aditiva y no bloquea la tienda; si falla, se vuelve a leer AuditLog mientras la nueva tabla queda sin autoridad. Solo se retira el fallback cuando una auditoría encuentre cero UUID exclusivos del legado.
+
+### SEG-01 · Segundo factor para cuentas privilegiadas
+
+**Orden propuesto.** Enrolar TOTP para acceso total y gerencia, pero exigirlo inicialmente solo al entrar desde equipo no aprobado. Separar contraseña, sesión provisional, desafío y aprobación del equipo en autenticación/realtime; registrar enrolamiento, recuperación y revocación sin guardar secretos legibles. Entregar códigos de recuperación de un uso y permitir aprobación desde otro equipo ya aprobado.
+
+**Comprobación y marcha atrás.** Probar reloj desfasado, código repetido, pérdida del teléfono, último administrador, equipo revocado y rate limit. En pantalla la persona siempre sabe si falta contraseña, TOTP o aprobación. No hay migración de ventas; las cuentas existentes se enrolan gradualmente antes de activar el requisito. Ante incidente, un flag puede suspender la exigencia para equipos ya aprobados, pero nunca aceptar soporte como bypass silencioso.
+
+### SEG-07 · Idempotencia en ajustes y órdenes
+
+**Orden propuesto.** Reutilizar el patrón de `MerchandiseOperation`: UUID, hash canónico, estado y respuesta original. La web siempre genera la clave; clientes anteriores pueden omitirla durante una ventana. Ajustes y órdenes adoptan el contrato por separado, sin mezclar ambos flujos. Una misma clave con cuerpo distinto se rechaza.
+
+**Comprobación y marcha atrás.** Probar doble POST simultáneo, corte después del commit, respuesta perdida, clave repetida con otra cantidad y reintento desde otra caja. Pantalla e historial muestran una sola operación. La tabla/columnas se añaden sin parada y se rellenan solo para operaciones nuevas. Si el mecanismo falla, se desactiva la exigencia en clientes nuevos, pero no se elimina el registro ya usado ni se permite reutilizar una clave consumida.
+
+### SEG-14 · Respaldo cifrado y restaurable
+
+**Orden propuesto.** Aplicar el formato NXBK existente al respaldo local y externo. El instalador genera una clave fuerte que el comprador exporta una vez; una copia protegida por Windows permite el trabajo automático, pero la recuperación en otra PC usa la clave externa. `Backup-FitStore.ps1`, `Restore-FitStore.ps1`, el núcleo NXBK y la interfaz del instalador deben compartir formato y versiones.
+
+**Comprobación y marcha atrás.** Probar corte a mitad, disco lleno, clave incorrecta, copia antigua sin cifrar y restauración en otra PC limpia. La pantalla muestra última copia y última restauración de prueba, sin imprimir secretos en logs. Durante transición el restaurador acepta el formato anterior; los nuevos respaldos son cifrados. Si se revierte el escritor, el lector nuevo sigue entendiendo ambos formatos y ninguna copia existente se borra.
+
+### SEG-17 · IA sin clave del proveedor en la laptop
+
+**Orden propuesto.** Hasta existir pasarela, la edición instalada sale con IA desactivada o BYOK claramente separado. La pasarela futura autentica cada instalación con credencial revocable, permite solo funciones/modelos contratados, aplica cuotas y minimiza registros. `assistant.ts`, `invoice.ts`, instalador y contrato de privacidad dejan de depender de una clave maestra distribuida.
+
+**Comprobación y marcha atrás.** Probar credencial revocada, cuota, caída de internet, respuesta lenta y datos sensibles redactados; en pantalla siempre queda alternativa manual. No hay migración de datos del negocio. La activación se hace por módulo y puede revertirse a IA desactivada sin afectar ventas, facturas manuales ni reportes. BYOK nunca se presenta como plan administrado y cualquier costo requiere aprobación comercial.
+
+### SEG-18 · Contrato offline versionado
+
+**Orden propuesto.** Definir en shared una representación canónica con caja, cliente, líneas, descuentos, total esperado, pagos, crédito/contraentrega, envío y fiscal; excluir PIN y estado puramente visual. Congelar vectores para versión antigua y nueva. Guardar versión/hash tanto en IndexedDB como en la venta del servidor; aceptar legado durante al menos 48 horas más margen de actualización.
+
+**Comprobación y marcha atrás.** Cada campo significativo se cambia de uno en uno para comprobar que el hash difiere; orden/normalización equivalentes deben conservarlo. Se prueban clientes viejos, reintento, respuesta perdida y misma clave con cobro distinto. La migración es aditiva y no detiene la tienda. Si aparece incompatibilidad, el servidor mantiene el lector legado y la web vuelve a emitir la versión anterior; no se reinterpretan ventas ya aceptadas.
+
+### EFI-01 · Venta sin descargas globales
+
+**Orden propuesto.** Medir primero la red después de vender con catálogos pequeños y 2.000 productos. Quitar únicamente invalidaciones de productos/clientes del cierre de venta; conservar caja y eventos de stock. Ventas, tablero y pendientes se recargan al abrir o por su evento específico. Los cambios se concentran en las claves de consultas del POS y no requieren esquema ni migración.
+
+**Comprobación y marcha atrás.** La prueba exige cero GET de productos/clientes tras cobrar, stock correcto en otra caja, crédito actualizado, recibo igual y cola offline intacta. En pantalla se observa que el artículo vendido cambia de existencia sin parpadeo ni catálogo completo. Si queda información vieja, reponer las invalidaciones concretas es una reversión inmediata porque no se cambió ningún dato ni contrato.
 
 ## Parte B: propuestas propias
 
@@ -638,24 +703,24 @@ Las órdenes detalladas se reservan para diez propuestas cuyo beneficio justific
 
 | ID | Dimensión | Versión | Impacto | Esfuerzo | Riesgo | Dinero | Certeza | Parecida a |
 |---|---|---|---:|---|---|---|---|---|
-| N-EST-01 | Estructura | ambas | 4 | M | medio | no | comprobado | — |
-| N-EST-02 | Estructura | ambas | 3 | M | medio | no | comprobado | — |
-| N-DIS-01 | Diseño | ambas | 3 | P | bajo | no | comprobado | — |
-| N-DIS-02 | Diseño | ambas | 2 | P | bajo | no | comprobado | — |
-| N-DIS-03 | Diseño | ambas | 2 | P | bajo | no | comprobado | — |
-| N-COM-01 | Comodidad | tienda | 4 | M | medio | no | comprobado | — |
-| N-COM-02 | Comodidad | producto | 3 | G | alto | sí | deducido | — |
-| N-COM-03 | Comodidad | producto | 3 | P | bajo | no | comprobado | — |
-| N-SEG-01 | Seguridad | ambas | 5 | G | alto | no | comprobado | — |
-| N-SEG-02 | Seguridad | ambas | 5 | M | alto | no | comprobado | — |
-| N-SEG-03 | Seguridad | tienda | 5 | P | alto | sí | comprobado | — |
-| N-SEG-04 | Seguridad | producto | 5 | M | alto | no | comprobado | — |
-| N-EFI-01 | Eficiencia | tienda | 3 | M | medio | no | comprobado | — |
-| N-EFI-02 | Eficiencia | ambas | 4 | M | alto | sí | comprobado | — |
-| N-EFI-03 | Eficiencia | producto | 4 | P | medio | no | comprobado | — |
-| N-MOD-01 | Modernidad | producto | 4 | G | alto | no | comprobado | — |
-| N-MOD-02 | Modernidad | producto | 3 | G | alto | sí | deducido | — |
-| N-MOD-03 | Modernidad | ambas | 3 | P | medio | no | comprobado | — |
+| N-EST-01 | Estructura | ambas | 4 | M | medio | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-EST-02 | Estructura | ambas | 3 | M | medio | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-DIS-01 | Diseño | ambas | 3 | P | bajo | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-DIS-02 | Diseño | ambas | 2 | P | bajo | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-DIS-03 | Diseño | ambas | 2 | P | bajo | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-COM-01 | Comodidad | tienda | 4 | M | medio | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-COM-02 | Comodidad | producto | 3 | G | alto | sí | deducido (lo razono del código) | — |
+| N-COM-03 | Comodidad | producto | 3 | P | bajo | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-SEG-01 | Seguridad | ambas | 5 | G | alto | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-SEG-02 | Seguridad | ambas | 5 | M | alto | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-SEG-03 | Seguridad | tienda | 5 | P | alto | sí | comprobado (lo abrí o lo ejecuté) | — |
+| N-SEG-04 | Seguridad | producto | 5 | M | alto | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-EFI-01 | Eficiencia | tienda | 3 | M | medio | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-EFI-02 | Eficiencia | ambas | 4 | M | alto | sí | comprobado (lo abrí o lo ejecuté) | — |
+| N-EFI-03 | Eficiencia | producto | 4 | P | medio | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-MOD-01 | Modernidad | producto | 4 | G | alto | no | comprobado (lo abrí o lo ejecuté) | — |
+| N-MOD-02 | Modernidad | producto | 3 | G | alto | sí | deducido (lo razono del código) | — |
+| N-MOD-03 | Modernidad | ambas | 3 | P | medio | no | comprobado (lo abrí o lo ejecuté) | — |
 
 ### N-EST-01 · Un área de trabajo única para inventario y abastecimiento
 - **Versión:** ambas · **Lo nota:** gerencia y almacén · **Esfuerzo:** M · **Toca dinero:** no
@@ -720,14 +785,14 @@ Las órdenes detalladas se reservan para diez propuestas cuyo beneficio justific
 - **Riesgo:** Autenticación débil puede exponer historial financiero; los mensajes pueden inducir cobros erróneos.
 - **Cómo se comprobaría:** Enlace vencido o reutilizado falla; un cliente nunca obtiene otra cuenta y los totales coinciden con crédito interno.
 
-### N-COM-03 · Enlaces de ayuda y avisos a la sección exacta
+### N-COM-03 · Paquete de diagnóstico redactado para soporte
 - **Versión:** producto · **Lo nota:** comprador y soporte · **Esfuerzo:** P · **Toca dinero:** no
-- **Hoy:** Varias tarjetas de puesta en marcha terminan en la portada de Configuración, obligando a buscar de nuevo la opción.
-- **Evidencia:** `producto-nexora:apps/web/src/Onboarding.tsx:210-221`; `producto-nexora:apps/web/src/Management.tsx:4234-4242`.
-- **Propuesta:** Definir enlaces estables a cada sección de configuración y devolver a la lista de puesta en marcha conservando progreso.
-- **Beneficio:** El comprador completa una tarea sin conocer la estructura interna.
-- **Riesgo:** Un enlace puede abrir una sección sin permiso o quedar obsoleto al reorganizar.
-- **Cómo se comprobaría:** Cada tarjeta abre control correcto, deniega por rol antes de montar y al volver refleja el cambio.
+- **Hoy:** Existe un script de diagnóstico que lee estado y colas de logs, pero el comprador debe localizar el resultado y no hay un contrato visible de qué se excluye.
+- **Evidencia:** `instalador/diagnosticar-instalacion.ps1:12-19,66-79`; `apps/api/src/monitoring.ts:49`.
+- **Propuesta:** Generar desde el menú local un ZIP de diagnóstico con versión, salud de servicios y últimas líneas redactadas, excluyendo secretos, respaldos y datos de negocio; mostrar la lista antes de exportar.
+- **Beneficio:** Soporte recibe evidencia útil sin pedir acceso remoto ni instrucciones técnicas largas.
+- **Riesgo:** Una redacción incompleta puede incluir credenciales, rutas personales o datos reales.
+- **Cómo se comprobaría:** Fixtures con secretos/datos inventados no aparecen en el ZIP; sí aparecen versión, servicios y errores; el comprador puede cancelar antes de guardarlo.
 
 ### N-SEG-01 · Identidad de terminal no clonable desde almacenamiento local
 - **Versión:** ambas · **Lo nota:** dueña y soporte · **Esfuerzo:** G · **Toca dinero:** no
@@ -738,14 +803,14 @@ Las órdenes detalladas se reservan para diez propuestas cuyo beneficio justific
 - **Riesgo:** Puede bloquear equipos antiguos, modo privado o restauraciones.
 - **Cómo se comprobaría:** Copiar localStorage a otro perfil no autentica; revocar/rotar funciona y existe recuperación auditada.
 
-### N-SEG-02 · Caducidad y limpieza de datos sensibles sin conexión
+### N-SEG-02 · Vaciar la caché en memoria al cerrar o cambiar de usuario
 - **Versión:** ambas · **Lo nota:** cajera y dueña · **Esfuerzo:** M · **Toca dinero:** no
-- **Hoy:** Pendientes transaccionales sobreviven al cierre de sesión sin una caducidad o borrado seguro visible.
-- **Evidencia:** `apps/web/src/api.ts:50,284-299`; `packages/shared/src/index.ts:550,593`.
-- **Propuesta:** Clasificar datos locales, fijar caducidad por tipo, borrar tras sincronización confirmada y ofrecer inventario seguro antes de limpiar manualmente.
-- **Beneficio:** Reduce exposición en equipos compartidos sin perder ventas pendientes.
-- **Riesgo:** Limpiar demasiado pronto puede destruir la única copia de una venta.
-- **Cómo se comprobaría:** Nada no confirmado se borra; lo sincronizado expira; otro usuario no puede leerlo y la recuperación ante reloj incorrecto es segura.
+- **Hoy:** `logout()` invalida la sesión en servidor, pero no hay una limpieza explícita de la caché de consultas del navegador; una pantalla posterior puede conservar datos renderizados hasta recargar.
+- **Evidencia:** `apps/web/src/api.ts:274-282`; búsqueda de `queryClient.clear` y `removeQueries` en `apps/web/src` sin resultados.
+- **Propuesta:** Al cerrar o cambiar identidad, cancelar solicitudes, vaciar la caché en memoria y desmontar pantallas privadas; conservar aparte únicamente las colas offline cifradas y atribuidas a su dueño.
+- **Beneficio:** En un equipo compartido, la siguiente persona no ve nombres, saldos o reportes de la sesión anterior.
+- **Riesgo:** Una limpieza indiscriminada puede borrar la única referencia visible a trabajo offline pendiente.
+- **Cómo se comprobaría:** Tras logout no queda texto de clientes/reportes en DOM ni caché; entrar con otro rol no hereda respuestas; las colas offline propias siguen recuperables.
 
 ### N-SEG-03 · Alinear quién puede autorizar descuentos con PIN
 - **Versión:** tienda · **Lo nota:** gerencia y cajera · **Esfuerzo:** P · **Toca dinero:** sí
@@ -792,14 +857,14 @@ Las órdenes detalladas se reservan para diez propuestas cuyo beneficio justific
 - **Riesgo:** Un plazo corto rompe respaldos, importaciones o reportes grandes.
 - **Cómo se comprobaría:** Pruebas de conexión lenta, cuerpo excesivo, reporte permitido y escritura sin reintento.
 
-### N-MOD-01 · Alta autoservicio segura para el primer administrador
+### N-MOD-01 · Reserva pública de citas GV con cupos controlados
 - **Versión:** producto · **Lo nota:** comprador · **Esfuerzo:** G · **Toca dinero:** no
-- **Hoy:** La landing invita a comenzar, pero la cuenta inicial todavía se crea mediante script/instalación asistida.
-- **Evidencia:** `apps/landing/src/index.tsx:66,121`; `apps/api/scripts/create-admin.ts:21`.
-- **Propuesta:** Flujo local de activación con código de instalación de un uso, creación del negocio y administrador, sin registro público abierto.
-- **Beneficio:** El comprador termina la puesta en marcha sin que soporte conozca su contraseña.
-- **Riesgo:** Un alta abierta permitiría apropiarse de una instalación nueva.
-- **Cómo se comprobaría:** Solo funciona antes de activar, exige código de un uso, se cierra después y deja auditoría sin secreto.
+- **Hoy:** GV administra citas desde una pantalla autenticada; no existe un formulario público limitado a horarios disponibles.
+- **Evidencia:** `apps/web/src/GvCitas.tsx:126`; `apps/api/src/gv-citas.ts:370,461`.
+- **Propuesta:** Módulo opcional con enlace público que muestre cupos, capture datos mínimos y cree una solicitud pendiente; confirmación y cambios sensibles quedan dentro del sistema.
+- **Beneficio:** El cliente solicita hora sin llamada y la tienda evita transcribir la cita.
+- **Riesgo:** Abuso, spam, doble reserva y datos personales expuestos.
+- **Cómo se comprobaría:** Rate limit, cupo concurrente, consentimiento, borrado y aislamiento entre negocios; una solicitud pública no confirma ni modifica una cita existente.
 
 ### N-MOD-02 · Enlace o QR de pago asociado a una cuenta por cobrar
 - **Versión:** producto · **Lo nota:** cliente y negocio · **Esfuerzo:** G · **Toca dinero:** sí
@@ -823,7 +888,7 @@ Las órdenes detalladas se reservan para diez propuestas cuyo beneficio justific
 
 1. Quitar filtros Desde/Hasta de informes que hoy calculan únicamente el estado actual, hasta que exista corte histórico real.
 2. Quitar textos y controles GV del producto vendible mientras no exista un módulo contratado.
-3. Simplificar los permisos visibles a tareas de negocio; no mostrar cadenas técnicas ni opciones que el rol no puede guardar.
+3. Quitar del formulario de Configuración los campos de otras secciones cuando se guarda un cambio puntual; cada guardado debe llevar solo su bloque.
 4. Eliminar de la instalación cualquier archivo reutilizable con la clave administrativa inicial después de activar.
 5. Reducir Configuración a secciones guardables; no reenviar un formulario gigante por un cambio pequeño.
 
@@ -843,7 +908,72 @@ No consulté la web para esta entrega. De memoria, sin comprobar: los POS modern
 
 ## Parte C: síntesis
 
-Pendiente del Paso 4.
+### Las 10 primeras
+
+1. **EST-02** — una sola regla de promociones evita que caja, servidor y cola cobren distinto.
+2. **SEG-18** — versionar la huella offline protege reintentos y futuras actualizaciones del contrato.
+3. **SEG-07** — idempotencia en ajustes y órdenes evita duplicar inventario y costo por un reintento.
+4. **SEG-14** — un respaldo que cualquiera puede leer no es una recuperación segura del producto.
+5. **EST-21** — los conflictos offline necesitan estado propio para no reabrir una venta descartada.
+6. **EST-14** — retirar identidad y series de la tienda es requisito previo a vender otra instalación.
+7. **EST-16** — corregir la promesa de sucursales evita vender hoy algo que el recorrido completo no soporta.
+8. **N-SEG-03** — web y API deben reconocer exactamente a la misma persona autorizadora.
+9. **N-SEG-04** — la clave inicial reutilizable convierte una instalación nueva en un riesgo evitable.
+10. **EFI-01** — dejar de bajar catálogos/clientes tras cada venta mejora la caja con un cambio pequeño.
+
+### Las 5 primeras para la TIENDA
+
+1. **EST-02** — paridad de promociones y descuentos.
+2. **SEG-18** — contrato offline versionado.
+3. **SEG-07** — reintentos idempotentes de inventario/compras.
+4. **N-SEG-03** — autorización de descuentos coherente.
+5. **EFI-01** — cierre de venta sin descargas globales.
+
+### Las 5 primeras para el PRODUCTO
+
+1. **EST-14** — identidad neutral y series configurables antes del primer documento.
+2. **EST-16** — una sucursal en la oferta hasta completar la capacidad real.
+3. **SEG-14** — respaldo cifrado y restaurable.
+4. **SEG-17** — no entregar la clave de IA del proveedor al cliente.
+5. **N-SEG-04** — credencial administrativa inicial de un uso.
+
+### Victorias rápidas
+
+- **DIS-01:** distinguir carga, vacío y error en Resumen.
+- **SEG-11:** alinear la cabecera de micrófono únicamente donde existe voz.
+- **SEG-12:** ampliar Dependabot a npm y documentar excepciones.
+- **N-DIS-01:** enlace Saltar al contenido.
+- **N-DIS-02:** mostrar Ctrl+K o Cmd+K según plataforma.
+- **N-DIS-03:** alternar Mostrar/Ocultar contraseña.
+- **MOD-07:** medición local de duración por ruta, sin datos sensibles.
+
+Todas son esfuerzo P, riesgo bajo y no tocan dinero según esta revisión; SEG-11 requiere todavía comprobación en navegadores reales antes de construir.
+
+### Qué no hacer todavía
+
+- **SEG-10:** no encadenar la bitácora hasta tener respaldo externo inmutable y un requisito forense real.
+- **MOD-01:** no construir una segunda tienda completa para práctica; primero validar un recorrido efímero sin escrituras.
+- **EST-16:** no habilitar tres sucursales con el modelo actual; primero corregir la oferta y luego completar todo el recorrido.
+- **N-COM-02:** no abrir portal de crédito hasta diseñar autenticación, privacidad y corrección de saldos.
+- **N-MOD-02:** no ofrecer QR de pago sin proveedor, costos aprobados, webhooks idempotentes y conciliación.
+- **EST-10:** no reconstruir inventario histórico con saldos de semántica mixta; iniciar fotos mensuales verificables.
+
+### Orden y dependencias en cuatro semanas
+
+1. **Semana 1 — verdad visible y cambios P:** corregir la oferta de sucursales; ejecutar DIS-01, N-DIS-01, N-DIS-02 y N-DIS-03. ChatGPT PC comprueba 1366/390 cuando exista una orden de construcción.
+2. **Semana 2 — integridad de caja:** construir EST-02 y diseñar SEG-18; cada cambio monetario recibe aprobación individual y pruebas de paridad online/offline.
+3. **Semana 3 — reintentos y autorizaciones:** SEG-07 y N-SEG-03, en ramas separadas; probar concurrencia, doble envío y matriz de roles antes de integrar.
+4. **Semana 4 — producto recuperable:** SEG-14 y N-SEG-04; comprobar en Windows limpio respaldo, restauración y primer acceso. EST-14 se prepara como inventario de residuos, sin mezclarlo con esos cambios.
+
+Solo Norexos 1 integra; ChatGPT PC comprueba pantalla; cualquier elemento marcado como dinero vuelve a la dueña por separado.
+
+### Desacuerdos más fuertes con el catálogo
+
+1. **EST-01:** no uniría hoy las ramas completas con un interruptor; extraería primero un núcleo común y conservaría multiempresa aislada.
+2. **EST-10:** el kardex no basta para valorar con seguridad cualquier fecha; iniciaría una foto mensual inmutable.
+3. **SEG-10:** no haría el sello diario dentro de la misma base; da una prueba débil frente al costo y la falsa confianza.
+4. **EFI-09:** no movería primero las imágenes a otra tabla; excluirlas de listados y guardar metadatos logra casi todo con menos migración.
+5. **MOD-01:** no crearía un sandbox persistente completo como primera versión; validaría un recorrido guiado sin escrituras.
 
 ## Lo que no pude comprobar
 
