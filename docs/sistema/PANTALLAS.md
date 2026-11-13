@@ -12,7 +12,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 2   | **Resumen**                  | `reports:read`                                          | `Dashboard` (`apps/web/src/Dashboard.tsx:108`)                           | 203                |
 | 3   | **Punto de venta**           | `sale:write`                                            | `POS` (`apps/web/src/POS.tsx:194`)                                       | 209                |
 | 4   | **Ventas**                   | `sale:write`                                            | `SalesHistory` (`apps/web/src/Management.tsx:3207`)                      | 213                |
-| 5   | **Solicitudes de anulación** | `sale:write`                                            | `VoidRequests` (`apps/web/src/VoidRequests.tsx:15`)                      | 216                |
+| 5   | **Solicitudes de anulación** | `sale:write`                                            | `VoidRequests` (`apps/web/src/VoidRequests.tsx:16`)                      | 216                |
 | 6   | **Conciliar transferencias** | `*`                                                     | `TransferReconciliation` (`apps/web/src/TransferReconciliation.tsx:28`)  | 222                |
 | 7   | **Envíos del mensajero**     | `*`                                                     | `CourierPayouts` (`apps/web/src/CourierPayouts.tsx:26`)                  | 228                |
 | 8   | **Productos**                | `catalog:read`                                          | `Catalog` (`apps/web/src/Management.tsx:244`)                            | 234                |
@@ -64,7 +64,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
 
 ## Solicitudes de anulación
 
-- **Etiqueta:** «Solicitudes de anulación». **Permiso:** `sale:write`. **Componente:** `apps/web/src/VoidRequests.tsx:15`.
+- **Etiqueta:** «Solicitudes de anulación». **Permiso:** `sale:write`. **Componente:** `apps/web/src/VoidRequests.tsx:16`.
 - **Qué hace:** lista (filtro Pendientes/Todas/Aprobadas/Rechazadas/Canceladas, `:45-54`). La administración ve «Aprobar y anular» y «Rechazar» (`:123-136`); la cajera solo puede cancelar su propia solicitud (`:137-155`).
 - **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2117`, `POST void-requests/:id/approve`).
 
@@ -77,7 +77,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1054-1084`):
 ## Envíos del mensajero
 
 - **Etiqueta:** «Envíos del mensajero». **Permiso:** `*`. **Componente:** `apps/web/src/CourierPayouts.tsx:26`.
-- **Qué hace:** lista los envíos pendientes de pago al mensajero («Pendientes», `:175`), se seleccionan y se pulsa «Marcar como pagado» (`:219-226`); «Historial de pagados» (`:230`). El envío va aparte del total de la venta: no es venta, ganancia ni ITBIS (`apps/web/src/POS.tsx:2967-2971`).
+- **Qué hace:** lista los envíos pendientes de pago al mensajero («Pendientes», `:175`), se seleccionan y se pulsa «Marcar como pagado» (`:219-226`); «Historial de pagados» (`:230`). El envío va aparte del total de la venta: no es venta, ganancia ni ITBIS (`apps/web/src/POS.tsx:2984-2988`).
 
 ## Productos
 

@@ -513,11 +513,14 @@ export function POS({ go }: { go: (page: string) => void }) {
       },
     );
   };
+  // C1: si «Cobrar» abrió el selector de cliente, al elegirlo sigue al cobro.
+  const resumeCharge = useRef(false);
   const charge = () => {
     // 05-N1: un error de escaneo no se queda sobre la ventana de cobro.
     clearPersistentErrors();
     if (!cart.length) return;
     if (!customerId) {
+      resumeCharge.current = true;
       setPickerHint("Selecciona o crea el cliente antes de cobrar.");
       setClientPicker(true);
       return;
@@ -537,6 +540,11 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     setCheckout(true);
   };
+  useEffect(() => {
+    if (!resumeCharge.current || clientPicker) return;
+    resumeCharge.current = false;
+    if (customerId) charge();
+  }, [clientPicker, customerId]);
   useEffect(() => {
     const box = cartList.current;
     const row = lastAdded
