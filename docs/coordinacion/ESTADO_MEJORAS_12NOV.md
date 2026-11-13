@@ -75,3 +75,10 @@ Antes de activar el plan `analista` en producción:
 4. (baja) El monto 0.4 dice «PENDIENTE de aprobar por la dueña» en el código; **ya lo aprobó el 12-nov**: actualizar el comentario al mezclar.
 5. Pendiente de revisar: que todo reporte con columnas de costo tenga la marca `margin` (la limpieza por nombre `strip` no cubre las columnas en español).
 Falta para mezclar: fusionar `nexora-cloud` (108 commits de retraso), 3 CI verdes y revisión de seguridad. No se activa sin la clave y el plan puestos por la dueña.
+
+## 13-nov, madrugada (N1)
+- **Integrado:** C13 (`953cb7c6`, 3 CI verdes en su rama) y la revisión nocturna de ChatGPT nube (`bfa8948f`, 3 CI verdes): tabla de las 5 guías, criterios en pantalla de C1/C2/C3/C10 y 3 contradicciones del contrato del asistente con el tope aprobado de US$0.40.
+- **Claude PC:** Orden 124 en `RESPUESTA_CLAUDE_PC_27OCT.md` (corregir las 5 guías con la lista de Nube y cerrar s3, s5 y s7).
+- **Contrato del asistente (`04_TERMINOS_USO_IA_VENTAS.md`, rama `claude-pc/asistente-analista`):** se corrige al mezclar esa rama: el tope de US$0.40 ya está aprobado y no se promete como techo absoluto (se comprueba antes de cada pregunta).
+- **Decisión de la dueña (12-nov, noche):** la instalación limpia de Windows y la clave de Render quedan para el fin de semana. Hasta entonces no hay despliegue.
+- **En preparación:** consulta de mejoras para ChatGPT PC y nube (50+ propuestas con evidencia comprobada, por orden de la dueña).
