@@ -1,5 +1,16 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-13 · consulta independiente de 82 mejoras
+
+- **Orden y base:** `CONSULTA_MEJORAS_CHATGPT_13NOV.md`, evaluada desde `origin/nexora-cloud` `1fe0c99968ae9dff5fa91da6248ff787a1543896`.
+- **Rama:** `chatgpt-nube/consulta-mejoras-13nov`. La entrega final es el cuarto commit/push de esa rama; el SHA exacto y los tres estados de CI se verifican en GitHub después de publicarlo, sin crear un quinto commit.
+- **Paso 1:** 14 propuestas a ciegas fijadas en `1d730b61`, antes de traer el catálogo; luego se añadió la tabla de coincidencias.
+- **Paso 2:** 59 fichas asignadas, diez análisis a fondo y evidencia del código; catálogo `consulta/catalogo-13nov` `9c862267f93b9b935ff82aebf53e0842ee15c62d`.
+- **Paso 3:** 18 propuestas propias, matriz de 12 casillas, simplificaciones, decisiones de tres meses y modernidad.
+- **Paso 4:** prioridades generales/por versión, victorias rápidas, exclusiones, secuencia de cuatro semanas y cinco desacuerdos.
+- **Autoauditoría:** solo cambiaron `docs/coordinacion/consulta-13nov/` y este archivo. No se abrió D12 local, producción, Render, datos reales ni credenciales; no se construyó, probó, mezcló, desplegó ni abrió PR.
+- **Pendiente fuera de esta orden:** Windows-Smoke real y cualquier validación visual; esta consulta por código/documentos no certifica el instalador.
+
 ## 2026-11-12 · revisión nocturna de textos, criterios y contrato
 
 - **Base y fuentes:** revisión hecha desde `origin/nexora-cloud` `3705f7d8ef006c4a9698b70e7d65adbb133ef428`. Las cinco guías se leyeron sin editar desde `origin/claude-pc/ayuda-local-12nov` `0963547f8a4308e7e9e21be5eca47f4e418e91f6`; el contrato se leyó sin editar desde `origin/claude-pc/asistente-analista` `9d419f3052ea2c758814cb0ade2d0d1156135a3d`.
