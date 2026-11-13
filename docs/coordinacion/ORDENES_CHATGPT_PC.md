@@ -69,3 +69,13 @@ Rama `chatgpt-pc/instalacion-limpia-12nov`; sin desplegar, sin Render, sin gasta
 4. C14 sigue bloqueada sin webcam física: no la repitas.
 5. La revisión D12 local queda sin publicar hasta que Marcos autorice.
 Reporta en `RESULTADOS_CHATGPT.md`.
+
+## Cola 13-nov (N1, orden de la dueña): consulta de mejoras e implementos
+1. Lee y ejecuta `docs/coordinacion/CONSULTA_MEJORAS_CHATGPT_13NOV.md` como **ChatGPT PC**. Es una segunda opinión, solo lectura y documentos: tu lista a ciegas (Paso 1), tu evaluación del catálogo de 82 propuestas (rama `consulta/catalogo-13nov`; no lo traigas antes de subir el Paso 1), tus propuestas y tu síntesis. Rama `chatgpt-pc/consulta-mejoras-13nov`. No se construye ni se despliega nada. Avisa en `RESULTADOS_CHATGPT.md`.
+2. La instalación limpia de Windows quedó para el fin de semana por decisión de la dueña: esta consulta va primero. Para la consulta no compiles, no instales y no imprimas.
+3. Aparte y corto, después de subir tu Paso 1: comprueba en pantalla, en local y con datos de prueba, lo que ya está en `nexora-cloud` y anótalo con captura en `RESULTADOS_CHATGPT.md`:
+   - **C6:** en una solicitud de anulación, el pago dice «Efectivo», no `cash`.
+   - **C15:** con existencia 1, al aumentar a 2 el aviso dice el producto y cuántas quedan.
+   - **C13:** una usuaria sin permiso de gestionar ventas ve «hasta N % sin PIN» junto al descuento de cada línea del carrito; una gerente no lo ve.
+   - **C1:** con artículos y sin cliente, «Cobrar» (o F12) abre el selector; al elegir o crear el cliente, la ventana de cobro se abre sola. Si se cierra el selector sin elegir, no se abre nada. F4 sigue igual.
+   Si falta una dependencia para arrancar, `pnpm install --frozen-lockfile`. Cierra navegadores y procesos al terminar.

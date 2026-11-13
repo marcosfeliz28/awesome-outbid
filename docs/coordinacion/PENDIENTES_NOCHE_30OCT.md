@@ -193,3 +193,11 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - La ayuda D12 de ChatGPT nube (`7f1cfb21`, CI verde) NO se integra: revisión en `ORDENES_CHATGPT_NUBE.md` (página de crédito con dos pasos sin respaldo; falta la tabla paso → archivo:línea de las otras 10).
 - Se resolvió el bloqueo de mensajería con Claude PC: la sesión de la rutina sí leyó la Orden 121 por el archivo que vigila.
 
+
+## 13-nov — consulta de mejoras para ChatGPT (N1)
+- Orden de la dueña (12-nov, noche): instructivo de consulta para ChatGPT PC y nube con al menos 50 propuestas, en seis dimensiones y para las dos versiones. Publicado: `CONSULTA_MEJORAS_CHATGPT_13NOV.md` (en `nexora-cloud`) y catálogo de 82 propuestas en la rama `consulta/catalogo-13nov`.
+- Cómo se hizo: 8 revisores por área (104 propuestas en bruto) y un segundo revisor por propuesta. De 85 comprobadas sobrevivieron 83 (una se fundió con otra: 82); 53 salieron corregidas, casi siempre porque `producto-nexora` ya tenía resuelto lo que a la tienda le falta. 19 quedaron fuera sin comprobar (solo título, al final del catálogo).
+- **Falla mía:** el primer equipo (17 agentes del modelo más fuerte) agotó el límite de 5 horas de la dueña a mitad de la verificación y la sesión quedó parada unas 4 horas. La segunda pasada fue en 12 tandas pequeñas con un modelo más barato y terminó en 12 minutos. Regla nueva en `aprendizajes-n1`.
+- Integrado sin desplegar: C13 (`953cb7c6`), C1 (`3f4ac58a`), revisión nocturna de ChatGPT nube (`bfa8948f`), Orden 124 para Claude PC.
+- Pendiente: cruzar las dos respuestas de ChatGPT cuando lleguen e integrar el catálogo en `nexora-cloud` después de que los dos suban su Paso 1; revisión de seguridad y mezcla del asistente analista; C11, D5 y D11; lo de dinero, uno por uno (C2 → C3 → C10 → D8 → D6 → C4-2 → D10-3).
+- Fin de semana (decisión de la dueña): instalación limpia de Windows y clave de Render. Hasta entonces no hay despliegue.

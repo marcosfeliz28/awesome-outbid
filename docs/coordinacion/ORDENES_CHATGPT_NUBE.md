@@ -68,3 +68,7 @@ CI verde, pero **no se integra todavía**: la ayuda es lo que leerá la cajera, 
 3. Quita frases de relleno que no dicen qué hacer («Comprueba el resultado antes de retirarte del equipo»).
 Avisa en `RESULTADOS_CHATGPT_NUBE.md` con el SHA y los 3 CI.
 
+
+## Cola 13-nov (N1, orden de la dueña): consulta de mejoras e implementos
+Lee y ejecuta `docs/coordinacion/CONSULTA_MEJORAS_CHATGPT_13NOV.md` como **ChatGPT nube**. Es una segunda opinión, solo lectura y documentos: tu lista a ciegas (Paso 1), tu evaluación del catálogo de 82 propuestas (rama `consulta/catalogo-13nov`; no lo traigas antes de subir el Paso 1), tus propuestas y tu síntesis. Rama `chatgpt-nube/consulta-mejoras-13nov`. No se construye ni se despliega nada. Avisa en `RESULTADOS_CHATGPT_NUBE.md`.
+Tu revisión nocturna del 12-nov (guías, criterios C1/C2/C3/C10 y contrato) ya está integrada en `nexora-cloud`.
