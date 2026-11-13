@@ -4,7 +4,7 @@ Rama base `nexora-cloud` (commit `1e25909f`, 30-oct-2026). Citas `archivo:línea
 
 ## 1. Vocabulario rápido
 
-- **Crédito / contraentrega**: la mercancía sale ahora y el dinero se cobra después. En la base es un pago con método `cod` y estado `pending`; el saldo vive en `Sale.creditBalance` (`apps/api/src/sales.ts:280`, `:361-363`). «Crédito» y «Contraentrega» son solo una etiqueta de estadística (`receivableKind`: `credit` o `cod`); tienen las mismas reglas (`apps/api/prisma/schema.prisma`, comentario de `receivableKind`; `apps/web/src/POS.tsx:1871-1875`).
+- **Crédito / contraentrega**: la mercancía sale ahora y el dinero se cobra después. En la base es un pago con método `cod` y estado `pending`; el saldo vive en `Sale.creditBalance` (`apps/api/src/sales.ts:280`, `:361-363`). «Crédito» y «Contraentrega» son solo una etiqueta de estadística (`receivableKind`: `credit` o `cod`); tienen las mismas reglas (`apps/api/prisma/schema.prisma`, comentario de `receivableKind`; `apps/web/src/POS.tsx:1888-1892`).
 - **Abono / cobro**: un pago posterior sobre una venta con saldo. Se guarda como `Payment` con `entryType = "installment"` (manejador `installment`, `apps/api/src/sales.ts:4107`). Un pago hecho al vender tiene `entryType = "sale"`.
 - **Verificar**: confirmar contra el banco que una transferencia llegó. Estados del pago: `ok`, `pending_verification`, `rejected` y `pending` (deuda sin cobrar) (`apps/api/prisma/schema.prisma` modelo `Payment`, campo `status`).
 
@@ -12,13 +12,13 @@ Rama base `nexora-cloud` (commit `1e25909f`, 30-oct-2026). Citas `archivo:línea
 
 Pasos exactos en `FLUJO_CAJA_POS.md` §5.1. Resumen:
 
-1. Elegir **cliente** (obligatorio, `apps/web/src/POS.tsx:2071`).
-2. En la ventana «Todo listo para cobrar» (`apps/web/src/POS.tsx:2511`) pulsar **«Vender a crédito (queda pendiente)»** (texto en `:2033`, `:2035`) o elegir **«Crédito»** / **«Contraentrega»** en el selector de cobro (`:2770`).
-3. Confirmar con **«Sí, vender a crédito»** (`apps/web/src/POS.tsx:2603`).
+1. Elegir **cliente** (obligatorio, `apps/web/src/POS.tsx:2088`).
+2. En la ventana «Todo listo para cobrar» (`apps/web/src/POS.tsx:2528`) pulsar **«Vender a crédito (queda pendiente)»** (texto en `:2033`, `:2035`) o elegir **«Crédito»** / **«Contraentrega»** en el selector de cobro (`:2770`).
+3. Confirmar con **«Sí, vender a crédito»** (`apps/web/src/POS.tsx:2620`).
 4. Reglas de aprobación con **PIN de gerente** (`packages/shared/src/index.ts:404-447`, `receivableApprovalReason` y `receivableNeedsApproval`): monto de crédito > umbral (`creditApprovalThreshold`, RD$ 1,000 por defecto); contraentrega de quien no tiene `sale:manage` > umbral o con ventas a crédito deshabilitadas; deuda abierta del cliente + esta venta > umbral; lo dejado por cobrar en el turno > RD$ 3,000 (`receivableShiftLimit`, `packages/shared/src/index.ts:400-410`). El aviso del turno está en `apps/api/src/sales.ts:717`.
 5. Límite por cliente: `Customer.creditLimit` (0 = sin límite para crédito): «La venta supera el límite de crédito del cliente.» (`apps/api/src/sales.ts:1059`).
-6. Necesita conexión (no se guarda sin internet) (`apps/web/src/POS.tsx:2077-2082`).
-7. El recibo imprime «CRÉDITO · PENDIENTE DE PAGO» y «Monto pendiente» (`apps/web/src/Prints.tsx:616-623`; `apps/web/src/POS.tsx:2436-2448`).
+6. Necesita conexión (no se guarda sin internet) (`apps/web/src/POS.tsx:2094-2099`).
+7. El recibo imprime «CRÉDITO · PENDIENTE DE PAGO» y «Monto pendiente» (`apps/web/src/Prints.tsx:616-623`; `apps/web/src/POS.tsx:2453-2465`).
 8. El incentivo de la cajera por esa parte se acredita **al cobrar**, no al vender (`apps/api/src/sales.ts:1188`, campo `incentiveOnCollection`).
 
 ## 3. Cobrar un crédito / contraentrega
@@ -57,7 +57,7 @@ Una venta con cobros válidos registrados no se puede anular, ni corregir su mé
 
 ### 4.1 Cómo nace una transferencia por verificar
 
-- En la caja: método **Transferencia** + «Cuenta donde cayó» (`apps/web/src/POS.tsx:2852`, bloque en `:2776`) + «Referencia». El pago queda `pending_verification` (`apps/api/src/sales.ts:1439`) y se crea una **alerta alta** «Transferencia de FS-… por RD$ … sin verificar · banco · ref.» (`sales.ts:1453-1458`, tipo `transfer_pending`).
+- En la caja: método **Transferencia** + «Cuenta donde cayó» (`apps/web/src/POS.tsx:2869`, bloque en `:2776`) + «Referencia». El pago queda `pending_verification` (`apps/api/src/sales.ts:1439`) y se crea una **alerta alta** «Transferencia de FS-… por RD$ … sin verificar · banco · ref.» (`sales.ts:1453-1458`, tipo `transfer_pending`).
 - El monto de una transferencia **cuenta en el esperado de la caja** (`apps/api/src/cash.ts:55-113`, función `cashExpected`), pero el cierre usa lo que el sistema suma, no lo que declara la cajera (misma función).
 - En abonos: cobro por transferencia de una cajera/gerente → `pending_verification` hasta verificarla (manejador `installment`, `apps/api/src/sales.ts:4107`). Un abono pendiente no descuenta la deuda.
 

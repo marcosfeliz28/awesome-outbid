@@ -49,3 +49,36 @@ Dadas por ella en este chat, no por mensaje de otra sesión:
 - **Tope del asistente analista: US$0.40 por usuaria al día, aceptado.** Máximo US$12 al mes por usuaria (30 días). La función `claude-pc/asistente-analista` sigue sin mezclar: falta auditarla.
 - **Cambios que tocan dinero: C2, C3, C4-2, C10, D6, D8, D10-3 autorizados, uno por uno.** Reglas: sin cambiar totales, impuestos, descuentos ni la forma en que se guardan los pagos; una rama y un push por código; Paso 0 contra el código; pruebas completas y 3 CI verdes; ChatGPT PC los comprueba en pantalla; **ninguno se despliega** sin la prueba de Windows y sin avisarle.
 - Orden: C1 → C2 → C3 → C10 → D8 → D6 → C4-2 → D10-3.
+
+## Reparto actualizado (12-nov, noche, Norexos 1; sin gastos ni despliegue, nada mezclado en esta revisión)
+Verificado en las ramas, no en mensajes:
+| Área | Estado real | Pieza vigente (exclusiva) | Entrega |
+|---|---|---|---|
+| **Claude PC nativo** | `claude-pc/ayuda-local-12nov` (`0963547f`): 5 guías aprobadas con 3 CI verdes; s3 y s7 bloqueadas por el revisor (cifras de dinero); s5 excluida por rol equivocado | Cierre de la Orden 123 y lint rojo de `claude-pc/cola2-26oct` (16 no-undef en scripts de cola/Ollama). **Nadie más toca esos scripts** | Reformular s3, s5 y s7 sin cifras y con el rol correcto; cola2 con lint verde y 3 CI |
+| **ChatGPT PC** | `chatgpt-pc/instalacion-limpia-12nov` (`2d817d0a`): la VM limpia no arrancó (ISO de Windows dañado); sin capturas C6/C15 (falta `@zxing/library` en su PC) | Instalación limpia + C6/C15 | ISO reparado, instalación de punta a punta con versión, tamaño, SHA-256 y tiempos; capturas. **Sigue siendo lo que bloquea el despliegue** |
+| **ChatGPT nube** | D12 cerrada y reconciliada (`e40f3925`, 3 CI verdes); D12 local sigue sin publicar | Nueva (abajo) | Informe en `RESULTADOS_CHATGPT_NUBE.md` |
+| **Norexos 1** | Auditando `claude-pc/asistente-analista` (tope US$0.40 ya está en el código); C1 y siguientes en cola | Auditoría de arquitectura, luego C1 → C2 → C3 | Hallazgos aquí; nada se mezcla sin aviso |
+
+**Tareas nuevas para ChatGPT nube (solo textos y documentos):**
+1. Verificar las 5 guías de `docs/ayuda/local/` de la rama `claude-pc/ayuda-local-12nov` contra el código y las pantallas: tabla paso → archivo:línea, como en D12. No editar esa rama; entregar las correcciones como lista.
+2. Escribir los criterios de aceptación en pantalla de C1, C2, C3 y C10 (qué ve la cajera antes y después), para que ChatGPT PC los compruebe cuando se construyan. Sin cambiar reglas de dinero.
+3. Revisar que el contrato `docs/venta/contrato/04_TERMINOS_USO_IA_VENTAS.md` de la rama del asistente analista no contradiga el tope de US$0.40 por usuaria al día.
+
+**Dependencias:** despliegue ← instalación limpia aprobada + 0 cajas + 3 CI verdes; asistente analista ← auditoría + fusión con `nexora-cloud` (108 commits de retraso); clave de IA ← la dueña, «Save only».
+
+## Auditoría del asistente analista (`claude-pc/asistente-analista`, 9d419f30), 12-nov noche
+Lectura de diff por revisor de dinero (no ejecutó pruebas ni probó con base real). **Veredicto: se puede mezclar; ningún hallazgo bloquea.** Solo lectura confirmada (6 herramientas sin escritura, salvo la fila del medidor `AiUsage`); `sessionsFor` sin cambio con rango vacío; permisos reutilizan los de los reportes.
+Antes de activar el plan `analista` en producción:
+1. (media) Si `ASSISTANT_MODEL` apunta a un modelo que no esté en `ai-prices.ts`, `costUsd` queda nulo y el tope de US$0.40 no salta. Con el modelo por defecto `claude-haiku-5-5` sí está en la tabla (verificado por N1). Acción: fallar cerrado (negar) si no hay precio.
+2. (media) El tope es blando: se revisa antes de la pregunta y una pregunta puede hacer hasta 4 llamadas al modelo. Pasarse unos centavos es posible.
+3. (media) Preguntas simultáneas de la misma usuaria pasan con el mismo gasto acumulado hasta que se liquida el costo; el exceso queda acotado por las 30 preguntas diarias. No probado con carga.
+4. (baja) El monto 0.4 dice «PENDIENTE de aprobar por la dueña» en el código; **ya lo aprobó el 12-nov**: actualizar el comentario al mezclar.
+5. Pendiente de revisar: que todo reporte con columnas de costo tenga la marca `margin` (la limpieza por nombre `strip` no cubre las columnas en español).
+Falta para mezclar: fusionar `nexora-cloud` (108 commits de retraso), 3 CI verdes y revisión de seguridad. No se activa sin la clave y el plan puestos por la dueña.
+
+## 13-nov, madrugada (N1)
+- **Integrado:** C13 (`953cb7c6`, 3 CI verdes en su rama) y la revisión nocturna de ChatGPT nube (`bfa8948f`, 3 CI verdes): tabla de las 5 guías, criterios en pantalla de C1/C2/C3/C10 y 3 contradicciones del contrato del asistente con el tope aprobado de US$0.40.
+- **Claude PC:** Orden 124 en `RESPUESTA_CLAUDE_PC_27OCT.md` (corregir las 5 guías con la lista de Nube y cerrar s3, s5 y s7).
+- **Contrato del asistente (`04_TERMINOS_USO_IA_VENTAS.md`, rama `claude-pc/asistente-analista`):** se corrige al mezclar esa rama: el tope de US$0.40 ya está aprobado y no se promete como techo absoluto (se comprueba antes de cada pregunta).
+- **Decisión de la dueña (12-nov, noche):** la instalación limpia de Windows y la clave de Render quedan para el fin de semana. Hasta entonces no hay despliegue.
+- **En preparación:** consulta de mejoras para ChatGPT PC y nube (50+ propuestas con evidencia comprobada, por orden de la dueña).

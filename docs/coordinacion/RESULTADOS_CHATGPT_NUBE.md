@@ -1,5 +1,96 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-12 · revisión nocturna de textos, criterios y contrato
+
+- **Base y fuentes:** revisión hecha desde `origin/nexora-cloud` `3705f7d8ef006c4a9698b70e7d65adbb133ef428`. Las cinco guías se leyeron sin editar desde `origin/claude-pc/ayuda-local-12nov` `0963547f8a4308e7e9e21be5eca47f4e418e91f6`; el contrato se leyó sin editar desde `origin/claude-pc/asistente-analista` `9d419f3052ea2c758814cb0ade2d0d1156135a3d`.
+- **Asignación comprobada:** `docs/coordinacion/ESTADO_MEJORAS_12NOV.md:63-65` asigna exclusivamente a ChatGPT Nube estas tres tareas. No repiten D12 ni C5-1 y no requieren modificar `apps/**`, `tests/e2e/**` ni las ramas fuente.
+
+### 1. Verificación de las cinco guías locales
+
+| Guía           | Paso | Evidencia en la interfaz o el servidor                                                                                                                  | Resultado                                                                                                                                                                                |
+| -------------- | ---: | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cajera-s1.md` |    1 | `apps/web/src/passwordChange.ts:6-13`, `apps/web/src/passwordChange.ts:23-35`, `apps/web/src/App.tsx:548-564`                                           | **Corregir.** Para cajera/vendedora la regla es un PIN nuevo de seis números, no las cinco reglas de una contraseña fuerte.                                                              |
+| `cajera-s1.md` |    2 | `apps/web/src/Management.tsx:1753-1759`                                                                                                                 | Conforme: «Caja» muestra `Abrir mi caja` cuando no hay sesión abierta.                                                                                                                   |
+| `cajera-s1.md` |    3 | `apps/web/src/Management.tsx:2030-2068`, `apps/api/src/cash.ts:859-880`                                                                                 | **Corregir.** Un fondo menor que el sugerido exige una nota; no pide PIN.                                                                                                                |
+| `cajera-s1.md` |    4 | `apps/web/src/Management.tsx:1713-1751`                                                                                                                 | Conforme: se ve `Caja abierta` y el nombre del equipo/caja.                                                                                                                              |
+| `cajera-s1.md` |    5 | `apps/api/src/common.ts:768`, `apps/web/src/realtime.tsx:515-565`                                                                                       | Parcial: el equipo nuevo sí requiere aprobación o PIN. Quitar «no abras una caja solo para consultar», que no describe una regla demostrable del sistema.                                |
+| `cajera-s2.md` |    1 | `apps/web/src/POS.tsx:960-976`, `apps/web/src/POS.tsx:1022-1028`                                                                                        | Conforme en función; corregir la frase «o escáname» por «o escanéalo con la cámara/lector».                                                                                              |
+| `cajera-s2.md` |  2-3 | `apps/web/src/POS.tsx:1031-1082`, `apps/web/src/POS.tsx:1127-1289`, `apps/web/src/POS.tsx:1361-1388`                                                    | Conforme: búsqueda, variante, precio, existencia y carrito están visibles.                                                                                                               |
+| `cajera-s2.md` |    4 | `apps/web/src/POS.tsx:1106-1123`, `apps/web/src/POS.tsx:1435-1549`                                                                                      | Conforme: F4 selecciona cliente y el formulario permite crear uno.                                                                                                                       |
+| `cajera-s2.md` |    5 | `apps/web/src/POS.tsx:1288-1311`                                                                                                                        | **Corregir.** El total sí se revisa; «no cambies el cliente o producto» no es una regla del sistema y estorba una corrección normal del carrito.                                         |
+| `cajera-s2.md` |    6 | `apps/web/src/POS.tsx:1073-1082`                                                                                                                        | Conforme con matiz: la pantalla recomienda menos palabras o el código; avisar a gerencia es procedimiento operativo, no comportamiento del programa.                                     |
+| `cajera-s4.md` |  1-4 | `apps/web/src/Management.tsx:1695-1708`, `apps/web/src/Management.tsx:2072-2105`                                                                        | Conforme: `Movimiento`, salida, monto, motivo y PIN de gerencia cuando corresponda.                                                                                                      |
+| `cajera-s4.md` |    5 | `apps/api/src/cash.ts:974-1033`                                                                                                                         | Conforme: el límite acumula las salidas de la usuaria en el turno/día y exige PIN al superarlo.                                                                                          |
+| `cajera-s4.md` |    6 | `apps/api/src/cash.ts:987-1003`                                                                                                                         | Parcial: la operación es idempotente. «Conserva el comprobante según el procedimiento» no tiene respaldo en esta pantalla; dejarlo solo si existe un procedimiento externo aprobado.     |
+| `cajera-s6.md` |  1-2 | `apps/web/src/Management.tsx:3372-3386`, `apps/web/src/Management.tsx:3685-3715`                                                                        | **Corregir.** La cajera sí puede pulsar `Solicitar anulación`, elegir el tipo de motivo y explicarlo; administración decide la anulación. No dirigir por nombre a personas concretas.    |
+| `cajera-s6.md` |    3 | `apps/web/src/QuickQuestions.tsx:547-552`                                                                                                               | Conforme: no repetir la venta mientras la solicitud está pendiente.                                                                                                                      |
+| `cajera-s6.md` |    4 | `apps/web/src/Management.tsx:3412-3420`, `apps/web/src/Management.tsx:3826-3887`                                                                        | **Corregir.** Las devoluciones y los abonos pueden impedir una anulación total; la guía debe separar `Solicitar anulación` de `Devolver`.                                                |
+| `cajera-s6.md` |  5-6 | `apps/web/src/Management.tsx:3393-3409`, `apps/web/src/Management.tsx:3670-3683`                                                                        | Conforme con rol: quien administra necesita su caja abierta para una devolución y para el reembolso en efectivo si la caja original cerró.                                               |
+| `cajera-s8.md` |  1-2 | `apps/web/src/App.tsx:1122-1147`, `apps/web/src/offlinePolicy.ts:3-12`, `apps/web/src/POS.tsx:2232-2260`                                                | Conforme: el indicador muestra el estado y solo se guarda localmente si la tienda permite ventas sin conexión. Crédito, contraentrega y una operación que requiere PIN esperan conexión. |
+| `cajera-s8.md` |  3-4 | `apps/web/src/Management.tsx:1765-1924`, `apps/web/src/pendingSales.ts:190-197`, `apps/web/src/pendingSales.ts:297-313`                                 | Conforme: sincronización automática/manual, conflicto de inventario, actualización de precios y reintento.                                                                               |
+| `cajera-s8.md` |    5 | `apps/web/src/POS.tsx:2254-2260`                                                                                                                        | Conforme en el código actual: no procesar crédito ni autorizaciones con PIN sin conexión.                                                                                                |
+| `cajera-s8.md` |    6 | `apps/web/src/cartDraftPolicy.ts:5-13`, `apps/web/src/cartDraftPolicy.ts:29-38`, `apps/web/src/App.tsx:885-943`, `apps/web/src/pendingSales.ts:382-396` | Conforme con precisión: actividad conserva la sesión hasta dos horas; un carrito reciente se restaura; una venta local pendiente impide cerrar sin resolverla.                           |
+
+**Lista de correcciones para Claude PC, sin tocar su rama:**
+
+1. `cajera-s1.md`: sustituir las cinco reglas por «crea un PIN nuevo de seis números»; fondo menor = nota, no PIN; retirar consejos no demostrables.
+2. `cajera-s2.md`: corregir «escáname»; eliminar la prohibición de cambiar cliente/producto; distinguir la ayuda de pantalla del procedimiento de escalar.
+3. `cajera-s4.md`: conservar la salida y el PIN condicional; retirar la obligación de guardar un comprobante salvo que se cite el procedimiento externo.
+4. `cajera-s6.md`: reescribir alrededor de `Solicitar anulación`; no nombrar personas; separar anulación, devolución y abono.
+5. `cajera-s8.md`: conservar el flujo; precisar que la venta local depende de la configuración y que el cierre se bloquea mientras haya pendientes.
+
+### 2. Criterios de aceptación en pantalla
+
+Estos criterios describen la pantalla; no autorizan cambios en totales, impuestos, descuentos, precios, permisos ni persistencia de pagos.
+
+#### C1 · Consumidor final por defecto
+
+- **Antes:** sin cliente, la cabecera muestra `Selecciona el cliente`; al pulsar F12 se abre el selector y, después de elegir, hay que pulsar cobrar otra vez (`apps/web/src/POS.tsx:516-539`, `apps/web/src/POS.tsx:1106-1123`).
+- **Después:** al iniciar una venta se ve `Consumidor final` seleccionado. Con artículos en el carrito, F12 abre el cobro en una sola acción.
+- Elegir otro cliente reemplaza claramente al genérico y mantiene el comportamiento actual. Al finalizar o cancelar, la venta siguiente vuelve al cliente genérico.
+- Si el cliente genérico no está disponible, la pantalla no inventa ni duplica clientes: explica el bloqueo y permite elegir o crear uno. La API sigue exigiendo cliente para crédito; no se cambia esa regla.
+
+#### C2 · Cobro exacto y cambio visible
+
+- **Antes:** la cajera abre cobro, elige efectivo, puede pulsar `Exacto`, agrega el pago y luego finaliza; el cambio aparece después de registrar pagos (`apps/web/src/POS.tsx:2515-2590`, `apps/web/src/POS.tsx:2750-2770`, `apps/web/src/POS.tsx:2880-2935`, `apps/web/src/POS.tsx:2990-3020`).
+- **Después:** se ve una acción inequívoca `Cobrar exacto en efectivo`; al usarla se registra una sola vez el total pendiente en efectivo y el cambio visible es RD$0.00.
+- Al escribir el efectivo recibido, el cambio se actualiza antes de confirmar. Enter ejecuta la acción visible una sola vez y nunca omite un PIN, motivo o validación existente.
+- Total, impuestos, descuentos, métodos, redondeo y datos guardados deben coincidir exactamente con el flujo actual.
+
+#### C3 · Una entrada clara para crédito
+
+- **Antes:** crédito aparece en el atajo, en el selector de condición y entre las formas de pago, lo que presenta tres entradas (`apps/web/src/POS.tsx:2537-2580`, `apps/web/src/POS.tsx:2610-2630`).
+- **Después:** la cajera ve una sola entrada inicial `Vender a crédito`. Dentro de ese flujo elige, si aplica, `Crédito (paga después)` o `Contraentrega`; no hay botones duplicados que parezcan métodos distintos.
+- Antes de confirmar se muestran cliente, total pendiente y condición elegida. Si falta cliente, el selector se abre y al terminar vuelve al mismo punto del cobro.
+- Se conservan permisos, PIN/motivo cuando corresponda, límites, deuda y forma de guardar pagos. No se acredita efectivo ni se altera el total.
+
+#### C10 · Cierre guiado por pasos
+
+- **Antes:** una sola pantalla larga reúne conteo, tarjetas, lotes, divisas, efectivo dejado, notas, confirmación y errores (`apps/web/src/Tienda.tsx:175-285`, `apps/web/src/Tienda.tsx:320-468`).
+- **Después:** un indicador muestra cinco pasos: **1 Conteo**, **2 Tarjetas**, **3 Efectivo dejado**, **4 Revisar**, **5 Confirmar**. Atrás/Continuar conserva lo escrito.
+- Cada error aparece en su paso y evita avanzar: conteos inválidos, lote obligatorio, nota de descuadre y PIN existente. La revisión resume únicamente lo que la cajera ingresó.
+- El cierre continúa siendo ciego: la cajera no ve efectivo esperado ni diferencia antes de confirmar. La pantalla envía una sola solicitud con el mismo contenido y las mismas reglas actuales.
+- La foto es opcional y queda fuera del criterio obligatorio hasta una aprobación separada. Cerrar/imprimir conserva su resultado actual.
+
+### 3. Contrato del asistente analista frente al tope aprobado
+
+**Veredicto: requiere corrección antes de firmar.** El contrato no está alineado por completo con la decisión registrada en `ESTADO_MEJORAS_12NOV.md:49`.
+
+1. En `04_TERMINOS_USO_IA_VENTAS.md:41`, cambiar «US$0.40 ... (PENDIENTE de aprobar)» por «US$0.40 por usuario y día, aprobado por la dueña el 12-nov-2026».
+2. En las líneas 13 y 75, separar el límite operativo aprobado de los precios/condiciones comerciales de la Hoja de contratación, que sí pueden seguir pendientes. «Los topes ... siguen PENDIENTES» contradice hoy la decisión sobre US$0.40.
+3. No prometer un techo duro absoluto. El servidor comprueba el costo acumulado antes de reservar una pregunta (`apps/api/src/assistant.ts:1232-1246`) y bloquea preguntas posteriores cuando lo ya contabilizado alcanza el límite (`apps/api/src/assistant.ts:1088-1104`), pero una pregunta admitida puede sumar costo después de la comprobación. Redacción propuesta: «Antes de cada pregunta se comprueba el costo estimado ya registrado. Si alcanzó US$0.40, no se llama a la IA; una pregunta ya admitida puede hacer que el acumulado final supere ese valor».
+4. Conservar la distinción entre límite de 30 preguntas y límite de costo. El valor configurado sí es `0.4` para analista (`apps/api/src/assistant.ts:38-46`, `apps/api/src/assistant.ts:1092-1095`).
+5. Mantener el rótulo de borrador y la revisión por abogado dominicano antes de firma. Esta revisión es técnica, no jurídica.
+
+### Regresión documental y autoauditoría
+
+- **Antes:** la búsqueda de `revisión nocturna de textos`, `criterios de aceptación C1` y `US$0.40 ... aprobado` en ambos archivos de resultados no encontró la entrega y terminó con código 1.
+- **Después:** el control exige las cinco guías, C1/C2/C3/C10, los tres puntos del contrato, los dos SHA fuente y esta sección en ambos archivos de resultados.
+- **Control completo:** tras instalar desde el lockfile y generar el cliente Prisma local (sin conectar ni migrar una base), `pnpm check` terminó con código 0: typecheck y ESLint pasaron; 116 archivos de prueba y 1,028 pruebas pasaron; uno y 10, respectivamente, se omitieron por condiciones existentes; los builds web y API pasaron. Vite solo emitió la advertencia conocida de un chunk mayor de 500 kB.
+- **Incidencia de preparación:** el primer `pnpm check` se detuvo en typecheck porque el worktree nuevo aún no tenía generado Prisma; el primer error fue `src/admin.ts(255,37): error TS2339: Property 'customer' does not exist on type 'Database'.` Después de `pnpm db:generate`, la comprobación completa quedó verde.
+- Revisé que todas las correcciones estén formuladas como lista para las ramas propietarias: no edité guías, contrato, `apps/**` ni `tests/e2e/**`. No cambié reglas de dinero, precios o permisos.
+- No se desplegó, mezcló ni abrió PR; no se tocó Render, producción, la base de la tienda ni credenciales. Windows-Smoke real sigue pendiente y no se declara certificado.
+
 ## 2026-11-12 · D12 · contenido de ayuda por rol
 
 - **Rama y base:** `chatgpt-nube/ayuda-contenido-12nov`, creada desde `origin/nexora-cloud` `8a83093723a884f7edb017d2f0916b371f556227`. La implementación está en `6a809cd700c59b1bd7eddf6f2b4a24cb4300a8e7`.

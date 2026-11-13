@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-12 · ChatGPT NUBE · revisión nocturna de textos
+
+- **Alcance:** atendí las tres tareas nuevas de `ESTADO_MEJORAS_12NOV.md:63-65`: verificación de cinco guías locales, criterios en pantalla de C1/C2/C3/C10 y revisión técnica del contrato frente al tope aprobado de US$0.40 por usuario/día.
+- **Fuentes inmutables:** base `origin/nexora-cloud` `3705f7d8`; guías `origin/claude-pc/ayuda-local-12nov` `0963547f`; contrato `origin/claude-pc/asistente-analista` `9d419f30`. No edité ni sustituí esas ramas.
+- **Resultado:** `RESULTADOS_CHATGPT_NUBE.md` contiene la matriz paso → archivo:línea, la lista concreta de correcciones para Claude PC, los criterios antes/después y tres contradicciones contractuales. La principal: el contrato aún dice que US$0.40 está pendiente y describe el límite como absoluto, aunque la dueña lo aprobó y el código comprueba el acumulado antes de cada pregunta.
+- **Regresión y controles:** antes no existía esta entrega en ninguno de los dos informes; después el validador documental comprueba guías, mejoras, contrato y SHA fuente. Tras generar Prisma local, `pnpm check` pasó con 116 archivos y 1,028 pruebas verdes, más ambos builds. Solo se modificaron documentos de resultados.
+- **Límites:** no hubo mezcla, PR, despliegue ni acceso a Render, producción, base o credenciales; Windows-Smoke sigue pendiente.
+
 ## 2026-11-12 · ChatGPT NUBE · corrección D12 de ayuda por rol
 
 - **Alcance:** corregí en `chatgpt-nube/ayuda-contenido-12nov` la entrega D12 revisada por Norexos 1. La aprobación de crédito ahora es condicional, desapareció el relleno señalado y se retiraron instrucciones sin respaldo demostrable.

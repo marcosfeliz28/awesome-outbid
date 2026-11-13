@@ -751,21 +751,11 @@ Pasos exactos, sin gastar ni desplegar:
 6. Responde aquí: tareas hechas/bloqueadas, tiempo por tarea, modelo usado. Cierra Ollama y procesos al terminar.
 No escribas en chats de ChatGPT hasta que la dueña confirme cuál es.
 
-### Ejecución ChatGPT PC · 12-nov
-
-- **Rama/base:** `claude-pc/ayuda-local-12nov`, creada desde `origin/nexora-cloud` (`880dd415ae2736b4ca90c8206f4a2f781a7700e4`).
-- **Modelo y preparación:** `ollama list` respondió; se seleccionó `qwen-optimizado:latest`. Preparación y comprobación: aproximadamente 1 minuto.
-- **Prueba inicial (`--una`):** se ejecutó la cola indicada con una carpeta de salida fuera del repositorio. `M12-ayuda-cajera-s1` quedó **BLOQUEADA**: `Ollama respondió HTTP 500`. Comprobación mínima posterior del modelo respondió `OK`, por lo que el bloqueo está en la llamada de la cola y no demuestra que Ollama esté ausente.
-- **Datos sensibles:** no se aprobó ni copió ningún texto; por tanto no entró material sensible al repositorio ni se modificó dinero o precios.
-- **Cierre:** se cerraron los procesos de Ollama iniciados para esta comprobación. Pendiente: corregir o diagnosticar el HTTP 500 y repetir `--una` antes de procesar el resto de tareas.
-
-### Informe Claude PC · Orden 123 (12-nov, final)
-
-- **Rama y commits:** `claude-pc/ayuda-local-12nov`. Contenido aprobado en `687bfa4d` (cinco guías). Este informe va en un commit posterior; no reemplaza el bloque de `7d62fbb9`, que quedó superado por lo siguiente.
-- **Modelo y tiempo:** `qwen-optimizado` (9.0 GB). Ocho tareas, de 65 s a 263 s cada una; unos 17 min en total, más un reintento de s1 que dio HTTP 500 la primera vez.
-- **Hechas y subidas (5):** s1, s2, s4, s6, s8, a `docs/ayuda/local/`. Verificadas contra su manual de entrada; cabecera de borrador sin verificar y sin meta-texto del modelo.
-- **Bloqueadas por el revisor de datos sensibles (no subidas, por cifras de dinero):** s3 y s7.
-- **Excluida por error de contenido (no subida):** s5. El borrador decía que el cajero abre la caja de devolución; el manual dice que lo hace gerencia.
-- **CI de `687bfa4d`:** `verify`, `render-images` y `windows-installer`, los tres en verde.
-- **Pendiente:** reformular s3, s5 y s7 sin cifras de dinero y con el rol correcto. Revisión humana de las cinco guías antes de usarlas en la tienda.
-- **Cierre:** Ollama, la API local (3001) y PostgreSQL (5452) detenidos.
+## Orden 124 (N1, 13-nov): corregir las 5 guías y cerrar s3, s5 y s7
+ChatGPT nube comprobó tus 5 guías contra el código (`docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`, sección «revisión nocturna de textos», tabla paso → archivo:línea). Sin gastar ni desplegar.
+1. Rama: sigue en `claude-pc/ayuda-local-12nov`, con `git merge origin/nexora-cloud` primero (merge, no rebase).
+2. Aplica su «Lista de correcciones para Claude PC» (5 puntos). Las que más pesan: en `cajera-s1` el cambio es a un PIN de seis números y un fondo menor pide nota, no PIN; en `cajera-s6` la cajera pulsa «Solicitar anulación» y la guía separa anulación, devolución y abono; no se nombra a personas.
+3. Reescribe s3 y s7 sin cifras de dinero (describe el paso, no el monto) y s5 con el rol correcto. Cada paso lleva su respaldo `archivo:línea` en el informe; el que no lo tenga se borra o se marca `[FALTA DATO]`.
+4. Puedes corregir a mano o con la cola local; lo que cuenta es el respaldo de cada paso. Los scripts de cola y Ollama siguen siendo tuyos.
+5. `claude-pc/cola2-26oct` y `claude-pc/fix-lint-cola2-12nov`: no sigas trabajando en ellas (820 commits de retraso; sus scripts ya están en `nexora-cloud`). No las borres.
+6. Un solo push, 3 CI verdes, y responde aquí con el SHA. Cierra Ollama y procesos al terminar.
