@@ -1,0 +1,225 @@
+{
+  "base": "511d223f0c0c512f54b900265b2c6c1e59d4c560",
+  "browser": "153.0.8010.12",
+  "measurement": "CDP Network, ventana de 5 s tras responseReceived de POST /api/sales; cache calida; SW bloqueado; sin throttle",
+  "runs": [
+    {
+      "width": 1366,
+      "height": 900,
+      "sale": "FS-0000862",
+      "postSaleGetCount": 10,
+      "postSaleTransferredBytes": 213227,
+      "postSaleDecodedBytes": 267227,
+      "rows": [
+        {
+          "method": "POST",
+          "url": "/api/sales",
+          "status": 201,
+          "startMs": -86,
+          "durationMs": 86,
+          "transferredBytes": 3008,
+          "decodedBodyBytes": 2001
+        },
+        {
+          "method": "GET",
+          "url": "/api/alerts?status=new",
+          "status": 200,
+          "startMs": 4,
+          "durationMs": 54,
+          "transferredBytes": 944,
+          "decodedBodyBytes": 61743
+        },
+        {
+          "method": "GET",
+          "url": "/api/assistant/status",
+          "status": 200,
+          "startMs": 4,
+          "durationMs": 17,
+          "transferredBytes": 942,
+          "decodedBodyBytes": 144
+        },
+        {
+          "method": "GET",
+          "url": "/api/products?limit=200&page=1",
+          "status": 200,
+          "startMs": 4,
+          "durationMs": 51,
+          "transferredBytes": 195943,
+          "decodedBodyBytes": 194937
+        },
+        {
+          "method": "GET",
+          "url": "/api/categories",
+          "status": 200,
+          "startMs": 4,
+          "durationMs": 19,
+          "transferredBytes": 943,
+          "decodedBodyBytes": 1344
+        },
+        {
+          "method": "GET",
+          "url": "/api/customers",
+          "status": 200,
+          "startMs": 5,
+          "durationMs": 22,
+          "transferredBytes": 8997,
+          "decodedBodyBytes": 7994
+        },
+        {
+          "method": "GET",
+          "url": "/api/cash-sessions",
+          "status": 200,
+          "startMs": 5,
+          "durationMs": 54,
+          "transferredBytes": 1634,
+          "decodedBodyBytes": 633
+        },
+        {
+          "method": "GET",
+          "url": "/api/promotions",
+          "status": 200,
+          "startMs": 5,
+          "durationMs": 36,
+          "transferredBytes": 941,
+          "decodedBodyBytes": 2
+        },
+        {
+          "method": "GET",
+          "url": "/api/settings",
+          "status": 200,
+          "startMs": 5,
+          "durationMs": 39,
+          "transferredBytes": 943,
+          "decodedBodyBytes": 426
+        },
+        {
+          "method": "GET",
+          "url": "/api/credit-notes?customerId=CLIENTA_DEMO",
+          "status": 200,
+          "startMs": 5,
+          "durationMs": 56,
+          "transferredBytes": 941,
+          "decodedBodyBytes": 2
+        },
+        {
+          "method": "GET",
+          "url": "/api/credit-notes",
+          "status": 200,
+          "startMs": 11,
+          "durationMs": 52,
+          "transferredBytes": 999,
+          "decodedBodyBytes": 2
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "sale": "FS-0000863",
+      "postSaleGetCount": 10,
+      "postSaleTransferredBytes": 213169,
+      "postSaleDecodedBytes": 267227,
+      "rows": [
+        {
+          "method": "POST",
+          "url": "/api/sales",
+          "status": 201,
+          "startMs": -67,
+          "durationMs": 66,
+          "transferredBytes": 3008,
+          "decodedBodyBytes": 2001
+        },
+        {
+          "method": "GET",
+          "url": "/api/alerts?status=new",
+          "status": 200,
+          "startMs": 2,
+          "durationMs": 47,
+          "transferredBytes": 944,
+          "decodedBodyBytes": 61743
+        },
+        {
+          "method": "GET",
+          "url": "/api/assistant/status",
+          "status": 200,
+          "startMs": 3,
+          "durationMs": 17,
+          "transferredBytes": 942,
+          "decodedBodyBytes": 144
+        },
+        {
+          "method": "GET",
+          "url": "/api/products?limit=200&page=1",
+          "status": 200,
+          "startMs": 3,
+          "durationMs": 37,
+          "transferredBytes": 195943,
+          "decodedBodyBytes": 194937
+        },
+        {
+          "method": "GET",
+          "url": "/api/categories",
+          "status": 200,
+          "startMs": 3,
+          "durationMs": 18,
+          "transferredBytes": 943,
+          "decodedBodyBytes": 1344
+        },
+        {
+          "method": "GET",
+          "url": "/api/customers",
+          "status": 200,
+          "startMs": 3,
+          "durationMs": 39,
+          "transferredBytes": 8997,
+          "decodedBodyBytes": 7994
+        },
+        {
+          "method": "GET",
+          "url": "/api/cash-sessions",
+          "status": 200,
+          "startMs": 3,
+          "durationMs": 58,
+          "transferredBytes": 1634,
+          "decodedBodyBytes": 633
+        },
+        {
+          "method": "GET",
+          "url": "/api/promotions",
+          "status": 200,
+          "startMs": 3,
+          "durationMs": 43,
+          "transferredBytes": 941,
+          "decodedBodyBytes": 2
+        },
+        {
+          "method": "GET",
+          "url": "/api/settings",
+          "status": 200,
+          "startMs": 3,
+          "durationMs": 49,
+          "transferredBytes": 943,
+          "decodedBodyBytes": 426
+        },
+        {
+          "method": "GET",
+          "url": "/api/credit-notes?customerId=CLIENTA_DEMO",
+          "status": 200,
+          "startMs": 3,
+          "durationMs": 58,
+          "transferredBytes": 941,
+          "decodedBodyBytes": 2
+        },
+        {
+          "method": "GET",
+          "url": "/api/credit-notes",
+          "status": 200,
+          "startMs": 8,
+          "durationMs": 53,
+          "transferredBytes": 941,
+          "decodedBodyBytes": 2
+        }
+      ]
+    }
+  ]
+}
