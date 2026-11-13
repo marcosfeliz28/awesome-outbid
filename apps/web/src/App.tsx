@@ -5,6 +5,7 @@ import {
   gvOnly,
   storedTerminalCredentials,
 } from "./realtime";
+import { applyTheme } from "./theme";
 import { PageErrorBoundary } from "./PageErrorBoundary";
 import { Merchandise } from "./Merchandise";
 import { Gv } from "./Gv";
@@ -695,7 +696,7 @@ function Shell() {
       id === "pos" || page === "pos",
     );
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    applyTheme(theme);
   }, [theme]);
   // G12: al abrir el menú en celular, el foco entra en él.
   useEffect(() => {
@@ -1152,8 +1153,7 @@ function Shell() {
               onClick={() =>
                 withTransition(() => {
                   toggleTheme();
-                  document.documentElement.dataset.theme =
-                    useStore.getState().theme;
+                  applyTheme(useStore.getState().theme);
                 })
               }
               aria-label={

@@ -10,7 +10,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **B01 / B02** — Tipos de comprobante fiscal que se pueden _solicitar_ si la «Preparación de NCF» está activa: B01 «Crédito fiscal» (pide RNC o cédula) y B02 «Consumidor final». El sistema solo prepara la solicitud; no emite el comprobante (`apps/web/src/POS.tsx:2670-2698`).
 
-**Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:259`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
+**Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:260`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
 
 **Caja ciega / arqueo ciego / conteo ciego** — Mientras la caja está abierta, y al cerrar, la cajera **no ve** cuánto se espera que tenga; declara lo que contó y el sistema compara después. «Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados» (`apps/web/src/managementMessages.ts:37-44`). Solo ven los esperados `profit:read` o `sale:manage` (`apps/api/src/common.ts:70-72`). Además existe una bandera para ocultar importes de las ventas a quien no ve esperados, **apagada por defecto**: `NEXORA_VENTAS_CAJA_CIEGA` (`apps/api/src/sales.ts:140-153`).
 
@@ -54,7 +54,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Génesis / Macgen** — Nombres de las dos empresas/grupos de cuentas bancarias. En GV, las cuentas se agrupan «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis» (`apps/api/src/gv-money.ts:164-176`). Los cobros de GV caen en cuentas de Génesis (`docs/coordinacion/MODULO-GV.md:3`).
 
-**Grupo MacGen** — La empresa dueña de la tienda: suplementos, fajas, tenis y ropa deportiva, accesorios de gym y maquillaje (`apps/web/src/App.tsx:300-328`, `:349`).
+**Grupo MacGen** — La empresa dueña de la tienda: suplementos, fajas, tenis y ropa deportiva, accesorios de gym y maquillaje (`apps/web/src/App.tsx:301-329`, `:349`).
 
 **GV / GV Makeup Studio** — Empresa hermana de cursos y servicios de maquillaje. Ver `GV.md`.
 

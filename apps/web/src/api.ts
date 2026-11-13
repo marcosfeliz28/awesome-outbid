@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import { THEME_KEY, initialTheme, type Theme } from "./theme";
 import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
@@ -96,7 +97,7 @@ export const useStore = create<{
   customerId: string | null;
   globalDiscount: number;
   online: boolean;
-  theme: string;
+  theme: Theme;
   setSession: (user: User, token: string | null) => void;
   clearSession: () => void;
   add: (variant: Variant, product: Product) => void;
@@ -114,7 +115,7 @@ export const useStore = create<{
   customerId: null,
   globalDiscount: 0,
   online: navigator.onLine,
-  theme: localStorage.getItem("fitstore-theme") || "light",
+  theme: initialTheme(),
   setSession: (user, token) => set({ user, token }),
   clearSession: () =>
     set({
@@ -154,7 +155,7 @@ export const useStore = create<{
   toggleTheme: () =>
     set((state) => {
       const theme = state.theme === "light" ? "dark" : "light";
-      localStorage.setItem("fitstore-theme", theme);
+      localStorage.setItem(THEME_KEY, theme);
       return { theme };
     }),
 }));
