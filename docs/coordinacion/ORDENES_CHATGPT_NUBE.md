@@ -72,3 +72,12 @@ Avisa en `RESULTADOS_CHATGPT_NUBE.md` con el SHA y los 3 CI.
 ## Cola 13-nov (N1, orden de la dueña): consulta de mejoras e implementos
 Lee y ejecuta `docs/coordinacion/CONSULTA_MEJORAS_CHATGPT_13NOV.md` como **ChatGPT nube**. Es una segunda opinión, solo lectura y documentos: tu lista a ciegas (Paso 1), tu evaluación del catálogo de 82 propuestas (rama `consulta/catalogo-13nov`; no lo traigas antes de subir el Paso 1), tus propuestas y tu síntesis. Rama `chatgpt-nube/consulta-mejoras-13nov`. No se construye ni se despliega nada. Avisa en `RESULTADOS_CHATGPT_NUBE.md`.
 Tu revisión nocturna del 12-nov (guías, criterios C1/C2/C3/C10 y contrato) ya está integrada en `nexora-cloud`.
+
+## Cola 13-nov (2) — N1: especificaciones de construcción de la primera tanda
+Tu consulta ya está integrada. Ahora, para que cada mejora se construya sin vueltas, escribe una especificación por mejora. Rama `chatgpt-nube/espec-tanda1-13nov`, solo documentos (`docs/coordinacion/espec-tanda1/`), sin cambiar código ni desplegar. Reporta en `RESULTADOS_CHATGPT_NUBE.md`.
+Norexos 1 construirá estas siete, en este orden: **DIS-01, EST-03, COM-08, COM-03, MOD-08, DIS-02, EFI-01**. Por cada una, una página con: (1) archivos y funciones que toca, con `archivo:línea` en el `origin/nexora-cloud` actual; (2) el cambio más pequeño que resuelve el problema; (3) la prueba nueva que debe fallar antes y pasar después, con su archivo y qué comprueba; (4) pruebas existentes que lean esos archivos como texto y puedan romperse (revisa `tests/` buscando el nombre del archivo); (5) casos límite; (6) cómo dar marcha atrás. Con palabras y pseudocódigo corto; sin parches ni código completo.
+Después, tres piezas de diseño para lo que toca dinero, que **no se construye** sin confirmación de la dueña:
+8. **EST-02** (una sola regla de promociones): plan de pruebas de paridad entre caja, cola sin conexión y servidor, con los casos que hoy podrían dar totales distintos.
+9. **COM-04** (cantidad editable en el carrito): reglas de límites (existencia, descuento por línea, mayoreo) y qué hace con precio, promoción e ITBIS.
+10. **COM-03** parte de aviso de margen bajo: confirma que respeta (precio − costo) / precio sin restar ITBIS y el mínimo de 15 %.
+Termina con una tabla con el orden de construcción que recomiendas y las dependencias entre las diez.

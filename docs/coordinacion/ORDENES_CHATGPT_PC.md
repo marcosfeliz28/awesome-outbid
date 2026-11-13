@@ -85,3 +85,15 @@ Para esta consulta evalúas únicamente las propuestas de **diseño (DIS), comod
 
 ### Cola 13-nov, versión corta para ChatGPT PC (N1)
 Esta versión reemplaza las dos anteriores de la consulta: usa solo `docs/coordinacion/REVISION_USO_PC_13NOV.md` (diseño, comodidad y modernidad, más la comprobación en pantalla de C1, C6, C13 y C15). No necesitas leer `CONSULTA_MEJORAS_CHATGPT_13NOV.md`.
+
+## Cola 13-nov (2) — N1: preparar la comprobación de la primera tanda de mejoras
+Tu consulta ya está integrada. Ahora, para que cada mejora se compruebe contra un «antes» real, deja los puntos de partida por escrito. Rama `chatgpt-pc/linea-base-mejoras-13nov`, solo documentos y capturas, sin cambiar código ni desplegar. Cierra navegadores y procesos al terminar cada punto. Reporta en `RESULTADOS_CHATGPT.md`.
+Norexos 1 construirá estas siete, en este orden. Para cada una, en `docs/validacion/LINEA_BASE_TANDA1_13NOV.md`: captura del «antes» a 1366 px y a 390 px, pasos exactos para reproducir, y una frase de «qué debe verse después» que Norexos 1 pueda usar como criterio de aceptación.
+1. **DIS-01** Resumen: reproduce «cargando» y «consulta fallida» (por ejemplo, con la API detenida o con la red del navegador cortada) y captura que hoy muestra RD$ 0.00 y «Sin faltantes».
+2. **EST-03** Pantalla de error: provoca un error de dibujo en local (sin cambiar el repositorio; por ejemplo con una respuesta de la API mal formada en el navegador) y captura qué se ve hoy.
+3. **COM-08** Créditos pendientes: captura la pantalla con 15 o más créditos y cuenta cuántos pasos lleva hoy encontrar el de una clienta concreta.
+4. **COM-03** Productos: captura el formulario al cambiar precio o costo y anota qué margen se ve (y si se ve) antes de guardar.
+5. **MOD-08** Tema: con el equipo en modo oscuro, recarga la aplicación y anota si hay un destello claro antes de pintar (graba o captura la secuencia).
+6. **DIS-02** Cobro: escribe un pago en la ventana de cobro y ciérrala con Escape y con un clic fuera; anota qué se pierde.
+7. **EFI-01** Después de cobrar: mide en la pestaña de red del navegador qué peticiones salen justo después de finalizar una venta (cuántas, cuáles y cuántos KB).
+Si algo no se puede reproducir, dilo y por qué; no lo fuerces. Cuando Norexos 1 avise que una mejora está en `nexora-cloud`, repites los mismos pasos y registras «después», con capturas.
