@@ -2077,6 +2077,10 @@ td strong {
   font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
   color: var(--muted);
 }
+.line-discount small {
+  margin-left: 4px;
+  white-space: nowrap;
+}
 .line-discount input {
   padding: 0 2px;
   border: 0;

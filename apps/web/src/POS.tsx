@@ -1206,6 +1206,11 @@ export function POS({ go }: { go: (page: string) => void }) {
                         }}
                       />
                       %
+                      {!can(user!.permissions, "sale:manage") && (
+                        <small>
+                          hasta {config.data?.sellerDiscountLimit ?? 10} % sin PIN
+                        </small>
+                      )}
                     </label>
                     <label className="line-discount">
                       <span>RD$</span>
