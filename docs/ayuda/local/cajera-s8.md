@@ -8,7 +8,7 @@
    - **Falta inventario:** gerencia ajusta el inventario y tú pulsas **Reintentar**.
    - **Cambió un precio:** pulsa **Actualizar precios y reintentar**.
    - **No se puede reintentar:** pulsa **Descartar con PIN de gerente**; gerencia escribe el motivo y su PIN en tu equipo.
-5. **No tramites crédito:** No tramites crédito ni autorizaciones con PIN sin conexión. No cierres caja con operaciones locales por resolver: la ventana de cierre avisa cuántas quedan y qué hacer.
+5. **No tramites crédito:** No tramites crédito ni autorizaciones con PIN sin conexión. No cierres caja con operaciones locales por resolver: el cierre queda bloqueado mientras haya pendientes y la ventana de cierre avisa cuántas quedan y qué hacer.
 6. **Sesión activa:** Con artículos en el carrito o ventas por enviar, la sesión no se cierra por inactividad mientras alguien toque la pantalla y, si nadie la toca, hasta 2 horas; sin internet y con ventas por enviar no se cierra nunca. Pasado el tope la pantalla pide la contraseña, pero el carrito se conserva y vuelve al entrar (un carrito de más de 12 horas se descarta). Si recargas la página, el carrito vuelve a aparecer; una venta ya cobrada no vuelve.
 
 **Si algo sale mal:** Si no sabes si se registró una venta, consúltala; nunca la cobres otra vez por intuición.

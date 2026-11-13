@@ -5,9 +5,8 @@
 1. Abre **Caja** y asegúrate de que esté abierta.
 2. Ve a **Movimiento** y selecciona **Salida de efectivo**.
 3. Escribe el monto positivo y un motivo claro.
-4. Si el límite acumulado del turno lo supera, pide al gerente que escriba su PIN.
+4. Si con esta salida superas el límite acumulado de tus salidas del turno, el sistema pide el PIN de gerencia.
 5. Guarda el movimiento una sola vez.
-6. Entrega solo lo autorizado y conserva el comprobante según el procedimiento de la tienda.
+6. Entrega solo lo autorizado.
 
-**Si algo sale mal:** No alteres el monto para saltar controles; avisa a gerencia.
-
+**Si algo sale mal:** no alteres el monto para saltar controles; avisa a gerencia.
