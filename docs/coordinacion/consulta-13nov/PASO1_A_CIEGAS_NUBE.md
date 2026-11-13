@@ -19,3 +19,22 @@ Esta lista se preparó antes de abrir o traer `consulta/catalogo-13nov`. Se revi
 13. **N-A13 · Caducidad y limpieza segura de datos offline.** Al cerrar sesión se conserva la venta o mercancía pendiente, incluyendo datos transaccionales, sin una caducidad local visible; propongo vencimiento, inventario de pendientes y borrado seguro tras sincronizar. Evidencia: `apps/web/src/api.ts:50,284-299`; `packages/shared/src/index.ts:550,593`. **Versión:** ambas.
 14. **N-A14 · Credencial administrativa inicial de un solo uso.** La instalación silenciosa deja un archivo reutilizable en Documentos y la cuenta creada no exige cambio inmediato; propongo mostrar/entregar la clave una vez y forzar su reemplazo al primer acceso. Evidencia: `instalador/lanzar-instalacion-silenciosa.ps1:183,272`; `apps/api/scripts/create-admin.ts:128`. **Versión:** producto instalado.
 
+## Cruce posterior con el catálogo
+
+| Mía | En el catálogo | Coincidencia |
+|---|---|---|
+| N-A01 | COM-02 | igual |
+| N-A02 | no está | — |
+| N-A03 | no está | — |
+| N-A04 | DIS-03 | igual |
+| N-A05 | no está | — |
+| N-A06 | EST-16 | parecida |
+| N-A07 | MOD-02 | parecida |
+| N-A08 | MOD-02 | parecida |
+| N-A09 | EST-01 | parecida |
+| N-A10 | EFI-02 | igual |
+| N-A11 | EFI-05 | parecida |
+| N-A12 | EFI-08 | igual |
+| N-A13 | SEG-09 | parecida |
+| N-A14 | no está | — |
+
