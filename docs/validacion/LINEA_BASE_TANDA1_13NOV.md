@@ -1,5 +1,7 @@
 # Línea base de la primera tanda de mejoras · 13-nov-2026
 
+**Actualización del 13-nov:** el «después» de DIS-01 y EST-03 sobre `7244c21a` está registrado en la sección 8, con 19 capturas nuevas. La franja superior, el aviso de error, el menú y la conservación del carrito mejoraron; quedan hallazgos reproducidos sobre ceros en «HOY» y reintentos. El «antes» y sus 79 capturas se conservan.
+
 Base observada: `origin/nexora-cloud` **`511d223f0c0c512f54b900265b2c6c1e59d4c560`**. Rama de entrega: `chatgpt-pc/linea-base-mejoras-13nov`. Orden: sección «Cola 13-nov (2)» de `docs/coordinacion/ORDENES_CHATGPT_PC.md` en esa base.
 
 Los siete casos tienen un «antes» reproducido a **1366×900 y 390×844 píxeles**, pasos y criterio para comparar después. Se entregan **79 PNG**, incluidos 47 fotogramas de recarga del tema, y tres registros JSON sin cabeceras, cookies, tokens ni cuerpos de clientes. La única limitación de herramienta es la captura del panel gráfico de Red: Chromium con ventana falló al arrancar con `browserType.launch: spawn UNKNOWN`. La medición de peticiones sí se completó en el navegador mediante su protocolo de Red, el mismo que alimenta DevTools.
@@ -168,17 +170,95 @@ Referencia causal de la base: tras registrar la venta, `POS.tsx:2359-2360` ejecu
 
 - **Completado:** siete líneas base a ambos tamaños, pasos exactos, criterios de aceptación, capturas, medición de Red y revisión visual de encuadres. El índice con dimensiones y SHA-256 permite comprobar que los PNG conservan sus píxeles.
 - **Bloqueado:** solo la captura del panel gráfico de Red, por el fallo de arranque indicado; no impidió medir las peticiones reales. No hay otro caso sin reproducir.
-- **Pendiente por diseño:** el «después» de cada ID. Se repetirá el mismo caso cuando Norexos 1 comunique que la mejora correspondiente está integrada en `nexora-cloud`; no se da por implementada ninguna de las siete.
+- **Después actualizado:** DIS-01 y EST-03 se comprobaron sobre `7244c21a`, con resultados parciales detallados en la sección 8. Los otros cinco ID continúan pendientes de implementación y comprobación posterior.
 - El CI que se dispare al publicar esta rama se informará por su SHA exacto. Este documento no certifica una corrección de código ni un despliegue.
 
 Plantilla para añadir el «después», sin reemplazar el «antes»:
 
 | ID | SHA integrado y fecha | Mismos datos/rol/viewport | Capturas después | Comparación y resultado | Límite pendiente |
 | --- | --- | --- | --- | --- | --- |
-| DIS-01 | Pendiente | Pendiente | Pendiente | Pendiente | — |
-| EST-03 | Pendiente | Pendiente | Pendiente | Pendiente | — |
+| DIS-01 | `7244c21a`, 13-nov | Mismos datos, dueña, 1366/390 | Sección 8.1 | Franja superior corregida; «HOY» inferior todavía muestra ceros durante carga/fallo | Completar tarjetas inferiores y reintento de consulta diaria |
+| EST-03 | `7244c21a`, 13-nov | Mismo error; se añade carrito preparado; dueña, 1366/390 | Sección 8.2 | Aviso/menú/carrito/Volver a Caja pasan; Reintentar inmediato no recupera | Invalidar o renovar la respuesta defectuosa al reintentar |
 | COM-08 | Pendiente | Pendiente | Pendiente | Pendiente | — |
 | COM-03 | Pendiente | Pendiente | Pendiente | Pendiente | — |
 | MOD-08 | Pendiente | Pendiente | Pendiente | Pendiente | — |
 | DIS-02 | Pendiente | Pendiente | Pendiente | Pendiente | — |
 | EFI-01 | Pendiente | Pendiente | Pendiente | Pendiente | Panel gráfico de Red |
+
+## 8. Después de DIS-01 y EST-03 · 13-nov-2026
+
+Código comprobado: **`7244c21ad26eb217b47fdc0e930ea14b3c4cc5bc`**, obtenido con `git fetch origin` y confirmado como `origin/nexora-cloud`. Rama de esta comprobación: `chatgpt-pc/despues-dis01-est03-13nov`. No se modificó código ni se desplegó.
+
+Se usaron la misma versión de Chromium (153.0.8010.12), Windows 11 Pro, viewports **1366×900 y 390×844**, idioma `es-DO`, zona `America/Santo_Domingo`, build web de producción local, service worker bloqueado y sin limitación artificial de CPU/red. Dependencias congeladas, generación de Prisma y `pnpm build` terminaron correctamente. No se ejecutó una suite general de regresión porque esta entrega solo modifica documentos y capturas.
+
+Para conservar los datos, se copió la base descartable de la línea base **estando detenida** a la carpeta local ignorada de este worktree. No se usó la base de la tienda. Se confirmó otra vez la respuesta válida de hoy: **RD$ 5,100 / 17 facturas**. No se hicieron ventas, cobros ni cambios de precio nuevos. La caja de prueba preexistente pertenece a otro equipo; en EST-03 se dejó así porque se comprueba la conservación de un carrito, no la autorización para finalizar un cobro.
+
+Evidencia nueva: [registro de ejecución](datos/tanda1-13nov-despues-dis01-est03.json), [manifiesto con dimensiones y SHA-256](datos/tanda1-13nov-despues-dis01-est03-capturas.json), y 19 PNG en `capturas/tanda1-13nov-despues-dis01-est03/`. Las capturas y registros anteriores no se sobrescribieron.
+
+### 8.1 DIS-01 · Franja corregida; quedan ceros en «HOY»
+
+Se repitieron exactamente las intercepciones de la sección 1 en contextos nuevos: **Este mes** responde normalmente y solo se retiene o responde 503 a `GET /api/dashboard/summary?from=2026-11-13&to=2026-11-13`. Para el fallo se esperó **«No se pudo cargar»**, después de los dos intentos HTTP 503 del navegador, en lugar de capturar el primer fallo durante el reintento automático. Para carga se capturó antes del timeout de 12 segundos.
+
+| Estado | Franja «Resumen de hoy», ambos tamaños | Bloque inferior «HOY», ambos tamaños |
+| --- | --- | --- |
+| Consulta diaria pendiente | Ventas e inventario: **— / Cargando…** | **RD$ 0.00 / 0 facturas**, costo y ganancia 0 |
+| Consulta diaria fallida | Ventas e inventario: **— / No se pudo cargar** | **RD$ 0.00 / 0 facturas**, costo y ganancia 0 |
+| Respuesta válida, sin intercepción | **RD$ 5,100.00 / 17 facturas** | **RD$ 5,100.00 / 17 facturas**, costo 3,060 y ganancia 2,040 |
+
+La tarjeta Cajas activas mantiene **1 caja abierta**: consulta una ruta independiente que sí respondió. En la franja superior ya no aparecen «Sin faltantes» ni importes cero mientras falta la respuesta diaria. **Ese tramo pasa** la comparación con el «antes».
+
+| Evidencia después | 1366 px | 390 px |
+| --- | --- | --- |
+| Carga, franja superior | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-cargando-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-cargando-390.png) |
+| Fallo, franja superior | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-fallida-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-fallida-390.png) |
+| Carga, «HOY» inferior | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-cargando-hoy-inferior-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-cargando-hoy-inferior-390.png) |
+| Fallo, «HOY» inferior | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-fallida-hoy-inferior-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-fallida-hoy-inferior-390.png) |
+| Control con respuesta válida | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-respuesta-valida-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/DIS-01-despues-respuesta-valida-390.png) |
+
+**Hallazgo DIS-01-A · cumplimiento parcial:** al desplazarse a «Ventas por día», el bloque **HOY sigue presentando ceros como datos** durante esos mismos estados. No son los importes reales del fixture. Comparte la consulta diaria, pero `apps/web/src/Dashboard.tsx:49-73` sigue convirtiendo la ausencia de datos en 0; ese archivo no cambió en `7244c21a`. La franja sí usa el estado en `KpiStrip.tsx:35` y `kpiStripModel.ts:30-44`.
+
+**Hallazgo DIS-01-B · reintento pendiente:** con solo la consulta diaria fallida no aparece ningún botón **Reintentar** en la página (0 botones en ambos tamaños). El reintento de `QueryState` corresponde al período mensual, que aquí respondió bien. El criterio original de la sección 1 pedía aviso y reintento para este fallo; hay aviso, pero falta esa acción.
+
+**Resultado:** comparación ejecutada y documentada a ambos tamaños. Se acepta la franja superior; no se da por cerrada DIS-01 en todo el Resumen mientras «HOY» muestre cifras falsas y el fallo diario no tenga una acción de reintento.
+
+### 8.2 EST-03 · Aviso, menú y carrito conservados; límite de Reintentar
+
+Se repitió el error de la sección 2: HTTP **200**, `Content-Type: application/json`, cuerpo **`{"alerts":{}}`** en una consulta de `/api/dashboard/summary?...`. Para comprobar la promesa de conservar el carrito, se añadió esta preparación antes del mismo error:
+
+1. Entrar como dueña directamente en `/#pos`, en un contexto nuevo, para no tener el Resumen previamente en caché.
+2. Buscar **Bandas Resistance**, elegir **Lila**, cantidad **1**, precio/total **RD$ 300**. Elegir **Adriana Torres** mediante F4, sin abrir ni finalizar el cobro. Capturar el carrito.
+3. Activar la intercepción y abrir **Resumen** desde el menú. La respuesta del período mensual mal formada basta para provocar el mismo error de dibujo.
+4. Capturar el aviso. Pulsar **Reintentar** una vez con la intercepción todavía activa; comprobar que la aplicación conserva el aviso, sin quedar vacía.
+5. **Retirar la intercepción**, sin recargar ni borrar caché. Pulsar **Reintentar inmediatamente** y contar las nuevas consultas de `/dashboard/summary`.
+6. En móvil, abrir y cerrar el menú mientras sigue el aviso. Pulsar **Volver a Caja** y comparar el carrito. Después navegar por el menú a **Productos → Punto de venta** y volver a compararlo.
+
+| Comprobación | 1366 px | 390 px |
+| --- | --- | --- |
+| Aviso «Esta pantalla tuvo un problema. Tu carrito y tus ventas guardadas no se perdieron.» | Pasa | Pasa |
+| Botones Reintentar y Volver a Caja visibles | Pasa | Pasa |
+| Raíz de aplicación conservada (`#root` con 1 hijo) | Pasa | Pasa |
+| Menú disponible y navegación Productos → Punto de venta | Pasa | Pasa; también se capturó el menú abierto sobre el aviso |
+| Volver a Caja navega a `#pos` | Pasa | Pasa |
+| Carrito antes/después: clienta, artículo, variante, cantidad y total | **Idéntico** | **Idéntico** |
+| Reintentar tras retirar el fallo, con dato defectuoso fresco en caché | **0 consultas nuevas; el aviso permanece** | **0 consultas nuevas; el aviso permanece** |
+
+| Evidencia después | 1366 px | 390 px |
+| --- | --- | --- |
+| Carrito preparado antes del error | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-carrito-antes-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-carrito-antes-390.png) |
+| Aviso que reemplaza la pantalla vacía | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-aviso-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-aviso-390.png) |
+| Reintentar después de retirar el fallo | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-reintentar-sin-fallo-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-reintentar-sin-fallo-390.png) |
+| Volver a Caja, carrito conservado | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-volver-caja-1366.png) | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-volver-caja-390.png) |
+| Menú abierto con el aviso todavía detrás | Menú ya visible en la captura del aviso | [Captura](capturas/tanda1-13nov-despues-dis01-est03/EST-03-despues-menu-con-aviso-390.png) |
+
+Alcance visual del carrito: a 390 px se ven clienta, artículo, variante, cantidad y total completos. A 1366 px, el aviso preexistente de «caja abierta en otro equipo» ocupa parte del panel y la línea de artículo no queda visible en esos PNG; se ven clienta, contador de 1 artículo y total RD$ 300. La igualdad del artículo/variante/cantidad en escritorio se acredita además por la comparación del texto DOM completo, antes y después, conservado en el registro JSON. No se cambió el estilo ni se ocultó el aviso para fabricar un encuadre.
+
+**Hallazgo EST-03-A · recuperación incompleta para este caso:** al retirar la respuesta defectuosa y reintentar aproximadamente **248 ms / 241 ms** después de recibirla, no se hizo otra petición y se volvió a mostrar el aviso. La respuesta mal formada estaba guardada como éxito HTTP 200 en una consulta todavía fresca. `PageErrorBoundary.tsx:27` reinicia el indicador de error, pero no invalida esa consulta; `main.tsx:21-23` mantiene `staleTime: 30000`. El hallazgo se refiere a **este reintento inmediato con datos defectuosos en caché**, no demuestra que todos los tipos de error sean irrecuperables. No se limpió caché ni se recargó para atribuir al botón una recuperación que no produjo.
+
+**Resultado:** el reemplazo de la pantalla vacía, la disponibilidad del menú, Volver a Caja y la conservación del carrito **pasan** a ambas anchuras. El reintento inmediato del caso mal formado **no pasa**. No se tocaron ventas guardadas; el aviso las menciona, pero esta comprobación no simula un corte durante una transacción.
+
+### 8.3 Cierre de esta comprobación
+
+- **Terminado:** repetición de los dos casos a 1366 y 390 px; 19 capturas, registro de respuestas/acciones, comparación con el «antes» y resultados por subcriterio.
+- **Sin bloqueos de entorno:** se pudieron reproducir y capturar ambos casos. El antiguo bloqueo del panel gráfico de Red de EFI-01 no interviene en estas dos pruebas.
+- **Pendiente de corrección por Norexos 1:** DIS-01-A/B y EST-03-A. Se documentan, no se implementan en esta rama. La aceptación completa de ambas mejoras queda pendiente de resolverlos y repetir esos subcasos.
+- **Alcance respetado:** solo documentos, capturas y registros de prueba sin credenciales. Ningún cambio de aplicación ni despliegue. Se cerraron navegador, API, web y PostgreSQL de prueba al terminar cada mejora; los puertos 3013/5183/5443 quedaron libres.
