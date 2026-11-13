@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { buildKpis, kpiStripVisible } from "../apps/web/src/kpiStripModel";
 
@@ -53,4 +54,13 @@ it("DIS-01: una respuesta válida con ceros sí muestra cero y «Sin faltantes»
   expect(k[0].value).toContain("0");
   expect(k[0].note).toBe("0 facturas");
   expect(k[k.length - 1].note).toBe("Sin faltantes");
+});
+
+it("DIS-01: las tarjetas de «Hoy» y «Ayer» de Inicio tampoco muestran ceros sin respuesta", () => {
+  const src = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+  const i = src.indexOf("function DayFigures");
+  const body = src.slice(i, src.indexOf("function DayCard"));
+  expect(body).toMatch(/if \(!data && query\.fetchStatus !== "idle"\)/);
+  expect(body).toContain("Cargando…");
+  expect(body).toContain("Reintentar");
 });

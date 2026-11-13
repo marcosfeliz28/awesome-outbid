@@ -5,7 +5,7 @@ import { captureUiError } from "./monitoring";
 // siguen; solo esa pantalla muestra el mensaje. Cambiar de pantalla la reinicia
 // (App la monta con key={page}).
 export class PageErrorBoundary extends Component<
-  { page: string; children: ReactNode },
+  { page: string; onRetry?: () => void; children: ReactNode },
   { failed: boolean }
 > {
   state = { failed: false };
@@ -24,7 +24,14 @@ export class PageErrorBoundary extends Component<
           <strong>Esta pantalla tuvo un problema.</strong> Tu carrito y tus
           ventas guardadas no se perdieron.
         </p>
-        <button type="button" onClick={() => this.setState({ failed: false })}>
+        <button
+          type="button"
+          onClick={() => {
+            // Una respuesta defectuosa guardada se vuelve a pedir al reintentar.
+            this.props.onRetry?.();
+            this.setState({ failed: false });
+          }}
+        >
           Reintentar
         </button>{" "}
         <button

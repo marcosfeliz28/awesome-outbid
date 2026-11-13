@@ -36,7 +36,7 @@ it("con fallo muestra un aviso con Reintentar y Volver a Caja, sin el contenido"
 it("App envuelve solo la pantalla activa, con una clave por pantalla", () => {
   const app = readFileSync("apps/web/src/App.tsx", "utf8");
   expect(app).toMatch(
-    /<PageErrorBoundary key=\{page\.split\("\?"\)\[0\]\} page=\{page\}>/,
+    /<PageErrorBoundary\s+key=\{page\.split\("\?"\)\[0\]\}\s+page=\{page\}\s+onRetry=\{\(\) => void client\.invalidateQueries\(\)\}/,
   );
   const main = app.indexOf("<main");
   const boundary = app.indexOf("<PageErrorBoundary");
@@ -49,5 +49,12 @@ it("el aviso a monitoreo lleva solo el nombre de la pantalla", () => {
   const src = readFileSync("apps/web/src/monitoring.ts", "utf8");
   expect(src).toContain(
     'captureMessage("ui-render-error: " + page.split("?")[0]',
+  );
+});
+
+it("Reintentar vuelve a pedir las respuestas guardadas antes de dibujar de nuevo", () => {
+  const src = readFileSync("apps/web/src/PageErrorBoundary.tsx", "utf8");
+  expect(src).toMatch(
+    /this\.props\.onRetry\?\.\(\);\s+this\.setState\(\{ failed: false \}\)/,
   );
 });

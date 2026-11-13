@@ -58,6 +58,24 @@ function DayFigures({
   const data = query.data;
   const revenue = Number(data?.revenue ?? 0),
     cost = Number(data?.costTotal ?? 0);
+  // DIS-01: sin respuesta no se muestran ceros como si fueran datos.
+  if (!data && query.fetchStatus !== "idle")
+    return (
+      <div className={"day-figures day-" + tone}>
+        <span className="day-title">{title}</span>
+        <strong>—</strong>
+        {query.isError ? (
+          <small role="alert">
+            No se pudo cargar.{" "}
+            <button type="button" onClick={() => query.refetch()}>
+              Reintentar
+            </button>
+          </small>
+        ) : (
+          <small>Cargando…</small>
+        )}
+      </div>
+    );
   return (
     <div className={"day-figures day-" + tone}>
       <span className="day-title">{title}</span>

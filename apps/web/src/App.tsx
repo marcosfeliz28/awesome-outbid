@@ -1244,7 +1244,11 @@ function Shell() {
           className={`main-content ${page === "pos" ? "pos-content" : ""}`}
         >
           <DeviceGate />
-          <PageErrorBoundary key={page.split("?")[0]} page={page}>
+          <PageErrorBoundary
+            key={page.split("?")[0]}
+            page={page}
+            onRetry={() => void client.invalidateQueries()}
+          >
             {pages[page.split("?")[0]] || <Dashboard go={go} />}
           </PageErrorBoundary>
         </main>
