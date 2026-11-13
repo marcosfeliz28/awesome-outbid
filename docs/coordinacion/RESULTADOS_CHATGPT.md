@@ -2,6 +2,15 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-13 · ChatGPT PC · línea base de la primera tanda
+
+- **Orden y base:** «Cola 13-nov (2)»; `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560`. Rama `chatgpt-pc/linea-base-mejoras-13nov`.
+- **Entrega:** [LINEA_BASE_TANDA1_13NOV.md](../validacion/LINEA_BASE_TANDA1_13NOV.md), 79 PNG a 1366×900/390×844 (47 son fotogramas de recarga), registros de estados/uso/red e índice de dimensiones y SHA-256. Pasos exactos y criterio de «después» para DIS-01, EST-03, COM-08, COM-03, MOD-08, DIS-02 y EFI-01.
+- **Antes reproducido:** ceros y «Sin faltantes» durante carga/fallo de la consulta diaria; error de dibujo deja raíz vacía; 15 créditos sin buscador para vendedora, recorrido medido 6/13 acciones; formulario no muestra margen 10/20 %; fondo claro antes del oscuro guardado; Escape/clic fuera pierden pago RD$ 123.45 y texto 77.77; después de cobrar salen 10 GET y 213,227/213,169 bytes, mayormente catálogo.
+- **Preparación y controles:** dependencias congeladas, Prisma, 68 migraciones, seed y build terminaron correctamente. Base descartable; 15 créditos y 2 ventas en efectivo ficticios. Revisión visual de capturas y comprobación documental; ningún archivo de aplicación modificado. Navegador/API/web/PostgreSQL de prueba cerrados, puertos 3013/5183/5443 libres al terminar.
+- **Bloqueo acotado:** no se pudo capturar el panel gráfico de Red (`browserType.launch: spawn UNKNOWN` en modo con ventana). La medición real de Red sí está guardada mediante CDP, sin cabeceras, tokens ni cuerpos de clientes. Ninguno de los siete casos quedó sin reproducir.
+- **Pendiente:** repetir «después» cuando Norexos 1 avise de la integración de cada mejora. Solo documentos/capturas; sin código ni despliegue. El SHA publicado y CI se comunican en la entrega de esta rama.
+
 ## 2026-11-13 · ChatGPT NUBE · especificaciones de la primera tanda
 
 - **Base y asignación:** `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560`; cola nueva `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`; rama `chatgpt-nube/espec-tanda1-13nov`.

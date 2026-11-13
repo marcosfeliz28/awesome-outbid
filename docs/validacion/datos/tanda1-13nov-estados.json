@@ -1,0 +1,78 @@
+{
+  "base": "511d223f0c0c512f54b900265b2c6c1e59d4c560",
+  "DIS01": [
+    {
+      "width": 1366,
+      "mode": "cargando",
+      "requests": [
+        {
+          "url": "/api/dashboard/summary?from=2026-11-13&to=2026-11-13",
+          "status": null,
+          "state": "retenida"
+        }
+      ],
+      "visible": "Ventas de hoy\nRD$ 0.00\n0 facturas\nCajas activas\n1\ncaja abierta\nAlertas de inventario\n0\nSin faltantes"
+    },
+    {
+      "width": 1366,
+      "mode": "fallida",
+      "requests": [
+        {
+          "url": "/api/dashboard/summary?from=2026-11-13&to=2026-11-13",
+          "status": 503,
+          "state": "respondida"
+        }
+      ],
+      "visible": "Ventas de hoy\nRD$ 0.00\n0 facturas\nCajas activas\n1\ncaja abierta\nAlertas de inventario\n0\nSin faltantes"
+    },
+    {
+      "width": 390,
+      "mode": "cargando",
+      "requests": [
+        {
+          "url": "/api/dashboard/summary?from=2026-11-13&to=2026-11-13",
+          "status": null,
+          "state": "retenida"
+        }
+      ],
+      "visible": "Ventas de hoy\nRD$ 0.00\n0 facturas\nCajas activas\n1\ncaja abierta\nAlertas de inventario\n0\nSin faltantes"
+    },
+    {
+      "width": 390,
+      "mode": "fallida",
+      "requests": [
+        {
+          "url": "/api/dashboard/summary?from=2026-11-13&to=2026-11-13",
+          "status": 503,
+          "state": "respondida"
+        }
+      ],
+      "visible": "Ventas de hoy\nRD$ 0.00\n0 facturas\nCajas activas\n1\ncaja abierta\nAlertas de inventario\n0\nSin faltantes"
+    }
+  ],
+  "EST03": [
+    {
+      "width": 1366,
+      "httpStatus": 200,
+      "injectedBody": {
+        "alerts": {}
+      },
+      "error": "R?.alerts?.slice is not a function",
+      "rootChildren": 0
+    },
+    {
+      "width": 390,
+      "httpStatus": 200,
+      "injectedBody": {
+        "alerts": {}
+      },
+      "error": "R?.alerts?.slice is not a function",
+      "rootChildren": 0
+    }
+  ],
+  "actualDailySummary": {
+    "revenue": 5100,
+    "invoices": 17,
+    "alertsCount": 6
+  }
+}
