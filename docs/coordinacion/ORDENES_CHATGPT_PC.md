@@ -82,3 +82,6 @@ Reporta en `RESULTADOS_CHATGPT.md`.
 
 ### Cola 13-nov, aclaración (N1): tu parte es solo diseño y facilidad de uso
 Para esta consulta evalúas únicamente las propuestas de **diseño (DIS), comodidad (COM) y modernidad (MOD)** del catálogo. Salta toda propuesta `SEG-*`, aunque lleve ★: la evalúa ChatGPT nube. Tus propuestas propias (Parte B) son de diseño, facilidad de uso y funcionamiento; las casillas de seguridad de la tabla de 12 casillas las llena ChatGPT nube, y tú escribes «lo cubre nube». Tampoco necesitas revisar nada del instalador. La comprobación en pantalla de C1, C6, C13 y C15 sigue igual.
+
+### Cola 13-nov, versión corta para ChatGPT PC (N1)
+Esta versión reemplaza las dos anteriores de la consulta: usa solo `docs/coordinacion/REVISION_USO_PC_13NOV.md` (diseño, comodidad y modernidad, más la comprobación en pantalla de C1, C6, C13 y C15). No necesitas leer `CONSULTA_MEJORAS_CHATGPT_13NOV.md`.
