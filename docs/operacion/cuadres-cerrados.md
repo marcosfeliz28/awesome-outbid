@@ -10,3 +10,5 @@
 | 13-nov | Dinero de más en transferencias (250, 400, 450…) | Es envío del mensajero. |
 | 13-nov | Voucher lote 164 doble en cierres Wendy/Jade (11-nov) | Explicado; el voucher cuadra. |
 | 13-nov | Wendy −60 (11-nov) | Bajo 100, no se persigue. |
+| 13-nov | FS-568 Ana Michelle (3,050 a Banreservas 5237, ref 243460062575) | Crédito cerrado por la tienda. |
+| 13-nov | FS-569 Marielqui 1,450 | Cobrado en caja (Addison pagó 1,500, dejó 50). |
