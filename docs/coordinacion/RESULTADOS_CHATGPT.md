@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-13 · ChatGPT PC · consulta de diseño y facilidad de uso
+
+- **Base y rama:** `origin/nexora-cloud` `4fef4d550fc465f2285876fa84ed55e6a6501c5f`; `chatgpt-pc/consulta-mejoras-13nov`. Solo documentos y capturas; sin código ni despliegue.
+- **Entrega:** `docs/coordinacion/consulta-13nov/PASO1_A_CIEGAS_PC.md`, `RESPUESTA_CHATGPT_PC.md` y `capturas/`. La lista propia se publicó antes de abrir el catálogo.
+- **Catálogo:** se abrieron las evidencias de las 28 propuestas en `3705f7d8` y `origin/producto-nexora`; el informe contiene veredicto, impacto, esfuerzo, riesgo, respuesta y certeza para cada una, más propuestas propias y prioridades.
+- **Pantalla local:** C1, C6, C13 y C15 pasaron con PostgreSQL local descartable y datos demo. C1 conservó F4; C6 dijo «Efectivo»; C13 mostró «hasta 10 % sin PIN» a vendedora y no a gerente; C15 nombró producto y existencia 1. Capturas dentro de la entrega.
+- **Límites:** sin térmica/gaveta/Windows limpio, WhatsApp Business, contable ni modo práctica instalado; esos puntos quedan declarados como no comprobados.
+
 ## 2026-11-12 · ChatGPT NUBE · revisión nocturna de textos
 
 - **Alcance:** atendí las tres tareas nuevas de `ESTADO_MEJORAS_12NOV.md:63-65`: verificación de cinco guías locales, criterios en pantalla de C1/C2/C3/C10 y revisión técnica del contrato frente al tope aprobado de US$0.40 por usuario/día.
