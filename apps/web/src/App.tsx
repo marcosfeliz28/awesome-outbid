@@ -5,6 +5,7 @@ import {
   gvOnly,
   storedTerminalCredentials,
 } from "./realtime";
+import { PageErrorBoundary } from "./PageErrorBoundary";
 import { Merchandise } from "./Merchandise";
 import { Gv } from "./Gv";
 import { PasswordChangeFields } from "./PasswordChangeFields";
@@ -1243,7 +1244,9 @@ function Shell() {
           className={`main-content ${page === "pos" ? "pos-content" : ""}`}
         >
           <DeviceGate />
-          {pages[page.split("?")[0]] || <Dashboard go={go} />}
+          <PageErrorBoundary key={page.split("?")[0]} page={page}>
+            {pages[page.split("?")[0]] || <Dashboard go={go} />}
+          </PageErrorBoundary>
         </main>
         <footer className="app-footer">
           <span>Norexos · Tu negocio, en movimiento.</span>

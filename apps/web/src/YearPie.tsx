@@ -112,7 +112,13 @@ export function YearPie({ go }: { go: (page: string) => void }) {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="muted">Sin ventas en {year}.</p>
+            <p className="muted" role={query.isError ? "alert" : undefined}>
+              {query.isError
+                ? "No se pudo cargar las ventas del año."
+                : query.isPending
+                  ? "Cargando…"
+                  : `Sin ventas en ${year}.`}
+            </p>
           )}
         </div>
         {picked && (

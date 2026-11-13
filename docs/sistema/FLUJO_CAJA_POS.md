@@ -2,19 +2,19 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Etiquetas copiadas del código tal cual. Cada paso lleva `archivo:línea`.
 
-Resumen de pantallas que usa el cajero: **Caja** (abrir y cerrar) y **Punto de venta** (vender). Las dos están en el menú lateral (`apps/web/src/App.tsx:217`, `:250`).
+Resumen de pantallas que usa el cajero: **Caja** (abrir y cerrar) y **Punto de venta** (vender). Las dos están en el menú lateral (`apps/web/src/App.tsx:218`, `:250`).
 
 ---
 
 ## 0. Antes de empezar
 
-- Entrar: pantalla de acceso con campo «Tu usuario o correo» y «Tu contraseña», botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:481`, `:512`). La contraseña temporal se cambia al entrar (`apps/web/src/App.tsx:564`).
+- Entrar: pantalla de acceso con campo «Tu usuario o correo» y «Tu contraseña», botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:482`, `:512`). La contraseña temporal se cambia al entrar (`apps/web/src/App.tsx:565`).
 - El equipo (computadora) debe estar **aprobado**. Si no, sale «Este equipo necesita aprobación … un gerente debe aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos» (`apps/web/src/realtime.tsx:515-518`). Sin equipo aprobado no se puede vender ni mover mercancía (`apps/api/src/common.ts` decorador `RequireTerminal`, usado en `apps/api/src/sales.ts:1528` y `apps/api/src/cash.ts:838`).
-- Cambiar de cajera sin salir: menú de la cuenta › **«Cambiar de usuario con PIN»** (`apps/web/src/App.tsx:1208`). No se puede cambiar con PIN a alguien con más permisos (`apps/api/src/auth.ts:845-859`).
+- Cambiar de cajera sin salir: menú de la cuenta › **«Cambiar de usuario con PIN»** (`apps/web/src/App.tsx:1209`). No se puede cambiar con PIN a alguien con más permisos (`apps/api/src/auth.ts:845-859`).
 
 ## 1. Abrir la caja
 
-1. Menú lateral › **Caja** (`apps/web/src/App.tsx:258`).
+1. Menú lateral › **Caja** (`apps/web/src/App.tsx:259`).
 2. Si no hay caja abierta se ve el título «Una caja que siempre cuadra» y el botón **«Abrir caja»** (`apps/web/src/Management.tsx:1685-1692`), o en el centro **«Abrir mi caja»** con el texto «Tu día empieza con una caja abierta» (`:1740-1744`).
 3. Se abre la ventana **«Abrir mi caja»** (`:2017`). Campo **«Efectivo inicial»** (`:2022`). El sistema sugiere lo que la misma persona dejó en su último cierre: «Sugerido: lo que dejaste en tu último cierre.» (`:2025-2028`, API `apps/api/src/cash.ts:1433-1468`).
 4. Si el fondo es **menor** que lo sugerido aparece **«Nota si el fondo es menor que el sugerido»** y es obligatoria; no pide PIN (`apps/web/src/Management.tsx:2044-2054`; `apps/api/src/cash.ts:868-885`).
@@ -26,7 +26,7 @@ Caja ciega: mientras está abierta, quien no tiene `profit:read` ni `sale:manage
 
 ## 2. Abrir el Punto de venta y elegir cliente
 
-1. Menú › **Punto de venta** (`apps/web/src/App.tsx:217`). Título «Punto de venta» (`apps/web/src/POS.tsx:969`).
+1. Menú › **Punto de venta** (`apps/web/src/App.tsx:218`). Título «Punto de venta» (`apps/web/src/POS.tsx:969`).
 2. El cliente es **obligatorio**. Botón **«Selecciona el cliente»** con la leyenda «Elegir cliente · F4» (`:1033-1051`; atajo F4 `:567-571`). Si se pulsa «Cobrar» sin cliente se abre la ventana con el aviso «Selecciona o crea el cliente antes de cobrar.» (`:517-521`). Al elegir o crear el cliente desde ese aviso, la ventana de cobro se abre sola, sin pulsar «Cobrar» otra vez; si el selector se cierra sin elegir, no pasa nada (mejora C1, 13-nov).
 3. Ventana **«¿Para quién es esta venta?»** (`:1318`): buscar por «Nombre, teléfono o cédula» (`:1420`); Enter elige el primero si es único (`:1426-1441`). «Consumidor final» sale primero si existe (`:360-377`). Si no está: **«Nuevo cliente aquí mismo»** (`:1474-1477`) → formulario «Nombre del cliente *», «Teléfono», «RNC o cédula», «Correo electrónico» → **«Guardar y usar cliente»** (`:1354-1409`).
 4. Interruptor «al por mayor» (`WholesaleToggle`, `apps/web/src/POS.tsx:1133`; solo cambia el incentivo de la cajera a la mitad, no los precios: `apps/api/prisma/schema.prisma` campo `wholesale` de `Sale`).

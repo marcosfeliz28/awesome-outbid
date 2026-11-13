@@ -11,7 +11,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 
 ## 2. Dónde está en el menú y cómo se llama cada sección
 
-- Ítem del menú: **«GV Makeup Studio»**, permiso `gv:read` (`apps/web/src/App.tsx:290`). Título dentro de la pantalla: **«Cursos y cobros»**, antetítulo «GV MAKEUP STUDIO» (`apps/web/src/Gv.tsx:142-143`).
+- Ítem del menú: **«GV Makeup Studio»**, permiso `gv:read` (`apps/web/src/App.tsx:291`). Título dentro de la pantalla: **«Cursos y cobros»**, antetítulo «GV MAKEUP STUDIO» (`apps/web/src/Gv.tsx:142-143`).
 - **Pestañas internas** (`apps/web/src/Gv.tsx:150-195`):
 
 | Pestaña (etiqueta exacta) | Qué es                                                                                                                                                                  | Permiso para verla                 |
@@ -22,7 +22,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 | **Por verificar**         | Transferencias de GV pendientes de verificar.                                                                                                                           | `gv:read` (verificar: `gv:verify`) |
 | **Reportes**              | Ingresos y pendientes.                                                                                                                                                  | `gv:reports`                       |
 
-- Una persona cuyo único permiso es de GV (`gvOnly`, todos los permisos empiezan con `gv:`) no carga el catálogo ni registra terminal (`apps/web/src/realtime.tsx:148-154`, `apps/web/src/App.tsx:811`).
+- Una persona cuyo único permiso es de GV (`gvOnly`, todos los permisos empiezan con `gv:`) no carga el catálogo ni registra terminal (`apps/web/src/realtime.tsx:148-154`, `apps/web/src/App.tsx:812`).
 
 ## 3. Cursos
 

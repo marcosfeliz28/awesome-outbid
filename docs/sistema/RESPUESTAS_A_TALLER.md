@@ -8,7 +8,7 @@ Rama `cola-n26` (= `nexora-cloud`, la tienda en vivo). Cada respuesta lleva su c
 
 Son **dos pasos en dos pantallas**:
 
-1. **Entrar**: usuario y contraseña, botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:481`, `:512`). Una cajera (`seller`) no tiene permiso de «Resumen» ni de «Mercancía», así que el sistema la lleva sola a **«Punto de venta»**, la primera pantalla del menú que sí puede ver (`apps/web/src/App.tsx:766-773`; permisos de `seller` en `packages/shared/src/index.ts:783`).
+1. **Entrar**: usuario y contraseña, botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:482`, `:512`). Una cajera (`seller`) no tiene permiso de «Resumen» ni de «Mercancía», así que el sistema la lleva sola a **«Punto de venta»**, la primera pantalla del menú que sí puede ver (`apps/web/src/App.tsx:767-774`; permisos de `seller` en `packages/shared/src/index.ts:783`).
 2. **Abrir la caja**: menú lateral › **Caja** › botón **«Abrir caja»** (o «Abrir mi caja» en el centro) › en la ventana **«Abrir mi caja»** escribe **«Efectivo inicial»** (el sistema sugiere lo que ella misma dejó al cerrar la última vez) › confirma (`apps/web/src/Management.tsx:1688-1692`, `:1738-1745`, `:2015-2055`). Si el fondo es menor que lo sugerido debe escribir **«Nota si el fondo es menor que el sugerido»** (`:2029-2039`).
 3. Desde el Punto de venta, si no hay caja abierta, aparece el enlace **«Abre tu caja para comenzar»** que lleva a Caja (`apps/web/src/POS.tsx:1308-1311`), y el estado dice «Caja sin abrir» → «Caja abierta» (`:1024-1028`). Intentar cobrar sin caja: «Abre tu caja antes de cobrar.» (`:523`).
 
@@ -66,7 +66,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 ## 7. ¿Cómo se llama la sección de citas en el menú de GV?
 
-- En el menú lateral solo hay **un** ítem: **«GV Makeup Studio»** (`apps/web/src/App.tsx:290`). Dentro de esa pantalla (título «Cursos y cobros») hay pestañas: **«Cursos»**, **«Citas»**, **«Interesadas»**, **«Por verificar»** y **«Reportes»** (`apps/web/src/Gv.tsx:143`, `:129-174`).
+- En el menú lateral solo hay **un** ítem: **«GV Makeup Studio»** (`apps/web/src/App.tsx:291`). Dentro de esa pantalla (título «Cursos y cobros») hay pestañas: **«Cursos»**, **«Citas»**, **«Interesadas»**, **«Por verificar»** y **«Reportes»** (`apps/web/src/Gv.tsx:143`, `:129-174`).
 - La sección de citas se llama **«Citas»** (`apps/web/src/Gv.tsx:166`). Al abrirla, el botón es **«Nueva cita»** y los estados son Agendada, Realizada, Cancelada, Reembolsada (`apps/web/src/GvCitas.tsx:110-120`, `:54-59`).
 
 ---
@@ -84,8 +84,8 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 **Solo en `producto-nexora`. No existen en `nexora-cloud`.**
 
-- En esta rama (`nexora-cloud`) la lista del menú tiene 18 ítems y ninguno se llama «Primeros pasos» ni «Plan y facturación» (`apps/web/src/App.tsx:202-291`; búsqueda del texto en `apps/web/src`: sin resultados).
-- En `producto-nexora` sí: «Primeros pasos» (`id: "onboarding"`) en `apps/web/src/App.tsx:253` y «Plan y facturación» (`id: "billing"`, permiso `*`) en `:249`. Leído con `git show origin/producto-nexora:apps/web/src/App.tsx` (rama del producto multiempresa; no es la tienda).
+- En esta rama (`nexora-cloud`) la lista del menú tiene 18 ítems y ninguno se llama «Primeros pasos» ni «Plan y facturación» (`apps/web/src/App.tsx:203-292`; búsqueda del texto en `apps/web/src`: sin resultados).
+- En `producto-nexora` sí: «Primeros pasos» (`id: "onboarding"`) en `apps/web/src/App.tsx:254` y «Plan y facturación» (`id: "billing"`, permiso `*`) en `:249`. Leído con `git show origin/producto-nexora:apps/web/src/App.tsx` (rama del producto multiempresa; no es la tienda).
 - Dato extra: esa rama del producto no tiene el ítem «GV Makeup Studio» en el menú (solo el cubo de la pantalla de entrada), según la misma lectura.
 
 ---

@@ -19,10 +19,31 @@ export function kpiStripVisible(permissions: string[]): boolean {
 export function buildKpis({
   day,
   sessions,
+  dayStatus,
 }: {
   day?: DayData;
   sessions?: { closedAt?: string | null }[];
+  dayStatus?: "pending" | "error" | "success";
 }): Kpi[] {
+  // DIS-01: sin respuesta del servidor no se muestran ceros como si fueran
+  // datos: «—» y el motivo (cargando o no se pudo cargar).
+  if (!day) {
+    const note = dayStatus === "error" ? "No se pudo cargar" : "Cargando…";
+    const kpis: Kpi[] = [
+      { key: "ventas", label: "Ventas de hoy", value: "—", note },
+    ];
+    if (sessions)
+      kpis.push(
+        ...buildKpis({ day: {}, sessions }).filter((k) => k.key === "cajas"),
+      );
+    kpis.push({
+      key: "inventario",
+      label: "Alertas de inventario",
+      value: "—",
+      note,
+    });
+    return kpis;
+  }
   const revenue = Number(day?.revenue ?? 0);
   const kpis: Kpi[] = [
     {

@@ -92,6 +92,7 @@ export default defineConfig({
       "tests/incentives-calc.test.ts",
       "tests/afirmaciones.test.ts",
       "tests/f2-01-primitivos.test.tsx",
+      "tests/page-error-boundary.test.tsx",
       "tests/f2-02-kpi-strip.test.ts",
       "tests/f2-03-pos-visual.test.ts",
       "tests/licencias.test.ts",

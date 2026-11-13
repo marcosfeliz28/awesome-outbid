@@ -42,7 +42,7 @@ Permiso `inventory:write`; el rol `seller` queda bloqueado (`apps/api/src/mercha
 
 ## 3. Pantalla «Inventario»: stock, ajustes y conteos
 
-Permiso `inventory:write` (`apps/web/src/App.tsx:248`).
+Permiso `inventory:write` (`apps/web/src/App.tsx:249`).
 
 - Selector **«Almacén»**: Todos / Tienda / Casa (`Management.tsx:857-865`). Pestañas **«Stock actual»** y **«Conteos físicos»** (`:858-870`). Columnas: Producto / Variante, Precio, Costo (solo `profit:read`), «En Tienda» o «En Casa», Total, «Lote en Tienda», Vencimiento, Acciones (`:880-945`).
 - **«Ajustar»** (`:946-950`, ventana `:1018-1090`): Almacén, **«Cantidad (+ entrada / − salida)»**, Tipo (**Ajuste**, **Merma**, **Devolución a proveedor**), Proveedor y referencia (solo devolución), «Lote de salida», «Lote de entrada», «Vencimiento de entrada», **«Motivo»** obligatorio. API `POST /inventory/adjustments`, permiso `inventory:write` (`apps/api/src/inventory.ts:674-757`). No deja negativo: «Stock insuficiente en …» (`inventory.ts:740`); pide lote/vencimiento donde corresponde (`:748-755`).
