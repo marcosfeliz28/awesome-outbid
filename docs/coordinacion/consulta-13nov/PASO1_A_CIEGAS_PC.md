@@ -91,3 +91,22 @@ Gerente y administradora reciben prácticamente el mismo Resumen extenso. La ger
 ## Nota de alcance
 
 La semilla no incluye un rol llamado literalmente «cajera»; para el recorrido operativo se usó la vendedora, que tiene Punto de venta, Ventas, Caja y Clientes. Almacén se revisó además para distinguir problemas propios del flujo de mercancía de los problemas generales de navegación.
+
+## Comparación posterior con el catálogo
+
+Esta tabla se añadió después de cerrar, publicar y luego leer el catálogo. P-A01 queda retirada: la inspección posterior confirmó que ya existe una barra móvil fija con contador, «Ver carrito» y «Cobrar» (`POS.tsx:1347-1370`, `styles.css:5825-5855`). La captura de página completa hizo que esa ayuda fija no quedara clara durante la primera pasada.
+
+| Mía | En el catálogo | Relación |
+|---|---|---|
+| P-A01 | — | — (retirada: ya existe) |
+| P-A02 | COM-01 | parecida |
+| P-A03 | — | distinta |
+| P-A04 | — | distinta |
+| P-A05 | DIS-01 | parecida |
+| P-A06 | DIS-03 / COM-14 | parecida |
+| P-A07 | DIS-03 | parecida |
+| P-A08 | — | distinta |
+| P-A09 | — | distinta |
+| P-A10 | DIS-01 | parecida |
+| P-A11 | — | distinta |
+| P-A12 | — | distinta |
