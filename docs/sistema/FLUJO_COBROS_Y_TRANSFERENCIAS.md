@@ -25,21 +25,21 @@ Pasos exactos en `FLUJO_CAJA_POS.md` §5.1. Resumen:
 
 ### 3.1 Pantalla «Caja» › panel «Créditos pendientes»
 
-- Panel con ícono de camión y texto: «Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración.» (`apps/web/src/Tienda.tsx:602-614`).
-- Pestañas **«Pendientes»** / **«Cerrados»** (`apps/web/src/Tienda.tsx:622-623`). La administración (`*`) además ve **«Por venta»** / **«Por persona»** (`:646`, `:654`); «Por persona» abre el estado de cuenta por cliente (`apps/web/src/CreditAccounts.tsx:36`; API `GET credit-accounts` en `apps/api/src/sales.ts:4210`, detalle `:4011`, PDF del estado de cuenta `:4018`).
-- Cada fila muestra número FS-xxxxxxx, estado (Abierto / Parcial / Cerrado), tipo (Crédito o Contraentrega), días sin cobrar («Lleva N días sin cobrar», «Se cobró el mismo día») (`apps/web/src/Tienda.tsx:580-584`), «Total / Cobrado / Pendiente», lo «por verificar», y el historial de cobros con foto.
-- Botón **«Registrar cobro»** (`apps/web/src/Tienda.tsx:754`) abre **«Registrar cobro · FS-…»** (`:1052`).
+- Panel con ícono de camión y texto: «Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración.» (`apps/web/src/Tienda.tsx:605-617`).
+- Pestañas **«Pendientes»** / **«Cerrados»** (`apps/web/src/Tienda.tsx:625-626`). La administración (`*`) además ve **«Por venta»** / **«Por persona»** (`:646`, `:654`); «Por persona» abre el estado de cuenta por cliente (`apps/web/src/CreditAccounts.tsx:36`; API `GET credit-accounts` en `apps/api/src/sales.ts:4210`, detalle `:4011`, PDF del estado de cuenta `:4018`).
+- Cada fila muestra número FS-xxxxxxx, estado (Abierto / Parcial / Cerrado), tipo (Crédito o Contraentrega), días sin cobrar («Lleva N días sin cobrar», «Se cobró el mismo día») (`apps/web/src/Tienda.tsx:581-585`), «Total / Cobrado / Pendiente», lo «por verificar», y el historial de cobros con foto.
+- Botón **«Registrar cobro»** (`apps/web/src/Tienda.tsx:779`) abre **«Registrar cobro · FS-…»** (`:1052`).
 
 ### 3.2 La ventana «Registrar cobro»
 
-- Se pueden agregar varias líneas: **«Agregar otra forma de pago»** (`apps/web/src/Tienda.tsx:1201`). Cada línea: «Forma de pago» (Efectivo; Tarjeta y Transferencia solo con `sale:manage`) y «Monto entregado» (`:1124`).
-- **Efectivo** entra a la **caja abierta** de quien registra. Si no tiene caja: «No tienes caja abierta: sin ella no puedes recibir efectivo. Abre tu caja o registra solo tarjeta o transferencia.» (`apps/web/src/Tienda.tsx:1092`; API: manejador `credit-collections`, `apps/api/src/sales.ts:4758`).
-- Casilla (cajera): **«Este efectivo ya lo tiene la dueña (no entra a mi gaveta)»** + «PIN de gerente» (`apps/web/src/Tienda.tsx:1072`; API, reglas de PIN en el mismo manejador `apps/api/src/sales.ts:4758`).
-- **Tarjeta**: «Referencia del voucher» obligatoria (`apps/web/src/Tienda.tsx:1137`).
+- Se pueden agregar varias líneas: **«Agregar otra forma de pago»** (`apps/web/src/Tienda.tsx:1226`). Cada línea: «Forma de pago» (Efectivo; Tarjeta y Transferencia solo con `sale:manage`) y «Monto entregado» (`:1124`).
+- **Efectivo** entra a la **caja abierta** de quien registra. Si no tiene caja: «No tienes caja abierta: sin ella no puedes recibir efectivo. Abre tu caja o registra solo tarjeta o transferencia.» (`apps/web/src/Tienda.tsx:1117`; API: manejador `credit-collections`, `apps/api/src/sales.ts:4758`).
+- Casilla (cajera): **«Este efectivo ya lo tiene la dueña (no entra a mi gaveta)»** + «PIN de gerente» (`apps/web/src/Tienda.tsx:1097`; API, reglas de PIN en el mismo manejador `apps/api/src/sales.ts:4758`).
+- **Tarjeta**: «Referencia del voucher» obligatoria (`apps/web/src/Tienda.tsx:1162`).
 - **Transferencia**: «Banco» (lista de cuentas de Configuración) y «Referencia» (obligatoria salvo para la dueña).
-- **Foto de la evidencia** opcional: «Subir foto de la evidencia», JPG/PNG/WebP hasta 2 MB (`apps/web/src/Tienda.tsx:902`).
-- Botón **«Guardar cobro»** (`apps/web/src/Tienda.tsx:1231`). API `POST /sales/:id/credit-collections` (manejador en `apps/api/src/sales.ts:4758`), permiso `sale:write`. Una cajera (sin `sale:manage`) solo puede cobrar en efectivo: «Las cajeras solo cierran créditos en efectivo. La tarjeta y la transferencia las registra la administración.» (`sales.ts:4774`).
-- No se puede cobrar más que el saldo: «El cobro supera el saldo pendiente.» (`sales.ts:4942`). Se puede cobrar una parte y el resto después; el crédito se cierra cuando el saldo llega a cero (`apps/web/src/Tienda.tsx:1218-1219`).
+- **Foto de la evidencia** opcional: «Subir foto de la evidencia», JPG/PNG/WebP hasta 2 MB (`apps/web/src/Tienda.tsx:927`).
+- Botón **«Guardar cobro»** (`apps/web/src/Tienda.tsx:1256`). API `POST /sales/:id/credit-collections` (manejador en `apps/api/src/sales.ts:4758`), permiso `sale:write`. Una cajera (sin `sale:manage`) solo puede cobrar en efectivo: «Las cajeras solo cierran créditos en efectivo. La tarjeta y la transferencia las registra la administración.» (`sales.ts:4774`).
+- No se puede cobrar más que el saldo: «El cobro supera el saldo pendiente.» (`sales.ts:4942`). Se puede cobrar una parte y el resto después; el crédito se cierra cuando el saldo llega a cero (`apps/web/src/Tienda.tsx:1243-1244`).
 - Efecto: se crea el `Payment` `installment`; efectivo/tarjeta → `ok` y descuentan el saldo al instante; transferencia → `pending_verification` y **no** descuenta hasta verificarse.
 
 ### 3.3 Otras vías de cobro (solo administración `*`)
@@ -47,7 +47,7 @@ Pasos exactos en `FLUJO_CAJA_POS.md` §5.1. Resumen:
 - **Ventas › «Registrar abono»** en una venta con saldo (`apps/web/src/Management.tsx:3361`): ventana «Registrar pago de crédito / contraentrega · FS-…» (`:3716`) con «Monto del abono», «Método», banco/referencia o últimos 4/aprobación. API `POST /sales/:id/installments` (`apps/api/src/sales.ts:4107`). Exige caja abierta: «Abre tu caja para registrar abonos.» (`apps/web/src/Management.tsx:3350`).
 - **Cobro de contraentrega cuando el mensajero trae el dinero**: `POST /sales/:id/cod-collections` (`apps/api/src/sales.ts:4119`); pide la referencia del voucher si es tarjeta.
 - **Cobro por persona** (varias ventas de un cliente a la vez): `POST /credit-accounts/:id/collections` (`apps/api/src/sales.ts:4434`, manejador `collectCustomerCredit` en `:4086`); usa `allocateCredit` (`apps/api/src/credit-allocation.ts:2`).
-- **Dueña (`*`)**: al registrar una transferencia se da por recibida y cierra el cobro al instante, solo indica el banco; el efectivo sin caja abierta queda como recibido por ella, fuera de cualquier caja (`apps/web/src/Tienda.tsx:947-949`, `:1098`, `:1216-1217`; API marca `OWNER_CASH_MARK`, `apps/api/src/sales.ts:5092`).
+- **Dueña (`*`)**: al registrar una transferencia se da por recibida y cierra el cobro al instante, solo indica el banco; el efectivo sin caja abierta queda como recibido por ella, fuera de cualquier caja (`apps/web/src/Tienda.tsx:972-974`, `:1098`, `:1216-1217`; API marca `OWNER_CASH_MARK`, `apps/api/src/sales.ts:5092`).
 
 ### 3.4 Venta con saldo y devolución
 

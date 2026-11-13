@@ -58,7 +58,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 
 - Ve: Mercancía, Resumen, Punto de venta, Ventas, Solicitudes de anulación, Productos, Inventario, Compras, Caja, Gastos, Clientes, Promociones, Reportes, Alertas, Incentivos, GV; y el botón «Configuración».
 - Ve costos y utilidades (`profit:read`) y los esperados de caja.
-- Hace: devoluciones, aprobar conteos, cobrar créditos con tarjeta/transferencia, cierres de emergencia de la caja de otra persona (`apps/web/src/Tienda.tsx:321-328`), verificar/rechazar transferencias **de GV** (`gv:verify`), aprobar equipos nuevos (`apps/api/src/realtime.ts:257-258`, `:415`).
+- Hace: devoluciones, aprobar conteos, cobrar créditos con tarjeta/transferencia, cierres de emergencia de la caja de otra persona (`apps/web/src/Tienda.tsx:322-329`), verificar/rechazar transferencias **de GV** (`gv:verify`), aprobar equipos nuevos (`apps/api/src/realtime.ts:257-258`, `:415`).
 - **Su PIN es el «PIN de gerente»** que pide la caja: cualquier usuario activo con `sale:manage` puede aprobar (`apps/api/src/security.ts:92-136`).
 - No puede (solo `*`): anular una venta, verificar transferencias de ventas, abonos, traspasos, guardar la configuración, crear usuarios (ver §4).
 
@@ -131,5 +131,5 @@ Nota (pendiente de comprobar en vivo): el botón «Configuración» lo ve un ger
 
 - Un equipo nuevo de vendedor/almacén **espera aprobación** de un gerente: «Este equipo necesita aprobación. Puedes consultar, pero para vender o mover mercancía un gerente debe aprobarlo» (`apps/web/src/realtime.tsx:515-518`). Se aprueba con PIN en el mismo equipo o desde Configuración › **Equipos** (`apps/api/src/realtime.ts:257-264`; modelo `Terminal`, campo `approvedAt`).
 - Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1528`, `cash.ts:838`).
-- La caja se asigna al equipo con nombre y número visibles en el cuadre (ej. «4012 · GPRO STORE RD») y cada cajero tiene un «No. de cajero» (ej. 1031) (`apps/web/src/Tienda.tsx:1293-1360`; `schema.prisma` `Terminal.registerNumber`, `User.cashierNumber`).
+- La caja se asigna al equipo con nombre y número visibles en el cuadre (ej. «4012 · GPRO STORE RD») y cada cajero tiene un «No. de cajero» (ej. 1031) (`apps/web/src/Tienda.tsx:1318-1385`; `schema.prisma` `Terminal.registerNumber`, `User.cashierNumber`).
 - Una sesión se cierra por inactividad según «sessionTimeoutMinutes» (30 min por defecto) (`apps/api/src/auth.ts:358-360`; `apps/api/src/admin.ts:92`).

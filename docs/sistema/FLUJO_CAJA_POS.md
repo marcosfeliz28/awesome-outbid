@@ -143,10 +143,10 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 
 ## 10. Cierre ciego y cuadre
 
-1. Antes: **cerrar el lote del verifón** (datáfono). La ventana lo recuerda: «Antes de cerrar: cierra el lote del verifón (datáfono) para que los cobros con tarjeta caigan el próximo día.» (`apps/web/src/Tienda.tsx:329-332`).
-2. Caja › **«Cerrar y arquear»** (`Management.tsx:1708`) → ventana **«Cuadre y cierre de caja»** (`Tienda.tsx:314`).
+1. Antes: **cerrar el lote del verifón** (datáfono). La ventana lo recuerda: «Antes de cerrar: cierra el lote del verifón (datáfono) para que los cobros con tarjeta caigan el próximo día.» (`apps/web/src/Tienda.tsx:330-333`).
+2. Caja › **«Cerrar y arquear»** (`Management.tsx:1708`) → ventana **«Cuadre y cierre de caja»** (`Tienda.tsx:315`).
 3. Texto: «Conteo ciego: declara lo que realmente tienes. La comparación con lo esperado aparece después de cerrar.» (`apps/web/src/managementMessages.ts:37-40`).
-4. Se llena (`Tienda.tsx:334-453`):
+4. Se llena (`Tienda.tsx:335-454`):
    - **«Detalles de monedas»**: cantidad de cada denominación (1, 5, 10, 20, 25, 50, 100, 200, 500, 1,000, 2,000) → «Efectivo contado (Sub-total)» (`packages/shared/src/index.ts:650`).
    - **«Vale de caja»** (solo si ve esperados): exige nota y PIN de **otro** gerente; genera alerta alta (`apps/api/src/cash.ts:1139-1165`, `:1366-1385`).
    - **«Dólares US$»** / **«Euros €»** si hay tasa en Configuración.
@@ -154,15 +154,15 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
    - **«Número de lote del verifón»**: obligatorio si hubo cobros con tarjeta (`cash.ts:1196-1210`).
    - **«Entregado»** (efectivo que se le entrega a la dueña) y **«Dejado en caja»** (calculado; será el fondo sugerido de la próxima apertura) (`packages/shared/src/index.ts:688-701`).
    - **«Notas del cierre»**, y la casilla obligatoria «Confirmo que conté efectivo y tarjeta. Las transferencias las suma el sistema.»
-5. Botón **«Cerrar caja e imprimir cuadre»** (`Tienda.tsx:464-467`). `POST /cash-sessions/:id/close` (`cash.ts:1112`).
+5. Botón **«Cerrar caja e imprimir cuadre»** (`Tienda.tsx:465-468`). `POST /cash-sessions/:id/close` (`cash.ts:1112`).
 6. Reglas del cierre en el servidor:
    - Las **transferencias las suma el sistema**, no la cajera (`cash.ts:1213`).
    - Si tarjeta, efectivo o dólares **no cuadran** y quien cierra es cajera (o gerente cerrando SU caja, salvo `*`): no cierra sin el **PIN de otra persona con permiso** y una **justificación del descuadre** (mín. 10 letras). El mensaje no dice cuánto falta ni sobra (`cash.ts:1248-1300`). Mensajes: «El total de tarjeta no coincide con el sistema…», «La caja no cuadra con el sistema. Vuelve a contar…» (`:1268-1274`).
    - Desde el **2.º intento** que no cuadra, todo cierre pide justificación y PIN: «Ya hubo 2 intentos de cierre que no cuadraron…» (`cash.ts:46-48`, `:1254-1268`).
    - Diferencia mayor a «cashDifferenceLimit» (RD$ 100 por defecto) → exige nota y crea alerta «cash_difference» (`cash.ts:203-226`, `:1390-1410`).
-   - Un gerente/administración puede cerrar la caja de otra persona («cierre de emergencia»; el cuadre muestra a ambos) (`Tienda.tsx:321-328`; `cash.ts:1335-1350`).
-   - No se cierra si hay ventas sin sincronizar en el equipo (`Tienda.tsx:247-256`).
-7. Después de cerrar se imprime solo el **Cuadre** (`Management.tsx:2117-2127`, `apps/web/src/Tienda.tsx:76-81`), y se pregunta «¿También deseas imprimir los productos vendidos de esta caja?» con **«Sí, imprimir productos»** / **«No»** (`Tienda.tsx:95-114`). Otros impresos: «Productos vendidos de esta caja», «Facturas por forma de pago» (`Tienda.tsx:115-141`). Desde el historial: botones «Cuadre», «Venta diaria», «Por forma de pago» (`Tienda.tsx:475-505`).
+   - Un gerente/administración puede cerrar la caja de otra persona («cierre de emergencia»; el cuadre muestra a ambos) (`Tienda.tsx:322-329`; `cash.ts:1335-1350`).
+   - No se cierra si hay ventas sin sincronizar en el equipo (`Tienda.tsx:248-257`).
+7. Después de cerrar se imprime solo el **Cuadre** (`Management.tsx:2117-2127`, `apps/web/src/Tienda.tsx:77-82`), y se pregunta «¿También deseas imprimir los productos vendidos de esta caja?» con **«Sí, imprimir productos»** / **«No»** (`Tienda.tsx:96-115`). Otros impresos: «Productos vendidos de esta caja», «Facturas por forma de pago» (`Tienda.tsx:116-142`). Desde el historial: botones «Cuadre», «Venta diaria», «Por forma de pago» (`Tienda.tsx:476-506`).
 8. Cómo se calcula lo esperado en efectivo: apertura + pagos en efectivo − cambio + entradas − salidas − reembolsos en efectivo; tarjeta y transferencia aparte; transferencias rechazadas no cuentan; los abonos solo cuentan una vez aplicados (`apps/api/src/cash.ts:55-113`).
 9. Después del cierre, si una transferencia se verifica o se sincroniza una venta, el cuadre se recalcula y queda en la bitácora (`apps/api/src/sales.ts:3136-3151`).
 

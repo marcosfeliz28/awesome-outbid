@@ -1,5 +1,6 @@
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
+import { filterCredits } from "./codPendingSearch";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Printer, Truck, Upload } from "lucide-react";
@@ -593,7 +594,9 @@ export function CodPending({ session }: { session: any }) {
     refetchInterval: 30000,
   });
   const [collecting, setCollecting] = useState<any>(null);
+  const [search, setSearch] = useState("");
   const rows = query.data ?? [];
+  const shown = filterCredits(rows, search);
   // B-01: la API manda null en los importes de la caja abierta (hiddenUntilClose).
   const totalPending = rows.reduce((a, r) => a + (Number(r.pending) || 0), 0);
   const money = (r: any, v: unknown) =>
@@ -665,10 +668,32 @@ export function CodPending({ session }: { session: any }) {
               cobrar: <strong>{formatMoney(totalPending)}</strong>
             </p>
           )}
+          {rows.length > 0 && (
+            <label className="field">
+              <span>Buscar por cliente, factura o teléfono</span>
+              <input
+                type="search"
+                value={search}
+                autoComplete="off"
+                placeholder="Ej.: María, FS-0000123 o 809"
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+          )}
+          {search.trim() && rows.length > 0 && (
+            <p className="cod-hint" role="status">
+              {shown.length} de {rows.length} en los resultados cargados
+            </p>
+          )}
           <QueryState query={query}>
-            {rows.length ? (
+            {rows.length && !shown.length ? (
+              <Empty
+                title="No hay coincidencias"
+                description="Prueba con otro nombre, número de factura o teléfono."
+              />
+            ) : rows.length ? (
               <div className="cod-list">
-                {rows.map((r) => (
+                {shown.map((r) => (
                   <div className="cod-row" key={r.saleId}>
                     <div>
                       <strong>{r.number}</strong>{" "}
