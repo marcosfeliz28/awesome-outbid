@@ -2,6 +2,15 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-13 · ChatGPT PC · después de DIS-01 y EST-03
+
+- **Base y rama:** `origin/nexora-cloud` `7244c21ad26eb217b47fdc0e930ea14b3c4cc5bc`; `chatgpt-pc/despues-dis01-est03-13nov`. Solo documentos/capturas, sin código ni despliegue.
+- **Entrega:** sección 8 de [LINEA_BASE_TANDA1_13NOV.md](../validacion/LINEA_BASE_TANDA1_13NOV.md), 19 PNG nuevos a 1366×900/390×844, registro de ejecución y manifiesto con dimensiones/SHA-256. El «antes» permanece intacto.
+- **DIS-01, parcial:** la franja superior muestra «— / Cargando…» o «— / No se pudo cargar» correctamente. Con la misma consulta diaria retenida/503, «HOY» inferior sigue mostrando RD$0 y 0 facturas; el dato válido es RD$5,100/17 facturas. Tampoco aparece Reintentar para ese fallo diario. Hallazgos DIS-01-A/B.
+- **EST-03, parcial:** aviso y botones visibles, menú funcional y Volver a Caja → `#pos`; carrito con Adriana Torres, 1 Bandas Resistance/Lila y RD$300 idéntico antes/después, también navegando por Productos. Al retirar la respuesta mal formada HTTP200 y pulsar Reintentar inmediatamente, no se vuelve a consultar y el aviso permanece por el dato fresco en caché. Hallazgo EST-03-A; no se fuerza recuperación limpiando caché.
+- **Verificación:** dependencias congeladas, Prisma y build correctos; copia detenida de la misma base descartable, sin nuevas ventas. Capturas y datos revisados, archivos anteriores preservados. Navegadores/API/web/PostgreSQL cerrados y puertos de prueba libres.
+- **Bloqueos:** ninguno de ejecución. La aceptación completa queda pendiente de corregir los subcasos anteriores y repetirlos. No se intentó arreglar código en esta rama.
+
 ## 2026-11-13 · ChatGPT PC · línea base de la primera tanda
 
 - **Orden y base:** «Cola 13-nov (2)»; `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560`. Rama `chatgpt-pc/linea-base-mejoras-13nov`.
