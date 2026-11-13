@@ -627,7 +627,219 @@ Las órdenes detalladas se reservan para diez propuestas cuyo beneficio justific
 
 ## Parte B: propuestas propias
 
-Pendiente del Paso 3.
+### Matriz de 12 casillas
+
+| | Estructura | Diseño | Comodidad | Seguridad | Eficiencia | Modernidad |
+|---|---|---|---|---|---|---|
+| TIENDA | N-EST-01 | N-DIS-01, N-DIS-02 | N-COM-01 | N-SEG-02, N-SEG-03 | N-EFI-01, N-EFI-02 | N-MOD-03 |
+| PRODUCTO | N-EST-02 | N-DIS-03 | N-COM-02, N-COM-03 | N-SEG-01, N-SEG-04 | N-EFI-03 | N-MOD-01, N-MOD-02 |
+
+### Tabla de propuestas propias
+
+| ID | Dimensión | Versión | Impacto | Esfuerzo | Riesgo | Dinero | Certeza | Parecida a |
+|---|---|---|---:|---|---|---|---|---|
+| N-EST-01 | Estructura | ambas | 4 | M | medio | no | comprobado | — |
+| N-EST-02 | Estructura | ambas | 3 | M | medio | no | comprobado | — |
+| N-DIS-01 | Diseño | ambas | 3 | P | bajo | no | comprobado | — |
+| N-DIS-02 | Diseño | ambas | 2 | P | bajo | no | comprobado | — |
+| N-DIS-03 | Diseño | ambas | 2 | P | bajo | no | comprobado | — |
+| N-COM-01 | Comodidad | tienda | 4 | M | medio | no | comprobado | — |
+| N-COM-02 | Comodidad | producto | 3 | G | alto | sí | deducido | — |
+| N-COM-03 | Comodidad | producto | 3 | P | bajo | no | comprobado | — |
+| N-SEG-01 | Seguridad | ambas | 5 | G | alto | no | comprobado | — |
+| N-SEG-02 | Seguridad | ambas | 5 | M | alto | no | comprobado | — |
+| N-SEG-03 | Seguridad | tienda | 5 | P | alto | sí | comprobado | — |
+| N-SEG-04 | Seguridad | producto | 5 | M | alto | no | comprobado | — |
+| N-EFI-01 | Eficiencia | tienda | 3 | M | medio | no | comprobado | — |
+| N-EFI-02 | Eficiencia | ambas | 4 | M | alto | sí | comprobado | — |
+| N-EFI-03 | Eficiencia | producto | 4 | P | medio | no | comprobado | — |
+| N-MOD-01 | Modernidad | producto | 4 | G | alto | no | comprobado | — |
+| N-MOD-02 | Modernidad | producto | 3 | G | alto | sí | deducido | — |
+| N-MOD-03 | Modernidad | ambas | 3 | P | medio | no | comprobado | — |
+
+### N-EST-01 · Un área de trabajo única para inventario y abastecimiento
+- **Versión:** ambas · **Lo nota:** gerencia y almacén · **Esfuerzo:** M · **Toca dinero:** no
+- **Hoy:** Inventario, Mercancía y Compras reparten tareas relacionadas y exigen saber en qué pantalla empieza cada flujo.
+- **Evidencia:** `docs/sistema/PANTALLAS.md:87-103`; `apps/web/src/Management.tsx:790,1170`.
+- **Propuesta:** Crear una portada común que enlace recibir, contar, ajustar, traspasar, ordenar e historial, conservando las pantallas y permisos internos.
+- **Beneficio:** Reduce aprendizaje y evita empezar una tarea en el lugar equivocado.
+- **Riesgo:** Una portada mal filtrada puede mostrar accesos sin permiso.
+- **Cómo se comprobaría:** Cada rol ve solo sus tareas; todos los enlaces llegan al flujo correcto y volver conserva contexto.
+
+### N-EST-02 · Separar Configuración en secciones con borradores independientes
+- **Versión:** ambas · **Lo nota:** dueña y soporte · **Esfuerzo:** M · **Toca dinero:** no
+- **Hoy:** Configuración concentra un formulario extenso y el guardado no protege claramente cambios pendientes al navegar.
+- **Evidencia:** `apps/web/src/Management.tsx:4238-4368,4567-4605`; `apps/web/src/helpers.tsx:311-313,375-379`.
+- **Propuesta:** Dividir identidad, caja, crédito, impresión y seguridad en secciones que carguen y guarden solo su bloque, con aviso de cambios sin guardar.
+- **Beneficio:** Un ajuste pequeño deja de arriesgar o reenviar toda la configuración.
+- **Riesgo:** Separar el guardado puede producir valores parciales incompatibles.
+- **Cómo se comprobaría:** Cambiar una sección no modifica las demás; navegar con cambios pide confirmar y los errores quedan en su sección.
+
+### N-DIS-01 · Enlace «Saltar al contenido» para teclado
+- **Versión:** ambas · **Lo nota:** persona que usa teclado · **Esfuerzo:** P · **Toca dinero:** no
+- **Hoy:** Cada cambio de pantalla obliga a recorrer menú y barra superior, aunque UI ya incluye el primitivo.
+- **Evidencia:** `apps/web/src/App.tsx:991,1241`; `packages/ui/src/nx-primitivos.tsx:228`.
+- **Propuesta:** Conectar un enlace visible al recibir foco con el `main` y restaurar foco al cambiar de pantalla.
+- **Beneficio:** La tarea principal queda a una tecla en vez de atravesar toda la navegación.
+- **Riesgo:** Un destino mal gestionado puede perder foco o mover la vista.
+- **Cómo se comprobaría:** Con solo teclado, el primer Tab ofrece saltar; Enter enfoca el título principal en escritorio y móvil.
+
+### N-DIS-02 · Mostrar el atajo de búsqueda según el equipo
+- **Versión:** ambas · **Lo nota:** cajera y soporte · **Esfuerzo:** P · **Toca dinero:** no
+- **Hoy:** La aplicación acepta Ctrl+K y Cmd+K, pero la barra enseña únicamente `⌘ K`.
+- **Evidencia:** `apps/web/src/App.tsx:834-839,1120,1313`.
+- **Propuesta:** Mostrar `Ctrl + K` en Windows/Linux y `⌘ K` en macOS, con texto accesible equivalente.
+- **Beneficio:** El atajo deja de parecer exclusivo de Mac en el producto para Windows.
+- **Riesgo:** Detectar plataforma por navegador puede equivocarse.
+- **Cómo se comprobaría:** Prueba de ambos agentes de usuario y comprobación de que los dos atajos siguen abriendo búsqueda.
+
+### N-DIS-03 · El botón de contraseña debe decir «Mostrar» y «Ocultar»
+- **Versión:** ambas · **Lo nota:** cualquier persona al entrar · **Esfuerzo:** P · **Toca dinero:** no
+- **Hoy:** El control cambia la visibilidad, pero su nombre accesible no comunica de forma consistente el estado resultante.
+- **Evidencia:** `apps/web/src/App.tsx:490-501`.
+- **Propuesta:** Alternar texto, `aria-label` y estado presionado entre Mostrar y Ocultar contraseña.
+- **Beneficio:** Evita dudas a personas con lector de pantalla y en pantallas pequeñas.
+- **Riesgo:** Ninguno funcional si solo cambia el nombre del control.
+- **Cómo se comprobaría:** Lector de pantalla anuncia acción/estado correctos y la contraseña conserva foco y valor.
+
+### N-COM-01 · Centro de trabajo pendiente del equipo
+- **Versión:** tienda · **Lo nota:** cajera y almacén · **Esfuerzo:** M · **Toca dinero:** no
+- **Hoy:** La aplicación conserva ventas y mercancía pendientes localmente, pero la persona no tiene un inventario único con antigüedad, estado y acción segura.
+- **Evidencia:** `apps/web/src/api.ts:50,274-299,548-572`; `packages/shared/src/index.ts:550,593`.
+- **Propuesta:** Una pantalla local reúne pendientes por tipo, fecha y estado, permite sincronizar los válidos y explica conflictos sin exponer datos de otra sesión.
+- **Beneficio:** La cajera sabe qué falta enviar antes de cerrar o cambiar de equipo.
+- **Riesgo:** Puede revelar datos locales de otra persona o permitir reenvío incorrecto.
+- **Cómo se comprobaría:** Dos usuarios en el mismo navegador solo ven lo propio; sin red no se borra nada y un conflicto no se reenvía automáticamente.
+
+### N-COM-02 · Portal de cliente para saldo, abonos y comprobantes
+- **Versión:** producto · **Lo nota:** cliente del negocio · **Esfuerzo:** G · **Toca dinero:** sí
+- **Hoy:** El personal consulta crédito y comprobantes dentro del POS; no existe acceso limitado para el cliente.
+- **Evidencia:** `apps/web/src/POS.tsx:2470`; `apps/web/src/CreditAccounts.tsx:281`; `apps/api/src/sales.ts:5027`.
+- **Propuesta:** Portal opcional de solo lectura, con enlace de un uso, que muestre saldo, movimientos y comprobantes sin exponer otros datos.
+- **Beneficio:** Reduce consultas por teléfono y facilita verificar pagos.
+- **Riesgo:** Autenticación débil puede exponer historial financiero; los mensajes pueden inducir cobros erróneos.
+- **Cómo se comprobaría:** Enlace vencido o reutilizado falla; un cliente nunca obtiene otra cuenta y los totales coinciden con crédito interno.
+
+### N-COM-03 · Enlaces de ayuda y avisos a la sección exacta
+- **Versión:** producto · **Lo nota:** comprador y soporte · **Esfuerzo:** P · **Toca dinero:** no
+- **Hoy:** Varias tarjetas de puesta en marcha terminan en la portada de Configuración, obligando a buscar de nuevo la opción.
+- **Evidencia:** `producto-nexora:apps/web/src/Onboarding.tsx:210-221`; `producto-nexora:apps/web/src/Management.tsx:4234-4242`.
+- **Propuesta:** Definir enlaces estables a cada sección de configuración y devolver a la lista de puesta en marcha conservando progreso.
+- **Beneficio:** El comprador completa una tarea sin conocer la estructura interna.
+- **Riesgo:** Un enlace puede abrir una sección sin permiso o quedar obsoleto al reorganizar.
+- **Cómo se comprobaría:** Cada tarjeta abre control correcto, deniega por rol antes de montar y al volver refleja el cambio.
+
+### N-SEG-01 · Identidad de terminal no clonable desde almacenamiento local
+- **Versión:** ambas · **Lo nota:** dueña y soporte · **Esfuerzo:** G · **Toca dinero:** no
+- **Hoy:** Parte de la identidad del equipo se conserva en localStorage y se envía en autenticación; copiar el perfil puede copiar esa referencia.
+- **Evidencia:** `apps/web/src/realtime.tsx:66,95`; `apps/api/src/auth.ts:191`; `apps/api/src/common.ts:697,749`.
+- **Propuesta:** Emitir una credencial de equipo rotatoria y vinculada a una clave no exportable cuando el navegador lo permita; tratar localStorage solo como identificador público.
+- **Beneficio:** Copiar archivos del navegador no basta para hacerse pasar por una caja aprobada.
+- **Riesgo:** Puede bloquear equipos antiguos, modo privado o restauraciones.
+- **Cómo se comprobaría:** Copiar localStorage a otro perfil no autentica; revocar/rotar funciona y existe recuperación auditada.
+
+### N-SEG-02 · Caducidad y limpieza de datos sensibles sin conexión
+- **Versión:** ambas · **Lo nota:** cajera y dueña · **Esfuerzo:** M · **Toca dinero:** no
+- **Hoy:** Pendientes transaccionales sobreviven al cierre de sesión sin una caducidad o borrado seguro visible.
+- **Evidencia:** `apps/web/src/api.ts:50,284-299`; `packages/shared/src/index.ts:550,593`.
+- **Propuesta:** Clasificar datos locales, fijar caducidad por tipo, borrar tras sincronización confirmada y ofrecer inventario seguro antes de limpiar manualmente.
+- **Beneficio:** Reduce exposición en equipos compartidos sin perder ventas pendientes.
+- **Riesgo:** Limpiar demasiado pronto puede destruir la única copia de una venta.
+- **Cómo se comprobaría:** Nada no confirmado se borra; lo sincronizado expira; otro usuario no puede leerlo y la recuperación ante reloj incorrecto es segura.
+
+### N-SEG-03 · Alinear quién puede autorizar descuentos con PIN
+- **Versión:** tienda · **Lo nota:** gerencia y cajera · **Esfuerzo:** P · **Toca dinero:** sí
+- **Hoy:** La web trata `sale:manage` como suficiente en un punto, mientras la API exige una aprobación distinta salvo acceso total.
+- **Evidencia:** `apps/web/src/POS.tsx:1956-1961`; `apps/api/src/sales.ts:708-722`; `apps/api/src/security.ts:99-102`.
+- **Propuesta:** Definir una única regla compartida de quién autoriza, siempre con identidad de otra persona cuando la operación lo exija.
+- **Beneficio:** La caja no promete una autorización que el servidor rechazará ni acepta la propia por error.
+- **Riesgo:** Toca descuentos y puede bloquear ventas o permitirlos indebidamente.
+- **Cómo se comprobaría:** Matriz de roles/PIN propio/PIN ajeno en web y API produce exactamente el mismo resultado.
+
+### N-SEG-04 · Credencial administrativa inicial de un solo uso
+- **Versión:** producto · **Lo nota:** comprador · **Esfuerzo:** M · **Toca dinero:** no
+- **Hoy:** La instalación silenciosa deja una clave reutilizable en Documentos y la cuenta no exige reemplazo inmediato.
+- **Evidencia:** `instalador/lanzar-instalacion-silenciosa.ps1:183,272`; `apps/api/scripts/create-admin.ts:128`.
+- **Propuesta:** Generar un secreto temporal mostrado o exportado una vez, marcar la cuenta para cambio obligatorio y borrar el artefacto después de la activación.
+- **Beneficio:** Una copia del archivo de instalación no conserva acceso administrativo permanente.
+- **Riesgo:** Perder el secreto antes del primer acceso puede dejar la instalación inaccesible.
+- **Cómo se comprobaría:** Primer acceso obliga a cambiar, el secreto anterior deja de funcionar y existe recuperación local auditada.
+
+### N-EFI-01 · Una sola carga de datos por informe GV
+- **Versión:** tienda · **Lo nota:** gerencia GV · **Esfuerzo:** M · **Toca dinero:** no
+- **Hoy:** El reporte GV repite cargas amplias y sin límite de los mismos datos para formar vistas relacionadas.
+- **Evidencia:** `apps/web/src/Gv.tsx:1157`; `apps/api/src/gv.ts:187,636,697`.
+- **Propuesta:** Definir consulta paginada y resumen agregado reutilizable por la pantalla, con filtros aplicados en servidor.
+- **Beneficio:** La pantalla escala sin transferir o recalcular toda la historia.
+- **Riesgo:** Un resumen distinto puede cambiar cifras o permisos.
+- **Cómo se comprobaría:** Mismos totales con fixture conocida, límite efectivo y número estable de consultas al crecer datos.
+
+### N-EFI-02 · Resolver lotes y existencias en bloque al vender
+- **Versión:** ambas · **Lo nota:** cajera · **Esfuerzo:** M · **Toca dinero:** sí
+- **Hoy:** La finalización de venta consulta variantes y lotes dentro del recorrido de líneas, multiplicando viajes a base.
+- **Evidencia:** `apps/api/src/sales.ts:905`; `apps/api/src/inventory.ts:337,541,564`.
+- **Propuesta:** Precargar en una consulta las variantes, existencias y lotes necesarios; mantener selección FEFO y bloqueos dentro de la transacción.
+- **Beneficio:** Ventas con muchos artículos tardan menos sin reducir controles.
+- **Riesgo:** Un lote precargado puede quedar obsoleto bajo concurrencia y afectar dinero/stock.
+- **Cómo se comprobaría:** Mismo resultado FEFO y stock con dos ventas concurrentes; conteo de consultas no crece por línea.
+
+### N-EFI-03 · Plazos y límites de tamaño en el servidor web local
+- **Versión:** producto · **Lo nota:** comprador y soporte · **Esfuerzo:** P · **Toca dinero:** no
+- **Hoy:** El proxy local abre conexiones al backend sin límites explícitos equivalentes de cabeceras, cuerpo y respuesta.
+- **Evidencia:** `instalador/scripts/Configure-Network.ps1:160`; `instalador/runtime/web-server.mjs:64,179`.
+- **Propuesta:** Definir timeouts distintos para cabeceras, cuerpo y respuesta, límites por ruta y cierre limpio, sin reintentar escrituras.
+- **Beneficio:** Una conexión colgada no consume recursos indefinidamente en la laptop.
+- **Riesgo:** Un plazo corto rompe respaldos, importaciones o reportes grandes.
+- **Cómo se comprobaría:** Pruebas de conexión lenta, cuerpo excesivo, reporte permitido y escritura sin reintento.
+
+### N-MOD-01 · Alta autoservicio segura para el primer administrador
+- **Versión:** producto · **Lo nota:** comprador · **Esfuerzo:** G · **Toca dinero:** no
+- **Hoy:** La landing invita a comenzar, pero la cuenta inicial todavía se crea mediante script/instalación asistida.
+- **Evidencia:** `apps/landing/src/index.tsx:66,121`; `apps/api/scripts/create-admin.ts:21`.
+- **Propuesta:** Flujo local de activación con código de instalación de un uso, creación del negocio y administrador, sin registro público abierto.
+- **Beneficio:** El comprador termina la puesta en marcha sin que soporte conozca su contraseña.
+- **Riesgo:** Un alta abierta permitiría apropiarse de una instalación nueva.
+- **Cómo se comprobaría:** Solo funciona antes de activar, exige código de un uso, se cierra después y deja auditoría sin secreto.
+
+### N-MOD-02 · Enlace o QR de pago asociado a una cuenta por cobrar
+- **Versión:** producto · **Lo nota:** cliente y negocio · **Esfuerzo:** G · **Toca dinero:** sí
+- **Hoy:** El sistema registra referencias y abonos, pero no crea una solicitud de pago con proveedor ni conciliación automática.
+- **Evidencia:** `apps/api/src/sales.ts:4945`; no hay adaptador de proveedor de pago en `apps/api/package.json`.
+- **Propuesta:** Adaptador opcional por proveedor que emita enlace/QR con importe y referencia opaca, y reciba confirmación firmada antes de aplicar abono.
+- **Beneficio:** El cliente paga a distancia y el negocio concilia con menos escritura manual.
+- **Riesgo:** Comisiones, devoluciones, fraude y webhooks duplicados tocan dinero.
+- **Cómo se comprobaría:** Sandbox del proveedor: firma inválida falla, webhook repetido es idempotente y total/estado coinciden.
+
+### N-MOD-03 · Aviso y control contextual cuando una función usa IA
+- **Versión:** ambas · **Lo nota:** dueña, empleada y comprador · **Esfuerzo:** P · **Toca dinero:** no
+- **Hoy:** El asistente y lectura de facturas llaman a un proveedor externo, pero la pantalla no siempre explica qué contenido sale ni permite decidir por función.
+- **Evidencia:** `apps/web/src/AssistantPanel.tsx:45`; `apps/api/src/assistant.ts:482,533,558`; `apps/api/src/invoice.ts:364-379`.
+- **Propuesta:** Antes del primer uso, explicar datos enviados, finalidad y retención; permitir desactivar por función y mostrar alternativa manual.
+- **Beneficio:** La persona entiende cuándo interviene IA y puede trabajar sin ella.
+- **Riesgo:** Un aviso genérico puede ser falso o interrumpir demasiado; desactivar puede dejar tareas incompletas.
+- **Cómo se comprobaría:** Cada función declara su alcance, respetar desactivación impide llamadas externas y el flujo manual sigue disponible.
+
+### Qué quitaría o simplificaría
+
+1. Quitar filtros Desde/Hasta de informes que hoy calculan únicamente el estado actual, hasta que exista corte histórico real.
+2. Quitar textos y controles GV del producto vendible mientras no exista un módulo contratado.
+3. Simplificar los permisos visibles a tareas de negocio; no mostrar cadenas técnicas ni opciones que el rol no puede guardar.
+4. Eliminar de la instalación cualquier archivo reutilizable con la clave administrativa inicial después de activar.
+5. Reducir Configuración a secciones guardables; no reenviar un formulario gigante por un cambio pequeño.
+
+### Si este software fuera mío
+
+1. Haría una sola definición verificable de la edición que se vende, sus límites y qué módulos incluye.
+2. Priorizaría integridad de venta offline, permisos e idempotencia antes que funciones vistosas.
+3. Certificaría respaldo y restauración en otra PC antes de declarar vendible el instalador.
+4. Mediría caja, sincronización y tablero con datos sintéticos de volumen antes de optimizar.
+5. Mantendría una matriz de diferencias tienda/producto con responsable y fecha de reconciliación.
+
+La decisión que más me preocupa no tomar es si el producto tendrá un solo tronco compartido o seguirá divergente: cada mes de espera multiplica el costo y el riesgo de trasladar arreglos de dinero.
+
+### Modernidad, mirando afuera
+
+No consulté la web para esta entrega. De memoria, sin comprobar: los POS modernos suelen ofrecer activación autoservicio, enlaces/QR de pago, portal del cliente, salud visible de equipos y controles transparentes de IA. Solo propongo aquí las tres capacidades para las que encontré un hueco concreto en este código; cualquier promesa comercial debe validarse con proveedor, país, costos y privacidad antes de construir.
 
 ## Parte C: síntesis
 
