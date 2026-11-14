@@ -14,7 +14,7 @@ it("los scripts de PowerShell del instalador con acentos llevan marca BOM", () =
     const bytes = readFileSync(f);
     const tieneBom =
       bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf;
-    const tieneAcentos = /[^\x00-\x7f]/.test(bytes.toString("utf8"));
+    const tieneAcentos = bytes.some((byte) => byte > 0x7f);
     return tieneAcentos && !tieneBom;
   });
   expect(sinMarca).toEqual([]);
