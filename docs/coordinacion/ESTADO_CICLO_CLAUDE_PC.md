@@ -2331,3 +2331,7 @@ Límite: no se escribió en ningún chat en este ciclo.
 ## Ciclo nube (14-nov, 2) — sin órdenes nuevas; CI de visual-antes-14nov en verde: LISTA escrita
 - RESPUESTA y OBSIDIAN_LUMINA_PROGRESO sin cambios desde 1d118b16. claude-pc/visual-antes-14nov 4d3d09eb: verify, windows-installer y render-images en verde (orden 125). pc23, a1, b01 y lumina verdes.
 - Último hash visto de nexora-cloud: 1d118b16. No desplegar.
+
+## Ciclo nube (14-nov, 3) — orden 126 (nexora-cloud 16fb9887) BLOQUEADA en la nube: necesita la VM Hyper-V local; LISTA NO escrita
+- Orden 126 (instalación limpia en FitStore-INST1-Win10) y la decisión de la dueña «A» (aprobar UAC solo en la VM) requieren Hyper-V y pantalla; no hay ni lo uno ni lo otro aquí. Ya existe claude-pc/instalacion-limpia-14nov bb47cbb0 (local, instalación fallida con cuenta estándar, UAC pendiente): falta que Claude PC local la continúe con la decisión «A»; sin CI visible aún. OBSIDIAN_LUMINA_PROGRESO sin cambios.
+- CI: pc23, a1, b01, lumina y visual-antes-14nov verdes. Último hash visto de nexora-cloud: 16fb9887. No desplegar.
