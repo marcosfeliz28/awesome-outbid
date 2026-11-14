@@ -1,6 +1,6 @@
 # Instalación limpia · informe de Claude PC · 14-nov-2026 (orden 126)
 
-**Estado: EN CURSO (14-nov, 11:17 UTC−04).** Paso 1 hecho: cuenta local de prueba `NexoraPrueba` creada en la VM (Offline account / Limited experience), con una clave temporal que no se guardó en ningún archivo. Windows sigue en la preparación inicial («This might take several minutes»). Pendiente: escritorio, `winver`, copia del EXE, instalación, caja/venta/cierre/respaldo, guardar la VM.
+**Estado: INSTALACIÓN FALLIDA con cuenta estándar (14-nov, 11:47 UTC−04).** Windows 10 Pro 22H2 (build 19045.3803) limpio con cuenta local `NexoraPrueba`. El instalador copió los archivos a `C:Program FilesFitStore POS` (`VERSION` 13), pero terminó con «La instalación no se completó correctamente» al no poder escribir en `C:ProgramDataFitStore POS` (log `instalador.log`). No se abrió Nexora ni se probó caja, venta, cierre ni respaldo.
 
 Rama: `claude-pc/instalacion-limpia-14nov`, desde `origin/nexora-cloud` (ae3c750b). Solo documentos, sin código, sin Render, sin producción, sin datos reales.
 
@@ -35,3 +35,35 @@ Rama: `claude-pc/instalacion-limpia-14nov`, desde `origin/nexora-cloud` (ae3c750
 ## Nota
 
 Este informe no declara la instalación «certificada». Su único resultado verificado es la coincidencia del SHA-256 del EXE.
+
+## Resultado de la instalación (14-nov, 11:44–11:47 UTC−04)
+
+- **Windows:** Windows 10 Pro, versión 22H2, compilación **19045.3803** (`winver`, captura pendiente de guardar).
+- **Cuenta:** `NexoraPrueba`, local, **usuario estándar** (el grupo Administradores aparece como «deny only»).
+- **Instalador:** `Nexora-POS-Setup-0.1.1-prueba.exe`, 141,778,408 bytes, SHA-256 `42F50D6F…C548F`, **igual** en el host y en la VM. Inicio: 11:44:14.
+- **Pantallas del instalador:** usuario dueño (nombre, correo, clave, PIN de 6 dígitos), aviso de respaldos en `C:ProgramDataFitStore POSBackups`, y «Instalar».
+- **Advertencias de Windows:** no apareció SmartScreen ni aviso de editor desconocido durante la ejecución (el EXE se lanzó desde el DVD de datos; no se revisó si Windows lo bloqueó antes).
+- **Fallo:** tras copiar los archivos, el instalador mostró «La configuración de Nexora POS no terminó» y luego «Instalación anulada». Indicó revisar `C:ProgramDataFitStore POSlogsinstalador.log`, que **no existe**.
+- **Causa observada:** la cuenta estándar no puede escribir en `C:ProgramDataFitStore POS` (acceso denegado al crear un archivo de prueba). El instalador no pide elevación ni gestiona cuentas sin permisos de administrador.
+- **Hallazgo de texto:** en las pantallas del instalador aparecen caracteres dañados («dueÃ±o», «contraseÃ±a», «configuraciÃ³n»): codificación UTF-8 leída como ANSI.
+- **Hallazgo de pantalla:** en el paso del correo, el campo recibió texto de más al escribir (portapapeles). Se corrigió; no afecta al instalador.
+
+## Paso a paso (orden 126), estado final
+
+| Paso | Resultado |
+| --- | --- |
+| 1 · Cuenta local | **Hecho** (`NexoraPrueba`, estándar) |
+| 2 · `winver` | **Hecho** (22H2, 19045.3803). Captura no guardada |
+| 3 · Copia, SHA-256, instalación | Copia y SHA **Hecho**; instalación **Falla** |
+| 4 · Caja, venta, cierre, respaldo y restauración | **No probado** (la app no quedó configurada) |
+| 5 · Guardar la VM | **Hecho**: VM en estado Saved, con el instalador fallido y el DVD de datos montado |
+| 6 · Informe | Este documento |
+| 7 · Un solo push y 3 CI | Pendiente de este commit |
+
+## Qué falta para cerrar la prueba
+
+1. Decidir si la cuenta de prueba debe ser **administradora** (cambio de privilegio en la VM) o si se aprueba la elevación (UAC) con una clave de administrador local. Hasta entonces, no se puede declarar la instalación ni la prueba funcional.
+2. Corregir la codificación de los textos del instalador y el comportamiento sin permisos de administrador, en el repositorio de instalador (no se ha tocado aquí).
+3. Repetir la instalación y los pasos 4 y 5.
+
+No se declara la instalación «certificada».
