@@ -58,8 +58,9 @@ function DayFigures({
   const data = query.data;
   const revenue = Number(data?.revenue ?? 0),
     cost = Number(data?.costTotal ?? 0);
-  // DIS-01: sin respuesta no se muestran ceros como si fueran datos.
-  if (!data && query.fetchStatus !== "idle")
+  // DIS-01: sin respuesta no se muestran ceros como si fueran datos. Tras un
+  // error la consulta queda en reposo («idle»), así que se mira el error.
+  if (!data && (query.isError || query.fetchStatus !== "idle"))
     return (
       <div className={"day-figures day-" + tone}>
         <span className="day-title">{title}</span>
