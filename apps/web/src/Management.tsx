@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import { formatMoney, can } from "@fitstore/shared";
+import { marginHint } from "./productMargin";
 import {
   api,
   post,
@@ -249,6 +250,19 @@ export function Catalog() {
     queryKey: ["categories"],
     queryFn: () => api("/categories"),
   });
+  // COM-03: el aviso de margen usa el mínimo de Ajustes (15 % si no se puede leer).
+  const marginSettings = useQuery<any>({
+    queryKey: ["settings"],
+    queryFn: () => api("/settings"),
+    retry: false,
+  });
+  const lowMargin = marginSettings.data?.lowMargin;
+  const withMargin = (list: Field[]) => (values: Record<string, any>) =>
+    list.map((f) =>
+      f.key === "costAvg"
+        ? { ...f, help: marginHint(values.price, values.costAvg, lowMargin) }
+        : f,
+    );
   const [search, setSearch] = useState(""),
     [category, setCategory] = useState(""),
     [create, setCreate] = useState(false),
@@ -465,7 +479,7 @@ export function Catalog() {
       {create && (
         <FormModal
           title="Un nuevo producto para tu tienda"
-          fields={fields}
+          fields={withMargin(fields)}
           onClose={() => setCreate(false)}
           onSubmit={(values) => {
             const { barcode, price, costAvg, service, ...data } = values;
@@ -648,11 +662,11 @@ export function Catalog() {
                   { key: "imageUrl", label: "Foto URL" },
                   { key: "active", label: "Producto activo", type: "checkbox" },
                 ]
-              : [
+              : withMargin([
                   requiredNumber("price", "Precio"),
                   requiredNumber("costAvg", "Costo promedio"),
                   { key: "barcode", label: "Código de barras", required: true },
-                ]
+                ])
           }
           onClose={() => setEditing(null)}
           onSubmit={async (data) => {
@@ -3338,8 +3352,8 @@ export function SalesHistory() {
                     </button>
                     <button
                       onClick={() =>
-                        printPdf("/sales/" + s.id + "/receipt.pdf").catch(
-                          (e) => toast(e.message, true),
+                        printPdf("/sales/" + s.id + "/receipt.pdf").catch((e) =>
+                          toast(e.message, true),
                         )
                       }
                       aria-label={"Reimprimir " + s.number}
