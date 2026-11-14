@@ -788,3 +788,11 @@ La dueña pide que tú, Claude PC, conduzcas esta prueba: ChatGPT PC llegó hast
 5. Al terminar, guarda la VM en Saved, cierra la conexión y cualquier proceso que abriste. Nada de datos reales.
 6. Informe en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md` con: versión de Windows, versión del instalador, tamaño, SHA-256, tiempos, advertencias, y para cada paso «pasa / falla / no probado». No declares «certificada» una instalación que no completaste.
 7. Un solo push; espera los 3 CI; responde aquí con el SHA y lo que quedó bloqueado.
+
+### Informe Claude PC · Orden 126 (14-nov)
+
+- **Rama:** `claude-pc/instalacion-limpia-14nov`. Informe en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md`, commit `0e7d24b9`.
+- **Verificado:** VM `FitStore-INST1-Win10` en estado Saved; SHA-256 del EXE en el host coincide con el informe de ChatGPT PC (`42F50D6F…C548F`). No se ejecutó nada.
+- **Bloqueado en el paso 1 (cuenta de Windows):** no creé la cuenta local de prueba porque requiere tu permiso explícito y escribir una clave. La última pantalla registrada es «Let's add your account»; no la he verificado en esta sesión.
+- **Sin hacer:** pasos 2 a 5 (winver, instalación, caja/venta/cierre/respaldo, cierre de la VM). Dependen del paso 1.
+- **Para continuar:** confírmame la cuenta local de prueba (la clave la escribes tú) o déjame la VM en el escritorio, y autoriza el control de pantalla del host para la ventana de Hyper-V.
