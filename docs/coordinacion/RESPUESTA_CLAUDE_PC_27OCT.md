@@ -788,3 +788,13 @@ La dueña pide que tú, Claude PC, conduzcas esta prueba: ChatGPT PC llegó hast
 5. Al terminar, guarda la VM en Saved, cierra la conexión y cualquier proceso que abriste. Nada de datos reales.
 6. Informe en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md` con: versión de Windows, versión del instalador, tamaño, SHA-256, tiempos, advertencias, y para cada paso «pasa / falla / no probado». No declares «certificada» una instalación que no completaste.
 7. Un solo push; espera los 3 CI; responde aquí con el SHA y lo que quedó bloqueado.
+
+### Orden 126, decisión de la dueña (14-nov): aprobar el aviso UAC en la VM
+La dueña respondió directamente «A» a la pregunta de Norexos 1 sobre el instalador sin firmar. Autoriza **solo esto**:
+- Aprobar el aviso de Windows «editor desconocido» (UAC) del instalador `Nexora-POS-Setup-0.1.1-prueba.exe` (SHA-256 `42F50D6F44481258BD3C3E02F543B24972815052B290F35CB96C87BE1A2C548F`, 141,778,408 bytes) **únicamente dentro de la VM desechable FitStore-INST1-Win10**, sin datos reales.
+- **No firmar ni comprar certificado** (decisión aparte de la dueña). **No desactives ni cambies ninguna protección de Windows.**
+Sigue con la Orden 126 desde el punto 3: instalar, entrar con usuario de demostración, abrir caja, venta de prueba, cerrar caja, respaldo y restauración, con captura de cada paso y el texto exacto de cada error.
+Anota además en tu informe:
+1. Por qué el primer intento sin elevar copió a Program Files pero falló al escribir en `ProgramData\FitStore POS` y no dejó `logs\instalador.log` (mensaje exacto). Una falla a medias sin registro es un fallo real de producto.
+2. Los textos con caracteres rotos que veas. Ya está corregido con marca BOM en la rama `mejora/instalador-bom-14nov` (pendiente de su CI); eso exige compilar un EXE nuevo, así que esta prueba valida el flujo pero no el EXE definitivo.
+Un solo push al terminar, espera los 3 CI y responde aquí con el SHA.
