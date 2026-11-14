@@ -33,3 +33,17 @@ it("el arranque pinta el tema antes de montar React y el almacén ya no fuerza c
   expect(api).toContain("theme: initialTheme(),");
   expect(api).not.toMatch(/getItem\("fitstore-theme"\) \|\| "light"/);
 });
+
+it("MOD-08: el tema se pinta antes del primer dibujo con un script propio, compatible con la política de contenido", () => {
+  const html = readFileSync("apps/web/index.html", "utf8");
+  const init = html.indexOf('<script src="/theme-init.js"></script>');
+  expect(init).toBeGreaterThan(-1);
+  expect(init).toBeLessThan(html.indexOf("/src/main.tsx"));
+  // La política de seguridad solo permite scripts de este sitio: ninguno en línea.
+  expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/);
+  const js = readFileSync("apps/web/public/theme-init.js", "utf8");
+  expect(js).toContain('"fitstore-theme"');
+  expect(js).toContain("prefers-color-scheme: dark");
+  expect(js).toContain("#0b0f19");
+  expect(js).toContain("#7C3AED");
+});
