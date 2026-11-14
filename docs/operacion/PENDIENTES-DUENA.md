@@ -141,3 +141,8 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - Casos: **FS-0000328** (7,500; transferencia Banreservas 7,800, ref 43376075790) y «la otra» (FS-0000302, ya corregida el 26-oct). Revisar si hay más del mismo tipo al verificar las transferencias de octubre.
 - Herramienta ya publicada (30-oct 02:32 UTC): correct-method para cobros/abonos, `payments/:id/unverify`, `payments/:id/move-cash-session`.
 - Falta la confirmación de la dueña para aplicar FS-328, FS-288 (volver a por verificar) y FS-304 (mover el cobro con tarjeta a la caja de Wendy) con las 3 verificaciones.
+
+## 14-nov · Incentivo de Clary (servicio amarrado)
+- **Pregunta para la dueña (Norexos 1 la repite el 30-nov-2026):** ¿Le pagaste a Clary el incentivo de octubre y el de noviembre? Se paga a fin de noviembre junto con el de octubre; después se reinicia cada 30 días.
+- **Necesito de ti:** qué significa «servicio amarrado», el monto de octubre, y la regla para el monto del mes. Hoy el sistema tiene 0 en el incentivo GV de octubre y noviembre.
+- Detalle y lo que se construiría: `docs/coordinacion/PENDIENTES_NOCHE_30OCT.md`, sección «Cola (Q)».

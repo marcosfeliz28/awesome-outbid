@@ -60,7 +60,9 @@ it("DIS-01: las tarjetas de «Hoy» y «Ayer» de Inicio tampoco muestran ceros 
   const src = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
   const i = src.indexOf("function DayFigures");
   const body = src.slice(i, src.indexOf("function DayCard"));
-  expect(body).toMatch(/if \(!data && query\.fetchStatus !== "idle"\)/);
+  expect(body).toMatch(
+    /if \(!data && \(query\.isError \|\| query\.fetchStatus !== "idle"\)\)/,
+  );
   expect(body).toContain("Cargando…");
   expect(body).toContain("Reintentar");
 });

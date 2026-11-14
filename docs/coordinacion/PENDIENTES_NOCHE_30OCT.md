@@ -201,3 +201,14 @@ Cloudflare (cuenta 875b3a7f…): `norexos.net` registrable a US$11,86/año (`.co
 - Integrado sin desplegar: C13 (`953cb7c6`), C1 (`3f4ac58a`), revisión nocturna de ChatGPT nube (`bfa8948f`), Orden 124 para Claude PC.
 - Pendiente: cruzar las dos respuestas de ChatGPT cuando lleguen e integrar el catálogo en `nexora-cloud` después de que los dos suban su Paso 1; revisión de seguridad y mezcla del asistente analista; C11, D5 y D11; lo de dinero, uno por uno (C2 → C3 → C10 → D8 → D6 → C4-2 → D10-3).
 - Fin de semana (decisión de la dueña): instalación limpia de Windows y clave de Render. Hasta entonces no hay despliegue.
+
+## Cola (Q) · pedidos de la dueña por construir
+- **14-nov, incentivo de Clary por «servicio amarrado» (orden directa de la dueña):**
+  1. Se le debe a Clary **el mes pasado (octubre 2026)** por incentivos de servicio amarrado. Registrarlo como deuda pendiente.
+  2. **Su usuario (rol `gv`) debe mostrar en una esquina de la pantalla el monto del incentivo del mes.**
+  3. Ese contador se **paga a fin de este mes (noviembre) junto con el de octubre**; después **se reinicia cada 30 días**.
+  4. **Norexos 1 le pregunta a la dueña si le pagó el incentivo** (primera vez: 30-nov-2026; después, cada ciclo de 30 días).
+  5. «Ponlo en Q para después todo también hacer eso»: queda en esta cola; no se construye todavía.
+  - **Qué falta saber (no se inventa):** (a) qué es exactamente «servicio amarrado» (no aparece definido en el repositorio); (b) el monto que se le debe de octubre; (c) la tarifa o regla para calcular el monto del mes; (d) si «cada 30 días» corre desde el pago de fin de noviembre o desde otra fecha; (e) si el contador lo ve solo ella o también la gerencia.
+  - **Lo que ya existe:** el módulo GV paga un incentivo por pago de curso a quien cobra cada pago (`apps/api/src/gv-incentives.ts`, `docs/sistema/GV.md`). Verificado en el sistema el 14-nov (solo lectura): `GET /gv/incentives` devuelve **0 filas en 2026-10 y en 2026-11**, así que ese incentivo **no existe hoy como dato**; el monto de «servicio amarrado» no se puede sacar del sistema.
+  - **Toca dinero:** sí. Cuando se construya va como los demás cambios de dinero: confirmación de la dueña, verificación ×3 y revisión de dinero. Nunca se paga ni se registra un pago desde el sistema sin su orden.

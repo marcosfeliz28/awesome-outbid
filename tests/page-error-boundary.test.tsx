@@ -36,7 +36,7 @@ it("con fallo muestra un aviso con Reintentar y Volver a Caja, sin el contenido"
 it("App envuelve solo la pantalla activa, con una clave por pantalla", () => {
   const app = readFileSync("apps/web/src/App.tsx", "utf8");
   expect(app).toMatch(
-    /<PageErrorBoundary\s+key=\{page\.split\("\?"\)\[0\]\}\s+page=\{page\}\s+onRetry=\{\(\) => void client\.invalidateQueries\(\)\}/,
+    /<PageErrorBoundary\s+key=\{page\.split\("\?"\)\[0\]\}\s+page=\{page\}\s+onRetry=\{\(\) => void client\.resetQueries\(\)\}/,
   );
   const main = app.indexOf("<main");
   const boundary = app.indexOf("<PageErrorBoundary");

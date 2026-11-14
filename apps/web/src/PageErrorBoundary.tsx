@@ -27,7 +27,7 @@ export class PageErrorBoundary extends Component<
         <button
           type="button"
           onClick={() => {
-            // Una respuesta defectuosa guardada se vuelve a pedir al reintentar.
+            // Una respuesta defectuosa guardada se borra y se vuelve a pedir al reintentar.
             this.props.onRetry?.();
             this.setState({ failed: false });
           }}

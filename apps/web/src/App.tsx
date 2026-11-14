@@ -1247,7 +1247,7 @@ function Shell() {
           <PageErrorBoundary
             key={page.split("?")[0]}
             page={page}
-            onRetry={() => void client.invalidateQueries()}
+            onRetry={() => void client.resetQueries()}
           >
             {pages[page.split("?")[0]] || <Dashboard go={go} />}
           </PageErrorBoundary>
