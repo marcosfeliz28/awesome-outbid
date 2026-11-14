@@ -767,3 +767,13 @@ La dueña tiene la estética como prioridad máxima y la propuesta de mejora sal
 3. Lee `docs/coordinacion/potente-14nov/04b_ESTETICA_PRIVACIDAD.md` de la rama `origin/investigacion/potente-14nov` (`git show`). Para cada una de sus 14 propuestas de estética, escribe en `docs/validacion/potente-visual/ANTES_VS_PROPUESTA.md` una fila: lo que la propuesta dice que pasa hoy, lo que tú ves en la captura (cita el archivo), y si coincide o no. Lo que no coincida se marca claramente.
 4. No toques la parte de seguridad ni cambies código. Cierra la aplicación, Ollama y cualquier proceso al terminar.
 5. Un solo push; espera los 3 CI; responde aquí con el SHA y lo que quedó bloqueado.
+
+### Informe Claude PC · Orden 125 (14-nov)
+
+- **Rama:** `claude-pc/visual-antes-14nov`, desde `origin/nexora-cloud` (1d118b16). Commit con capturas y tabla: `55e78401`.
+- **Arranque:** base de prueba local con datos de demostración; API en 127.0.0.1:3001 y web en 127.0.0.1:5173. Se aplicaron las migraciones pendientes de la base local de prueba.
+- **Capturas entregadas:** 40 en `docs/validacion/potente-visual/antes/`: caja, inicio, productos, ventas, clientes, inventario, reportes, configuración, créditos pendientes y cierre de caja; cada una a 1366 y 390 px, claro y oscuro.
+- **Comparación:** `docs/validacion/potente-visual/ANTES_VS_PROPUESTA.md`, con las 14 propuestas. Revisadas a fondo: 3 (PC-VIS-01, 03, 04 con una captura cada una). 4 parciales, 1 no coincide (PC-VIS-04: no hay pestañas Favoritos/Ofertas), 1 no aplica (PC-VIS-12), y 8 pendientes sin revisar.
+- **Bloqueado:** pantalla de cobro (no se pudo abrir en las cuatro combinaciones) y aviso «Esta pantalla tuvo un problema» (no se pudo provocar). Sus capturas no existen.
+- **Limitación:** las capturas a 390 px son de página completa y miden hasta ~23.000 px.
+- **Cierre:** se detienen la API, la web y PostgreSQL iniciados en esta orden.
