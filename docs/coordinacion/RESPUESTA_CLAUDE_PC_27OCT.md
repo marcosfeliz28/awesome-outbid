@@ -777,3 +777,14 @@ La dueña tiene la estética como prioridad máxima y la propuesta de mejora sal
 - **Bloqueado:** pantalla de cobro (no se pudo abrir en las cuatro combinaciones) y aviso «Esta pantalla tuvo un problema» (no se pudo provocar). Sus capturas no existen.
 - **Limitación:** las capturas a 390 px son de página completa y miden hasta ~23.000 px.
 - **Cierre:** se detienen la API, la web y PostgreSQL iniciados en esta orden.
+
+## Orden 126 (N1, 14-nov): instalación limpia de Windows y prueba del instalador
+La dueña pide que tú, Claude PC, conduzcas esta prueba: ChatGPT PC llegó hasta la pantalla de cuenta de Windows y se detuvo (su regla de pantalla no deja automatizar diálogos de acceso). Es la única pieza que falta para poder desplegar, junto con la clave de Render y 0 cajas abiertas. Rama `claude-pc/instalacion-limpia-14nov`, solo documentos y capturas; sin cambiar código, sin desplegar, sin tocar Render, producción ni datos reales de la tienda.
+**Punto de partida:** lee `docs/validacion/INSTALACION_LIMPIA_14NOV.md` (ya integrado en `nexora-cloud`). La VM **FitStore-INST1-Win10** (Hyper-V, Windows 10 Pro) está guardada en estado Saved, en la pantalla «Let's add your account». El EXE del CI de `1d118b16` está preparado con su hash comprobado (ver ese informe). La VM de Windows 11 está apagada.
+1. Abre la VM. **Cuenta de Windows:** si tus reglas de pantalla te permiten crear una cuenta local de prueba (opción «Offline account», un usuario y una clave simple que no se reutiliza en ningún otro sitio), hazlo y anótalo sin escribir la clave en ningún archivo. **Si tus reglas tampoco lo permiten, no lo eludas:** para y escribe en tu informe exactamente en qué pantalla estás, y la dueña hará ese paso en 1 o 2 minutos antes de que sigas.
+2. Con el escritorio de la VM visible, anota `winver` (versión y compilación) y captura.
+3. Copia a la VM solo el EXE del instalador (sin Node ni el repositorio), comprueba su SHA-256 contra el informe de ChatGPT PC, instala y anota tamaño, tiempo y si Windows avisó de «editor desconocido» (firma). **No elimines ni desactives ninguna advertencia ni ninguna protección de Windows.**
+4. Abre Nexora, entra con un usuario de demostración, **abre caja, haz una venta de prueba, cierra caja, haz un respaldo y restáuralo**. Captura cada paso. Anota si algo falla y el texto exacto del error.
+5. Al terminar, guarda la VM en Saved, cierra la conexión y cualquier proceso que abriste. Nada de datos reales.
+6. Informe en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md` con: versión de Windows, versión del instalador, tamaño, SHA-256, tiempos, advertencias, y para cada paso «pasa / falla / no probado». No declares «certificada» una instalación que no completaste.
+7. Un solo push; espera los 3 CI; responde aquí con el SHA y lo que quedó bloqueado.
