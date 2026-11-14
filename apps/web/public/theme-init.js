@@ -1,13 +1,16 @@
 // MOD-08: pinta el tema antes del primer dibujo. Es un archivo propio porque la
 // política de contenido solo admite scripts de este mismo sitio. Debe coincidir
 // con apps/web/src/theme.ts (clave, colores y regla).
+/* global localStorage, matchMedia, document */
 (function () {
   var theme = "light";
   try {
     var stored = localStorage.getItem("fitstore-theme");
     if (stored === "light" || stored === "dark") theme = stored;
     else if (matchMedia("(prefers-color-scheme: dark)").matches) theme = "dark";
-  } catch (e) {}
+  } catch {
+    // Sin almacenamiento: se usa el tema del equipo o el claro.
+  }
   var root = document.documentElement;
   root.setAttribute("data-theme", theme);
   root.style.colorScheme = theme;
