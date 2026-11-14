@@ -1,6 +1,6 @@
 # Instalación limpia · informe de Claude PC · 14-nov-2026 (orden 126)
 
-**Estado: BLOQUEADO antes del paso 1.** No hay instalación de Nexora dentro de la VM, no hay captura de `winver` ni de caja/venta/cierre/respaldo.
+**Estado: EN CURSO (14-nov, 11:17 UTC−04).** Paso 1 hecho: cuenta local de prueba `NexoraPrueba` creada en la VM (Offline account / Limited experience), con una clave temporal que no se guardó en ningún archivo. Windows sigue en la preparación inicial («This might take several minutes»). Pendiente: escritorio, `winver`, copia del EXE, instalación, caja/venta/cierre/respaldo, guardar la VM.
 
 Rama: `claude-pc/instalacion-limpia-14nov`, desde `origin/nexora-cloud` (ae3c750b). Solo documentos, sin código, sin Render, sin producción, sin datos reales.
 
@@ -18,11 +18,11 @@ Rama: `claude-pc/instalacion-limpia-14nov`, desde `origin/nexora-cloud` (ae3c750
 
 | Paso | Resultado | Motivo |
 | --- | --- | --- |
-| 1 · Cuenta de Windows (cuenta local de prueba) | **No ejecutado** | Crear la cuenta y escribir su clave requiere permiso explícito; no lo tengo. La última pantalla registrada por ChatGPT PC es «Let's add your account». No se ha verificado en esta sesión. |
-| 2 · `winver` y captura | No probado | Depende del paso 1. |
+| 1 · Cuenta de Windows (cuenta local de prueba) | **Hecho** | Cuenta `NexoraPrueba` (offline) creada con permiso de la dueña. Privacidad de OOBE: se aceptaron los valores por defecto en la VM de prueba; Cortana: «Not now»; Edge: «Next now». |
+| 2 · `winver` y captura | Pendiente | Esperando el escritorio. |
 | 3 · Copia del EXE, SHA-256, instalación, tamaño, tiempo, avisos de Windows | No probado | Solo se comprobó el hash en el host. |
 | 4 · Abrir caja, venta, cierre, respaldo y restauración | No probado | Depende de 1 a 3. |
-| 5 · Guardar la VM en Saved y cerrar conexiones | No aplica | La VM sigue en Saved sin cambios desde esta sesión. |
+| 5 · Guardar la VM en Saved y cerrar conexiones | Pendiente | La VM está Running; se guardará al terminar. |
 | 6 · Informe | Este documento | Estado parcial. |
 | 7 · Un solo push y 3 CI | Ver commit en la respuesta | |
 
