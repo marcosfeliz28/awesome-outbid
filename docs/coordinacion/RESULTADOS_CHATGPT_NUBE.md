@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-14 · revisión independiente de estética, facilidad de uso e idiomas
+
+- **Orden, base y rama:** revisión documental solicitada por la dueña desde `origin/nexora-cloud` `ed5826f9f2b680243443239abf76adcc19f3f05b`, en `chatgpt-nube/potente-14nov-b`.
+- **Entrega:** `docs/coordinacion/potente-14nov/RESPUESTA_CHATGPT_NUBE_B.md`. Compara Nexora con 16 POS públicos (globales, latinoamericanos y dominicanos), prioriza la parte visual y propone “Norexos Aura”: actual, avanzada y fácil de leer, con administración profunda y español/inglés completos.
+- **Evidencia:** cada fuente externa tiene URL y fecha; cada propuesta tiene referencia `archivo:línea`, esfuerzo, forma de comprobación y la marca obligatoria `Visto en pantalla en Nexora: no`.
+- **Límite:** no se abrió la aplicación ni se ejecutaron pruebas visuales o funcionales. Las capturas de competidores son material comercial público y sus funciones se atribuyen a sus páginas; no se probaron sus productos.
+- **Autoauditoría:** solo se añadieron este informe y este aviso. No se abrió el catálogo del 13-nov ni respuestas de otras IA, salvo `REVISION_USO_PC_13NOV.md`, exigido expresamente por la orden. No se cambió código, dinero, precios, permisos, Render, producción, base de tienda o credenciales; no hubo mezcla ni despliegue.
+- **Publicación:** se hará un único push. El SHA remoto final y cualquier CI disparado por la rama se comprobarán después sin añadir un commit de autorreferencia.
+
 ## 2026-11-13 · especificaciones de construcción de la primera tanda
 
 - **Orden, base y rama:** nueva cola `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`, ejecutada desde `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560` en `chatgpt-nube/espec-tanda1-13nov`.
