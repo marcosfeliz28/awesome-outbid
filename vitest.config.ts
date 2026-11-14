@@ -94,6 +94,7 @@ export default defineConfig({
       "tests/f2-01-primitivos.test.tsx",
       "tests/page-error-boundary.test.tsx",
       "tests/f2-02-kpi-strip.test.ts",
+      "tests/instalador-codificacion.test.ts",
       "tests/theme-bootstrap.test.ts",
       "tests/cod-pending-search.test.ts",
       "tests/f2-03-pos-visual.test.ts",

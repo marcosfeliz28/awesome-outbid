@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(Mandatory = $true)][string]$InstallDir,
   [Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][string]$InstallerSession,
   [switch]$RecoverInterrupted

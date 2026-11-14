@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $installerRoot = Split-Path -Parent $PSScriptRoot
 foreach ($name in @("FitStoreAPI", "FitStoreWeb")) {

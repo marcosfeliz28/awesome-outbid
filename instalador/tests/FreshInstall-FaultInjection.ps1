@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $installer = Join-Path (Split-Path -Parent $PSScriptRoot) "scripts\Install-FitStore.ps1"
 $source = Get-Content -LiteralPath $installer -Raw
