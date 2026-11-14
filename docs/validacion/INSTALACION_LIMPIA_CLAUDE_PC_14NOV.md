@@ -67,3 +67,10 @@ Este informe no declara la instalación «certificada». Su único resultado ver
 3. Repetir la instalación y los pasos 4 y 5.
 
 No se declara la instalación «certificada».
+
+## Segundo intento (14-nov, 11:49 UTC−04)
+
+- **Verificado:** `NexoraPrueba` **sí es miembro de Administradores** (`net localgroup`), pero corría sin elevación (`IsInRole(Administrator)` = False). El primer fallo era por falta de elevación; no hizo falta cambiar privilegios.
+- **Advertencia de Windows (UAC):** «Do you want to allow this app from an unknown publisher to make changes to your device?» — `Nexora-POS-Setup-0.1.1-prueba.exe`, **Publisher: Unknown**, origen «Hard drive on this computer». Coincide con el hallazgo de que el EXE no está firmado (NotSigned).
+- **Decisión:** no se aprueba el UAC desde esta sesión. Es una advertencia que exige intervención de la persona; no se eluden ni se desactivan protecciones. El aviso queda abierto en la VM para que la dueña decida.
+- **Pendiente para completar:** (1) aprobar o rechazar el UAC; (2) si se aprueba, repetir las pantallas del instalador; (3) probar caja, venta, cierre y respaldo; (4) verificar la firma del EXE antes de distribuirlo.
