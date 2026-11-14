@@ -18,3 +18,4 @@
 | 14-nov | 8 transferencias del sábado: FS-611, 615, 616, 619, 623, 629, 632, 633 (46,020 + 950 de envíos) | Verificadas con extractos BHD ···0015, Popular ···3620 y Banreservas ···5237. |
 | 14-nov | Tarjeta lote 166 GPRO (19,500) y GV lote 015 (5,900) | Cuadran: la diferencia de 1,250 en GPRO es el cobro de Lizbeth FS-613 (1,200 + 50) hecho en el verifón compartido; diferencias de caja aprobadas por la dueña al cierre. |
 | 14-nov | Efectivo: Jade −8,000 (contra entrega FS-618 entregada a la dueña); Wendy −3,500 (entregó el dinero a la dueña, foto, cerrado el mismo día) | Cerrado por la dueña. FS-618 ya con saldo 0 en el sistema. |
+| 14-nov | FS-614 nazareth 1,000 (contra entrega, Lizbeth) | Addison cobró 1,250 con tarjeta en el verifón GPRO (1,000 + 250 de envío de Addison). Cobro registrado (tarjeta **4336, aprob. 451820, voucher 000849). Saldo 0. |
