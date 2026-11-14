@@ -1,0 +1,154 @@
+{
+  "base": "1d118b16e779ab41827d60daee0e59295747f643",
+  "date": "2026-11-14",
+  "control": [
+    {
+      "date": "2026-11-12",
+      "revenue": 9650,
+      "invoices": 3,
+      "costTotal": 5350
+    },
+    {
+      "date": "2026-11-13",
+      "revenue": 5100,
+      "invoices": 17,
+      "costTotal": 3060
+    },
+    {
+      "date": "2026-11-14",
+      "revenue": 0,
+      "invoices": 0,
+      "costTotal": 0
+    }
+  ],
+  "cases": [
+    {
+      "width": 1366,
+      "mode": "cargando",
+      "requests": [
+        {
+          "date": "2026-11-14",
+          "status": null
+        },
+        {
+          "date": "2026-11-13",
+          "status": null
+        },
+        {
+          "date": "2026-11-12",
+          "status": null
+        }
+      ],
+      "upper": "Ventas de hoy\n—\nCargando…\nCajas activas\n1\ncaja abierta\nAlertas de inventario\n—\nCargando…",
+      "yesterday": "AYER\n—\nCargando…",
+      "today": "HOY\n—\nCargando…",
+      "other": "12/11/2026\n—\nCargando…",
+      "retryButtons": 0
+    },
+    {
+      "width": 1366,
+      "mode": "fallida",
+      "requests": [
+        {
+          "date": "2026-11-14",
+          "status": 503
+        },
+        {
+          "date": "2026-11-13",
+          "status": 503
+        },
+        {
+          "date": "2026-11-12",
+          "status": 503
+        },
+        {
+          "date": "2026-11-14",
+          "status": 503
+        },
+        {
+          "date": "2026-11-13",
+          "status": 503
+        },
+        {
+          "date": "2026-11-12",
+          "status": 503
+        }
+      ],
+      "upper": "Ventas de hoy\n—\nNo se pudo cargar\nCajas activas\n1\ncaja abierta\nAlertas de inventario\n—\nNo se pudo cargar",
+      "yesterday": "AYER\nRD$ 0.00\n0 facturas\nCosto RD$ 0.00\nGanancia (venta − costo) RD$ 0.00",
+      "today": "HOY\nRD$ 0.00\n0 facturas\nCosto RD$ 0.00\nGanancia (venta − costo) RD$ 0.00",
+      "other": "12/11/2026\nRD$ 0.00\n0 facturas\nCosto RD$ 0.00\nGanancia (venta − costo) RD$ 0.00",
+      "retryButtons": 0,
+      "retryOutcome": "No se puede pulsar: no aparece el boton al finalizar los dos503"
+    },
+    {
+      "width": 390,
+      "mode": "cargando",
+      "requests": [
+        {
+          "date": "2026-11-14",
+          "status": null
+        },
+        {
+          "date": "2026-11-13",
+          "status": null
+        },
+        {
+          "date": "2026-11-12",
+          "status": null
+        }
+      ],
+      "upper": "Ventas de hoy\n—\nCargando…\nCajas activas\n1\ncaja abierta\nAlertas de inventario\n—\nCargando…",
+      "yesterday": "AYER\n—\nCargando…",
+      "today": "HOY\n—\nCargando…",
+      "other": "12/11/2026\n—\nCargando…",
+      "retryButtons": 0
+    },
+    {
+      "width": 390,
+      "mode": "fallida",
+      "requests": [
+        {
+          "date": "2026-11-14",
+          "status": 503
+        },
+        {
+          "date": "2026-11-13",
+          "status": 503
+        },
+        {
+          "date": "2026-11-12",
+          "status": 503
+        },
+        {
+          "date": "2026-11-14",
+          "status": 503
+        },
+        {
+          "date": "2026-11-13",
+          "status": 503
+        },
+        {
+          "date": "2026-11-12",
+          "status": 503
+        }
+      ],
+      "upper": "Ventas de hoy\n—\nNo se pudo cargar\nCajas activas\n1\ncaja abierta\nAlertas de inventario\n—\nNo se pudo cargar",
+      "yesterday": "AYER\nRD$ 0.00\n0 facturas\nCosto RD$ 0.00\nGanancia (venta − costo) RD$ 0.00",
+      "today": "HOY\nRD$ 0.00\n0 facturas\nCosto RD$ 0.00\nGanancia (venta − costo) RD$ 0.00",
+      "other": "12/11/2026\nRD$ 0.00\n0 facturas\nCosto RD$ 0.00\nGanancia (venta − costo) RD$ 0.00",
+      "retryButtons": 0,
+      "retryOutcome": "No se puede pulsar: no aparece el boton al finalizar los dos503"
+    }
+  ],
+  "valid": [
+    {
+      "width": 1366,
+      "text": "AYER\nRD$ 5,100.00\n17 facturas\nCosto RD$ 3,060.00\nGanancia (venta − costo) RD$ 2,040.00\nHOY\nRD$ 0.00\n0 facturas\nCosto RD$ 0.00\nGanancia (venta − costo) RD$ 0.00\nBuscar otro día\n12/11/2026\nRD$ 9,650.00\n3 facturas\nCosto RD$ 5,350.00\nGanancia (venta − costo) RD$ 4,300.00"
+    },
+    {
+      "width": 390,
+      "text": "AYER\nRD$ 5,100.00\n17 facturas\nCosto RD$ 3,060.00\nGanancia (venta − costo) RD$ 2,040.00\nHOY\nRD$ 0.00\n0 facturas\nCosto RD$ 0.00\nGanancia (venta − costo) RD$ 0.00\nBuscar otro día\n12/11/2026\nRD$ 9,650.00\n3 facturas\nCosto RD$ 5,350.00\nGanancia (venta − costo) RD$ 4,300.00"
+    }
+  ]
+}
