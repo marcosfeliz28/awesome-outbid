@@ -2,6 +2,17 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
+
+- **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
+- **Entrega:** sección 9 de [LINEA_BASE_TANDA1_13NOV.md](../validacion/LINEA_BASE_TANDA1_13NOV.md), [INSTALACION_LIMPIA_14NOV.md](../validacion/INSTALACION_LIMPIA_14NOV.md), 93 PNG web a 1366×900/390×844 y 17 capturas nativas de VM; registros de ejecución y manifiesto de dimensiones/SHA-256. Evidencias anteriores conservadas.
+- **DIS-01, parcial:** Ayer/Hoy/Otro día cargan con «— / Cargando…». Tras los dos 503 por fecha vuelven a RD$0/0 facturas y no aparece Reintentar. El control confirma Ayer RD$5,100/17 facturas y Otro día RD$9,650/3; Hoy RD$0/0 es válido solo con respuesta confirmada.
+- **EST-03, parcial:** aviso, menú, carrito y Volver a Caja permanecen. Tras retirar el JSON mal formado y pulsar Reintentar inmediatamente, salen 0 consultas nuevas de Resumen y sigue el aviso; el carrito permanece idéntico a ambos tamaños.
+- **COM-08, pasa:** nombre con/sin acento, factura, teléfono con guiones con la dueña, contador N de M, vacío y limpieza. La vendedora busca el sufijo visible del teléfono enmascarado, no el número completo que su rol no recibe. 18 escenarios, sin nuevas consultas de lista al escribir.
+- **MOD-08, parcial:** sin tema guardado sigue al sistema; la elección manual se guarda y vence al sistema en ambos tamaños. Sigue habiendo un cuadro claro antes del oscuro a 1366; no se observó un cuadro claro en la secuencia móvil. Se conservaron 49 fotogramas y el registro de pintado.
+- **Windows:** el ISO se montó y Windows 10 Pro se instaló en la VM vacía hasta OOBE; ya no se da por probado que el medio esté dañado. La etapa de cuenta requiere intervención manual conforme a la skill de pantalla. VM Win10 Saved, Win11 Off, conexión cerrada. EXE exacto del CI de este HEAD preparado y con hash comprobado, pero **Nexora aún no instalado/ejecutado**; ventas/caja/respaldo/restauración quedan pendientes.
+- **Cierre/control:** dependencias congeladas, Prisma y build correctos; verificaciones documentales y de capturas. Navegador/API/web/PostgreSQL cerrados y puertos de prueba libres. La aceptación completa de las mejoras y del instalador no se declara concluida.
+
 ## 2026-11-13 · ChatGPT PC · después de DIS-01 y EST-03
 
 - **Base y rama:** `origin/nexora-cloud` `7244c21ad26eb217b47fdc0e930ea14b3c4cc5bc`; `chatgpt-pc/despues-dis01-est03-13nov`. Solo documentos/capturas, sin código ni despliegue.
