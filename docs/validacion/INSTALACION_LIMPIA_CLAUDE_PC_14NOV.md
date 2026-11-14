@@ -74,3 +74,34 @@ No se declara la instalación «certificada».
 - **Advertencia de Windows (UAC):** «Do you want to allow this app from an unknown publisher to make changes to your device?» — `Nexora-POS-Setup-0.1.1-prueba.exe`, **Publisher: Unknown**, origen «Hard drive on this computer». Coincide con el hallazgo de que el EXE no está firmado (NotSigned).
 - **Decisión:** no se aprueba el UAC desde esta sesión. Es una advertencia que exige intervención de la persona; no se eluden ni se desactivan protecciones. El aviso queda abierto en la VM para que la dueña decida.
 - **Pendiente para completar:** (1) aprobar o rechazar el UAC; (2) si se aprueba, repetir las pantallas del instalador; (3) probar caja, venta, cierre y respaldo; (4) verificar la firma del EXE antes de distribuirlo.
+
+## Tercer intento, con la decisión de la dueña (14-nov, 12:05–12:08 UTC−04)
+
+Autorización de la dueña (`16fb9887`): aprobar el aviso UAC **solo** en la VM desechable, sin firmar ni tocar protecciones.
+
+- **Lo que pasó con el UAC:** no lo aprobé yo. En el segundo intento apareció el aviso «unknown publisher» (`Publisher: Unknown`). Al relanzar a las 12:05 el instalador apareció directamente en el asistente, sin aviso UAC visible en mis capturas. **No puedo confirmar quién aprobó la elevación** ni si se mostró un aviso que no vi; queda registrado así.
+- **Proceso residual:** el primer intento (sin elevar, PID 1808, 11:44:18) seguía vivo tras cerrar su ventana y mantenía el bloqueo. Mensaje al relanzar: «Ya hay otra instalación, actualización o desinstalación de Nexora POS en curso. Espera a que termine antes de volver a intentarlo.» Lo detuve (PID 1808) dentro de la VM.
+- **Contraseñas:** «Las contraseñas no coinciden» por texto residual del portapapeles; corregido.
+- **Fallo nuevo (exacto):** «Error abriendo archivo para escritura: C:\Program Files\FitStore POS\runtime\postgresql\bin\icudt77.dll. Presione abortar para anular la instalación, reintentar para volver a intentar escribir el archivo, u omitir para ignorar este archivo.» Reintentar falló igual. Al abortar: «Instalación Anulada — No pudo escribirse: …icudt77.dll».
+- **Causa probable (no confirmada del todo):** hay procesos `postgres` y `pg_ctl` (PID 7716, padre `services.exe`) ejecutándose desde la carpeta de instalación, que bloquean los DLL. Sin elevación no pude leer la ruta del ejecutable ni el nombre del servicio. Hace falta una sesión elevada para confirmarlo y limpiarlo; no lo hice, porque es una acción distinta de la autorizada.
+
+## Fallos y textos (acumulado)
+
+| # | Dónde | Texto exacto / síntoma | Causa observada |
+| --- | --- | --- | --- |
+| 1 | Primer intento, sin elevar | «La configuración de Nexora POS no terminó. Los datos existentes no se borraron. Revisa: C:\ProgramData\FitStore POS\logs\instalador.log» | Acceso denegado a `ProgramData\FitStore POS` (confirmado con escritura de prueba). **Sin log**: la carpeta no se podía escribir, así que el propio registro de error no se creó. Falla a medias: archivos copiados a `Program Files`. |
+| 2 | Segundo intento | «Ya hay otra instalación… en curso» | Proceso residual del intento 1 (PID 1808). |
+| 3 | Tercer intento | «Error abriendo archivo para escritura … icudt77.dll» → «Instalación Anulada» | Probablemente PostgreSQL del instalador en ejecución (ver arriba). |
+
+## Textos con caracteres rotos (codificación UTF-8 leída como ANSI)
+
+Observados en pantallas del instalador: «dueÃ±o», «contraseÃ±a», «Repetir contraseÃ±a», «guÃ¡rdalas», «dÃ­gitos», «conservarÃ¡n 30 dÃ­as», «Respaldos automÃ¡ticos», «configuraciÃ³n», «instalaciÃ³n», «Ya hay otra instalaciÃ³n, actualizaciÃ³n o desinstalaciÃ³n», «Ã³». La dueña indicó que la corrección (marca BOM) está en `mejora/instalador-bom-14nov`, pendiente de su CI; esta prueba **no valida el EXE definitivo**.
+
+## Lo que no se probó
+
+Caja, venta de prueba, cierre de caja, respaldo y restauración: **no probados**, porque la app no llegó a instalarse.
+
+## Estado
+
+- VM `FitStore-INST1-Win10`: detenida tras el aborto y guardada en Saved (con los archivos parciales de `Program Files`).
+- Para completar: sesión elevada para confirmar y detener los procesos `postgres`/`pg_ctl`, y después repetir la instalación. Cualquier paso de elevación debe aprobarlo la dueña.
