@@ -97,3 +97,12 @@ Norexos 1 construirá estas siete, en este orden. Para cada una, en `docs/valida
 6. **DIS-02** Cobro: escribe un pago en la ventana de cobro y ciérrala con Escape y con un clic fuera; anota qué se pierde.
 7. **EFI-01** Después de cobrar: mide en la pestaña de red del navegador qué peticiones salen justo después de finalizar una venta (cuántas, cuáles y cuántos KB).
 Si algo no se puede reproducir, dilo y por qué; no lo fuerces. Cuando Norexos 1 avise que una mejora está en `nexora-cloud`, repites los mismos pasos y registras «después», con capturas.
+
+## Cola 14-nov — N1: comprobar en pantalla lo ya integrado
+Rama `chatgpt-pc/despues3-14nov`, solo documentos y capturas; sin cambiar código ni desplegar. Cierra navegadores y procesos al terminar cada punto. Reporta en `RESULTADOS_CHATGPT.md`.
+Comprueba con la aplicación en local, a 1366 px y a 390 px, y registra en `docs/validacion/LINEA_BASE_TANDA1_13NOV.md` con capturas:
+1. **DIS-01 y EST-03 (correcciones):** las tarjetas «Ayer», «Hoy» y de otro día en Inicio muestran «—» y «Cargando…», o «No se pudo cargar» con Reintentar, en vez de ceros; «Reintentar» en el aviso de pantalla con problema vuelve a pedir los datos antes de dibujar de nuevo.
+2. **COM-08:** en Créditos pendientes, el campo «Buscar por cliente, factura o teléfono» (nombre con y sin acento, factura, teléfono con guiones); «N de M en los resultados cargados» y «No hay coincidencias».
+3. **MOD-08:** con el equipo en modo oscuro y sin tema guardado, al recargar arranca oscuro y sin destello claro; el botón de luna o sol guarda la elección y gana sobre el sistema.
+4. **Instalación limpia de Windows 10/11** (la pendiente del fin de semana): si el ISO sigue dañado, dilo y para; no la repitas sin avisar. Sin esta prueba no hay despliegue.
+Nota: en tus mensajes y documentos evita la palabra «seguridad» en los títulos; el filtro de ChatGPT saltó el 13-nov.

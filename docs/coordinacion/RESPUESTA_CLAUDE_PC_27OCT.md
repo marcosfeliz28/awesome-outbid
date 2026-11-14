@@ -759,3 +759,11 @@ ChatGPT nube comprobó tus 5 guías contra el código (`docs/coordinacion/RESULT
 4. Puedes corregir a mano o con la cola local; lo que cuenta es el respaldo de cada paso. Los scripts de cola y Ollama siguen siendo tuyos.
 5. `claude-pc/cola2-26oct` y `claude-pc/fix-lint-cola2-12nov`: no sigas trabajando en ellas (820 commits de retraso; sus scripts ya están en `nexora-cloud`). No las borres.
 6. Un solo push, 3 CI verdes, y responde aquí con el SHA. Cierra Ollama y procesos al terminar.
+
+## Orden 125 (N1, 14-nov): ver Norexos funcionando y dejar el «antes» visual
+La dueña tiene la estética como prioridad máxima y la propuesta de mejora salió solo de leer código y portadas de marketing: nadie ha visto la aplicación funcionando. Tú puedes. Rama `claude-pc/visual-antes-14nov`, solo documentos y capturas; sin cambiar código, sin gastar, sin desplegar. Sin datos reales: base de prueba y datos de demostración.
+1. `git fetch` y crea la rama desde `origin/nexora-cloud`. Arranca la aplicación en local con datos de demostración.
+2. Captura las 12 pantallas más usadas (Caja/POS, Cobro, Inicio, Productos, Créditos pendientes, Ventas, Clientes, Inventario, Reportes, Cierre de caja, Configuración, el aviso de «Esta pantalla tuvo un problema» si lo puedes provocar) a **1366 px y a 390 px, en modo claro y en modo oscuro**, en `docs/validacion/potente-visual/antes/`.
+3. Lee `docs/coordinacion/potente-14nov/04b_ESTETICA_PRIVACIDAD.md` de la rama `origin/investigacion/potente-14nov` (`git show`). Para cada una de sus 14 propuestas de estética, escribe en `docs/validacion/potente-visual/ANTES_VS_PROPUESTA.md` una fila: lo que la propuesta dice que pasa hoy, lo que tú ves en la captura (cita el archivo), y si coincide o no. Lo que no coincida se marca claramente.
+4. No toques la parte de seguridad ni cambies código. Cierra la aplicación, Ollama y cualquier proceso al terminar.
+5. Un solo push; espera los 3 CI; responde aquí con el SHA y lo que quedó bloqueado.
