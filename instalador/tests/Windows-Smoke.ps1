@@ -1,4 +1,4 @@
-param([string]$InstallDir)
+﻿param([string]$InstallDir)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
