@@ -805,3 +805,13 @@ La dueña pide que tú, Claude PC, conduzcas esta prueba: ChatGPT PC llegó hast
 - **Hallazgos:** textos con caracteres dañados en el instalador (UTF-8 leído como ANSI); el instalador no contempla cuentas sin permisos de administrador.
 - **Bloqueado:** caja, venta, cierre y respaldo (paso 4) no probados. Falta decidir si la cuenta de prueba es administradora o si se aprueba la elevación; eso cambia la configuración de seguridad de la VM y no lo hice sin tu decisión.
 - **Estado de la VM:** guardada en Saved, con el instalador fallido y el DVD de datos montado. Los CI de `207a79bb` aún no los he verificado.
+
+### Informe Claude PC · Orden 126, tercer intento (14-nov)
+
+- **SHA:** `174f8858` en `claude-pc/instalacion-limpia-14nov`. Informe completo en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md`.
+- **Hecho:** cuenta local `NexoraPrueba`; intento con elevación; proceso residual del intento 1 detenido dentro de la VM; datos de prueba del instalador.
+- **Fallo 1 (sin elevar):** «La configuración de Nexora POS no terminó…» por acceso denegado a `ProgramData\FitStore POS`; no se creó `logs\instalador.log`.
+- **Fallo 2 (tercer intento):** «Error abriendo archivo para escritura: C:\Program Files\FitStore POS\runtime\postgresql\bin\icudt77.dll» → «Instalación Anulada». Probable causa: procesos `postgres`/`pg_ctl` del instalador en ejecución; no confirmado sin elevación.
+- **Textos rotos:** «dueÃ±o», «contraseÃ±a», «guÃ¡rdalas», «dÃ­gitos», «automÃ¡ticos», entre otros.
+- **Bloqueado:** caja, venta, cierre, respaldo y restauración (no probados). Falta una sesión elevada para limpiar los procesos de PostgreSQL y repetir la instalación; eso lo aprueba la dueña. No confirmo quién aprobó la elevación del segundo intento.
+- **Estado:** VM guardada en Saved. CI de `174f8858`: aún sin ejecutar al revisar.
