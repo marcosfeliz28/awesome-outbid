@@ -15,3 +15,5 @@
 | 13-nov | FS-570 angela bello 9,450 | Completivo de un pago que ya nos hicieron (dueña). Verificada. |
 | 13-nov | FS-547 olfi 4,300; FS-548 davelys 3,750; FS-553 marcos 5,500 | Cayeron en cuentas de Génesis (dueña). Verificadas. Cuentan para lo de Génesis → MacGen. |
 | 13-nov | FS-568 Ana Michelle | Cobro registrado por Claude (administración, sin caja): transferencia 2,600 Banreservas 5237 ref 243460062575; depósito 3,050 (envío 250 según chat; 200 de más = mensajero). Saldo 0. |
+| 14-nov | 8 transferencias del sábado: FS-611, 615, 616, 619, 623, 629, 632, 633 (46,020 + 950 de envíos) | Verificadas con extractos BHD ···0015, Popular ···3620 y Banreservas ···5237. |
+| 14-nov | Tarjeta lote 166 GPRO (19,500) y GV lote 015 (5,900) | Cuadran: la diferencia de 1,250 en GPRO es el cobro de Lizbeth FS-613 (1,200 + 50) hecho en el verifón compartido; diferencias de caja aprobadas por la dueña al cierre. |
