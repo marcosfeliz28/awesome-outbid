@@ -33,3 +33,9 @@ Bitácora: `docs/operacion/bitacora-mercancia.jsonl` (una línea por cambio, con
 - Casa solo se mueve con instrucción expresa; cada salida dice su destino (regalo a X / traspaso a Tienda).
 - No tocar lo que la dueña contó o modificó ayer u hoy sin un conteo nuevo suyo.
 - Nunca imprimas credenciales.
+
+## Salidas del sistema: reglas fijas de la dueña (14-nov-2026)
+1. **«Sácalo / sacar del sistema»**: sin preguntas cuando el producto es claro. Tipo `salida`, motivo «salida», orden textual de la dueña, solo almacén Tienda. **No se deja línea en la bitácora** (`git checkout docs/operacion/bitacora-mercancia.jsonl` después). Las entradas, ajustes y notas **sí** se anotan.
+2. **Texto ambiguo = consulta obligatoria.** Si el producto no queda único (p. ej. «iso100 vainilla» sin libras, o varios sabores/tamaños posibles), **antes de mover nada** se le pregunta a la dueña cuál es (libras, sabor, marca). Nunca elegir «el más probable». Vale para entradas, salidas y ventas.
+3. Una foto borrosa que no deja identificar marca o tamaño también obliga a preguntar.
+4. Al mover una salida, leer el stock antes y después; si cambió entre la lectura y la orden (venta en medio), parar y avisar.
