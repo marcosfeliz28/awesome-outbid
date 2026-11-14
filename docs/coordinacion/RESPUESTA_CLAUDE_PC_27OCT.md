@@ -796,3 +796,12 @@ La dueña pide que tú, Claude PC, conduzcas esta prueba: ChatGPT PC llegó hast
 - **Bloqueado en el paso 1 (cuenta de Windows):** no creé la cuenta local de prueba porque requiere tu permiso explícito y escribir una clave. La última pantalla registrada es «Let's add your account»; no la he verificado en esta sesión.
 - **Sin hacer:** pasos 2 a 5 (winver, instalación, caja/venta/cierre/respaldo, cierre de la VM). Dependen del paso 1.
 - **Para continuar:** confírmame la cuenta local de prueba (la clave la escribes tú) o déjame la VM en el escritorio, y autoriza el control de pantalla del host para la ventana de Hyper-V.
+
+### Informe Claude PC · Orden 126 (14-nov, final)
+
+- **Rama y SHA:** `claude-pc/instalacion-limpia-14nov`, último commit `207a79bb`. Informe completo en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md`.
+- **Hecho:** cuenta local `NexoraPrueba` (estándar) creada; `winver` 22H2, build 19045.3803; EXE copiado y SHA-256 igual en host y VM (`42F50D6F…C548F`); instalador lanzado.
+- **Falla:** el instalador copió los archivos a `Program Files`, pero terminó con «Instalación anulada» porque la cuenta estándar no puede escribir en `C:\ProgramData\FitStore POS` (acceso denegado; no existe `instalador.log`).
+- **Hallazgos:** textos con caracteres dañados en el instalador (UTF-8 leído como ANSI); el instalador no contempla cuentas sin permisos de administrador.
+- **Bloqueado:** caja, venta, cierre y respaldo (paso 4) no probados. Falta decidir si la cuenta de prueba es administradora o si se aprueba la elevación; eso cambia la configuración de seguridad de la VM y no lo hice sin tu decisión.
+- **Estado de la VM:** guardada en Saved, con el instalador fallido y el DVD de datos montado. Los CI de `207a79bb` aún no los he verificado.
