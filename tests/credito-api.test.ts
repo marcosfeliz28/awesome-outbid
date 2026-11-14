@@ -814,14 +814,34 @@ describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día
     expect(numbers(beforeNow)).toContain(now.number);
     // Devolución hoy de 1 de 4 unidades de la venta del mes anterior.
     const item = await db.saleItem.findFirst({ where: { saleId: old.id } });
-    const ret = await request("/returns", adminA.token, {
-      operationId: randomUUID(),
-      saleId: old.id,
-      cashSessionId: adminA.cash.id,
-      reason: "QA sincronía opción A",
-      refundMethod: "credit_note",
-      items: [{ saleItemId: item.id, qty: 1, restock: true }],
+    // La venta del mes anterior se envejece al día 15; según el día del mes
+    // pasa de los 30 días del plazo normal de devolución (el 14-nov-2026 a las
+    // 16:00 UTC empezó a fallar). Se amplía el plazo solo durante esta devolución.
+    const storedSettings = await db.settings.findUniqueOrThrow({
+      where: { id: "main" },
     });
+    await db.settings.update({
+      where: { id: "main" },
+      data: {
+        data: { ...(storedSettings.data as any), returnDays: 365 },
+      },
+    });
+    let ret: any;
+    try {
+      ret = await request("/returns", adminA.token, {
+        operationId: randomUUID(),
+        saleId: old.id,
+        cashSessionId: adminA.cash.id,
+        reason: "QA sincronía opción A",
+        refundMethod: "credit_note",
+        items: [{ saleItemId: item.id, qty: 1, restock: true }],
+      });
+    } finally {
+      await db.settings.update({
+        where: { id: "main" },
+        data: { data: storedSettings.data as any },
+      });
+    }
     expect(ret.status, JSON.stringify(ret.body)).toBeLessThan(300);
     await db.saleReturn.updateMany({
       where: { saleId: old.id },
