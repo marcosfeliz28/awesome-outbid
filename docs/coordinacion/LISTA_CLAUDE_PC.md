@@ -89,3 +89,4 @@ LISTA: claude-pc/mcp-recomendados a6e009f9 (orden 118 punto 1, versiones fijas e
 LISTA: claude-pc/cola-salida-externa 632baf70
 LISTA: claude-pc/salida-revision-2 c02b71df
 LISTA: claude-pc/ayuda-local-12nov d10819d1
+LISTA: claude-pc/visual-antes-14nov 4d3d09eb
