@@ -282,3 +282,10 @@ La carrera requiere que, al mismo tiempo, termine con éxito un cambio o restabl
   y diff limitado a documentos. Sin `apps/**`, lógica, dinero, precios, DIS-02,
   EFI-01, VM, producción, Render, credenciales, mezcla o despliegue.
 - **Cierre remoto:** SHA final y tres CI se registran tras el único push.
+- **Primer CI:** `43766515257` falló en `pnpm check` por globales de navegador
+  no declarados en `capturar.mjs` (`document`, `window`, `getComputedStyle`,
+  `URL`) y `process` declarado sin uso. La corrección no cambia las maquetas:
+  ESLint focal pasó y dos generaciones consecutivas de las 18 capturas dieron
+  hashes idénticos después de esperar la carga de fuentes. Tras generar Prisma
+  localmente, `pnpm check` pasó con 123 archivos/1,067 pruebas, typecheck, lint
+  y builds web/API (1 archivo/10 pruebas omitidos).

@@ -319,3 +319,10 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
   No hubo mezcla, despliegue ni acceso a Render, producción, base o credenciales.
 - **Publicación y CI:** el SHA remoto final y `verify`, `windows-installer` y
   `render-images` se comprueban después del único push permitido.
+- **Corrección del primer CI:** el run `43766515257` detuvo `verify` en ESLint
+  porque `capturar.mjs` no declaraba los globales del navegador usados dentro
+  de `page.evaluate` y declaraba `process` sin usar. Se corrigió solo la cabecera
+  de globales y se esperó `document.fonts.ready` para capturas deterministas.
+  ESLint focal pasó; dos reproducciones consecutivas produjeron hashes idénticos.
+  Tras generar el cliente Prisma local, `pnpm check` pasó: typecheck, ESLint,
+  123 archivos/1,067 pruebas, builds web/API (1 archivo/10 pruebas omitidos).

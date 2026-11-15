@@ -1,4 +1,4 @@
-/* global console, process */
+/* global console, URL, document, getComputedStyle, window */
 import { mkdir, readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
@@ -52,6 +52,7 @@ async function capture({ pageSpec, viewport, theme, depth, filename }) {
   });
   const page = await context.newPage();
   await page.goto(`${baseUrl}/${pageSpec.file}`);
+  await page.evaluate(() => document.fonts.ready);
   if (!depth) {
     await page.evaluate(() => {
       document.body.className = "";
