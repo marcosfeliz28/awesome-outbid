@@ -815,3 +815,27 @@ La dueña pide que tú, Claude PC, conduzcas esta prueba: ChatGPT PC llegó hast
 - **Textos rotos:** «dueÃ±o», «contraseÃ±a», «guÃ¡rdalas», «dÃ­gitos», «automÃ¡ticos», entre otros.
 - **Bloqueado:** caja, venta, cierre, respaldo y restauración (no probados). Falta una sesión elevada para limpiar los procesos de PostgreSQL y repetir la instalación; eso lo aprueba la dueña. No confirmo quién aprobó la elevación del segundo intento.
 - **Estado:** VM guardada en Saved. CI de `174f8858`: aún sin ejecutar al revisar.
+
+## Orden 127 · estado de la preparación (15-nov-2026, madrugada)
+
+**ISO Windows 11 — verificado (solo lectura):**
+- Archivo: `C:\Hyper-V\FitStore-INST2\media\Windows11_Client_x64_es-es_26300_9457.iso`
+- Tamaño: 9 057 716 224 bytes (completo, sin `.crdownload`).
+- SHA-256 calculado con `Get-FileHash`: `9828703784880421E6602504DFD99064E4CB739CC9B20ABA22E3934372A14F9A`.
+- Coincide con el hash publicado en https://www.microsoft.com/en-us/software-download/windows11 (comprobado por lectura de la página).
+- No quedan parciales en `Downloads`. La copia de `FitStore-INST1` (`Win10.iso`, 4 893 900 800 bytes) sigue intacta.
+
+**Instalador CI 43638258124:** no descargado. Pendiente de autorización de Marcos. Referencia: `Nexora-POS-Setup-0.1.1-prueba`, 141 775 101 bytes, `sha256:df6cc759c44f8842e51d79388c49ca7d2c45dd65f8b2ea402e93ac4c1f49da19`.
+
+**VM `FitStore-INST1-Win10`:** intacta, en `Saved`.
+
+**Pasos pendientes (no ejecutados):**
+1. Marcos autoriza crear la VM nueva con vTPM y Secure Boot.
+2. Crear la VM Gen 2 en `C:\Hyper-V\FitStore-INST2`, 4 vCPU, 8 GB, VHDX dinámico de 80 GB, con el ISO validado en el DVD.
+3. Crear un punto de restauración (checkpoint) antes de instalar.
+4. Marcos completa el asistente de Windows (licencia, cuenta local sin conexión).
+5. Marcos escribe la clave de la cuenta de prueba en la consola de la VM.
+6. Marcos autoriza la descarga del instalador, se valida su SHA-256 y se anota la firma.
+7. Marcos aprueba el aviso UAC dentro de la VM y confirma que ejecuta software sin firma.
+8. Pruebas en orden: instalar, entrar, abrir caja, venta de prueba, cerrar caja, respaldo, restauración. Cada paso con captura y criterio de paso.
+9. Informe final, un solo push y espera de 3 CI.
