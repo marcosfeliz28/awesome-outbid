@@ -789,7 +789,6 @@ La dueña pide que tú, Claude PC, conduzcas esta prueba: ChatGPT PC llegó hast
 6. Informe en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md` con: versión de Windows, versión del instalador, tamaño, SHA-256, tiempos, advertencias, y para cada paso «pasa / falla / no probado». No declares «certificada» una instalación que no completaste.
 7. Un solo push; espera los 3 CI; responde aquí con el SHA y lo que quedó bloqueado.
 
-<<<<<<< HEAD
 ### Orden 126, decisión de la dueña (14-nov): aprobar el aviso UAC en la VM
 La dueña respondió directamente «A» a la pregunta de Norexos 1 sobre el instalador sin firmar. Autoriza **solo esto**:
 - Aprobar el aviso de Windows «editor desconocido» (UAC) del instalador `Nexora-POS-Setup-0.1.1-prueba.exe` (SHA-256 `42F50D6F44481258BD3C3E02F543B24972815052B290F35CB96C87BE1A2C548F`, 141,778,408 bytes) **únicamente dentro de la VM desechable FitStore-INST1-Win10**, sin datos reales.
@@ -799,7 +798,6 @@ Anota además en tu informe:
 1. Por qué el primer intento sin elevar copió a Program Files pero falló al escribir en `ProgramData\FitStore POS` y no dejó `logs\instalador.log` (mensaje exacto). Una falla a medias sin registro es un fallo real de producto.
 2. Los textos con caracteres rotos que veas. Ya está corregido con marca BOM en la rama `mejora/instalador-bom-14nov` (pendiente de su CI); eso exige compilar un EXE nuevo, así que esta prueba valida el flujo pero no el EXE definitivo.
 Un solo push al terminar, espera los 3 CI y responde aquí con el SHA.
-=======
 ### Informe Claude PC · Orden 126 (14-nov)
 
 - **Rama:** `claude-pc/instalacion-limpia-14nov`. Informe en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md`, commit `0e7d24b9`.
@@ -850,4 +848,3 @@ Un solo push al terminar, espera los 3 CI y responde aquí con el SHA.
 7. Marcos aprueba el aviso UAC dentro de la VM y confirma que ejecuta software sin firma.
 8. Pruebas en orden: instalar, entrar, abrir caja, venta de prueba, cerrar caja, respaldo, restauración. Cada paso con captura y criterio de paso.
 9. Informe final, un solo push y espera de 3 CI.
->>>>>>> origin/claude-pc/instalacion-limpia-14nov
