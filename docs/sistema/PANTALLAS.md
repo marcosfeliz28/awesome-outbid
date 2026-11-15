@@ -10,7 +10,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | --- | ---------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------ |
 | 1   | **Mercancía**                | `inventory:write`                                       | `Merchandise` (`apps/web/src/Merchandise.tsx:279`)                       | 197                |
 | 2   | **Resumen**                  | `reports:read`                                          | `Dashboard` (`apps/web/src/Dashboard.tsx:127`)                           | 203                |
-| 3   | **Punto de venta**           | `sale:write`                                            | `POS` (`apps/web/src/POS.tsx:194`)                                       | 209                |
+| 3   | **Punto de venta**           | `sale:write`                                            | `POS` (`apps/web/src/POS.tsx:195`)                                       | 209                |
 | 4   | **Ventas**                   | `sale:write`                                            | `SalesHistory` (`apps/web/src/Management.tsx:3221`)                      | 213                |
 | 5   | **Solicitudes de anulación** | `sale:write`                                            | `VoidRequests` (`apps/web/src/VoidRequests.tsx:16`)                      | 216                |
 | 6   | **Conciliar transferencias** | `*`                                                     | `TransferReconciliation` (`apps/web/src/TransferReconciliation.tsx:28`)  | 222                |
@@ -43,7 +43,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1056-1086`):
 
 ## Punto de venta (Caja registradora)
 
-- **Etiqueta:** «Punto de venta». **Permiso:** `sale:write`. **Componente:** `apps/web/src/POS.tsx:194`.
+- **Etiqueta:** «Punto de venta». **Permiso:** `sale:write`. **Componente:** `apps/web/src/POS.tsx:195`.
 - **Qué hace:** catálogo de tarjetas a la izquierda, carrito «Venta actual» a la derecha, botón «Cobrar».
 - **Flujo corto:** abrir caja (pantalla «Caja») → elegir cliente → un clic en la tarjeta del producto (o escanear/buscar) → descuentos si aplican → «Cobrar» → «Agregar pago» → «Finalizar venta» → «Imprimir recibo».
 - Detalle completo: `FLUJO_CAJA_POS.md`.
@@ -77,7 +77,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1056-1086`):
 ## Envíos del mensajero
 
 - **Etiqueta:** «Envíos del mensajero». **Permiso:** `*`. **Componente:** `apps/web/src/CourierPayouts.tsx:26`.
-- **Qué hace:** lista los envíos pendientes de pago al mensajero («Pendientes», `:175`), se seleccionan y se pulsa «Marcar como pagado» (`:219-226`); «Historial de pagados» (`:230`). El envío va aparte del total de la venta: no es venta, ganancia ni ITBIS (`apps/web/src/POS.tsx:3004-3008`).
+- **Qué hace:** lista los envíos pendientes de pago al mensajero («Pendientes», `:175`), se seleccionan y se pulsa «Marcar como pagado» (`:219-226`); «Historial de pagados» (`:230`). El envío va aparte del total de la venta: no es venta, ganancia ni ITBIS (`apps/web/src/POS.tsx:3005-3009`).
 
 ## Productos
 
@@ -112,7 +112,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1056-1086`):
 
 ## Promociones
 
-- **Etiqueta:** «Promociones». **Permiso:** `promotions:write`. **Componente:** `Promotions`, `apps/web/src/Management.tsx:2460`. Título: «Dale una nueva oportunidad» (`:2451`). Pestañas «Candidatos a liquidación» y «Mis promociones» (`:2475-2485`); botón «Nueva promoción». Tipos de promoción que entiende la caja: porcentaje, monto, precio especial, NxM y segunda a mitad (`apps/web/src/POS.tsx:118-147`). **La caja aplica el descuento; no se cambia el precio del producto.**
+- **Etiqueta:** «Promociones». **Permiso:** `promotions:write`. **Componente:** `Promotions`, `apps/web/src/Management.tsx:2460`. Título: «Dale una nueva oportunidad» (`:2451`). Pestañas «Candidatos a liquidación» y «Mis promociones» (`:2475-2485`); botón «Nueva promoción». Tipos de promoción que entiende la caja: porcentaje, monto, precio especial, NxM y segunda a mitad (`apps/web/src/POS.tsx:119-148`). **La caja aplica el descuento; no se cambia el precio del producto.**
 
 ## Reportes
 

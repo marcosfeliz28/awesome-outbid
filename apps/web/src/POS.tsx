@@ -1,3 +1,4 @@
+import { refreshAfterSale } from "./postSaleRefresh";
 import {
   memo,
   useCallback,
@@ -2357,7 +2358,7 @@ function Checkout({
       // Impresión automática del recibo (Ajustes).
       if (config?.autoPrintReceipt) printSoon();
       clearCart();
-      await client.invalidateQueries();
+      refreshAfterSale(client);
     } catch (e: any) {
       // Un precio o una promoción cambiaron en otro equipo: antes la única
       // salida era quitar y volver a agregar la línea. Se leen catálogo,
