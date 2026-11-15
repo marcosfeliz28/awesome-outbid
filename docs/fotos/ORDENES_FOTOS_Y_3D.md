@@ -84,3 +84,18 @@ Abre las vistas 3D y 2.5D en el navegador de la laptop. Anota si el desplazamien
 1. Hoy: ChatGPT nube lote 1 (filas 1–60) + B1. Claude PC: instalación con la dueña.
 2. Cada lote: ChatGPT nube → ChatGPT PC → Claude nube (conteo) → dueña.
 3. B2 en paralelo con los lotes 2–5; B3 cuando B2 esté listo.
+
+---
+
+## Decisiones de la dueña sobre el diseño (15-nov, chat con Norexos 1)
+1. **Violeta más oscuro:** `#6d28d9` como color de marca y de acciones.
+2. **Cobrar en verde** (el resto de acciones en violeta). El verde debe cumplir contraste AA con su texto.
+3. **Inicio (Dirección) en 3D; Caja, Mercancía y lo demás en 2.5D.**
+4. **Tema por defecto:** delegado a Norexos 1 y Dot. Decisión: **sigue el tema del equipo** (claro u oscuro del sistema) hasta que la persona elija uno, como ya hace la app real desde MOD-08. Motivo: ya está construido y probado, y respeta el equipo de cada cajera.
+
+### Orden actualizada para ChatGPT nube (B1 + B2), rama `chatgpt-nube/maquetas-15nov`, solo `docs/`
+- Aplicar 1 y 2 en las 3 maquetas.
+- B1: 6 capturas en **modo claro** (Caja, Dirección, Mercancía × 1440×900 y 390×844), ventana real, no página completa.
+- B2: **Dirección en 3D** (claro y oscuro) y **Caja y Mercancía en 2.5D** (claro y oscuro): 6 vistas, 12 capturas (1440 y 390).
+- Cumplir la matriz de aceptación del chat de Norexos 1 (15-nov): cifra escrita en cada barra, «menos movimiento» quieto, solo CSS (sin WebGL), foco visible, imágenes genéricas, contraste AA del verde y del violeta nuevo.
+- Entregar con conteo: «6 claras + 12 de B2 = 18 capturas».
