@@ -220,3 +220,14 @@ La carrera requiere que, al mismo tiempo, termine con éxito un cambio o restabl
 ### Estado
 
 `pnpm check` terminó con código 0: typecheck, ESLint, **112 archivos de prueba pasaron y 1 se omitió; 985 pruebas pasaron y 10 se omitieron**, y los builds web/API terminaron correctamente. Vite emitió la advertencia ya conocida por un chunk mayor de 500 kB; no es un fallo y esta auditoría no modifica el bundle. La rama solo se declarará lista después del push y de comprobar `verify`, `windows-installer` y `render-images` sobre el último commit.
+
+## 2026-11-15 · A2 fotos de suplementos · lote 1
+
+- **Orden y rama:** A2 de `docs/fotos/ORDENES_FOTOS_Y_3D.md`, rama `chatgpt-nube/fotos-suplementos`, base `origin/nexora-cloud` `944e3be93a37bf585545754945654776e7a3430b`.
+- **Entrada confirmada:** recibí 261 filas: 221 de 56 marcas y 40 sin marca. Este lote cubre, sin saltos ni reordenamiento, las filas 1–60.
+- **Entrega:** `docs/fotos/candidatas_lote1.csv`. Solo contiene enlaces públicos; no descargué ni incorporé imágenes al repositorio.
+- **Conteo:** **Lote 1: filas 1–60 = 60 recibidas; encontradas 37, dudosas 18, sin foto 5; 37+18+5 = 60.**
+- **Criterio conservador:** descarté como `sin foto` las filas 15 y 16 porque la búsqueda devolvió BCAA 6000 en vez de BCAA 5000; la 37 porque la fuente decía 5.78 lb en vez de 5.83 lb; y las 45 y 52 porque no apareció una coincidencia verificable. La fila 53 queda `dudosa` porque la lista dice `Forsage` y las fuentes encontradas dicen `Forzagen`.
+- **Regresión documental:** antes del trabajo, `test -f docs/fotos/candidatas_lote1.csv` terminaba con código 1. Después, el validador CSV comprobó 13 columnas, 60 filas, coincidencia exacta de `n`, `sku` y `nombre` contra la lista original, estados permitidos, solo URLs HTTPS y suma 60, sin errores.
+- **Autoauditoría:** no hay URL de imagen duplicada entre productos. Una fila se marca `encontrada` solo cuando tiene principal y respaldo distintos; si el índice público no informó ancho y alto completos, los campos desconocidos quedan vacíos y la nota lo declara. La revisión visual 100 % corresponde a ChatGPT PC; este lote no la sustituye.
+- **Límites:** no cambié nombres, precios, existencias, dinero, código de aplicación ni datos del sistema; no usé credenciales, no desplegué y no toqué Render, producción o la base de la tienda. Los tres CI se comprobarán sobre el SHA final después del único push.
