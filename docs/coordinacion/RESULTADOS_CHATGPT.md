@@ -282,3 +282,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - En `chatgpt-nube/fotos-suplementos` preparé `docs/fotos/candidatas_lote1.csv` para las filas 1–60 de una lista confirmada de 261 suplementos. Resultado: **37 encontradas, 18 dudosas y 5 sin foto; total 60**.
 - La comprobación previa falló porque el CSV no existía. Después, el validador confirmó 13 columnas, 60 identidades `n/sku/nombre` exactas, estados válidos, URLs HTTPS y suma correcta. `git diff --check` forma parte del control final.
 - Solo se registran enlaces públicos; no se descargaron imágenes ni se cambió aplicación, precios, existencias, dinero, producción, Render, base o credenciales. El detalle de descartes y la autoauditoría están en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`. La revisión visual sigue asignada a ChatGPT PC.
+
+## 2026-11-15 · ChatGPT NUBE · A2 fotos de suplementos, lote 2
+
+- Continué la orden A2 vigente con `docs/fotos/candidatas_lote2.csv`, filas 61–120: **33 encontradas, 20 dudosas y 7 sin foto; total 60**. No repetí el lote 1 ni las maquetas.
+- La prueba previa confirmó que el archivo no existía. Después, el validador comprobó 13 columnas, 60 identidades exactas, estados válidos, dos URLs distintas para cada fila encontrada, suma correcta y ninguna URL compartida entre productos.
+- La autoauditoría retiró una imagen de Vanilla Ice Cream que se había asociado también a la fila Vanilla. Solo se registran enlaces; no se descargaron imágenes ni se tocó código, precios, existencias, dinero, producción, Render, base o credenciales. Detalle en `RESULTADOS_CHATGPT_NUBE.md`.
