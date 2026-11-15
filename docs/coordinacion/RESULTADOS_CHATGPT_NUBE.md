@@ -264,3 +264,21 @@ La carrera requiere que, al mismo tiempo, termine con éxito un cambio o restabl
 ### Estado
 
 `pnpm check` terminó con código 0: typecheck, ESLint, **112 archivos de prueba pasaron y 1 se omitió; 985 pruebas pasaron y 10 se omitieron**, y los builds web/API terminaron correctamente. Vite emitió la advertencia ya conocida por un chunk mayor de 500 kB; no es un fallo y esta auditoría no modifica el bundle. La rama solo se declarará lista después del push y de comprobar `verify`, `windows-installer` y `render-images` sobre el último commit.
+
+## 2026-11-15 · B1/B2 · maquetas visuales 3D/2.5D
+
+- **Rama/base:** `chatgpt-nube/maquetas-15nov` sobre
+  `7ba92f4a8bd323c75883888dcca8ec2f31b3554f`.
+- **Resultado:** 18 capturas nuevas de viewport real: seis B1 claras y doce B2
+  clara/oscura a 1440 × 900 y 390 × 844. Dirección usa 3D CSS; Caja y Mercancía
+  usan 2.5D CSS. Se aplicaron violeta `#6d28d9`, Cobrar verde `#047857`, tema
+  inicial del equipo, foco visible, mínimo de 14 px y números escritos en cada
+  barra. No se usó WebGL, Three.js ni imágenes de marcas.
+- **Prueba antes/después:** el verificador nuevo falló primero por la captura B1
+  inexistente `caja-claro-1440.png`; después pasó y confirmó las 18 capturas y
+  los contratos visuales. El capturador reproducible valida estructura, tamaño
+  tipográfico y ausencia de desbordamiento horizontal con movimiento reducido.
+- **Autoauditoría y límites:** revisión visual de seis variantes representativas
+  y diff limitado a documentos. Sin `apps/**`, lógica, dinero, precios, DIS-02,
+  EFI-01, VM, producción, Render, credenciales, mezcla o despliegue.
+- **Cierre remoto:** SHA final y tres CI se registran tras el único push.

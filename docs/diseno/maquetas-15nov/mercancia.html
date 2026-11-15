@@ -6,12 +6,11 @@
     <title>Nexora · Maqueta de Mercancía</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="depth-25d">
     <input
       id="theme-toggle"
       type="checkbox"
       aria-label="Cambiar modo oscuro"
-      checked
     />
     <div class="app-shell">
       <aside class="sidebar">
@@ -213,5 +212,11 @@
         </main>
       </div>
     </div>
+    <script>
+      const themeToggle = document.querySelector("#theme-toggle");
+      themeToggle.checked = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+    </script>
   </body>
 </html>

@@ -6,12 +6,11 @@
     <title>Nexora · Maqueta de Inicio de dirección</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="depth-3d">
     <input
       id="theme-toggle"
       type="checkbox"
       aria-label="Cambiar modo oscuro"
-      checked
     />
     <div class="app-shell">
       <aside class="sidebar">
@@ -117,10 +116,13 @@
                 <span class="pill"><span class="dot"></span>Vista semanal</span>
               </div>
               <div class="chart" aria-label="Gráfico ilustrativo de siete días">
-                <span class="bar"></span><span class="bar"></span
-                ><span class="bar"></span><span class="bar"></span
-                ><span class="bar"></span><span class="bar"></span
-                ><span class="bar"></span>
+                <span class="bar"><span class="bar-value">42</span></span
+                ><span class="bar"><span class="bar-value">58</span></span
+                ><span class="bar"><span class="bar-value">46</span></span
+                ><span class="bar"><span class="bar-value">76</span></span
+                ><span class="bar"><span class="bar-value">65</span></span
+                ><span class="bar"><span class="bar-value">88</span></span
+                ><span class="bar"><span class="bar-value">72</span></span>
               </div>
               <div class="chart-labels">
                 <span>L</span><span>M</span><span>X</span><span>J</span
@@ -193,5 +195,11 @@
         </main>
       </div>
     </div>
+    <script>
+      const themeToggle = document.querySelector("#theme-toggle");
+      themeToggle.checked = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+    </script>
   </body>
 </html>

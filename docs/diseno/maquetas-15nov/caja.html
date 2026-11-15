@@ -6,12 +6,11 @@
     <title>Nexora · Maqueta de Caja</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="depth-25d">
     <input
       id="theme-toggle"
       type="checkbox"
       aria-label="Cambiar modo oscuro"
-      checked
     />
     <div class="app-shell">
       <aside class="sidebar">
@@ -170,7 +169,7 @@
                 <div class="total-line">
                   <span>Total a cobrar</span><strong>RD$ 0.00</strong>
                 </div>
-                <button class="button" style="width: 100%">
+                <button class="button checkout-button" style="width: 100%">
                   Cobrar <span>F12</span>
                 </button>
               </div>
@@ -179,5 +178,11 @@
         </main>
       </div>
     </div>
+    <script>
+      const themeToggle = document.querySelector("#theme-toggle");
+      themeToggle.checked = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+    </script>
   </body>
 </html>

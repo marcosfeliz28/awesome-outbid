@@ -16,6 +16,24 @@ const captures = [
   ["capturas/direccion-oscuro-390.png", 390, 844],
   ["capturas/mercancia-oscuro-1440.png", 1440, 900],
   ["capturas/mercancia-oscuro-390.png", 390, 844],
+  ["capturas/caja-claro-1440.png", 1440, 900],
+  ["capturas/caja-claro-390.png", 390, 844],
+  ["capturas/direccion-claro-1440.png", 1440, 900],
+  ["capturas/direccion-claro-390.png", 390, 844],
+  ["capturas/mercancia-claro-1440.png", 1440, 900],
+  ["capturas/mercancia-claro-390.png", 390, 844],
+  ["capturas/caja-25d-claro-1440.png", 1440, 900],
+  ["capturas/caja-25d-claro-390.png", 390, 844],
+  ["capturas/caja-25d-oscuro-1440.png", 1440, 900],
+  ["capturas/caja-25d-oscuro-390.png", 390, 844],
+  ["capturas/direccion-3d-claro-1440.png", 1440, 900],
+  ["capturas/direccion-3d-claro-390.png", 390, 844],
+  ["capturas/direccion-3d-oscuro-1440.png", 1440, 900],
+  ["capturas/direccion-3d-oscuro-390.png", 390, 844],
+  ["capturas/mercancia-25d-claro-1440.png", 1440, 900],
+  ["capturas/mercancia-25d-claro-390.png", 390, 844],
+  ["capturas/mercancia-25d-oscuro-1440.png", 1440, 900],
+  ["capturas/mercancia-25d-oscuro-390.png", 390, 844],
 ];
 
 const css = await readFile(path.join(root, "styles.css"), "utf8");
@@ -46,6 +64,8 @@ const aaPairs = [
   ["texto oscuro", "#f4f1ff", "#171525"],
   ["texto secundario oscuro", "#b7b3ce", "#171525"],
   ["botón oscuro", "#17162b", "#bba4ff"],
+  ["acción violeta nueva", "#ffffff", "#6d28d9"],
+  ["Cobrar verde", "#ffffff", "#047857"],
 ];
 
 for (const [label, foreground, background] of aaPairs) {
@@ -61,6 +81,18 @@ if (!css.includes("#theme-toggle:checked ~ .app-shell")) {
 }
 if (!css.includes("prefers-reduced-motion: reduce")) {
   failures.push("styles.css debe respetar prefers-reduced-motion");
+}
+if (!css.includes("--brand-action: #6d28d9")) {
+  failures.push("styles.css debe usar el violeta aprobado #6d28d9");
+}
+if (!css.includes("--checkout: #047857")) {
+  failures.push("styles.css debe reservar el verde aprobado para Cobrar");
+}
+if (!css.includes(".depth-3d") || !css.includes(".depth-25d")) {
+  failures.push("styles.css debe declarar variantes 3D y 2.5D");
+}
+if (/getContext\(["']webgl|THREE\.|from\s+["']three/i.test(css)) {
+  failures.push("styles.css no debe depender de WebGL o Three.js");
 }
 
 for (const [file, heading] of pages) {
@@ -83,6 +115,21 @@ for (const [file, heading] of pages) {
   if (!html.includes("Datos de demostración")) {
     failures.push(`${file}: los datos de muestra no están identificados`);
   }
+  if (!html.includes("prefers-color-scheme: dark")) {
+    failures.push(`${file}: el tema inicial no sigue al equipo`);
+  }
+}
+
+const depthByPage = new Map([
+  ["caja.html", "depth-25d"],
+  ["direccion.html", "depth-3d"],
+  ["mercancia.html", "depth-25d"],
+]);
+for (const [file, depth] of depthByPage) {
+  const html = await readFile(path.join(root, file), "utf8");
+  if (!html.includes(`class="${depth}"`)) {
+    failures.push(`${file}: falta la variante ${depth}`);
+  }
 }
 
 for (const [file, expectedWidth, expectedHeight] of captures) {
@@ -97,6 +144,9 @@ for (const [file, expectedWidth, expectedHeight] of captures) {
 }
 
 const direction = await readFile(path.join(root, "direccion.html"), "utf8");
+if ((direction.match(/class="bar-value"/g) ?? []).length !== 7) {
+  failures.push("direccion.html debe escribir la cifra de sus siete barras");
+}
 for (const vagueLabel of ["Tendencia disponible", "Solo con permiso"]) {
   if (direction.includes(vagueLabel)) {
     failures.push(`direccion.html conserva el texto vago: ${vagueLabel}`);
@@ -118,5 +168,5 @@ if (failures.length) {
 }
 
 console.log(
-  "PASS: 3 maquetas, CSS compartido, tema oscuro, contraste AA y texto mínimo de 14 px",
+  "PASS: 3 maquetas, 18 capturas, 3D/2.5D, tema del equipo, contraste AA y texto mínimo de 14 px",
 );

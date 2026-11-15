@@ -296,3 +296,26 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-15 · ChatGPT NUBE · B1/B2 de maquetas visuales
+
+- **Rama y base:** `chatgpt-nube/maquetas-15nov`, actualizada sobre
+  `origin/nexora-cloud` `7ba92f4a8bd323c75883888dcca8ec2f31b3554f`.
+- **Entrega:** seis capturas B1 claras y doce B2 clara/oscura: Caja y Mercancía
+  2.5D, Dirección 3D, cada una a 1440 × 900 y 390 × 844. La identidad usa
+  violeta `#6d28d9`, Cobrar usa verde `#047857` y el tema inicial sigue al
+  equipo. La gráfica escribe sus siete valores y las imágenes son siluetas
+  genéricas hechas con CSS.
+- **Regresión:** antes, el verificador terminó con código 1 al no encontrar
+  `capturas/caja-claro-1440.png`. Después exige las 18 capturas, profundidad,
+  tema del equipo, contraste AA y ausencia de WebGL/Three.js, y termina con
+  código 0.
+- **Comprobación visual reproducible:** el capturador usa Chromium con movimiento
+  reducido y valida mínimo de 14 px, un `h1`, un `main` y cero desbordamiento
+  horizontal. Se inspeccionó una variante clara de escritorio y una oscura móvil
+  de cada pantalla.
+- **Autoauditoría:** el diff propio frente a la base se limita a `docs/**`; no
+  cambia `apps/**`, lógica, dinero, precios, DIS-02, EFI-01 ni instalación VM.
+  No hubo mezcla, despliegue ni acceso a Render, producción, base o credenciales.
+- **Publicación y CI:** el SHA remoto final y `verify`, `windows-installer` y
+  `render-images` se comprueban después del único push permitido.
