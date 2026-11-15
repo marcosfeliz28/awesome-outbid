@@ -6826,3 +6826,18 @@ td strong {
     transform: none;
   }
 }
+.discard-notice {
+  border: 1px solid var(--warn, #b45309);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 0 0 12px;
+}
+.discard-notice p {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+.discard-notice div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

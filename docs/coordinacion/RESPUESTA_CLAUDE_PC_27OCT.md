@@ -798,3 +798,53 @@ Anota además en tu informe:
 1. Por qué el primer intento sin elevar copió a Program Files pero falló al escribir en `ProgramData\FitStore POS` y no dejó `logs\instalador.log` (mensaje exacto). Una falla a medias sin registro es un fallo real de producto.
 2. Los textos con caracteres rotos que veas. Ya está corregido con marca BOM en la rama `mejora/instalador-bom-14nov` (pendiente de su CI); eso exige compilar un EXE nuevo, así que esta prueba valida el flujo pero no el EXE definitivo.
 Un solo push al terminar, espera los 3 CI y responde aquí con el SHA.
+### Informe Claude PC · Orden 126 (14-nov)
+
+- **Rama:** `claude-pc/instalacion-limpia-14nov`. Informe en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md`, commit `0e7d24b9`.
+- **Verificado:** VM `FitStore-INST1-Win10` en estado Saved; SHA-256 del EXE en el host coincide con el informe de ChatGPT PC (`42F50D6F…C548F`). No se ejecutó nada.
+- **Bloqueado en el paso 1 (cuenta de Windows):** no creé la cuenta local de prueba porque requiere tu permiso explícito y escribir una clave. La última pantalla registrada es «Let's add your account»; no la he verificado en esta sesión.
+- **Sin hacer:** pasos 2 a 5 (winver, instalación, caja/venta/cierre/respaldo, cierre de la VM). Dependen del paso 1.
+- **Para continuar:** confírmame la cuenta local de prueba (la clave la escribes tú) o déjame la VM en el escritorio, y autoriza el control de pantalla del host para la ventana de Hyper-V.
+
+### Informe Claude PC · Orden 126 (14-nov, final)
+
+- **Rama y SHA:** `claude-pc/instalacion-limpia-14nov`, último commit `207a79bb`. Informe completo en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md`.
+- **Hecho:** cuenta local `NexoraPrueba` (estándar) creada; `winver` 22H2, build 19045.3803; EXE copiado y SHA-256 igual en host y VM (`42F50D6F…C548F`); instalador lanzado.
+- **Falla:** el instalador copió los archivos a `Program Files`, pero terminó con «Instalación anulada» porque la cuenta estándar no puede escribir en `C:\ProgramData\FitStore POS` (acceso denegado; no existe `instalador.log`).
+- **Hallazgos:** textos con caracteres dañados en el instalador (UTF-8 leído como ANSI); el instalador no contempla cuentas sin permisos de administrador.
+- **Bloqueado:** caja, venta, cierre y respaldo (paso 4) no probados. Falta decidir si la cuenta de prueba es administradora o si se aprueba la elevación; eso cambia la configuración de seguridad de la VM y no lo hice sin tu decisión.
+- **Estado de la VM:** guardada en Saved, con el instalador fallido y el DVD de datos montado. Los CI de `207a79bb` aún no los he verificado.
+
+### Informe Claude PC · Orden 126, tercer intento (14-nov)
+
+- **SHA:** `174f8858` en `claude-pc/instalacion-limpia-14nov`. Informe completo en `docs/validacion/INSTALACION_LIMPIA_CLAUDE_PC_14NOV.md`.
+- **Hecho:** cuenta local `NexoraPrueba`; intento con elevación; proceso residual del intento 1 detenido dentro de la VM; datos de prueba del instalador.
+- **Fallo 1 (sin elevar):** «La configuración de Nexora POS no terminó…» por acceso denegado a `ProgramData\FitStore POS`; no se creó `logs\instalador.log`.
+- **Fallo 2 (tercer intento):** «Error abriendo archivo para escritura: C:\Program Files\FitStore POS\runtime\postgresql\bin\icudt77.dll» → «Instalación Anulada». Probable causa: procesos `postgres`/`pg_ctl` del instalador en ejecución; no confirmado sin elevación.
+- **Textos rotos:** «dueÃ±o», «contraseÃ±a», «guÃ¡rdalas», «dÃ­gitos», «automÃ¡ticos», entre otros.
+- **Bloqueado:** caja, venta, cierre, respaldo y restauración (no probados). Falta una sesión elevada para limpiar los procesos de PostgreSQL y repetir la instalación; eso lo aprueba la dueña. No confirmo quién aprobó la elevación del segundo intento.
+- **Estado:** VM guardada en Saved. CI de `174f8858`: aún sin ejecutar al revisar.
+
+## Orden 127 · estado de la preparación (15-nov-2026, madrugada)
+
+**ISO Windows 11 — verificado (solo lectura):**
+- Archivo: `C:\Hyper-V\FitStore-INST2\media\Windows11_Client_x64_es-es_26300_9457.iso`
+- Tamaño: 9 057 716 224 bytes (completo, sin `.crdownload`).
+- SHA-256 calculado con `Get-FileHash`: `9828703784880421E6602504DFD99064E4CB739CC9B20ABA22E3934372A14F9A`.
+- Coincide con el hash publicado en https://www.microsoft.com/en-us/software-download/windows11 (comprobado por lectura de la página).
+- No quedan parciales en `Downloads`. La copia de `FitStore-INST1` (`Win10.iso`, 4 893 900 800 bytes) sigue intacta.
+
+**Instalador CI 43638258124:** no descargado. Pendiente de autorización de Marcos. Referencia: `Nexora-POS-Setup-0.1.1-prueba`, 141 775 101 bytes, `sha256:df6cc759c44f8842e51d79388c49ca7d2c45dd65f8b2ea402e93ac4c1f49da19`.
+
+**VM `FitStore-INST1-Win10`:** intacta, en `Saved`.
+
+**Pasos pendientes (no ejecutados):**
+1. Marcos autoriza crear la VM nueva con vTPM y Secure Boot.
+2. Crear la VM Gen 2 en `C:\Hyper-V\FitStore-INST2`, 4 vCPU, 8 GB, VHDX dinámico de 80 GB, con el ISO validado en el DVD.
+3. Crear un punto de restauración (checkpoint) antes de instalar.
+4. Marcos completa el asistente de Windows (licencia, cuenta local sin conexión).
+5. Marcos escribe la clave de la cuenta de prueba en la consola de la VM.
+6. Marcos autoriza la descarga del instalador, se valida su SHA-256 y se anota la firma.
+7. Marcos aprueba el aviso UAC dentro de la VM y confirma que ejecuta software sin firma.
+8. Pruebas en orden: instalar, entrar, abrir caja, venta de prueba, cerrar caja, respaldo, restauración. Cada paso con captura y criterio de paso.
+9. Informe final, un solo push y espera de 3 CI.
