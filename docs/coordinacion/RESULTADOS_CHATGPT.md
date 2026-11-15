@@ -276,3 +276,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-15 · ChatGPT NUBE · A2 fotos de suplementos, lote 1
+
+- En `chatgpt-nube/fotos-suplementos` preparé `docs/fotos/candidatas_lote1.csv` para las filas 1–60 de una lista confirmada de 261 suplementos. Resultado: **37 encontradas, 18 dudosas y 5 sin foto; total 60**.
+- La comprobación previa falló porque el CSV no existía. Después, el validador confirmó 13 columnas, 60 identidades `n/sku/nombre` exactas, estados válidos, URLs HTTPS y suma correcta. `git diff --check` forma parte del control final.
+- Solo se registran enlaces públicos; no se descargaron imágenes ni se cambió aplicación, precios, existencias, dinero, producción, Render, base o credenciales. El detalle de descartes y la autoauditoría están en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`. La revisión visual sigue asignada a ChatGPT PC.
