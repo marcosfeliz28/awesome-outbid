@@ -1,17 +1,14 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-// EFI-01: tras vender no se vuelve a bajar el catálogo completo. Su stock ya
-// llega por `stock.changed` (realtime.tsx); estas claves cambian poco y el
-// precio en conflicto se relee aparte con `reprice`.
-const NO_REFRESCAR = new Set(["catalog", "categories", "settings", "promotions"]);
+// EFI-01: tras vender se refresca lo derivado de la venta sin retener el
+// recibo. Categorías, ajustes y promociones no se releen (el conflicto de
+// precio las relee aparte con `reprice`). El catálogo SÍ se recarga, en
+// segundo plano: es la red de seguridad del stock si un aviso en vivo se
+// perdió, y tests/e2e/stock-en-vivo.spec.ts depende de esa recarga.
+const NO_REFRESCAR = new Set(["categories", "settings", "promotions"]);
 
-export function refreshAfterSale(client: QueryClient) {
-  // Todo lo derivado de la venta (caja, ventas, pendientes, créditos,
-  // resumen, alertas…) se refresca, sin retener el recibo.
+export function refreshAfterSale(client: QueryClient): void {
   void client.invalidateQueries({
     predicate: (q) => !NO_REFRESCAR.has(String(q.queryKey[0])),
   });
-  // El catálogo queda marcado como viejo, sin descargarlo ahora: se relee la
-  // próxima vez que se necesite si el aviso de stock no llegó.
-  void client.invalidateQueries({ queryKey: ["catalog"], refetchType: "none" });
 }
