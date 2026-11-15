@@ -9,6 +9,14 @@ const pages = [
   ["direccion.html", "El pulso de tu negocio"],
   ["mercancia.html", "Mercancía"],
 ];
+const captures = [
+  ["capturas/caja-oscuro-1440.png", 1440, 900],
+  ["capturas/caja-oscuro-390.png", 390, 844],
+  ["capturas/direccion-oscuro-1440.png", 1440, 900],
+  ["capturas/direccion-oscuro-390.png", 390, 844],
+  ["capturas/mercancia-oscuro-1440.png", 1440, 900],
+  ["capturas/mercancia-oscuro-390.png", 390, 844],
+];
 
 const css = await readFile(path.join(root, "styles.css"), "utf8");
 const failures = [];
@@ -74,6 +82,24 @@ for (const [file, heading] of pages) {
     failures.push(`${file}: falta el título ${heading}`);
   if (!html.includes("Datos de demostración")) {
     failures.push(`${file}: los datos de muestra no están identificados`);
+  }
+}
+
+for (const [file, expectedWidth, expectedHeight] of captures) {
+  const png = await readFile(path.join(root, file));
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  if (width !== expectedWidth || height !== expectedHeight) {
+    failures.push(
+      `${file}: ${width}x${height}; se esperaba ${expectedWidth}x${expectedHeight}`,
+    );
+  }
+}
+
+const direction = await readFile(path.join(root, "direccion.html"), "utf8");
+for (const vagueLabel of ["Tendencia disponible", "Solo con permiso"]) {
+  if (direction.includes(vagueLabel)) {
+    failures.push(`direccion.html conserva el texto vago: ${vagueLabel}`);
   }
 }
 

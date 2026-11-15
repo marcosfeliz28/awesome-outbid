@@ -14,7 +14,10 @@ Abrir [`index.html`](index.html) y entrar a cada pantalla:
 
 El modo oscuro está activo al abrir cada maqueta. El control «Modo claro» cambia
 la presentación sin JavaScript. Las seis capturas revisadas están en
-[`capturas/`](capturas/): escritorio a 1440 × 900 y móvil a 390 px.
+[`capturas/`](capturas/): escritorio a 1440 × 900 y ventana móvil a 390 × 844.
+Las capturas móviles son del viewport real, no de una página completa: así la
+barra inferior fija aparece donde la persona realmente la ve y no en medio de
+una imagen larga compuesta por el navegador.
 
 ## Decisiones visuales
 
@@ -60,10 +63,11 @@ la presentación sin JavaScript. Las seis capturas revisadas están en
 - `docs/diseno/MAPA_PANTALLAS.md` se leyó completo, pero se declara borrador
   parcial y no enumera estas vistas; por eso la correspondencia funcional se
   contrastó con `docs/sistema/PANTALLAS.md` y las fuentes solo en lectura.
-- La orden cita
-  `docs/coordinacion/potente-14nov/PROPUESTA_VERSION_POTENTE.md`, pero ese archivo
-  no existe en `origin/nexora-cloud` ni en las ramas remotas visibles al iniciar.
-  No se inventó su contenido y se avanzó con las otras tres fuentes disponibles.
+- La primera entrega registró correctamente que
+  `docs/coordinacion/potente-14nov/PROPUESTA_VERSION_POTENTE.md` no existía aún
+  en `origin/nexora-cloud`. La fuente se incorporó después en `4818c607` y la
+  revisión de Claude nube en `6369cdd3`; la comparación posterior está en
+  [`MATRIZ_REVISION_15NOV.md`](MATRIZ_REVISION_15NOV.md).
 
 ## Revisión realizada
 
@@ -80,6 +84,10 @@ la presentación sin JavaScript. Las seis capturas revisadas están en
 - Revisión visual de las capturas: se corrigió la altura inexistente de la gráfica
   de Dirección, el desbordamiento móvil de Mercancía y el contraste del botón
   primario oscuro antes de cerrar la entrega.
+- Revisión posterior: el control reprodujo que las capturas móviles anteriores
+  medían 390 × 3027, 390 × 2305 y 390 × 1957, y que la barra fija quedaba en
+  medio de la imagen larga. Se sustituyeron por capturas de ventana 390 × 844.
+  También se reemplazaron dos etiquetas vagas de Dirección sin añadir cifras.
 
 ## Fuera de alcance
 

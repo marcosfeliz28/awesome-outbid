@@ -2,6 +2,15 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-15 · ChatGPT NUBE · revisión posterior de maquetas
+
+- Contrastadas las tres maquetas contra la revisión `6369cdd3` y la propuesta
+  potente ya integrada. Se añadió una matriz trazable, se corrigieron dos textos
+  vagos sin inventar cifras y se rehacen las capturas móviles como viewport 390
+  × 844 para que la barra fija aparezca en su posición real.
+- Solo documentos y presentación estática; paleta violeta conservada. Sin
+  aplicaciones, lógica, dinero, DIS-02, EFI-01, VM, producción ni despliegue.
+
 ## 2026-11-15 · ChatGPT NUBE · maquetas visuales estáticas
 
 - Rama `chatgpt-nube/maquetas-15nov`, base `da387171`. Entrega únicamente

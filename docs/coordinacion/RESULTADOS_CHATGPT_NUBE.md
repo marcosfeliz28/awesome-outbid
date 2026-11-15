@@ -1,5 +1,18 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-15 · contraste posterior de las maquetas
+
+- Se comprobó `origin/nexora-cloud` en `6369cdd3`, se leyeron completas la
+  revisión de Claude nube y la propuesta potente integrada en `4818c607`, y se
+  añadió `docs/diseno/maquetas-15nov/MATRIZ_REVISION_15NOV.md` sin atribuir a las
+  maquetas funciones que no muestran.
+- La regresión reprodujo tres capturas móviles de página completa (390 × 3027,
+  2305 y 1957) y las etiquetas vagas «Tendencia disponible»/«Solo con permiso».
+  Se sustituyen por ventanas reales 390 × 844 y textos explicativos sin cifras.
+- Se conserva la paleta violeta actual. El alcance sigue limitado a documentos
+  y presentación estática; sin `apps/**`, lógica, dinero, DIS-02, EFI-01, VM,
+  Render, producción, credenciales, mezcla ni despliegue.
+
 ## 2026-11-15 · tres maquetas estáticas de Caja, Dirección y Mercancía
 
 - **Orden/base/rama:** tarea nueva de `ORDENES_15NOV.md`, base
