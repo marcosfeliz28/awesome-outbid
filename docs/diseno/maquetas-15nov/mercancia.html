@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nexora · Maqueta de Mercancía</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <input
+      id="theme-toggle"
+      type="checkbox"
+      aria-label="Cambiar modo oscuro"
+      checked
+    />
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">N</span
+          ><span class="brand-copy"
+            ><strong>Nexora</strong><small>POS inteligente</small></span
+          >
+        </div>
+        <nav class="nav" aria-label="Navegación principal">
+          <a href="direccion.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="M3 12 12 3l9 9v9H3z" />
+              <path d="M9 21v-6h6v6" /></svg
+            ><span class="nav-label">Inicio</span></a
+          >
+          <a href="caja.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="M4 6h16v13H4z" />
+              <path d="M8 6V3h8v3M8 11h8M8 15h5" /></svg
+            ><span class="nav-label">Caja</span></a
+          >
+          <a class="active" href="mercancia.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="m4 7 8-4 8 4-8 4z" />
+              <path d="M4 7v10l8 4 8-4V7M12 11v10" /></svg
+            ><span class="nav-label">Mercancía</span></a
+          >
+          <a href="index.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M9 9h.01M15 9h.01M8 15c2 2 6 2 8 0" /></svg
+            ><span class="nav-label">Preview</span></a
+          >
+        </nav>
+        <div class="sidebar-foot">
+          Entrada guiada<br />Revisión antes de confirmar
+        </div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <span class="crumb">Inventario / Mercancía</span>
+          <div class="top-actions">
+            <span class="status-chip"
+              ><span class="dot"></span>Equipo conectado</span
+            ><label class="theme-switch" for="theme-toggle"
+              ><span class="light-label">Modo oscuro</span
+              ><span class="dark-label">Modo claro</span></label
+            ><span class="user-chip">Administración</span>
+          </div>
+        </header>
+        <main class="main">
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">Control de existencias</p>
+              <h1>Mercancía</h1>
+              <p class="subtitle">
+                Entradas y salidas con revisión antes de confirmar.
+              </p>
+            </div>
+            <div class="demo-banner">
+              Datos de demostración · este movimiento no se guarda
+            </div>
+          </div>
+          <div class="flow-steps" aria-label="Progreso de la entrada">
+            <div class="flow-step">
+              <span class="step-number">1</span>Datos de la entrada
+            </div>
+            <div class="flow-step active">
+              <span class="step-number">2</span>Productos y cantidades
+            </div>
+            <div class="flow-step">
+              <span class="step-number">3</span>Revisar y confirmar
+            </div>
+          </div>
+          <div class="grid-2">
+            <section class="panel flat">
+              <div class="panel-head">
+                <div>
+                  <h2>Nueva entrada</h2>
+                  <p class="muted">Escanea o busca cada producto recibido.</p>
+                </div>
+                <div class="segmented">
+                  <button class="segment active">Entrada</button
+                  ><button class="segment">Salida</button>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="warehouse">Almacén</label
+                  ><select id="warehouse">
+                    <option>Tienda</option>
+                    <option>Casa</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="provider">Proveedor</label
+                  ><input id="provider" value="Proveedor de demostración" />
+                </div>
+                <div class="field">
+                  <label for="invoice">Factura del proveedor</label
+                  ><input id="invoice" value="Documento de muestra" />
+                </div>
+              </div>
+              <div class="search-wrap" style="margin-bottom: 16px">
+                <svg class="search-icon nav-icon" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-4-4" /></svg
+                ><input
+                  class="search"
+                  aria-label="Buscar mercancía"
+                  placeholder="Escanea o busca un producto"
+                />
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Variante</th>
+                      <th class="number">Cantidad</th>
+                      <th>Lote</th>
+                      <th>Vence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Producto de muestra A</strong></td>
+                      <td>Chocolate · 2 lb</td>
+                      <td class="number">12</td>
+                      <td>LOTE-A</td>
+                      <td>Mes / año</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Producto de muestra B</strong></td>
+                      <td>Negro · M</td>
+                      <td class="number">8</td>
+                      <td>LOTE-B</td>
+                      <td>No aplica</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Producto de muestra C</strong></td>
+                      <td>Violeta · Media</td>
+                      <td class="number">16</td>
+                      <td>LOTE-C</td>
+                      <td>Mes / año</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  gap: 12px;
+                  flex-wrap: wrap;
+                  margin-top: 16px;
+                "
+              >
+                <button class="button secondary">Importar factura</button
+                ><button class="button ghost">Agregar otra línea</button>
+              </div>
+            </section>
+            <aside class="panel review-card">
+              <p class="eyebrow">Revisión</p>
+              <h2>Antes de confirmar</h2>
+              <p class="muted">
+                Comprueba el destino y las unidades. La maqueta no aplica
+                cambios.
+              </p>
+              <div class="review-list">
+                <div class="review-row">
+                  <span>Movimiento</span><strong>Entrada</strong>
+                </div>
+                <div class="review-row">
+                  <span>Almacén</span><strong>Tienda</strong>
+                </div>
+                <div class="review-row">
+                  <span>Productos</span><strong>3 líneas</strong>
+                </div>
+                <div class="review-row">
+                  <span>Unidades</span><strong>36</strong>
+                </div>
+                <div class="review-row">
+                  <span>Estado</span
+                  ><span class="pill">Listo para revisar</span>
+                </div>
+              </div>
+              <button class="button" style="width: 100%; margin-top: 18px">
+                Continuar a revisión</button
+              ><button
+                class="button secondary"
+                style="width: 100%; margin-top: 10px"
+              >
+                Guardar como pendiente
+              </button>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

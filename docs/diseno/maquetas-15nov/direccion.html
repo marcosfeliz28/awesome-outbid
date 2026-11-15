@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nexora · Maqueta de Inicio de dirección</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <input
+      id="theme-toggle"
+      type="checkbox"
+      aria-label="Cambiar modo oscuro"
+      checked
+    />
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">N</span
+          ><span class="brand-copy"
+            ><strong>Nexora</strong><small>POS inteligente</small></span
+          >
+        </div>
+        <nav class="nav" aria-label="Navegación principal">
+          <a class="active" href="direccion.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="M3 12 12 3l9 9v9H3z" />
+              <path d="M9 21v-6h6v6" /></svg
+            ><span class="nav-label">Inicio</span></a
+          >
+          <a href="caja.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="M4 6h16v13H4z" />
+              <path d="M8 6V3h8v3M8 11h8M8 15h5" /></svg
+            ><span class="nav-label">Caja</span></a
+          >
+          <a href="mercancia.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="m4 7 8-4 8 4-8 4z" />
+              <path d="M4 7v10l8 4 8-4V7M12 11v10" /></svg
+            ><span class="nav-label">Mercancía</span></a
+          >
+          <a href="index.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M9 9h.01M15 9h.01M8 15c2 2 6 2 8 0" /></svg
+            ><span class="nav-label">Preview</span></a
+          >
+        </nav>
+        <div class="sidebar-foot">
+          Vista de dirección<br />Prioridades en un vistazo
+        </div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <span class="crumb">Dirección / Resumen</span>
+          <div class="top-actions">
+            <span class="status-chip"
+              ><span class="dot"></span>Datos al día</span
+            ><label class="theme-switch" for="theme-toggle"
+              ><span class="light-label">Modo oscuro</span
+              ><span class="dark-label">Modo claro</span></label
+            ><span class="user-chip">Dirección</span>
+          </div>
+        </header>
+        <main class="main">
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">El pulso de tu negocio</p>
+              <h1>Buenos días. Esto merece tu atención.</h1>
+              <p class="subtitle">
+                Un resumen ejecutivo que separa resultados, señales y acciones.
+              </p>
+            </div>
+            <div>
+              <div class="demo-banner">
+                Datos de demostración · período de muestra
+              </div>
+              <div class="segmented" style="margin-top: 10px">
+                <button class="segment active">Este mes</button
+                ><button class="segment">7 días</button
+                ><button class="segment">Otro día</button>
+              </div>
+            </div>
+          </div>
+          <section class="kpi-grid" aria-label="Indicadores principales">
+            <article class="kpi">
+              <span class="kpi-label">Ventas del período</span>
+              <div class="metric-value">RD$ —</div>
+              <span class="delta">Tendencia disponible</span>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Ganancia bruta</span>
+              <div class="metric-value">RD$ —</div>
+              <span class="delta">Solo con permiso</span>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Ventas registradas</span>
+              <div class="metric-value">—</div>
+              <span class="muted">Facturas de muestra</span>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Ticket promedio</span>
+              <div class="metric-value">RD$ —</div>
+              <span class="muted">Comparación disponible</span>
+            </article>
+          </section>
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Así van tus ventas</h2>
+                  <p class="muted">Ritmo diario del período seleccionado</p>
+                </div>
+                <span class="pill"><span class="dot"></span>Vista semanal</span>
+              </div>
+              <div class="chart" aria-label="Gráfico ilustrativo de siete días">
+                <span class="bar"></span><span class="bar"></span
+                ><span class="bar"></span><span class="bar"></span
+                ><span class="bar"></span><span class="bar"></span
+                ><span class="bar"></span>
+              </div>
+              <div class="chart-labels">
+                <span>L</span><span>M</span><span>X</span><span>J</span
+                ><span>V</span><span>S</span><span>D</span>
+              </div>
+            </section>
+            <aside class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Un poco de atención</h2>
+                  <p class="muted">Acciones ordenadas por urgencia</p>
+                </div>
+                <span class="pill">3 señales</span>
+              </div>
+              <div class="attention-list">
+                <div class="attention-row">
+                  <span class="attention-icon">1</span>
+                  <div>
+                    <strong>Transferencias por revisar</strong>
+                    <p class="muted">Confirma antes del cierre.</p>
+                  </div>
+                  <button class="button ghost">Ver</button>
+                </div>
+                <div class="attention-row">
+                  <span class="attention-icon">2</span>
+                  <div>
+                    <strong>Existencias bajo mínimo</strong>
+                    <p class="muted">Planifica la próxima entrada.</p>
+                  </div>
+                  <button class="button ghost">Ver</button>
+                </div>
+                <div class="attention-row">
+                  <span class="attention-icon">3</span>
+                  <div>
+                    <strong>Solicitudes pendientes</strong>
+                    <p class="muted">Revisa el detalle antes de decidir.</p>
+                  </div>
+                  <button class="button ghost">Ver</button>
+                </div>
+              </div>
+            </aside>
+          </div>
+          <section class="panel flat" style="margin-top: 20px">
+            <div class="panel-head">
+              <div>
+                <h2>Los favoritos de tu tienda</h2>
+                <p class="muted">
+                  Lectura rápida, sin mezclar decisiones con cifras
+                </p>
+              </div>
+              <button class="button secondary">Abrir reportes</button>
+            </div>
+            <div class="activity-list">
+              <div class="activity-row">
+                <div>
+                  <strong>Producto de demostración A</strong>
+                  <p class="muted">Categoría de muestra</p>
+                </div>
+                <span class="pill">Tendencia alta</span>
+              </div>
+              <div class="activity-row">
+                <div>
+                  <strong>Producto de demostración B</strong>
+                  <p class="muted">Categoría de muestra</p>
+                </div>
+                <span class="pill">Tendencia estable</span>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

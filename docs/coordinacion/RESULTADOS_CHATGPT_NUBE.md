@@ -1,5 +1,36 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-15 · tres maquetas estáticas de Caja, Dirección y Mercancía
+
+- **Orden/base/rama:** tarea nueva de `ORDENES_15NOV.md`, base
+  `da387171bea50687a93093feb013b958b772b825`, rama
+  `chatgpt-nube/maquetas-15nov`. Se comprobó primero que la rama remota no
+  existía.
+- **Entrega:** índice de preview, Caja, Inicio de dirección y Mercancía en
+  `docs/diseno/maquetas-15nov/`, CSS compartido claro/oscuro, seis capturas
+  revisadas (1440 y 390 px), decisiones visuales y control reproducible.
+- **Regresión:** antes, `node docs/diseno/maquetas-15nov/verificar.mjs` terminó
+  con código 1 por ausencia de `styles.css`; después pasa y comprueba tres HTML,
+  mínimo de 14 px, modo oscuro, movimiento reducido y contraste AA.
+- **Revisión visual:** Chromium/Playwright confirmó 14 px mínimos y 0 px de
+  desbordamiento horizontal en las seis combinaciones. Se corrigieron durante la
+  revisión la gráfica sin altura, el desbordamiento móvil de Mercancía y el
+  contraste del botón principal oscuro.
+- **Control completo local:** tras `pnpm db:generate`, `pnpm check` pasó:
+  typecheck y lint verdes; 121 archivos/1,057 pruebas pasaron, 1 archivo/10
+  pruebas quedaron omitidos y ambos builds terminaron. Vite solo mostró la
+  advertencia conocida del chunk mayor de 500 kB. El intento anterior se había
+  detenido por Prisma sin generar; después, lint detectó y permitió corregir las
+  globales Node del verificador.
+- **Autoauditoría:** el diff queda limitado a documentos, HTML/CSS y PNG. No se
+  tocaron `apps/**`, lógica, DIS-02, EFI-01, VM, dinero, producción, Render,
+  credenciales ni despliegues. La fuente `PROPUESTA_VERSION_POTENTE.md` citada
+  por la orden no existe en la base ni en las ramas remotas visibles; se dejó la
+  limitación escrita y no se inventó contenido.
+- **Publicación/CI:** esta sección forma parte del único commit previsto. El SHA
+  final y `verify`, `windows-installer` y `render-images` se comprobarán sobre
+  ese mismo SHA después del único push.
+
 ## 2026-11-13 · especificaciones de construcción de la primera tanda
 
 - **Orden, base y rama:** nueva cola `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`, ejecutada desde `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560` en `chatgpt-nube/espec-tanda1-13nov`.
@@ -136,42 +167,42 @@ Estos criterios describen la pantalla; no autorizan cambios en totales, impuesto
 
 La revisión se amplió a las 18 páginas publicadas, aunque la orden menciona 14. Los rangos agrupados cubren todos los pasos numerados de cada página.
 
-| Página | Paso(s) | Respaldo en código |
-|---|---:|---|
-| `cajera/abrir-caja` | 1 | `apps/web/src/App.tsx:470-528` |
-| `cajera/abrir-caja` | 2–5 | `apps/web/src/Management.tsx:1688-1759`, `apps/web/src/Management.tsx:2030-2068` |
-| `cajera/cerrar-caja` | 1 | `apps/web/src/Management.tsx:1708`, `apps/web/src/pendingSales.ts:382-396` |
-| `cajera/cerrar-caja` | 2–6 | `apps/web/src/Tienda.tsx:329-367`, `apps/web/src/Tienda.tsx:389-467` |
-| `cajera/cobrar-venta` | 1 | `apps/web/src/POS.tsx:1297-1306` |
-| `cajera/cobrar-venta` | 2–6 | `apps/web/src/POS.tsx:2730-3013` |
-| `cajera/escanear-con-camara` | 1–2 | `apps/web/src/POS.tsx:993-1028` |
-| `cajera/escanear-con-camara` | 3–4 | `apps/web/src/POS.tsx:3045-3072` |
-| `cajera/pedir-devolucion` | 1–5 | `apps/web/src/QuickQuestions.tsx:531-536`, `apps/web/src/Management.tsx:3388-3409`, `apps/web/src/Management.tsx:3828-3868` |
-| `cajera/poner-venta-en-espera` | 1–3 | `apps/web/src/POS.tsx:457-485`, `apps/web/src/POS.tsx:1308-1312` |
-| `cajera/poner-venta-en-espera` | 4–5 | `apps/web/src/QuickQuestions.tsx:555-560` |
-| `cajera/preparar-venta` | 1–3 | `apps/web/src/POS.tsx:963-1082`, `apps/web/src/POS.tsx:1127-1289`, `apps/web/src/POS.tsx:1360-1380` |
-| `cajera/preparar-venta` | 4–6 | `apps/web/src/POS.tsx:1106-1122`, `apps/web/src/POS.tsx:1435-1549`, `apps/web/src/POS.tsx:1281-1289` |
-| `cajera/respuesta-perdida-al-cobrar` | 1–5 | `apps/web/src/POS.tsx:2197-2212` |
-| `cajera/solicitar-anulacion` | 1–2 | `apps/web/src/Management.tsx:3372-3386` |
-| `cajera/solicitar-anulacion` | 3–6 | `apps/web/src/Management.tsx:3685-3715`, `apps/web/src/QuickQuestions.tsx:547-552` |
-| `cajera/trabajar-sin-conexion` | 1–2 | `apps/web/src/offlinePolicy.ts:3-12`, `apps/web/src/POS.tsx:2232-2252` |
-| `cajera/trabajar-sin-conexion` | 3–6 | `apps/web/src/Management.tsx:1765-1923`, `apps/web/src/pendingSales.ts:382-396` |
-| `cajera/usar-preguntas-y-encuesta` | 1–2 | `apps/web/src/POS.tsx:993-1001`, `apps/web/src/QuickQuestions.tsx:665-716` |
-| `cajera/usar-preguntas-y-encuesta` | 3–5 | `apps/web/src/QuickQuestions.tsx:588-660`, `apps/web/src/QuickQuestions.tsx:707-713` |
-| `cajera/vender-a-credito` | 1–2 | `apps/web/src/POS.tsx:1106-1122`, `apps/web/src/QuickQuestions.tsx:539-544` |
-| `cajera/vender-a-credito` | 3–4 | `apps/web/src/POS.tsx:1939-1960`, `apps/web/src/POS.tsx:2348-2360`, `apps/web/src/POS.tsx:2563-2621` |
-| `gerente/autorizar-con-pin` | 1–3 | `apps/web/src/POS.tsx:1939-1960`, `apps/web/src/POS.tsx:2348-2360`, `apps/web/src/Tienda.tsx:218-225` |
-| `gerente/procesar-devolucion` | 1–4 | `apps/web/src/Management.tsx:3388-3409`, `apps/web/src/Management.tsx:3828-3868` |
-| `gerente/procesar-devolucion` | 5–6 | `apps/api/src/sales.ts:3678-3696`, `apps/api/src/sales.ts:3783-3966` |
-| `gerente/resolver-venta-sin-conexion` | 1–3 | `apps/web/src/pendingSales.ts:293-313`, `apps/web/src/Management.tsx:1765-1923` |
-| `gerente/resolver-venta-sin-conexion` | 4–6 | `apps/web/src/pendingSales.ts:316-379` |
-| `duena/desactivar-usuaria` | 1–3 | `apps/web/src/Management.tsx:4375-4389`, `apps/web/src/Management.tsx:4455-4516`, `apps/web/src/Management.tsx:4608-4638` |
-| `duena/desactivar-usuaria` | 4 | `apps/web/src/realtime.tsx:294-463`, `apps/api/src/realtime.ts:415-430` |
-| `duena/equipo-robado` | 1 | `apps/web/src/Management.tsx:4491-4516`, `apps/api/src/admin.ts:1121-1219` |
-| `duena/equipo-robado` | 2 | `apps/web/src/realtime.tsx:442-463`, `apps/api/src/realtime.ts:415-430` |
-| `duena/equipo-robado` | 3 | `apps/web/src/Management.tsx:4045-4165` |
-| `duena/revisar-respaldos` | 1–2 | `apps/web/src/DriveBackup.tsx:154-166`, `apps/web/src/DriveBackup.tsx:203-249` |
-| `duena/revisar-respaldos` | 3–4 | `apps/web/src/DriveBackup.tsx:128-138`, `apps/web/src/DriveBackup.tsx:254-266` |
+| Página                                | Paso(s) | Respaldo en código                                                                                                          |
+| ------------------------------------- | ------: | --------------------------------------------------------------------------------------------------------------------------- |
+| `cajera/abrir-caja`                   |       1 | `apps/web/src/App.tsx:470-528`                                                                                              |
+| `cajera/abrir-caja`                   |     2–5 | `apps/web/src/Management.tsx:1688-1759`, `apps/web/src/Management.tsx:2030-2068`                                            |
+| `cajera/cerrar-caja`                  |       1 | `apps/web/src/Management.tsx:1708`, `apps/web/src/pendingSales.ts:382-396`                                                  |
+| `cajera/cerrar-caja`                  |     2–6 | `apps/web/src/Tienda.tsx:329-367`, `apps/web/src/Tienda.tsx:389-467`                                                        |
+| `cajera/cobrar-venta`                 |       1 | `apps/web/src/POS.tsx:1297-1306`                                                                                            |
+| `cajera/cobrar-venta`                 |     2–6 | `apps/web/src/POS.tsx:2730-3013`                                                                                            |
+| `cajera/escanear-con-camara`          |     1–2 | `apps/web/src/POS.tsx:993-1028`                                                                                             |
+| `cajera/escanear-con-camara`          |     3–4 | `apps/web/src/POS.tsx:3045-3072`                                                                                            |
+| `cajera/pedir-devolucion`             |     1–5 | `apps/web/src/QuickQuestions.tsx:531-536`, `apps/web/src/Management.tsx:3388-3409`, `apps/web/src/Management.tsx:3828-3868` |
+| `cajera/poner-venta-en-espera`        |     1–3 | `apps/web/src/POS.tsx:457-485`, `apps/web/src/POS.tsx:1308-1312`                                                            |
+| `cajera/poner-venta-en-espera`        |     4–5 | `apps/web/src/QuickQuestions.tsx:555-560`                                                                                   |
+| `cajera/preparar-venta`               |     1–3 | `apps/web/src/POS.tsx:963-1082`, `apps/web/src/POS.tsx:1127-1289`, `apps/web/src/POS.tsx:1360-1380`                         |
+| `cajera/preparar-venta`               |     4–6 | `apps/web/src/POS.tsx:1106-1122`, `apps/web/src/POS.tsx:1435-1549`, `apps/web/src/POS.tsx:1281-1289`                        |
+| `cajera/respuesta-perdida-al-cobrar`  |     1–5 | `apps/web/src/POS.tsx:2197-2212`                                                                                            |
+| `cajera/solicitar-anulacion`          |     1–2 | `apps/web/src/Management.tsx:3372-3386`                                                                                     |
+| `cajera/solicitar-anulacion`          |     3–6 | `apps/web/src/Management.tsx:3685-3715`, `apps/web/src/QuickQuestions.tsx:547-552`                                          |
+| `cajera/trabajar-sin-conexion`        |     1–2 | `apps/web/src/offlinePolicy.ts:3-12`, `apps/web/src/POS.tsx:2232-2252`                                                      |
+| `cajera/trabajar-sin-conexion`        |     3–6 | `apps/web/src/Management.tsx:1765-1923`, `apps/web/src/pendingSales.ts:382-396`                                             |
+| `cajera/usar-preguntas-y-encuesta`    |     1–2 | `apps/web/src/POS.tsx:993-1001`, `apps/web/src/QuickQuestions.tsx:665-716`                                                  |
+| `cajera/usar-preguntas-y-encuesta`    |     3–5 | `apps/web/src/QuickQuestions.tsx:588-660`, `apps/web/src/QuickQuestions.tsx:707-713`                                        |
+| `cajera/vender-a-credito`             |     1–2 | `apps/web/src/POS.tsx:1106-1122`, `apps/web/src/QuickQuestions.tsx:539-544`                                                 |
+| `cajera/vender-a-credito`             |     3–4 | `apps/web/src/POS.tsx:1939-1960`, `apps/web/src/POS.tsx:2348-2360`, `apps/web/src/POS.tsx:2563-2621`                        |
+| `gerente/autorizar-con-pin`           |     1–3 | `apps/web/src/POS.tsx:1939-1960`, `apps/web/src/POS.tsx:2348-2360`, `apps/web/src/Tienda.tsx:218-225`                       |
+| `gerente/procesar-devolucion`         |     1–4 | `apps/web/src/Management.tsx:3388-3409`, `apps/web/src/Management.tsx:3828-3868`                                            |
+| `gerente/procesar-devolucion`         |     5–6 | `apps/api/src/sales.ts:3678-3696`, `apps/api/src/sales.ts:3783-3966`                                                        |
+| `gerente/resolver-venta-sin-conexion` |     1–3 | `apps/web/src/pendingSales.ts:293-313`, `apps/web/src/Management.tsx:1765-1923`                                             |
+| `gerente/resolver-venta-sin-conexion` |     4–6 | `apps/web/src/pendingSales.ts:316-379`                                                                                      |
+| `duena/desactivar-usuaria`            |     1–3 | `apps/web/src/Management.tsx:4375-4389`, `apps/web/src/Management.tsx:4455-4516`, `apps/web/src/Management.tsx:4608-4638`   |
+| `duena/desactivar-usuaria`            |       4 | `apps/web/src/realtime.tsx:294-463`, `apps/api/src/realtime.ts:415-430`                                                     |
+| `duena/equipo-robado`                 |       1 | `apps/web/src/Management.tsx:4491-4516`, `apps/api/src/admin.ts:1121-1219`                                                  |
+| `duena/equipo-robado`                 |       2 | `apps/web/src/realtime.tsx:442-463`, `apps/api/src/realtime.ts:415-430`                                                     |
+| `duena/equipo-robado`                 |       3 | `apps/web/src/Management.tsx:4045-4165`                                                                                     |
+| `duena/revisar-respaldos`             |     1–2 | `apps/web/src/DriveBackup.tsx:154-166`, `apps/web/src/DriveBackup.tsx:203-249`                                              |
+| `duena/revisar-respaldos`             |     3–4 | `apps/web/src/DriveBackup.tsx:128-138`, `apps/web/src/DriveBackup.tsx:254-266`                                              |
 
 ## 2026-11-12 · Mejoras C5-1 · textos y ayuda
 

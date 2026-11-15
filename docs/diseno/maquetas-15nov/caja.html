@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nexora · Maqueta de Caja</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <input
+      id="theme-toggle"
+      type="checkbox"
+      aria-label="Cambiar modo oscuro"
+      checked
+    />
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">N</span
+          ><span class="brand-copy"
+            ><strong>Nexora</strong><small>POS inteligente</small></span
+          >
+        </div>
+        <nav class="nav" aria-label="Navegación principal">
+          <a href="direccion.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="M3 12 12 3l9 9v9H3z" />
+              <path d="M9 21v-6h6v6" /></svg
+            ><span class="nav-label">Inicio</span></a
+          >
+          <a class="active" href="caja.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="M4 6h16v13H4z" />
+              <path d="M8 6V3h8v3M8 11h8M8 15h5" /></svg
+            ><span class="nav-label">Caja</span></a
+          >
+          <a href="mercancia.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <path d="m4 7 8-4 8 4-8 4z" />
+              <path d="M4 7v10l8 4 8-4V7M12 11v10" /></svg
+            ><span class="nav-label">Mercancía</span></a
+          >
+          <a href="index.html"
+            ><svg class="nav-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M9 9h.01M15 9h.01M8 15c2 2 6 2 8 0" /></svg
+            ><span class="nav-label">Preview</span></a
+          >
+        </nav>
+        <div class="sidebar-foot">
+          Maqueta estática<br />Sin conexión a datos reales
+        </div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <span class="crumb">Operación / Punto de venta</span>
+          <div class="top-actions">
+            <span class="status-chip"
+              ><span class="dot"></span>Caja abierta</span
+            >
+            <label class="theme-switch" for="theme-toggle"
+              ><span class="light-label">Modo oscuro</span
+              ><span class="dark-label">Modo claro</span></label
+            >
+            <span class="user-chip">Cajera · Turno actual</span>
+          </div>
+        </header>
+        <main class="main">
+          <div class="page-head">
+            <div>
+              <p class="eyebrow">Venta rápida</p>
+              <h1>Caja</h1>
+              <p class="subtitle">
+                Busca, agrega y cobra sin perder de vista la venta actual.
+              </p>
+            </div>
+            <div class="demo-banner">
+              Datos de demostración · ninguna acción se guarda
+            </div>
+          </div>
+          <div class="grid-2">
+            <section class="panel flat">
+              <div class="panel-head">
+                <div>
+                  <h2>Todos los productos</h2>
+                  <p class="muted">12 disponibles en esta vista</p>
+                </div>
+                <span class="pill">Lector listo</span>
+              </div>
+              <div class="search-wrap">
+                <svg class="search-icon nav-icon" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-4-4" /></svg
+                ><input
+                  class="search"
+                  aria-label="Buscar productos"
+                  placeholder="Código o nombre del producto"
+                />
+              </div>
+              <div class="segmented" style="margin: 14px 0 18px">
+                <button class="segment active">Todos</button
+                ><button class="segment">Suplementos</button
+                ><button class="segment">Ropa</button
+                ><button class="segment">Accesorios</button>
+              </div>
+              <div class="product-grid">
+                <article class="product-card">
+                  <div class="product-visual">WHEY</div>
+                  <h3>Proteína de muestra</h3>
+                  <p class="muted">Chocolate · 2 lb</p>
+                  <strong>RD$ 0.00</strong>
+                </article>
+                <article class="product-card">
+                  <div class="product-visual">FIT</div>
+                  <h3>Legging de muestra</h3>
+                  <p class="muted">Negro · M</p>
+                  <strong>RD$ 0.00</strong>
+                </article>
+                <article class="product-card">
+                  <div class="product-visual">MOVE</div>
+                  <h3>Banda de muestra</h3>
+                  <p class="muted">Violeta · Media</p>
+                  <strong>RD$ 0.00</strong>
+                </article>
+                <article class="product-card">
+                  <div class="product-visual">CORE</div>
+                  <h3>Faja de muestra</h3>
+                  <p class="muted">Arena · M</p>
+                  <strong>RD$ 0.00</strong>
+                </article>
+                <article class="product-card">
+                  <div class="product-visual">GLOW</div>
+                  <h3>Gloss de muestra</h3>
+                  <p class="muted">Rosa suave</p>
+                  <strong>RD$ 0.00</strong>
+                </article>
+                <article class="product-card">
+                  <div class="product-visual">RUN</div>
+                  <h3>Tenis de muestra</h3>
+                  <p class="muted">Blanco · 38</p>
+                  <strong>RD$ 0.00</strong>
+                </article>
+              </div>
+            </section>
+            <aside class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Venta actual</p>
+                  <h2>Cliente de demostración</h2>
+                </div>
+                <button class="button ghost">Elegir · F4</button>
+              </div>
+              <div class="cart-list">
+                <div class="cart-row">
+                  <div>
+                    <strong>Proteína de muestra</strong>
+                    <p class="muted">Chocolate · 1 unidad</p>
+                  </div>
+                  <strong>RD$ 0.00</strong>
+                </div>
+                <div class="cart-row">
+                  <div>
+                    <strong>Banda de muestra</strong>
+                    <p class="muted">Violeta · 1 unidad</p>
+                  </div>
+                  <strong>RD$ 0.00</strong>
+                </div>
+              </div>
+              <div class="cart-total">
+                <div class="total-line">
+                  <span>Total a cobrar</span><strong>RD$ 0.00</strong>
+                </div>
+                <button class="button" style="width: 100%">
+                  Cobrar <span>F12</span>
+                </button>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
