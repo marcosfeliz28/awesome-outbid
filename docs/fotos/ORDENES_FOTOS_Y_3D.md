@@ -13,7 +13,7 @@ Plan general: `docs/coordinacion/PLAN_FOTOS_3D_15NOV.md`. Lista: `docs/fotos/sup
 Rama: `chatgpt-nube/fotos-suplementos` (fotos) y `chatgpt-nube/maquetas-15nov` (diseño). Solo `docs/`.
 
 ### A2 · Fotos, por lotes de 60 (5 lotes; el último tiene 21)
-1. Lee `docs/fotos/suplementos.csv`. Confirma al inicio: «recibí 261 filas, 57 marcas, 40 sin marca».
+1. Lee `docs/fotos/suplementos.csv`. Confirma al inicio: «recibí 261 filas: 221 de 56 marcas y 40 sin marca».
 2. Para cada fila, en orden, busca **1 foto principal y 1 de respaldo**:
    - Orden de fuentes: (a) web oficial del fabricante, (b) distribuidor o tienda grande, (c) redes de la marca, (d) redes de tiendas. Nunca bancos de imágenes de pago.
    - Debe coincidir **producto, sabor y tamaño** del nombre (ej.: «ISO100 Vanilla 1.34 lb» no sirve con foto de 5 lb).

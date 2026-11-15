@@ -2,7 +2,7 @@
 
 **Total: 261 productos activos de la categoría Suplementos** (967 productos en el sistema; 0 con foto al 15-nov).
 
-Marcas distintas: 57. Sin marca: 40.
+Marcas distintas: 56, más 40 productos sin marca (la fila «(sin marca)» de la tabla). 56 marcas suman 221 productos; 221 + 40 = 261.
 
 | Marca | Productos |
 |---|---|
