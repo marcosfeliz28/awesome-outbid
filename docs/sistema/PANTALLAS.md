@@ -51,7 +51,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1056-1086`):
 ## Caja
 
 - **Etiqueta:** «Caja». **Permiso:** `cash:write`. **Componente:** `Cash`, `apps/web/src/Management.tsx:1620`. Título en pantalla: «Una caja que siempre cuadra» (`:1670`).
-- **Qué hace:** abrir caja («Abrir caja», `:1674-1677`), «Movimiento» de efectivo (entrada/salida, `:1688-1692`), «Cerrar y arquear» (`:1693`), ventas guardadas sin conexión (`:1750-1917`), «Historial de cajas» con botones «Cuadre», «Venta diaria», «Por forma de pago» (`:1918-2014`; `apps/web/src/Tienda.tsx:476-506`), y el panel **«Créditos pendientes»** (crédito y contraentrega) (`apps/web/src/Tienda.tsx:586-787`). También muestra «Mis incentivos» (`:1748`).
+- **Qué hace:** abrir caja («Abrir caja», `:1674-1677`), «Movimiento» de efectivo (entrada/salida, `:1688-1692`), «Cerrar y arquear» (`:1693`), ventas guardadas sin conexión (`:1750-1917`), «Historial de cajas» con botones «Cuadre», «Venta diaria», «Por forma de pago» (`:1918-2014`; `apps/web/src/Tienda.tsx:484-514`), y el panel **«Créditos pendientes»** (crédito y contraentrega) (`apps/web/src/Tienda.tsx:594-795`). También muestra «Mis incentivos» (`:1748`).
 - **Flujo corto:** «Abrir caja» → vender en Punto de venta → (si hace falta) «Movimiento» → al terminar «Cerrar y arquear» → contar → «Cerrar caja e imprimir cuadre».
 - Detalle: `FLUJO_CAJA_POS.md` y `FLUJO_COBROS_Y_TRANSFERENCIAS.md`.
 
@@ -77,7 +77,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1056-1086`):
 ## Envíos del mensajero
 
 - **Etiqueta:** «Envíos del mensajero». **Permiso:** `*`. **Componente:** `apps/web/src/CourierPayouts.tsx:26`.
-- **Qué hace:** lista los envíos pendientes de pago al mensajero («Pendientes», `:175`), se seleccionan y se pulsa «Marcar como pagado» (`:219-226`); «Historial de pagados» (`:230`). El envío va aparte del total de la venta: no es venta, ganancia ni ITBIS (`apps/web/src/POS.tsx:2984-2988`).
+- **Qué hace:** lista los envíos pendientes de pago al mensajero («Pendientes», `:175`), se seleccionan y se pulsa «Marcar como pagado» (`:219-226`); «Historial de pagados» (`:230`). El envío va aparte del total de la venta: no es venta, ganancia ni ITBIS (`apps/web/src/POS.tsx:3004-3008`).
 
 ## Productos
 
@@ -142,7 +142,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1056-1086`):
 
 - **Etiqueta:** «Configuración» (botón al fondo del menú, `sale:manage`). **Componente:** `apps/web/src/Management.tsx:4094`. Título «A la medida de tu negocio» (`:4150`).
 - **Pestañas** (`:4155-4158`):
-  - **Negocio y reglas:** datos del negocio, «Editar configuración» (descuento vendedor 10 %, margen bajo 15 %, devolución, tasa del dólar, cuentas de banco para transferencias, terminales de tarjeta, imprimir el recibo automáticamente, ventas sin conexión, «No vender productos sin costo» (apagado por defecto; aún no desplegado, ver `VENTA_SIN_COSTO.md`), ventas a crédito, preparación de NCF, ITBIS incluido: `:4026-4141`), cajas y cajeros (`apps/web/src/Tienda.tsx:1265-1397`), avisos por Telegram, respaldo a Drive, tasas de incentivos y encuesta de caja (`:4223-4227`).
+  - **Negocio y reglas:** datos del negocio, «Editar configuración» (descuento vendedor 10 %, margen bajo 15 %, devolución, tasa del dólar, cuentas de banco para transferencias, terminales de tarjeta, imprimir el recibo automáticamente, ventas sin conexión, «No vender productos sin costo» (apagado por defecto; aún no desplegado, ver `VENTA_SIN_COSTO.md`), ventas a crédito, preparación de NCF, ITBIS incluido: `:4026-4141`), cajas y cajeros (`apps/web/src/Tienda.tsx:1273-1405`), avisos por Telegram, respaldo a Drive, tasas de incentivos y encuesta de caja (`:4223-4227`).
   - **Usuarios y permisos:** «Crear usuario», Editar, «Restablecer contraseña», Activar/Desactivar y «Permisos por rol» (`:4230-4310`).
   - **Bitácora:** registro de acciones (`:4312-4335`).
   - **Equipos:** aprobar o revocar equipos (`:4171`).

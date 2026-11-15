@@ -312,7 +312,15 @@ export function CloseCashModal({
     </label>
   );
   return (
-    <Modal open onClose={onClose} title="Cuadre y cierre de caja">
+    <Modal
+      open
+      onClose={onClose}
+      title="Cuadre y cierre de caja"
+      hasData={
+        Object.values(counts).some((v) => v !== "") ||
+        Object.values(form).some((v) => v !== "")
+      }
+    >
       <form onSubmit={submit} className="close-cash">
         {waiting && (
           <p className="close-pending-warning" role="alert">

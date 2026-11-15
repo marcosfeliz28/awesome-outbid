@@ -8,7 +8,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Arqueo / «Cerrar y arquear»** — Contar el dinero de la caja y compararlo con lo que el sistema espera (`apps/web/src/Management.tsx:1722`).
 
-**B01 / B02** — Tipos de comprobante fiscal que se pueden _solicitar_ si la «Preparación de NCF» está activa: B01 «Crédito fiscal» (pide RNC o cédula) y B02 «Consumidor final». El sistema solo prepara la solicitud; no emite el comprobante (`apps/web/src/POS.tsx:2670-2698`).
+**B01 / B02** — Tipos de comprobante fiscal que se pueden _solicitar_ si la «Preparación de NCF» está activa: B01 «Crédito fiscal» (pide RNC o cédula) y B02 «Consumidor final». El sistema solo prepara la solicitud; no emite el comprobante (`apps/web/src/POS.tsx:2690-2718`).
 
 **Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:260`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
 
@@ -16,7 +16,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Casa** — Almacén de la mercancía guardada fuera de la tienda (`kind=home`, no vendible). Solo se mueve con instrucción expresa de la dueña (`.claude/skills/mercancia/SKILL.md:33`; `apps/api/prisma/migrations/202610240401_warehouses/migration.sql:56`).
 
-**Cierre de emergencia** — Un gerente/administrador cierra la caja de otra persona; queda «cerrada por X en nombre de Y» (`apps/web/src/Tienda.tsx:322-329`; `apps/api/src/cash.ts:1335-1350`).
+**Cierre de emergencia** — Un gerente/administrador cierra la caja de otra persona; queda «cerrada por X en nombre de Y» (`apps/web/src/Tienda.tsx:330-337`; `apps/api/src/cash.ts:1335-1350`).
 
 **Conciliar** — Comparar las transferencias del sistema con el estado del banco antes de verificarlas. Pantalla «Conciliar transferencias» (`apps/web/src/TransferReconciliation.tsx:182-190`).
 
@@ -24,23 +24,23 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Consumidor final** — Cliente genérico para ventas sin datos; si existe en la lista, sale primero al elegir cliente (`apps/web/src/POS.tsx:363-380`). Las facturas deben identificar a una persona o empresa (`requireCustomer`, `apps/api/src/admin.ts:123-125`). También es el tipo B02.
 
-**Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2860`, `:1798-1802`).
+**Contraentrega (`cod`)** — Venta que sale con la mercancía y se cobra cuando el mensajero trae el dinero. En la base es lo mismo que el crédito (método `cod`); solo cambia la etiqueta estadística (`apps/web/src/POS.tsx:2880`, `:1798-1802`).
 
 **Costo promedio (`costAvg`)** — Costo de una variante, recalculado en cada entrada (`apps/api/prisma/schema.prisma:120-135`). Con él se calcula el margen.
 
-**Crédito** — Venta a cuenta del cliente: la mercancía sale ahora, se cobra después. Pantalla: «Créditos pendientes» dentro de Caja (`apps/web/src/Tienda.tsx:605`). Reglas de PIN: `packages/shared/src/index.ts:447`.
+**Crédito** — Venta a cuenta del cliente: la mercancía sale ahora, se cobra después. Pantalla: «Créditos pendientes» dentro de Caja (`apps/web/src/Tienda.tsx:613`). Reglas de PIN: `packages/shared/src/index.ts:447`.
 
 **Cuadre** — El resultado del cierre de caja: lo contado contra lo esperado por método (efectivo, tarjeta, transferencia, dólares), con diferencias; se imprime al cerrar (`apps/web/src/Management.tsx:2131-2141`; `apps/api/src/cash.ts:1112`). **Descuadre** = diferencia distinta de cero; exige justificación y el PIN de otra persona (`apps/api/src/cash.ts:1248-1300`).
 
-**Datáfono / verifón / lote del verifón** — Terminal de tarjeta. «Cerrar el lote» antes de cerrar la caja para que los cobros caigan al día siguiente; el número de lote es obligatorio si hubo tarjeta (`apps/web/src/Tienda.tsx:330-333`, `:399-412`; `apps/api/src/cash.ts:1196-1210`).
+**Datáfono / verifón / lote del verifón** — Terminal de tarjeta. «Cerrar el lote» antes de cerrar la caja para que los cobros caigan al día siguiente; el número de lote es obligatorio si hubo tarjeta (`apps/web/src/Tienda.tsx:338-341`, `:399-412`; `apps/api/src/cash.ts:1196-1210`).
 
 **Descuento** — Rebaja a una línea (% o RD$) o global (%). Siempre con motivo; sobre el límite del vendedor pide PIN. La caja aplica el mayor entre el descuento manual y el de la promoción (`apps/web/src/POS.tsx:343-356`).
 
 **Dueña** — Marcos/Grupo MacGen, usuaria con permiso `*` (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:2`). Sus órdenes fechadas están en `CLAUDE.md` y en `.claude/skills/comunicacion/SKILL.md`.
 
-**Entregado / Dejado en caja** — Al cerrar: «Entregado» es el efectivo que se le da a la dueña; «Dejado en caja» es lo que queda y será el fondo sugerido de la próxima apertura (`apps/web/src/Tienda.tsx:414-425`; `packages/shared/src/index.ts:688-701`).
+**Entregado / Dejado en caja** — Al cerrar: «Entregado» es el efectivo que se le da a la dueña; «Dejado en caja» es lo que queda y será el fondo sugerido de la próxima apertura (`apps/web/src/Tienda.tsx:422-433`; `packages/shared/src/index.ts:688-701`).
 
-**Envío / mensajero** — Cobro del envío que paga el cliente junto con la transferencia o la tarjeta. Va **aparte** del total (no es venta, ganancia ni ITBIS) y se le paga luego al mensajero (por defecto «Addison») en «Envíos del mensajero» (`apps/web/src/POS.tsx:2947-2992`; `apps/web/src/CourierPayouts.tsx:26`; `packages/shared/src/index.ts` `courierCharge`).
+**Envío / mensajero** — Cobro del envío que paga el cliente junto con la transferencia o la tarjeta. Va **aparte** del total (no es venta, ganancia ni ITBIS) y se le paga luego al mensajero (por defecto «Addison») en «Envíos del mensajero» (`apps/web/src/POS.tsx:2967-3012`; `apps/web/src/CourierPayouts.tsx:26`; `packages/shared/src/index.ts` `courierCharge`).
 
 **Equipo / terminal** — Computadora registrada. Un equipo nuevo necesita aprobación de un gerente (`apps/web/src/realtime.tsx:515-518`).
 
@@ -100,7 +100,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Transferencia** — Pago por banco. Siempre pide cuenta y referencia y queda por verificar hasta que la administración la comprueba.
 
-**Vale de caja** — Comprobante de salida que está en la gaveta al cerrar y compensa efectivo faltante. Exige nota y el PIN de otro gerente, y genera una alerta alta (`apps/web/src/Tienda.tsx:363-369`; `apps/api/src/cash.ts:1139-1165`).
+**Vale de caja** — Comprobante de salida que está en la gaveta al cerrar y compensa efectivo faltante. Exige nota y el PIN de otro gerente, y genera una alerta alta (`apps/web/src/Tienda.tsx:371-377`; `apps/api/src/cash.ts:1139-1165`).
 
 **Variante** — Combinación concreta de un producto (talla, color, sabor) con su propio código, precio y existencia (`apps/api/prisma/schema.prisma:120`).
 

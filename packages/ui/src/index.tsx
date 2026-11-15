@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, LoaderCircle } from "lucide-react";
@@ -83,21 +84,65 @@ export function Loading() {
     </div>
   );
 }
+// DIS-02: con datos escritos, cerrar (X, Escape o clic fuera) pregunta antes de
+// descartar. Sin datos, cierra como siempre.
+export function closeAction(
+  hasData: boolean,
+  asking: boolean,
+): "close" | "ask" | "stay" {
+  if (!hasData) return "close";
+  return asking ? "stay" : "ask";
+}
+export function DiscardNotice({
+  onKeep,
+  onDiscard,
+}: {
+  onKeep: () => void;
+  onDiscard: () => void;
+}) {
+  const keep = useRef<HTMLButtonElement>(null);
+  useEffect(() => keep.current?.focus(), []);
+  return (
+    <div className="discard-notice" role="alertdialog" aria-label="Datos sin guardar">
+      <p>Tienes datos escritos que se perderán. ¿Salir sin guardar?</p>
+      <div>
+        <button ref={keep} type="button" className="button primary" onClick={onKeep}>
+          Seguir aquí
+        </button>
+        <button type="button" className="button ghost" onClick={onDiscard}>
+          Salir y descartar
+        </button>
+      </div>
+    </div>
+  );
+}
 export function Modal({
   open,
   onClose,
   title,
   children,
   wide = false,
+  hasData = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   wide?: boolean;
+  /** Si es true, cerrar pregunta antes de descartar lo escrito. */
+  hasData?: boolean;
 }) {
+  const [asking, setAsking] = useState(false);
+  useEffect(() => {
+    if (!hasData) setAsking(false);
+  }, [hasData]);
+  const request = () => {
+    const action = closeAction(hasData, asking);
+    if (action === "close") onClose();
+    else if (action === "ask") setAsking(true);
+  };
   return (
-    <Dialog.Root open={open} onOpenChange={(value) => !value && onClose()}>
+    <Dialog.Root open={open} onOpenChange={(value) => !value && request()}>
       <Dialog.Portal>
         <Dialog.Overlay className="modal-overlay" />
         <Dialog.Content
@@ -112,6 +157,15 @@ export function Modal({
               </button>
             </Dialog.Close>
           </div>
+          {asking && (
+            <DiscardNotice
+              onKeep={() => setAsking(false)}
+              onDiscard={() => {
+                setAsking(false);
+                onClose();
+              }}
+            />
+          )}
           {children}
         </Dialog.Content>
       </Dialog.Portal>

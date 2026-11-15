@@ -95,6 +95,7 @@ export default defineConfig({
       "tests/page-error-boundary.test.tsx",
       "tests/f2-02-kpi-strip.test.ts",
       "tests/product-margin.test.ts",
+      "tests/modal-dirty-guard.test.tsx",
       "tests/instalador-codificacion.test.ts",
       "tests/theme-bootstrap.test.ts",
       "tests/cod-pending-search.test.ts",

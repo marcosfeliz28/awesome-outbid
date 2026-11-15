@@ -2525,7 +2525,27 @@ function Checkout({
     );
   }
   return (
-    <Modal open title="Todo listo para cobrar" onClose={onClose}>
+    <Modal
+      open
+      title="Todo listo para cobrar"
+      onClose={onClose}
+      hasData={
+        payments.length > 0 ||
+        amount !== String(total) ||
+        pin !== "" ||
+        discountReason !== "" ||
+        courier.on ||
+        creditNoteCode !== "" ||
+        recipientLegalId !== "" ||
+        Boolean(
+          details.bank ||
+            details.terminal ||
+            details.reference ||
+            details.cardLast4 ||
+            details.approvalCode,
+        )
+      }
+    >
       <div className="payment-total">
         <span>Total de esta venta</span>
         <h2>{formatMoney(total)}</h2>
