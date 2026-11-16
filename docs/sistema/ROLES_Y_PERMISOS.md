@@ -99,7 +99,7 @@ Lista de lo que la API exige `@Permit("*")` (verificado en el código; no se enu
 | Usuarios, restablecer contraseña, roles | `/users`, `/roles` | `admin.ts:1034-1330` |
 | Bitácora y reglas de alertas | `/audit-log`, `/alert-rules` | `admin.ts:1331`; `alerts.ts:919-922` |
 | Cerrar el mes de incentivos / ajustar tasas | `/incentives/close`, `/incentives/rates` | `apps/api/src/incentives.ts:805`, `:852` |
-| Importación de GV | `POST /gv/import` | `apps/api/src/gv.ts:1001` |
+| Importación de GV | `POST /gv/import` | `apps/api/src/gv.ts:1020` |
 | Respaldo a Drive (tarjeta) | Configuración | `apps/api/src/drive-backup.ts` |
 | IA de ventas («Preguntar a Norexos») | Con `reports:read`: ventas, top y cobros de la tienda (forma de cobro/banco solo si ve el esperado de caja). Costo, ganancia y margen solo con `profit:read` y nunca para `seller`. La cajera (`seller`) usa solo `mis_ventas`: sus ventas, sin costos ni totales de la tienda. Sin `reports:read` y sin ser cajera → 403. | `apps/api/src/assistant.ts` (`toolsFor`, `runTool`); ver `IA_VENTAS.md` |
 

@@ -922,6 +922,25 @@ export class GvController {
     };
   }
 
+  // «Mi incentivo GV»: sólo lo que la usuaria de la sesión registró (cobró);
+  // ignora cualquier userId. Reusa el cálculo de arriba, sin costos.
+  @Get("incentives/me")
+  @Permit("gv:read")
+  async incentivesMe(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    const all = await this.incentives(query, actor);
+    const rows = all.rows.filter((r) => r.personId === actor.id);
+    const total = rows.reduce((a, r) => a.plus(r.amount), d(0));
+    return {
+      period: all.period,
+      rows,
+      total: total.toFixed(2),
+      count: rows.length,
+    };
+  }
+
   // PENDIENTE DE VISTO BUENO DE LA DUEÑA (4-nov): avisos de GV. Abono viejo =
   // inscripción activa con saldo cuyo último pago válido tiene más de 15 días.
   @Get("alerts")

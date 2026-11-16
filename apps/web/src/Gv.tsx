@@ -97,7 +97,8 @@ const money = (value: string | number) => (
 const paymentAmount = (p: Payment) =>
   p.currency === "USD" ? (
     <span className="gv-money">
-      US$ {Number(p.amount).toLocaleString("es-DO", {
+      US${" "}
+      {Number(p.amount).toLocaleString("es-DO", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}
@@ -132,7 +133,13 @@ function Options({ map }: { map: Record<string, string> }) {
 export function Gv() {
   const user = useStore((s) => s.user)!;
   const [tab, setTab] = useState<
-    "courses" | "appointments" | "leads" | "transfers" | "cash" | "reports"
+    | "courses"
+    | "appointments"
+    | "leads"
+    | "transfers"
+    | "cash"
+    | "incentive"
+    | "reports"
   >("courses");
   const [courseId, setCourseId] = useState<string | null>(null);
   return (
@@ -191,6 +198,14 @@ export function Gv() {
         >
           Caja GV
         </button>
+        <button
+          role="tab"
+          aria-selected={tab === "incentive"}
+          className={tab === "incentive" ? "active" : ""}
+          onClick={() => setTab("incentive")}
+        >
+          Mi incentivo
+        </button>
         {can(user.permissions, "gv:reports") && (
           <button
             role="tab"
@@ -212,8 +227,54 @@ export function Gv() {
       {tab === "leads" && <GvLeads />}
       {tab === "transfers" && <Transfers />}
       {tab === "cash" && <GvCaja />}
+      {tab === "incentive" && <MyIncentive />}
       {tab === "reports" && <Reports />}
     </section>
+  );
+}
+
+type MyIncentiveData = {
+  total: string;
+  count: number;
+  rows: {
+    enrollmentId: string;
+    clientName: string;
+    course: string;
+    kind: string;
+    amount: string;
+  }[];
+};
+
+function MyIncentive() {
+  const [period, setPeriod] = useState(businessDate().slice(0, 7));
+  const q = useQuery<MyIncentiveData>({
+    queryKey: ["gv-my-incentive", period],
+    queryFn: () => api(`/gv/incentives/me?period=${period}`),
+  });
+  return (
+    <>
+      <div className="gv-toolbar">
+        <input
+          type="month"
+          aria-label="Mes"
+          value={period}
+          onChange={(e) => e.target.value && setPeriod(e.target.value)}
+        />
+      </div>
+      <QueryState query={q}>
+        <div className="panel">
+          <strong>
+            Acumulado del mes: {formatMoney(q.data?.total ?? "0")}
+          </strong>
+          <span> · {q.data?.count ?? 0} movimientos que tú registraste</span>
+          {q.data?.rows.map((r, i) => (
+            <div key={`${r.enrollmentId}-${i}`}>
+              {r.clientName} · {r.course} · {formatMoney(r.amount)}
+            </div>
+          ))}
+        </div>
+      </QueryState>
+    </>
   );
 }
 

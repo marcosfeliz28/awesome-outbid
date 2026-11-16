@@ -125,6 +125,7 @@ export default defineConfig({
       "tests/configuracion-pruebas.test.ts",
       "tests/gv-unit.test.ts",
       "tests/gv-incentivos-unit.test.ts",
+      "tests/gv-mi-incentivo-api.test.ts",
       "tests/gv-auditoria-migration-postgres.test.ts",
       "tests/gv-gerente-rol-migration-postgres.test.ts",
       "tests/dominio-redireccion.test.ts",
