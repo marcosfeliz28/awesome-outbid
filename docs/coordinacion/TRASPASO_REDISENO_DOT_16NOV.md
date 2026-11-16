@@ -6,63 +6,65 @@ Todo lo de abajo lo comprobó Claude nube el 16-nov a las ~18:40 (hora de la tie
 
 ## 1. Punto de partida
 
-| Elemento | Valor o enlace | Commit / fecha | Estado | Acceso faltante | Responsable |
-|---|---|---|---|---|---|
-| Repositorio | `marcosfeliz28/awesome-outbid` (público hoy; Marcos lo pasa a privado esta noche) | — | verificado | — | Marcos |
-| Rama de la tienda (Macgen) | `nexora-cloud` | `f46187ca`, 16-nov | verificado | — | compartida |
-| Rama del producto que se vende (multiempresa) | `producto-nexora` | `50563e46`, 30-oct | verificado | — | compartida |
-| Desplegado: tienda API `nexora-pos-api` | rama `nexora-cloud`, autoDeploy apagado | `65a2ca62`, 16-nov 18:18 | verificado | — | Claude nube |
-| Desplegado: tienda web `nexora-pos-web` (https://nexora-pos-web.onrender.com) | rama `nexora-cloud`, autoDeploy apagado | `65a2ca62`, 16-nov 18:17 | verificado | — | Claude nube |
-| Desplegado: producto API `nexora-saas-api` | rama `producto-nexora`, autoDeploy apagado | `d3acef4f`, 29-oct | verificado | — | Claude nube |
-| Desplegado: producto web `nexora-saas-web` (https://nexora-saas-web.onrender.com) | rama `producto-nexora`, autoDeploy apagado | `92f77795`, 29-oct | verificado | — | Claude nube |
-| Vistas previas de Render | apagadas en los 4 servicios (`previews: off`) | — | verificado | activarlas cuesta; decide Marcos | Marcos |
-| Reglas del proyecto | `CLAUDE.md`, `AGENTS.md`, `docs/coordinacion/INSTRUCCIONES_ACTUALES.md`, `.claude/skills/seguridad-20/` | `f46187ca` | verificado | — | todos |
-| Pantallas y rutas | `docs/sistema/PANTALLAS.md`, `docs/diseno/MAPA_PANTALLAS.md` | `f46187ca` | verificado | — | — |
-| Roles | `docs/sistema/ROLES_Y_PERMISOS.md` (admin, seller, warehouse, manager, gv, gerente_gv) | `f46187ca` | verificado | — | — |
-| Flujos de caja, cobros, mercancía | `docs/sistema/FLUJO_CAJA_POS.md`, `FLUJO_COBROS_Y_TRANSFERENCIAS.md`, `FLUJO_MERCANCIA.md` | `f46187ca` | verificado | — | — |
-| Plataformas | Web/PWA (`apps/web`), instalador Windows (`instalador/`, NSIS), shell Tauri solo en ramas del producto (`apps/web/src-tauri`) | — | verificado | — | — |
+| Elemento                                                                          | Valor o enlace                                                                                                                | Commit / fecha           | Estado     | Acceso faltante                  | Responsable |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------- | -------------------------------- | ----------- |
+| Repositorio                                                                       | `marcosfeliz28/awesome-outbid` (público hoy; Marcos lo pasa a privado esta noche)                                             | —                        | verificado | —                                | Marcos      |
+| Rama de la tienda (Macgen)                                                        | `nexora-cloud`                                                                                                                | `f46187ca`, 16-nov       | verificado | —                                | compartida  |
+| Rama del producto que se vende (multiempresa)                                     | `producto-nexora`                                                                                                             | `50563e46`, 30-oct       | verificado | —                                | compartida  |
+| Desplegado: tienda API `nexora-pos-api`                                           | rama `nexora-cloud`, autoDeploy apagado                                                                                       | `65a2ca62`, 16-nov 18:18 | verificado | —                                | Claude nube |
+| Desplegado: tienda web `nexora-pos-web` (https://nexora-pos-web.onrender.com)     | rama `nexora-cloud`, autoDeploy apagado                                                                                       | `65a2ca62`, 16-nov 18:17 | verificado | —                                | Claude nube |
+| Desplegado: producto API `nexora-saas-api`                                        | rama `producto-nexora`, autoDeploy apagado                                                                                    | `d3acef4f`, 29-oct       | verificado | —                                | Claude nube |
+| Desplegado: producto web `nexora-saas-web` (https://nexora-saas-web.onrender.com) | rama `producto-nexora`, autoDeploy apagado                                                                                    | `92f77795`, 29-oct       | verificado | —                                | Claude nube |
+| Vistas previas de Render                                                          | apagadas en los 4 servicios (`previews: off`)                                                                                 | —                        | verificado | activarlas cuesta; decide Marcos | Marcos      |
+| Reglas del proyecto                                                               | `CLAUDE.md`, `AGENTS.md`, `docs/coordinacion/INSTRUCCIONES_ACTUALES.md`, `.claude/skills/seguridad-20/`                       | `f46187ca`               | verificado | —                                | todos       |
+| Pantallas y rutas                                                                 | `docs/sistema/PANTALLAS.md`, `docs/diseno/MAPA_PANTALLAS.md`                                                                  | `f46187ca`               | verificado | —                                | —           |
+| Roles                                                                             | `docs/sistema/ROLES_Y_PERMISOS.md` (admin, seller, warehouse, manager, gv, gerente_gv)                                        | `f46187ca`               | verificado | —                                | —           |
+| Flujos de caja, cobros, mercancía                                                 | `docs/sistema/FLUJO_CAJA_POS.md`, `FLUJO_COBROS_Y_TRANSFERENCIAS.md`, `FLUJO_MERCANCIA.md`                                    | `f46187ca`               | verificado | —                                | —           |
+| Plataformas                                                                       | Web/PWA (`apps/web`), instalador Windows (`instalador/`, NSIS), shell Tauri solo en ramas del producto (`apps/web/src-tauri`) | —                        | verificado | —                                | —           |
 
 ## 2. Trabajo en paralelo (no tocar sus archivos)
 
-| Trabajo | Rama | Archivos reservados | Estado | Responsable |
-|---|---|---|---|---|
-| Incentivo de Clary (solo pagos propios, desde octubre) | `mejora/gv-incentivo-solo-propios-16nov` (`01372c09`) | `apps/api/src/gv.ts`, `docs/sistema/GV.md`, `CAMBIOS.md`, `CITAS_ANCLAS.json` | CI corriendo; se despliega hoy | Claude nube |
-| Bitácora de mercancía | `claude/bitacora-n2` (`596fb296`) | `docs/operacion/*` | sin mezclar | Norexos 2 |
-| Maquetas 15-nov y frascos cortados | `chatgpt-nube/maquetas-15nov` (`0b7bd8c3`) | `docs/diseno/maquetas-15nov/` | abierto | ChatGPT nube |
-| Fotos de suplementos | `chatgpt-nube/fotos-suplementos` (`70029992`), `docs/fotos/suplementos.csv` | `docs/fotos/` | 0 fotos aprobadas | ChatGPT nube |
-| Rediseño de Claude (rechazado) | `mejora/diseno-violeta-cobrar-16nov` (`e92d0ba3`) | `apps/web/src/styles.css` | **no se mezcla**; solo referencia | — |
-| Obsidian Lumina (rediseño anterior de ChatGPT, del producto) | PR borrador #8, #9, #10, #11, #13, #14, #16 | `apps/web/src/*` en ramas del producto | sin mezclar desde el 27-oct; Dot debe revisarlos antes de empezar para no repetir | Dot / Marcos |
-| Otros PR abiertos | #18 (texto de «Método» en informe), #12 (docs), #4 (propuesta de cierre) | — | sin mezclar | — |
+| Trabajo                                                      | Rama                                                                        | Archivos reservados                                                           | Estado                                                                            | Responsable  |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------ |
+| Incentivo de Clary (solo pagos propios, desde octubre)       | `mejora/gv-incentivo-solo-propios-16nov` (`01372c09`)                       | `apps/api/src/gv.ts`, `docs/sistema/GV.md`, `CAMBIOS.md`, `CITAS_ANCLAS.json` | CI corriendo; se despliega hoy                                                    | Claude nube  |
+| Bitácora de mercancía                                        | `claude/bitacora-n2` (`596fb296`)                                           | `docs/operacion/*`                                                            | sin mezclar                                                                       | Norexos 2    |
+| Maquetas 15-nov y frascos cortados                           | `chatgpt-nube/maquetas-15nov` (`0b7bd8c3`)                                  | `docs/diseno/maquetas-15nov/`                                                 | abierto                                                                           | ChatGPT nube |
+| Fotos de suplementos                                         | `chatgpt-nube/fotos-suplementos` (`70029992`), `docs/fotos/suplementos.csv` | `docs/fotos/`                                                                 | 0 fotos aprobadas                                                                 | ChatGPT nube |
+| Rediseño de Claude (rechazado)                               | `mejora/diseno-violeta-cobrar-16nov` (`e92d0ba3`)                           | `apps/web/src/styles.css`                                                     | **no se mezcla**; solo referencia                                                 | —            |
+| Obsidian Lumina (rediseño anterior de ChatGPT, del producto) | PR borrador #8, #9, #10, #11, #13, #14, #16                                 | `apps/web/src/*` en ramas del producto                                        | sin mezclar desde el 27-oct; Dot debe revisarlos antes de empezar para no repetir | Dot / Marcos |
+| Otros PR abiertos                                            | #18 (texto de «Método» en informe), #12 (docs), #4 (propuesta de cierre)    | —                                                                             | sin mezclar                                                                       | —            |
 
 ## 3. Material visual
 
-| Elemento | Dónde | Estado |
-|---|---|---|
-| Capturas reales de hoy (Inicio, datos de demostración, escritorio 1440): estándar, Impacto claro y oscuro | `docs/diseno/capturas-16nov/real-*.png` | verificado (datos de demostración, no reales) |
-| Capturas antes/después de octubre (escritorio, oscuro, iPhone) | `docs/diseno/capturas/`, `docs/diseno/capturas-rediseno-tienda/` | verificado; pueden estar viejas |
-| Logo | `apps/web/public/icon.svg`, `apps/web/public/logo-grupo-macgen.png`; logo del producto en las ramas del producto | **pendiente**: Marcos confirma cuál es el oficial (la imagen de referencia usa «Nexora» con N dorada) |
-| Tipografías | Inter (texto) y Plus Jakarta Sans (títulos), locales en la app | verificado |
-| Colores y tokens | `packages/ui/src/tokens.css`, `apps/web/src/styles.css` (`:root` y `[data-theme="dark"]`) | verificado |
-| Tema claro/oscuro | sigue al equipo (`apps/web/src/theme.ts`) | verificado |
-| Modo «Impacto» (movimiento, cifras que cuentan, aurora) | `apps/web/src/impacto.*`, `docs/diseno/DIRECCION_VISUAL_IMPACTO.md`; **apagado por defecto**, nunca en la caja | verificado |
-| Íconos | `lucide-react` | verificado |
-| Ilustraciones de categorías | `apps/web/public/products/*.svg` (genéricas, no fotos) | verificado |
-| Fotos de productos | ninguna real aprobada | verificado |
-| Archivos editables (Figma u otros) | no hay en el repositorio | **pendiente** |
+| Elemento                                                                                                  | Dónde                                                                                                            | Estado                                                                                                |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Capturas reales de hoy (Inicio, datos de demostración, escritorio 1440): estándar, Impacto claro y oscuro | `docs/diseno/capturas-16nov/real-*.png`                                                                          | verificado (datos de demostración, no reales)                                                         |
+| Capturas antes/después de octubre (escritorio, oscuro, iPhone)                                            | `docs/diseno/capturas/`, `docs/diseno/capturas-rediseno-tienda/`                                                 | verificado; pueden estar viejas                                                                       |
+| Logo                                                                                                      | `apps/web/public/icon.svg`, `apps/web/public/logo-grupo-macgen.png`; logo del producto en las ramas del producto | **pendiente**: Marcos confirma cuál es el oficial (la imagen de referencia usa «Nexora» con N dorada) |
+| Tipografías                                                                                               | Inter (texto) y Plus Jakarta Sans (títulos), locales en la app                                                   | verificado                                                                                            |
+| Colores y tokens                                                                                          | `packages/ui/src/tokens.css`, `apps/web/src/styles.css` (`:root` y `[data-theme="dark"]`)                        | verificado                                                                                            |
+| Tema claro/oscuro                                                                                         | sigue al equipo (`apps/web/src/theme.ts`)                                                                        | verificado                                                                                            |
+| Modo «Impacto» (movimiento, cifras que cuentan, aurora)                                                   | `apps/web/src/impacto.*`, `docs/diseno/DIRECCION_VISUAL_IMPACTO.md`; **apagado por defecto**, nunca en la caja   | verificado                                                                                            |
+| Íconos                                                                                                    | `lucide-react`                                                                                                   | verificado                                                                                            |
+| Ilustraciones de categorías                                                                               | `apps/web/public/products/*.svg` (genéricas, no fotos)                                                           | verificado                                                                                            |
+| Fotos de productos                                                                                        | ninguna real aprobada                                                                                            | verificado                                                                                            |
+| Archivos editables (Figma u otros)                                                                        | no hay en el repositorio                                                                                         | **pendiente**                                                                                         |
 
 ## 4. Flujos que el rediseño no puede romper
+
 Caja y cobro (F12 «Cobrar»), búsqueda y lector de código, catálogo, recibos e impresión, devoluciones y anulaciones, cierre de caja ciego, venta sin conexión y sincronización, transferencias por verificar, GV (cursos, caja GV, «Mi incentivo»), estados de carga, error, sin permiso, red caída y sesión vencida. Pruebas que los cuidan: `tests/e2e/*.spec.ts` (más de 150) y `tests/accessibility-contract.test.ts`.
 
 ## 5. Accesos de Dot
 
-| Acceso | Estado | Qué falta y cómo darlo de forma segura |
-|---|---|---|
-| GitHub: leer, crear rama, commit, PR, ver Actions | **pendiente**. El único colaborador del repo es `marcosfeliz28`; los PR de ChatGPT salen con la cuenta de Marcos (conector de GitHub en ChatGPT). | Dot prueba creando la rama `dot/prueba-acceso` con un archivo de texto. Si falla, Marcos conecta GitHub en ChatGPT solo para este repositorio. Sin administración ni quitar protecciones. |
-| Render: ver servicios, versión, historial, logs | **pendiente**: Dot no tiene acceso | Marcos lo invita al espacio «Marcos» de Render con el rol más bajo que permita ver servicios y logs. Revisar los roles de Render antes de elegir. |
-| Render: desplegar `nexora-pos-web` | **contradicción pendiente**: `CLAUDE.md` regla 4 dice «Solo Claude (nube) despliega en Render, con los 3 CI en verde». | Marcos decide: (a) Dot entrega la rama con CI verde y Claude despliega (no cambia nada), o (b) Marcos cambia la regla 4 por escrito y le da a Dot permiso de despliegue solo en `nexora-pos-web`. |
-| Base de datos, claves, secretos | no hacen falta para el diseño | No se dan. Ningún secreto por chat ni en el repositorio. |
+| Acceso                                            | Estado                                                                                                                                            | Qué falta y cómo darlo de forma segura                                                                                                                                                            |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub: leer, crear rama, commit, PR, ver Actions | **pendiente**. El único colaborador del repo es `marcosfeliz28`; los PR de ChatGPT salen con la cuenta de Marcos (conector de GitHub en ChatGPT). | Dot prueba creando la rama `dot/prueba-acceso` con un archivo de texto. Si falla, Marcos conecta GitHub en ChatGPT solo para este repositorio. Sin administración ni quitar protecciones.         |
+| Render: ver servicios, versión, historial, logs   | **pendiente**: Dot no tiene acceso                                                                                                                | Marcos lo invita al espacio «Marcos» de Render con el rol más bajo que permita ver servicios y logs. Revisar los roles de Render antes de elegir.                                                 |
+| Render: desplegar `nexora-pos-web`                | **contradicción pendiente**: `CLAUDE.md` regla 4 dice «Solo Claude (nube) despliega en Render, con los 3 CI en verde».                            | Marcos decide: (a) Dot entrega la rama con CI verde y Claude despliega (no cambia nada), o (b) Marcos cambia la regla 4 por escrito y le da a Dot permiso de despliegue solo en `nexora-pos-web`. |
+| Base de datos, claves, secretos                   | no hacen falta para el diseño                                                                                                                     | No se dan. Ningún secreto por chat ni en el repositorio.                                                                                                                                          |
 
 ## 6. Etapas (resumen del instructivo)
+
 1. Rama `dot/rediseno-*` desde `nexora-cloud` en un commit nombrado; nunca trabajar en `nexora-cloud`.
 2. Auditar la interfaz y medir una línea base (capturas y tiempo de carga).
 3. Biblioteca de tokens y componentes (colores, tipografía, tarjetas, botones, tablas, formularios, estados).
@@ -73,6 +75,7 @@ Caja y cobro (F12 «Cobrar»), búsqueda y lector de código, catálogo, recibos
 8. Publicar solo la web (`nexora-pos-web`), sin redesplegar la API ni migraciones; verificar después la versión servida. Reversión: volver a desplegar el commit anterior (`65a2ca62` hoy).
 
 ## 7. Qué puede empezar Dot hoy / qué depende de accesos / qué no tocar
+
 - **Hoy, sin accesos nuevos:** leer este archivo, las reglas y los PR de Obsidian Lumina; elegir con Marcos el concepto (01, 02 o 03); entregar la biblioteca de tokens y las maquetas de Caja e Inicio.
 - **Depende de accesos:** crear ramas y PR (GitHub), ver Render y desplegar (decisión de Marcos sobre la regla 4).
 - **En paralelo:** incentivo de Clary (Claude), bitácora (Norexos 2), fotos y frascos (ChatGPT nube).
