@@ -12,6 +12,9 @@ Lo que dijo la dueña en el chat con Norexos 1, textual y sin interpretar de má
 | 6 | **Botón** para poner o no poner el ITBIS en la factura | Pendiente de su sí; toca dinero |
 | 7 | «Corrige todo lo demás» | Aplicado lo que no depende de decisiones (ver el final) |
 
+## Confirmado por la dueña (16-nov, mediodía)
+Respondió «1) sí» a la propuesta del punto 1: **Instalado US$200 pago único** con instalador, 1 sucursal, hasta 3 cajas y 1 año de actualizaciones y soporte; **IA no incluida** (opcional con clave propia del cliente o paquetes prepagados); **Online US$40 al mes** sobre nube compartida entre clientes. (Norexos 1 lo lee así; si «sí» respondía otra pregunta, corregir aquí.)
+
 ## Preguntas abiertas (necesarias)
 1. **Moneda:** dijo «pesos primero» y luego dio cifras en dólares. ¿Se muestra en RD$ (con la tasa del día) o en US$?
 2. **US$40 en línea:** ¿es un solo plan que sustituye a los 4, o el precio de entrada (Básico)?
