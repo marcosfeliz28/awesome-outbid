@@ -870,7 +870,8 @@ export class GvController {
       },
     });
     // Incentivo por pago: a quien cobró cada pago (eventos del mes pedido).
-    const calc = enrollments.flatMap((e) =>
+    // Orden de la dueña (16-nov): el incentivo de Clary empieza en octubre de 2026.
+    const calc = (period < "2026-10" ? [] : enrollments).flatMap((e) =>
       gvIncentivosMes(
         {
           courseName: e.course.name,
@@ -892,21 +893,6 @@ export class GvController {
         personId: ev.personId,
       })),
     );
-    // Orden de la dueña (16-nov): lo cobrado con las cuentas técnicas «claude»
-    // (carga de datos de Clary) se acredita a Clary.
-    const [tecnicas, clary] = await Promise.all([
-      this.db.user.findMany({
-        where: { username: { in: ["claude", "claude-acceso"] } },
-        select: { id: true },
-      }),
-      this.db.user.findFirst({
-        where: { username: "Clary" },
-        select: { id: true },
-      }),
-    ]);
-    const aClary = new Set(tecnicas.map((u) => u.id));
-    if (clary)
-      for (const r of calc) if (aClary.has(r.personId)) r.personId = clary.id;
     const name = await gvUserNames(
       this.db,
       calc.map((r) => r.personId),
