@@ -41,7 +41,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 - **Transferencia:** sí. Campo **«Cuenta donde cayó»**, una **lista desplegable** («Elige la cuenta…») con las cuentas que la administración cargó en Configuración › «Cuentas de banco para transferencias (una por línea)». Si esa lista está vacía, se escribe el banco a mano. Además **«Referencia»** (obligatoria) (`apps/web/src/POS.tsx:2887-2927`; lista en `:2023`; campo de Configuración `apps/web/src/Management.tsx:4155-4163`). En la base el valor se guarda en `Payment.bank` (`apps/api/prisma/schema.prisma` modelo `Payment`) y el servidor exige banco y referencia (`apps/api/src/sales.ts:1025-1026`).
 - **Tarjeta:** pide **«Últimos 4 dígitos»**, **«Número de aprobación»**, **«Marca»** (Visa/Mastercard/Amex) y **«Tipo de tarjeta»** (Crédito/Débito); y, si Configuración tiene lista de «Terminales de tarjeta», un campo **«Terminal»** obligatorio («Elige el terminal…») (`apps/web/src/POS.tsx:2816-2886`, lista `:2024`). El terminal elegido se guarda también en `bank` (`:1970-1971`).
-- **Los nombres de los bancos y terminales** (lo que ve la cajera en la lista) **no están en el código**: son datos de Configuración. NO ENCONTRADO en el código; hay que mirar Configuración › Negocio y reglas › Editar configuración, o `GET /settings` entrando con `entrar.py`. (En GV se agrupan en «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis»: `apps/web/src/Gv.tsx:1056-1069`.)
+- **Los nombres de los bancos y terminales** (lo que ve la cajera en la lista) **no están en el código**: son datos de Configuración. NO ENCONTRADO en el código; hay que mirar Configuración › Negocio y reglas › Editar configuración, o `GET /settings` entrando con `entrar.py`. (En GV se agrupan en «Grupo Génesis» y «Grupo Macgen» según si el nombre contiene «génesis»: `apps/web/src/Gv.tsx:1067-1080`.)
 
 ---
 
@@ -73,7 +73,7 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 ## 8. ¿La tabla de inscripciones de GV muestra PRECIO, PAGADO y PENDIENTE?
 
-**Sí, las tres.** Columnas de la tabla de inscripciones de un curso, en orden: `CLIENTA`, `TELÉFONO`, **`PRECIO`**, **`PAGADO`**, **`PENDIENTE`**, `ESTADO`, `ASISTIÓ`, `SET` y una columna de acciones («Pago», «Editar») (`apps/web/src/Gv.tsx:531-539`; datos `:404-411`).
+**Sí, las tres.** Columnas de la tabla de inscripciones de un curso, en orden: `CLIENTA`, `TELÉFONO`, **`PRECIO`**, **`PAGADO`**, **`PENDIENTE`**, `ESTADO`, `ASISTIÓ`, `SET` y una columna de acciones («Pago», «Editar») (`apps/web/src/Gv.tsx:542-550`; datos `:404-411`).
 
 - PRECIO = precio acordado de esa inscripción. PAGADO = solo lo **verificado** (si hay transferencias sin verificar se agrega «(RD$ X por verificar)»). PENDIENTE = precio − pagado, nunca negativo (`apps/api/src/gv-money.ts:374-396`).
 - Las **citas** no son tabla: son tarjetas con «Total … · Pagado … · Pendiente …» (`apps/web/src/GvCitas.tsx:154-161`).

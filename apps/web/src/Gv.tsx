@@ -283,8 +283,19 @@ function MyIncentive() {
     queryFn: () => api(`/gv/incentives/me?period=${actual}`),
   });
   const total = Number(a.data?.total ?? 0) + Number(b.data?.total ?? 0);
+  // Estado de cierre: el último día del mes (al cerrar caja) y hasta el día 2.
+  const dia = Number(hoy.slice(8, 10));
+  const ultimo = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const cierre = dia === ultimo ? actual : dia <= 2 ? pasado : null;
   return (
     <>
+      {cierre && (
+        <div className="panel">
+          <strong>Estado de cierre de {cierre}</strong>
+          <span> · disponible hasta el día 2 del mes siguiente </span>
+          <Button onClick={() => window.print()}>Imprimir o guardar</Button>
+        </div>
+      )}
       <div className="panel">
         <strong>Total acumulado por cobrar: {formatMoney(total)}</strong>
         <span> (mes pasado + mes en curso)</span>

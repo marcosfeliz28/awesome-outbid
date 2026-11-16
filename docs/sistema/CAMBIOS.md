@@ -7,6 +7,7 @@ Formato: `| fecha | quién | qué cambió | archivos |`
 <!-- prettier-ignore-start -->
 | fecha | quién | qué cambió | archivos |
 |---|---|---|---|
+| 2026-11-16 | Norexos 1 | GV «Mi incentivo»: pestaña siempre visible y «Estado de cierre» del mes (último día del mes hasta el día 2) con botón Imprimir. Pendiente de despliegue. | `apps/web/src/Gv.tsx`, `docs/sistema/GV.md` |
 | 2026-11-16 | Norexos 1 | Incentivo GV: cuentan todos los pagos no anulados, verificados o no, en proporción al % pagado (reemplaza la regla de «curso ya dado»). Pendiente de despliegue. | `apps/api/src/gv-incentives.ts`, `apps/api/src/gv.ts`, `docs/sistema/GV.md` |
 | 2026-11-16 | Norexos 1 | Incentivo GV: los pagos vigentes de un curso que ya se dio cuentan aunque no estén verificados. Verificado 3 veces: Clary oct 2,352.0, nov 2,108.6. Pendiente de despliegue. | `apps/api/src/gv-incentives.ts`, `apps/api/src/gv.ts`, `docs/sistema/GV.md` |
 | 2026-11-16 | Norexos 1 | Incentivo GV por tipo de curso para cursos fuera del catálogo (grupal 50; personalizado y perfeccionamiento 500; Brazilian 0; bodas sin definir). Verificado 3 veces contra los pagos reales: Clary oct 752.14, nov 233.33. Pendiente de despliegue. | `apps/api/src/gv-incentives.ts`, `apps/api/src/gv.ts`, `docs/sistema/GV.md` |
