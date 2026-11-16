@@ -6874,3 +6874,96 @@ td strong {
       0 28px 48px #6d28d914;
   }
 }
+
+/* Rediseño atrevido (16-nov): fondo con luz de color, banner de marca con
+   degradado profundo, tarjetas de cifras con acento y brillo, menú activo en
+   degradado. Solo apariencia; se apaga con «reducir movimiento» donde anima. */
+.main-content {
+  background:
+    radial-gradient(900px 420px at 85% -80px, #8b5cf622, transparent 70%),
+    radial-gradient(700px 380px at 0% 30%, #ec489914, transparent 70%),
+    var(--bg);
+}
+:root[data-theme="dark"] .main-content {
+  background:
+    radial-gradient(900px 420px at 85% -80px, #7c3aed38, transparent 70%),
+    radial-gradient(700px 380px at 0% 30%, #ec489924, transparent 70%),
+    var(--bg);
+}
+.welcome-banner {
+  background:
+    radial-gradient(520px 260px at 90% 20%, #f0abfc66, transparent 70%),
+    linear-gradient(120deg, #3b0764 0%, #6d28d9 55%, #a21caf 100%) !important;
+  color: #fff;
+  border: 0 !important;
+  box-shadow:
+    0 20px 44px #6d28d940,
+    0 2px 0 #ffffff26 inset;
+}
+.welcome-banner h2,
+.welcome-banner h2 span,
+.welcome-banner p,
+.welcome-banner button,
+.welcome-banner .banner-chip {
+  color: #fff !important;
+}
+.welcome-banner h2 span {
+  background: linear-gradient(90deg, #fde68a, #fbcfe8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+.welcome-banner .banner-chip {
+  background: #ffffff1f !important;
+  border: 1px solid #ffffff40 !important;
+}
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(160deg, #8b5cf614 0%, transparent 55%), var(--surface);
+  border-top: 3px solid var(--primary);
+}
+.kpi-card:nth-child(2) {
+  border-top-color: #ec4899;
+}
+.kpi-card:nth-child(3) {
+  border-top-color: #059669;
+}
+.kpi-card:nth-child(4) {
+  border-top-color: #d97706;
+}
+.kpi-card > strong {
+  font-size: max(var(--fs-min), calc(31px * var(--fs-scale)));
+  letter-spacing: -0.02em;
+}
+.metric-icon {
+  box-shadow:
+    0 6px 14px #6d28d930,
+    0 1px 0 #ffffff80 inset;
+}
+.nav-item.active {
+  background: linear-gradient(90deg, #6d28d9, #9333ea) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px #6d28d94d;
+}
+.nav-item.active svg {
+  color: #fff !important;
+}
+.kpi-strip .kpi-strip-card {
+  position: relative;
+  overflow: hidden;
+  border-top: 3px solid var(--primary);
+  background:
+    linear-gradient(160deg, #8b5cf61a 0%, transparent 60%), var(--surface);
+}
+.kpi-strip .kpi-strip-card:nth-child(2) {
+  border-top-color: #ec4899;
+}
+.kpi-strip .kpi-strip-card:nth-child(3) {
+  border-top-color: #d97706;
+}
+.kpi-strip .kpi-strip-card strong {
+  font-size: max(var(--fs-min), calc(34px * var(--fs-scale)));
+  letter-spacing: -0.02em;
+}
