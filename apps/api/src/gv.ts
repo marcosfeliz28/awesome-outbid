@@ -852,7 +852,7 @@ export class GvController {
       },
       include: {
         course: {
-          select: { name: true, type: true, capacity: true, date: true },
+          select: { name: true, type: true, capacity: true },
         },
         payments: {
           select: {
@@ -876,7 +876,6 @@ export class GvController {
           courseName: e.course.name,
           courseType: e.course.type,
           courseCapacity: e.course.capacity,
-          courseDate: e.course.date,
           agreedPrice: e.agreedPrice,
           refundAmount: e.refundAmount,
           refundDate: e.refundDate,

@@ -168,11 +168,18 @@ describe("GV · incentivo por pago (cobrador)", () => {
     ]);
   });
 
-  it("sólo pagos verificados: los por verificar no devengan", () => {
+  it("los pagos por verificar también devengan (orden 16-nov); el anulado no", () => {
     const e = alumna(AUTO, "4500", [
       pago("4500", "2026-10-03", { verified: false }),
     ]);
-    expect(gvIncentivosMes(e)).toEqual([]);
+    expect(gvIncentivosMes(e).map((x) => x.amount)).toEqual(["50.00"]);
+    const r = alumna(AUTO, "4500", [
+      pago("4500", "2026-10-03", {
+        verified: false,
+        rejectedAt: new Date("2026-10-04T12:00:00Z"),
+      }),
+    ]);
+    expect(gvIncentivosMes(r)).toEqual([]);
   });
 });
 
@@ -244,26 +251,19 @@ describe("GV · casos de moneda y catálogo", () => {
     expect(monto("boda", 1, "20000", "20000")).toEqual([]);
   });
 
-  it("curso ya dado: sus pagos cuentan sin verificar; curso futuro o pago anulado, no", () => {
-    const base = (courseDate: string, extra = {}) => ({
+  it("pagos sin verificar cuentan en proporción al % pagado (también adelantos); anulados no", () => {
+    const base = (paid: string, extra = {}) => ({
       ...alumna("Nombre libre", "4500", [
-        pago("4500", "2026-11-03", {
-          createdBy: "C",
-          verified: false,
-          ...extra,
-        }),
+        pago(paid, "2026-11-03", { createdBy: "C", verified: false, ...extra }),
       ]),
       courseType: "automaquillaje",
       courseCapacity: 32,
-      courseDate: new Date(courseDate + "T12:00:00Z"),
     });
     const monto = (e: any) => gvIncentivosMes(e).map((x) => x.amount);
-    expect(monto(base("2026-11-08"))).toEqual(["50.00"]);
-    expect(monto(base("2099-01-01"))).toEqual([]);
+    expect(monto(base("4500"))).toEqual(["50.00"]);
+    expect(monto(base("2000"))).toEqual(["22.22"]);
     expect(
-      monto(
-        base("2026-11-08", { rejectedAt: new Date("2026-11-09T12:00:00Z") }),
-      ),
+      monto(base("2000", { rejectedAt: new Date("2026-11-09T12:00:00Z") })),
     ).toEqual([]);
   });
 
