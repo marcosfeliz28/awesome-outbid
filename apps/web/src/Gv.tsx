@@ -245,35 +245,52 @@ type MyIncentiveData = {
   }[];
 };
 
-function MyIncentive() {
-  const [period, setPeriod] = useState(businessDate().slice(0, 7));
+function MyIncentiveMonth({ period }: { period: string }) {
   const q = useQuery<MyIncentiveData>({
     queryKey: ["gv-my-incentive", period],
     queryFn: () => api(`/gv/incentives/me?period=${period}`),
   });
   return (
-    <>
-      <div className="gv-toolbar">
-        <input
-          type="month"
-          aria-label="Mes"
-          value={period}
-          onChange={(e) => e.target.value && setPeriod(e.target.value)}
-        />
+    <QueryState query={q}>
+      <div className="panel">
+        <strong>
+          {period}: {formatMoney(q.data?.total ?? "0")}
+        </strong>
+        <span> · {q.data?.count ?? 0} movimientos que tú registraste</span>
+        {q.data?.rows.map((r, i) => (
+          <div key={`${r.enrollmentId}-${i}`}>
+            {r.clientName} · {r.course} · {formatMoney(r.amount)}
+          </div>
+        ))}
       </div>
-      <QueryState query={q}>
-        <div className="panel">
-          <strong>
-            Acumulado del mes: {formatMoney(q.data?.total ?? "0")}
-          </strong>
-          <span> · {q.data?.count ?? 0} movimientos que tú registraste</span>
-          {q.data?.rows.map((r, i) => (
-            <div key={`${r.enrollmentId}-${i}`}>
-              {r.clientName} · {r.course} · {formatMoney(r.amount)}
-            </div>
-          ))}
-        </div>
-      </QueryState>
+    </QueryState>
+  );
+}
+
+// Muestra el mes pasado (por pagar) y el que corre; el total suma ambos.
+function MyIncentive() {
+  const hoy = businessDate();
+  const [y, m] = hoy.slice(0, 7).split("-").map(Number);
+  const actual = hoy.slice(0, 7);
+  const pasado =
+    m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+  const a = useQuery<MyIncentiveData>({
+    queryKey: ["gv-my-incentive", pasado],
+    queryFn: () => api(`/gv/incentives/me?period=${pasado}`),
+  });
+  const b = useQuery<MyIncentiveData>({
+    queryKey: ["gv-my-incentive", actual],
+    queryFn: () => api(`/gv/incentives/me?period=${actual}`),
+  });
+  const total = Number(a.data?.total ?? 0) + Number(b.data?.total ?? 0);
+  return (
+    <>
+      <div className="panel">
+        <strong>Total acumulado por cobrar: {formatMoney(total)}</strong>
+        <span> (mes pasado + mes en curso)</span>
+      </div>
+      <MyIncentiveMonth period={pasado} />
+      <MyIncentiveMonth period={actual} />
     </>
   );
 }
