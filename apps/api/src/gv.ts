@@ -851,7 +851,9 @@ export class GvController {
         branchId: actor.branchId,
       },
       include: {
-        course: { select: { name: true, type: true, capacity: true } },
+        course: {
+          select: { name: true, type: true, capacity: true, date: true },
+        },
         payments: {
           select: {
             id: true,
@@ -874,6 +876,7 @@ export class GvController {
           courseName: e.course.name,
           courseType: e.course.type,
           courseCapacity: e.course.capacity,
+          courseDate: e.course.date,
           agreedPrice: e.agreedPrice,
           refundAmount: e.refundAmount,
           refundDate: e.refundDate,

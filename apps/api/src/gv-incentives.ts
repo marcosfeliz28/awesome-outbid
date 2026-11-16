@@ -26,6 +26,7 @@ type Inscripcion = {
   courseName: string;
   courseType?: string | null;
   courseCapacity?: number | null;
+  courseDate?: Date | null;
   agreedPrice: unknown;
   refundAmount?: unknown;
   refundDate?: Date | null;
@@ -66,8 +67,12 @@ export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
   if (precio.lte(0)) return [];
 
   // Pagos verificados en orden de fecha, con su valor en la moneda del curso.
+  // Orden de la dueña (16-nov): un curso que ya se dio queda validado, así que
+  // sus pagos vigentes cuentan aunque nadie los haya verificado.
+  const yaDado =
+    !!e.courseDate && businessDate(e.courseDate) <= businessDate(new Date());
   const ordenados = e.payments
-    .filter((p) => p.verified)
+    .filter((p) => p.verified || (yaDado && !p.rejectedAt))
     .map((p) => ({ p, valor: valorEnMoneda(p as any, curso.moneda) }))
     .filter((x) => x.valor !== null)
     .sort(
