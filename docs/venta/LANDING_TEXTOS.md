@@ -29,8 +29,8 @@ tienda dominicana. Empieza hoy; sin instalar nada.
 4. **Créditos y contraentrega bajo control.** Deja pendiente lo que el cliente
    debe y cobra los abonos cuando lleguen, con aprobación de gerencia cuando
    toca.
-5. **Comprobantes NCF.** Emite comprobantes con las secuencias NCF que tú
-   declaras; la numeración la controla tu contador. *(verificar con contador).*
+5. **Recibos y comprobantes no fiscales.** Norexos no emite NCF ni e-CF; los
+   comprobantes fiscales se emiten por otro medio.
 6. **Funciona con o sin internet.** La caja sigue vendiendo sin conexión y
    sincroniza al volver; tu negocio no se detiene.
 
@@ -39,7 +39,7 @@ tienda dominicana. Empieza hoy; sin instalar nada.
 | | Norexos | POS globales (Square/Lightspeed) | Solo facturación (Facturama/Quipu) |
 |---|---|---|---|
 | Caja + inventario + clientes | Sí | Sí (sin NCF RD) | No |
-| Comprobantes NCF (secuencias declaradas) | Sí | No | No (otro país) |
+| Emite NCF o e-CF | No (recibos no fiscales) | No | No (otro país) |
 | Cierre de caja ciego | Sí | Parcial | No |
 | Precio en RD$ y soporte local | Sí | No | No |
 | Offline | Sí | Parcial | No |
@@ -54,8 +54,8 @@ tienda dominicana. Empieza hoy; sin instalar nada.
    internet puedes instalarlo en tu PC.
 2. **¿Sirve para una sola tienda?** Sí, y escala a varias sucursales y bodegas.
 3. **¿Puedo cobrar a crédito?** Sí, con aprobación de gerencia sobre el umbral.
-4. **¿Emite comprobantes NCF?** Sí, con las secuencias que tú declaras. *(verificar con
-   contador).*
+4. **¿Emite comprobantes NCF?** No. Norexos no emite NCF ni e-CF; sus recibos son
+   documento no fiscal.
 5. **¿Qué pasa si se va la luz o internet?** La caja sigue vendiendo sin conexión
    y sincroniza al volver.
 6. **¿Mis datos están seguros?** Acceso por rol y copias de respaldo. *(verificar con

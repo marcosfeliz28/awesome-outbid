@@ -1,5 +1,7 @@
 # Hoja de precios de introducción
 
+> **EN REVISIÓN (16-nov-2026).** La dueña ya dio dos cifras (Instalado US$200 y Online US$40 al mes) y faltan decisiones: ver `docs/venta/DECISIONES_PRECIOS_16NOV.md`. **No publicar esta hoja ni la landing hasta actualizarla.**
+
 Precios en US$, aprobados por la dueña (7-nov-2026) como **precios de introducción**. Referencia aproximada: ~RD$60 por US$ — **confirmar tasa** antes de dar un precio en pesos. La versión para imprimir es `hoja-de-precios.html`.
 
 | Opción                                               | Precio                                      | Qué incluye                                                                                          |

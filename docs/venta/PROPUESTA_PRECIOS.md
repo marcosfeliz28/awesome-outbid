@@ -1,5 +1,7 @@
 # Propuesta de precios de Norexos (borrador de N1, 30-oct-2026)
 
+> **HISTÓRICO (16-nov-2026).** Reemplazado por las decisiones de la dueña: ver `docs/venta/DECISIONES_PRECIOS_16NOV.md`. Se conserva como historial; no usar sus cifras.
+
 Estado: PROPUESTA para la dueña. No hay estudio de mercado hecho todavía (lo investiga Claude PC, orden 95). Precios en USD; la dueña decide moneda de cobro y tipo de cambio.
 
 ## Costos conocidos

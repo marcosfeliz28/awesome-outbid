@@ -28,8 +28,8 @@ stores. Start today; nothing to install.
    and expiry before something runs out or spoils.
 4. **Credit and cash-on-delivery under control.** Record what a customer owes and
    collect payments when they arrive, with manager approval when needed.
-5. **NCF receipts.** Issue receipts using the NCF sequences you declare; your
-   accountant controls the numbering. *(check with your accountant)*
+5. **Non-fiscal receipts.** Norexos does not issue NCF or e-CF; fiscal receipts
+   are issued by other means.
 6. **Works with or without internet.** The register keeps selling offline and
    syncs when the connection returns; your business does not stop.
 
@@ -38,7 +38,7 @@ stores. Start today; nothing to install.
 | | Norexos | Global POS (Square/Lightspeed) | Invoicing only (Facturama/Quipu) |
 |---|---|---|---|
 | Register + inventory + customers | Yes | Yes (no DR NCF) | No |
-| NCF receipts (declared sequences) | Yes | No | No (other country) |
+| Issues NCF or e-CF | No (non-fiscal receipts) | No | No (other country) |
 | Blind cash count | Yes | Partial | No |
 | Pricing in RD$ and local support | Yes | No | No |
 | Offline | Yes | Partial | No |
@@ -54,8 +54,8 @@ stores. Start today; nothing to install.
 2. **Does it work for a single store?** Yes, and it grows to several branches and
    warehouses.
 3. **Can I sell on credit?** Yes, with manager approval above the limit.
-4. **Does it issue NCF receipts?** Yes, using the NCF sequences you declare.
-   *(check with your accountant).*
+4. **Does it issue NCF receipts?** No. Norexos does not issue NCF or e-CF; its
+   receipts are non-fiscal documents.
 5. **What if the power or internet goes out?** The register keeps selling offline
    and syncs when it is back.
 6. **Is my data safe?** Access by role and backup copies. *(check with your lawyer).*
