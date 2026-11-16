@@ -7,6 +7,7 @@ Formato: `| fecha | quién | qué cambió | archivos |`
 <!-- prettier-ignore-start -->
 | fecha | quién | qué cambió | archivos |
 |---|---|---|---|
+| 2026-11-16 | Norexos 1 | Diseño: violeta principal más oscuro `#6d28d9`, tarjetas con relieve 2.5D y, en Inicio, leve inclinación 3D al pasar el cursor (solo CSS, se apaga con reducir movimiento). «Cobrar» ya era verde. | `apps/web/src/styles.css` |
 | 2026-11-16 | Norexos 1 | Incentivo GV: lo cobrado con las cuentas `claude` y `claude-acceso` se acredita a Clary (orden de la dueña). Pendiente de despliegue. | `apps/api/src/gv.ts`, `docs/sistema/GV.md` |
 | 2026-11-16 | Norexos 1 | GV «Mi incentivo»: pestaña siempre visible y «Estado de cierre» del mes (último día del mes hasta el día 2) con botón Imprimir. Pendiente de despliegue. | `apps/web/src/Gv.tsx`, `docs/sistema/GV.md` |
 | 2026-11-16 | Norexos 1 | Incentivo GV: cuentan todos los pagos no anulados, verificados o no, en proporción al % pagado (reemplaza la regla de «curso ya dado»). Pendiente de despliegue. | `apps/api/src/gv-incentives.ts`, `apps/api/src/gv.ts`, `docs/sistema/GV.md` |

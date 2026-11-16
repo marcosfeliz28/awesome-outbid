@@ -63,7 +63,7 @@
   --text: #1b2134;
   --muted: #54627a;
   --border: #eaeaf2;
-  --primary: #7c3aed;
+  --primary: #6d28d9;
   --primary-soft: #f2ecfe;
   --pink: #ec4899;
   --green: #059669;
@@ -221,7 +221,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px #7c3aed15;
+  box-shadow: 0 0 0 3px #6d28d915;
 }
 input[type="checkbox"] {
   width: 20px;
@@ -338,9 +338,9 @@ kbd {
   white-space: nowrap;
 }
 .button.primary {
-  background: #7c3aed;
+  background: #6d28d9;
   color: #fff;
-  box-shadow: 0 3px 7px #7c3aed16;
+  box-shadow: 0 3px 7px #6d28d916;
 }
 .button.secondary {
   background: var(--surface);
@@ -524,7 +524,7 @@ kbd {
   height: 35px;
   width: 35px;
   border-radius: 11px;
-  background: #7c3aed;
+  background: #6d28d9;
   color: #fff;
   font-size: max(var(--fs-min), calc(33px * var(--fs-scale)));
   line-height: 35px;
@@ -533,7 +533,7 @@ kbd {
   position: relative;
   letter-spacing: -3px;
   padding-right: 5px;
-  box-shadow: 0 4px 10px #7c3aed20;
+  box-shadow: 0 4px 10px #6d28d920;
 }
 .brand-icon span {
   color: #f9a8d4;
@@ -771,7 +771,7 @@ kbd {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  color: #7c3aed;
+  color: #6d28d9;
   background: #ede4fc;
   font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 650;
@@ -921,7 +921,7 @@ kbd {
   letter-spacing: -0.06em;
 }
 .welcome-banner h2 span {
-  color: #7c3aed;
+  color: #6d28d9;
 }
 .welcome-banner p {
   font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
@@ -934,7 +934,7 @@ kbd {
   gap: 8px;
   font-size: max(var(--fs-min), calc(10px * var(--fs-scale)));
   font-weight: 650;
-  color: #7c3aed;
+  color: #6d28d9;
 }
 .banner-chip {
   font-size: max(var(--fs-min), calc(8px * var(--fs-scale)));
@@ -1840,8 +1840,8 @@ td strong {
   min-height: 44px;
 }
 .category-tabs button.active {
-  border-color: #7c3aed !important;
-  background: #7c3aed !important;
+  border-color: #6d28d9 !important;
+  background: #6d28d9 !important;
   color: white;
 }
 .category-tabs i {
@@ -2463,7 +2463,7 @@ td strong {
   margin-bottom: 25px;
 }
 .cash-main {
-  background: linear-gradient(125deg, #7c3aed, #9455dc);
+  background: linear-gradient(125deg, #6d28d9, #9455dc);
   border-radius: 14px;
   color: #fff;
   padding: 28px;
@@ -2768,7 +2768,7 @@ td strong {
   display: flex;
   min-height: 100vh;
   background:
-    radial-gradient(1200px 600px at 85% -10%, #7c3aed38, transparent 60%),
+    radial-gradient(1200px 600px at 85% -10%, #6d28d938, transparent 60%),
     radial-gradient(900px 500px at 10% 110%, #22d3ee22, transparent 60%),
     var(--login-bg);
   color: #e6e8ff;
@@ -2896,7 +2896,7 @@ td strong {
   padding: 14px;
   text-align: center;
   color: #fff;
-  background: linear-gradient(135deg, #7c3aed59, #22d3ee33);
+  background: linear-gradient(135deg, #6d28d959, #22d3ee33);
   border: 1px solid #c4b5fdaa;
   border-radius: 14px;
   box-shadow:
@@ -3150,8 +3150,8 @@ td strong {
   justify-content: space-between;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(100deg, #6d28d9, #7c3aed 45%, #0e7490);
-  box-shadow: 0 10px 30px #7c3aed66;
+  background: linear-gradient(100deg, #6d28d9, #6d28d9 45%, #0e7490);
+  box-shadow: 0 10px 30px #6d28d966;
   transition:
     transform 0.15s,
     box-shadow 0.2s;
@@ -4266,7 +4266,7 @@ td strong {
 .goods-mode button.active {
   background: var(--primary);
   color: #fff;
-  box-shadow: 0 3px 8px #7c3aed22;
+  box-shadow: 0 3px 8px #6d28d922;
 }
 .goods-mode button.active.exit {
   background: #be185d;
@@ -6375,7 +6375,7 @@ td strong {
   gap: 4px;
   padding: 14px 16px;
   border-radius: 14px;
-  border-left: 5px solid var(--day-accent, #7c3aed);
+  border-left: 5px solid var(--day-accent, #6d28d9);
   background: var(--day-bg, #f5f3ff);
 }
 .day-yesterday {
@@ -6840,4 +6840,37 @@ td strong {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* Rediseño 2.5D (orden de la dueña, 16-nov): violeta más oscuro #6d28d9, capas
+   con sombra en las tarjetas y, en Inicio, un leve relieve 3D al pasar el
+   cursor. Solo CSS (sin librerías), y se apaga con «reducir movimiento». */
+:root {
+  --depth: 0 1px 2px #1b213410, 0 6px 18px #29315b14, 0 18px 36px #6d28d90d;
+}
+:root[data-theme="dark"] {
+  --depth: 0 1px 0 #ffffff0d inset, 0 8px 24px #00000066;
+}
+.panel,
+.kpi-card,
+.kpi-strip .kpi-strip-card {
+  box-shadow: var(--depth);
+}
+.tablero-kpis {
+  perspective: 900px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .kpi-card {
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+    transform-style: preserve-3d;
+  }
+  .tablero-kpis .kpi-card:hover {
+    transform: translateY(-3px) rotateX(3deg) rotateY(-3deg);
+    box-shadow:
+      0 2px 4px #1b213414,
+      0 14px 30px #29315b22,
+      0 28px 48px #6d28d914;
+  }
 }
