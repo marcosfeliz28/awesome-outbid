@@ -15,7 +15,13 @@ Lo que dijo la dueña en el chat con Norexos 1, textual y sin interpretar de má
 ## Confirmado por la dueña (16-nov, mediodía)
 Respondió «1) sí» a la propuesta del punto 1: **Instalado US$200 pago único** con instalador, 1 sucursal, hasta 3 cajas y 1 año de actualizaciones y soporte; **IA no incluida** (opcional con clave propia del cliente o paquetes prepagados); **Online US$40 al mes** sobre nube compartida entre clientes. (Norexos 1 lo lee así; si «sí» respondía otra pregunta, corregir aquí.)
 
-## Preguntas abiertas (necesarias)
+## Aclaración final de la dueña (16-nov, 12:00)
+- Lectura **B** confirmada: puntos 1 y 2 aprobados (Instalado US$200 sin IA incluida y Online US$40 compartido; IA más barata).
+- **La IA se vende como opciones aparte**, no incluida en los planes. (Hoy el código incluye una cuota de IA por plan: 100, 250, 600 y 1,500 preguntas al mes; cambiar eso toca el cobro y queda como pieza propia, con su sí y verificación ×3.)
+- Autoservicio: «aparte o ambas opciones» (plan aparte, o con y sin extras). Preguntó qué es: es el plan de entrada del código (RD$1,250 al mes, 1 caja, 1 sucursal, 2 usuarios): el cliente lo configura solo, sin acompañamiento humano.
+- Moneda y US$40 contra planes: «es lo mismo todo, enfócate en lo más importante»: se resuelve al actualizar la hoja, sin frenar nada.
+
+## Preguntas abiertas (históricas, ya no bloquean)
 1. **Moneda:** dijo «pesos primero» y luego dio cifras en dólares. ¿Se muestra en RD$ (con la tasa del día) o en US$?
 2. **US$40 en línea:** ¿es un solo plan que sustituye a los 4, o el precio de entrada (Básico)?
 3. **ITBIS:** ¿los precios incluyen ITBIS o se suma aparte? (el botón del punto 6 es otra cosa: mostrarlo o no en el recibo.)
