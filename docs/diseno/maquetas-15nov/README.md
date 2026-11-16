@@ -46,6 +46,9 @@ una imagen larga compuesta por el navegador.
   movimiento reducido.
 - **Caja y Mercancía 2.5D:** las tarjetas tienen capas y sombras contenidas, con
   siluetas genéricas construidas en CSS; no se usan marcas ni fotos de terceros.
+- **Frascos completos en Caja:** cada silueta reserva 16 px sobre la tapa y ya
+  no usa el desplazamiento negativo de la primera variante 2.5D. La altura se
+  mantiene entre 54 y 72 px para conservar la forma a 1440 y 390 px.
 - **Mercancía guiada:** tres pasos, formulario y tabla a la izquierda, revisión
   persistente a la derecha; en móvil se apilan y la tabla queda desplazable sin
   desbordar la página.
@@ -98,6 +101,10 @@ una imagen larga compuesta por el navegador.
 - Revisión B1/B2: se inspeccionó una captura clara de escritorio y una oscura
   móvil de cada pantalla. La barra móvil queda en el borde inferior del viewport,
   los números de la gráfica son visibles y Cobrar se distingue en verde.
+- Corrección del 16-nov: la regresión nueva falló primero porque no existía el
+  margen seguro de 16 px y Caja aún aplicaba `translateY(-3px)` a los frascos.
+  Después del ajuste, el verificador pasó y se recapturaron las 18 vistas. Se
+  inspeccionaron las cuatro vistas 2.5D de Caja en claro/oscuro y 1440/390.
 - Revisión posterior: el control reprodujo que las capturas móviles anteriores
   medían 390 × 3027, 390 × 2305 y 390 × 1957, y que la barra fija quedaba en
   medio de la imagen larga. Se sustituyeron por capturas de ventana 390 × 844.

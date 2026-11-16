@@ -326,3 +326,21 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
   ESLint focal pasó; dos reproducciones consecutivas produjeron hashes idénticos.
   Tras generar el cliente Prisma local, `pnpm check` pasó: typecheck, ESLint,
   123 archivos/1,067 pruebas, builds web/API (1 archivo/10 pruebas omitidos).
+
+## 2026-11-16 · ChatGPT NUBE · continuación nube primero
+
+- Corregí en la maqueta de Caja el riesgo de frascos cortados: margen superior
+  explícito de 16 px, sin desplazamiento negativo y altura de 54–72 px. La
+  regresión falló antes por ambas reglas y pasó después; se regeneraron y
+  revisaron las 18 capturas.
+- Verifiqué, sin editar `apps/**`, que las páginas ES/EN de precios coinciden con
+  `HOJA_DE_PRECIOS.md`. Las promesas antiguas sobre NCF, «sin instalar nada» y
+  «Precio en RD$» permanecen solo en `LANDING_TEXTOS.md`.
+- Preparé un índice para abogado separado de las decisiones comerciales de la
+  dueña. No es asesoría legal. La segunda búsqueda de fotos queda bloqueada hasta
+  recibir filas concretas de Dot.
+- Rama `chatgpt-nube/maquetas-15nov`, base incorporada
+  `ccfe0ace584cd8e8d3bd2bb3df471e6a6b88a2c3`; sin despliegue, Render,
+  producción, dinero, datos o credenciales.
+- `pnpm check` pasó con typecheck, ESLint, 123 archivos/1,067 pruebas y builds
+  web/API; 1 archivo/10 pruebas se omitieron por las condiciones existentes.

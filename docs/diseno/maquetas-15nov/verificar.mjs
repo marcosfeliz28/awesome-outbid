@@ -91,6 +91,12 @@ if (!css.includes("--checkout: #047857")) {
 if (!css.includes(".depth-3d") || !css.includes(".depth-25d")) {
   failures.push("styles.css debe declarar variantes 3D y 2.5D");
 }
+if (!css.includes("--bottle-safe-top: 16px")) {
+  failures.push("styles.css debe reservar 16 px sobre cada frasco de Caja");
+}
+if (css.includes(".depth-25d .product-visual::before {\n  transform: translateY(-3px)")) {
+  failures.push("Caja 2.5D no debe desplazar los frascos hacia el borde superior");
+}
 if (/getContext\(["']webgl|THREE\.|from\s+["']three/i.test(css)) {
   failures.push("styles.css no debe depender de WebGL o Three.js");
 }

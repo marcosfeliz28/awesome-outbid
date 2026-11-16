@@ -289,3 +289,29 @@ La carrera requiere que, al mismo tiempo, termine con éxito un cambio o restabl
   hashes idénticos después de esperar la carga de fuentes. Tras generar Prisma
   localmente, `pnpm check` pasó con 123 archivos/1,067 pruebas, typecheck, lint
   y builds web/API (1 archivo/10 pruebas omitidos).
+
+## 2026-11-16 · Nube primero · Caja, landing y revisión legal
+
+- **Rama:** `chatgpt-nube/maquetas-15nov`, actualizada sobre
+  `origin/nexora-cloud` `ccfe0ace584cd8e8d3bd2bb3df471e6a6b88a2c3`.
+- **Caja:** eliminé el desplazamiento negativo que acercaba los frascos al borde,
+  reservé 16 px sobre la tapa y fijé una altura legible de 54 a 72 px. Se
+  regeneraron las 18 capturas y se revisaron las cuatro variantes 2.5D de Caja.
+- **Regresión antes/después:** `verificar.mjs` falló primero con «debe reservar
+  16 px» y «no debe desplazar los frascos»; después pasó junto con el capturador:
+  18 capturas, contraste AA, mínimo 14 px y cero desbordamiento horizontal.
+- **Landing:** `docs/piloto/AUDITORIA_LANDING_CHATGPT_NUBE_16NOV.md` confirma
+  que ambas páginas de precios coinciden con la hoja aprobada. NCF, «sin
+  instalar nada» y «Precio en RD$» solo siguen contradictorios en el borrador
+  `LANDING_TEXTOS.md`; no se editaron páginas ni precios.
+- **Abogado:** `docs/venta/contrato/INDICE_REVISION_ABOGADO_16NOV.md` separa
+  preguntas `[ABOGADO]` de decisiones `[DUEÑA]` y remite a los borradores y
+  fuentes existentes; no es asesoría legal.
+- **Bloqueo:** la segunda búsqueda de fotos espera la lista de filas de Dot.
+- **Límites:** solo documentos y capturas estáticas. Sin despliegue, Render,
+  producción, datos, credenciales, dinero ni cambios bajo `apps/**`.
+- **Control completo:** `pnpm check` pasó: typecheck y ESLint verdes; 123
+  archivos y 1,067 pruebas pasaron, 1 archivo y 10 pruebas se omitieron; builds
+  web/API correctos. Vite emitió su advertencia conocida de chunk mayor de 500 kB.
+- **Publicación/CI:** SHA final y los tres trabajos se registran tras el único
+  push de esta continuación.
