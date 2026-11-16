@@ -24,6 +24,8 @@ type Pago = {
 };
 type Inscripcion = {
   courseName: string;
+  courseType?: string | null;
+  courseCapacity?: number | null;
   agreedPrice: unknown;
   refundAmount?: unknown;
   refundDate?: Date | null;
@@ -41,9 +43,24 @@ export type EventoIncentivo = {
 const mes = (f: Date) => f.toISOString().slice(0, 7);
 const mesNegocio = (f: Date) => businessDate(f).slice(0, 7);
 
+// Orden de la dueña (16-nov): cursos fuera del catálogo se pagan por tipo:
+// automaquillaje grupal 50, personalizados y perfeccionamientos 500 por alumna
+// (automaquillaje de 1 cupo = personalizado). Brazilian touch 0; bodas sin definir.
+function cursoPorTipo(tipo?: string | null, cupo?: number | null) {
+  const incentivo =
+    tipo === "automaquillaje" && (cupo ?? 0) > 1
+      ? 50
+      : tipo === "automaquillaje" || tipo === "personalizado"
+        ? 500
+        : 0;
+  return { moneda: "RD$" as const, incentivo };
+}
+
 /** Eventos del incentivo de una inscripción, cada uno con su cobrador y mes. */
 export function gvIncentivosEventos(e: Inscripcion): EventoIncentivo[] {
-  const curso = GV_CATALOGO.find((c) => c.nombre === e.courseName);
+  const curso =
+    GV_CATALOGO.find((c) => c.nombre === e.courseName) ??
+    cursoPorTipo(e.courseType, e.courseCapacity);
   if (!curso || curso.incentivo === 0) return [];
   const precio = d(e.agreedPrice as any);
   if (precio.lte(0)) return [];

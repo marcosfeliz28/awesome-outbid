@@ -226,6 +226,24 @@ describe("GV · casos de moneda y catálogo", () => {
     expect(gvIncentivosMes(e)).toEqual([]);
   });
 
+  it("por tipo (16-nov): grupal 50, personalizado y automaquillaje de 1 cupo 500, brazilian 0", () => {
+    const monto = (tipo: string, cupo: number, price: string, paid: string) =>
+      gvIncentivosMes({
+        ...alumna("Nombre libre", price, [
+          pago(paid, "2026-11-03", { createdBy: "C" }),
+        ]),
+        courseType: tipo,
+        courseCapacity: cupo,
+      }).map((x) => x.amount);
+    expect(monto("automaquillaje", 32, "4500", "4500")).toEqual(["50.00"]);
+    expect(monto("automaquillaje", 32, "4500", "2250")).toEqual(["25.00"]);
+    expect(monto("automaquillaje", 1, "12000", "12000")).toEqual(["500.00"]);
+    expect(monto("personalizado", 1, "18000", "18000")).toEqual(["500.00"]);
+    expect(monto("personalizado", 1, "18000", "9000")).toEqual(["250.00"]);
+    expect(monto("brazilian", 12, "18000", "18000")).toEqual([]);
+    expect(monto("boda", 1, "20000", "20000")).toEqual([]);
+  });
+
   it("maquilladora profesional: RD$ 1,000 en proporción al pago", () => {
     const e = alumna(MAQ, "70000", [
       pago("35000", "2026-10-03", { createdBy: "A" }),

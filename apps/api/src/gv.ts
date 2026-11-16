@@ -57,7 +57,7 @@ import {
   approverPin,
   gvAprobacionDuena,
 } from "./gv-money";
-import { GV_CATALOGO, gvIncentivosMes } from "./gv-incentives";
+import { gvIncentivosMes } from "./gv-incentives";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -849,10 +849,9 @@ export class GvController {
     const enrollments = await this.db.gvEnrollment.findMany({
       where: {
         branchId: actor.branchId,
-        course: { name: { in: GV_CATALOGO.map((c) => c.nombre) } },
       },
       include: {
-        course: { select: { name: true } },
+        course: { select: { name: true, type: true, capacity: true } },
         payments: {
           select: {
             id: true,
@@ -873,6 +872,8 @@ export class GvController {
       gvIncentivosMes(
         {
           courseName: e.course.name,
+          courseType: e.course.type,
+          courseCapacity: e.course.capacity,
           agreedPrice: e.agreedPrice,
           refundAmount: e.refundAmount,
           refundDate: e.refundDate,
