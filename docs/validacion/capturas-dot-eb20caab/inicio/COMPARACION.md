@@ -51,3 +51,36 @@ El ajuste lo restablece junto al título «Resumen» y la comprobación local ya
 
 A las 20:34 UTC, en `eb20caab`, `verify` estaba en curso, `windows-installer` aprobado
 y `render-images` aprobado. [Controles de la versión probada](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44169472399).
+
+
+## Seguimiento de la revisión
+
+Marcos dio su visto bueno a la vista de prueba de Inicio y pidió continuar por fases con Higgsfield.
+Dot mostró el primer concepto de Punto de venta. La comprobación de esa fase queda pendiente de la
+lámina que Marcos apruebe y de una rama funcional con capturas de la aplicación.
+
+El control `verify` de `46ae8830` también terminó con 105 pruebas esperando el saludo «Hola,».
+La restauración del saludo se comprobó en la aplicación de `eb20caab`. Su ejecución de GitHub
+es la que determina el cierre técnico de Inicio.
+[Control anterior](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44164527303/job/134326932194),
+[controles vigentes](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44169472399).
+
+Marcos eligió **Noxeros**. La auditoría de la web ubicó textos de marca anteriores. Confirmé la grafía
+«Norexos» en el nombre visible al instalar la web y en el aviso compartido de actualización.
+[Auditoría actualizada](https://github.com/marcosfeliz28/awesome-outbid/blob/03593f280c038cf96e0dcebbeea97f53ae969594/docs/diseno/inicio-integrado/AUDITORIA_CLAUDE_4e4bb76f.md#L35),
+[nombre de la web](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/apps/web/vite.config.ts#L46),
+[aviso de actualización](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/apps/web/src/pwaUpdatePolicy.ts#L43).
+
+
+A las 20:51 UTC, `verify` de `eb20caab` terminó con 154 de 155 casos de navegador aprobados.
+La prueba de `store.spec.ts:185` abre el menú móvil y encuentra dos botones llamados «Punto de venta».
+La búsqueda abarca el menú y el panel de accesos rápidos. Pasaron 1087 pruebas unitarias y 656 de
+integración, además de `windows-installer` y `render-images`.
+[Log del caso restante](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44169472399/job/134344378836),
+[búsqueda del botón](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/tests/e2e/store.spec.ts#L185).
+
+Cuando el asistente está disponible, el menú dice «Preguntar a Noxeros» y la pantalla abre con
+el encabezado «Preguntar a Norexos». El nombre de instalación «Norexos» también se comprobó en
+el manifiesto generado por la compilación local de ese SHA.
+[Entrada](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/apps/web/src/App.tsx#L298),
+[encabezado](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/apps/web/src/AssistantPanel.tsx#L46).

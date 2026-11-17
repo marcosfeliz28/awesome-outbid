@@ -286,3 +286,13 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - Cotejé el PNG de Higgsfield que Dot reenvió con la captura real. La cabecera y el primer encuadre
   todavía ocupan más altura que en la lámina. El primer acceso móvil queda parcialmente bajo los 844 px.
   El informe documenta también el fallo anterior de `verify` y el estado del control del SHA nuevo.
+
+
+## 2026-11-17 · ChatGPT PC · visto bueno de Inicio y siguiente fase
+
+- Marcos aprobó la vista de prueba de Inicio en «Your dot» y pidió seguir el rediseño por fases.
+  El concepto inicial de Punto de venta está en revisión. La comprobación de su versión funcional
+  queda a la espera de la lámina aprobada y de la rama de Dot.
+- La ejecución vigente de Inicio corresponde a `eb20caab`. La decisión de marca de Marcos es Noxeros.
+  El seguimiento de los controles y las grafías compartidas está en
+  [el informe de Inicio](../validacion/capturas-dot-eb20caab/inicio/COMPARACION.md).
