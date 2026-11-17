@@ -1,10 +1,32 @@
 import { useSyncExternalStore } from "react";
 
 export type Language = "es" | "en";
-const KEY = "noxeros-overview-language";
+const KEY = "norexos-overview-language";
+const LEGACY_KEY = "noxeros-overview-language";
+/** Keep the user's previous choice; a valid canonical preference always wins. */
+export function readLanguagePreference(
+  storage: Pick<Storage, "getItem" | "setItem">,
+): Language {
+  try {
+    const current = storage.getItem(KEY);
+    if (current === "es" || current === "en") return current;
+    const legacy = storage.getItem(LEGACY_KEY);
+    if (legacy === "es" || legacy === "en") {
+      try {
+        storage.setItem(KEY, legacy);
+      } catch {
+        /* Read-only storage still preserves this session. */
+      }
+      return legacy;
+    }
+  } catch {
+    /* Storage unavailable: Spanish remains usable. */
+  }
+  return "es";
+}
 let language: Language = "es";
 try {
-  language = localStorage.getItem(KEY) === "en" ? "en" : "es";
+  language = readLanguagePreference(localStorage);
 } catch {
   /* SSR or unavailable storage */
 }
@@ -58,6 +80,7 @@ export const english: Record<string, string> = {
   "Carrito vacío · Busca un artículo": "Empty cart \u00b7 Search for an item",
 
   Abrir: "Open",
+  "Ir a": "Go to",
   "No se pudo cargar.": "Unable to load.",
   "No se pudo cargar": "Unable to load",
   Reintentar: "Retry",
@@ -201,7 +224,7 @@ export const english: Record<string, string> = {
   Reportes: "Reports",
   Alertas: "Alerts",
   Incentivos: "Incentives",
-  "Preguntar a Noxeros": "Ask Noxeros",
+  "Preguntar a Norexos": "Ask Norexos",
   "Cerrar menú": "Close menu",
   "Tienda principal": "Main store",
   "República Dominicana": "Dominican Republic",
@@ -215,7 +238,7 @@ export const english: Record<string, string> = {
   "Guía de estilos": "Style guide",
   "Abrir menú": "Open menu",
   "Mi tienda": "My store",
-  "Buscar en Noxeros": "Search Noxeros",
+  "Buscar en Norexos": "Search Norexos",
   Conectado: "Connected",
   "Sin conexión": "Offline",
   Sincronizando: "Syncing",
@@ -228,8 +251,8 @@ export const english: Record<string, string> = {
   Almacén: "Warehouse",
   "Cambiar de usuario con PIN": "Switch user with PIN",
   "Cerrar sesión": "Sign out",
-  "Noxeros · Tu negocio, en movimiento.":
-    "Noxeros · Your business, moving forward.",
+  "Norexos · Tu negocio, en movimiento.":
+    "Norexos · Your business, moving forward.",
   "RD$ · ITBIS incluido · Documento interno":
     "DOP · ITBIS included · Internal document",
   "¿A dónde quieres ir?": "Where would you like to go?",

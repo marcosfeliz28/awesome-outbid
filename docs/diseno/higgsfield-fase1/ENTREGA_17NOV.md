@@ -39,3 +39,10 @@ QA PC de este ajuste: 12/12 casos (50,4 s), ocho variantes con importes íntegro
 
 ## Nombre accesible de accesos rápidos
 El CI de eb20caab llegó a154 E2E aprobados y1fallo: navegación y atajo tenían ambos nombre accesible exacto «Punto de venta». Se da al atajo un nombre de acción «Abrir Punto de venta» (inglés «Open Point of sale»), preservando texto visible, permiso y destino. No se toca store.spec.ts ni se relaja su cobertura. La prueba visual propia de Reportes se actualiza al nuevo nombre y se añade regresión de unicidad navegación/atajo. Typecheck/lint y11pruebas preservación pasan; navegador local bloqueado antes de abrir página por socketEPERM, pendiente CI.
+
+## Marca canónica: Norexos (corrección expresa de Marcos)
+Se devuelve Noxeros a Norexos en index.html, App.tsx e inicioLanguage.ts. La clave nueva es norexos-overview-language; se lee la anterior únicamente para migrar una preferencia válida, sin eliminarla ni pisar una elección canónica. El almacenamiento bloqueado no inutiliza la sesión.
+
+Se restauran íntegros los E2E acerca-de y caja-web al contenido anterior a1d62b760 (comprobado con diff contraa1c18c66 vacío), y el assert/nombre original de la prueba Inicio. Se conservan las nuevas regresiones. Atajos accesibles «Ir a Punto de venta», «Ir a Inventario» y «Ir a Reportes», en inglés «Go to …»; texto visible inalterado y navegación sigue diferenciada.
+
+Fuente de referencia leída: docs/diseno/inicio-integrado/AUDITORIA_CLAUDE_4e4bb76f.md en nexora-cloud, blob5742af07. No se ejecutan instrucciones adicionales de ese documento. Typecheck, lint, build,12pruebasInicio y4citas pasan. E2E/CI remoto pendiente. Rama de corrección separada de Caja.

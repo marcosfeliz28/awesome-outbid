@@ -163,19 +163,19 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
     }
   };
   return (
-    <Modal open={open} onClose={onClose} title="Acerca de Noxeros" wide>
+    <Modal open={open} onClose={onClose} title="Acerca de Norexos" wide>
       <div className="about">
         <p>
           <strong>Versión {__NEXORA_VERSION__}</strong>
         </p>
         <p className="about-fiscal">
           <strong>Documento no fiscal.</strong> Los recibos, notas y reportes de
-          Noxeros son documentos internos y no sustituyen un comprobante fiscal
+          Norexos son documentos internos y no sustituyen un comprobante fiscal
           (NCF/e-CF).
         </p>
         <h3>Privacidad</h3>
         <p className="about-privacy">
-          Noxeros guarda los datos de clientes que registra la tienda (nombre y,
+          Norexos guarda los datos de clientes que registra la tienda (nombre y,
           si se dan, teléfono, correo y cédula/RNC) sólo para sus ventas,
           garantías y créditos. Cada recibo lo recuerda en el pie.{" "}
           <a href="/privacidad.html" target="_blank" rel="noopener">
@@ -295,7 +295,7 @@ const navigation = [
   // Visible solo si la API tiene la llave de IA y la persona puede usarla.
   {
     id: "assistant",
-    label: "Preguntar a Noxeros",
+    label: "Preguntar a Norexos",
     icon: AssistantIcon,
     permission: "authenticated",
   },
@@ -360,7 +360,7 @@ function Login() {
           <div className="brand-icon">
             n<span>•</span>
           </div>
-          <span>Noxeros</span>
+          <span>Norexos</span>
         </div>
         <div>
           <span className="eyebrow light">GRUPO MACGEN · GV MAKEUP STUDIO</span>
@@ -1028,7 +1028,7 @@ function Shell() {
           <div className="brand-icon">
             n<span>•</span>
           </div>
-          <span>Noxeros</span>
+          <span>Norexos</span>
         </a>
         <div className="store-switch">
           <div className="store-avatar">
@@ -1128,7 +1128,7 @@ function Shell() {
           <div className="topbar-right">
             <button className="global-search" onClick={() => setCommands(true)}>
               <Search size={17} />
-              <span>{t("Buscar en Noxeros")}</span>
+              <span>{t("Buscar en Norexos")}</span>
               <kbd>⌘ K</kbd>
             </button>
             <button
@@ -1261,7 +1261,7 @@ function Shell() {
           </PageErrorBoundary>
         </main>
         <footer className="app-footer" lang={language}>
-          <span>{t("Noxeros · Tu negocio, en movimiento.")}</span>
+          <span>{t("Norexos · Tu negocio, en movimiento.")}</span>
           <span>{t("RD$ · ITBIS incluido · Documento interno")}</span>
         </footer>
       </div>
