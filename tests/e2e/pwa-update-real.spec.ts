@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./apoyo";
 import { createServer, type Server } from "node:http";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
