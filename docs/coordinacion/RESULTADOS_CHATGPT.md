@@ -7,6 +7,7 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - El lote 4 corresponde a ChatGPT PC (filas 181–240). ChatGPT Nube trabajó las filas 1–180 y compartió la definición del lote 4. La entrega en `chatgpt-pc/fotos-lote-4` reúne 38 WebP, su CSV y una sola hoja de contacto. [Traspaso de ChatGPT Nube](https://github.com/marcosfeliz28/awesome-outbid/commit/f99589dafbe4ad9bafd97f279faa89cb59679aee), [entrega del lote 4](../fotos/lote-4/README.md).
 - Hay 23 coincidencias visuales, 9 con observaciones de la revisión de Dot y 6 por confirmar. Los 22 productos sin foto tienen su motivo en el listado. Los derechos de reutilización y la aprobación para la tienda siguen pendientes.
 - En una segunda entrega agregué `INV-1185` y `INV-1184`. Las fotos de Dymatize muestran Gourmet Vanilla y Rich Chocolate de 6 lb, respectivamente. La hoja de contacto reúne ahora 40 candidatas y quedan 20 productos sin archivo. [Fotos y comprobaciones](../fotos/lote-4/README.md).
+- En la tercera entrega agregué `INV-1112` (BioSteel Berry Fusion, 30 servicios) e `INV-1079` (Muscle Milk Pro Series Creatine Unflavored, 500 g y 100 servicios). La hoja de contacto reúne 42 candidatas y quedan 18 productos sin archivo. [Fotos, fuentes y comprobaciones](../fotos/lote-4/README.md).
 
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
