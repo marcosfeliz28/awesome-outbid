@@ -1,5 +1,7 @@
 import { t, useLanguage, money as formatMoney, locale, dateLabel, invoiceLabel } from "./inicioLanguage";
 import "./fusion-inicio-integrado.css";
+import "./fusion-higgsfield.css";
+import { QuickAccessOverview } from "./QuickAccessOverview";
 import { chartSalesLabel } from "./chartSalesLabel";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -203,7 +205,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         <div>
           <div className="eyebrow">{t("EL PULSO DE TU NEGOCIO")}</div>
           <h1>
-            {t("Hola,")} {user.name.split(" ")[0]} <span className="wave">✦</span>
+            {t("Resumen")} <span className="fi-heading-divider" aria-hidden="true">/</span> <span className="fi-heading-subtitle">{t("Tu negocio, de un vistazo")}</span>
           </h1>
           <p>{t("Un vistazo a tu tienda. Un paso más hacia tus metas.")}</p>
         </div>
@@ -332,48 +334,6 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
       )}
       <QueryState query={query}>
         {kpiStripVisible(user.permissions) && <KpiStrip />}
-        <div className="welcome-banner">
-          <div>
-            <span className="banner-chip">
-              <span className="live-dot" />
-              {t("Tu tienda está en movimiento")}
-            </span>
-            <h2>
-              {t("Pequeñas decisiones.")}
-              <br />
-              <span>{t("Grandes resultados.")}</span>
-            </h2>
-            <p>{t("Todo lo que necesitas para vender mejor, en un solo lugar.")}</p>
-            <button onClick={() => go("reports")}>
-              {t("Explorar mis reportes")} <ArrowRight size={16} />
-            </button>
-          </div>
-          {/* Ilustración decorativa: el lector de pantalla la omite. */}
-          <div className="banner-illustration" aria-hidden="true">
-            <div className="floating-tag">
-              <TrendingUp size={20} />
-              <span>
-                {t("Tu siguiente meta")}<strong>{t("Seguir creciendo")}</strong>
-              </span>
-            </div>
-            <div className="bag-shape">
-              <div className="bag-handle" />
-              <span>
-                n<span>•</span>
-              </span>
-            </div>
-            <div className="banner-spark one">✦</div>
-            <div className="banner-spark two">✧</div>
-            <div className="floating-ticket">
-              <ReceiptText />
-              <div />
-              <div />
-              <i />
-            </div>
-          </div>
-        </div>
-        <YearPie go={go} />
-        <DayCard />
         <div className="kpi-grid tablero-kpis">
           {metric.map((m) => (
             <article className="kpi-card" key={m.label} tabIndex={0}>
@@ -504,6 +464,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               </button>
             </div>
           </section>
+          <QuickAccessOverview permissions={user.permissions} go={go} />
           <section className="panel alerts-panel">
             <div className="panel-heading">
               <div>
@@ -639,6 +600,48 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             </div>
           </section>
         </div>
+        <div className="welcome-banner">
+          <div>
+            <span className="banner-chip">
+              <span className="live-dot" />
+              {t("Tu tienda está en movimiento")}
+            </span>
+            <h2>
+              {t("Pequeñas decisiones.")}
+              <br />
+              <span>{t("Grandes resultados.")}</span>
+            </h2>
+            <p>{t("Todo lo que necesitas para vender mejor, en un solo lugar.")}</p>
+            <button onClick={() => go("reports")}>
+              {t("Explorar mis reportes")} <ArrowRight size={16} />
+            </button>
+          </div>
+          {/* Ilustración decorativa: el lector de pantalla la omite. */}
+          <div className="banner-illustration" aria-hidden="true">
+            <div className="floating-tag">
+              <TrendingUp size={20} />
+              <span>
+                {t("Tu siguiente meta")}<strong>{t("Seguir creciendo")}</strong>
+              </span>
+            </div>
+            <div className="bag-shape">
+              <div className="bag-handle" />
+              <span>
+                n<span>•</span>
+              </span>
+            </div>
+            <div className="banner-spark one">✦</div>
+            <div className="banner-spark two">✧</div>
+            <div className="floating-ticket">
+              <ReceiptText />
+              <div />
+              <div />
+              <i />
+            </div>
+          </div>
+        </div>
+        <YearPie go={go} />
+        <DayCard />
         <section className="panel">
           <div className="panel-heading">
             <div>

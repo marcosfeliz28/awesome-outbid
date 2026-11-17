@@ -212,6 +212,9 @@ export const english: Record<string, string> = {
   "Buscar pantalla…": "Search pages…",
   Demostración: "Demonstration",
   "Cambiar mi contraseña": "Change my password",
+  "Tu negocio, de un vistazo": "Your business at a glance",
+  "Accesos rápidos": "Quick access",
+  "Tus herramientas, a un clic.": "Your tools, one click away.",
 };
 export function translate(text: string, lang: Language): string {
   return lang === "en" ? (english[text] ?? text) : text;

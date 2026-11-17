@@ -172,3 +172,40 @@ it("permite crecer a la bienvenida móvil para no ocultar la acción de reportes
     /\.welcome-banner button\s*\{\s*min-height: 44px;\s*white-space: normal;/,
   );
 });
+it("Fusión 02 añade atajos con los mismos permisos que navegación, sin escrituras", async () => {
+  const { overviewShortcuts } =
+    await import("../apps/web/src/QuickAccessOverview");
+  const { can } = await import("../packages/shared/src/index");
+  expect(
+    overviewShortcuts.map(({ page, permission }) => ({ page, permission })),
+  ).toEqual([
+    { page: "pos", permission: "sale:write" },
+    { page: "inventory", permission: "inventory:write" },
+    { page: "reports", permission: "reports:read" },
+  ]);
+  expect(overviewShortcuts.filter((s) => can([], s.permission))).toHaveLength(
+    0,
+  );
+  expect(
+    overviewShortcuts
+      .filter((s) => can(["reports:read"], s.permission))
+      .map((s) => s.page),
+  ).toEqual(["reports"]);
+  const source = readFileSync("apps/web/src/QuickAccessOverview.tsx", "utf8");
+  expect(source).toContain("can(permissions, item.permission)");
+  expect(source).not.toMatch(/\b(fetch|post|api)\s*\(/);
+});
+it("Fusión 02 limita el acabado negro a Inicio y respeta movimiento reducido", () => {
+  const css = readFileSync("apps/web/src/fusion-higgsfield.css", "utf8");
+  expect(css.replace(/\s+/g, " ")).toContain(
+    '[data-overview-surface="black"] .app-shell:has(.fusion-inicio-integrado)',
+  );
+  expect(css).toContain("prefers-reduced-motion: reduce");
+  expect(css).toContain("forced-colors: active");
+  expect(css).toContain("minmax(0, 1fr)");
+  const source = readFileSync("apps/web/src/AppearanceControls.tsx", "utf8");
+  expect(source).toContain(
+    "delete document.documentElement.dataset.overviewSurface",
+  );
+  expect(source).toContain('["light", "dark", "black"]');
+});
