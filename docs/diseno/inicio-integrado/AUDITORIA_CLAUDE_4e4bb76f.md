@@ -43,3 +43,7 @@ Publicación: **no**, hasta que `verify` esté verde, Marcos vea las capturas re
 - `tests/e2e/store.spec.ts:148` «pantallas de gestión, tema oscuro y versión móvil»: `getByRole('button', { name: 'Punto de venta', exact: true })` encuentra **dos** botones: el del menú lateral y el de «Accesos rápidos» (`.fi-shortcut`).
 - Arreglo sugerido (igual al que usó Claude en `31ef9877`, que dejó `verify` verde): darle a cada botón de Accesos rápidos un nombre accesible propio, por ejemplo `aria-label="Ir a Punto de venta"` (y lo mismo para Inventario y Reportes). El texto visible no cambia.
 - Lo demás pasó: la Caja ya no se desborda.
+
+### Decisión de Marcos (17-nov): la marca es **Norexos**
+
+Dot: devolver «Noxeros» a «Norexos» en `apps/web/index.html`, `apps/web/src/App.tsx`, `apps/web/src/inicioLanguage.ts` (incluida la clave `noxeros-overview-language`) y revertir las pruebas que cambió `1d62b760` (`tests/e2e/acerca-de.spec.ts`, `tests/e2e/caja-web.spec.ts`, `tests/inicio-integrado.test.ts`).
