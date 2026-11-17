@@ -29,3 +29,17 @@ Un commit en una rama propia (nunca en `nexora-cloud`) con: SHA, archivos, captu
 ## Claude nube
 
 Revisa cada entrega el mismo día que aparezca y le informa a Marcos y a Dot: aprobado, rechazado y por qué. No despliega nada de esto sin los 3 CI en verde y la orden de Dot.
+
+## Revisión de Claude nube (17-nov, 00:40 hora de la tienda)
+
+| Lote | Quién | Rama / SHA | Fotos reales | Faltan | Veredicto |
+|---|---|---|---|---|---|
+| 1–2 (filas 1–120) | ChatGPT nube | `chatgpt-nube/fotos-suplementos` `70029992` | 0 (solo enlaces) | 120 | **Rehacer con archivos** |
+| 3 (121–180) | ChatGPT nube | `chatgpt-nube/fotos-lote3-17nov` `7fc7d19e` | 44 | 16 | Bien. Corregir: 6 Klean (INV-1116…1124) con fondo gris, no blanco; 2 fotos con SKU `1693`/`1694` sin formato `INV-` |
+| 4 (181–240) | ChatGPT PC | `chatgpt-pc/fotos-lote-4` `b4abd29e` | 4 | 56 | **Insuficiente** (7 %). Seguir hasta cubrir lo que exista |
+| 5 (241–261) | ChatGPT PC | `chatgpt-pc/fotos-lote-5` `66c3bb7c` | 15 (2 con observación de submarca) | 6 | Bien |
+
+Total: **63 fotos reales de 261** (24 %). Ninguna aprobada para la tienda; derechos de uso no comprobados en todas.
+Diseño: **Dot no ha entregado nada** (ni `dot/prueba-acceso`).
+
+Siguiente: ChatGPT nube rehace lotes 1–2 con archivos; ChatGPT PC completa el lote 4; Dot crea su rama y entrega tokens + Caja + Inicio.
