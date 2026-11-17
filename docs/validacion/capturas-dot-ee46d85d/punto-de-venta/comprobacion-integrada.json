@@ -1,0 +1,308 @@
+{
+  "commit": "ee46d85d5e97d8edade4d10bd82aefdfbe018ddb",
+  "completedAt": "2026-11-17T21:02:38.602Z",
+  "browser": {
+    "name": "Edge",
+    "version": "157.0.4341.60"
+  },
+  "screenshots": [
+    {
+      "file": "pos-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "mode": "light",
+      "format": "PNG",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "24c37398241ed00aa807850a3da95744d2c8fc21a61a6fb1b2a0f81bf401ec5d",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": false,
+        "product": [
+          267,
+          510,
+          496,
+          920
+        ],
+        "charge": [
+          1043,
+          846,
+          1419,
+          910
+        ],
+        "cart": [
+          1022,
+          216,
+          1440,
+          1020
+        ],
+        "mobileBar": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "file": "pos-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "mode": "dark",
+      "format": "PNG",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "5ab5788c99afafd87c577677f6ba4ed44b3facc59f168477e3d0f3db69c65065",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": false,
+        "product": [
+          267,
+          510,
+          496,
+          920
+        ],
+        "charge": [
+          1043,
+          846,
+          1419,
+          910
+        ],
+        "cart": [
+          1022,
+          216,
+          1440,
+          1020
+        ],
+        "mobileBar": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "file": "pos-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "light",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "8a7842373b6cf88a7e459fc3b26cfdf3a7ae2077dbf48f51cca0b42327c795d9",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "product": [
+          29,
+          756,
+          190,
+          1111
+        ],
+        "charge": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cart": [
+          14,
+          11278,
+          376,
+          12000
+        ],
+        "mobileBar": [
+          12,
+          766,
+          378,
+          832
+        ]
+      }
+    },
+    {
+      "file": "carrito-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "light",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "8f1b6b4cd66f7600829951f41592490de6359338a18f822dfbbf3463e0753e79",
+      "cartVisibleAfterShortcut": true
+    },
+    {
+      "file": "pos-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "dark",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "d0de9d054ae198bf2ad1748c8e091cf4ac59815bf54f35ee37a5997c6d871204",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "product": [
+          29,
+          756,
+          190,
+          1111
+        ],
+        "charge": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cart": [
+          14,
+          11278,
+          376,
+          12000
+        ],
+        "mobileBar": [
+          12,
+          766,
+          378,
+          832
+        ]
+      }
+    },
+    {
+      "file": "carrito-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "dark",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "2a21beeb5f50b554f5eb913002ae2910f7a4977d0e50cd85070db62eb6fff708",
+      "cartVisibleAfterShortcut": true
+    }
+  ],
+  "checks": {
+    "1440": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "abreYCierraCobro": "pasa",
+      "englishChargeLabelStillSpanish": true,
+      "inglesConCarrito": "pasa",
+      "motion": {
+        "hover": {
+          "y": -2,
+          "duration": "0.15s, 0.15s"
+        },
+        "reduced": {
+          "y": 0,
+          "duration": "0s"
+        }
+      },
+      "movimientoTarjeta": "pasa"
+    },
+    "390": {
+      "viewport": [
+        390,
+        844
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "abreYCierraCobro": "pasa",
+      "englishChargeLabelStillSpanish": true,
+      "inglesConCarrito": "pasa",
+      "englishCartLabelStillSpanish": true
+    }
+  },
+  "mobileNavigation": {
+    "shortcut": "Abrir Punto de venta",
+    "menu": "Punto de venta",
+    "exactMenuMatches": 1,
+    "opened": true
+  },
+  "realApi": {
+    "dataset": "demostración local",
+    "salePosts": 0,
+    "pageErrorCount": 0,
+    "servicesStopped": true,
+    "observedHttpStatus": [
+      {
+        "route": "/api/auth/login",
+        "status": 201,
+        "count": 1
+      },
+      {
+        "route": "/api/auth/refresh",
+        "status": 400,
+        "count": 1
+      },
+      {
+        "route": "/api/categories",
+        "status": 200,
+        "count": 1
+      },
+      {
+        "route": "/api/products",
+        "status": 200,
+        "count": 1
+      }
+    ]
+  },
+  "simulatedApi": {
+    "passed": 8,
+    "total": 8,
+    "durationSeconds": 15.2,
+    "remainingOwnedProcesses": 0,
+    "portListeningAfterRun": false
+  },
+  "githubActions": {
+    "runId": 44174462030,
+    "observedAt": "2026-11-17T21:06:05.7592635Z",
+    "jobs": {
+      "verify": "cancelled",
+      "windows-installer": "success",
+      "render-images": "success"
+    }
+  }
+}

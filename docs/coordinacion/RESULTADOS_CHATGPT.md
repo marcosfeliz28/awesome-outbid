@@ -276,3 +276,10 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · evidencias de Punto de venta de Dot
+
+- **Rama de evidencias** `chatgpt-pc/capturas-dot-ee46d85d`. Se documentó `dot/caja-higgsfield-fase2-17nov` en el commit `ee46d85d5e97d8edade4d10bd82aefdfbe018ddb`. El informe incluye seis PNG de 1440 × 900 y 390 × 844 en claro y oscuro, mediciones y hashes. [Informe y capturas](../validacion/capturas-dot-ee46d85d/punto-de-venta/COMPARACION.md)
+- **Validación** El recorrido con API local abrió y cerró el cobro en ambos tamaños sin solicitudes de venta. En Inicio móvil se encontró un único menú «Punto de venta» y se abrió la pantalla. Con API simulada pasaron 8 de 8 casos en 15,2 s. Los procesos de las pruebas se cerraron.
+- **Hallazgos** A 1440 × 900 el borde de «Cobrar» y parte del carrito quedan fuera del primer cuadro. En inglés las etiquetas accesibles de «Cobrar» y, en móvil, «Ver carrito» siguen en español. Las capturas conservan el nombre visible antes del cambio a Norexos. El commit posterior `2e75ca92` tiene su propia evidencia.
+- **CI de la versión fotografiada** `windows-installer` y `render-images` pasaron. `verify` quedó cancelado. [Ejecución 44174462030](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44174462030)
