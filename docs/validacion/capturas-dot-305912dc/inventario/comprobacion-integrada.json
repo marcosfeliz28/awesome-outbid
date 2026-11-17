@@ -1,0 +1,146 @@
+{
+  "commit": "305912dc3e33292f865029573765fb22888f2448",
+  "completedAt": "2026-11-17T22:57:07.903Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "inventario-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 1440,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 416,
+        "searchTop": 354,
+        "tabsInside": true
+      },
+      "sha256": "626d6055086e8f6ae91d2e4599f00ddfe54cee942f079412385641f4c89f641c"
+    },
+    {
+      "file": "inventario-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 390,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 461,
+        "searchTop": 400,
+        "tabsInside": true
+      },
+      "sha256": "45b64e9652a25351bb190b229d7c4a51b9f742a39cc120d1e30c45729e2fa6d4"
+    },
+    {
+      "file": "inventario-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 1440,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 416,
+        "searchTop": 354,
+        "tabsInside": true
+      },
+      "sha256": "05b01bf242fbc83195dbe929686d72dfe6b403400a698d041b447827502bf8d8"
+    },
+    {
+      "file": "inventario-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 390,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 461,
+        "searchTop": 400,
+        "tabsInside": true
+      },
+      "sha256": "1249807fa2cd552cdb962c5420a4f7217907a732c2822c7060b54fc3706b1a4d"
+    },
+    {
+      "file": "inventario-390-ingles-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "locale": "en",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 390,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 461,
+        "searchTop": 400,
+        "tabsInside": true
+      },
+      "sha256": "1b30c082f922bfce41c75d0178d480a5b754a4f5b789a657b8ee89aceb549a10"
+    }
+  ],
+  "checks": {
+    "stockRowsInitially": 248,
+    "motion": {
+      "regular": {
+        "y": -2,
+        "duration": "0.14s, 0.14s"
+      },
+      "reduced": {
+        "y": 0,
+        "duration": "0s"
+      }
+    },
+    "stockAndCountsSwitch": true,
+    "stockRowsMatchingSku": 2,
+    "kardexOpensAndCloses": true,
+    "searchAndReset": true,
+    "warehouseOptions": 3,
+    "warehouseSelect": true,
+    "mobileAdjustHit": true,
+    "mobileTabs": {
+      "height": 44,
+      "color": "rgb(244, 244, 233)",
+      "background": "rgb(6, 63, 40)"
+    },
+    "mobileGoodsBar": "static",
+    "disabled": [
+      {
+        "label": "Anterior",
+        "cursor": "not-allowed",
+        "background": "rgb(3, 12, 8)"
+      },
+      {
+        "label": "Traspasar",
+        "cursor": "not-allowed",
+        "background": "rgb(3, 12, 8)"
+      },
+      {
+        "label": "Revisar archivo",
+        "cursor": "not-allowed",
+        "background": "rgb(3, 12, 8)"
+      }
+    ],
+    "englishPrimaryLabels": true,
+    "productDisplayNamePreserved": true
+  },
+  "servicesStopped": true,
+  "inventoryWrites": 0,
+  "pageErrorCount": 0
+}
