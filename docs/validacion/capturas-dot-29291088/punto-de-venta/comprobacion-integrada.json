@@ -1,0 +1,308 @@
+{
+  "commit": "292910889821bee22640110defc86bdf0f570b4b",
+  "completedAt": "2026-11-17T21:15:55.507Z",
+  "browser": "157.0.4341.60",
+  "brand": {
+    "menu": "Norexos",
+    "about": "Acerca de Norexos",
+    "title": "Norexos"
+  },
+  "mobileNavigation": {
+    "shortcut": "Ir a Punto de venta",
+    "menu": "Punto de venta",
+    "exactMenuMatches": 1,
+    "opened": true
+  },
+  "screenshots": [
+    {
+      "file": "pos-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "mode": "light",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": true,
+        "desktopChargeVisible": true,
+        "cartFullyVisible": false,
+        "mobileBarVisible": false,
+        "product": [
+          267,
+          453,
+          496,
+          863
+        ],
+        "charge": [
+          1043,
+          778,
+          1419,
+          842
+        ],
+        "cart": [
+          1022,
+          159,
+          1440,
+          952
+        ],
+        "mobileBar": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "sha256": "02c5ac82bc53a6f54bfd2ee145e9fd5cb60df9fec2cde507afc2f810dcd3cbd7"
+    },
+    {
+      "file": "pos-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "mode": "dark",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": true,
+        "desktopChargeVisible": true,
+        "cartFullyVisible": false,
+        "mobileBarVisible": false,
+        "product": [
+          267,
+          453,
+          496,
+          863
+        ],
+        "charge": [
+          1043,
+          778,
+          1419,
+          842
+        ],
+        "cart": [
+          1022,
+          159,
+          1440,
+          952
+        ],
+        "mobileBar": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "sha256": "534fb7eb800faa918b0b68d94b33227982aeb1e9bf6967e0295b241c856e62ac"
+    },
+    {
+      "file": "pos-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "light",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "product": [
+          29,
+          582,
+          190,
+          937
+        ],
+        "charge": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cart": [
+          14,
+          11104,
+          376,
+          11815
+        ],
+        "mobileBar": [
+          12,
+          766,
+          378,
+          832
+        ]
+      },
+      "sha256": "c36c7c9b291d5e25262731f3a4876f95edc4e780611d6e90c596add46e8d8e45"
+    },
+    {
+      "file": "carrito-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "light",
+      "cartVisibleAfterShortcut": true,
+      "sha256": "ef239473d3829d2cc21602ecf612462e6d1023ec4affe03741f56f1232d64af9"
+    },
+    {
+      "file": "pos-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "dark",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "product": [
+          29,
+          582,
+          190,
+          937
+        ],
+        "charge": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cart": [
+          14,
+          11104,
+          376,
+          11815
+        ],
+        "mobileBar": [
+          12,
+          766,
+          378,
+          832
+        ]
+      },
+      "sha256": "eb5d1a08ecd504fd1dcdf7db7b1639d4e445ae02162908925d909c1c431686d5"
+    },
+    {
+      "file": "carrito-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "dark",
+      "cartVisibleAfterShortcut": true,
+      "sha256": "cf56b802c2c1a78617d171664b65a011ebaf0d6fac8a139b663097bad30c50f1"
+    }
+  ],
+  "checks": {
+    "390": {
+      "viewport": [
+        390,
+        844
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "abreYCierraCobro": "pasa",
+      "englishChargeLabelStillSpanish": true,
+      "englishCartLabelStillSpanish": true,
+      "inglesConCarrito": "pasa"
+    },
+    "1440": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "abreYCierraCobro": "pasa",
+      "englishChargeLabelStillSpanish": true,
+      "inglesConCarrito": "pasa",
+      "motion": {
+        "hover": {
+          "y": -2,
+          "duration": "0.15s, 0.15s"
+        },
+        "reduced": {
+          "y": 0,
+          "duration": "0s"
+        }
+      },
+      "movimientoTarjeta": "pasa"
+    }
+  },
+  "desktopSizes": [
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "chargeTop": 629,
+      "chargeBottom": 677,
+      "chargeFullyVisible": true,
+      "itemNameInsideLabel": true,
+      "overflowPx": 0
+    },
+    {
+      "viewport": [
+        1180,
+        757
+      ],
+      "chargeTop": 629,
+      "chargeBottom": 677,
+      "chargeFullyVisible": true,
+      "itemNameInsideLabel": true,
+      "overflowPx": 0
+    },
+    {
+      "viewport": [
+        1366,
+        768
+      ],
+      "chargeTop": 629,
+      "chargeBottom": 677,
+      "chargeFullyVisible": true,
+      "itemNameInsideLabel": true,
+      "overflowPx": 0
+    },
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "chargeTop": 778,
+      "chargeBottom": 842,
+      "chargeFullyVisible": true,
+      "itemNameInsideLabel": true,
+      "overflowPx": 0
+    }
+  ],
+  "totalTypography": {
+    "390": {
+      "fontFamily": "Georgia, \"Times New Roman\", serif",
+      "fontPixels": 28,
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    "1280": {
+      "fontFamily": "Georgia, \"Times New Roman\", serif",
+      "fontPixels": 25.6,
+      "viewport": [
+        1280,
+        900
+      ]
+    }
+  },
+  "servicesStopped": true,
+  "salePosts": 0,
+  "pageErrorCount": 0,
+  "independentBrowserTests": {
+    "backend": "simulado",
+    "passed": 12,
+    "total": 12
+  }
+}

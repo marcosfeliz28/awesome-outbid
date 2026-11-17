@@ -276,3 +276,8 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · Punto de venta compacto
+
+- Validé `292910889821bee22640110defc86bdf0f570b4b` de Dot desde la aplicación local con API y PostgreSQL de prueba. «Cobrar» queda entero sin desplazamiento con un producto en el carrito a 1024 × 768, 1180 × 757, 1366 × 768 y 1440 × 900. F2, F4, F12, acceso móvil al carrito, cambio de tema y continuidad del carrito aprobados en el recorrido.
+- La verificación independiente con API simulada pasó 12/12. Confirmé Norexos y el acceso desde Inicio con nombres distintos para menú y acceso rápido. Quedan diferencias de tipografía del total, etiquetas accesibles en inglés y detalles de textos. El [informe y las seis capturas](../validacion/capturas-dot-29291088/punto-de-venta/COMPARACION.md) incluyen medidas, huellas y el enlace a la ejecución de GitHub del candidato. Cerré los procesos propios.
