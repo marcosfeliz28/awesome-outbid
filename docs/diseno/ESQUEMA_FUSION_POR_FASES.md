@@ -2,30 +2,26 @@
 
 Referencia única: **lámina 03 Fusión** generada por Dot. No Aurora, no violeta, no maquetas viejas.
 
-## Quién hace qué
+## Flujo (afinado por Marcos, 17-nov, vía Dot): una imagen, un área, a la vez
 
-| Paso              | Quién           | Qué entrega                                                                                                                                                    | Qué cuenta como hecho                                                                                  |
-| ----------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 1. Diseñar        | ChatGPT con Dot | Imágenes del área (escritorio 1440 y celular 390, claro y oscuro)                                                                                              | Imágenes en el chat de Marcos o en `docs/diseno/fusion03/fase-N/`                                      |
-| 2. Autorizar      | **Marcos**      | «Aprobado fase N» o cambios                                                                                                                                    | Su palabra en el chat. Sin esto no se programa nada                                                    |
-| 3. Mandar la fase | Dot             | El código de esa fase: rama `dot/rediseno-fase-N` (o paquete `git bundle` si la subida falla), con el código completo del commit y la versión de partida       | Claude comprueba que el commit llegó idéntico                                                          |
-| 4. Entrar la fase | Claude nube     | Integra el commit **tal cual**, corre las 3 pruebas automáticas, el recorrido de cajera con datos de demostración y capturas al lado de las imágenes aprobadas | Informe: pasa, falla (archivo:línea) y diferencias con la imagen. No corrige ni reinterpreta el diseño |
-| 5. Ver            | **Marcos**      | Revisa las capturas reales de la fase                                                                                                                          | «Publicar fase N» o cambios (vuelve a Dot)                                                             |
-| 6. Publicar       | Claude nube     | Solo la web (`nexora-pos-web`), con los 3 CI en verde; verifica después en vivo                                                                                | Fase N en la tienda; reversión al commit anterior si algo falla                                        |
+1. **Dot** genera **una** imagen de **un** área (estilo Fusión premium) y se la muestra a Marcos en su conversación.
+2. **Marcos** la aprueba o pide cambios. Sin imagen aprobada no se programa nada.
+3. **Claude nube** implementa esa área **poco a poco**, solo presentación, siguiendo la imagen aprobada (sin reinterpretarla). Se acepta que convivan estilos viejos y nuevos mientras se avanza.
+4. **Claude nube** compara el resultado **real** (capturas de la app en 1440 y 390, claro y oscuro) contra la imagen aprobada y documenta las diferencias en `docs/diseno/fusion03/<area>/COMPARACION.md`.
+5. Pasan los controles técnicos: 3 pruebas automáticas en verde, recorrido de cajera con datos de demostración, accesibilidad.
+6. **Marcos** (o Dot) aprueba la publicación de esa área; Claude publica solo la web y verifica en vivo.
+7. Recién entonces se pasa a la siguiente área.
 
-Una fase a la vez: la siguiente empieza cuando Marcos dice «publicar» (o la descarta).
+## Áreas (en este orden)
 
-## Fases
-
-| Fase | Área                                                          | Estado                |
-| ---- | ------------------------------------------------------------- | --------------------- |
-| 1    | Caja (POS) e Inicio                                           | Diseño en curso (Dot) |
-| 2    | Productos y Mercancía                                         | Pendiente             |
-| 3    | Reportes y Cierre de caja                                     | Pendiente             |
-| 4    | GV (cursos, caja GV, Mi incentivo)                            | Pendiente             |
-| 5    | Resto (clientes, usuarios, ajustes, estados de error y carga) | Pendiente             |
-
-Dot puede reordenar o dividir fases con el visto bueno de Marcos.
+| #   | Área                      | Estado                                  |
+| --- | ------------------------- | --------------------------------------- |
+| 1   | Punto de venta / Caja     | Imagen en generación (Dot). Sin aprobar |
+| 2   | Inicio                    | Después de Caja                         |
+| 3   | Productos y Mercancía     | Pendiente                               |
+| 4   | Reportes y Cierre de caja | Pendiente                               |
+| 5   | GV                        | Pendiente                               |
+| 6   | Resto                     | Pendiente                               |
 
 ## Límites en todas las fases
 
