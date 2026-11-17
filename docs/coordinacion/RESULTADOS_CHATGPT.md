@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-17 · ChatGPT NUBE · revisión de las 18 fotos retenidas
+
+- **Base/rama:** base inicial `origin/nexora-cloud` `721ad27562c518ceb3f2f56ccc85f6b8c98a6cb0`; `chatgpt-nube/fotos-retenidas-17nov`.
+- **Entrega:** `docs/fotos/retenidas-17nov/` con 18 candidatos WebP, manifiesto de fuente/dimensiones/lectura visible/coincidencias/derechos/vigencia, hoja de contacto y prueba reproducible.
+- **Veredicto conservador:** seis coincidencias exactas y doce pendientes. Los tres Isopure blancos actuales se entregan para revisión, pero no coinciden literalmente con las 3 lb del catálogo; tampoco se aprobaron otros pesos dudosos por redondeo o por el título del vendedor.
+- **Regresión y controles:** el control falló con código 1 contra la base sin la entrega y pasó después con 18/18 archivos a 800 × 800. `pnpm check` pasó con typecheck, ESLint, 123 archivos/1,069 pruebas y ambos builds; un archivo/10 pruebas quedaron omitidos.
+- **Autoauditoría y límites:** no se alteró catálogo, inventario ni código; ninguna imagen fue asignada a la tienda. Fuente activa no equivale a permiso de reutilización. Sin subida a tienda, PR, mezcla, despliegue, dinero, precios, Render, producción, base ni credenciales. SHA y tres CI se anotan tras el único push.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

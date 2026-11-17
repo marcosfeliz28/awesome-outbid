@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-17 · revisión conservadora de las 18 fotos retenidas
+
+- **Orden, base y rama:** tarea nueva de `ORDEN_EVIDENCIA_17NOV.md`, base inicial `origin/nexora-cloud` `721ad27562c518ceb3f2f56ccc85f6b8c98a6cb0`, rama `chatgpt-nube/fotos-retenidas-17nov`.
+- **Entrega:** `docs/fotos/retenidas-17nov/` contiene 18 WebP a 800 × 800, `candidatas.csv`, hoja de contacto, explicación y control reproducible. Se aportaron los tres Isopure con envase blanco actual pedidos, pero se marcaron como discrepantes: sus etiquetas dicen 2.73, 2.73 y 2.91 lb frente a 3 lb en el catálogo.
+- **Resultado de la revisión:** seis coincidencias exactas comprobadas (`INV-1122`, `INV-1152`, `INV-1192`, `INV-1193`, `INV-1199`, `INV-1937`) y doce pendientes explícitos por peso distinto o no comprobado. Ningún título de minorista se usó para ocultar una contradicción de la etiqueta.
+- **Regresión antes/después:** el control ejecutado contra la base terminó con código 1 porque no existía `docs/fotos/retenidas-17nov/candidatas.csv`; sobre esta rama pasó y confirmó 18 filas, 18 WebP válidos de 800 × 800, seis exactos y doce pendientes.
+- **Control completo local:** después de generar Prisma, `pnpm check` pasó: typecheck y ESLint limpios; 123 archivos y 1,069 pruebas verdes, un archivo y 10 pruebas omitidos; ambos builds terminaron correctamente. Vite solo mostró la advertencia conocida de un chunk mayor de 500 kB.
+- **Autoauditoría:** la coincidencia visual, el tamaño, la vigencia y los derechos están separados. Una fuente oficial/activa no se trató como permiso de reutilización. No se cambió catálogo, inventario ni aplicación para acomodar una foto; las doce candidatas ámbar no están autorizadas para asignarse o publicarse.
+- **Límites y publicación:** solo se añadieron documentos e imágenes candidatas internas y estos dos informes. No hubo carga a tienda, mezcla, PR, despliegue ni acceso a dinero, precios, Render, producción, base o credenciales. El SHA final y `verify`, `windows-installer` y `render-images` se comprobarán después del único push de esta rama.
+
 ## 2026-11-13 · especificaciones de construcción de la primera tanda
 
 - **Orden, base y rama:** nueva cola `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`, ejecutada desde `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560` en `chatgpt-nube/espec-tanda1-13nov`.
