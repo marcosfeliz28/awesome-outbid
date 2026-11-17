@@ -281,3 +281,4 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 
 - Probé `7bf3ef770f1ce474633e00421bfaefd19ad2345f`. La aplicación conserva el código de 59d77a17 y las imágenes de base. El menú móvil y reportes funcionaron; Cobrar y la primera tarjeta caben en cuatro tamaños con cinco artículos y textos largos. Se repite el límite de dos filas completas a 1280 × 720. [Once capturas y mediciones](../validacion/capturas-dot-7bf3ef77/inicio-y-punto-de-venta/COMPARACION.md)
 - Cerré los navegadores y los servicios ficticios. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44196714177)
+- Los tres controles del mismo commit terminaron en verde. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44196714177)
