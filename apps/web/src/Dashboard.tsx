@@ -431,21 +431,33 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             </div>
             <div className="fusion-quick-list">
               {can(user.permissions, "sale:write") && (
-                <button type="button" onClick={() => go("pos")}>
+                <button
+                  type="button"
+                  aria-label={"Ir a Punto de venta"}
+                  onClick={() => go("pos")}
+                >
                   <Store size={22} aria-hidden="true" />
                   Punto de venta
                   <ChevronRight size={18} aria-hidden="true" />
                 </button>
               )}
               {can(user.permissions, "inventory:write") && (
-                <button type="button" onClick={() => go("inventory")}>
+                <button
+                  type="button"
+                  aria-label={"Ir a Inventario"}
+                  onClick={() => go("inventory")}
+                >
                   <Boxes size={22} aria-hidden="true" />
                   Inventario
                   <ChevronRight size={18} aria-hidden="true" />
                 </button>
               )}
               {can(user.permissions, "reports:read") && (
-                <button type="button" onClick={() => go("reports")}>
+                <button
+                  type="button"
+                  aria-label={"Ir a Reportes"}
+                  onClick={() => go("reports")}
+                >
                   <BarChart3 size={22} aria-hidden="true" />
                   Reportes
                   <ChevronRight size={18} aria-hidden="true" />
