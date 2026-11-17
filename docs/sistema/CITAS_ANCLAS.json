@@ -443,7 +443,6 @@
   "Management.tsx:2131": "{closing && (",
   "Management.tsx:2758": "[\"purchases\", \"Compras y cuentas por pagar\"],",
   "Management.tsx:3290": "render: (s) => (",
-  "Management.tsx:3316": "label: \"Saldo pendiente\",",
   "Management.tsx:3333": "label: \"Acciones\",",
   "Management.tsx:3336": "<button",
   "Management.tsx:3462": "void client.invalidateQueries({ queryKey: [\"sales\"] });",
@@ -548,5 +547,6 @@
   "Tienda.tsx:96": "{sessionId && onSwitch && printing.kind === \"cuadre\" && askProducts && (",
   "warehouses.ts:112": "@Post(\"inventory/transfers\")",
   "warehouses.ts:94": "@Get(\"inventory/transfers\")",
-  "WarehousesPanel.tsx:272": "<h2>Historial de traspasos</h2>"
+  "WarehousesPanel.tsx:272": "<h2>Historial de traspasos</h2>",
+  "Management.tsx:3418": "{!can(user.permissions, \"*\") &&"
 }
