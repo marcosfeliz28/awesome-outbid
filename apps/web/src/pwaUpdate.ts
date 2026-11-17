@@ -47,32 +47,28 @@ export function startPwaUpdates() {
 
   const cartItems = () => useStore.getState().cart.length;
 
+  const dialogOpen = () =>
+    !!document.querySelector('[role="dialog"], dialog[open]');
+  // Una sola barrera para botón, actualización automática y TODAS las pestañas.
+  // No se promete un guardado durable: con carrito activo nunca se recarga,
+  // aunque IndexedDB falle. El modal de pago/conteo también bloquea la recarga.
+  const workInProgress = () =>
+    cartItems() > 0 ||
+    dialogOpen() ||
+    Date.now() - lastInput < PWA_UPDATE_FORM_MS;
+
   const apply = () => {
     if (applying || cartItems() > 0) return;
+    if (workInProgress()) return;
     applying = true;
     if (timer) clearInterval(timer);
-    // Recarga cuando el service worker nuevo tome el control. workbox-window
-    // no recarga si la versión la encontró una revisión posterior a la carga
-    // (la de cada hora la marca como «externa»), así que se escucha aquí.
-    navigator.serviceWorker?.addEventListener("controllerchange", () => {
-      if (reloading) return;
-      reloading = true;
-      window.location.reload();
-    });
-    // Activa el service worker en espera (mensaje SKIP_WAITING).
-    void updateSW(true);
+    // false: Workbox NO debe recargar por su cuenta. El controlador nuevo
+    // puede llegar después de otro escaneo o cobro: reloadIfFree revalida.
+    void updateSW(false);
   };
 
-  const dialogOpen = () => !!document.querySelector('[role="dialog"]');
   const reloadIfFree = () => {
-    if (
-      !reloadWanted ||
-      reloading ||
-      cartItems() > 0 ||
-      dialogOpen() ||
-      Date.now() - lastInput < PWA_UPDATE_FORM_MS
-    )
-      return;
+    if (!reloadWanted || reloading || workInProgress()) return;
     clearInterval(reloadTimer);
     reloading = true;
     window.location.reload();
@@ -156,7 +152,7 @@ export function startPwaUpdates() {
 
   const check = () => {
     if (!waiting || applying) return;
-    if (eager && cartItems() === 0 && !dialogOpen()) {
+    if (eager && !workInProgress()) {
       apply();
       return;
     }
