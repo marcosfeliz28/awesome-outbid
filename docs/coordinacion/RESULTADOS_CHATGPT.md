@@ -2,6 +2,18 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-17 UTC · ChatGPT PC · evidencia de fotos, lote 5
+
+- **Orden/base/rama:** `ORDEN_EVIDENCIA_17NOV.md`, sección ChatGPT PC; base `32852bf046f499bc27bd369b1e5fc215a5d4912c`; rama `chatgpt-pc/fotos-lote-5`. Solo documentos e imágenes candidatas.
+- **Reparto por escrito, confirmado con ChatGPT Nube:** Nube conserva lote 3, filas 121–180 (`chatgpt-nube/fotos-lote3-17nov`); ChatGPT PC del chat `01a15b07` trabaja lote 4, filas 181–240 (`chatgpt-pc/fotos-lote-4`); este chat PC `01a1147f` trabaja exclusivamente lote 5, filas 241–261. No se editaron los otros lotes ni se reanudaron lotes rechazados.
+- **Commit con archivos reales:** `e10cb085f4de38914c351559313b24d8420a154b`: 15 WebP, [manifest.csv](../fotos/lote-5/manifest.csv) con los 21 productos y sus fuentes/uso, [contacto.png](../fotos/lote-5/contacto.png) con todas las imágenes en una sola hoja, [validacion.json](../fotos/lote-5/validacion.json) y [detalle de revisión](../fotos/lote-5/README.md). Son 19 archivos en `docs/fotos/lote-5/`.
+- **Conteo:** 21 recibidas y 21 trabajadas = 13 candidatas con coincidencia visual según los datos especificados + 2 candidatas observadas por submarca Bronson/Bronson Basics + 6 faltantes. Hay **15 archivos de imagen reales**, no 21; las seis casillas de faltantes de la hoja no cuentan como fotos. Cero aprobadas para aplicar.
+- **Mejora comprobada:** n 242 / `INV-1029` ahora tiene candidata Flowing Health, con glicinato, malato y citrato; las candidatas de marcas BioEmblem/Quiet Mood se excluyeron. No se rellenaron cantidades discordantes de la ficha ni se cambió el maestro.
+- **Verificación:** 21 pares n/SKU y nombres contra el maestro; 15 firmas WebP, dimensiones originales de al menos 800 px por eje y SHA-256; conversión sin pérdida y sin ampliar; hashes comprobados también contra los bytes preparados para Git; hoja de contacto final inspeccionada. `git diff --cached --check` pasó. Catorce originales son descargas locales del 15-nov, con fecha preservada; una fuente nueva se descargó el 17-nov. No se presenta el trabajo previo como descarga nueva.
+- **Falta y no comprobado:** cuatro archivos mayores para n 243/245/250/253; equivalencia Vanilla Flavour/Milkshake en n 247; envase oscuro/120 tabletas de n 256; cotejo físico y submarca de n 254/255; permisos comerciales y aprobación de Claude Nube/Marcos o Dot. Se registraron HTTP 403/429 sin eludirlos. Los estados exactos están en el CSV.
+- **Diseño de Dot:** se comprobó de nuevo el remoto después de `git fetch origin`; no existe todavía una rama `dot/rediseno-*`. Capturas reales de Caja, Inicio, Productos y GV a 1440/390, claro/oscuro, **pendientes de esa entrega**, no sustituidas por maquetas ni por esta hoja de fotos.
+- **Límites y cierre:** no se cambió código, datos de tienda, precios, existencias, credenciales ni Render; sin despliegue ni PR. No se iniciaron navegadores ni servicios Node/PostgreSQL de la aplicación; los procesos auxiliares de imagen finalizaron. Las comprobaciones de CI del SHA que se publique aún no se dan por verdes; esta entrega certifica los archivos documentados, no la aceptación del sistema.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
