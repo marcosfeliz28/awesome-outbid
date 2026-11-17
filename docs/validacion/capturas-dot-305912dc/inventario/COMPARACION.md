@@ -9,7 +9,7 @@ Probé `305912dc3e33292f865029573765fb22888f2448` de `dot/inventario-higgsfield-
 
 La pestaña activa se ve esmeralda y se acerca a la referencia aprobada. La tabla operativa con almacén, precio y lote sigue siendo el centro de la pantalla. Quedan pendientes los indicadores, las alertas y el panel de movimientos recientes de la lámina. [Cotejo de la lámina](https://github.com/marcosfeliz28/awesome-outbid/blob/039f17f94778864709bc0237b5cd9b8441105b23/docs/validacion/capturas-dot-0248bc89/inventario/COMPARACION.md)
 
-El instalador y las imágenes pasaron en GitHub. `verify` seguía en curso al guardar esta revisión. [CI de Inventario](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44192830997)
+El instalador y las imágenes pasaron en GitHub. `verify` terminó en rojo el 17 de noviembre a las 23:15 UTC. Pasó `pnpm check` y el paso `node scripts/verify.mjs` salió con código 1. La información pública no muestra la prueba ni la aserción que falló. [CI de Inventario](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44192830997/job/134426586155)
 
 ## Capturas reales
 

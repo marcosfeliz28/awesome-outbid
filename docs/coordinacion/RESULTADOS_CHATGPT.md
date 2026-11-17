@@ -281,3 +281,4 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 
 - Probé `305912dc3e33292f865029573765fb22888f2448`. Las pestañas de móvil miden 44 px y la barra «Mercancía» dejó libre «Ajustar». Confirmé las etiquetas principales en inglés, los nombres de productos intactos y cero escrituras en la copia de prueba. Pasaron 6/6 pruebas focales.
 - [Cinco capturas y cotejo](../validacion/capturas-dot-305912dc/inventario/COMPARACION.md). Quedan pendientes componentes compartidos en inglés y los indicadores, alertas y movimientos recientes del concepto. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44192830997)
+- Actualización de CI del mismo commit. `verify` falló en `node scripts/verify.mjs` tras pasar `pnpm check`. El resumen público permite confirmar el paso y el código de salida. Falta el detalle de la prueba fallida. [Ejecución](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44192830997/job/134426586155)
