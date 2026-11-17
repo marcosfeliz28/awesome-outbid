@@ -281,3 +281,4 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 
 - En `defb2fc2` confirmé la activación real del service worker local, la recarga de la pestaña libre y la conservación del carrito, total e indicador de caja abierta durante 16 segundos en la pestaña ocupada. Pasaron las 21 pruebas focales. Cero ventas y cero errores de página. Procesos cerrados.
 - [Dos capturas, mediciones y alcance](../validacion/capturas-dot-defb2fc2/actualizacion/COMPARACION.md). El cambio está en rama aparte y falta probar dos compilaciones con recursos distintos. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44197874395)
+- Los tres controles del mismo commit terminaron en verde. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44197874395)
