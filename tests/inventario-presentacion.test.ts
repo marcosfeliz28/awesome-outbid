@@ -38,3 +38,11 @@ describe("Inventario Higgsfield: presentación sin alterar negocio", () => {
     expect(css).not.toMatch(/url\(|content:\s*['"](?:RD|\d)/);
   });
 });
+
+it("corrige el acento heredado y evita barra superpuesta en móvil", () => {
+  const css = read("apps/web/src/fusion-inventory.css");
+  expect(css).toContain("--primary: var(--iv-accent)");
+  expect(css).toContain("--primary-soft: var(--iv-pressed)");
+  expect(css).toMatch(/\.goods-mobile-bar\s*\{\s*position: static;/);
+  expect(css).toMatch(/grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+});

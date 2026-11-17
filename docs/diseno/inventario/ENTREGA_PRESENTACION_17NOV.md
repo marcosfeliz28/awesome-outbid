@@ -25,3 +25,9 @@ Se incorpora relieve CSS, bordes metálicos, superficies verde/azul y claro/oscu
 3. Diseñar métricas solo con datos verificables y traducciones completas; la pantalla conserva textos originales en español, no se afirma EN completo.
 4. Restablecer entorno PostgreSQL de pruebas y pasar check e integración sin cambiar assertions.
 5. Publicar rama y confirmar CI del SHA exacto. No realizado en este corte.
+
+## Segundo corte tras QA PC
+
+La PC reconstruyó el árbol exacto `7a608b8f` y pasó 4/4 casos 1440/390 claro/oscuro (sin overflow, pestañas repetidas, cero mutaciones). Encontró acento púrpura heredado, pestañas móviles demasiado altas y barra fija atravesando acciones.
+
+Este ajuste **solo CSS** limita `--primary`/`--primary-soft` al inventario, da prioridad al color activo y pone la barra Mercancía dentro del flujo móvil, conservando el botón y su handler. Las pestañas móviles pasan a dos columnas de altura intrínseca y mínimo44px. La repetición de QA contra este corte sigue pendiente; no se declara acabado. No se inventan KPIs ni fotos para imitar números del PNG.

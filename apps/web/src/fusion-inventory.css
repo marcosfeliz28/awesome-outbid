@@ -247,3 +247,67 @@
     box-shadow: none;
   }
 }
+
+/* QA PC: replace inherited violet tokens only while Inventario is mounted. */
+.app-shell:has(.fusion-inventory) {
+  --primary: var(--iv-accent);
+  --primary-soft: var(--iv-pressed);
+}
+.app-shell:has(.fusion-inventory) .sidebar .nav-item.active {
+  color: var(--iv-ink);
+  background: linear-gradient(
+    145deg,
+    var(--iv-pressed),
+    var(--iv-deep)
+  ) !important;
+}
+.fusion-inventory .tabs button.active {
+  background: var(--iv-pressed) !important;
+  color: var(--iv-ink);
+}
+.fusion-inventory .text-link {
+  color: var(--iv-accent);
+}
+.app-shell:has(.fusion-inventory) .goods-mobile-bar {
+  background: var(--iv-surface);
+  border-top: 1px solid var(--iv-edge);
+}
+.app-shell:has(.fusion-inventory) .goods-mobile-bar button {
+  color: var(--iv-ink);
+  background: linear-gradient(145deg, var(--iv-pressed), var(--iv-deep));
+  border: 1px solid var(--iv-edge);
+  box-shadow:
+    inset 0 1px 2px var(--iv-glint),
+    0 4px 8px var(--iv-shadow);
+}
+@media (max-width: 768px) {
+  /* Keep the shortcut available, but in document flow, never across a row action. */
+  .app-shell:has(.fusion-inventory) {
+    flex-direction: column;
+  }
+  .app-shell:has(.fusion-inventory) .main-shell {
+    order: 1;
+  }
+  .app-shell:has(.fusion-inventory) .goods-mobile-bar {
+    position: static;
+    order: 2;
+    width: 100%;
+    flex-shrink: 0;
+  }
+  .app-shell:has(.fusion-inventory) .main-content {
+    padding-bottom: 24px;
+  }
+  .fusion-inventory .table-toolbar .tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    align-items: stretch;
+  }
+  .fusion-inventory .table-toolbar .tabs button {
+    min-height: 44px;
+    height: auto;
+    flex: none;
+    line-height: 1.3;
+    padding: 10px 8px !important;
+  }
+}
