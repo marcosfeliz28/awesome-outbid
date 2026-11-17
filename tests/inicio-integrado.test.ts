@@ -13,12 +13,12 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 describe("Inicio integrado: preservación", () => {
-  it("limita preferencias a Inicio y conserva el diálogo legal existente", () => {
+  it("limita preferencias a Inicio y respeta la marca Noxeros en el diálogo", () => {
     const source = readFileSync("apps/web/src/App.tsx", "utf8");
     expect(source).toContain(
       '{page === "dashboard" && <div className="fusion-preferences"',
     );
-    expect(source).toContain('title="Acerca de Norexos"');
+    expect(source).toContain('title="Acerca de Noxeros"');
     const css = readFileSync(
       "apps/web/src/fusion-inicio-integrado.css",
       "utf8",

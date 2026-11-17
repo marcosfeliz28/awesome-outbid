@@ -203,7 +203,7 @@
   "apps/web/src/App.tsx:1264": "<span>{t(\"Noxeros · Tu negocio, en movimiento.\")}</span>",
   "apps/web/src/App.tsx:1269": "open={commands}",
   "apps/web/src/App.tsx:1304": "variantes. Cobrar permite combinar efectivo, tarjeta y transferencia.",
-  "apps/web/src/App.tsx:166": "<Modal open={open} onClose={onClose} title=\"Acerca de Norexos\" wide>",
+  "apps/web/src/App.tsx:166": "<Modal open={open} onClose={onClose} title=\"Acerca de Noxeros\" wide>",
   "apps/web/src/App.tsx:206": "const navigation = [",
   "apps/web/src/App.tsx:221": "label: \"Punto de venta\",",
   "apps/web/src/App.tsx:252": "label: \"Inventario\",",

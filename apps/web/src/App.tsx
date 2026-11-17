@@ -163,7 +163,7 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
     }
   };
   return (
-    <Modal open={open} onClose={onClose} title="Acerca de Norexos" wide>
+    <Modal open={open} onClose={onClose} title="Acerca de Noxeros" wide>
       <div className="about">
         <p>
           <strong>Versión {__NEXORA_VERSION__}</strong>
