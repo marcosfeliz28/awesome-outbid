@@ -296,6 +296,7 @@ test("preferencias e inglés mantienen la venta sin recargar ni cambiar total", 
   const blocked = await setup(page, "dark");
   await addProduct(page);
   await total(page, 118);
+  await page.locator(".fc-preferences > summary").click();
   await page
     .getByRole("combobox", { name: "Idioma de la interfaz", exact: true })
     .selectOption("en");
@@ -327,3 +328,23 @@ test("preferencias e inglés mantienen la venta sin recargar ni cambiar total", 
   await total(page, 118);
   expect(blocked).toEqual([]);
 });
+for (const width of [1024, 1180, 1366, 1536])
+  test(`cobro visible sin scroll ${width}x768`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 768 });
+    await setup(page, "dark");
+    await addProduct(page);
+    const charge = page.locator(".cart-summary > .charge-button");
+    const rect = await charge.boundingBox();
+    expect(rect).not.toBeNull();
+    expect(rect!.y).toBeGreaterThanOrEqual(0);
+    expect(rect!.y + rect!.height).toBeLessThanOrEqual(768);
+    const card = await page
+      .locator(".product-card.in-stock")
+      .first()
+      .boundingBox();
+    expect(card).not.toBeNull();
+    expect(card!.y).toBeLessThan(768);
+    await expect(page.locator(".cart-item-detail > strong")).toHaveText(
+      "Proteína DEMO",
+    );
+  });

@@ -601,3 +601,124 @@
 .pos-layout.fusion-caja-integrada .product-card:hover:not(:disabled) {
   border-color: var(--fc-gold) !important;
 }
+/* A native disclosure keeps visual options reachable without pushing checkout below the fold. */
+.pos-layout.fusion-caja-integrada .fc-preferences {
+  position: relative;
+  display: block;
+  padding: 0;
+  justify-self: end;
+  margin-left: auto;
+  width: fit-content;
+  z-index: 25;
+}
+.pos-layout.fusion-caja-integrada .fc-preferences > summary {
+  min-height: 42px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 650;
+  color: var(--fc-ink);
+}
+.pos-layout.fusion-caja-integrada .fc-preferences > summary:focus-visible {
+  outline: 3px solid var(--fc-accent);
+  outline-offset: 3px;
+}
+.pos-layout.fusion-caja-integrada .fc-preferences-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(660px, calc(100vw - 48px));
+  padding: 16px;
+  border: 1px solid var(--fc-edge);
+  border-radius: 14px;
+  background: var(--fc-surface);
+  box-shadow: 0 14px 28px var(--fc-shadow);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.pos-layout.fusion-caja-integrada
+  .fc-preferences:not([open])
+  .fc-preferences-panel {
+  display: none;
+}
+/* The existing compact grid had a 26px photo track: don't squeeze names into it. */
+.pos-layout.fusion-caja-integrada .cart-item {
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  column-gap: 10px;
+  row-gap: 4px;
+}
+.pos-layout.fusion-caja-integrada .cart-item > img {
+  grid-row: 1 / 3;
+  width: 44px;
+  height: 54px;
+}
+.pos-layout.fusion-caja-integrada .cart-item-detail > strong {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 15px;
+}
+.pos-layout.fusion-caja-integrada .cart-item-detail > small {
+  grid-column: 2;
+  grid-row: 2;
+  max-width: 100%;
+}
+.pos-layout.fusion-caja-integrada .cart-line-total {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.pos-layout.fusion-caja-integrada .cart-item-controls {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  flex-wrap: wrap;
+}
+@media (min-width: 901px) and (max-height: 860px) {
+  .pos-layout.fusion-caja-integrada .cart-panel {
+    padding: 12px;
+    min-height: 0;
+  }
+  .pos-layout.fusion-caja-integrada .cart-heading {
+    padding-bottom: 8px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-heading h2 {
+    font-size: 24px;
+  }
+  .pos-layout.fusion-caja-integrada .customer-selector {
+    min-height: 48px;
+    margin: 8px 0;
+    padding: 8px 10px !important;
+  }
+  .pos-layout.fusion-caja-integrada .cart-items {
+    min-height: 80px;
+    max-height: 160px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-item {
+    padding: 8px 0;
+  }
+  .pos-layout.fusion-caja-integrada .cart-summary {
+    padding-top: 8px;
+  }
+  .pos-layout.fusion-caja-integrada
+    .cart-summary
+    > div:not(.cart-bottom-actions) {
+    margin-bottom: 4px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-summary > .cart-total {
+    padding-top: 6px;
+    margin: 6px 0 8px !important;
+  }
+  .pos-layout.fusion-caja-integrada .cart-total strong {
+    font-size: 28px;
+  }
+  .pos-layout.fusion-caja-integrada .charge-button {
+    min-height: 48px;
+    height: 48px;
+    font-size: 21px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-bottom-actions button {
+    min-height: 36px;
+  }
+}

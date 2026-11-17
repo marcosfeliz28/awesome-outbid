@@ -1,7 +1,7 @@
 # Caja · concepto Higgsfield 01 · implementación inicial para revisión
 
 Referencia: PNG nítido revisado de Caja; Library `libfile_fde3_f-84d6325a9b8881919cb389ee4c9d4ec7_00021c7591648191a2873caeaff1ea36`, SHA256 `9555ca20584c15ec1fd61d461c3d348b19fcaf4952ea9bca8220539698b89dbc`.
-Estado: imagen conceptual pendiente de aprobación de Marcos. Esta rama prepara una vista funcional para revisar, no significa aprobación ni despliegue.
+Estado actualizado: Marcos aprobó el concepto Caja («Me encanta ... misma calidad y nitidez o más»). Esta rama prepara la vista funcional; aprobar la imagen no equivale a certificar la implementación ni a desplegar producción.
 
 ## Cambios reales
 Pintura CSS aislada de POS y shell mientras Caja está montada. Superficies negras/verdes con borde oro, relieve, catálogo con fotos reales existentes sin saturación artificial, tarjeta de venta actual, controles elevados, resumen legible, CTA Cobrar. En claro se prioriza contraste, azul y Negro como preferencias. Hover y pulsación ligeros; foco visible, reduced-motion y forced-colors.
@@ -24,3 +24,11 @@ Check global cloud: 16 suites PostgreSQL siguen bloqueadas por falta de libicuuc
 ## Ajuste previo a QA
 Se aumenta la especificidad de Caja para que la hoja antigua no vuelva a imponer un borde violeta o estilos planos sobre la referencia nueva. Se añade octava prueba de cambio ES/EN, azul y Negro conservando carrito y total. Se incorpora además el arreglo accesible de Inicio (atajos Abrir..., navegación sin duplicado), sin modificar su aspecto.
 PC se desconectó antes de ejecutar los casos Caja. El intento cloud estándar y ampliado sigue bloqueado al iniciar Chromium (socketEPERM). No hay aprobación visual, ocho pruebas aprobadas ni capturas certificadas de Caja. Se prepara copia DEMO privada con la misma fuente y fixtures para revisar sin tocar tienda.
+
+## Revisión de pantalla corta · candidato 2aa7c5b2
+La revisión de navegador de la demo detectó a 1180×757 el botón Cobrar entre y=783.375 y847.375, fuera de la pantalla, y nombre de producto comprimido. Se compactan las preferencias en disclosure nativo, se corrigen las columnas del carrito y se reducen espacios en escritorios de altura corta, sin modificar cálculos ni manejadores.
+Typecheck, lint de archivos modificados, build y 35 regresiones locales pasan. Se preparan cuatro casos adicionales de geometría (1024/1180/1366/1536×768), para doce casos de navegador. No se anuncian aprobados: Chromium automatizado cloud sigue bloqueado. La revisión real del nuevo candidato está en curso.
+Marca actual Norexos, con migración de preferencia anterior; accesos de Inicio «Ir a ...». Las menciones anteriores describen iteraciones históricas.
+
+### Resultado de revisión real del candidato
+La revisión independiente del navegador privado confirmó a 1180×757 Cobrar entre y=628.98 y676.98 (antes final847.375), nombre Proteína DEMO completo y variante debajo. Abrir apariencia no desplaza Caja. Alternar EN→ES y Negro→Claro conserva dos artículos, total RD$236 e ITBIS36. Demo privada v3 publicada con fuente2aa7c5b2; no producción. Esta comprobación manual no sustituye los doce casos automatizados ni certifica aún todos los anchos móviles.
