@@ -844,3 +844,57 @@
     gap: 4px;
   }
 }
+/* W5: primera tarjeta completa junto al cobro, con escala de caja.
+   Se conserva el nombre completo (incluidos sabor/talla), sin recortarlo. */
+@media (min-width: 901px) and (max-height: 900px) {
+  .pos-layout.fusion-caja-integrada {
+    row-gap: 12px;
+  }
+  .pos-layout.fusion-caja-integrada .pos-catalog {
+    padding: 12px;
+  }
+  .pos-layout.fusion-caja-integrada .pos-topbar {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .pos-layout.fusion-caja-integrada .pos-topbar h1 {
+    flex: 1 1 auto;
+    font-size: 26px;
+  }
+  .pos-layout.fusion-caja-integrada .pos-search {
+    order: 3;
+    flex: 1 1 100%;
+    min-width: 120px;
+  }
+  .pos-layout.fusion-caja-integrada .category-tabs {
+    margin: 10px 0;
+  }
+  .pos-layout.fusion-caja-integrada .catalog-caption {
+    margin-bottom: 8px;
+  }
+  .pos-layout.fusion-caja-integrada .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: 12px;
+  }
+  .pos-layout.fusion-caja-integrada .product-card {
+    align-self: start;
+  }
+  .pos-layout.fusion-caja-integrada .product-image {
+    height: 100px;
+    aspect-ratio: auto;
+    padding: 8px;
+  }
+  .pos-layout.fusion-caja-integrada .product-info {
+    padding: 10px;
+  }
+  .pos-layout.fusion-caja-integrada .product-info h3 {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .pos-layout.fusion-caja-integrada .product-info p {
+    margin-bottom: 6px;
+  }
+  .pos-layout.fusion-caja-integrada .product-bottom {
+    gap: 3px;
+  }
+}
