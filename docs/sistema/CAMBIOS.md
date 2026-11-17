@@ -7,6 +7,7 @@ Formato: `| fecha | quién | qué cambió | archivos |`
 <!-- prettier-ignore-start -->
 | fecha | quién | qué cambió | archivos |
 |---|---|---|---|
+| 2026-11-17 | Norexos 1 | Fotos de productos: 10 suplementos validados por Dot (`dot/fotos-10-validadas-17nov` `aba6cb9a`), sobre fondo blanco a 800 px. | `apps/web/public/products/fotos/` |
 | 2026-11-17 | Norexos 1 | Fotos de productos: 15 de las 18 retenidas con foto nueva (`<SKU>-v2.webp`), incluidos los 3 Isopure en envase blanco; regla de Marcos: diferencias pequeñas de peso (p. ej. 2.73 vs 3 lb) se aceptan si la foto muestra el producto. Retenidas: INV-1147, INV-1213, INV-1987. | `apps/web/public/products/fotos/` |
 | 2026-11-17 | Norexos 1 | Fotos de productos: 145 suplementos con foto real en `apps/web/public/products/fotos/<SKU>.webp` (800 px); cada producto apunta a su foto por `imageUrl` (orden de Marcos). | `apps/web/public/products/fotos/`, `docs/legal/ORIGEN_DE_ACTIVOS.md` |
 | 2026-11-16 | Norexos 1 | Incentivo GV: se revierte la acreditación de las cuentas `claude` a Clary; cada pago cuenta para quien lo registró y el incentivo empieza en octubre de 2026 (orden de la dueña). Clary: oct 2,563.13, nov 3,180.76. Pendiente de despliegue. | `apps/api/src/gv.ts`, `docs/sistema/GV.md` |
