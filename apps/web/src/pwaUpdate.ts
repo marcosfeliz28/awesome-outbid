@@ -47,44 +47,44 @@ export function startPwaUpdates() {
 
   const cartItems = () => useStore.getState().cart.length;
 
+  const dialogOpen = () =>
+    !!document.querySelector('[role="dialog"], dialog[open]');
+  // Una sola barrera para botón, actualización automática y TODAS las pestañas.
+  // No se promete un guardado durable: con carrito activo nunca se recarga,
+  // aunque IndexedDB falle. El modal de pago/conteo también bloquea la recarga.
+  const workInProgress = () =>
+    cartItems() > 0 ||
+    dialogOpen() ||
+    Date.now() - lastInput < PWA_UPDATE_FORM_MS;
+
   const apply = () => {
     if (applying || cartItems() > 0) return;
+    if (workInProgress()) return;
     applying = true;
     if (timer) clearInterval(timer);
-    // Recarga cuando el service worker nuevo tome el control. workbox-window
-    // no recarga si la versión la encontró una revisión posterior a la carga
-    // (la de cada hora la marca como «externa»), así que se escucha aquí.
-    navigator.serviceWorker?.addEventListener("controllerchange", () => {
-      if (reloading) return;
-      reloading = true;
-      window.location.reload();
-    });
-    // Activa el service worker en espera (mensaje SKIP_WAITING).
-    void updateSW(true);
+    // El booleano está obsoleto en vite-plugin-pwa: onNeedReload es quien
+    // impide la recarga propia de Workbox y revalida el trabajo pendiente.
+    void updateSW(false);
   };
 
-  const dialogOpen = () => !!document.querySelector('[role="dialog"]');
   const reloadIfFree = () => {
-    if (
-      !reloadWanted ||
-      reloading ||
-      cartItems() > 0 ||
-      dialogOpen() ||
-      Date.now() - lastInput < PWA_UPDATE_FORM_MS
-    )
-      return;
+    if (!reloadWanted || reloading || workInProgress()) return;
     clearInterval(reloadTimer);
     reloading = true;
     window.location.reload();
   };
+  const requestSafeReload = () => {
+    reloadWanted = true;
+    reloadIfFree();
+    if (!reloading) reloadTimer ??= setInterval(reloadIfFree, 15_000);
+  };
   // Sólo si la página ya la controlaba un service worker: la primera
   // instalación también cambia de controlador y no debe recargar.
   if (hadController)
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      reloadWanted = true;
-      reloadIfFree();
-      reloadTimer ??= setInterval(reloadIfFree, 15_000);
-    });
+    navigator.serviceWorker.addEventListener(
+      "controllerchange",
+      requestSafeReload,
+    );
 
   const render = () => {
     if (!waiting || applying || dismissed) {
@@ -156,7 +156,7 @@ export function startPwaUpdates() {
 
   const check = () => {
     if (!waiting || applying) return;
-    if (eager && cartItems() === 0 && !dialogOpen()) {
+    if (eager && !workInProgress()) {
       apply();
       return;
     }
@@ -175,6 +175,8 @@ export function startPwaUpdates() {
 
   const updateSW = registerSW({
     immediate: true,
+    // Contrato real del plugin: intercepta también su evento controlling.
+    onNeedReload: requestSafeReload,
     onNeedRefresh() {
       if (waiting) return;
       waiting = true;
