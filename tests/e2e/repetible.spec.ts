@@ -124,6 +124,6 @@ test.describe("TS-2: cada prueba llega a la API con su propia dirección", () =>
     const login = await request.post("/api/auth/login", { data: credentials });
     expect(login.ok()).toBe(true);
     expect((await signIn(page)).ok()).toBe(true);
-    await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   });
 });

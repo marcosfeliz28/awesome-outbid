@@ -48,7 +48,7 @@ async function login(page: any) {
   );
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
   expect((await response).ok()).toBe(true);
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
 }
 async function ensureCash(page: any) {
   await page.getByRole("button", { name: "Caja", exact: true }).click();
@@ -300,7 +300,7 @@ test("G9: cerrar sesión con una venta sin sincronizar la conserva y al volver a
   expect(await stock()).toBe(4);
   // Recargar no la envía otra vez: no queda nada pendiente.
   await page.reload();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.waitForTimeout(1500);
   expect(
     syncCalls.filter((b) => b.includes(pending[0].offlineUuid)),

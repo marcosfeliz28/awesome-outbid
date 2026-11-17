@@ -54,7 +54,7 @@ await page.route("**/api/**", async (route) => {
   });
 });
 await page.goto("http://127.0.0.1:4261/#dashboard");
-await page.getByRole("heading", { name: /Hola,/ }).waitFor();
+await page.getByRole("heading", { name: "Resumen", exact: true }).waitFor();
 await page.screenshot({
   path: "docs/capturas/U2-resumen-390.png",
   fullPage: false,

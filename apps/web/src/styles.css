@@ -6771,6 +6771,194 @@ td strong {
   }
 }
 
+/* ── Rediseño Fusión · Inicio (orden de Marcos, 17-nov-2026) ──────────────
+   Referencia: docs/diseno/fusion03/inicio/. Solo Inicio: grafito, esmeralda y
+   dorado. Redefine los tokens dentro de .fusion-inicio para que todo lo que
+   vive en el Inicio (gráficos, tablas, tarjetas) tome el estilo sin tocar el
+   resto de la app. Mientras se avanza conviven estilos (aprobado por Marcos). */
+.fusion-inicio {
+  --bg: #08100e;
+  --surface: #0d1915;
+  --surface-soft: #12221d;
+  --text: #f1f5f3;
+  --muted: #b3c4bd;
+  --border: rgba(52, 211, 153, 0.34);
+  --primary: #34d399;
+  --primary-soft: #11342a;
+  --focus: #fbbf24;
+  --input-border: #4f8f78;
+  --positive-text: #34d399;
+  --muted-on-soft: #c2d1cb;
+  --fx-gold: #e2b65c;
+  --fx-emerald: #10b981;
+  --fx-glow:
+    0 0 0 1px rgba(52, 211, 153, 0.18), 0 0 22px rgba(16, 185, 129, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow: var(--fx-glow);
+  color-scheme: dark;
+  color: var(--text);
+  background:
+    radial-gradient(
+      120% 60% at 100% 0%,
+      rgba(16, 185, 129, 0.16),
+      transparent 60%
+    ),
+    linear-gradient(180deg, #0a1311, #070d0b);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: var(--fx-glow);
+}
+.fusion-inicio .page-heading {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px 18px;
+  background: linear-gradient(
+    120deg,
+    rgba(16, 185, 129, 0.08),
+    rgba(13, 25, 21, 0.9) 45%,
+    rgba(16, 185, 129, 0.14)
+  );
+  box-shadow: var(--fx-glow);
+}
+.fusion-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.fusion-title h1 {
+  margin: 0;
+  font-size: max(var(--fs-min), calc(30px * var(--fs-scale)));
+  font-weight: 800;
+  color: #fff;
+}
+.fusion-title p {
+  margin: 0;
+  padding-left: 16px;
+  border-left: 2px solid var(--fx-gold);
+  color: var(--muted-on-soft);
+}
+.fusion-badge,
+.kpi-strip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fx-gold);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  background: radial-gradient(circle at 30% 25%, #1b3a30, #0a1512 70%);
+  box-shadow: inset 0 0 12px rgba(16, 185, 129, 0.25);
+}
+.fusion-badge {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+}
+.fusion-inicio .kpi-strip .kpi-strip-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto auto;
+  column-gap: 16px;
+  align-items: center;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #10221c, #0a1411);
+}
+.kpi-strip-icon {
+  grid-row: 1 / span 3;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+.fusion-inicio .kpi-strip .kpi-strip-card strong {
+  color: var(--fx-gold);
+  font-size: max(var(--fs-min), calc(26px * var(--fs-scale)));
+  font-weight: 800;
+}
+.fusion-inicio .panel,
+.fusion-inicio .kpi-card {
+  border-radius: 18px;
+  background: linear-gradient(165deg, #0f1f1a, #0a1311);
+}
+.fusion-inicio .panel-heading h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+.fusion-inicio .panel-heading h2 svg {
+  color: var(--fx-gold);
+}
+.fusion-inicio .kpi-card > strong {
+  color: var(--fx-gold);
+}
+.fusion-inicio .metric-icon {
+  color: var(--fx-gold);
+  background: #12261f;
+  border: 1px solid var(--border);
+}
+.fusion-quick-list {
+  display: grid;
+  gap: 10px;
+  padding: 0 18px 18px;
+}
+.fusion-quick-list button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  color: var(--text);
+  background: linear-gradient(120deg, #12241e, #0c1814);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.fusion-quick-list button > svg:first-child {
+  color: var(--fx-gold);
+}
+.fusion-quick-list button:hover {
+  border-color: var(--fx-emerald);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+}
+.fusion-inicio button:focus-visible,
+.fusion-inicio select:focus-visible,
+.fusion-inicio input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.fusion-inicio .button.primary,
+.fusion-inicio .heading-actions .button:not(.secondary) {
+  background: linear-gradient(135deg, #10b981, #047857);
+  border-color: #34d399;
+  color: #fff;
+}
+.fusion-inicio .dashboard-alert .alert-symbol {
+  color: var(--fx-gold);
+  background: #12261f;
+}
+.fusion-inicio table td,
+.fusion-inicio table th {
+  border-color: rgba(52, 211, 153, 0.18);
+}
+@media (max-width: 720px) {
+  .fusion-inicio {
+    padding: 12px;
+    border-radius: 16px;
+  }
+  .kpi-strip-icon {
+    width: 48px;
+    height: 48px;
+  }
+}
+.fusion-inicio .chart-key {
+  background: var(--fx-emerald);
+}
+
 /* Orden 98 · pieza 2: animación del tablero (KPIs, franja y alertas). Solo transform y opacity,
    tokens --nx-dur-*; prefers-reduced-motion lo apaga todo. */
 @keyframes tablero-enter {

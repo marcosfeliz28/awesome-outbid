@@ -76,7 +76,7 @@ async function login(page: any) {
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
 }
 // Abre una pantalla desde el menú, como lo hace quien usa la aplicación; en
 // celular el menú lateral está detrás del botón «Abrir menú».
@@ -300,7 +300,7 @@ test("las fuentes quedan en la precarga del service worker y se ven sin conexió
   expect(sinPrecarga).toEqual([]);
   // La primera instalación empieza a controlar la página en la próxima navegación.
   await page.reload();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(
     true,
   );

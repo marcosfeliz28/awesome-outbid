@@ -19,7 +19,7 @@ async function login(page: Page) {
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
 }
 async function open(page: Page, id: string) {
   await page.evaluate((hash) => (location.hash = hash), id);
@@ -453,7 +453,7 @@ test("G12: aviso 60 s antes del cierre por inactividad con «Seguir conectado»"
   await page.clock.fastForward("29:10");
   await expect(warning).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: /Hola,/, includeHidden: true }),
+    page.getByRole("heading", { name: "Resumen", exact: true, includeHidden: true }),
   ).toBeAttached();
   // Sin respuesta, la sesión se cierra como antes.
   await page.clock.fastForward("01:00");

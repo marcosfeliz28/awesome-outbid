@@ -72,7 +72,7 @@ async function login(page: any) {
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
   const logged = await response;
   expect(logged.ok()).toBe(true);
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   return (await logged.json()).accessToken;
 }
 async function ensureCash(page: any) {
@@ -2100,7 +2100,7 @@ test("R9-offline-5: el cierre por inactividad revoca la sesión y al recargar se
   await expect(
     page.getByRole("button", { name: "Entrar a mi tienda" }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toHaveCount(0);
   // La cookie de renovación de esa sesión ya no sirve en el servidor.
   const renewed = await request.post("/api/auth/refresh", {
     headers: { Cookie: "fitstore_refresh=" + refresh!.value },
@@ -2116,14 +2116,14 @@ test("R9-offline-5: una pestaña sin uso no cierra la sesión de otra pestaña a
   await login(active);
   const idle = await context.newPage();
   await idle.goto("/");
-  await expect(idle.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(idle.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   // La cajera trabaja en una pestaña; la otra queda sin tocar.
   await context.clock.fastForward("20:00");
   await active.keyboard.press("Shift");
   await context.clock.fastForward("15:00");
   await idle.waitForTimeout(1500);
   for (const page of [idle, active]) {
-    await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Entrar a mi tienda" }),
     ).toHaveCount(0);
@@ -2522,7 +2522,7 @@ test("Aceptación 04: Mercancía y la caja muestran como stock sólo lo vendible
   await db.$disconnect();
   // Un lote vence al cambiar el día, sin movimiento de stock: se ve al abrir.
   await page.reload();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Mercancía", exact: true }).click();
   await page.getByLabel("Buscar producto", { exact: true }).fill(p.name);
   const option = page

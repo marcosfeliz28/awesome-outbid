@@ -24,6 +24,11 @@ import {
   Sparkles,
   ArrowRight,
   Plus,
+  BarChart3,
+  Boxes,
+  Store,
+  Zap,
+  Star,
 } from "lucide-react";
 import { Button, Badge, Modal } from "@fitstore/ui";
 import { formatMoney, can, weekStart } from "@fitstore/shared";
@@ -192,14 +197,16 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     },
   ];
   return (
-    <>
+    <div className="fusion-inicio">
       <div className="page-heading">
         <div>
-          <div className="eyebrow">EL PULSO DE TU NEGOCIO</div>
-          <h1>
-            Hola, {user.name.split(" ")[0]} <span className="wave">✦</span>
-          </h1>
-          <p>Un vistazo a tu tienda. Un paso más hacia tus metas.</p>
+          <div className="fusion-title">
+            <span className="fusion-badge" aria-hidden="true">
+              <BarChart3 size={22} />
+            </span>
+            <h1>Resumen</h1>
+            <p>Tu negocio, de un vistazo</p>
+          </div>
         </div>
         <div className="heading-actions">
           <select
@@ -324,84 +331,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
       )}
       <QueryState query={query}>
         {kpiStripVisible(user.permissions) && <KpiStrip />}
-        <div className="welcome-banner">
-          <div>
-            <span className="banner-chip">
-              <span className="live-dot" />
-              Tu tienda está en movimiento
-            </span>
-            <h2>
-              Pequeñas decisiones.
-              <br />
-              <span>Grandes resultados.</span>
-            </h2>
-            <p>Todo lo que necesitas para vender mejor, en un solo lugar.</p>
-            <button onClick={() => go("reports")}>
-              Explorar mis reportes <ArrowRight size={16} />
-            </button>
-          </div>
-          {/* Ilustración decorativa: el lector de pantalla la omite. */}
-          <div className="banner-illustration" aria-hidden="true">
-            <div className="floating-tag">
-              <TrendingUp size={20} />
-              <span>
-                Tu siguiente meta<strong>Seguir creciendo</strong>
-              </span>
-            </div>
-            <div className="bag-shape">
-              <div className="bag-handle" />
-              <span>
-                n<span>•</span>
-              </span>
-            </div>
-            <div className="banner-spark one">✦</div>
-            <div className="banner-spark two">✧</div>
-            <div className="floating-ticket">
-              <ReceiptText />
-              <div />
-              <div />
-              <i />
-            </div>
-          </div>
-        </div>
-        <YearPie go={go} />
-        <DayCard />
-        <div className="kpi-grid tablero-kpis">
-          {metric.map((m) => (
-            <article className="kpi-card" key={m.label}>
-              <div className="kpi-top">
-                <span>{m.label}</span>
-                <div className={`metric-icon ${m.tone}`}>
-                  <m.icon size={19} />
-                </div>
-              </div>
-              <strong>
-                <CountUp text={m.value} />
-              </strong>
-              <div className="kpi-note">
-                {m.trend !== undefined && (
-                  <span
-                    className={`trend ${m.trend >= 0 ? "positive" : "negative"}`}
-                  >
-                    {m.trend >= 0 ? (
-                      <ArrowUpRight size={14} />
-                    ) : (
-                      <ArrowDownRight size={14} />
-                    )}{" "}
-                    {Math.abs(m.trend)}%
-                  </span>
-                )}
-                <span>{m.note}</span>
-              </div>
-            </article>
-          ))}
-        </div>
         <div className="dashboard-main-grid">
           <section className="panel sales-chart">
             <div className="panel-heading">
               <div>
-                <h2>Así van tus ventas</h2>
-                <p>Una historia de crecimiento, día a día.</p>
+                <h2>Ventas del período</h2>
+                <p>Día a día, según el período elegido.</p>
               </div>
               <Badge tone="violet">
                 <span className="chart-key" />
@@ -418,12 +353,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                     <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
                       <stop
                         offset="0%"
-                        stopColor="#8b5cf6"
-                        stopOpacity={0.23}
+                        stopColor="#10b981"
+                        stopOpacity={0.45}
                       />
                       <stop
                         offset="95%"
-                        stopColor="#8b5cf6"
+                        stopColor="#10b981"
                         stopOpacity={0.01}
                       />
                     </linearGradient>
@@ -462,9 +397,15 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   <Area
                     type="monotone"
                     dataKey="total"
-                    stroke="#8b5cf6"
+                    stroke="#34d399"
                     strokeWidth={3}
                     fill="url(#salesFill)"
+                    dot={{
+                      r: 4,
+                      fill: "#34d399",
+                      stroke: "#0b1412",
+                      strokeWidth: 2,
+                    }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -477,6 +418,85 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               <button onClick={() => go("reports")}>
                 Ver detalle <ChevronRight size={15} />
               </button>
+            </div>
+          </section>
+          <section
+            className="panel fusion-quick"
+            aria-labelledby="fusion-quick-title"
+          >
+            <div className="panel-heading">
+              <h2 id="fusion-quick-title">
+                <Zap size={20} aria-hidden="true" /> Accesos rápidos
+              </h2>
+            </div>
+            <div className="fusion-quick-list">
+              {can(user.permissions, "sale:write") && (
+                <button type="button" onClick={() => go("pos")}>
+                  <Store size={22} aria-hidden="true" />
+                  Punto de venta
+                  <ChevronRight size={18} aria-hidden="true" />
+                </button>
+              )}
+              {can(user.permissions, "inventory:write") && (
+                <button type="button" onClick={() => go("inventory")}>
+                  <Boxes size={22} aria-hidden="true" />
+                  Inventario
+                  <ChevronRight size={18} aria-hidden="true" />
+                </button>
+              )}
+              {can(user.permissions, "reports:read") && (
+                <button type="button" onClick={() => go("reports")}>
+                  <BarChart3 size={22} aria-hidden="true" />
+                  Reportes
+                  <ChevronRight size={18} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
+        <div className="dashboard-bottom-grid">
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <h2>
+                  <Star size={20} aria-hidden="true" /> Productos destacados
+                </h2>
+                <p>Los más vendidos del período.</p>
+              </div>
+              <button className="text-link" onClick={() => go("products")}>
+                Ver productos <ChevronRight size={15} />
+              </button>
+            </div>
+            <div className="table-wrap" tabIndex={0}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>PRODUCTO</th>
+                    <th>CATEGORÍA</th>
+                    <th>UNIDADES</th>
+                    <th className="right">VENTAS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.top?.slice(0, 5).map((p: any, i: number) => (
+                    <tr key={p.name}>
+                      <td>
+                        <div className="rank-product">
+                          <span className={`rank ${i === 0 ? "first" : ""}`}>
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <strong>{p.name}</strong>
+                        </div>
+                      </td>
+                      <td>
+                        <Badge>{p.category}</Badge>
+                      </td>
+                      <td>{p.units}</td>
+                      <td className="right amount">{formatMoney(p.revenue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
           <section className="panel alerts-panel">
@@ -533,86 +553,70 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             </button>
           </section>
         </div>
-        <div className="dashboard-bottom-grid">
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Los favoritos de tu tienda</h2>
-                <p>Productos que tus clientes eligen una y otra vez.</p>
-              </div>
-              <button className="text-link" onClick={() => go("products")}>
-                Ver productos <ChevronRight size={15} />
-              </button>
+        <section className="panel category-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Cada categoría cuenta</h2>
+              <p>La mezcla que mueve tu tienda.</p>
             </div>
-            <div className="table-wrap" tabIndex={0}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>PRODUCTO</th>
-                    <th>CATEGORÍA</th>
-                    <th>UNIDADES</th>
-                    <th className="right">VENTAS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data?.top?.slice(0, 5).map((p: any, i: number) => (
-                    <tr key={p.name}>
-                      <td>
-                        <div className="rank-product">
-                          <span className={`rank ${i === 0 ? "first" : ""}`}>
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          <strong>{p.name}</strong>
-                        </div>
-                      </td>
-                      <td>
-                        <Badge>{p.category}</Badge>
-                      </td>
-                      <td>{p.units}</td>
-                      <td className="right amount">{formatMoney(p.revenue)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-          <section className="panel category-panel">
-            <div className="panel-heading">
-              <div>
-                <h2>Cada categoría cuenta</h2>
-                <p>La mezcla que mueve tu tienda.</p>
-              </div>
-            </div>
-            {data?.category?.map((c: any) => {
-              const total = data.category.reduce(
-                  (a: number, i: any) => a + i.total,
-                  0,
-                ),
-                percent = total ? (c.total / total) * 100 : 0;
-              return (
-                <div className="category-row" key={c.name}>
-                  <div>
-                    <span>
-                      <i style={{ background: c.color }} />
-                      {c.name}
-                    </span>
-                    <strong>{percent.toFixed(0)}%</strong>
-                  </div>
-                  <div className="progress-track">
-                    <div
-                      style={{ width: `${percent}%`, background: c.color }}
-                    />
-                  </div>
+          </div>
+          {data?.category?.map((c: any) => {
+            const total = data.category.reduce(
+                (a: number, i: any) => a + i.total,
+                0,
+              ),
+              percent = total ? (c.total / total) * 100 : 0;
+            return (
+              <div className="category-row" key={c.name}>
+                <div>
+                  <span>
+                    <i style={{ background: c.color }} />
+                    {c.name}
+                  </span>
+                  <strong>{percent.toFixed(0)}%</strong>
                 </div>
-              );
-            })}
-            <div className="insight-note">
-              <Sparkles size={19} />
-              <p>
-                Conoce tu mezcla de ventas y dale espacio a lo que funciona.
-              </p>
-            </div>
-          </section>
+                <div className="progress-track">
+                  <div style={{ width: `${percent}%`, background: c.color }} />
+                </div>
+              </div>
+            );
+          })}
+          <div className="insight-note">
+            <Sparkles size={19} />
+            <p>Conoce tu mezcla de ventas y dale espacio a lo que funciona.</p>
+          </div>
+        </section>
+        <YearPie go={go} />
+        <DayCard />
+        <div className="kpi-grid tablero-kpis">
+          {metric.map((m) => (
+            <article className="kpi-card" key={m.label}>
+              <div className="kpi-top">
+                <span>{m.label}</span>
+                <div className={`metric-icon ${m.tone}`}>
+                  <m.icon size={19} />
+                </div>
+              </div>
+              <strong>
+                <CountUp text={m.value} />
+              </strong>
+              <div className="kpi-note">
+                {m.trend !== undefined && (
+                  <span
+                    className={`trend ${m.trend >= 0 ? "positive" : "negative"}`}
+                  >
+                    {m.trend >= 0 ? (
+                      <ArrowUpRight size={14} />
+                    ) : (
+                      <ArrowDownRight size={14} />
+                    )}{" "}
+                    {Math.abs(m.trend)}%
+                  </span>
+                )}
+                <span>{m.note}</span>
+              </div>
+            </article>
+          ))}
         </div>
         <section className="panel">
           <div className="panel-heading">
@@ -719,6 +723,6 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           </div>
         )}
       </QueryState>
-    </>
+    </div>
   );
 }

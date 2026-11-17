@@ -117,7 +117,7 @@ test("desde un celular por http (dirección de red, sin https) se abre la caja",
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page

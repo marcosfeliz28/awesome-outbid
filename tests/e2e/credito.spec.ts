@@ -93,7 +93,7 @@ async function login(page: Page) {
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
 }
 async function openCash(page: Page) {
   await page.getByRole("button", { name: "Caja", exact: true }).click();

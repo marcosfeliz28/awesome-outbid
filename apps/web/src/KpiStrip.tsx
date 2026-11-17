@@ -5,6 +5,14 @@ import { api, useStore } from "./api";
 import { buildKpis } from "./kpiStripModel";
 import { today } from "./helpers";
 import { CountUp } from "./impacto";
+import { Coins, Store, Boxes } from "lucide-react";
+
+// Ícono decorativo por indicador (rediseño Fusión, 17-nov).
+const ICONS: Record<string, typeof Coins> = {
+  ventas: Coins,
+  cajas: Store,
+  inventario: Boxes,
+};
 
 // Día de negocio que se actualiza solo (copia de useBusinessDay de ExecutiveDashboard).
 function useBusinessDay() {
@@ -38,6 +46,15 @@ export function KpiStrip() {
     <section aria-label="Resumen de hoy" className="kpi-strip">
       {kpis.map((k) => (
         <article key={k.key} className="kpi-strip-card">
+          {ICONS[k.key] &&
+            (() => {
+              const Icon = ICONS[k.key];
+              return (
+                <span className="kpi-strip-icon" aria-hidden="true">
+                  <Icon size={26} />
+                </span>
+              );
+            })()}
           <h2>{k.label}</h2>
           <strong className="amount">
             <CountUp text={k.value} />

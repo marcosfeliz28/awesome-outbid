@@ -35,7 +35,7 @@ async function login(page: Page, email: string) {
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
 }
 async function axe(page: Page) {
   if (!AXE_SCRIPT) return;

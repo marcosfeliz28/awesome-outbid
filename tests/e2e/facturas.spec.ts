@@ -56,7 +56,7 @@ test("R9-facturas-8: Guardar otra vez tras perder la respuesta de una recepción
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Compras", exact: true }).click();
   await page
     .getByRole("row", { name: new RegExp(order.number) })

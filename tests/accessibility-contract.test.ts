@@ -14,8 +14,8 @@ const css = readFileSync("apps/web/src/styles.css", "utf8");
 describe("U2 · identidad y ayuda de producción", () => {
   const app = readFileSync("apps/web/src/App.tsx", "utf8");
   const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
-  it("la bolsa del resumen usa la identidad de Nexora", () => {
-    expect(dashboard).toMatch(/n<span>•<\/span>/);
+  // Rediseño Fusión (17-nov): el Inicio ya no lleva la bolsa ilustrada.
+  it("el resumen no usa la identidad vieja", () => {
     expect(dashboard).not.toMatch(/f<span>•<\/span>/);
   });
   it("la guía tiene puerta de desarrollo tanto en navegación como en ruta", () => {
@@ -129,9 +129,7 @@ describe("Textos que dicen lo que funciona hoy", () => {
     const preguntas = read("docs/MANUAL-CAJERA-PREGUNTAS.md");
 
     expect(manual).toContain("El fondo menor no requiere PIN");
-    expect(manual).not.toContain(
-      "pide al gerente su PIN cuando se solicite",
-    );
+    expect(manual).not.toContain("pide al gerente su PIN cuando se solicite");
     expect(manual).toContain(
       "últimos cuatro dígitos, aprobación, marca, terminal si aparece y tipo",
     );

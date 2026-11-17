@@ -13,7 +13,7 @@ async function login(page: Page) {
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
 }
 async function openSettings(page: Page, width: number) {
   await page.setViewportSize({ width, height: 900 });
@@ -225,7 +225,7 @@ test("Respaldo a Drive: gerencia no ve la tarjeta", async ({ page }) => {
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   const settings = page.getByRole("button", {
     name: "Configuración",
     exact: true,

@@ -105,7 +105,7 @@ test("Casa se contabiliza por separado y el traspaso habilita stock en Tienda", 
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel("Almacén", { exact: true }).selectOption(home.id);
@@ -133,7 +133,7 @@ test("el traspaso desde Casa propone Tienda como destino en móvil", async ({
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel("Almacén", { exact: true }).selectOption(home.id);
@@ -190,7 +190,7 @@ test("el conteo precarga la existencia del almacén seleccionado", async ({
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel("Buscar producto o código").fill("COUNT-WH-V-" + suffix);
@@ -289,7 +289,7 @@ test("el traspaso Casa→Tienda conserva la identidad del lote en móvil", async
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel("Almacén", { exact: true }).selectOption(home.id);
@@ -356,7 +356,7 @@ test("la vista previa de Casa detalla el antes y el después del Excel", async (
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.evaluate(() => (location.hash = "inventory"));
   await expect(page.getByText("Dónde está la mercancía")).toBeVisible();
   await page.getByLabel("Excel de Casa").setInputFiles({

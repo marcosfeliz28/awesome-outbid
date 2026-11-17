@@ -11,7 +11,7 @@ test("Preguntas: abre el listado, responde y guarda la encuesta", async ({
     .getByLabel("Contraseña", { exact: true })
     .fill("FitStore-Demo-2026!");
   await page.getByRole("button", { name: "Entrar a mi tienda" }).click();
-  await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Resumen", exact: true })).toBeVisible();
   await page.evaluate(() => (location.hash = "pos"));
   await page.getByRole("button", { name: "Preguntas rápidas sin IA" }).click();
   await page.getByText("¿Cuántos productos hay a la venta?").click();
