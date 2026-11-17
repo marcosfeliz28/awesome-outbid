@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-17 · evidencia real de fotos, lotes 1 y 2
+
+- **Orden/base/rama:** revisión de `origin/nexora-cloud` `11fbc6099de4774103dc7b1f7967ea78281f5ab1`; rama `chatgpt-nube/fotos-lotes1-2-17nov`. PC mantiene la propiedad de los lotes 4 y 5.
+- **Resultado:** lote 1 contiene 42 WebP y 18 faltantes; lote 2, 40 WebP y 20 faltantes. Ambos incluyen manifiestos, contacto completo de 60 posiciones y README. Solo se aceptaron originales públicos decodificados de al menos 800×800; no se infirió tamaño desde la URL ni se amplió el producto.
+- **Certeza y derechos:** cada fila separa fuente, lectura visual, dimensiones y estado. El permiso de reutilización y la vigencia del envase están **no comprobados**; estas son candidatas para revisión independiente, no autorización para publicarlas en la tienda.
+- **Lote 3 corregido:** SKU `INV-1693`/`INV-1694`, seis fondos Klean ajustados mecánicamente a gris claro, contacto y validador actualizados. No se modificó inventario ni se generaron etiquetas.
+- **Regresión:** antes, `node docs/fotos/verificar_lotes12.mjs` falla por ausencia de entregables reales; después, en el commit de evidencia `69118b3d`, pasa con 120/120 productos. `node docs/fotos/verificar_lote3.mjs` pasa con 44 fotos y 16 faltantes.
+- **Comprobación:** `pnpm check` pasó tras instalar dependencias congeladas y generar Prisma: typecheck, ESLint, 123 archivos/1,069 pruebas y ambos builds; un archivo/10 pruebas omitidos. `git diff --check` y los validadores específicos pasan.
+- **Autoauditoría:** solo `docs/fotos/**` y resultados; sin código de aplicación, dinero, precios, tienda, credenciales, Render, producción, PR, mezcla ni despliegue. Falta comprobar los tres CI en el SHA remoto final tras el único push.
+
 ## 2026-11-13 · especificaciones de construcción de la primera tanda
 
 - **Orden, base y rama:** nueva cola `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`, ejecutada desde `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560` en `chatgpt-nube/espec-tanda1-13nov`.
@@ -220,24 +230,3 @@ La carrera requiere que, al mismo tiempo, termine con éxito un cambio o restabl
 ### Estado
 
 `pnpm check` terminó con código 0: typecheck, ESLint, **112 archivos de prueba pasaron y 1 se omitió; 985 pruebas pasaron y 10 se omitieron**, y los builds web/API terminaron correctamente. Vite emitió la advertencia ya conocida por un chunk mayor de 500 kB; no es un fallo y esta auditoría no modifica el bundle. La rama solo se declarará lista después del push y de comprobar `verify`, `windows-installer` y `render-images` sobre el último commit.
-
-## 2026-11-15 · A2 fotos de suplementos · lote 1
-
-- **Orden y rama:** A2 de `docs/fotos/ORDENES_FOTOS_Y_3D.md`, rama `chatgpt-nube/fotos-suplementos`, base `origin/nexora-cloud` `944e3be93a37bf585545754945654776e7a3430b`.
-- **Entrada confirmada:** recibí 261 filas: 221 de 56 marcas y 40 sin marca. Este lote cubre, sin saltos ni reordenamiento, las filas 1–60.
-- **Entrega:** `docs/fotos/candidatas_lote1.csv`. Solo contiene enlaces públicos; no descargué ni incorporé imágenes al repositorio.
-- **Conteo:** **Lote 1: filas 1–60 = 60 recibidas; encontradas 37, dudosas 18, sin foto 5; 37+18+5 = 60.**
-- **Criterio conservador:** descarté como `sin foto` las filas 15 y 16 porque la búsqueda devolvió BCAA 6000 en vez de BCAA 5000; la 37 porque la fuente decía 5.78 lb en vez de 5.83 lb; y las 45 y 52 porque no apareció una coincidencia verificable. La fila 53 queda `dudosa` porque la lista dice `Forsage` y las fuentes encontradas dicen `Forzagen`.
-- **Regresión documental:** antes del trabajo, `test -f docs/fotos/candidatas_lote1.csv` terminaba con código 1. Después, el validador CSV comprobó 13 columnas, 60 filas, coincidencia exacta de `n`, `sku` y `nombre` contra la lista original, estados permitidos, solo URLs HTTPS y suma 60, sin errores.
-- **Autoauditoría:** no hay URL de imagen duplicada entre productos. Una fila se marca `encontrada` solo cuando tiene principal y respaldo distintos; si el índice público no informó ancho y alto completos, los campos desconocidos quedan vacíos y la nota lo declara. La revisión visual 100 % corresponde a ChatGPT PC; este lote no la sustituye.
-- **Límites:** no cambié nombres, precios, existencias, dinero, código de aplicación ni datos del sistema; no usé credenciales, no desplegué y no toqué Render, producción o la base de la tienda. Los tres CI se comprobarán sobre el SHA final después del único push.
-
-## 2026-11-15 · A2 fotos de suplementos · lote 2
-
-- **Continuidad sin duplicación:** `origin/nexora-cloud` seguía en `944e3be93a37bf585545754945654776e7a3430b`; no había una orden nueva posterior. Continué únicamente A2, todavía vigente, con las filas 61–120. No repetí el lote 1 ni las piezas B1/B2.
-- **Entrega:** `docs/fotos/candidatas_lote2.csv`, en la rama asignada `chatgpt-nube/fotos-suplementos`. Solo contiene enlaces públicos; no descargué imágenes.
-- **Conteo:** **Lote 2: filas 61–120 = 60 recibidas; encontradas 33, dudosas 20, sin foto 7; 33+20+7 = 60.**
-- **Descartes conservadores:** marqué `sin foto` las filas 65 (resultados ajenos para Dollys Milk), 70 (otra marca, no ElectroVida), 80 y 87 (sin coincidencia verificable), 94 (solo aparecía Vanilla Ice Cream, que pertenece a otra fila), 97 (sin variante 5 lb verificable) y 116 (Fruity Pebbles normal, no Birthday Cake 5 lb). La 62 queda dudosa por `Lecrano` frente a `Legrano`; la 76 no permite comprobar peso; y la 84 no indica presentación.
-- **Regresión documental:** antes, `git cat-file -e HEAD:docs/fotos/candidatas_lote2.csv` falló porque el lote no existía. Después, el validador confirmó 13 columnas, 60 filas, identidad exacta `n/sku/nombre`, estados permitidos, parejas distintas para cada `encontrada`, suma 60 y cero URLs repetidas entre productos.
-- **Autoauditoría:** retiré un falso positivo que reutilizaba la imagen de Vanilla Ice Cream para la fila genérica Vanilla. Conservé como dudosas las fuentes de resolución menor a 500 px o con presentación incompleta. La validación visual 100 % sigue perteneciendo a ChatGPT PC.
-- **Límites:** solo documentos; ningún cambio en aplicación, nombres del sistema, precios, existencias, dinero, Render, producción, base o credenciales. Sin despliegue ni mezcla. El CI se comprobará sobre el SHA final tras el único push de este lote.

@@ -2,6 +2,15 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-17 · ChatGPT NUBE · evidencia real de fotos, lotes 1 y 2
+
+- **Orden/base/rama:** revisión incorporada en `origin/nexora-cloud` `11fbc6099de4774103dc7b1f7967ea78281f5ab1`; rama `chatgpt-nube/fotos-lotes1-2-17nov`. Se rehacen exclusivamente los lotes 1 y 2 y se aplican las dos correcciones pedidas al lote 3; PC conserva los lotes 4 y 5.
+- **Entrega de archivos:** lote 1: 42 WebP y 18 faltantes explícitos; lote 2: 40 WebP y 20 faltantes explícitos. Cada lote incluye `fotos.csv`, `faltantes.csv`, `contacto.png` y `README.md`. Las fotos aceptadas parten de archivos públicos decodificados con dimensiones nativas mínimas de 800×800; la normalización a lienzo cuadrado blanco no amplía el producto. El permiso de reutilización y la vigencia del envase quedan expresamente **no comprobados**: son candidatas para auditoría, no aprobación para la tienda.
+- **Corrección lote 3:** `1693` y `1694` se normalizaron a `INV-1693` y `INV-1694`; seis Klean indicadas por la revisión quedaron sobre fondo gris claro mediante ajuste mecánico, sin generación ni cambio de etiqueta. El contacto y el validador se regeneraron.
+- **Regresión antes/después:** sobre la base, `node docs/fotos/verificar_lotes12.mjs` falla porque faltan fotos, manifiestos de aceptadas/faltantes y contactos. Sobre `69118b3d`, pasa con los 120 registros contabilizados. `node docs/fotos/verificar_lote3.mjs` pasa con 44 fotos y 16 faltantes.
+- **Control completo:** tras `pnpm install --frozen-lockfile` y `pnpm db:generate`, `pnpm check` pasó: typecheck, ESLint, 123 archivos/1,069 pruebas, ambos builds; un archivo/10 pruebas quedaron omitidos por las condiciones declaradas del repositorio. Vite solo mostró la advertencia conocida de tamaño de chunk.
+- **Autoauditoría:** contenido limitado a `docs/fotos/**` y estos informes; no se alteraron aplicación, lógica, inventario, precios, base de tienda, credenciales, Render ni producción. No hubo upload de fotos a la tienda, PR, mezcla ni despliegue. La rama se publicará una sola vez y los tres CI se comprobarán en su SHA final.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
@@ -276,15 +285,3 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
-
-## 2026-11-15 · ChatGPT NUBE · A2 fotos de suplementos, lote 1
-
-- En `chatgpt-nube/fotos-suplementos` preparé `docs/fotos/candidatas_lote1.csv` para las filas 1–60 de una lista confirmada de 261 suplementos. Resultado: **37 encontradas, 18 dudosas y 5 sin foto; total 60**.
-- La comprobación previa falló porque el CSV no existía. Después, el validador confirmó 13 columnas, 60 identidades `n/sku/nombre` exactas, estados válidos, URLs HTTPS y suma correcta. `git diff --check` forma parte del control final.
-- Solo se registran enlaces públicos; no se descargaron imágenes ni se cambió aplicación, precios, existencias, dinero, producción, Render, base o credenciales. El detalle de descartes y la autoauditoría están en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md`. La revisión visual sigue asignada a ChatGPT PC.
-
-## 2026-11-15 · ChatGPT NUBE · A2 fotos de suplementos, lote 2
-
-- Continué la orden A2 vigente con `docs/fotos/candidatas_lote2.csv`, filas 61–120: **33 encontradas, 20 dudosas y 7 sin foto; total 60**. No repetí el lote 1 ni las maquetas.
-- La prueba previa confirmó que el archivo no existía. Después, el validador comprobó 13 columnas, 60 identidades exactas, estados válidos, dos URLs distintas para cada fila encontrada, suma correcta y ninguna URL compartida entre productos.
-- La autoauditoría retiró una imagen de Vanilla Ice Cream que se había asociado también a la fila Vanilla. Solo se registran enlaces; no se descargaron imágenes ni se tocó código, precios, existencias, dinero, producción, Render, base o credenciales. Detalle en `RESULTADOS_CHATGPT_NUBE.md`.
