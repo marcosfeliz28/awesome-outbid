@@ -13,9 +13,19 @@ La primera tarjeta quedó completa en las cuatro medidas, donde antes aparecía 
 
 Volví a abrir y cerrar el cobro a 1440 y 390 px. Se conservaron el artículo y el total. El recorrido registró cero envíos de venta y cero errores JavaScript. Pasaron F2, F4, el código y el acceso móvil al carrito. Se conserva el movimiento leve y respeta movimiento reducido. En inglés quedan etiquetas accesibles en español. Los navegadores y servicios propios se cerraron.
 
-Una comprobación independiente con API simulada pasó 15/16. Su único fallo también fue el mínimo de tres filas a 1280 × 720. El instalador y las imágenes aprobaron en GitHub. `verify` estaba en curso al guardar la evidencia. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44191832478)
+Una comprobación independiente con API simulada pasó 15/16. Su único fallo también fue el mínimo de tres filas a 1280 × 720. Los tres controles de GitHub aprobaron para `59d77a17`: verificación, instalador e imágenes. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44191832478)
 
-La composición mantiene los paneles esmeralda y el ribete dorado. Queda pendiente verificar la huella del PNG original de Punto de venta para un cotejo exacto con el concepto.
+## Cotejo con Higgsfield
+
+Guardé del mensaje que aprobó Marcos el original `noxeros-caja-higgsfield-concepto-01.png`, 2688 × 1520 px. Su SHA-256 `9555ca20584c15ec1fd61d461c3d348b19fcaf4952ea9bca8220539698b89dbc` coincide con el que declaró Dot. Usé la captura oscura de 1440 × 900 para el cotejo. [Procedencia de la lámina](https://github.com/marcosfeliz28/awesome-outbid/blob/59d77a175da32e3f383321233e10d9f0edf618b6/docs/diseno/caja-higgsfield/ENTREGA_17NOV.md)
+
+| Elemento | Lámina | Aplicación |
+| --- | --- | --- |
+| Composición | Catálogo a la izquierda, «Venta actual» y «Cobrar · F12» a la derecha. | Conserva esa relación y mantiene el botón entero junto a la primera tarjeta. |
+| Catálogo | Tres columnas y dos filas compactas con frascos ilustrativos. | Dos columnas a 1440 px en esta captura, con fotos del catálogo de prueba, precios, variantes y existencias. La búsqueda ocupa una fila propia. |
+| Apariencia | Esmeralda, dorado y un selector de preferencias en la cabecera. | Esmeralda y dorado en las superficies y acción de cobro, con acentos violetas en la selección de categorías y el menú. Las preferencias se abren con «Apariencia e idioma». La marca actual es Norexos. |
+
+La pantalla funcional comparte la distribución y el énfasis en el cobro. Las diferencias visibles de densidad, acento y controles quedan registradas para la revisión de Marcos.
 
 ## Capturas reales
 

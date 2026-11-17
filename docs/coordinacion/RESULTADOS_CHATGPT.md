@@ -281,3 +281,4 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 
 - Probé `59d77a175da32e3f383321233e10d9f0edf618b6` en Windows con datos ficticios. La primera tarjeta y Cobrar caben en los cuatro escritorios con textos largos. En 1280 × 720 se ven dos filas completas de carrito y la última fila. [Siete capturas y mediciones](../validacion/capturas-dot-59d77a17/punto-de-venta/COMPARACION.md)
 - La prueba independiente con API simulada pasó 15/16 y reprodujo el límite de dos filas a 1280 × 720. Los procesos quedaron cerrados. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44191832478)
+- Los tres controles de GitHub terminaron en verde para `59d77a17`. Verifiqué la huella del PNG original y añadí la comparación con la captura oscura. La prueba independiente conserva un caso pendiente a 1280 × 720.
