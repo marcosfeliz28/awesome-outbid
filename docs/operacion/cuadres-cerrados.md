@@ -19,3 +19,6 @@
 | 14-nov | Tarjeta lote 166 GPRO (19,500) y GV lote 015 (5,900) | Cuadran: la diferencia de 1,250 en GPRO es el cobro de Lizbeth FS-613 (1,200 + 50) hecho en el verifón compartido; diferencias de caja aprobadas por la dueña al cierre. |
 | 14-nov | Efectivo: Jade −8,000 (contra entrega FS-618 entregada a la dueña); Wendy −3,500 (entregó el dinero a la dueña, foto, cerrado el mismo día) | Cerrado por la dueña. FS-618 ya con saldo 0 en el sistema. |
 | 14-nov | FS-614 nazareth 1,000 (contra entrega, Lizbeth) | Addison cobró 1,250 con tarjeta en el verifón GPRO (1,000 + 250 de envío de Addison). Cobro registrado (tarjeta **4336, aprob. 451820, voucher 000849). Saldo 0. |
+| 16-nov | Voucher GPRO lote 167 = 14,800 (Wendy FS-673 2,600 + cobros con tarjeta de contra entrega FS-682 10,200+300 y FS-687 1,450+250) | Cuadrado. Wendy y Jade cerraron con 14,800 cada una (sobrante falso). |
+| 16-nov | Transferencias FS-675, 677, 688, 689 verificadas; contra entregas FS-676, 678, 684 cobradas por transferencia; FS-682 y FS-687 cobradas con tarjeta | Cerradas con extractos Popular ···3620, Banreservas ···5237 y voucher. |
+| 16-nov | Efectivo Jade −50, Lizbeth −100 | Aprobado por la dueña («Marcos sabe»), bajo 100. |
