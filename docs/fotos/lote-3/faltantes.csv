@@ -1,0 +1,17 @@
+n,sku,nombre,motivo
+124,INV-1218,ISOPURE - VANILLA / 4.5 LB,La candidata dice Isopure Zero Carb; el maestro solo dice Isopure y no permite confirmar la variante exacta.
+126,INV-1151,IsoFit Protein - Nutrex - Vanilla Bean Ice Cream / 30 servicios,La etiqueta visible indica 70 servicios; el maestro exige 30 servicios.
+132,INV-1634,Isopure - Chocolate / 3 lb,La candidata dice Isopure Low Carb; el maestro no confirma esa variante y además la original era menor de 800 px.
+133,INV-1632,Isopure - Chocolate Peanut Butter / 3 lb,La candidata dice Isopure Zero Carb; el maestro no confirma esa variante exacta.
+134,INV-1633,Isopure - Vanilla Salted Caramel / 3 lb,La candidata dice Isopure Zero Carb; el maestro no confirma esa variante exacta.
+136,INV-1171,Isopure Low Carb - Dutch Chocolate / 4.5 lb,La URL pública no descargó y la única representación declarada era 600 x 600 px.
+147,INV-1115,Klean B-Complex - Klean Athlete - 60 cápsulas vegetarianas,"La candidata muestra la cara posterior/tabla, no una fotografía frontal limpia."
+150,INV-1123,Klean Essential Aminos + HMB - Klean Athlete - Orange Cream / 30 servicios,La candidata disponible mide 600 x 600 px; la alternativa registrada devuelve 404.
+156,INV-1947,L-Arginine Free Form - Puritans Pride - 1000 mg / 100 cápsulas,"La candidata muestra la cara posterior/tabla, no una fotografía frontal limpia."
+157,INV-1020,L-Carnitine 3000 - Nutrex - Berry Blast / 31 serv.,La candidata es una composición promocional con salpicaduras y frutas; no tiene el fondo limpio exigido.
+158,INV-1013,L-Carnitine 3000 - Nutrex - Orange Mango / 31 serv.,La única candidata descargable mide 768 x 768 px; la alternativa principal devuelve una miniatura de 80 x 80 px.
+167,INV-1129,Lipo-6 Nighttime - Nutrex - 30 cápsulas,La URL pública registrada devuelve 404 y no hay alternativa registrada.
+168,INV-1068,Longjack Tongkat Ali - Horbäach - 1600 mg por servicio / 120 cápsulas,"La candidata es una composición promocional, no una fotografía frontal limpia del producto."
+172,INV-1030,Magnesium Glycinate - Pro Performance Nutrition - 60 cápsulas,La etiqueta visible dice Perfect Vitamin Products; el maestro indica Pro Performance Nutrition.
+173,INV-1944,Magnesium Glycinate con B6 - Vitabod - 90 tabletas,La URL pública registrada devuelve 404 y no hay alternativa registrada.
+180,INV-1076,Micronized Creatine Powder - Optimum Nutrition - 60 servicios; unflavored,La candidata es una composición promocional y el producto visible no alcanza 800 px; la URL solo entregó 500 x 500 px.
