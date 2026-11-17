@@ -24,3 +24,4 @@
 | 16-nov | Efectivo Jade −50, Lizbeth −100 | Aprobado por la dueña («Marcos sabe»), bajo 100. |
 | 16-nov | FS-680 genesis 5,220 (BHD, «Genesis Rojas Cruz») | Verificada con extracto BHD. |
 | 16-nov | FS-690 Anyelin Alvarez 7,000 (+450 envío) | Cayó en el banco personal de la dueña. Verificada por indicación suya. Pendiente de pasar a MacGen (dueña). |
+| 16-nov | FS-685 Wilmer 3,700 y FS-686 Mavel Rivera 6,250 (contra entregas de Jade) | Se cobran el 17-nov (dueña). No volver a mencionarlas hasta que llegue el cobro o pasen más de 3 días. |
