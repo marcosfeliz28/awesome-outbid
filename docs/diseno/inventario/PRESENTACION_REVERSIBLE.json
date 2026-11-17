@@ -9,6 +9,138 @@
     {
       "before": "    </>\n  );\n}\n\n",
       "after": "    </section>\n  );\n}\n\n"
+    },
+    {
+      "before": "export function Inventory() {",
+      "after": "export function Inventory() {\n  const inventoryLanguage = useLanguage();\n  const translateInventory = (text: string) => inventoryText(text, inventoryLanguage);"
+    },
+    {
+      "before": "title=\"Cada unidad, bajo control\"",
+      "after": "title={translateInventory(\"Cada unidad, bajo control\")}"
+    },
+    {
+      "before": "caption=\"El inventario correcto hace espacio para mejores decisiones.\"",
+      "after": "caption={translateInventory(\"El inventario correcto hace espacio para mejores decisiones.\")}"
+    },
+    {
+      "before": "label: \"Almacén\"",
+      "after": "label: translateInventory(\"Almacén\")"
+    },
+    {
+      "before": "label: \"Almacén\"",
+      "after": "label: translateInventory(\"Almacén\")"
+    },
+    {
+      "before": ">Almacén<",
+      "after": ">{translateInventory(\"Almacén\")}<"
+    },
+    {
+      "before": ">Todos<",
+      "after": ">{translateInventory(\"Todos\")}<"
+    },
+    {
+      "before": ">\n              Stock actual\n            <",
+      "after": ">\n              {translateInventory(\"Stock actual\")}\n            <"
+    },
+    {
+      "before": ">\n              Conteos físicos\n            <",
+      "after": ">\n              {translateInventory(\"Conteos físicos\")}\n            <"
+    },
+    {
+      "before": "placeholder=\"Buscar producto o código\"",
+      "after": "placeholder={translateInventory(\"Buscar producto o código\")}"
+    },
+    {
+      "before": "empty=\"No encontramos artículos en el inventario\"",
+      "after": "empty={translateInventory(\"No encontramos artículos en el inventario\")}"
+    },
+    {
+      "before": "emptyDescription=\"Revisa la búsqueda o registra una entrada de mercancía.\"",
+      "after": "emptyDescription={translateInventory(\"Revisa la búsqueda o registra una entrada de mercancía.\")}"
+    },
+    {
+      "before": "label: \"Producto / Variante\"",
+      "after": "label: translateInventory(\"Producto / Variante\")"
+    },
+    {
+      "before": "label: \"Precio\"",
+      "after": "label: translateInventory(\"Precio\")"
+    },
+    {
+      "before": "label: \"Costo\"",
+      "after": "label: translateInventory(\"Costo\")"
+    },
+    {
+      "before": ": \"En Tienda\"",
+      "after": ": translateInventory(\"En Tienda\")"
+    },
+    {
+      "before": "label: \"Total\"",
+      "after": "label: translateInventory(\"Total\")"
+    },
+    {
+      "before": "label: \"Lote en Tienda\"",
+      "after": "label: translateInventory(\"Lote en Tienda\")"
+    },
+    {
+      "before": "label: \"Vencimiento\"",
+      "after": "label: translateInventory(\"Vencimiento\")"
+    },
+    {
+      "before": ": \"No aplica\"",
+      "after": ": translateInventory(\"No aplica\")"
+    },
+    {
+      "before": "label: \"Acciones\"",
+      "after": "label: translateInventory(\"Acciones\")"
+    },
+    {
+      "before": ">\n                        Ajustar\n                      <",
+      "after": ">\n                        {translateInventory(\"Ajustar\")}\n                      <"
+    },
+    {
+      "before": ">\n                        Contar\n                      <",
+      "after": ">\n                        {translateInventory(\"Contar\")}\n                      <"
+    },
+    {
+      "before": "empty=\"Todavía no hay conteos físicos\"",
+      "after": "empty={translateInventory(\"Todavía no hay conteos físicos\")}"
+    },
+    {
+      "before": "emptyDescription=\"Pulsa Contar junto a un artículo para registrar su existencia real.\"",
+      "after": "emptyDescription={translateInventory(\"Pulsa Contar junto a un artículo para registrar su existencia real.\")}"
+    },
+    {
+      "before": "label: \"Fecha\"",
+      "after": "label: translateInventory(\"Fecha\")"
+    },
+    {
+      "before": "label: \"Artículos\"",
+      "after": "label: translateInventory(\"Artículos\")"
+    },
+    {
+      "before": "label: \"Estado\"",
+      "after": "label: translateInventory(\"Estado\")"
+    },
+    {
+      "before": "? \"Aplicado\"",
+      "after": "? translateInventory(\"Aplicado\")"
+    },
+    {
+      "before": ": \"Pendiente\"",
+      "after": ": translateInventory(\"Pendiente\")"
+    },
+    {
+      "before": "label: \"Acción\"",
+      "after": "label: translateInventory(\"Acción\")"
+    },
+    {
+      "before": ">\n                          Aprobar ajuste\n                        <",
+      "after": ">\n                          {translateInventory(\"Aprobar ajuste\")}\n                        <"
+    },
+    {
+      "before": "\"Cantidad contada\",",
+      "after": "translateInventory(\"Cantidad contada\"),"
     }
   ]
 }

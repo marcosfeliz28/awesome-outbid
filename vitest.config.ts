@@ -9,6 +9,7 @@ export default defineConfig({
     maxWorkers: 4,
     include: [
       "tests/inventario-presentacion.test.ts",
+      "tests/inventory-language.test.ts",
       "tests/docs-sistema-indice.test.ts",
       "tests/login-legible.test.ts",
       "tests/login-animacion.test.ts",

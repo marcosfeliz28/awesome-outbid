@@ -31,3 +31,11 @@ Se incorpora relieve CSS, bordes metálicos, superficies verde/azul y claro/oscu
 La PC reconstruyó el árbol exacto `7a608b8f` y pasó 4/4 casos 1440/390 claro/oscuro (sin overflow, pestañas repetidas, cero mutaciones). Encontró acento púrpura heredado, pestañas móviles demasiado altas y barra fija atravesando acciones.
 
 Este ajuste **solo CSS** limita `--primary`/`--primary-soft` al inventario, da prioridad al color activo y pone la barra Mercancía dentro del flujo móvil, conservando el botón y su handler. Las pestañas móviles pasan a dos columnas de altura intrínseca y mínimo44px. La repetición de QA contra este corte sigue pendiente; no se declara acabado. No se inventan KPIs ni fotos para imitar números del PNG.
+
+## Tercer corte: disabled y EN principal
+
+QA PC del segundo corte: 4/4 visuales y 4/4 diagnósticos, pestañas móviles44px, barra estática y hit-test Ajustar correcto tras scroll. Quedaban Traspasar/Revisar archivo deshabilitados con púrpura heredado; se neutralizan solo dentro de Inventario, sin quitar disabled ni cambiar handlers.
+
+Se conecta el cuerpo principal Inventory a la preferencia ES/EN existente: cabecera, pestañas, búsqueda, columnas, estados, etiquetas de almacén y conteo. Se preservan nombres del catálogo, códigos, valores persistidos y mensajes de servidor. La transformación reversible sigue recuperando byte a byte la función original al retirar exclusivamente presentación/traducciones.
+
+**EN parcial:** los componentes compartidos (WarehousesPanel, WithoutCostCard, controles comunes de modales/paginación) y textos dinámicos secundarios requieren otra fase. No se afirma pantalla completa traducida. KPI y productos ilustrativos de la referencia no se copian como datos reales. Sin producción.

@@ -311,3 +311,14 @@
     padding: 10px 8px !important;
   }
 }
+
+/* Disabled is visibly inactive, never inherited purple or deceptively clickable. */
+.fusion-inventory button:disabled {
+  color: var(--iv-muted) !important;
+  background: var(--iv-deep) !important;
+  border: 1px solid var(--iv-edge) !important;
+  opacity: 1;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed;
+}

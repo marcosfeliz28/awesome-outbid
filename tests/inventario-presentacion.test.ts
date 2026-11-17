@@ -46,3 +46,11 @@ it("corrige el acento heredado y evita barra superpuesta en móvil", () => {
   expect(css).toMatch(/\.goods-mobile-bar\s*\{\s*position: static;/);
   expect(css).toMatch(/grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });
+
+it("distingue disabled sin cambiar el atributo ni las acciones", () => {
+  const css = read("apps/web/src/fusion-inventory.css");
+  expect(css).toMatch(
+    /button:disabled\s*\{[^}]*background: var\(--iv-deep\) !important/,
+  );
+  expect(css).toMatch(/button:disabled\s*\{[^}]*cursor: not-allowed/);
+});

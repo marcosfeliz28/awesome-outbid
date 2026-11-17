@@ -1,3 +1,5 @@
+import { useLanguage } from "./inicioLanguage";
+import { inventoryText } from "./inventoryLanguage";
 import "./fusion-inventory.css";
 import {
   CashElsewhere,
@@ -803,6 +805,8 @@ function Kardex({ variantId }: { variantId: string }) {
 }
 
 export function Inventory() {
+  const inventoryLanguage = useLanguage();
+  const translateInventory = (text: string) => inventoryText(text, inventoryLanguage);
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
   const query = useQuery({
@@ -860,20 +864,20 @@ export function Inventory() {
   return (
     <section className="fusion-inventory" aria-label="Inventario">
       <Heading
-        title="Cada unidad, bajo control"
-        caption="El inventario correcto hace espacio para mejores decisiones."
+        title={translateInventory("Cada unidad, bajo control")}
+        caption={translateInventory("El inventario correcto hace espacio para mejores decisiones.")}
       />
       {user.role !== "seller" && can(user.permissions, "profit:read") && (
         <WithoutCostCard />
       )}
       <div className="panel">
-        <label htmlFor="warehouse-view">Almacén</label>
+        <label htmlFor="warehouse-view">{translateInventory("Almacén")}</label>
         <select
           id="warehouse-view"
           value={warehouseView}
           onChange={(e) => setWarehouseView(e.target.value)}
         >
-          <option value="all">Todos</option>
+          <option value="all">{translateInventory("Todos")}</option>
           {(warehouses.data || []).map((w: any) => (
             <option key={w.id} value={w.id}>
               {w.name}
@@ -886,30 +890,30 @@ export function Inventory() {
               className={mode === "stock" ? "active" : ""}
               onClick={() => setMode("stock")}
             >
-              Stock actual
+              {translateInventory("Stock actual")}
             </button>
             <button
               className={mode === "counts" ? "active" : ""}
               onClick={() => setMode("counts")}
             >
-              Conteos físicos
+              {translateInventory("Conteos físicos")}
             </button>
           </div>
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar producto o código"
+            placeholder={translateInventory("Buscar producto o código")}
           />
         </div>
         <QueryState query={query}>
           {mode === "stock" ? (
             <DataTable
               rows={rows}
-              empty="No encontramos artículos en el inventario"
-              emptyDescription="Revisa la búsqueda o registra una entrada de mercancía."
+              empty={translateInventory("No encontramos artículos en el inventario")}
+              emptyDescription={translateInventory("Revisa la búsqueda o registra una entrada de mercancía.")}
               columns={[
                 {
-                  label: "Producto / Variante",
+                  label: translateInventory("Producto / Variante"),
                   render: (v) => (
                     <span>
                       <strong>{v.product.name}</strong>
@@ -919,11 +923,11 @@ export function Inventory() {
                     </span>
                   ),
                 },
-                { label: "Precio", render: (v) => formatMoney(v.price) },
+                { label: translateInventory("Precio"), render: (v) => formatMoney(v.price) },
                 ...(can(user.permissions, "profit:read")
                   ? [
                       {
-                        label: "Costo",
+                        label: translateInventory("Costo"),
                         render: (v: any) => formatMoney(v.costAvg),
                       },
                     ]
@@ -931,7 +935,7 @@ export function Inventory() {
                 {
                   label: selectedWarehouse
                     ? "En " + selectedWarehouse.name
-                    : "En Tienda",
+                    : translateInventory("En Tienda"),
                   render: (v) => (
                     <Badge
                       tone={
@@ -946,15 +950,15 @@ export function Inventory() {
                     </Badge>
                   ),
                 },
-                { label: "Total", render: (v) => v.totalStock },
+                { label: translateInventory("Total"), render: (v) => v.totalStock },
                 {
-                  label: "Lote en Tienda",
+                  label: translateInventory("Lote en Tienda"),
                   render: (v) =>
                     v.lots.find((l: any) => Number(l.qty) > 0)?.lotNumber ||
                     "Sin lote",
                 },
                 {
-                  label: "Vencimiento",
+                  label: translateInventory("Vencimiento"),
                   render: (v) => {
                     const lot = v.lots
                       .filter((l: any) => Number(l.qty) > 0 && l.expiryDate)
@@ -962,21 +966,21 @@ export function Inventory() {
                         (a: any, b: any) =>
                           +new Date(a.expiryDate) - +new Date(b.expiryDate),
                       )[0];
-                    return lot ? dateLabel(lot.expiryDate) : "No aplica";
+                    return lot ? dateLabel(lot.expiryDate) : translateInventory("No aplica");
                   },
                 },
                 {
-                  label: "Acciones",
+                  label: translateInventory("Acciones"),
                   render: (v) => (
                     <div className="table-actions">
                       <button
                         className="text-link"
                         onClick={() => setAdjust(v)}
                       >
-                        Ajustar
+                        {translateInventory("Ajustar")}
                       </button>
                       <button className="text-link" onClick={() => setCount(v)}>
-                        Contar
+                        {translateInventory("Contar")}
                       </button>
                       <button
                         onClick={() => setKardex(v)}
@@ -993,23 +997,23 @@ export function Inventory() {
             <QueryState query={counts}>
               <DataTable
                 rows={counts.data || []}
-                empty="Todavía no hay conteos físicos"
-                emptyDescription="Pulsa Contar junto a un artículo para registrar su existencia real."
+                empty={translateInventory("Todavía no hay conteos físicos")}
+                emptyDescription={translateInventory("Pulsa Contar junto a un artículo para registrar su existencia real.")}
                 columns={[
-                  { label: "Fecha", render: (c) => dateLabel(c.createdAt) },
-                  { label: "Artículos", render: (c) => c.items.length },
+                  { label: translateInventory("Fecha"), render: (c) => dateLabel(c.createdAt) },
+                  { label: translateInventory("Artículos"), render: (c) => c.items.length },
                   {
-                    label: "Estado",
+                    label: translateInventory("Estado"),
                     render: (c) => (
                       <Badge
                         tone={c.status === "applied" ? "success" : "warning"}
                       >
-                        {c.status === "applied" ? "Aplicado" : "Pendiente"}
+                        {c.status === "applied" ? translateInventory("Aplicado") : translateInventory("Pendiente")}
                       </Badge>
                     ),
                   },
                   {
-                    label: "Acción",
+                    label: translateInventory("Acción"),
                     render: (c) =>
                       c.status === "pending" &&
                       can(user.permissions, "sale:manage") && (
@@ -1031,7 +1035,7 @@ export function Inventory() {
                             }
                           }}
                         >
-                          Aprobar ajuste
+                          {translateInventory("Aprobar ajuste")}
                         </Button>
                       ),
                   },
@@ -1048,7 +1052,7 @@ export function Inventory() {
           fields={[
             {
               key: "warehouseId",
-              label: "Almacén",
+              label: translateInventory("Almacén"),
               type: "select",
               required: true,
               initial: countWarehouseId,
@@ -1137,7 +1141,7 @@ export function Inventory() {
           fields={[
             {
               key: "warehouseId",
-              label: "Almacén",
+              label: translateInventory("Almacén"),
               type: "select",
               required: true,
               initial:
@@ -1152,7 +1156,7 @@ export function Inventory() {
             },
             requiredNumber(
               "counted",
-              "Cantidad contada",
+              translateInventory("Cantidad contada"),
               stockAtWarehouse(count, countWarehouseId),
             ),
           ]}
