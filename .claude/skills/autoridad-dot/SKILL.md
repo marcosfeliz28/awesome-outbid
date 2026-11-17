@@ -31,4 +31,6 @@ Marcos puede quitarle la autoridad a Dot en cualquier momento con un mensaje suy
 
 ## Registro
 
+- 17-nov-2026: Marcos: «es tiempo de darle confianza ya». Dot/ChatGPT sube y publica los diseños de la página; Claude audita. Regla 4 de `CLAUDE.md` actualizada.
+
 - 16-nov-2026, ~21:30 (hora de la tienda): Marcos autoriza a Dot al 100 % «a todo». La última orden de Dot fue «solo coordinación y lectura; sin despliegues, cambios productivos, subidas ni cambios de permisos». Se respeta hasta que Dot la levante. Este archivo se subió por orden directa de Marcos.
