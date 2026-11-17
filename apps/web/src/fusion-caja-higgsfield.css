@@ -722,3 +722,125 @@
     min-height: 36px;
   }
 }
+/* Operational geometry: long catalog labels must not widen the selling frame. */
+.pos-layout.fusion-caja-integrada .category-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+.pos-layout.fusion-caja-integrada .category-tabs button {
+  flex: 0 0 auto;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pos-layout.fusion-caja-integrada .product-info h3 {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.pos-layout.fusion-caja-integrada .cart-total strong {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+}
+@media (min-width: 901px) {
+  .pos-layout.fusion-caja-integrada .cart-panel {
+    position: sticky;
+    top: 12px;
+    height: calc(100dvh - 150px);
+    min-height: 0;
+    padding: 10px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-items {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .pos-layout.fusion-caja-integrada .cart-heading {
+    padding-bottom: 6px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-heading h2 {
+    font-size: 22px;
+  }
+  .pos-layout.fusion-caja-integrada .customer-selector {
+    margin: 4px 0;
+    min-height: 42px;
+    padding: 5px 8px !important;
+  }
+  .pos-layout.fusion-caja-integrada .cart-item {
+    padding: 4px 0;
+    row-gap: 2px;
+    column-gap: 6px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-item > img {
+    width: 34px;
+    height: 40px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-item-detail > strong {
+    font-size: 14px;
+    line-height: 1.2;
+  }
+  .pos-layout.fusion-caja-integrada .cart-item-detail > small {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  .pos-layout.fusion-caja-integrada .cart-item-controls {
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+  .pos-layout.fusion-caja-integrada .quantity-control {
+    height: 32px;
+  }
+  .pos-layout.fusion-caja-integrada .quantity-control button {
+    min-height: 32px;
+    min-width: 32px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-summary {
+    padding-top: 6px;
+    flex-shrink: 0;
+  }
+  .pos-layout.fusion-caja-integrada
+    .cart-summary
+    > div:not(.cart-bottom-actions) {
+    margin-bottom: 2px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-summary > .cart-total {
+    margin: 4px 0 6px !important;
+    padding-top: 4px;
+  }
+  .pos-layout.fusion-caja-integrada .charge-button {
+    height: 46px;
+    min-height: 46px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-bottom-actions {
+    margin-top: 4px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-bottom-actions button {
+    min-height: 32px;
+  }
+}
+/* Desktop cart starts alongside preferences, not underneath them. */
+@media (min-width: 901px) {
+  .pos-layout.fusion-caja-integrada .fc-preferences {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .pos-layout.fusion-caja-integrada .pos-catalog {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .pos-layout.fusion-caja-integrada .cart-panel {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    height: calc(100dvh - 105px);
+  }
+  .pos-layout.fusion-caja-integrada .cart-line-total {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+}

@@ -32,3 +32,8 @@ Marca actual Norexos, con migración de preferencia anterior; accesos de Inicio 
 
 ### Resultado de revisión real del candidato
 La revisión independiente del navegador privado confirmó a 1180×757 Cobrar entre y=628.98 y676.98 (antes final847.375), nombre Proteína DEMO completo y variante debajo. Abrir apariencia no desplaza Caja. Alternar EN→ES y Negro→Claro conserva dos artículos, total RD$236 e ITBIS36. Demo privada v3 publicada con fuente2aa7c5b2; no producción. Esta comprobación manual no sustituye los doce casos automatizados ni certifica aún todos los anchos móviles.
+
+## Regresiones CI 29291088
+El CI completo detectó siete fallos de navegador: A5 mostraba menos de tres filas completas con cinco artículos; W5 desbordaba el catálogo con categoría larga a cuatro tamaños; U1 exigía conservar la fuente operativa Plus Jakarta Sans de 28–32px en el total. Se corrigen geometría, contención y tipografía sin cambiar los tests E2E originales, datos ni manejadores. Harness DEMO ahora tiene 16 casos y reproduce esos escenarios. 29 regresiones unitarias locales pasan; build y lint pasan. Pendiente medición real y CI antes de afirmar resuelto.
+
+Revisión independiente real de fb119ff1 en 1180×757: cinco productos distintos, seis unidades; filas85px, lista255.406px con tres filas completas; panel y93–745 dentro de757; Cobrar y652–698. Categoría larga sin desbordamiento (documento1165px en viewport1180). No se publicaron estas correcciones en producción. Falta ejecución CI de los casos en todos los anchos y QA390/1440; una revisión manual no se anuncia como suite completa aprobada.

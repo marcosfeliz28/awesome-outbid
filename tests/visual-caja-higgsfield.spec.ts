@@ -64,7 +64,27 @@ const user = {
   branchId: "demo-branch",
   sessionTimeoutMinutes: 30,
 };
-async function setup(page: Page, theme: "light" | "dark") {
+async function setup(page: Page, theme: "light" | "dark", expanded = false) {
+  const catalog: Product[] = expanded
+    ? [
+        ...products,
+        ...Array.from({ length: 4 }, (_, i) => ({
+          ...products[0],
+          id: `demo-extra-${i}`,
+          name: `Producto DEMO ${i + 3}`,
+          sku: `EXTRA${i}`,
+          variants: [
+            {
+              ...products[0].variants[0],
+              id: `demo-extra-variant-${i}`,
+              productId: `demo-extra-${i}`,
+              sku: `EXTRA${i}`,
+              barcode: `EXTRA${i}`,
+            },
+          ],
+        })),
+      ]
+    : products;
   const blockedWrites: string[] = [];
   await page.addInitScript((theme) => {
     localStorage.setItem("fitstore-theme", theme);
@@ -104,8 +124,8 @@ async function setup(page: Page, theme: "light" | "dark") {
       });
     } else if (path === "/api/products")
       body = {
-        items: url.searchParams.get("page") === "1" ? products : [],
-        total: products.length,
+        items: url.searchParams.get("page") === "1" ? catalog : [],
+        total: catalog.length,
       };
     else if (path === "/api/categories")
       body = [{ id: "demo-category", ...category }];
@@ -167,7 +187,7 @@ async function setup(page: Page, theme: "light" | "dark") {
   await expect(
     page.getByRole("textbox", { name: "Buscar productos", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".product-card")).toHaveCount(2);
+  await expect(page.locator(".product-card")).toHaveCount(catalog.length);
   await expect(
     page.locator(".product-card").filter({ hasText: "Producto agotado DEMO" }),
   ).toBeDisabled();
@@ -347,4 +367,87 @@ for (const width of [1024, 1180, 1366, 1536])
     await expect(page.locator(".cart-item-detail > strong")).toHaveText(
       "Proteína DEMO",
     );
+  });
+
+for (const [width, height] of [
+  [1280, 720],
+  [1366, 768],
+  [1536, 864],
+  [1024, 768],
+])
+  test(`regresión A5/W5/U1 DEMO ${width}x${height}: cinco filas y textos largos`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    const blocked = await setup(page, "dark", true);
+    const search = page.getByRole("textbox", {
+      name: "Buscar productos",
+      exact: true,
+    });
+    for (const code of ["DEMO001", "EXTRA0", "EXTRA1", "EXTRA2", "EXTRA3"]) {
+      await search.fill(code);
+      await search.press("Enter");
+    }
+    await expect(page.locator(".cart-item")).toHaveCount(5);
+    await search.fill("");
+    await expect(page.locator(".product-card")).toHaveCount(6);
+    await page.waitForTimeout(600);
+    await page.evaluate(() => {
+      document.querySelector(".product-card h3")!.textContent = "X".repeat(120);
+      document.querySelectorAll(".category-tabs button")[1].textContent =
+        "Categoria".repeat(20);
+    });
+    const view = await page.evaluate(() => {
+      const region = document
+        .querySelector(".cart-items")!
+        .getBoundingClientRect();
+      const rows = [...document.querySelectorAll(".cart-item")].map((r) =>
+        r.getBoundingClientRect(),
+      );
+      const insideRow = (r: DOMRect) =>
+        r.top >= region.top - 1 && r.bottom <= region.bottom + 1;
+      const inside = (selector: string) => {
+        const r = document.querySelector(selector)!.getBoundingClientRect();
+        return (
+          r.left >= -1 &&
+          r.top >= -1 &&
+          r.right <= innerWidth + 1 &&
+          r.bottom <= innerHeight + 1
+        );
+      };
+      const main = document.querySelector(".main-content")!;
+      const style = getComputedStyle(
+        document.querySelector(".cart-summary > .cart-total strong")!,
+      );
+      return {
+        fully: rows.filter(insideRow).length,
+        lastVisible: insideRow(rows.at(-1)!),
+        rowHeight: Math.max(...rows.map((r) => r.height)),
+        cart: inside(".cart-panel"),
+        card: inside(".product-card"),
+        charge: inside(".cart-summary .charge-button"),
+        pageOverflow: document.documentElement.scrollWidth - innerWidth,
+        mainOverflow: main.scrollWidth - main.clientWidth,
+        font: style.fontFamily,
+        size: parseFloat(style.fontSize),
+        weight: Number(style.fontWeight),
+      };
+    });
+    expect(view.fully, JSON.stringify(view)).toBeGreaterThanOrEqual(3);
+    expect(view.lastVisible, JSON.stringify(view)).toBe(true);
+    expect(view.rowHeight).toBeLessThanOrEqual(100);
+    expect(view.cart, JSON.stringify(view)).toBe(true);
+    expect(view.card, JSON.stringify(view)).toBe(true);
+    expect(view.charge, JSON.stringify(view)).toBe(true);
+    expect(view.pageOverflow).toBe(0);
+    expect(view.mainOverflow).toBe(0);
+    expect(view.font).toContain("Plus Jakarta Sans");
+    expect(view.size).toBeGreaterThanOrEqual(28);
+    expect(view.size).toBeLessThanOrEqual(32);
+    expect(view.weight).toBeGreaterThanOrEqual(700);
+    await expect(page.locator(".cart-items")).toHaveCSS("overflow-y", "auto");
+    await page.screenshot({
+      path: test.info().outputPath(`regresion-pos-${width}x${height}.png`),
+    });
+    expect(blocked).toEqual([]);
   });
