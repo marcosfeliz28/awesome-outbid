@@ -1,0 +1,930 @@
+{
+  "commit": "7bf3ef770f1ce474633e00421bfaefd19ad2345f",
+  "areas": {
+    "inicio": {
+      "completedAt": "2026-11-17T23:24:18.722Z",
+      "browser": "157.0.4341.60",
+      "screenshots": [
+        {
+          "file": "inicio-1440-claro.png",
+          "mode": "light",
+          "viewport": [
+            1440,
+            900
+          ],
+          "documentWidth": 1440,
+          "documentHeight": 4274,
+          "heading": "Resumen / Tu negocio, de un vistazo",
+          "sections": [
+            {
+              "title": "Hola, Valeria",
+              "topPx": 322
+            },
+            {
+              "title": "Ventas de hoy",
+              "topPx": 437
+            },
+            {
+              "title": "Cajas activas",
+              "topPx": 437
+            },
+            {
+              "title": "Alertas de inventario",
+              "topPx": 437
+            },
+            {
+              "title": "Así van tus ventas",
+              "topPx": 830
+            },
+            {
+              "title": "Accesos rápidos",
+              "topPx": 830
+            },
+            {
+              "title": "Un poco de atención",
+              "topPx": 1267
+            },
+            {
+              "title": "Los favoritos de tu tienda",
+              "topPx": 1726
+            },
+            {
+              "title": "Cada categoría cuenta",
+              "topPx": 1726
+            },
+            {
+              "title": "Pequeñas decisiones.Grandes resultados.",
+              "topPx": 2278
+            },
+            {
+              "title": "Ventas del año por mes",
+              "topPx": 2490
+            },
+            {
+              "title": "Comparativo anual",
+              "topPx": 3485
+            },
+            {
+              "title": "Horas pico",
+              "topPx": 3653
+            }
+          ],
+          "banner": {
+            "heightPx": 201,
+            "overflowY": "hidden",
+            "headingClippedPx": 0,
+            "copyVisiblePx": 25,
+            "buttonHeightPx": 21,
+            "buttonVisiblePx": 21
+          },
+          "shortcutPanel": {
+            "topPx": 807,
+            "bottomPx": 1220,
+            "titleVisible": true,
+            "buttons": [
+              {
+                "label": "Punto de venta",
+                "topPx": 913,
+                "bottomPx": 995,
+                "fullyVisible": false
+              },
+              {
+                "label": "Inventario",
+                "topPx": 1010,
+                "bottomPx": 1092,
+                "fullyVisible": false
+              },
+              {
+                "label": "Reportes",
+                "topPx": 1107,
+                "bottomPx": 1189,
+                "fullyVisible": false
+              }
+            ]
+          },
+          "amounts": [
+            {
+              "label": "Ventas del período",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ganancia bruta",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ventas registradas",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ticket promedio",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            }
+          ],
+          "sha256": "2f260ac2331d53a0dbc57b1aa7b2c2fac34117944e97dbc3e5b01e8b134f5fde"
+        },
+        {
+          "file": "inicio-1440-oscuro.png",
+          "mode": "dark",
+          "viewport": [
+            1440,
+            900
+          ],
+          "documentWidth": 1440,
+          "documentHeight": 4274,
+          "heading": "Resumen / Tu negocio, de un vistazo",
+          "sections": [
+            {
+              "title": "Hola, Valeria",
+              "topPx": 322
+            },
+            {
+              "title": "Ventas de hoy",
+              "topPx": 437
+            },
+            {
+              "title": "Cajas activas",
+              "topPx": 437
+            },
+            {
+              "title": "Alertas de inventario",
+              "topPx": 437
+            },
+            {
+              "title": "Así van tus ventas",
+              "topPx": 830
+            },
+            {
+              "title": "Accesos rápidos",
+              "topPx": 830
+            },
+            {
+              "title": "Un poco de atención",
+              "topPx": 1267
+            },
+            {
+              "title": "Los favoritos de tu tienda",
+              "topPx": 1726
+            },
+            {
+              "title": "Cada categoría cuenta",
+              "topPx": 1726
+            },
+            {
+              "title": "Pequeñas decisiones.Grandes resultados.",
+              "topPx": 2278
+            },
+            {
+              "title": "Ventas del año por mes",
+              "topPx": 2490
+            },
+            {
+              "title": "Comparativo anual",
+              "topPx": 3485
+            },
+            {
+              "title": "Horas pico",
+              "topPx": 3653
+            }
+          ],
+          "banner": {
+            "heightPx": 201,
+            "overflowY": "hidden",
+            "headingClippedPx": 0,
+            "copyVisiblePx": 25,
+            "buttonHeightPx": 21,
+            "buttonVisiblePx": 21
+          },
+          "shortcutPanel": {
+            "topPx": 807,
+            "bottomPx": 1220,
+            "titleVisible": true,
+            "buttons": [
+              {
+                "label": "Punto de venta",
+                "topPx": 913,
+                "bottomPx": 995,
+                "fullyVisible": false
+              },
+              {
+                "label": "Inventario",
+                "topPx": 1010,
+                "bottomPx": 1092,
+                "fullyVisible": false
+              },
+              {
+                "label": "Reportes",
+                "topPx": 1107,
+                "bottomPx": 1189,
+                "fullyVisible": false
+              }
+            ]
+          },
+          "amounts": [
+            {
+              "label": "Ventas del período",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ganancia bruta",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ventas registradas",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ticket promedio",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            }
+          ],
+          "sha256": "5b4f0c6ba05e7ee7aa02df915e8ec83ca11ed7e04abef3f123618bc7e8b3c1eb"
+        },
+        {
+          "file": "inicio-390-claro.png",
+          "mode": "light",
+          "viewport": [
+            390,
+            844
+          ],
+          "documentWidth": 390,
+          "documentHeight": 8714,
+          "heading": "Resumen / Tu negocio, de un vistazo",
+          "sections": [
+            {
+              "title": "Hola, Valeria",
+              "topPx": 456
+            },
+            {
+              "title": "Accesos rápidos",
+              "topPx": 718
+            },
+            {
+              "title": "Ventas de hoy",
+              "topPx": 1116
+            },
+            {
+              "title": "Cajas activas",
+              "topPx": 1242
+            },
+            {
+              "title": "Alertas de inventario",
+              "topPx": 1369
+            },
+            {
+              "title": "Así van tus ventas",
+              "topPx": 2283
+            },
+            {
+              "title": "Un poco de atención",
+              "topPx": 2786
+            },
+            {
+              "title": "Los favoritos de tu tienda",
+              "topPx": 3647
+            },
+            {
+              "title": "Cada categoría cuenta",
+              "topPx": 4822
+            },
+            {
+              "title": "Pequeñas decisiones.Grandes resultados.",
+              "topPx": 5373
+            },
+            {
+              "title": "Ventas del año por mes",
+              "topPx": 5709
+            },
+            {
+              "title": "Comparativo anual",
+              "topPx": 7700
+            },
+            {
+              "title": "Horas pico",
+              "topPx": 7860
+            }
+          ],
+          "banner": {
+            "heightPx": 353,
+            "overflowY": "hidden",
+            "headingClippedPx": 0,
+            "copyVisiblePx": 67,
+            "buttonHeightPx": 44,
+            "buttonVisiblePx": 44
+          },
+          "shortcutPanel": {
+            "topPx": 681,
+            "bottomPx": 1083,
+            "titleVisible": true,
+            "buttons": [
+              {
+                "label": "Punto de venta",
+                "topPx": 812,
+                "bottomPx": 890,
+                "fullyVisible": false
+              },
+              {
+                "label": "Inventario",
+                "topPx": 900,
+                "bottomPx": 978,
+                "fullyVisible": false
+              },
+              {
+                "label": "Reportes",
+                "topPx": 988,
+                "bottomPx": 1066,
+                "fullyVisible": false
+              }
+            ]
+          },
+          "amounts": [
+            {
+              "label": "Ventas del período",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ganancia bruta",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ventas registradas",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ticket promedio",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            }
+          ],
+          "sha256": "84f8a54d0dcdf2a4c5894109e85e789a873b2c9b6401feb44a803a90bf1068f4"
+        },
+        {
+          "file": "inicio-390-oscuro.png",
+          "mode": "dark",
+          "viewport": [
+            390,
+            844
+          ],
+          "documentWidth": 390,
+          "documentHeight": 8714,
+          "heading": "Resumen / Tu negocio, de un vistazo",
+          "sections": [
+            {
+              "title": "Hola, Valeria",
+              "topPx": 456
+            },
+            {
+              "title": "Accesos rápidos",
+              "topPx": 718
+            },
+            {
+              "title": "Ventas de hoy",
+              "topPx": 1116
+            },
+            {
+              "title": "Cajas activas",
+              "topPx": 1242
+            },
+            {
+              "title": "Alertas de inventario",
+              "topPx": 1369
+            },
+            {
+              "title": "Así van tus ventas",
+              "topPx": 2283
+            },
+            {
+              "title": "Un poco de atención",
+              "topPx": 2786
+            },
+            {
+              "title": "Los favoritos de tu tienda",
+              "topPx": 3647
+            },
+            {
+              "title": "Cada categoría cuenta",
+              "topPx": 4822
+            },
+            {
+              "title": "Pequeñas decisiones.Grandes resultados.",
+              "topPx": 5373
+            },
+            {
+              "title": "Ventas del año por mes",
+              "topPx": 5709
+            },
+            {
+              "title": "Comparativo anual",
+              "topPx": 7700
+            },
+            {
+              "title": "Horas pico",
+              "topPx": 7860
+            }
+          ],
+          "banner": {
+            "heightPx": 353,
+            "overflowY": "hidden",
+            "headingClippedPx": 0,
+            "copyVisiblePx": 67,
+            "buttonHeightPx": 44,
+            "buttonVisiblePx": 44
+          },
+          "shortcutPanel": {
+            "topPx": 681,
+            "bottomPx": 1083,
+            "titleVisible": true,
+            "buttons": [
+              {
+                "label": "Punto de venta",
+                "topPx": 812,
+                "bottomPx": 890,
+                "fullyVisible": false
+              },
+              {
+                "label": "Inventario",
+                "topPx": 900,
+                "bottomPx": 978,
+                "fullyVisible": false
+              },
+              {
+                "label": "Reportes",
+                "topPx": 988,
+                "bottomPx": 1066,
+                "fullyVisible": false
+              }
+            ]
+          },
+          "amounts": [
+            {
+              "label": "Ventas del período",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ganancia bruta",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ventas registradas",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            },
+            {
+              "label": "Ticket promedio",
+              "lines": 1,
+              "contained": true,
+              "pastCardRightPx": 0
+            }
+          ],
+          "sha256": "cc0553a2c5568aefc4639cf1fd932da5f3b2e4cdee799a8f3bbe9aab2ba0ae7a"
+        }
+      ],
+      "checks": {
+        "390": {
+          "login": true,
+          "dimensions": {
+            "width": 390,
+            "height": 844
+          },
+          "mobileMenu": "pasa",
+          "accent": "pasa",
+          "language": "pasa",
+          "posNavigationDistinct": "pasa",
+          "visualComposition": {
+            "heading": "Resumen / Tu negocio, de un vistazo",
+            "viewportWidth": 390,
+            "overflowPx": 0,
+            "kpis": 4,
+            "kpisTop": 1502,
+            "quickAccessTop": 681,
+            "welcomeTop": 5295
+          },
+          "visualStructure": "pasa",
+          "themeSurfaces": {
+            "oscuro": "#06110e",
+            "negro": "#020504"
+          },
+          "overviewSurfaces": "pasa",
+          "greetingVisible": "pasa",
+          "quickReports": "pasa",
+          "reportsFromBanner": "pasa",
+          "brandLabelsSeen": {
+            "navigation": "Norexos",
+            "about": "Acerca de Norexos"
+          },
+          "brandLabels": "pasa"
+        },
+        "1440": {
+          "login": true,
+          "dimensions": {
+            "width": 1440,
+            "height": 900
+          },
+          "accent": "pasa",
+          "language": "pasa",
+          "visualComposition": {
+            "heading": "Resumen / Tu negocio, de un vistazo",
+            "viewportWidth": 1440,
+            "overflowPx": 0,
+            "kpis": 4,
+            "kpisTop": 576,
+            "quickAccessTop": 807,
+            "welcomeTop": 2220
+          },
+          "visualStructure": "pasa",
+          "themeSurfaces": {
+            "oscuro": "#06110e",
+            "negro": "#020504"
+          },
+          "overviewSurfaces": "pasa",
+          "motion": {
+            "rest": {
+              "translateY": 0,
+              "transitionDuration": "0.16s, 0.16s",
+              "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.267) 0px -2px 1px 0px inset, rgba(0, 0, 0, 0.6) 0px 5px 9px 0px"
+            },
+            "hover": {
+              "translateY": -3,
+              "transitionDuration": "0.16s, 0.16s",
+              "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgb(41, 239, 163) 0px 0px 0px 1px, rgba(0, 0, 0, 0.6) 0px 8px 16px 0px, rgba(0, 229, 154, 0.2) 0px 0px 18px 0px"
+            },
+            "press": {
+              "translateY": 1,
+              "transitionDuration": "0.16s, 0.16s",
+              "shadow": "rgba(0, 0, 0, 0.333) 0px 2px 5px 0px inset"
+            },
+            "reduced": {
+              "translateY": 0,
+              "transitionDuration": "0s",
+              "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgb(41, 239, 163) 0px 0px 0px 1px, rgba(0, 0, 0, 0.6) 0px 8px 16px 0px, rgba(0, 229, 154, 0.2) 0px 0px 18px 0px"
+            }
+          },
+          "quickAccessMotion": "pasa",
+          "greetingVisible": "pasa",
+          "compactResize": "pasa",
+          "quickReports": "pasa",
+          "reportsFromBanner": "pasa",
+          "brandLabelsSeen": {
+            "navigation": "Norexos",
+            "about": "Acerca de Norexos"
+          },
+          "brandLabels": "pasa"
+        }
+      },
+      "servicesStopped": true,
+      "pageErrorCount": 0
+    },
+    "pos": {
+      "completedAt": "2026-11-17T23:24:00.210Z",
+      "browser": "157.0.4341.60",
+      "screenshots": [
+        {
+          "file": "pos-1440-claro.png",
+          "viewport": [
+            1440,
+            900
+          ],
+          "mode": "light",
+          "layout": {
+            "documentOverflowPx": 0,
+            "productVisible": true,
+            "desktopChargeVisible": true,
+            "cartFullyVisible": true,
+            "mobileBarVisible": false,
+            "product": [
+              259,
+              361,
+              618,
+              634
+            ],
+            "charge": [
+              1033,
+              764,
+              1429,
+              810
+            ],
+            "cart": [
+              1022,
+              93,
+              1440,
+              888
+            ],
+            "mobileBar": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "sha256": "c67c6ae3db8c05a8fe4ede751ce0b225c78cc4ac42e4f98924a58512e65f4072"
+        },
+        {
+          "file": "pos-1440-oscuro.png",
+          "viewport": [
+            1440,
+            900
+          ],
+          "mode": "dark",
+          "layout": {
+            "documentOverflowPx": 0,
+            "productVisible": true,
+            "desktopChargeVisible": true,
+            "cartFullyVisible": true,
+            "mobileBarVisible": false,
+            "product": [
+              259,
+              361,
+              618,
+              634
+            ],
+            "charge": [
+              1033,
+              764,
+              1429,
+              810
+            ],
+            "cart": [
+              1022,
+              93,
+              1440,
+              888
+            ],
+            "mobileBar": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "sha256": "6a116c2220351bfc7ff6b28b2ae9996ff4028e8140e2622ae416d5d028b9a251"
+        },
+        {
+          "file": "pos-390-claro.png",
+          "viewport": [
+            390,
+            844
+          ],
+          "mode": "light",
+          "layout": {
+            "documentOverflowPx": 0,
+            "productVisible": true,
+            "desktopChargeVisible": false,
+            "cartFullyVisible": false,
+            "mobileBarVisible": true,
+            "product": [
+              29,
+              478,
+              190,
+              833
+            ],
+            "charge": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "cart": [
+              14,
+              11000,
+              376,
+              11711
+            ],
+            "mobileBar": [
+              12,
+              766,
+              378,
+              832
+            ]
+          },
+          "sha256": "67731a823ddfde4e1f580a3d305d8117c0d3a883bc66cedf2fdab273e323141d"
+        },
+        {
+          "file": "carrito-390-claro.png",
+          "viewport": [
+            390,
+            844
+          ],
+          "mode": "light",
+          "cartVisibleAfterShortcut": true,
+          "sha256": "96ddae94d9f0d31e84187d02d96fb29776983959ac6302ba03118ec176d8aeaa"
+        },
+        {
+          "file": "pos-390-oscuro.png",
+          "viewport": [
+            390,
+            844
+          ],
+          "mode": "dark",
+          "layout": {
+            "documentOverflowPx": 0,
+            "productVisible": true,
+            "desktopChargeVisible": false,
+            "cartFullyVisible": false,
+            "mobileBarVisible": true,
+            "product": [
+              29,
+              478,
+              190,
+              833
+            ],
+            "charge": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "cart": [
+              14,
+              11000,
+              376,
+              11711
+            ],
+            "mobileBar": [
+              12,
+              766,
+              378,
+              832
+            ]
+          },
+          "sha256": "dde7974ed7de02a25a0811b60865a7ad9ef42fed2881d6138f8af96d1acde2d4"
+        },
+        {
+          "file": "carrito-390-oscuro.png",
+          "viewport": [
+            390,
+            844
+          ],
+          "mode": "dark",
+          "cartVisibleAfterShortcut": true,
+          "sha256": "4aaab4aa0ac73ba972f1fa277e07d5d1475e802a256edd56355d1426ca727a9a"
+        },
+        {
+          "file": "carrito-1366-cinco-articulos.png",
+          "viewport": [
+            1366,
+            768
+          ],
+          "mode": "dark",
+          "sha256": "5e7dcd45e6e3e35bbff16f5a043ec8f23bb061bc9b76631f0a7ec830bce41f18"
+        }
+      ],
+      "checks": {
+        "390": {
+          "viewport": [
+            390,
+            844
+          ],
+          "f2Enfoca": true,
+          "f4Selecciona": true,
+          "scannedSkuAddsOne": true,
+          "abreYCierraCobro": "pasa",
+          "englishChargeLabelStillSpanish": true,
+          "englishCartLabelStillSpanish": true,
+          "inglesConCarrito": "pasa"
+        },
+        "1440": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "f2Enfoca": true,
+          "f4Selecciona": true,
+          "scannedSkuAddsOne": true,
+          "abreYCierraCobro": "pasa",
+          "englishChargeLabelStillSpanish": true,
+          "inglesConCarrito": "pasa",
+          "motion": {
+            "hover": {
+              "y": -2,
+              "duration": "0.15s, 0.15s"
+            },
+            "reduced": {
+              "y": 0,
+              "duration": "0s"
+            }
+          },
+          "movimientoTarjeta": "pasa"
+        }
+      },
+      "brand": {
+        "menu": "Norexos",
+        "about": "Acerca de Norexos",
+        "title": "Norexos"
+      },
+      "mobileNavigation": {
+        "shortcut": "Ir a Punto de venta",
+        "menu": "Punto de venta",
+        "exactMenuMatches": 1,
+        "opened": true
+      },
+      "fiveItemStress": [
+        {
+          "viewport": [
+            1280,
+            720
+          ],
+          "rowCount": 5,
+          "fullRows": 2,
+          "lastVisible": true,
+          "maxRowHeight": 85,
+          "chargeVisible": true,
+          "panelVisible": true,
+          "firstCardVisible": true,
+          "firstCardBottom": 715,
+          "pageOverflow": 0,
+          "mainOverflow": 0,
+          "totalFamily": "\"Plus Jakarta Sans\", sans-serif",
+          "totalPx": 28,
+          "totalWeight": 800
+        },
+        {
+          "viewport": [
+            1366,
+            768
+          ],
+          "rowCount": 5,
+          "fullRows": 3,
+          "lastVisible": true,
+          "maxRowHeight": 85,
+          "chargeVisible": true,
+          "panelVisible": true,
+          "firstCardVisible": true,
+          "firstCardBottom": 695,
+          "pageOverflow": 0,
+          "mainOverflow": 0,
+          "totalFamily": "\"Plus Jakarta Sans\", sans-serif",
+          "totalPx": 28,
+          "totalWeight": 800
+        },
+        {
+          "viewport": [
+            1536,
+            864
+          ],
+          "rowCount": 5,
+          "fullRows": 3,
+          "lastVisible": true,
+          "maxRowHeight": 95,
+          "chargeVisible": true,
+          "panelVisible": true,
+          "firstCardVisible": true,
+          "firstCardBottom": 697,
+          "pageOverflow": 0,
+          "mainOverflow": 0,
+          "totalFamily": "\"Plus Jakarta Sans\", sans-serif",
+          "totalPx": 28,
+          "totalWeight": 800
+        },
+        {
+          "viewport": [
+            1024,
+            768
+          ],
+          "rowCount": 5,
+          "fullRows": 3,
+          "lastVisible": true,
+          "maxRowHeight": 85,
+          "chargeVisible": true,
+          "panelVisible": true,
+          "firstCardVisible": true,
+          "firstCardBottom": 714,
+          "pageOverflow": 0,
+          "mainOverflow": 0,
+          "totalFamily": "\"Plus Jakarta Sans\", sans-serif",
+          "totalPx": 28,
+          "totalWeight": 800
+        }
+      ],
+      "salePosts": 0,
+      "servicesStopped": true,
+      "pageErrorCount": 0
+    }
+  }
+}
