@@ -2,6 +2,11 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-17 · ChatGPT PC · capturas reales de Inicio de Dot
+
+- En `chatgpt-pc/capturas-dot-4e4bb76f` quedan las cuatro capturas de Inicio del commit de Dot `4e4bb76f32b48924fd16f92ee238aa0899b178c8`, a 1440 y 390 px en claro y oscuro, y el registro de la prueba local con datos ficticios. [Informe y capturas](../validacion/capturas-dot-4e4bb76f/inicio/COMPARACION.md).
+- En móvil el banner recorta el título y oculta «Explorar mis reportes». En escritorio la gráfica de ventas queda más abajo que en la lámina aprobada. Los cambios de tema, idioma y acento y el menú móvil funcionaron. Caja, Productos y GV quedan pendientes de las ramas de Dot para esas áreas.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
