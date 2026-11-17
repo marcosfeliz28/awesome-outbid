@@ -1,0 +1,183 @@
+{
+  "commit": "5f7d61eba2bfd5ce82d299e44b5d47ce04f20c7b",
+  "completedAt": "2026-11-17T21:28:36.068Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "ventas-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "layout": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "columns": 2,
+        "windowOverflowPx": 0,
+        "listOverflowPx": 0,
+        "tableOverflowPx": 308,
+        "previewPageY": 351,
+        "previewStartsInViewport": true
+      },
+      "sha256": "d9d520c9d81aedd53ab63d5387f4b10976287fe74baafcd86d97c5b1800caca6"
+    },
+    {
+      "file": "ventas-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "layout": {
+        "viewport": [
+          390,
+          844
+        ],
+        "columns": 1,
+        "windowOverflowPx": 0,
+        "listOverflowPx": 0,
+        "tableOverflowPx": 0,
+        "previewPageY": 9830,
+        "previewStartsInViewport": false,
+        "scrollFromClickPx": 0,
+        "distanceFromViewportToPreviewPx": 8986
+      },
+      "sha256": "365e92389902fc9718081dfcbb8e9097bde211e90f3add92ca4cdfff12538c80"
+    },
+    {
+      "file": "vista-previa-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "layout": {
+        "viewport": [
+          390,
+          844
+        ],
+        "columns": 1,
+        "windowOverflowPx": 0,
+        "listOverflowPx": 0,
+        "tableOverflowPx": 0,
+        "previewPageY": 9830,
+        "previewStartsInViewport": true
+      },
+      "sha256": "9255e7a119db97c6f129d6de4ace2f25c1a5ea573d307058ee078612e9ceaf6d"
+    },
+    {
+      "file": "ventas-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "layout": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "columns": 2,
+        "windowOverflowPx": 0,
+        "listOverflowPx": 0,
+        "tableOverflowPx": 308,
+        "previewPageY": 351,
+        "previewStartsInViewport": true
+      },
+      "sha256": "3dbfdf9828aeaf5e6529b98b562873f0333ac833b9ef7682a58089e3eb959b05"
+    },
+    {
+      "file": "ventas-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "layout": {
+        "viewport": [
+          390,
+          844
+        ],
+        "columns": 1,
+        "windowOverflowPx": 0,
+        "listOverflowPx": 0,
+        "tableOverflowPx": 0,
+        "previewPageY": 9830,
+        "previewStartsInViewport": false,
+        "scrollFromClickPx": 0,
+        "distanceFromViewportToPreviewPx": 8986
+      },
+      "sha256": "06858cc479c35125b2884a47c75a385b2604befa6d52416a976d56e7302b3ccd"
+    },
+    {
+      "file": "vista-previa-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "layout": {
+        "viewport": [
+          390,
+          844
+        ],
+        "columns": 1,
+        "windowOverflowPx": 0,
+        "listOverflowPx": 0,
+        "tableOverflowPx": 0,
+        "previewPageY": 9830,
+        "previewStartsInViewport": true
+      },
+      "sha256": "36cf6d80a109ab16ec74d946338543719c637b1611e8f32d3da59821984ba467"
+    },
+    {
+      "file": "detalle-completo-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "layout": {
+        "viewport": [
+          1440,
+          900
+        ],
+        "columns": 2,
+        "windowOverflowPx": 0,
+        "listOverflowPx": 0,
+        "tableOverflowPx": 308,
+        "previewPageY": 351,
+        "previewStartsInViewport": true
+      },
+      "sha256": "f5c936e69519b7113f1014964c389df5147e2e0dc08b183d018038f7a1e504ff"
+    }
+  ],
+  "checks": {
+    "demoCounts": [
+      100,
+      100,
+      0
+    ],
+    "demoRowsInFirstPage": 20,
+    "keyboardSelect": true,
+    "pageNavigationKeepsCounts": true,
+    "totalMatchesRow": true,
+    "motion": {
+      "regular": {
+        "y": -2,
+        "duration": "0.18s, 0.18s"
+      },
+      "reduced": {
+        "y": 0,
+        "duration": "0s"
+      }
+    },
+    "legacyDetailOpensAndCloses": true,
+    "folioFilter": true,
+    "emptySearchClearsPreview": true,
+    "dateFilter": true,
+    "englishSidebarAndPreview": true,
+    "englishRowStatusStillSpanish": true,
+    "englishRowActionsStillSpanish": false,
+    "englishBrowStillSpanish": true
+  },
+  "servicesStopped": true,
+  "saleWrites": 0,
+  "pageErrorCount": 0
+}

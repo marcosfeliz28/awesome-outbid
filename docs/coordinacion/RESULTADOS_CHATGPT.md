@@ -276,3 +276,8 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · primer corte de Ventas
+
+- Validé `5f7d61eba2bfd5ce82d299e44b5d47ce04f20c7b` de Dot con API y PostgreSQL de prueba. Pasaron paginación, búsqueda por folio y fecha, selección por teclado, tema y movimiento reducido, y apertura y cierre del detalle. Publiqué [siete capturas y mediciones](../validacion/capturas-dot-5f7d61eb/ventas/COMPARACION.md).
+- Pendiente para Dot. Al seleccionar el primer folio a 390 × 844, el resumen aparece a 8986 px por debajo de lo visible y el toque conserva el desplazamiento de la lista. El CI falla por ESLint en el script de comprobación de Ventas (línea 19). Faltan también la comparación directa con la referencia de Higgsfield y las etiquetas de idioma registradas en el informe. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44178098199)
