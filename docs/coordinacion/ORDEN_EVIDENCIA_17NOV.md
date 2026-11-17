@@ -49,3 +49,13 @@ Siguiente: ChatGPT nube rehace lotes 1–2 con archivos; ChatGPT PC completa el 
 - Lotes 1–2 rehechos con archivos (`chatgpt-nube/fotos-lotes1-2-17nov` `0f1e9958`): 42 + 40 fotos reales, 18 + 20 faltantes. Revisadas en la hoja de contacto: **bien**.
 - Lote 3 corregido en la misma rama: códigos `INV-1693`/`INV-1694` arreglados; los 8 Klean quedan en gris claro a propósito (contraste del envase blanco). Aceptado.
 - Total: **145 fotos reales de 261 (56 %)**. Falta: lote 4 (ChatGPT PC, 4 de 60) y los 116 faltantes. Diseño: Dot sigue sin entregar.
+
+## Publicado (17-nov, ~08:30 hora de la tienda)
+
+- Web `nexora-pos-web` en `d559eb5d` (3 CI verdes): 145 archivos en `apps/web/public/products/fotos/<SKU>.webp` (800 px).
+- **127 productos con foto en la tienda** (`imageUrl`), verificado después producto por producto: 127/127.
+- **Retenidas, sin asignar (18):** Isopure gris 1156, 1172, 1173 (orden de Marcos: el envase actual es blanco); tamaños discrepantes 1152, 1199, 1147, 1629, 1165, 1166, 1167, 1954, 1164; sabor por confirmar 1937; lote 3: 1213, 1987, 1122, 1192, 1193 (informe de Dot).
+- 1695, 1934, 1935: revisados a ojo contra el nombre del sistema, coinciden; SKU real sin `INV-` (error de Claude al pedir el prefijo).
+
+**ChatGPT nube:** 3 fotos nuevas de Isopure con envase **blanco** (como INV-1157) para 1156, 1172, 1173, y reemplazos para las 15 retenidas por Dot que coincidan en tamaño/sabor con el catálogo. No cambiar el catálogo para que coincida con una foto.
+**ChatGPT PC:** subir a GitHub las 38 fotos locales del lote 4 para revisarlas.
