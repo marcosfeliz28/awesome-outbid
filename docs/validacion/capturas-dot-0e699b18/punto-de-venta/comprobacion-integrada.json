@@ -1,0 +1,255 @@
+{
+  "commit": "0e699b1810cab9992a29c34b89b3243371aa01c0",
+  "completedAt": "2026-11-17T20:57:54.266Z",
+  "captures": [
+    {
+      "file": "pos-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dimensions": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "sha256": "14fa64daa48658a219ded58a9e14295675c02223a2c51a2ff4c2048eda690168",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": false,
+        "productRectPx": [
+          267,
+          510,
+          502,
+          920
+        ],
+        "chargeRectPx": [
+          1061,
+          856,
+          1419,
+          920
+        ],
+        "cartRectPx": [
+          1040,
+          216,
+          1440,
+          1030
+        ],
+        "mobileBarRectPx": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "file": "pos-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dimensions": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "sha256": "911e46bb3986e9621c08a4f7fdd3bb4dd72faf6beab106443550a6ed702c1112",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": false,
+        "productRectPx": [
+          267,
+          510,
+          502,
+          920
+        ],
+        "chargeRectPx": [
+          1061,
+          856,
+          1419,
+          920
+        ],
+        "cartRectPx": [
+          1040,
+          216,
+          1440,
+          1030
+        ],
+        "mobileBarRectPx": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "file": "pos-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "sha256": "2a5e36a9cd49ae2f764918327a93cc41dc550ad2fc0715af60d5c67f4dc304b5",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "productRectPx": [
+          29,
+          754,
+          190,
+          1109
+        ],
+        "chargeRectPx": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cartRectPx": [
+          14,
+          11274,
+          376,
+          12002
+        ],
+        "mobileBarRectPx": [
+          12,
+          766,
+          378,
+          832
+        ]
+      }
+    },
+    {
+      "file": "pos-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "sha256": "88579dc75b99a50ca01efca5a07b631265175ea949a3195105f68870b8154094",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "productRectPx": [
+          29,
+          754,
+          190,
+          1109
+        ],
+        "chargeRectPx": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cartRectPx": [
+          14,
+          11274,
+          376,
+          12002
+        ],
+        "mobileBarRectPx": [
+          12,
+          766,
+          378,
+          832
+        ]
+      }
+    },
+    {
+      "file": "carrito-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "sha256": "f17c0541cf1b12f1253085693e2ffa5216829a6cc2bbad747182a5168eaccc98",
+      "cartVisibleAfterShortcut": true
+    },
+    {
+      "file": "carrito-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "sha256": "c95102c8554c97727fc82078769a4a61444777320520270ba2f5eb74cc682a33",
+      "cartVisibleAfterShortcut": true
+    }
+  ],
+  "checks": {
+    "1440": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "opensAndClosesCharge": true,
+      "englishWithCart": true,
+      "englishChargeLabelStillSpanish": true,
+      "motion": {
+        "hover": {
+          "translateYPx": -2,
+          "transitionDurationMs": [
+            150,
+            150
+          ]
+        },
+        "reduced": {
+          "translateYPx": 0,
+          "transitionDurationMs": [
+            0
+          ]
+        }
+      }
+    },
+    "390": {
+      "viewport": [
+        390,
+        844
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "opensAndClosesCharge": true,
+      "englishWithCart": true,
+      "englishChargeLabelStillSpanish": true,
+      "englishCartLabelStillSpanish": true
+    }
+  },
+  "salePosts": 0,
+  "pageErrorCount": 0,
+  "servicesStopped": true
+}

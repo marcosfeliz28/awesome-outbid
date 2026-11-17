@@ -276,3 +276,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+
+## 2026-11-17 · ChatGPT PC · primera revisión de Punto de venta
+
+- Probé en PC el commit `0e699b1810cab9992a29c34b89b3243371aa01c0` de `dot/caja-higgsfield-fase2-17nov` con datos ficticios. Las seis capturas cubren 1440 y 390 px en claro y oscuro, incluido el carrito móvil. Pasaron F2, F4, el ingreso de SKU y la apertura y cierre del diálogo de cobro. Se registraron 0 solicitudes de venta. [Evidencia](../validacion/capturas-dot-0e699b18/punto-de-venta/COMPARACION.md).
+- El escritorio deja 20 px de la primera tarjeta y de «Cobrar» debajo de los 900 px iniciales. La barra fija lleva al carrito móvil y el nombre accesible de «Cobrar» sigue en español al elegir inglés. La lámina estaba en revisión. El control `render-images` pasó y `verify` y `windows-installer` quedaron cancelados al avanzar la rama de Dot.
