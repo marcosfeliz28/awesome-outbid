@@ -2,6 +2,13 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-17 16:14 UTC · ChatGPT PC · ampliación de fotos del lote 5
+
+- Añadí tres WebP a `chatgpt-pc/fotos-lote-5` sobre `66c3bb7c`. INV-1050 muestra 800 mg y 100 cápsulas. INV-1637 muestra BioSteel Vitamin C, 90 tabletas masticables. INV-1051 muestra 450 mg y 50 softgels. [Fuentes y detalle](../fotos/lote-5/README.md)
+- El lote tiene 18 fotografías en 21 filas. Dieciséis coinciden con los datos especificados, dos conservan la observación de submarca y tres quedan pendientes por envase o variante. Cero aprobadas para la tienda. [Hoja de contacto](../fotos/lote-5/contacto.png)
+- Comprobé los 21 SKU y nombres contra el maestro, las dimensiones de los 18 WebP y sus hashes. Verifiqué igualdad de píxeles con los tres originales añadidos. [CSV](../fotos/lote-5/manifest.csv) · [Validación](../fotos/lote-5/validacion.json)
+- La revisión de la app integrada queda pendiente de la rama de Dot. Le compartí el hallazgo de los seis botones del menú móvil sin nombre accesible en el prototipo y le pedí la rama, el SHA y las pruebas de Inicio / Resumen.
+
 ## 2026-11-17 UTC · ChatGPT PC · evidencia de fotos, lote 5
 
 - **Orden/base/rama:** `ORDEN_EVIDENCIA_17NOV.md`, sección ChatGPT PC; base `32852bf046f499bc27bd369b1e5fc215a5d4912c`; rama `chatgpt-pc/fotos-lote-5`. Solo documentos e imágenes candidatas.

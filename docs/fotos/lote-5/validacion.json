@@ -1,13 +1,13 @@
 {
-  "fecha_utc": "2026-11-17T03:35:20Z",
+  "fecha_utc": "2026-11-17T16:14:43Z",
   "lote": 5,
   "base": "32852bf046f499bc27bd369b1e5fc215a5d4912c",
   "filas_recibidas": 21,
   "filas_trabajadas": 21,
-  "fotos_reales": 15,
-  "coincidencia_visual_con_datos_especificados": 13,
+  "fotos_reales": 18,
+  "coincidencia_visual_con_datos_especificados": 16,
   "observadas_submarca": 2,
-  "faltantes": 6,
+  "faltantes": 3,
   "suma": 21,
   "skus_unicos": 21,
   "minimo_800_por_eje": true,
@@ -20,11 +20,11 @@
       1640,
       2730
     ],
-    "sha256": "a025333dc0bd5828b69636b36f1cf0b3e317f6566467104b26cb24a743b3a022",
-    "fotos": 15,
-    "casillas_faltantes": 6
+    "sha256": "d240a748061716ed5c8b0c16cd3a5b840c6d179f618d74e3ee56d94c6ced9d03",
+    "fotos": 18,
+    "casillas_faltantes": 3
   },
-  "manifest_sha256": "8a67aed8f149ddc418767363b95b36fd9b38949405a0e75bbce2c91b28a90b2e",
+  "manifest_sha256": "aca37112ce00d66a0fffa0f05ce0ba30b243dc9c186e6d219b7703b2e9d47cbc",
   "archivos": [
     {
       "n": 241,
@@ -46,6 +46,17 @@
       ],
       "sha256": "fece377a3d11c93145445705635e738aa049f733783991c2bc9e89299bed6bab",
       "sha256_original": "cc5d6c0303c43fc4f45b94b699c3924a10a531e7e7035c780a6f656d11f012da",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 243,
+      "sku": "INV-1050",
+      "dimensiones": [
+        1001,
+        1788
+      ],
+      "sha256": "88ec82e1ccb798d2ed0aa8eaba7af41bd8da0cb534c44fdb3ddd5871f93eaca0",
+      "sha256_original": "88ec82e1ccb798d2ed0aa8eaba7af41bd8da0cb534c44fdb3ddd5871f93eaca0",
       "pixeles_iguales_al_original_sobre_blanco": true
     },
     {
@@ -93,6 +104,17 @@
       "pixeles_iguales_al_original_sobre_blanco": true
     },
     {
+      "n": 250,
+      "sku": "INV-1637",
+      "dimensiones": [
+        2048,
+        2048
+      ],
+      "sha256": "981322c0a160d96745a928e4dec92367817109afe6f981ebee5214de0638e313",
+      "sha256_original": "2f0c2084f6f328d8d0add115d2a208a171f90a3f73ce790682e4e0f3aed04aeb",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
       "n": 251,
       "sku": "INV-1070",
       "dimensiones": [
@@ -112,6 +134,17 @@
       ],
       "sha256": "0ecd937d5008b4ffee0822eb7a6a77c4bf62720c2f86c963b4ffd67e5b61dc6f",
       "sha256_original": "c79d37b07a9c542131fa32f79aafe86fbb8fb5f6b3310298679732d8556d6dfe",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 253,
+      "sku": "INV-1051",
+      "dimensiones": [
+        1080,
+        1080
+      ],
+      "sha256": "6508d73f52c539875441d2950ce44eab96d3028501eaf4b54489b2931d49d35b",
+      "sha256_original": "9494bc04efa97701d7efbbebb8193ca6db5ea2e144f3680e8ffcf3db67c00700",
       "pixeles_iguales_al_original_sobre_blanco": true
     },
     {
@@ -194,5 +227,11 @@
   ],
   "aprobadas_tienda": 0,
   "inventario_fisico_comprobado": false,
-  "licencia_comercial_confirmada": false
+  "licencia_comercial_confirmada": false,
+  "entrega_anterior": "66c3bb7c86da46e316e2f37106769fac55cb6c7a",
+  "nuevos_skus": [
+    "INV-1050",
+    "INV-1637",
+    "INV-1051"
+  ]
 }
