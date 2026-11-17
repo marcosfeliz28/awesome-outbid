@@ -276,3 +276,8 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · Punto de venta con tarjeta completa
+
+- Probé `59d77a175da32e3f383321233e10d9f0edf618b6` en Windows con datos ficticios. La primera tarjeta y Cobrar caben en los cuatro escritorios con textos largos. En 1280 × 720 se ven dos filas completas de carrito y la última fila. [Siete capturas y mediciones](../validacion/capturas-dot-59d77a17/punto-de-venta/COMPARACION.md)
+- La prueba independiente con API simulada pasó 15/16 y reprodujo el límite de dos filas a 1280 × 720. Los procesos quedaron cerrados. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44191832478)

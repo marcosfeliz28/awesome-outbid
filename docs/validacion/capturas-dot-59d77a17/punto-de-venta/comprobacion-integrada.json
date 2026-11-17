@@ -1,0 +1,387 @@
+{
+  "commit": "59d77a175da32e3f383321233e10d9f0edf618b6",
+  "completedAt": "2026-11-17T22:55:23.315Z",
+  "browser": "157.0.4341.60",
+  "brand": {
+    "menu": "Norexos",
+    "about": "Acerca de Norexos",
+    "title": "Norexos"
+  },
+  "mobileNavigation": {
+    "shortcut": "Ir a Punto de venta",
+    "menu": "Punto de venta",
+    "exactMenuMatches": 1,
+    "opened": true
+  },
+  "screenshots": [
+    {
+      "file": "pos-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "mode": "light",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": true,
+        "desktopChargeVisible": true,
+        "cartFullyVisible": true,
+        "mobileBarVisible": false,
+        "product": [
+          259,
+          361,
+          618,
+          634
+        ],
+        "charge": [
+          1033,
+          764,
+          1429,
+          810
+        ],
+        "cart": [
+          1022,
+          93,
+          1440,
+          888
+        ],
+        "mobileBar": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "sha256": "c67c6ae3db8c05a8fe4ede751ce0b225c78cc4ac42e4f98924a58512e65f4072"
+    },
+    {
+      "file": "pos-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "mode": "dark",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": true,
+        "desktopChargeVisible": true,
+        "cartFullyVisible": true,
+        "mobileBarVisible": false,
+        "product": [
+          259,
+          361,
+          618,
+          634
+        ],
+        "charge": [
+          1033,
+          764,
+          1429,
+          810
+        ],
+        "cart": [
+          1022,
+          93,
+          1440,
+          888
+        ],
+        "mobileBar": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "sha256": "6a116c2220351bfc7ff6b28b2ae9996ff4028e8140e2622ae416d5d028b9a251"
+    },
+    {
+      "file": "pos-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "light",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": true,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "product": [
+          29,
+          478,
+          190,
+          833
+        ],
+        "charge": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cart": [
+          14,
+          11000,
+          376,
+          11711
+        ],
+        "mobileBar": [
+          12,
+          766,
+          378,
+          832
+        ]
+      },
+      "sha256": "67731a823ddfde4e1f580a3d305d8117c0d3a883bc66cedf2fdab273e323141d"
+    },
+    {
+      "file": "carrito-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "light",
+      "cartVisibleAfterShortcut": true,
+      "sha256": "96ddae94d9f0d31e84187d02d96fb29776983959ac6302ba03118ec176d8aeaa"
+    },
+    {
+      "file": "pos-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "dark",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": true,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "product": [
+          29,
+          478,
+          190,
+          833
+        ],
+        "charge": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cart": [
+          14,
+          11000,
+          376,
+          11711
+        ],
+        "mobileBar": [
+          12,
+          766,
+          378,
+          832
+        ]
+      },
+      "sha256": "dde7974ed7de02a25a0811b60865a7ad9ef42fed2881d6138f8af96d1acde2d4"
+    },
+    {
+      "file": "carrito-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "dark",
+      "cartVisibleAfterShortcut": true,
+      "sha256": "4aaab4aa0ac73ba972f1fa277e07d5d1475e802a256edd56355d1426ca727a9a"
+    },
+    {
+      "file": "carrito-1366-cinco-articulos.png",
+      "viewport": [
+        1366,
+        768
+      ],
+      "mode": "dark",
+      "sha256": "afacf0137811b70e0828d23ed3f99c2282a790a85f308e663e76e95448e30930"
+    }
+  ],
+  "checks": {
+    "390": {
+      "viewport": [
+        390,
+        844
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "abreYCierraCobro": "pasa",
+      "englishChargeLabelStillSpanish": true,
+      "englishCartLabelStillSpanish": true,
+      "inglesConCarrito": "pasa"
+    },
+    "1440": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "abreYCierraCobro": "pasa",
+      "englishChargeLabelStillSpanish": true,
+      "inglesConCarrito": "pasa",
+      "motion": {
+        "hover": {
+          "y": -2,
+          "duration": "0.15s, 0.15s"
+        },
+        "reduced": {
+          "y": 0,
+          "duration": "0s"
+        }
+      },
+      "movimientoTarjeta": "pasa"
+    }
+  },
+  "desktopSizes": [
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "chargeTop": 663,
+      "chargeBottom": 709,
+      "chargeFullyVisible": true,
+      "itemNameInsideLabel": true,
+      "overflowPx": 0
+    },
+    {
+      "viewport": [
+        1180,
+        757
+      ],
+      "chargeTop": 652,
+      "chargeBottom": 698,
+      "chargeFullyVisible": true,
+      "itemNameInsideLabel": true,
+      "overflowPx": 0
+    },
+    {
+      "viewport": [
+        1366,
+        768
+      ],
+      "chargeTop": 663,
+      "chargeBottom": 709,
+      "chargeFullyVisible": true,
+      "itemNameInsideLabel": true,
+      "overflowPx": 0
+    },
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "chargeTop": 764,
+      "chargeBottom": 810,
+      "chargeFullyVisible": true,
+      "itemNameInsideLabel": true,
+      "overflowPx": 0
+    }
+  ],
+  "totalTypography": {
+    "390": {
+      "fontFamily": "\"Plus Jakarta Sans\", sans-serif",
+      "fontPixels": 28
+    },
+    "1280": {
+      "fontFamily": "\"Plus Jakarta Sans\", sans-serif",
+      "fontPixels": 28
+    }
+  },
+  "fiveItemStress": [
+    {
+      "viewport": [
+        1280,
+        720
+      ],
+      "rowCount": 5,
+      "fullRows": 2,
+      "lastVisible": true,
+      "maxRowHeight": 85,
+      "chargeVisible": true,
+      "panelVisible": true,
+      "firstCardVisible": true,
+      "firstCardBottom": 715,
+      "pageOverflow": 0,
+      "mainOverflow": 0,
+      "totalFamily": "\"Plus Jakarta Sans\", sans-serif",
+      "totalPx": 28,
+      "totalWeight": 800
+    },
+    {
+      "viewport": [
+        1366,
+        768
+      ],
+      "rowCount": 5,
+      "fullRows": 3,
+      "lastVisible": true,
+      "maxRowHeight": 85,
+      "chargeVisible": true,
+      "panelVisible": true,
+      "firstCardVisible": true,
+      "firstCardBottom": 695,
+      "pageOverflow": 0,
+      "mainOverflow": 0,
+      "totalFamily": "\"Plus Jakarta Sans\", sans-serif",
+      "totalPx": 28,
+      "totalWeight": 800
+    },
+    {
+      "viewport": [
+        1536,
+        864
+      ],
+      "rowCount": 5,
+      "fullRows": 3,
+      "lastVisible": true,
+      "maxRowHeight": 95,
+      "chargeVisible": true,
+      "panelVisible": true,
+      "firstCardVisible": true,
+      "firstCardBottom": 697,
+      "pageOverflow": 0,
+      "mainOverflow": 0,
+      "totalFamily": "\"Plus Jakarta Sans\", sans-serif",
+      "totalPx": 28,
+      "totalWeight": 800
+    },
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "rowCount": 5,
+      "fullRows": 3,
+      "lastVisible": true,
+      "maxRowHeight": 85,
+      "chargeVisible": true,
+      "panelVisible": true,
+      "firstCardVisible": true,
+      "firstCardBottom": 714,
+      "pageOverflow": 0,
+      "mainOverflow": 0,
+      "totalFamily": "\"Plus Jakarta Sans\", sans-serif",
+      "totalPx": 28,
+      "totalWeight": 800
+    }
+  ],
+  "servicesStopped": true,
+  "salePosts": 0,
+  "pageErrorCount": 0,
+  "independentBrowserTests": {
+    "backend": "simulado",
+    "passed": 15,
+    "total": 16
+  }
+}
