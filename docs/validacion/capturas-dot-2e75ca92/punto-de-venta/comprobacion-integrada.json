@@ -1,0 +1,248 @@
+{
+  "commit": "2e75ca92bb6ab397b937131e512671e3be397635",
+  "completedAt": "2026-11-17T21:07:53.296Z",
+  "servicesStopped": true,
+  "brand": {
+    "menu": "Norexos",
+    "about": "Acerca de Norexos",
+    "title": "Norexos"
+  },
+  "mobileNavigation": {
+    "shortcut": "Ir a Punto de venta",
+    "menu": "Punto de venta",
+    "exactMenuMatches": 1,
+    "opened": true
+  },
+  "checks": {
+    "390": {
+      "viewport": [
+        390,
+        844
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "abreYCierraCobro": "pasa",
+      "englishChargeLabelStillSpanish": true,
+      "englishCartLabelStillSpanish": true,
+      "inglesConCarrito": "pasa"
+    },
+    "1440": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "f2Enfoca": true,
+      "f4Selecciona": true,
+      "scannedSkuAddsOne": true,
+      "abreYCierraCobro": "pasa",
+      "englishChargeLabelStillSpanish": true,
+      "inglesConCarrito": "pasa",
+      "motion": {
+        "hover": {
+          "y": -2,
+          "duration": "0.15s, 0.15s"
+        },
+        "reduced": {
+          "y": 0,
+          "duration": "0s"
+        }
+      },
+      "movimientoTarjeta": "pasa"
+    }
+  },
+  "salePosts": 0,
+  "totalTypography": {
+    "390": {
+      "fontFamily": "Georgia, \"Times New Roman\", serif",
+      "fontPixels": 28
+    },
+    "1280": {
+      "fontFamily": "Georgia, \"Times New Roman\", serif",
+      "fontPixels": 25.6
+    }
+  },
+  "pageErrors": 0,
+  "captures": [
+    {
+      "file": "pos-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "mode": "light",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": false,
+        "product": [
+          267,
+          510,
+          496,
+          920
+        ],
+        "charge": [
+          1043,
+          846,
+          1419,
+          910
+        ],
+        "cart": [
+          1022,
+          216,
+          1440,
+          1020
+        ],
+        "mobileBar": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "sha256": "ed065daef263b2525ba373a2b32c867ce273d5118fa00488ce2b94dcb0dee9ec"
+    },
+    {
+      "file": "pos-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "mode": "dark",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": false,
+        "product": [
+          267,
+          510,
+          496,
+          920
+        ],
+        "charge": [
+          1043,
+          846,
+          1419,
+          910
+        ],
+        "cart": [
+          1022,
+          216,
+          1440,
+          1020
+        ],
+        "mobileBar": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "sha256": "276e72ae9f798e4278aea1cf90b7a435f0d4c018ee146562a3b1ff456d22eae6"
+    },
+    {
+      "file": "pos-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "light",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "product": [
+          29,
+          756,
+          190,
+          1111
+        ],
+        "charge": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cart": [
+          14,
+          11278,
+          376,
+          12000
+        ],
+        "mobileBar": [
+          12,
+          766,
+          378,
+          832
+        ]
+      },
+      "sha256": "8a7842373b6cf88a7e459fc3b26cfdf3a7ae2077dbf48f51cca0b42327c795d9"
+    },
+    {
+      "file": "carrito-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "light",
+      "cartVisibleAfterShortcut": true,
+      "sha256": "8f1b6b4cd66f7600829951f41592490de6359338a18f822dfbbf3463e0753e79"
+    },
+    {
+      "file": "pos-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "dark",
+      "layout": {
+        "documentOverflowPx": 0,
+        "productVisible": false,
+        "desktopChargeVisible": false,
+        "cartFullyVisible": false,
+        "mobileBarVisible": true,
+        "product": [
+          29,
+          756,
+          190,
+          1111
+        ],
+        "charge": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cart": [
+          14,
+          11278,
+          376,
+          12000
+        ],
+        "mobileBar": [
+          12,
+          766,
+          378,
+          832
+        ]
+      },
+      "sha256": "d0de9d054ae198bf2ad1748c8e091cf4ac59815bf54f35ee37a5997c6d871204"
+    },
+    {
+      "file": "carrito-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "mode": "dark",
+      "cartVisibleAfterShortcut": true,
+      "sha256": "2a21beeb5f50b554f5eb913002ae2910f7a4977d0e50cd85070db62eb6fff708"
+    }
+  ]
+}
