@@ -47,3 +47,16 @@ Publicación: **no**, hasta que `verify` esté verde, Marcos vea las capturas re
 ### Decisión de Marcos (17-nov): la marca es **Norexos**
 
 Dot: devolver «Noxeros» a «Norexos» en `apps/web/index.html`, `apps/web/src/App.tsx`, `apps/web/src/inicioLanguage.ts` (incluida la clave `noxeros-overview-language`) y revertir las pruebas que cambió `1d62b760` (`tests/e2e/acerca-de.spec.ts`, `tests/e2e/caja-web.spec.ts`, `tests/inicio-integrado.test.ts`).
+
+## Auditoría: `dot/pos-viewport-w5-17nov` @ `59d77a17` (Inicio + Caja, 17-nov, 23:10 UTC)
+
+- **3 pruebas automáticas en verde** (verify, windows-installer, render-images).
+- **Marca:** «Norexos» en todo (0 «Noxeros»). Resuelto.
+- **Caja (`POS.tsx`):** solo textos pasados por `t()` y un componente de preferencias visuales (`CajaVisualPreferences`). Sin cambios en cobro, totales, descuentos, teclado ni sincronización.
+- **Accesos rápidos (`QuickAccessOverview`):** respetan los mismos permisos del menú; no escriben nada.
+- Sin llamadas nuevas a la API, `innerHTML`, `eval`, direcciones externas ni tokens. Sin cambios en API, base de datos, instalador ni Render.
+- Capturas reales: `chatgpt-pc/capturas-dot-243bfdb8` (Caja) y `chatgpt-pc/capturas-dot-eb20caab` (Inicio). Falta una captura del commit exacto `59d77a17`.
+
+**Veredicto técnico: apto.** Se publica solo con la aceptación de Marcos de las capturas reales.
+
+`dot/inventario-higgsfield-17nov` @ `b78f2166`: `verify` **cancelada**; hay que volver a correrla antes de auditar.
