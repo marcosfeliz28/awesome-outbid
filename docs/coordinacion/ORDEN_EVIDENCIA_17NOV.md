@@ -43,3 +43,9 @@ Total: **63 fotos reales de 261** (24 %). Ninguna aprobada para la tienda; derec
 Diseño: **Dot no ha entregado nada** (ni `dot/prueba-acceso`).
 
 Siguiente: ChatGPT nube rehace lotes 1–2 con archivos; ChatGPT PC completa el lote 4; Dot crea su rama y entrega tokens + Caja + Inicio.
+
+### Actualización (17-nov, 02:40 hora de la tienda)
+
+- Lotes 1–2 rehechos con archivos (`chatgpt-nube/fotos-lotes1-2-17nov` `0f1e9958`): 42 + 40 fotos reales, 18 + 20 faltantes. Revisadas en la hoja de contacto: **bien**.
+- Lote 3 corregido en la misma rama: códigos `INV-1693`/`INV-1694` arreglados; los 8 Klean quedan en gris claro a propósito (contraste del envase blanco). Aceptado.
+- Total: **145 fotos reales de 261 (56 %)**. Falta: lote 4 (ChatGPT PC, 4 de 60) y los 116 faltantes. Diseño: Dot sigue sin entregar.
