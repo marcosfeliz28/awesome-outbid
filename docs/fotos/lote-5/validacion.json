@@ -1,0 +1,198 @@
+{
+  "fecha_utc": "2026-11-17T03:35:20Z",
+  "lote": 5,
+  "base": "32852bf046f499bc27bd369b1e5fc215a5d4912c",
+  "filas_recibidas": 21,
+  "filas_trabajadas": 21,
+  "fotos_reales": 15,
+  "coincidencia_visual_con_datos_especificados": 13,
+  "observadas_submarca": 2,
+  "faltantes": 6,
+  "suma": 21,
+  "skus_unicos": 21,
+  "minimo_800_por_eje": true,
+  "sin_ampliacion": true,
+  "sin_generacion_IA": true,
+  "sin_modificar_etiquetas": true,
+  "hoja_contacto": {
+    "archivo": "docs/fotos/lote-5/contacto.png",
+    "dimensiones": [
+      1640,
+      2730
+    ],
+    "sha256": "a025333dc0bd5828b69636b36f1cf0b3e317f6566467104b26cb24a743b3a022",
+    "fotos": 15,
+    "casillas_faltantes": 6
+  },
+  "manifest_sha256": "8a67aed8f149ddc418767363b95b36fd9b38949405a0e75bbce2c91b28a90b2e",
+  "archivos": [
+    {
+      "n": 241,
+      "sku": "INV-1002",
+      "dimensiones": [
+        1080,
+        1080
+      ],
+      "sha256": "31b04488ede2ae2c03331ba8865e50bf6c672bc09ccf306719e9fd15ecc8ada8",
+      "sha256_original": "455c85012720715fa6005694a060e507baa639da27c1e29089b1771d8422f6d9",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 242,
+      "sku": "INV-1029",
+      "dimensiones": [
+        1024,
+        1024
+      ],
+      "sha256": "fece377a3d11c93145445705635e738aa049f733783991c2bc9e89299bed6bab",
+      "sha256_original": "cc5d6c0303c43fc4f45b94b699c3924a10a531e7e7035c780a6f656d11f012da",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 244,
+      "sku": "INV-1061",
+      "dimensiones": [
+        1000,
+        1000
+      ],
+      "sha256": "89d16b098167612f5bff50f4a0eb02b1f4e53c54fae8d899122def4d89add3bb",
+      "sha256_original": "6c30231b86446b390712bfad3c53888d7d5911923759335b6c1f0f6ec3730516",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 246,
+      "sku": "INV-1053",
+      "dimensiones": [
+        1200,
+        1200
+      ],
+      "sha256": "e9bc24d76973f38d15dacf8bd64640e58ce37e9150d6c61c80bf9827c1ec3bf4",
+      "sha256_original": "60fda173ba6799fb68a3389dd6db1e6ca164952ed2fd7caee6feddd8c1684f12",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 248,
+      "sku": "INV-1109",
+      "dimensiones": [
+        1024,
+        1024
+      ],
+      "sha256": "d58847ff09650fd36cd912b6d4d4210f7e1483b22e2fa580fe037d4ae5f219e4",
+      "sha256_original": "47cb7df6372bd59c9c33748c54bb8e2017446f93ce211ebb7de27f14cd4fbc2b",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 249,
+      "sku": "INV-1055",
+      "dimensiones": [
+        800,
+        800
+      ],
+      "sha256": "74f8412d8de8aebafeea81f07cc2a766cc5f5d7b82d29da07da0eb3a1a262a3f",
+      "sha256_original": "848843daede32724bb15281dbaa57e34adcd887bea9517ac935056c25514ff22",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 251,
+      "sku": "INV-1070",
+      "dimensiones": [
+        2400,
+        2400
+      ],
+      "sha256": "84f43a2495e9050c7505a8b6a04cc07f1c7939e7231134bb28c18f80081aa7ee",
+      "sha256_original": "a74b39cb81b79f53314501df0b521cbbc11138bbf5e488509f4e382c1c77cabe",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 252,
+      "sku": "INV-1636",
+      "dimensiones": [
+        1080,
+        1080
+      ],
+      "sha256": "0ecd937d5008b4ffee0822eb7a6a77c4bf62720c2f86c963b4ffd67e5b61dc6f",
+      "sha256_original": "c79d37b07a9c542131fa32f79aafe86fbb8fb5f6b3310298679732d8556d6dfe",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 254,
+      "sku": "INV-1052",
+      "dimensiones": [
+        2890,
+        2890
+      ],
+      "sha256": "792ca8f74e65a3e8d324f4f61be529e14bcaa9c9c543bb3e706657a2fba71429",
+      "sha256_original": "2c1f79c56f835310e166d5f0b4da29d9b8c09a70e1b8ac8366210cfd5824e897",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 255,
+      "sku": "INV-1211",
+      "dimensiones": [
+        3000,
+        3000
+      ],
+      "sha256": "fc74b9f2d9dd3488e796c374ea7785ea5030e68358e64828137f1ee4dd845396",
+      "sha256_original": "d6f6ffef7edccccbdc680cc2702cddc6ee1d0f26a6cb4dd79ba57e259630ba29",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 257,
+      "sku": "INV-1075",
+      "dimensiones": [
+        1024,
+        1024
+      ],
+      "sha256": "ca95f49cd9c2cbe9eedf51f34e04efed2ea207c12c517277737b84e70b268ffc",
+      "sha256_original": "18b33efe8a4f93e9af9c3fddd2498a06910727d5bdb9c577161b4b1adf58eef9",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 258,
+      "sku": "INV-1097",
+      "dimensiones": [
+        1200,
+        1200
+      ],
+      "sha256": "4e348642e4c67f4fcdef6c1d5d32a8270ec8b239a142e300f17ae5e6fd62dc2e",
+      "sha256_original": "80c0202508c38b487abf351a84420ab3026a49a424ce075fa2153af88071d848",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 259,
+      "sku": "INV-1098",
+      "dimensiones": [
+        1600,
+        1600
+      ],
+      "sha256": "1d179a7bdac5bb00b60217fc72d0364c63d19181c68bb2e7d4f310088adacc82",
+      "sha256_original": "a75ccb84ea17f3c3efe9eae3bda29b472e1de4bf2b4073e55da78a2126cdb843",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 260,
+      "sku": "INV-1021",
+      "dimensiones": [
+        1600,
+        1600
+      ],
+      "sha256": "bd633274547a2f18c98b5afdd338180949d1b394c23db82183d4b914fbaa0327",
+      "sha256_original": "b70dc58634a0b1402f9b9fa15c60fb7f69d1ea31f14befe229483b033db7f0d2",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    },
+    {
+      "n": 261,
+      "sku": "INV-1025",
+      "dimensiones": [
+        1200,
+        1200
+      ],
+      "sha256": "ca249ae12458ae6a928d5200ffa6e5b72234c205ca52ebb8dcefb1668c5b8292",
+      "sha256_original": "2d256424b0b3c35171a050f44585c63bac2a7cdc27f4737c394a90ddb7680c66",
+      "pixeles_iguales_al_original_sobre_blanco": true
+    }
+  ],
+  "aprobadas_tienda": 0,
+  "inventario_fisico_comprobado": false,
+  "licencia_comercial_confirmada": false
+}
