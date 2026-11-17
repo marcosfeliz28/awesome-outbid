@@ -1,0 +1,101 @@
+{
+  "commit": "0248bc89b271d4dfe851d3e81e84b599b52d829b",
+  "completedAt": "2026-11-17T22:32:49.101Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "inventario-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 1440,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 416,
+        "searchTop": 354,
+        "tabsInside": true
+      },
+      "sha256": "811701cb26dcf7085a6c8fd86ff3531cd874e572c9d9c57625879732c6ec5b71"
+    },
+    {
+      "file": "inventario-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 390,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 513,
+        "searchTop": 452,
+        "tabsInside": true
+      },
+      "sha256": "c0a6129325a4f50efda7de9fd8031d7326843c49778d4612a0f67f31924ecb46"
+    },
+    {
+      "file": "inventario-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 1440,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 416,
+        "searchTop": 354,
+        "tabsInside": true
+      },
+      "sha256": "50b7a3010cc99b144bfcfc486bda74b934bf4357df594cb0886d2ea449be9792"
+    },
+    {
+      "file": "inventario-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "layout": {
+        "documentOverflow": 0,
+        "viewportWidth": 390,
+        "panelInside": true,
+        "tableContainerOverflow": 0,
+        "tableTop": 513,
+        "searchTop": 452,
+        "tabsInside": true
+      },
+      "sha256": "6a6b8b2721f8d69a215dd5a4e5f3ef2f8074ddca560ac5976a03205f5d76e9ca"
+    }
+  ],
+  "checks": {
+    "stockRowsInitially": 248,
+    "motion": {
+      "regular": {
+        "y": -2,
+        "duration": "0.14s, 0.14s"
+      },
+      "reduced": {
+        "y": 0,
+        "duration": "0s"
+      }
+    },
+    "stockAndCountsSwitch": true,
+    "stockRowsMatchingSku": 2,
+    "kardexOpensAndCloses": true,
+    "searchAndReset": true,
+    "warehouseOptions": 3,
+    "warehouseSelect": true
+  },
+  "servicesStopped": true,
+  "inventoryWrites": 0,
+  "pageErrorCount": 0
+}
