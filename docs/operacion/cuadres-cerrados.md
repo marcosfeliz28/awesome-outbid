@@ -22,3 +22,4 @@
 | 16-nov | Voucher GPRO lote 167 = 14,800 (Wendy FS-673 2,600 + cobros con tarjeta de contra entrega FS-682 10,200+300 y FS-687 1,450+250) | Cuadrado. Wendy y Jade cerraron con 14,800 cada una (sobrante falso). |
 | 16-nov | Transferencias FS-675, 677, 688, 689 verificadas; contra entregas FS-676, 678, 684 cobradas por transferencia; FS-682 y FS-687 cobradas con tarjeta | Cerradas con extractos Popular ···3620, Banreservas ···5237 y voucher. |
 | 16-nov | Efectivo Jade −50, Lizbeth −100 | Aprobado por la dueña («Marcos sabe»), bajo 100. |
+| 16-nov | FS-680 genesis 5,220 (BHD, «Genesis Rojas Cruz») | Verificada con extracto BHD. |
