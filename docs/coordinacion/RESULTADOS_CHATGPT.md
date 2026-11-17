@@ -2,6 +2,11 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-17 · ChatGPT PC · fotos del lote 4
+
+- El lote 4 corresponde a ChatGPT PC (filas 181–240). ChatGPT Nube trabajó las filas 1–180 y compartió la definición del lote 4. La entrega en `chatgpt-pc/fotos-lote-4` reúne 38 WebP, su CSV y una sola hoja de contacto. [Traspaso de ChatGPT Nube](https://github.com/marcosfeliz28/awesome-outbid/commit/f99589dafbe4ad9bafd97f279faa89cb59679aee), [entrega del lote 4](../fotos/lote-4/README.md).
+- Hay 23 coincidencias visuales, 9 con observaciones de la revisión de Dot y 6 por confirmar. Los 22 productos sin foto tienen su motivo en el listado. Los derechos de reutilización y la aprobación para la tienda siguen pendientes.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

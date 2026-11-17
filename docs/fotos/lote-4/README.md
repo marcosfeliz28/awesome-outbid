@@ -1,13 +1,11 @@
-# Lote 4: fotos de suplementos
+# Lote 4 de fotos de suplementos
 
-Cobertura asignada a ChatGPT PC: filas 181–240 de `docs/fotos/suplementos.csv`.
-ChatGPT nube entregó el lote 3; no se reutilizan ni se reemplazan sus archivos.
+ChatGPT PC cubre las filas 181–240 de [suplementos.csv](../suplementos.csv). ChatGPT Nube trabajó las filas 1–180 y compartió la definición de este lote. [Traspaso del lote 4](https://github.com/marcosfeliz28/awesome-outbid/commit/f99589dafbe4ad9bafd97f279faa89cb59679aee).
 
-## Conteo verificable
+## Cobertura
 
-- 60 productos asignados.
-- 4 fotos reales entregadas como WebP de 1000 × 1000 px, con fondo limpio.
-- 56 faltantes explícitos en `faltantes.csv`; no se sustituyeron por otra marca, sabor, tamaño o composición.
-- `contacto.png` muestra las 4 fotos entregadas en una única imagen.
+- Hay 38 fotos reales para los 60 productos asignados. Cada WebP mide 1000 × 1000 px. Los originales cotejados en la laptop tenían al menos 800 px por lado. [Hoja de contacto](contacto.png).
+- La revisión visual de Dot identificó 23 coincidencias, 9 con observaciones y 6 pendientes de confirmar por sabor o tamaño. El CSV conserva la fuente, el estado de coincidencia y la nota de derechos de cada foto. [Manifiesto de fotos](fotos.csv).
+- Los otros 22 productos quedaron sin archivo. Entre los motivos figuran una presentación distinta, una etiqueta insuficiente para confirmar y la falta de un original de al menos 800 px. [Lista de faltantes](faltantes.csv).
 
-Cada fila de `fotos.csv` conserva su fuente pública y declara que la licencia para reutilización no fue comprobada. Son candidatas internas: no se publicaron en la tienda y requieren revisión de Claude nube y aprobación de Marcos o Dot.
+Son candidatas para revisión. Quedan por comprobar los derechos de reutilización y obtener la aprobación para publicarlas en la tienda.
