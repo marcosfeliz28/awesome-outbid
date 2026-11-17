@@ -276,3 +276,10 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · evidencia fotográfica, lote 4
+
+- **Reparto sin duplicación:** ChatGPT nube ya publicó el lote 3 (filas 121–180, rama `chatgpt-nube/fotos-lote3-17nov`). Esta PC toma exclusivamente el lote 4 (filas 181–240) en `chatgpt-pc/fotos-lote-4`; otra sesión de PC trabaja el lote 5, por lo que tampoco se toca.
+- **Entrega real:** cuatro WebP de 1000 × 1000 px con fondo limpio: `INV-1640`, `INV-1217`, `INV-1077` e `INV-1034`. Se añadieron `docs/fotos/lote-4/fotos.csv`, `faltantes.csv` y `contacto.png`; la hoja de contacto contiene exactamente las cuatro fotos reales del lote.
+- **Límites verificables:** quedan 56 productos sin foto. No se usó una imagen de otra marca, presentación, sabor, composición o resolución nativa insuficiente para completar el conteo. Cada fuente pública declara licencia/uso no comprobado: son candidatas internas, no se subieron a la tienda y siguen pendientes de revisión Claude/Marcos/Dot.
+- **Sin cambios operativos:** no se modificó `apps/**`, inventario, precios, Render, producción, base ni credenciales; no hubo despliegue.
