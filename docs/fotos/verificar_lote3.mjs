@@ -77,8 +77,35 @@ if (photos.length + missing.length !== 60) {
 const seen = new Set();
 for (const row of [...photos, ...missing]) {
   if (!row.sku) failures.push("fila sin SKU");
+  if (row.sku && !/^INV-[0-9]+$/.test(row.sku)) {
+    failures.push(`${row.sku}: SKU sin formato INV-`);
+  }
   if (seen.has(row.sku)) failures.push(`SKU duplicado: ${row.sku}`);
   seen.add(row.sku);
+}
+
+for (const sku of [
+  "INV-1116",
+  "INV-1117",
+  "INV-1118",
+  "INV-1119",
+  "INV-1120",
+  "INV-1121",
+  "INV-1122",
+  "INV-1124",
+]) {
+  try {
+    const corner = execFileSync(
+      "convert",
+      [path.join(lot, `${sku}.webp`), "-format", "%[pixel:p{0,0}]", "info:"],
+      { encoding: "utf8" },
+    ).trim();
+    if (corner === "srgb(255,255,255)") {
+      failures.push(`${sku}: fondo blanco; la revisión exige gris claro`);
+    }
+  } catch {
+    failures.push(`${sku}: no se pudo comprobar el fondo gris`);
+  }
 }
 
 for (const row of photos) {

@@ -4,6 +4,8 @@
 
 - Maestro cubierto: filas 121–180 de `docs/fotos/suplementos.csv` (60 SKU).
 - Entrega: 44 fotografías WebP reales y 16 faltantes explícitos.
+- Corrección de revisión: los ocho productos Klean del rango `INV-1116`–`INV-1124` se presentan sobre gris claro para que el envase blanco conserve contraste; seis archivos recibieron el ajuste solicitado y los otros dos ya eran grises.
+- Corrección de revisión: `1693` y `1694` se normalizaron a `INV-1693` e `INV-1694` tanto en archivo como en manifiesto.
 - Ninguna imagen se subió a la tienda. Son candidatas internas sujetas a auditoría de Dot/Claude y aprobación de Marcos antes de cualquier uso.
 
 ## Criterio de aceptación
