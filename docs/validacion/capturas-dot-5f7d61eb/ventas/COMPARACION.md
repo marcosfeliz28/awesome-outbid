@@ -14,7 +14,7 @@ Candidato de Dot `dot/ventas-higgsfield-17nov`, commit `5f7d61eba2bfd5ce82d299e4
 
 | Prioridad | Evidencia | Pendiente |
 | --- | --- | --- |
-| Bloqueo de entrega | `verify` falló en `pnpm check` por `'console' is not defined` en el [script de verificación de Ventas, línea 19](https://github.com/marcosfeliz28/awesome-outbid/blob/5f7d61eba2bfd5ce82d299e44b5d47ce04f20c7b/docs/diseno/ventas-integrado/verificar-ventas.mjs#L19). El instalador y las imágenes pasaron. | Dot debe corregir el script y confirmar los tres controles del SHA corregido. [Trabajo fallido](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44178098199/job/134374777583) |
+| Bloqueo de entrega | `verify` falló en `pnpm check` por `'console' is not defined` en el [script de verificación de Ventas, línea 19](https://github.com/marcosfeliz28/awesome-outbid/blob/5f7d61eba2bfd5ce82d299e44b5d47ce04f20c7b/docs/diseno/ventas-integrado/verificar-ventas.mjs#L19). El instalador y las imágenes pasaron. | ESLint pasó en la revisión siguiente. Siguen en curso los tres controles de la nueva revisión. [Trabajo fallido](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44178098199/job/134374777583) |
 | Alta · móvil | Al tocar el primer folio a 390 × 844, el desplazamiento automático fue de 0 px en ambos temas. La vista previa comenzó en y=9830, a 8986 px del borde inferior visible en ese momento, después de 20 tarjetas. | Dot debe hacer visible la vista previa al seleccionar el folio y preservar un regreso claro a la lista. |
 | Media · escritorio | En la primera pantalla a 1440 × 900 hay 308 px de tabla fuera del ancho de su panel y «Ver detalle completo» queda más abajo que el total. | Revisar qué columnas se ven primero y mantener a la vista la acción principal del resumen. |
 | Media · idioma | Con el historial en inglés, la fila seguía mostrando «Completada» y el lema «TU NEGOCIO, CON CLARIDAD» quedó en español. | Completar las etiquetas propias del historial en el cambio de idioma. |
@@ -35,3 +35,7 @@ La entrega de Dot documenta que faltan el gráfico de tendencia y los filtros de
 | Diálogo de detalle 1440 × 900 | — | [PNG](detalle-completo-1440-oscuro.png) |
 
 El [registro de mediciones](comprobacion-integrada.json) contiene las dimensiones y la huella SHA-256 de las siete capturas.
+
+## Actualización del candidato
+
+Dot publicó `334e44da7a5dd385cc8eaec529fdaf9627073dc6` en la misma rama. El único archivo cambiado es el script de verificación. Importa `log` de `node:console` y pasó ESLint localmente. Comparé `apps/` entre ambos commits y los árboles coinciden. Las siete capturas y el problema de la vista previa móvil describen el mismo código de aplicación. Los controles completos de la nueva revisión están en curso. [Nueva ejecución de GitHub](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44183427539)
