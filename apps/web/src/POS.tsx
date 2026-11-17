@@ -1,3 +1,6 @@
+import "./fusion-caja-higgsfield.css";
+import { CajaVisualPreferences } from "./CajaVisualPreferences";
+import { t, useLanguage } from "./inicioLanguage";
 import { refreshAfterSale } from "./postSaleRefresh";
 import {
   memo,
@@ -193,6 +196,7 @@ const isEditable = (el: Element | null) =>
   el instanceof HTMLSelectElement ||
   (el instanceof HTMLElement && el.isContentEditable);
 export function POS({ go }: { go: (page: string) => void }) {
+  const language = useLanguage();
   const {
     cart,
     add,
@@ -960,21 +964,22 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
   }, [waitingCatalog]);
   return (
-    <div className="pos-layout">
+    <div className="pos-layout fusion-caja-integrada" lang={language}>
+      <CajaVisualPreferences language={language} />
       <section className="pos-catalog">
         <a className="pos-skip-to-cart" href="#pos-cart">
-          Ir al carrito y cobrar
+          {t("Ir al carrito y cobrar")}
         </a>
         <div className="pos-topbar">
           <h1>
-            Punto de venta <span className="title-dot" />
+            {t("Punto de venta")} <span className="title-dot" />
           </h1>
           <div className="pos-search">
             <Search size={20} aria-hidden="true" />
             <input
               ref={search}
-              aria-label="Buscar productos"
-              placeholder="Código o nombre del producto"
+              aria-label={t("Buscar productos")}
+              placeholder={t("Código o nombre del producto")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
@@ -1006,11 +1011,11 @@ export function POS({ go }: { go: (page: string) => void }) {
               onClick={() => setQuestions(true)}
             >
               <MessageCircleQuestion size={16} />
-              Preguntas
+              {t("Preguntas")}
             </Button>
             <Button variant="secondary" onClick={() => setHeld(true)}>
               <Pause size={16} />
-              En espera
+              {t("En espera")}
             </Button>
             <Button
               variant="secondary"
@@ -1043,7 +1048,7 @@ export function POS({ go }: { go: (page: string) => void }) {
             className={category === "all" ? "active" : ""}
             aria-pressed={category === "all"}
           >
-            Todos los productos
+            {t("Todos los productos")}
           </button>
           {categories.data
             // Sólo categorías con productos a la venta: las vacías no estorban.
@@ -1100,14 +1105,14 @@ export function POS({ go }: { go: (page: string) => void }) {
       >
         <div className="cart-heading">
           <div>
-            <h2>Venta actual</h2>
+            <h2>{t("Venta actual")}</h2>
             <span>
               <span className="live-dot" />
               {!session
-                ? "Caja sin abrir"
+                ? t("Caja sin abrir")
                 : elsewhere
-                  ? "Caja abierta en otro equipo"
-                  : "Caja abierta"}
+                  ? t("Caja abierta en otro equipo")
+                  : t("Caja abierta")}
             </span>
           </div>
           <Badge tone="violet">{units} artículos</Badge>
@@ -1125,9 +1130,9 @@ export function POS({ go }: { go: (page: string) => void }) {
           <div>
             <strong>
               {customers.data?.find((c: any) => c.id === customerId)?.name ||
-                "Selecciona el cliente"}
+                t("Selecciona el cliente")}
             </strong>
-            <small>Elegir cliente · F4</small>
+            <small>{t("Elegir cliente")} · F4</small>
           </div>
           <ChevronRight size={16} />
         </button>
@@ -1264,18 +1269,18 @@ export function POS({ go }: { go: (page: string) => void }) {
           ) : (
             <div className="cart-empty-state">
               <ShoppingCart size={34} aria-hidden="true" />
-              <strong>Carrito vacío</strong>
-              <span>Escanea o busca un artículo</span>
+              <strong>{t("Carrito vacío")}</strong>
+              <span>{t("Escanea o busca un artículo")}</span>
             </div>
           )}
         </div>
         <div className="cart-summary">
           <div>
-            <span>Subtotal</span>
+            <span>{t("Subtotal")}</span>
             <strong>{formatMoney(subtotal)}</strong>
           </div>
           <div>
-            <label htmlFor="global-discount">Descuento global</label>
+            <label htmlFor="global-discount">{t("Descuento global")}</label>
             <span className="discount-input">
               <input
                 id="global-discount"
@@ -1298,12 +1303,12 @@ export function POS({ go }: { go: (page: string) => void }) {
           </div>
           <div>
             <span>
-              ITBIS {config.data?.taxIncluded !== false ? "incluido" : ""}
+              ITBIS {config.data?.taxIncluded !== false ? t("incluido") : ""}
             </span>
             <strong>{formatMoney(tax)}</strong>
           </div>
           <div className="cart-total" aria-live="polite">
-            <span>Total a cobrar</span>
+            <span>{t("Total a cobrar")}</span>
             <strong>{formatMoney(total)}</strong>
           </div>
           {!session && (
@@ -1320,25 +1325,25 @@ export function POS({ go }: { go: (page: string) => void }) {
             aria-label={`Cobrar ${formatMoney(total)}`}
           >
             <CreditCard size={20} />
-            <span>Cobrar</span>
+            <span>{t("Cobrar")}</span>
             <kbd>F12</kbd>
           </Button>
           <div className="cart-bottom-actions">
             <button disabled={!cart.length} onClick={() => saveHeld()}>
               <Pause size={14} />
-              En espera
+              {t("En espera")}
             </button>
             <button disabled={!cart.length} onClick={() => saveHeld("quote")}>
               <FileText size={14} />
-              Cotizar
+              {t("Cotizar")}
             </button>
             <button disabled={!cart.length} onClick={clearWithUndo}>
               <Trash2 size={14} />
-              Limpiar
+              {t("Limpiar")}
             </button>
           </div>
           <small className="cart-security">
-            Cada venta se registra con tu usuario.
+            {t("Cada venta se registra con tu usuario.")}
           </small>
         </div>
       </aside>
@@ -1364,11 +1369,11 @@ export function POS({ go }: { go: (page: string) => void }) {
           <CreditCard size={20} />
           {cart.length ? (
             <>
-              <span>Cobrar · {formatMoney(total)}</span>
+              <span>{t("Cobrar")} · {formatMoney(total)}</span>
               <kbd>F12</kbd>
             </>
           ) : (
-            <span>Carrito vacío · Busca un artículo</span>
+            <span>{t("Carrito vacío · Busca un artículo")}</span>
           )}
         </Button>
       </div>

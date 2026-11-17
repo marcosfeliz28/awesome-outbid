@@ -1,0 +1,121 @@
+{
+  "base_sha256": "c4c13cd526d6b9287e174864dfcc086f57b8b3d9eea6d8116303b96ef135ebed",
+  "changes": [
+    {
+      "before": "import { refreshAfterSale }",
+      "after": "import \"./fusion-caja-higgsfield.css\";\nimport { CajaVisualPreferences } from \"./CajaVisualPreferences\";\nimport { t, useLanguage } from \"./inicioLanguage\";\nimport { refreshAfterSale }"
+    },
+    {
+      "before": "export function POS({ go }: { go: (page: string) => void }) {",
+      "after": "export function POS({ go }: { go: (page: string) => void }) {\n  const language = useLanguage();"
+    },
+    {
+      "before": "<div className=\"pos-layout\">",
+      "after": "<div className=\"pos-layout fusion-caja-integrada\" lang={language}>\n      <CajaVisualPreferences language={language} />"
+    },
+    {
+      "before": "          Ir al carrito y cobrar",
+      "after": "          {t(\"Ir al carrito y cobrar\")}"
+    },
+    {
+      "before": "            Punto de venta <span",
+      "after": "            {t(\"Punto de venta\")} <span"
+    },
+    {
+      "before": "placeholder=\"Código o nombre del producto\"",
+      "after": "placeholder={t(\"Código o nombre del producto\")}"
+    },
+    {
+      "before": "aria-label=\"Buscar productos\"",
+      "after": "aria-label={t(\"Buscar productos\")}"
+    },
+    {
+      "before": "              Preguntas\n",
+      "after": "              {t(\"Preguntas\")}\n"
+    },
+    {
+      "before": "              En espera\n",
+      "after": "              {t(\"En espera\")}\n"
+    },
+    {
+      "before": "            Todos los productos\n",
+      "after": "            {t(\"Todos los productos\")}\n"
+    },
+    {
+      "before": "<h2>Venta actual</h2>",
+      "after": "<h2>{t(\"Venta actual\")}</h2>"
+    },
+    {
+      "before": "                ? \"Caja sin abrir\"",
+      "after": "                ? t(\"Caja sin abrir\")"
+    },
+    {
+      "before": "                  ? \"Caja abierta en otro equipo\"",
+      "after": "                  ? t(\"Caja abierta en otro equipo\")"
+    },
+    {
+      "before": "                  : \"Caja abierta\"",
+      "after": "                  : t(\"Caja abierta\")"
+    },
+    {
+      "before": "                \"Selecciona el cliente\"}",
+      "after": "                t(\"Selecciona el cliente\")}"
+    },
+    {
+      "before": "<small>Elegir cliente · F4</small>",
+      "after": "<small>{t(\"Elegir cliente\")} · F4</small>"
+    },
+    {
+      "before": "<strong>Carrito vacío</strong>",
+      "after": "<strong>{t(\"Carrito vacío\")}</strong>"
+    },
+    {
+      "before": "<span>Escanea o busca un artículo</span>",
+      "after": "<span>{t(\"Escanea o busca un artículo\")}</span>"
+    },
+    {
+      "before": "<span>Subtotal</span>",
+      "after": "<span>{t(\"Subtotal\")}</span>"
+    },
+    {
+      "before": "<label htmlFor=\"global-discount\">Descuento global</label>",
+      "after": "<label htmlFor=\"global-discount\">{t(\"Descuento global\")}</label>"
+    },
+    {
+      "before": "ITBIS {config.data?.taxIncluded !== false ? \"incluido\" : \"\"}",
+      "after": "ITBIS {config.data?.taxIncluded !== false ? t(\"incluido\") : \"\"}"
+    },
+    {
+      "before": "<span>Total a cobrar</span>",
+      "after": "<span>{t(\"Total a cobrar\")}</span>"
+    },
+    {
+      "before": "<span>Cobrar</span>",
+      "after": "<span>{t(\"Cobrar\")}</span>"
+    },
+    {
+      "before": "              En espera\n",
+      "after": "              {t(\"En espera\")}\n"
+    },
+    {
+      "before": "              Cotizar\n",
+      "after": "              {t(\"Cotizar\")}\n"
+    },
+    {
+      "before": "              Limpiar\n",
+      "after": "              {t(\"Limpiar\")}\n"
+    },
+    {
+      "before": "            Cada venta se registra con tu usuario.",
+      "after": "            {t(\"Cada venta se registra con tu usuario.\")}"
+    },
+    {
+      "before": "<span>Cobrar · {formatMoney(total)}</span>",
+      "after": "<span>{t(\"Cobrar\")} · {formatMoney(total)}</span>"
+    },
+    {
+      "before": "<span>Carrito vacío · Busca un artículo</span>",
+      "after": "<span>{t(\"Carrito vacío · Busca un artículo\")}</span>"
+    }
+  ]
+}

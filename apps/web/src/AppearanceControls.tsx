@@ -15,8 +15,10 @@ function initialAccent(): Accent {
 /** Visual preference only; never reads or changes business data. */
 export function AppearanceControls({
   language = "es",
+  scope = "overview",
 }: {
   language?: "es" | "en";
+  scope?: "overview" | "checkout";
 }) {
   const [accent, setAccent] = useState<Accent>(initialAccent);
   const theme = useStore((s) => s.theme);
@@ -53,12 +55,28 @@ export function AppearanceControls({
     <div
       className="fusion-appearance"
       role="group"
-      aria-label={en ? "Overview accent color" : "Color de Inicio"}
+      aria-label={
+        scope === "checkout"
+          ? en
+            ? "Checkout accent color"
+            : "Color de Caja"
+          : en
+            ? "Overview accent color"
+            : "Color de Inicio"
+      }
     >
       <div
         className="fi-theme-options"
         role="group"
-        aria-label={en ? "Overview theme" : "Tema de Inicio"}
+        aria-label={
+          scope === "checkout"
+            ? en
+              ? "Checkout theme"
+              : "Tema de Caja"
+            : en
+              ? "Overview theme"
+              : "Tema de Inicio"
+        }
       >
         {(["light", "dark", "black"] as const).map((choice) => (
           <button

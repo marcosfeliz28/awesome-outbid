@@ -1,0 +1,47 @@
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { describe, it, expect } from "vitest";
+
+describe("Caja Fusión: pintura reversible", () => {
+  it("preserva byte por byte POS, incluyendo handlers, cálculos, stock y carrito", () => {
+    const record = JSON.parse(
+      readFileSync(
+        "docs/diseno/caja-higgsfield/PRESENTACION_REVERSIBLE.json",
+        "utf8",
+      ),
+    );
+    let source = readFileSync("apps/web/src/POS.tsx", "utf8");
+    for (const edit of [...record.changes].reverse()) {
+      expect(source).toContain(edit.after);
+      source = source.replace(edit.after, edit.before);
+    }
+    expect(createHash("sha256").update(source).digest("hex")).toBe(
+      record.base_sha256,
+    );
+  });
+  it("preferencias no escriben ni recargan carrito o cobran", () => {
+    const source = readFileSync(
+      "apps/web/src/CajaVisualPreferences.tsx",
+      "utf8",
+    );
+    expect(source).not.toMatch(
+      /\b(fetch|post|put|delete|clearCart|setCart|charge|reload)\s*\(/,
+    );
+    expect(source).toContain('scope="checkout"');
+    expect(source).toContain(
+      "payment dialogs and server messages retain their original language",
+    );
+  });
+  it("pintura está aislada y tiene movimiento reducido, foco y móvil", () => {
+    const source = readFileSync(
+      "apps/web/src/fusion-caja-higgsfield.css",
+      "utf8",
+    );
+    expect(source).toContain(".fusion-caja-integrada");
+    expect(source).toContain("prefers-reduced-motion: reduce");
+    expect(source).toContain("forced-colors: active");
+    expect(source).toContain(":focus-visible");
+    expect(source).toContain("env(safe-area-inset-bottom)");
+    expect(source).not.toContain("background-image: url");
+  });
+});
