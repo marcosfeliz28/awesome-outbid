@@ -7,6 +7,7 @@ Formato: `| fecha | quién | qué cambió | archivos |`
 <!-- prettier-ignore-start -->
 | fecha | quién | qué cambió | archivos |
 |---|---|---|---|
+| 2026-11-17 | Norexos 1 | Fotos de productos: 145 suplementos con foto real en `apps/web/public/products/fotos/<SKU>.webp` (800 px); cada producto apunta a su foto por `imageUrl` (orden de Marcos). | `apps/web/public/products/fotos/`, `docs/legal/ORIGEN_DE_ACTIVOS.md` |
 | 2026-11-16 | Norexos 1 | Incentivo GV: se revierte la acreditación de las cuentas `claude` a Clary; cada pago cuenta para quien lo registró y el incentivo empieza en octubre de 2026 (orden de la dueña). Clary: oct 2,563.13, nov 3,180.76. Pendiente de despliegue. | `apps/api/src/gv.ts`, `docs/sistema/GV.md` |
 | 2026-11-16 | Norexos 1 | Incentivo GV: lo cobrado con las cuentas `claude` y `claude-acceso` se acredita a Clary (orden de la dueña). Pendiente de despliegue. | `apps/api/src/gv.ts`, `docs/sistema/GV.md` |
 | 2026-11-16 | Norexos 1 | GV «Mi incentivo»: pestaña siempre visible y «Estado de cierre» del mes (último día del mes hasta el día 2) con botón Imprimir. Pendiente de despliegue. | `apps/web/src/Gv.tsx`, `docs/sistema/GV.md` |
