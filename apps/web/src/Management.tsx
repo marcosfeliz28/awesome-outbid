@@ -1,3 +1,4 @@
+import "./fusion-inventory.css";
 import {
   CashElsewhere,
   Equipment,
@@ -857,7 +858,7 @@ export function Inventory() {
       .includes(search.toLowerCase()),
   );
   return (
-    <>
+    <section className="fusion-inventory" aria-label="Inventario">
       <Heading
         title="Cada unidad, bajo control"
         caption="El inventario correcto hace espacio para mejores decisiones."
@@ -1177,7 +1178,7 @@ export function Inventory() {
       >
         {kardex && <Kardex variantId={kardex.id} />}
       </Modal>
-    </>
+    </section>
   );
 }
 

@@ -1,0 +1,14 @@
+{
+  "base": "93baacf5",
+  "inventory_sha256": "7d50fc0ec6afc5d81699516ba864d92234f784745a77a1063797bb307d1fc5dd",
+  "changes": [
+    {
+      "before": "    <>\n",
+      "after": "    <section className=\"fusion-inventory\" aria-label=\"Inventario\">\n"
+    },
+    {
+      "before": "    </>\n  );\n}\n\n",
+      "after": "    </section>\n  );\n}\n\n"
+    }
+  ]
+}
