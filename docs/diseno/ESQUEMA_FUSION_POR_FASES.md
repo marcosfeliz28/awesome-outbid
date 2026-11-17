@@ -1,5 +1,7 @@
 # Esquema del rediseño Fusión premium, fase por fase (orden de Marcos, 17-nov-2026)
 
+> **Cambio (17-nov, noche, orden de Marcos):** ChatGPT/Dot implementa el diseño en sus ramas, no Claude. Claude solo revisa riesgos (caja, cobro, datos, seguridad), corre las pruebas y publica con la aceptación de Marcos. La rama `mejora/fusion-inicio-17nov` de Claude queda solo como referencia y **no se publica**.
+
 Referencia única: **lámina 03 Fusión** generada por Dot. No Aurora, no violeta, no maquetas viejas.
 
 ## Flujo (afinado por Marcos, 17-nov, vía Dot): una imagen, un área, a la vez
