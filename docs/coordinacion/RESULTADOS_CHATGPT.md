@@ -276,3 +276,12 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+
+## 2026-11-17 · ChatGPT PC · ajuste de importes de Inicio
+
+- Probé `dot/inicio-kpi-responsive-17nov` (`46ae88300414f18285fa81818a547b6cd546bc53`) con la API local y datos ficticios.
+  Los 16 valores de los indicadores caben en una línea, con cuatro capturas a 1440 y 390 px.
+  Reportes y el movimiento del acceso rápido pasaron. [Capturas e informe](../validacion/capturas-dot-46ae8830/inicio/COMPARACION.md).
+- A 390 px, el acceso rápido comienza a 2309 px, 193 px más abajo que en la entrega anterior.
+  Queda pendiente revisar la prioridad de ese acceso y cotejar la pantalla con la lámina aprobada.

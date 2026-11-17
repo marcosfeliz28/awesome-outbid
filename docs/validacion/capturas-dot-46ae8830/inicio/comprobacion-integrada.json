@@ -1,0 +1,233 @@
+{
+  "commit": "46ae88300414f18285fa81818a547b6cd546bc53",
+  "completedAt": "2026-11-17T20:15:08.203Z",
+  "servicesStopped": true,
+  "captures": [
+    {
+      "file": "inicio-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "dimensions": [
+        1440,
+        4239
+      ],
+      "sha256": "f86bb4d83154977c507a2c43659158aa005777c4b04dd1e7153b5f7733109cbd",
+      "values": [
+        {
+          "label": "Ventas del período",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        }
+      ]
+    },
+    {
+      "file": "inicio-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "dimensions": [
+        1440,
+        4239
+      ],
+      "sha256": "ca00a0e75e5870183545dbcfa85d2a0acd87137682b397eec833f9440ba01530",
+      "values": [
+        {
+          "label": "Ventas del período",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        }
+      ]
+    },
+    {
+      "file": "inicio-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "dimensions": [
+        390,
+        8695
+      ],
+      "sha256": "8b707c4a6665110f3d6df6629f4ba9774ef0bff334f5956573004d4b19261116",
+      "values": [
+        {
+          "label": "Ventas del período",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        }
+      ]
+    },
+    {
+      "file": "inicio-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "dimensions": [
+        390,
+        8695
+      ],
+      "sha256": "167d38f3a9dbca9f7f04359b299924c4730029dd809940509f61dcf723c61f57",
+      "values": [
+        {
+          "label": "Ventas del período",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        }
+      ]
+    }
+  ],
+  "realApi": {
+    "1440": {
+      "visualStructure": "pasa",
+      "quickReports": "pasa",
+      "overviewSurfaces": "pasa",
+      "reportsFromBanner": "pasa",
+      "brandLabels": "pasa",
+      "accent": "pasa",
+      "language": "pasa",
+      "layout": {
+        "heading": "Resumen / Tu negocio, de un vistazo",
+        "viewportWidth": 1440,
+        "overflowPx": 0,
+        "kpis": 4,
+        "kpisTop": 541,
+        "quickAccessTop": 772,
+        "welcomeTop": 2184
+      },
+      "dashboardResponses": {
+        "/api/dashboard/summary": 200,
+        "/api/dashboard/year": 200
+      },
+      "pageErrors": 0
+    },
+    "390": {
+      "visualStructure": "pasa",
+      "quickReports": "pasa",
+      "overviewSurfaces": "pasa",
+      "reportsFromBanner": "pasa",
+      "brandLabels": "pasa",
+      "accent": "pasa",
+      "language": "pasa",
+      "layout": {
+        "heading": "Resumen / Tu negocio, de un vistazo",
+        "viewportWidth": 390,
+        "overflowPx": 0,
+        "kpis": 4,
+        "kpisTop": 1046,
+        "quickAccessTop": 2309,
+        "welcomeTop": 5277
+      },
+      "dashboardResponses": {
+        "/api/dashboard/summary": 200,
+        "/api/dashboard/year": 200
+      },
+      "pageErrors": 0
+    }
+  },
+  "motion": {
+    "rest": {
+      "translateY": 0,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.267) 0px -2px 1px 0px inset, rgba(0, 0, 0, 0.6) 0px 5px 9px 0px"
+    },
+    "hover": {
+      "translateY": -3,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgb(41, 239, 163) 0px 0px 0px 1px, rgba(0, 0, 0, 0.6) 0px 8px 16px 0px, rgba(0, 229, 154, 0.2) 0px 0px 18px 0px"
+    },
+    "press": {
+      "translateY": 1,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(0, 0, 0, 0.333) 0px 2px 5px 0px inset"
+    },
+    "reduced": {
+      "translateY": 0,
+      "transitionDuration": "0s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgb(41, 239, 163) 0px 0px 0px 1px, rgba(0, 0, 0, 0.6) 0px 8px 16px 0px, rgba(0, 229, 154, 0.2) 0px 0px 18px 0px"
+    }
+  }
+}
