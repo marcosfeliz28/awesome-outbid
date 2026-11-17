@@ -1,7 +1,7 @@
 import { t, useLanguage, money as formatMoney, locale, dateLabel, invoiceLabel } from "./inicioLanguage";
 import "./fusion-inicio-integrado.css";
 import "./fusion-higgsfield.css";
-import { QuickAccessOverview } from "./QuickAccessOverview";
+import { QuickAccessOverview, useCompactOverview } from "./QuickAccessOverview";
 import { chartSalesLabel } from "./chartSalesLabel";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -132,6 +132,7 @@ function DayCard() {
 }
 
 export function Dashboard({ go }: { go: (page: string) => void }) {
+  const compactOverview = useCompactOverview();
   const language = useLanguage();
   const user = useStore((s) => s.user)!;
   const [period, setPeriod] = useState("month");
@@ -207,6 +208,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           <h1>
             {t("Resumen")} <span className="fi-heading-divider" aria-hidden="true">/</span> <span className="fi-heading-subtitle">{t("Tu negocio, de un vistazo")}</span>
           </h1>
+          <h2 className="fi-welcome-heading">{t("Hola,")} {user.name.split(" ")[0]}</h2>
           <p>{t("Un vistazo a tu tienda. Un paso más hacia tus metas.")}</p>
         </div>
         <div className="heading-actions">
@@ -333,6 +335,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         </Modal>
       )}
       <QueryState query={query}>
+        {compactOverview && <QuickAccessOverview permissions={user.permissions} go={go} />}
         {kpiStripVisible(user.permissions) && <KpiStrip />}
         <div className="kpi-grid tablero-kpis">
           {metric.map((m) => (
@@ -464,7 +467,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               </button>
             </div>
           </section>
-          <QuickAccessOverview permissions={user.permissions} go={go} />
+          {!compactOverview && <QuickAccessOverview permissions={user.permissions} go={go} />}
           <section className="panel alerts-panel">
             <div className="panel-heading">
               <div>

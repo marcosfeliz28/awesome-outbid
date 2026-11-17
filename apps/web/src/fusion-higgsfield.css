@@ -458,3 +458,22 @@
     inset 0 1px 1px var(--fh-glint),
     0 0 12px var(--fh-glow);
 }
+
+/* Keep the existing visible greeting contract alongside the overview title. */
+.fusion-inicio-integrado .fi-welcome-heading {
+  margin: 10px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--fh-muted);
+}
+@media (max-width: 560px) {
+  .fusion-inicio-integrado > .fi-quick-access {
+    padding: 16px;
+  }
+  .fusion-inicio-integrado > .fi-quick-access .panel-heading {
+    margin-bottom: 12px;
+  }
+  .fusion-inicio-integrado > .fi-quick-access .fi-shortcuts {
+    gap: 10px;
+  }
+}

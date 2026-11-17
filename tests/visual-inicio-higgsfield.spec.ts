@@ -111,6 +111,19 @@ for (const width of [1440, 390])
       }) => {
         await page.setViewportSize({ width, height: 1000 });
         await setup(page, theme, accent);
+        await expect(
+          page.getByRole("heading", { name: /Hola,/ }),
+        ).toBeVisible();
+        const shortcuts = page.locator(".fi-quick-access");
+        await expect(shortcuts).toHaveCount(1);
+        if (width === 390) {
+          const quick = await shortcuts.boundingBox();
+          const firstKpi = await page.locator(".kpi-grid").boundingBox();
+          expect(quick).not.toBeNull();
+          expect(firstKpi).not.toBeNull();
+          expect(quick!.y).toBeLessThan(1000);
+          expect(quick!.y + quick!.height).toBeLessThanOrEqual(firstKpi!.y);
+        }
         const revenue = page.locator(".kpi-grid .kpi-card > strong").first();
         await expect(revenue).toContainText("124,850.00");
         const valueGeometry = await revenue.evaluate((el) => {
@@ -229,4 +242,25 @@ test("Negro es distinto de Oscuro y los controles de tema se traducen", async ({
   await expect(
     theme.getByRole("button", { name: "Black", exact: true }),
   ).toHaveAttribute("aria-pressed", "false");
+});
+
+test("responsive resize preserves one shortcut group and visible greeting", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await setup(page, "dark", "green");
+  for (const width of [390, 1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expect(page.locator(".fi-quick-access")).toHaveCount(1);
+    await expect(page.getByRole("heading", { name: /Hola,/ })).toBeVisible();
+    if (width === 390) {
+      await expect(
+        page.locator(".fusion-inicio-integrado > .fi-quick-access"),
+      ).toHaveCount(1);
+    } else {
+      await expect(
+        page.locator(".dashboard-main-grid > .fi-quick-access"),
+      ).toHaveCount(1);
+    }
+  }
 });

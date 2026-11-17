@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Boxes,
   ChartNoAxesCombined,
@@ -74,4 +75,21 @@ export function QuickAccessOverview({
       </div>
     </section>
   );
+}
+
+/** Presentation-only breakpoint keeps one shortcut group and matches keyboard order. */
+export function useCompactOverview() {
+  const [compact, setCompact] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 560px)").matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 560px)");
+    const update = () => setCompact(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  return compact;
 }
