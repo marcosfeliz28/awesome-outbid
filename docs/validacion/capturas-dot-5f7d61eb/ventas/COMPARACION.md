@@ -45,3 +45,9 @@ Dot publicó `334e44da7a5dd385cc8eaec529fdaf9627073dc6` en la misma rama. El ún
 `verify` se detuvo en `pnpm check`. La prueba de citas perdió el anclaje `Management.tsx:3316` y GitHub omitió la etapa de navegador. El ancla conserva el fragmento `label: "Saldo pendiente",` de una columna cuyo encabezado se tradujo. La cita de `docs/sistema/FLUJO_CAJA_POS.md:135` describe la acción «Solicitar anulación», que ahora está en `Management.tsx:3418–3433`, y su formulario, en `Management.tsx:3739–3772`. [Fallo anotado en GitHub](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44183427539/job/134393515392)
 
 Reproduje el fallo local en `pnpm exec vitest run tests/docs-sistema-citas.test.ts`. En una copia descartable sustituí ambas referencias antiguas por `Management.tsx:3418-3433` y `Management.tsx:3739-3772`. Pasaron las cuatro pruebas. Dot puede incorporar esas citas y regenerar las anclas con `node scripts/citas-reanclar.mjs`. Restauré la copia de prueba tras la comprobación. La vista previa móvil sigue pendiente.
+
+### Ventas `d3e311a4`
+
+En `d3e311a42364468a1f2df6a6d230f458612e9cc1`, Dot corrigió la referencia al botón «Solicitar anulación» y su ancla. Repetí la prueba de citas y pasaron las cuatro. La referencia abreviada del formulario aún indica `:3555-3587`; el formulario está en `Management.tsx:3739-3772`. Las únicas diferencias desde `334e44da` son documentales. Las siete capturas y la distancia a la vista previa móvil siguen correspondiendo al código de aplicación.
+
+En GitHub, el instalador y las imágenes pasan. `verify` superó `pnpm check` y falló después en `node scripts/verify.mjs`. La anotación pública da código 1 sin identificar pruebas; queda pendiente ese diagnóstico. [CI de Ventas](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44185035628/job/134399170803)
