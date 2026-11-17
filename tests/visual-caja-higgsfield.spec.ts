@@ -289,3 +289,41 @@ test("movimiento reducido no anima tarjeta al pasar mouse; teclado mantiene acce
   ).toBe(true);
   expect(motion.animation).toBe("none");
 });
+test("preferencias e inglés mantienen la venta sin recargar ni cambiar total", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 1000 });
+  const blocked = await setup(page, "dark");
+  await addProduct(page);
+  await total(page, 118);
+  await page
+    .getByRole("combobox", { name: "Idioma de la interfaz", exact: true })
+    .selectOption("en");
+  await expect(
+    page.getByRole("heading", { name: "Point of sale", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".cart-total")).toContainText("Total due");
+  await page.locator(".fusion-accent-blue").click();
+  await expect(page.locator(".fusion-accent-blue")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page
+    .getByRole("group", { name: "Checkout theme", exact: true })
+    .getByRole("button", { name: "Black", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-overview-surface",
+    "black",
+  );
+  await expect(page.locator(".cart-item")).toHaveCount(1);
+  await total(page, 118);
+  await page
+    .getByRole("combobox", { name: "Interface language", exact: true })
+    .selectOption("es");
+  await expect(
+    page.getByRole("heading", { name: "Punto de venta", exact: true }),
+  ).toBeVisible();
+  await total(page, 118);
+  expect(blocked).toEqual([]);
+});

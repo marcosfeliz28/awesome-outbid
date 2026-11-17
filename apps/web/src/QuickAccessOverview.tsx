@@ -63,6 +63,7 @@ export function QuickAccessOverview({
             type="button"
             key={page}
             className="fi-shortcut"
+            aria-label={`${t("Abrir")} ${t(label)}`}
             onClick={() => go(page)}
           >
             <span className="fi-shortcut-icon" aria-hidden="true">

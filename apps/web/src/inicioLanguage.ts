@@ -57,6 +57,7 @@ export const english: Record<string, string> = {
   "Cada venta se registra con tu usuario.": "Each sale is recorded under your account.",
   "Carrito vacío · Busca un artículo": "Empty cart \u00b7 Search for an item",
 
+  Abrir: "Open",
   "No se pudo cargar.": "Unable to load.",
   "No se pudo cargar": "Unable to load",
   Reintentar: "Retry",

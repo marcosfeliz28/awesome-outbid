@@ -20,3 +20,7 @@ Harness nuevo con API únicamente DEMO, escrituras desconocidas405 y recursos ex
 Sin producción, despliegue, datos de clientes, dinero ni cambios de seguridad.
 
 Check global cloud: 16 suites PostgreSQL siguen bloqueadas por falta de libicuuc.so.60. Se reparó una cita documental del título traducido (el fragmento de evidencia pasó de texto literal a t(...)); pruebas de citas pasan sin relajar sus assertions. Los demás cambios de docs/sistema son reanclajes automáticos a las nuevas líneas del mismo código.
+
+## Ajuste previo a QA
+Se aumenta la especificidad de Caja para que la hoja antigua no vuelva a imponer un borde violeta o estilos planos sobre la referencia nueva. Se añade octava prueba de cambio ES/EN, azul y Negro conservando carrito y total. Se incorpora además el arreglo accesible de Inicio (atajos Abrir..., navegación sin duplicado), sin modificar su aspecto.
+PC se desconectó antes de ejecutar los casos Caja. El intento cloud estándar y ampliado sigue bloqueado al iniciar Chromium (socketEPERM). No hay aprobación visual, ocho pruebas aprobadas ni capturas certificadas de Caja. Se prepara copia DEMO privada con la misma fuente y fixtures para revisar sin tocar tienda.
