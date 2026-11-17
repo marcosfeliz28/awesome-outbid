@@ -4,9 +4,9 @@ ChatGPT PC cubre las filas 181–240 de [suplementos.csv](../suplementos.csv). C
 
 ## Cobertura
 
-- Hay 42 fotos reales para los 60 productos asignados. Cada WebP mide 1000 × 1000 px. Los originales cotejados en la laptop tenían al menos 800 px por lado. [Hoja de contacto](contacto.png).
-- La revisión visual de Dot de las primeras 38 fotos identificó 23 coincidencias, 9 con observaciones y 6 pendientes de confirmar por sabor o tamaño. ChatGPT PC cotejó cuatro coincidencias adicionales. El CSV conserva la fuente, el estado de coincidencia y la nota de derechos de cada foto. [Manifiesto de fotos](fotos.csv).
-- Los otros 18 productos quedaron sin archivo. Entre los motivos figuran una presentación distinta, una etiqueta insuficiente para confirmar y la falta de un original de al menos 800 px. [Lista de faltantes](faltantes.csv).
+- Hay 43 fotos reales para los 60 productos asignados. Cada WebP mide 1000 × 1000 px. Los originales cotejados en la laptop tenían al menos 800 px por lado. [Hoja de contacto](contacto.png).
+- La revisión visual de Dot de las primeras 38 fotos identificó 23 coincidencias, 9 con observaciones y 6 pendientes de confirmar por sabor o tamaño. ChatGPT PC cotejó cinco coincidencias adicionales. El CSV conserva la fuente, el estado de coincidencia y la nota de derechos de cada foto. [Manifiesto de fotos](fotos.csv).
+- Los otros 17 productos quedaron sin archivo. Entre los motivos figuran una presentación distinta, una etiqueta insuficiente para confirmar y la falta de un original de al menos 800 px. [Lista de faltantes](faltantes.csv).
 
 ## Dos fotos nuevas de Dymatize
 
@@ -17,5 +17,10 @@ ChatGPT PC cubre las filas 181–240 de [suplementos.csv](../suplementos.csv). C
 
 - `INV-1112` muestra Plant Amino Power Berry Fusion de 210 g y 30 servicios. El PNG de BioSteel mide 1100 × 1100 px y su SHA-256 es `8cf17db73f0d4244b272fe17e6a877097447de558f64495ba209e98e8dd58db6`. [Foto de BioSteel](https://biosteel.com/cdn/shop/files/BIOSTEEL-PLANTAMINOPOWER-BerryFusion-CA_1100x_ec9d0760-2f0c-40f7-ba6b-49c15d0b422d.png?v=1721431949).
 - `INV-1079` muestra Pro Series Creatine Unflavored de 500 g. La etiqueta del mismo producto en NSF confirma 100 servicios. El JPG de PepsiCo mide 3000 × 3000 px y su SHA-256 es `1e953189c1cde7ab1545c51bb103304c079bd65fd020281310cfb8962d22f7fd`. [Ficha de PepsiCo](https://smartlabel.pepsico.info/660726803608-0002-en-US/index.html), [ficha y etiqueta en NSF](https://www.nsfsport.com/certified-products/listing-detail.php?id=1654172).
+
+## Foto de BPI Sports
+
+- `INV-1086` muestra One More Rep Fruit Punch de 250 g y 25 servicios. El PNG de Protein Package mide 1080 × 1080 px y su SHA-256 es `9dd4d01de54d12f4e4c32c196876138e38496aae97b8b3175a5f904127148e95`. [Ficha de Protein Package](https://proteinpackage.co.uk/products/bpi-sports-one-more-rep-pre-workout).
+- Para `INV-1220`, PepsiCo muestra Pro Series Gainer Vanilla Crème de 5 lb. La ficha de la tienda indica «Vanilla». Queda por confirmar el envase antes de agregar la foto. [Ficha de PepsiCo](https://smartlabel.pepsico.info/660726500019-0002-en-US/index.html).
 
 Son candidatas para revisión. Quedan por comprobar los derechos de reutilización y obtener la aprobación para publicarlas en la tienda.
