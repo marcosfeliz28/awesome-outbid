@@ -198,7 +198,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     },
   ];
   return (
-    <div className="fusion-inicio-integrado">
+    <div className="fusion-inicio-integrado" lang={language}>
       <div className="page-heading">
         <div>
           <div className="eyebrow">{t("EL PULSO DE TU NEGOCIO")}</div>

@@ -1018,6 +1018,7 @@ function Shell() {
       {/* G12: en celular, el menú cerrado queda fuera del orden de tabulación
           y del lector de pantalla. */}
       <aside
+        lang={language}
         ref={sidebar}
         className={`sidebar ${menu ? "open" : ""}`}
         inert={mobile && !menu}
@@ -1094,12 +1095,12 @@ function Shell() {
         </div>
       </aside>
       <div className="main-shell">
-        <div className="fusion-preferences">
+        <div className="fusion-preferences" lang={language}>
           <label>{language === "en" ? "Language" : "Idioma"} <select aria-label={language === "en" ? "Interface language" : "Idioma de la interfaz"} value={language} onChange={(e) => setLanguage(e.target.value === "en" ? "en" : "es")}><option value="es">Español</option><option value="en">English</option></select></label>
           {page === "dashboard" && <AppearanceControls language={language} />}
           <small role="status">{language === "en" ? "English covers Overview and main navigation. Other pages, store data and server messages retain their original language." : "Traducción disponible: Inicio y navegación principal. Las demás pantallas, datos de tienda y mensajes del servidor conservan su idioma original."}</small>
         </div>
-        <header className="topbar">
+        <header className="topbar" lang={language}>
           <div className="topbar-left">
             <button
               ref={menuButton}
@@ -1259,7 +1260,7 @@ function Shell() {
             {pages[page.split("?")[0]] || <Dashboard go={go} />}
           </PageErrorBoundary>
         </main>
-        <footer className="app-footer">
+        <footer className="app-footer" lang={language}>
           <span>{t("Noxeros · Tu negocio, en movimiento.")}</span>
           <span>{t("RD$ · ITBIS incluido · Documento interno")}</span>
         </footer>

@@ -28,13 +28,13 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 18  | **GV Makeup Studio**         | `gv:read`                                               | `Gv` (`apps/web/src/Gv.tsx:133`)                                         | 282                |
 | 19  | **Preguntar a Norexos**      | `reports:read` o cajera, con `ANTHROPIC_API_KEY` y plan | `AssistantPage` (`apps/web/src/AssistantPanel.tsx`) — ver `IA_VENTAS.md` | —                  |
 
-Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1060-1090`):
+Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1061-1091`):
 
-- **Ver ayuda** (tarjeta «Ayuda para trabajar»): abre «Tu tienda, en movimiento» con los atajos (`apps/web/src/App.tsx:1060-1062`, `:1230-1262`).
-- **Configuración**: solo si tiene `sale:manage` (`apps/web/src/App.tsx:1065-1072`). Componente `Configuration` (`apps/web/src/Management.tsx:4094`). Aquí viven «Usuarios y permisos», «Bitácora» y «Equipos».
-- **Acerca de** (`apps/web/src/App.tsx:1074-1082`): versión, aviso de privacidad, licencias.
-- **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1088-1093`); no es de uso diario.
-- Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1247-1273`, atajo `:797`).
+- **Ver ayuda** (tarjeta «Ayuda para trabajar»): abre «Tu tienda, en movimiento» con los atajos (`apps/web/src/App.tsx:1061-1063`, `:1230-1262`).
+- **Configuración**: solo si tiene `sale:manage` (`apps/web/src/App.tsx:1066-1073`). Componente `Configuration` (`apps/web/src/Management.tsx:4094`). Aquí viven «Usuarios y permisos», «Bitácora» y «Equipos».
+- **Acerca de** (`apps/web/src/App.tsx:1075-1083`): versión, aviso de privacidad, licencias.
+- **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1089-1094`); no es de uso diario.
+- Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1269-1295`, atajo `:797`).
 - F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:852`).
 
 **No existe** en este menú: «Primeros pasos» ni «Plan y facturación» (solo en `producto-nexora`, ver `RESPUESTAS_A_TALLER.md` pregunta 9). Tampoco existe un ítem llamado «Gestión» ni uno llamado «Usuarios»: la gestión de usuarios es la pestaña «Usuarios y permisos» dentro de Configuración (`apps/web/src/Management.tsx:4293`). NO ENCONTRADO como etiqueta de menú.
@@ -151,7 +151,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1060-1090`):
 
 ## Usuarios
 
-No es un ítem de menú. Se administra en Configuración › «Usuarios y permisos» (ver arriba y `ROLES_Y_PERMISOS.md`). Cada persona puede además «Cambiar mi contraseña» y «Cerrar sesión» desde su cuenta, y cambiar de usuario con PIN (`apps/web/src/App.tsx:1216`, `:1171`, `:1184`).
+No es un ítem de menú. Se administra en Configuración › «Usuarios y permisos» (ver arriba y `ROLES_Y_PERMISOS.md`). Cada persona puede además «Cambiar mi contraseña» y «Cerrar sesión» desde su cuenta, y cambiar de usuario con PIN (`apps/web/src/App.tsx:1217`, `:1171`, `:1184`).
 
 ## Desglose del mes («Ver detalle del mes», `#month-report?from=&to=`)
 

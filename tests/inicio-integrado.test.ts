@@ -13,6 +13,28 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 describe("Inicio integrado: preservación", () => {
+  it("fecha vacía, inválida o inexistente no lanza ni inventa otra fecha", () => {
+    for (const value of [
+      "",
+      "no-date",
+      "2026-02-30",
+      "2026-13-01",
+      "2026-00-01",
+    ]) {
+      expect(() => dateLabel(value)).not.toThrow();
+      expect(dateLabel(value)).toBe("—");
+    }
+    expect(dateLabel("2024-02-29")).not.toBe("—");
+    const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+    expect(dashboard).toContain(
+      'className="fusion-inicio-integrado" lang={language}',
+    );
+    const shell = readFileSync("apps/web/src/App.tsx", "utf8");
+    for (const region of ["topbar", "app-footer", "fusion-preferences"])
+      expect(shell).toContain(`className="${region}" lang={language}`);
+    expect(shell).toMatch(/<aside\s+lang=\{language\}/);
+    expect(shell).not.toMatch(/<main[^>]*lang=\{language\}/);
+  });
   it("traduce texto de interfaz sin traducir datos desconocidos ni convertir moneda", () => {
     for (const [es, en] of Object.entries(english)) {
       expect(translate(es, "en")).toBe(en);

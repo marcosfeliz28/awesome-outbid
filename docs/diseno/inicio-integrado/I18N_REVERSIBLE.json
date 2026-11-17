@@ -434,5 +434,9 @@
   {
     "before": "              {voidRequests.data.length} solicitud\n              {voidRequests.data.length === 1 ? \"\" : \"es\"} de anulación\n              pendiente{voidRequests.data.length === 1 ? \"\" : \"s\"}",
     "after": "              {language === \"en\" ? `${voidRequests.data.length} pending cancellation request${voidRequests.data.length === 1 ? \"\" : \"s\"}` : <>\n              {voidRequests.data.length} solicitud\n              {voidRequests.data.length === 1 ? \"\" : \"es\"} de anulación\n              pendiente{voidRequests.data.length === 1 ? \"\" : \"s\"}\n              </>}"
+  },
+  {
+    "before": "<div className=\"fusion-inicio-integrado\">",
+    "after": "<div className=\"fusion-inicio-integrado\" lang={language}>"
   }
 ]

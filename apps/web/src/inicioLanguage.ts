@@ -235,9 +235,14 @@ export function monthLabel(month: number) {
   }).format(new Date(Date.UTC(2026, month - 1, 1)));
 }
 export function dateLabel(date: string) {
-  return new Intl.DateTimeFormat(locale(), { timeZone: "UTC" }).format(
-    new Date(date + "T12:00:00Z"),
-  );
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "—";
+  const parsed = new Date(date + "T12:00:00Z");
+  if (
+    !Number.isFinite(parsed.getTime()) ||
+    parsed.toISOString().slice(0, 10) !== date
+  )
+    return "—";
+  return new Intl.DateTimeFormat(locale(), { timeZone: "UTC" }).format(parsed);
 }
 export function invoiceLabel(count: number) {
   return `${count} ${language === "en" ? (count === 1 ? "invoice" : "invoices") : count === 1 ? "factura" : "facturas"}`;
