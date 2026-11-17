@@ -9,7 +9,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | #   | Etiqueta                     | Permiso                                                 | Componente                                                               | Línea en `App.tsx` |
 | --- | ---------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------ |
 | 1   | **Mercancía**                | `inventory:write`                                       | `Merchandise` (`apps/web/src/Merchandise.tsx:279`)                       | 197                |
-| 2   | **Resumen**                  | `reports:read`                                          | `Dashboard` (`apps/web/src/Dashboard.tsx:127`)                           | 203                |
+| 2   | **Resumen**                  | `reports:read`                                          | `Dashboard` (`apps/web/src/Dashboard.tsx:132`)                           | 203                |
 | 3   | **Punto de venta**           | `sale:write`                                            | `POS` (`apps/web/src/POS.tsx:195`)                                       | 209                |
 | 4   | **Ventas**                   | `sale:write`                                            | `SalesHistory` (`apps/web/src/Management.tsx:3221`)                      | 213                |
 | 5   | **Solicitudes de anulación** | `sale:write`                                            | `VoidRequests` (`apps/web/src/VoidRequests.tsx:16`)                      | 216                |
@@ -121,8 +121,8 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1056-1086`):
 
 ## Resumen
 
-- **Etiqueta:** «Resumen». **Permiso:** `reports:read`. **Componente:** `apps/web/src/Dashboard.tsx:127`. Encabezado «EL PULSO DE TU NEGOCIO» (`:176`).
-- **Qué hace:** periodo («Este mes», «Últimos 7 días», «Otro día…», `:188-191`), ventas del periodo, «Así van tus ventas», «Un poco de atención», «Los favoritos de tu tienda», «Cada categoría cuenta», «Comparativo anual», «Horas pico» (`:378-640`), gastos, comisiones bancarias, mermas y «Ganancia neta» (solo con `profit:read`, `:663-681`). A la administración le avisa de solicitudes de anulación pendientes y deja aprobarlas desde aquí (`:233-282`).
+- **Etiqueta:** «Resumen». **Permiso:** `reports:read`. **Componente:** `apps/web/src/Dashboard.tsx:132`. Encabezado «Resumen · Tu negocio, de un vistazo» con el estilo Fusión (rediseño 17-nov, `docs/diseno/fusion03/inicio/`).
+- **Qué hace:** periodo («Este mes», «Últimos 7 días», «Otro día…», `:188-191`), franja de hoy con íconos, «Ventas del período» (gráfico), «Accesos rápidos» (Punto de venta, Inventario y Reportes según permisos), «Productos destacados», «Un poco de atención», «Cada categoría cuenta», «Comparativo anual», «Horas pico» (`:378-640`), gastos, comisiones bancarias, mermas y «Ganancia neta» (solo con `profit:read`, `:663-681`). A la administración le avisa de solicitudes de anulación pendientes y deja aprobarlas desde aquí (`:233-282`).
 
 ## Alertas
 
