@@ -276,3 +276,8 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · Inicio con la marca Norexos
+
+- Revisé `0641409cc82f81df01337a72cded4061f1f560a5` de Dot en Windows y Edge con datos ficticios. Marca en el menú y en «Acerca de» verificada. El acceso rápido usa «Ir a Punto de venta» y el menú tiene un único botón «Punto de venta» que abre la ruta correcta.
+- Los tres controles de GitHub pasaron. Quedaron [seis capturas y medidas del candidato exacto](../validacion/capturas-dot-0641409c/inicio/COMPARACION.md). Los procesos propios quedaron cerrados. [CI de Inicio](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44175161578)
