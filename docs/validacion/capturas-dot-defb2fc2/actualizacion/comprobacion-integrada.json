@@ -1,0 +1,36 @@
+{
+  "commit": "defb2fc2e3a6ee0c11194c5c1f79ed17c1e33d6d",
+  "completedAt": "2026-11-17T23:33:29.383Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "actualizacion-pestana-libre.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "7fb345c3fe9ee2450e7797ac0a74ac1fd582ffe11a31267f7b47bf2fe61842a8"
+    },
+    {
+      "file": "carrito-despues-de-actualizar-otra-pestana.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "90b6bac80d8db4e24597a4d023823a7533d6400c1c738d9fd41bac05f9340259"
+    }
+  ],
+  "checks": {
+    "browserServiceWorker": true,
+    "idleTabReloaded": true,
+    "activeTabChangedController": true,
+    "activeTabPreservedDocumentAfter16s": true,
+    "activeTabPreservedItemAndTotal": true,
+    "turnStillShownOpen": true,
+    "saleRequests": 0,
+    "simulatedModuleTests": 21
+  },
+  "servicesStopped": true,
+  "salePosts": 0,
+  "pageErrorCount": 0
+}
