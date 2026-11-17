@@ -176,6 +176,7 @@
 .fusion-inicio-integrado .kpi-card {
   padding: 22px;
   min-width: 0;
+  container-type: inline-size;
 }
 .fusion-inicio-integrado .kpi-top {
   gap: 12px;
@@ -188,7 +189,9 @@
   color: var(--fh-ink);
 }
 .fusion-inicio-integrado .kpi-card > strong {
-  font-size: clamp(23px, 2.2vw, 34px);
+  /* Scale to the card content width, not the wider viewport. */
+  font-size: clamp(18px, 1.6vw, 28px);
+  font-size: clamp(18px, 9.6cqi, 32px);
   overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
   color: var(--fh-gold);
@@ -361,6 +364,10 @@
   }
 }
 @media (max-width: 560px) {
+  /* Full-width amounts stay readable instead of splitting currency digits. */
+  .fusion-inicio-integrado .kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .fusion-inicio-integrado {
     gap: 18px;
   }

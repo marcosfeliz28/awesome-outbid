@@ -24,3 +24,8 @@ Referencia inspeccionada: segunda lámina aprobada, Library `libfile_fde3_f-0019
 11 casos; datos DEMO y API simulada, nunca producción. Ocho combinaciones 1440/390, claro/oscuro y verde/azul; inglés/teclado/movimiento reducido; accesos rápidos sin escrituras; Negro diferenciado. Capturas en `test-results/higgsfield-visual/capturas` cuando pueda arrancar navegador. Este harness no certifica integración API real.
 
 No avanzar a otra área ni desplegar como acabado visual aprobado hasta que Marcos vea la aplicación real. El relieve está implementado, pero la fidelidad al PNG sigue pendiente de revisión visual.
+
+## Revisión PC y corrección de KPI
+La revisión PC del primer árbol pasó 11/11 casos pero la inspección humana detectó un último cero partido en el importe `RD$124,850.00` a 1440 px. Se corrigió la tipografía para que dependa del ancho de la tarjeta y se apilaron los KPI a 390 px; no se alteraron importes, formato monetario ni lógica. No se oculta ni se trunca texto.
+
+El revisor PC confirmó sobre la corrección CSS en copia aislada: 11/11 Playwright (45,4 s), 8/8 combinaciones 1440/390 × claro/oscuro × verde/azul con importe en una línea y todos sus rectángulos contenidos; inspección de 1440 oscuro y 390 claro confirmó cifra íntegra y gráfica/pie completos tras 2200 ms. Capturas PC: `noxeros-inicio-kpi-review/test-results/higgsfield-visual/capturas`. El harness ahora exige estas comprobaciones del importe y espera la entrada animada de la gráfica antes de capturar. Typecheck, lint, build y 11 pruebas de preservación también pasan en cloud. Las pruebas de API real y los controles GitHub quedan separados de esta evidencia visual DEMO.

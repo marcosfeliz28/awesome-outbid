@@ -100,7 +100,8 @@ async function setup(
   });
   if (await accentButton.count()) await accentButton.click();
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(400);
+  // Recharts defaults to a 1500ms entrance; capture the settled graph.
+  await page.waitForTimeout(2200);
 }
 for (const width of [1440, 390])
   for (const theme of ["light", "dark"])
@@ -110,6 +111,22 @@ for (const width of [1440, 390])
       }) => {
         await page.setViewportSize({ width, height: 1000 });
         await setup(page, theme, accent);
+        const revenue = page.locator(".kpi-grid .kpi-card > strong").first();
+        await expect(revenue).toContainText("124,850.00");
+        const valueGeometry = await revenue.evaluate((el) => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const lines = [...range.getClientRects()].filter((r) => r.width > 0);
+          const bounds = el.getBoundingClientRect();
+          return {
+            lineCount: new Set(lines.map((r) => Math.round(r.top))).size,
+            contained: lines.every(
+              (r) => r.left >= bounds.left - 1 && r.right <= bounds.right + 1,
+            ),
+          };
+        });
+        expect(valueGeometry.lineCount).toBe(1);
+        expect(valueGeometry.contained).toBe(true);
         const overflow = await page.evaluate(() => ({
           content: document.documentElement.scrollWidth,
           viewport: innerWidth,
