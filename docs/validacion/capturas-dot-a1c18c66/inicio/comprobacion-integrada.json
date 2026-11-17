@@ -1,0 +1,454 @@
+{
+  "commit": "a1c18c66a45458fe8ed666d5d9042fcd0e47c9e1",
+  "screenshots": [
+    {
+      "file": "inicio-1440-claro.png",
+      "mode": "light",
+      "viewport": [
+        1440,
+        900
+      ],
+      "documentWidth": 1440,
+      "documentHeight": 4023,
+      "heading": "Hola, Valeria ✦",
+      "sections": [
+        {
+          "title": "Ventas de hoy",
+          "topPx": 385
+        },
+        {
+          "title": "Cajas activas",
+          "topPx": 385
+        },
+        {
+          "title": "Alertas de inventario",
+          "topPx": 385
+        },
+        {
+          "title": "Pequeñas decisiones.Grandes resultados.",
+          "topPx": 578
+        },
+        {
+          "title": "Ventas del año por mes",
+          "topPx": 786
+        },
+        {
+          "title": "Así van tus ventas",
+          "topPx": 1988
+        },
+        {
+          "title": "Un poco de atención",
+          "topPx": 1988
+        },
+        {
+          "title": "Los favoritos de tu tienda",
+          "topPx": 2753
+        },
+        {
+          "title": "Cada categoría cuenta",
+          "topPx": 2753
+        },
+        {
+          "title": "Comparativo anual",
+          "topPx": 3257
+        },
+        {
+          "title": "Horas pico",
+          "topPx": 3413
+        }
+      ],
+      "banner": {
+        "heightPx": 201,
+        "overflowY": "hidden",
+        "headingClippedPx": 0,
+        "copyVisiblePx": 25,
+        "buttonHeightPx": 21,
+        "buttonVisiblePx": 21
+      },
+      "amounts": [
+        {
+          "label": "Ventas del período",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "pastCardRightPx": 0
+        }
+      ],
+      "sha256": "316e181fb19acb0bde8b2c837616a05c9ee1f18b885c4765f73f0895278311f9"
+    },
+    {
+      "file": "inicio-1440-oscuro.png",
+      "mode": "dark",
+      "viewport": [
+        1440,
+        900
+      ],
+      "documentWidth": 1440,
+      "documentHeight": 4023,
+      "heading": "Hola, Valeria ✦",
+      "sections": [
+        {
+          "title": "Ventas de hoy",
+          "topPx": 385
+        },
+        {
+          "title": "Cajas activas",
+          "topPx": 385
+        },
+        {
+          "title": "Alertas de inventario",
+          "topPx": 385
+        },
+        {
+          "title": "Pequeñas decisiones.Grandes resultados.",
+          "topPx": 578
+        },
+        {
+          "title": "Ventas del año por mes",
+          "topPx": 786
+        },
+        {
+          "title": "Así van tus ventas",
+          "topPx": 1988
+        },
+        {
+          "title": "Un poco de atención",
+          "topPx": 1988
+        },
+        {
+          "title": "Los favoritos de tu tienda",
+          "topPx": 2753
+        },
+        {
+          "title": "Cada categoría cuenta",
+          "topPx": 2753
+        },
+        {
+          "title": "Comparativo anual",
+          "topPx": 3257
+        },
+        {
+          "title": "Horas pico",
+          "topPx": 3413
+        }
+      ],
+      "banner": {
+        "heightPx": 201,
+        "overflowY": "hidden",
+        "headingClippedPx": 0,
+        "copyVisiblePx": 25,
+        "buttonHeightPx": 21,
+        "buttonVisiblePx": 21
+      },
+      "amounts": [
+        {
+          "label": "Ventas del período",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "pastCardRightPx": 0
+        }
+      ],
+      "sha256": "eac9073eba0e9fb62ca07432a1c23e1f5b951e118f7359efaf6fb995d1177d5d"
+    },
+    {
+      "file": "inicio-390-claro.png",
+      "mode": "light",
+      "viewport": [
+        390,
+        844
+      ],
+      "documentWidth": 390,
+      "documentHeight": 7796,
+      "heading": "Hola, Valeria ✦",
+      "sections": [
+        {
+          "title": "Ventas de hoy",
+          "topPx": 570
+        },
+        {
+          "title": "Cajas activas",
+          "topPx": 696
+        },
+        {
+          "title": "Alertas de inventario",
+          "topPx": 822
+        },
+        {
+          "title": "Pequeñas decisiones.Grandes resultados.",
+          "topPx": 1029
+        },
+        {
+          "title": "Ventas del año por mes",
+          "topPx": 1361
+        },
+        {
+          "title": "Así van tus ventas",
+          "topPx": 3820
+        },
+        {
+          "title": "Un poco de atención",
+          "topPx": 4307
+        },
+        {
+          "title": "Los favoritos de tu tienda",
+          "topPx": 5163
+        },
+        {
+          "title": "Cada categoría cuenta",
+          "topPx": 6329
+        },
+        {
+          "title": "Comparativo anual",
+          "topPx": 6810
+        },
+        {
+          "title": "Horas pico",
+          "topPx": 6956
+        }
+      ],
+      "banner": {
+        "heightPx": 353,
+        "overflowY": "hidden",
+        "headingClippedPx": 0,
+        "copyVisiblePx": 67,
+        "buttonHeightPx": 44,
+        "buttonVisiblePx": 44
+      },
+      "amounts": [
+        {
+          "label": "Ventas del período",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "pastCardRightPx": 0
+        }
+      ],
+      "sha256": "ddfdc4a629c26cd93e37ae77dab50eb706e5ee8e0b131c563df3488df9a5bbbc"
+    },
+    {
+      "file": "inicio-390-oscuro.png",
+      "mode": "dark",
+      "viewport": [
+        390,
+        844
+      ],
+      "documentWidth": 390,
+      "documentHeight": 7796,
+      "heading": "Hola, Valeria ✦",
+      "sections": [
+        {
+          "title": "Ventas de hoy",
+          "topPx": 570
+        },
+        {
+          "title": "Cajas activas",
+          "topPx": 696
+        },
+        {
+          "title": "Alertas de inventario",
+          "topPx": 822
+        },
+        {
+          "title": "Pequeñas decisiones.Grandes resultados.",
+          "topPx": 1029
+        },
+        {
+          "title": "Ventas del año por mes",
+          "topPx": 1361
+        },
+        {
+          "title": "Así van tus ventas",
+          "topPx": 3820
+        },
+        {
+          "title": "Un poco de atención",
+          "topPx": 4307
+        },
+        {
+          "title": "Los favoritos de tu tienda",
+          "topPx": 5163
+        },
+        {
+          "title": "Cada categoría cuenta",
+          "topPx": 6329
+        },
+        {
+          "title": "Comparativo anual",
+          "topPx": 6810
+        },
+        {
+          "title": "Horas pico",
+          "topPx": 6956
+        }
+      ],
+      "banner": {
+        "heightPx": 353,
+        "overflowY": "hidden",
+        "headingClippedPx": 0,
+        "copyVisiblePx": 67,
+        "buttonHeightPx": 44,
+        "buttonVisiblePx": 44
+      },
+      "amounts": [
+        {
+          "label": "Ventas del período",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "pastCardRightPx": 0
+        }
+      ],
+      "sha256": "22ebbaaa9caea358c84e356eac7c1be9093c254b06ad3f2da2ad2ff015bae406"
+    }
+  ],
+  "checks": {
+    "390": {
+      "login": true,
+      "dimensions": {
+        "width": 390,
+        "height": 844
+      },
+      "mobileNavigation": [
+        "- link \"n • Noxeros\":",
+        "- button \"Mercancía\":",
+        "- button \"Resumen\":",
+        "- button \"Punto de venta\":",
+        "- button \"Ventas\":",
+        "- button \"Solicitudes de anulación\":",
+        "- button \"Conciliar transferencias\":",
+        "- button \"Envíos del mensajero\":",
+        "- button \"Productos\":",
+        "- button \"Inventario\":",
+        "- button \"Compras\":",
+        "- button \"Caja\":",
+        "- button \"Gastos\":",
+        "- button \"Clientes\":",
+        "- button \"Promociones\":",
+        "- button \"Reportes\":",
+        "- button \"Alertas\":",
+        "- button \"Incentivos\":",
+        "- button \"GV Makeup Studio\":",
+        "- button \"Ver ayuda\":",
+        "- button \"Configuración\":",
+        "- button \"Acerca de\":"
+      ],
+      "mobileMenu": "pasa",
+      "accent": "pasa",
+      "language": "pasa",
+      "reportsFromBanner": "pasa",
+      "posNavigation": "pasa",
+      "posLayoutGeometry": {
+        "viewport": [
+          320,
+          800
+        ],
+        "horizontalOverflowPx": 0,
+        "toolbarOverflowPx": 0,
+        "productVisibleWithoutScrolling": true,
+        "desktopChargeVisibleWithoutScrolling": false,
+        "desktopCartVisibleWithoutScrolling": false
+      },
+      "posLayout": "pasa",
+      "httpResponses": [
+        {
+          "route": "/api/dashboard/summary",
+          "status": 200
+        },
+        {
+          "route": "/api/dashboard/year",
+          "status": 200
+        }
+      ],
+      "externalHostsBlocked": [],
+      "pageErrors": []
+    },
+    "1440": {
+      "login": true,
+      "dimensions": {
+        "width": 1440,
+        "height": 900
+      },
+      "accent": "pasa",
+      "language": "pasa",
+      "reportsFromBanner": "pasa",
+      "brandLabelsSeen": {
+        "navigation": "Noxeros",
+        "about": "Acerca de Norexos"
+      },
+      "brandLabels": "pasa",
+      "posNavigation": "pasa",
+      "posLayoutGeometry": {
+        "viewport": [
+          1366,
+          768
+        ],
+        "horizontalOverflowPx": 0,
+        "toolbarOverflowPx": 0,
+        "productVisibleWithoutScrolling": true,
+        "desktopChargeVisibleWithoutScrolling": true,
+        "desktopCartVisibleWithoutScrolling": true
+      },
+      "posLayout": "pasa",
+      "httpResponses": [
+        {
+          "route": "/api/dashboard/summary",
+          "status": 200
+        },
+        {
+          "route": "/api/dashboard/year",
+          "status": 200
+        }
+      ],
+      "externalHostsBlocked": [],
+      "pageErrors": [],
+      "brandLabelConsistency": false
+    }
+  },
+  "stages": [
+    "PostgreSQL temporal en loopback",
+    "Migraciones de la base de demostración",
+    "Generación de registros ficticios",
+    "API local real",
+    "Aplicación web del SHA publicado"
+  ],
+  "servicesStopped": true,
+  "browser": "157.0.4341.60",
+  "completedAt": "2026-11-17T19:06:16.591Z"
+}

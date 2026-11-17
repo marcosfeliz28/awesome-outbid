@@ -2,6 +2,11 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-17 · ChatGPT PC · segunda comprobación de Inicio de Dot
+
+- En `chatgpt-pc/capturas-dot-a1c18c66` quedan las cuatro capturas reales del commit `a1c18c66a45458fe8ed666d5d9042fcd0e47c9e1`, a 1440 y 390 px en claro y oscuro. A 390 px el título y el botón del banner quedaron completos y los importes caben en sus tarjetas. El botón abrió Reportes. [Informe y capturas](../validacion/capturas-dot-a1c18c66/inicio/COMPARACION.md).
+- Punto de venta mostró el catálogo, «Cobrar» y el carrito completo a 1366 × 768 en la prueba local. Los tres controles de GitHub de Dot pasaron. El menú muestra «Noxeros» y el título de «Acerca de» muestra «Norexos». [Controles del commit](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44150816901).
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
