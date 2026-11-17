@@ -23,3 +23,4 @@
 | 16-nov | Transferencias FS-675, 677, 688, 689 verificadas; contra entregas FS-676, 678, 684 cobradas por transferencia; FS-682 y FS-687 cobradas con tarjeta | Cerradas con extractos Popular ···3620, Banreservas ···5237 y voucher. |
 | 16-nov | Efectivo Jade −50, Lizbeth −100 | Aprobado por la dueña («Marcos sabe»), bajo 100. |
 | 16-nov | FS-680 genesis 5,220 (BHD, «Genesis Rojas Cruz») | Verificada con extracto BHD. |
+| 16-nov | FS-690 Anyelin Alvarez 7,000 (+450 envío) | Cayó en el banco personal de la dueña. Verificada por indicación suya. Pendiente de pasar a MacGen (dueña). |
