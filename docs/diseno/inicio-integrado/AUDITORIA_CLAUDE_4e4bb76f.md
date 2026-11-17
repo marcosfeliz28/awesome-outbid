@@ -31,3 +31,9 @@ Revisión funcional y de seguridad, sin tocar la rama ni el diseño. Fuente: dif
 - Hay 7 archivos de `docs/sistema/` con anclas actualizadas: conviene confirmar que sus pruebas pasan cuando se arregle lo de arriba.
 
 Publicación: **no**, hasta que `verify` esté verde, Marcos vea las capturas reales y lo acepte.
+
+## Actualización: `dot/inicio-accesos-movil-17nov` @ `eb20caab` (17-nov, 20:40 UTC)
+
+- **Bloqueante 1 (Caja): corregido en el código.** La barra de idioma y apariencia ahora sale solo en Inicio (`page === "dashboard"`, `App.tsx:1098`). Falta confirmarlo con `verify` en verde (en curso; en `46ae8830` y `1d0d0dcd` salió rojo).
+- **Bloqueante 2 (marca): sigue, y ahora mezclado.** El commit `1d62b760` cambió las pruebas para aceptar «Noxeros». Quedan «Noxeros» en 3 archivos (`index.html`, `App.tsx`, `inicioLanguage.ts`) y «Norexos» en otros 10 de `apps/web`. La marca debe ser una sola: **decide Marcos** (Norexos o Noxeros) y se cambia en todo a la vez.
+- Archivos fuera de `apps/web/src`/`tests`/`docs`: `apps/web/index.html`, `playwright.visual-inicio.config.ts`, `vitest.config.ts`, `vitest.inicio-integrado.config.ts` (configuración de pruebas; sin riesgo).
