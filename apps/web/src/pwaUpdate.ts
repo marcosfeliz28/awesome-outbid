@@ -62,8 +62,8 @@ export function startPwaUpdates() {
     if (workInProgress()) return;
     applying = true;
     if (timer) clearInterval(timer);
-    // false: Workbox NO debe recargar por su cuenta. El controlador nuevo
-    // puede llegar después de otro escaneo o cobro: reloadIfFree revalida.
+    // El booleano está obsoleto en vite-plugin-pwa: onNeedReload es quien
+    // impide la recarga propia de Workbox y revalida el trabajo pendiente.
     void updateSW(false);
   };
 
@@ -73,14 +73,18 @@ export function startPwaUpdates() {
     reloading = true;
     window.location.reload();
   };
+  const requestSafeReload = () => {
+    reloadWanted = true;
+    reloadIfFree();
+    if (!reloading) reloadTimer ??= setInterval(reloadIfFree, 15_000);
+  };
   // Sólo si la página ya la controlaba un service worker: la primera
   // instalación también cambia de controlador y no debe recargar.
   if (hadController)
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      reloadWanted = true;
-      reloadIfFree();
-      reloadTimer ??= setInterval(reloadIfFree, 15_000);
-    });
+    navigator.serviceWorker.addEventListener(
+      "controllerchange",
+      requestSafeReload,
+    );
 
   const render = () => {
     if (!waiting || applying || dismissed) {
@@ -171,6 +175,8 @@ export function startPwaUpdates() {
 
   const updateSW = registerSW({
     immediate: true,
+    // Contrato real del plugin: intercepta también su evento controlling.
+    onNeedReload: requestSafeReload,
     onNeedRefresh() {
       if (waiting) return;
       waiting = true;

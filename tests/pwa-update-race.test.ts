@@ -3,13 +3,45 @@ const env = vi.hoisted(() => ({
   state: { cart: [] as unknown[] },
   options: null as any,
   update: vi.fn(),
+  controlling: null as null | ((event: any) => void),
 }));
-vi.mock("virtual:pwa-register", () => ({
-  registerSW: (options: any) => {
-    env.options = options;
-    return env.update;
-  },
-}));
+// Ejecuta el register.js INSTALADO, no una imitación de su contrato.
+// Solo adapta los dos enlaces ESM (import/export) al sandbox de Node;
+// el cuerpo del plugin, incluido controlling y el argumento obsoleto, es real.
+vi.mock("virtual:pwa-register", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { runInNewContext } = await import("node:vm");
+  const source = readFileSync(
+    "apps/web/node_modules/vite-plugin-pwa/dist/client/build/register.js",
+    "utf8",
+  );
+  const linked = source
+    .replace('import("workbox-window")', "Promise.resolve({ Workbox })")
+    .replace(
+      /export\s*\{\s*registerSW\s*\};?/,
+      "result.registerSW = registerSW;",
+    );
+  return {
+    registerSW: (options: any) => {
+      env.options = options;
+      const result: any = {};
+      class Workbox {
+        addEventListener(name: string, handler: any) {
+          if (name === "controlling") env.controlling = handler;
+          if (name === "waiting") Promise.resolve().then(handler);
+        }
+        register() {
+          return Promise.resolve({ update: vi.fn() });
+        }
+        messageSkipWaiting() {}
+      }
+      runInNewContext(linked, { result, Workbox, navigator, window });
+      const update = result.registerSW(options);
+      env.update.mockImplementation(update);
+      return env.update;
+    },
+  };
+});
 vi.mock("../apps/web/src/api", () => ({
   useStore: { getState: () => env.state, subscribe: vi.fn() },
 }));
@@ -32,7 +64,8 @@ function element() {
 async function start() {
   const { startPwaUpdates } = await import("../apps/web/src/pwaUpdate");
   startPwaUpdates();
-  env.options.onNeedRefresh();
+  for (let i = 0; i < 8; i++) await Promise.resolve();
+  expect(env.controlling).toBeTypeOf("function");
 }
 function clickUpdate() {
   buttons
@@ -46,6 +79,7 @@ describe("PWA real · carreras de activación sin perder trabajo", () => {
     vi.setSystemTime(2_000_000);
     env.state = { cart: [] };
     env.update.mockReset();
+    env.controlling = null;
     reload.mockReset();
     modal = false;
     buttons = [];
@@ -74,6 +108,7 @@ describe("PWA real · carreras de activación sin perder trabajo", () => {
     clickUpdate();
     expect(env.update).toHaveBeenCalledWith(false);
     env.state.cart = [{}];
+    env.controlling!({ isUpdate: true });
     sw.dispatchEvent(new Event("controllerchange"));
     vi.advanceTimersByTime(60_000);
     expect(reload).not.toHaveBeenCalled();
@@ -84,6 +119,7 @@ describe("PWA real · carreras de activación sin perder trabajo", () => {
   it("otra pestaña activa SW: esta pestaña conserva carrito incluso sin persistencia", async () => {
     await start();
     env.state.cart = [{}];
+    env.controlling!({ isUpdate: true });
     sw.dispatchEvent(new Event("controllerchange"));
     vi.advanceTimersByTime(3_600_000);
     expect(reload).not.toHaveBeenCalled();
@@ -94,6 +130,7 @@ describe("PWA real · carreras de activación sin perder trabajo", () => {
     modal = true;
     clickUpdate();
     win.dispatchEvent(new Event("nexora:check-update"));
+    env.controlling!({ isUpdate: true });
     sw.dispatchEvent(new Event("controllerchange"));
     vi.advanceTimersByTime(60_000);
     expect(env.update).not.toHaveBeenCalled();

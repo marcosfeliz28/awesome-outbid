@@ -84,7 +84,8 @@ describe("PWA · actualización sin cortar ventas", () => {
     );
     expect(apply).toContain("cartItems() > 0) return;");
     // Recarga también si la versión la encontró la revisión de cada hora.
-    expect(module).toContain('addEventListener("controllerchange"');
+    expect(module).toMatch(/addEventListener\(\s*"controllerchange"/);
+    expect(module).toContain("onNeedReload: requestSafeReload");
     expect(apply).toContain("if (workInProgress()) return;");
     expect(module.match(/updateSW\(false\)/g)).toHaveLength(1);
     expect(module).toContain('role", "status"');
