@@ -4,9 +4,9 @@ ChatGPT PC cubre las filas 181–240 de [suplementos.csv](../suplementos.csv). C
 
 ## Cobertura
 
-- Hay 43 fotos reales para los 60 productos asignados. Cada WebP mide 1000 × 1000 px. Los originales cotejados en la laptop tenían al menos 800 px por lado. [Hoja de contacto](contacto.png).
-- La revisión visual de Dot de las primeras 38 fotos identificó 23 coincidencias, 9 con observaciones y 6 pendientes de confirmar por sabor o tamaño. ChatGPT PC cotejó cinco coincidencias adicionales. El CSV conserva la fuente, el estado de coincidencia y la nota de derechos de cada foto. [Manifiesto de fotos](fotos.csv).
-- Los otros 17 productos quedaron sin archivo. Entre los motivos figuran una presentación distinta, una etiqueta insuficiente para confirmar y la falta de un original de al menos 800 px. [Lista de faltantes](faltantes.csv).
+- Hay 44 fotos reales para los 60 productos asignados. Cada WebP mide 1000 × 1000 px. Los originales cotejados en la laptop tenían al menos 800 px por lado. [Hoja de contacto](contacto.png).
+- La revisión visual de Dot de las primeras 38 fotos identificó 23 coincidencias, 9 con observaciones y 6 pendientes de confirmar por sabor o tamaño. ChatGPT PC cotejó seis coincidencias adicionales. El CSV conserva la fuente, el estado de coincidencia y la nota de derechos de cada foto. [Manifiesto de fotos](fotos.csv).
+- Los otros 16 productos quedaron sin archivo. Entre los motivos figuran una presentación distinta, una etiqueta insuficiente para confirmar y la falta de un original de al menos 800 px. [Lista de faltantes](faltantes.csv).
 
 ## Dos fotos nuevas de Dymatize
 
@@ -22,5 +22,9 @@ ChatGPT PC cubre las filas 181–240 de [suplementos.csv](../suplementos.csv). C
 
 - `INV-1086` muestra One More Rep Fruit Punch de 250 g y 25 servicios. El PNG de Protein Package mide 1080 × 1080 px y su SHA-256 es `9dd4d01de54d12f4e4c32c196876138e38496aae97b8b3175a5f904127148e95`. [Ficha de Protein Package](https://proteinpackage.co.uk/products/bpi-sports-one-more-rep-pre-workout).
 - Para `INV-1220`, PepsiCo muestra Pro Series Gainer Vanilla Crème de 5 lb. La ficha de la tienda indica «Vanilla». Queda por confirmar el envase antes de agregar la foto. [Ficha de PepsiCo](https://smartlabel.pepsico.info/660726500019-0002-en-US/index.html).
+
+## Foto de Puritan’s Pride
+
+- `INV-1210` muestra Omega-3 Fish Oil de 1,200 mg y 100 softgels. El WebP fuente mide 1200 × 1200 px y su SHA-256 es `769399c3e6a481307e06cac1b9e59d403606cf281e9e11479ab7946cc05dcd2e`. [Foto de Your Green Shop](https://yourgreen.shop/wp-content/uploads/2023/12/puritans-pride-omega-3-fish-oil.webp), [ficha de Puritan’s Pride](https://www.puritan.com/fish-oils-056/omega-3-fish-oil-1200mg-013326).
 
 Son candidatas para revisión. Quedan por comprobar los derechos de reutilización y obtener la aprobación para publicarlas en la tienda.

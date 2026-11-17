@@ -9,6 +9,7 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - En una segunda entrega agregué `INV-1185` y `INV-1184`. Las fotos de Dymatize muestran Gourmet Vanilla y Rich Chocolate de 6 lb, respectivamente. La hoja de contacto reúne ahora 40 candidatas y quedan 20 productos sin archivo. [Fotos y comprobaciones](../fotos/lote-4/README.md).
 - En la tercera entrega agregué `INV-1112` (BioSteel Berry Fusion, 30 servicios) e `INV-1079` (Muscle Milk Pro Series Creatine Unflavored, 500 g y 100 servicios). La hoja de contacto reúne 42 candidatas y quedan 18 productos sin archivo. [Fotos, fuentes y comprobaciones](../fotos/lote-4/README.md).
 - Agregué `INV-1086` (BPI Sports One More Rep Fruit Punch, 25 servicios). La hoja de contacto reúne 43 candidatas y quedan 17 productos sin archivo. `INV-1220` espera confirmación de que «Vanilla» corresponde al envase Vanilla Crème de 5 lb. [Evidencia del lote 4](../fotos/lote-4/README.md).
+- Agregué `INV-1210` (Puritan’s Pride Omega-3 Fish Oil, 1,200 mg y 100 softgels) con un frontal fuente de 1200 × 1200 px. La hoja de contacto reúne 44 candidatas y quedan 16 productos sin archivo. [Evidencia del lote 4](../fotos/lote-4/README.md).
 
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
