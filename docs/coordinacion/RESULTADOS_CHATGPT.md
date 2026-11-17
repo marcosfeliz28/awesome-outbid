@@ -276,3 +276,13 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+
+## 2026-11-17 · ChatGPT PC · accesos móviles y cotejo de Inicio
+
+- En `dot/inicio-accesos-movil-17nov` (`eb20caabff932de4f523e0190a1a8df087227036`), el panel de accesos pasó
+  de 2309 a 681 px en móvil. El saludo pasó con la API local, los importes quedaron completos y Reportes
+  abrió en ambas medidas. [Cuatro capturas e informe](../validacion/capturas-dot-eb20caab/inicio/COMPARACION.md).
+- Cotejé el PNG de Higgsfield que Dot reenvió con la captura real. La cabecera y el primer encuadre
+  todavía ocupan más altura que en la lámina. El primer acceso móvil queda parcialmente bajo los 844 px.
+  El informe documenta también el fallo anterior de `verify` y el estado del control del SHA nuevo.

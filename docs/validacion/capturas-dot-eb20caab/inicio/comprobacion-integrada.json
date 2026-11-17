@@ -1,0 +1,345 @@
+{
+  "commit": "eb20caabff932de4f523e0190a1a8df087227036",
+  "completedAt": "2026-11-17T20:32:02.894Z",
+  "servicesStopped": true,
+  "reference": {
+    "file": "noxeros-inicio-higgsfield-02.png",
+    "format": "PNG",
+    "dimensions": [
+      2688,
+      1520
+    ],
+    "sha256": "159dc72e708a71cbeb505ba7c0bb12e34b7e38435e25af4d44c0e79fe3aa31dc"
+  },
+  "captures": [
+    {
+      "file": "inicio-1440-claro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "dimensions": [
+        1440,
+        4274
+      ],
+      "sha256": "1291be0e6dcb219dd5695e61ab057762d34f08f29e11f8ae26de2bd66e7b8a9b",
+      "values": [
+        {
+          "label": "Ventas del período",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        }
+      ],
+      "shortcuts": {
+        "topPx": 807,
+        "bottomPx": 1220,
+        "titleVisible": true,
+        "buttons": [
+          {
+            "label": "Punto de venta",
+            "topPx": 913,
+            "bottomPx": 995,
+            "fullyVisible": false
+          },
+          {
+            "label": "Inventario",
+            "topPx": 1010,
+            "bottomPx": 1092,
+            "fullyVisible": false
+          },
+          {
+            "label": "Reportes",
+            "topPx": 1107,
+            "bottomPx": 1189,
+            "fullyVisible": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "inicio-1440-oscuro.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "dimensions": [
+        1440,
+        4274
+      ],
+      "sha256": "e45a033f9a54bdf0eeabfb6e6785e0528f1ae84dc21ac996b0b89aa9482f0cef",
+      "values": [
+        {
+          "label": "Ventas del período",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        }
+      ],
+      "shortcuts": {
+        "topPx": 807,
+        "bottomPx": 1220,
+        "titleVisible": true,
+        "buttons": [
+          {
+            "label": "Punto de venta",
+            "topPx": 913,
+            "bottomPx": 995,
+            "fullyVisible": false
+          },
+          {
+            "label": "Inventario",
+            "topPx": 1010,
+            "bottomPx": 1092,
+            "fullyVisible": false
+          },
+          {
+            "label": "Reportes",
+            "topPx": 1107,
+            "bottomPx": 1189,
+            "fullyVisible": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "inicio-390-claro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "dimensions": [
+        390,
+        8758
+      ],
+      "sha256": "e0472b8620f3110c5a14aa140c407c7888286ca1452f516194482768df7916db",
+      "values": [
+        {
+          "label": "Ventas del período",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        }
+      ],
+      "shortcuts": {
+        "topPx": 681,
+        "bottomPx": 1083,
+        "titleVisible": true,
+        "buttons": [
+          {
+            "label": "Punto de venta",
+            "topPx": 812,
+            "bottomPx": 890,
+            "fullyVisible": false
+          },
+          {
+            "label": "Inventario",
+            "topPx": 900,
+            "bottomPx": 978,
+            "fullyVisible": false
+          },
+          {
+            "label": "Reportes",
+            "topPx": 988,
+            "bottomPx": 1066,
+            "fullyVisible": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "inicio-390-oscuro.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "dimensions": [
+        390,
+        8758
+      ],
+      "sha256": "8d7693d658bf44500c0f9dfeeb3de43c494b7eb98b79dba81098aa147366ec3b",
+      "values": [
+        {
+          "label": "Ventas del período",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ganancia bruta",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ventas registradas",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        },
+        {
+          "label": "Ticket promedio",
+          "lines": 1,
+          "contained": true,
+          "pastCardRightPx": 0
+        }
+      ],
+      "shortcuts": {
+        "topPx": 681,
+        "bottomPx": 1083,
+        "titleVisible": true,
+        "buttons": [
+          {
+            "label": "Punto de venta",
+            "topPx": 812,
+            "bottomPx": 890,
+            "fullyVisible": false
+          },
+          {
+            "label": "Inventario",
+            "topPx": 900,
+            "bottomPx": 978,
+            "fullyVisible": false
+          },
+          {
+            "label": "Reportes",
+            "topPx": 988,
+            "bottomPx": 1066,
+            "fullyVisible": false
+          }
+        ]
+      }
+    }
+  ],
+  "realApi": {
+    "1440": {
+      "visualStructure": "pasa",
+      "greetingVisible": "pasa",
+      "quickReports": "pasa",
+      "overviewSurfaces": "pasa",
+      "reportsFromBanner": "pasa",
+      "brandLabels": "pasa",
+      "accent": "pasa",
+      "language": "pasa",
+      "layout": {
+        "heading": "Resumen / Tu negocio, de un vistazo",
+        "viewportWidth": 1440,
+        "overflowPx": 0,
+        "kpis": 4,
+        "kpisTop": 576,
+        "quickAccessTop": 807,
+        "welcomeTop": 2220
+      },
+      "dashboardResponses": {
+        "/api/dashboard/summary": 200,
+        "/api/dashboard/year": 200
+      },
+      "pageErrors": 0
+    },
+    "390": {
+      "visualStructure": "pasa",
+      "greetingVisible": "pasa",
+      "quickReports": "pasa",
+      "overviewSurfaces": "pasa",
+      "reportsFromBanner": "pasa",
+      "brandLabels": "pasa",
+      "accent": "pasa",
+      "language": "pasa",
+      "layout": {
+        "heading": "Resumen / Tu negocio, de un vistazo",
+        "viewportWidth": 390,
+        "overflowPx": 0,
+        "kpis": 4,
+        "kpisTop": 1502,
+        "quickAccessTop": 681,
+        "welcomeTop": 5340
+      },
+      "dashboardResponses": {
+        "/api/dashboard/summary": 200,
+        "/api/dashboard/year": 200
+      },
+      "pageErrors": 0
+    }
+  },
+  "desktopMotion": {
+    "rest": {
+      "translateY": 0,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.267) 0px -2px 1px 0px inset, rgba(0, 0, 0, 0.6) 0px 5px 9px 0px"
+    },
+    "hover": {
+      "translateY": -3,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgb(41, 239, 163) 0px 0px 0px 1px, rgba(0, 0, 0, 0.6) 0px 8px 16px 0px, rgba(0, 229, 154, 0.2) 0px 0px 18px 0px"
+    },
+    "press": {
+      "translateY": 1,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(0, 0, 0, 0.333) 0px 2px 5px 0px inset"
+    },
+    "reduced": {
+      "translateY": 0,
+      "transitionDuration": "0s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgb(41, 239, 163) 0px 0px 0px 1px, rgba(0, 0, 0, 0.6) 0px 8px 16px 0px, rgba(0, 229, 154, 0.2) 0px 0px 18px 0px"
+    }
+  },
+  "resize1440To390AndBack": "pasa"
+}
