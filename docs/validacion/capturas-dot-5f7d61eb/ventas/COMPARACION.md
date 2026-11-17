@@ -38,4 +38,10 @@ El [registro de mediciones](comprobacion-integrada.json) contiene las dimensione
 
 ## Actualización del candidato
 
-Dot publicó `334e44da7a5dd385cc8eaec529fdaf9627073dc6` en la misma rama. El único archivo cambiado es el script de verificación. Importa `log` de `node:console` y pasó ESLint localmente. Comparé `apps/` entre ambos commits y los árboles coinciden. Las siete capturas y el problema de la vista previa móvil describen el mismo código de aplicación. Los controles completos de la nueva revisión están en curso. [Nueva ejecución de GitHub](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44183427539)
+Dot publicó `334e44da7a5dd385cc8eaec529fdaf9627073dc6` en la misma rama. El único archivo cambiado es el script de verificación. Importa `log` de `node:console` y pasó ESLint localmente. Comparé `apps/` entre ambos commits y los árboles coinciden. Las siete capturas y el problema de la vista previa móvil describen el mismo código de aplicación. GitHub reportó un fallo documental en la nueva revisión. [Nueva ejecución de GitHub](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44183427539)
+
+### Resultado del CI de `334e44da`
+
+`verify` se detuvo en `pnpm check`. La prueba de citas perdió el anclaje `Management.tsx:3316` y GitHub omitió la etapa de navegador. El ancla conserva el fragmento `label: "Saldo pendiente",` de una columna cuyo encabezado se tradujo. La cita de `docs/sistema/FLUJO_CAJA_POS.md:135` describe la acción «Solicitar anulación», que ahora está en `Management.tsx:3418–3433`, y su formulario, en `Management.tsx:3739–3772`. [Fallo anotado en GitHub](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44183427539/job/134393515392)
+
+Reproduje el fallo local en `pnpm exec vitest run tests/docs-sistema-citas.test.ts`. En una copia descartable sustituí ambas referencias antiguas por `Management.tsx:3418-3433` y `Management.tsx:3739-3772`. Pasaron las cuatro pruebas. Dot puede incorporar esas citas y regenerar las anclas con `node scripts/citas-reanclar.mjs`. Restauré la copia de prueba tras la comprobación. La vista previa móvil sigue pendiente.
