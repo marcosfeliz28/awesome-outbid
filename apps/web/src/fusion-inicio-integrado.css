@@ -1,0 +1,544 @@
+/* Resumen real. Alcance estrictamente visual: no sustituir valores o permisos. */
+.fusion-inicio-integrado {
+  --fi-accent: #087950;
+  --fi-gold: #80580f;
+  --fi-surface: #edf5ef;
+  --fi-edge: #8ba99b;
+  --fi-ink: #152f28;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: var(--fi-ink);
+  min-width: 0;
+}
+:root[data-theme="dark"] .fusion-inicio-integrado {
+  --fi-accent: #00e5a4;
+  --fi-gold: #f6d28b;
+  --fi-surface: #102723;
+  --fi-edge: #649e8a;
+  --fi-ink: #f4fbf7;
+}
+:root[data-accent="blue"] .fusion-inicio-integrado {
+  --fi-accent: #318fd0;
+}
+.fusion-inicio-integrado .page-heading {
+  padding: 20px;
+  border: 1px solid var(--fi-edge);
+  border-radius: 20px;
+  background: linear-gradient(
+    120deg,
+    var(--fi-surface),
+    color-mix(in srgb, var(--fi-accent) 15%, var(--fi-surface))
+  );
+  box-shadow:
+    inset 0 1px 2px #ffffff66,
+    0 7px 14px #0002;
+  margin: 0;
+}
+.fusion-inicio-integrado .page-heading h1 {
+  color: var(--fi-ink);
+  letter-spacing: -1px;
+}
+.fusion-inicio-integrado :is(.panel, .kpi-card, .day-card) {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--fi-surface) 85%, white),
+    var(--fi-surface) 37%,
+    color-mix(in srgb, var(--fi-surface) 92%, black)
+  );
+  border: 1px solid var(--fi-edge);
+  border-radius: 21px;
+  box-shadow:
+    inset 0 1px 2px #ffffff66,
+    inset 0 -1px 1px var(--fi-accent),
+    0 6px 12px #0003;
+  color: var(--fi-ink);
+}
+.fusion-inicio-integrado
+  :is(.panel-heading h2, .kpi-top > span, .kpi-card > strong) {
+  color: var(--fi-ink);
+}
+.fusion-inicio-integrado .kpi-card > strong {
+  color: var(--fi-gold);
+  text-shadow: 0 2px 2px #0001;
+}
+.fusion-inicio-integrado .metric-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: var(--fi-gold);
+  background:
+    radial-gradient(circle at 30% 15%, #ffffff55, transparent 52%),
+    linear-gradient(
+      135deg,
+      var(--fi-surface),
+      color-mix(in srgb, var(--fi-accent) 18%, var(--fi-surface))
+    );
+  border: 1px solid var(--fi-edge);
+  box-shadow:
+    inset 0 2px 2px #ffffffaa,
+    inset 0 -3px 3px #0002,
+    0 4px 7px #0004;
+}
+.fusion-inicio-integrado .metric-icon svg {
+  width: 29px;
+  height: 29px;
+  filter: drop-shadow(0 2px 1px #0003);
+}
+.fusion-inicio-integrado :is(button, select, input) {
+  border-radius: 12px;
+}
+.fusion-inicio-integrado :is(button, select) {
+  box-shadow:
+    inset 0 1px 1px #ffffff66,
+    0 3px 0 #0002,
+    0 5px 8px #0002;
+  transition:
+    box-shadow 140ms ease,
+    filter 140ms ease;
+}
+.fusion-inicio-integrado button:not(:disabled):active {
+  box-shadow: inset 0 2px 5px #0005;
+  filter: brightness(0.97);
+}
+.fusion-inicio-integrado :is(button, select, input):focus-visible {
+  outline: 3px solid var(--fi-accent);
+  outline-offset: 3px;
+}
+.fusion-inicio-integrado .panel-heading {
+  border-bottom: 1px solid var(--fi-edge);
+  padding-bottom: 16px;
+}
+.fusion-inicio-integrado .dashboard-alert {
+  border: 1px solid var(--fi-edge);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #ffffff0d, var(--fi-surface));
+  box-shadow:
+    inset 0 1px 1px #ffffff66,
+    0 4px 8px #0002;
+}
+.fusion-inicio-integrado .welcome-banner {
+  background: linear-gradient(
+    120deg,
+    var(--fi-surface),
+    color-mix(in srgb, var(--fi-accent) 19%, var(--fi-surface))
+  );
+  color: var(--fi-ink);
+  border: 1px solid var(--fi-edge);
+}
+.fusion-inicio-integrado .welcome-banner :is(h2, p) {
+  color: var(--fi-ink);
+}
+.fusion-inicio-integrado .welcome-banner h2 > span {
+  color: var(--fi-accent);
+}
+.fusion-inicio-integrado .welcome-banner button {
+  color: var(--fi-ink);
+  background: var(--fi-surface);
+}
+.fusion-inicio-integrado .dashboard-bottom-grid {
+  min-width: 0;
+}
+.fusion-inicio-integrado .table-wrap {
+  max-width: 100%;
+  overflow: auto;
+}
+/* El shell se pinta solo mientras Resumen está montado, sin modificar navegación. */
+.app-shell:has(.fusion-inicio-integrado) .sidebar {
+  background: linear-gradient(155deg, #183f35, #091c18 75%);
+  border-right: 1px solid #547f6c;
+}
+.app-shell:has(.fusion-inicio-integrado) .sidebar .nav-item {
+  border: 1px solid #547b6b;
+  border-radius: 13px;
+  margin-bottom: 8px;
+  color: #eaf7f1;
+  background: linear-gradient(145deg, #385c4d66, #0d241e);
+  box-shadow:
+    inset 0 1px 1px #ffffff44,
+    0 4px 6px #0005;
+}
+.app-shell:has(.fusion-inicio-integrado) .sidebar .nav-item.active {
+  border-color: #64d4a4;
+  background: linear-gradient(145deg, #087f55, #063d2b);
+  box-shadow:
+    inset 0 1px 3px #b7ffdb77,
+    0 0 9px #00bf8033;
+}
+.app-shell:has(.fusion-inicio-integrado) .sidebar .nav-item svg {
+  color: #f6d28b;
+  filter: drop-shadow(0 2px 1px #0006);
+}
+@media (max-width: 560px) {
+  .fusion-inicio-integrado {
+    gap: 14px;
+  }
+  .fusion-inicio-integrado .page-heading {
+    padding: 14px;
+  }
+  .fusion-inicio-integrado .page-heading h1 {
+    font-size: 28px;
+  }
+  .fusion-inicio-integrado .heading-actions {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .fusion-inicio-integrado .heading-actions > * {
+    max-width: 100%;
+  }
+  .fusion-inicio-integrado .dashboard-main-grid,
+  .fusion-inicio-integrado .dashboard-bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fusion-inicio-integrado .metric-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fusion-inicio-integrado * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+@media (forced-colors: active) {
+  .fusion-inicio-integrado
+    :is(.panel, .kpi-card, .day-card, .metric-icon, button) {
+    box-shadow: none;
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+  }
+}
+/* Profundidad y microinteracción solicitadas: solo tarjetas de lectura. */
+.fusion-inicio-integrado .kpi-card {
+  position: relative;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+  box-shadow:
+    inset 0 2px 3px #ffffff88,
+    inset 0 -3px 0 #0002,
+    0 5px 0 color-mix(in srgb, var(--fi-surface) 70%, black),
+    0 11px 18px #0005;
+}
+.fusion-inicio-integrado .kpi-card:hover,
+.fusion-inicio-integrado .kpi-card:focus-visible {
+  transform: translateY(-5px);
+  outline: 2px solid var(--fi-accent);
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 2px 3px #ffffffaa,
+    inset 0 -3px 0 #0002,
+    0 6px 0 color-mix(in srgb, var(--fi-surface) 70%, black),
+    0 18px 25px #0006,
+    0 0 14px color-mix(in srgb, var(--fi-accent) 28%, transparent);
+}
+.fusion-inicio-integrado .fi-chart-point {
+  fill: var(--fi-accent);
+  stroke: var(--fi-ink);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
+}
+.fusion-inicio-integrado .fi-chart-point:hover,
+.fusion-inicio-integrado .fi-chart-point:focus-visible {
+  outline: none;
+  stroke: var(--fi-gold);
+  stroke-width: 3;
+  transform: scale(1.5);
+  filter: drop-shadow(0 0 4px var(--fi-ink))
+    drop-shadow(0 0 10px var(--fi-accent));
+}
+@media (prefers-reduced-motion: reduce) {
+  .fusion-inicio-integrado .kpi-card,
+  .fusion-inicio-integrado .fi-chart-point {
+    transition: none;
+  }
+  .fusion-inicio-integrado .kpi-card:hover,
+  .fusion-inicio-integrado .kpi-card:focus-visible,
+  .fusion-inicio-integrado .fi-chart-point:hover,
+  .fusion-inicio-integrado .fi-chart-point:focus-visible {
+    transform: none;
+  }
+}
+/* Acciones existentes: superficies dimensionales sin alterar callbacks. */
+.fusion-inicio-integrado
+  :is(.heading-actions button, .panel-link, .dashboard-alert) {
+  border: 1px solid var(--fi-edge);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--fi-surface) 78%, white),
+    var(--fi-surface) 46%,
+    color-mix(in srgb, var(--fi-accent) 12%, var(--fi-surface))
+  );
+  color: var(--fi-ink);
+  box-shadow:
+    inset 0 2px 2px #ffffff77,
+    inset 0 -2px 1px #0003,
+    0 4px 0 color-mix(in srgb, var(--fi-surface) 75%, black),
+    0 8px 12px #0003;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+.fusion-inicio-integrado
+  :is(.heading-actions button, .panel-link, .dashboard-alert):hover:not(
+    :disabled
+  ),
+.fusion-inicio-integrado
+  :is(.heading-actions button, .panel-link, .dashboard-alert):focus-visible {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 2px 2px #ffffff99,
+    inset 0 -2px 1px #0003,
+    0 5px 0 color-mix(in srgb, var(--fi-surface) 75%, black),
+    0 13px 17px #0004;
+}
+.fusion-inicio-integrado
+  :is(.heading-actions button, .panel-link, .dashboard-alert):active:not(
+    :disabled
+  ) {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px #0005;
+}
+.fusion-inicio-integrado .alert-symbol {
+  border: 1px solid var(--fi-edge);
+  box-shadow:
+    inset 0 1px 2px #ffffff77,
+    0 3px 4px #0004;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fusion-inicio-integrado
+    :is(.heading-actions button, .panel-link, .dashboard-alert) {
+    transition: none;
+  }
+  .fusion-inicio-integrado
+    :is(.heading-actions button, .panel-link, .dashboard-alert):is(
+      :hover,
+      :focus-visible,
+      :active
+    ) {
+    transform: none;
+  }
+}
+/* Bisel de medallón Fusión: luz metálica contenida y forma nítida. */
+.fusion-inicio-integrado .metric-icon {
+  border: 2px solid color-mix(in srgb, var(--fi-gold) 55%, var(--fi-edge));
+  outline: 1px solid color-mix(in srgb, var(--fi-surface) 70%, black);
+  outline-offset: 2px;
+  background:
+    radial-gradient(ellipse at 32% 12%, #fff3c866, transparent 45%),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--fi-surface) 78%, white),
+      var(--fi-surface) 50%,
+      color-mix(in srgb, var(--fi-surface) 75%, black)
+    );
+  box-shadow:
+    inset 0 2px 2px #fff3c8aa,
+    inset 0 -3px 2px #0005,
+    0 3px 0 color-mix(in srgb, var(--fi-surface) 75%, black),
+    0 7px 10px #0004;
+}
+.fusion-inicio-integrado .metric-icon svg {
+  filter: drop-shadow(0 1px 0 #fff3c866) drop-shadow(0 2px 1px #0005);
+}
+/* Mayor especificidad que el tema legado: no dejar paneles violeta. */
+.app-shell .fusion-inicio-integrado .welcome-banner {
+  background: linear-gradient(
+    120deg,
+    var(--fi-surface),
+    color-mix(in srgb, var(--fi-accent) 19%, var(--fi-surface))
+  );
+  border-color: var(--fi-edge);
+  color: var(--fi-ink);
+}
+.app-shell .fusion-inicio-integrado .welcome-banner :is(h2, p) {
+  color: var(--fi-ink);
+}
+.app-shell .fusion-inicio-integrado .welcome-banner h2 span {
+  color: var(--fi-accent);
+}
+.app-shell .fusion-inicio-integrado .kpi-strip-card {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--fi-surface) 85%, white),
+    var(--fi-surface) 40%,
+    color-mix(in srgb, var(--fi-surface) 90%, black)
+  );
+  border: 1px solid var(--fi-edge);
+  border-radius: 20px;
+  color: var(--fi-ink);
+  box-shadow:
+    inset 0 1px 2px #ffffff88,
+    inset 0 -2px 0 #0003,
+    0 4px 0 color-mix(in srgb, var(--fi-surface) 70%, black),
+    0 9px 14px #0004;
+}
+.app-shell .fusion-inicio-integrado .kpi-strip-card .amount {
+  color: var(--fi-gold);
+}
+:root[data-theme="dark"][data-accent="blue"] .fusion-inicio-integrado {
+  --fi-accent: #56bfff;
+  --fi-surface: #112330;
+  --fi-edge: #5e91b4;
+  --fi-ink: #f4f9ff;
+}
+:root[data-accent="blue"] .app-shell:has(.fusion-inicio-integrado) .sidebar {
+  background: linear-gradient(155deg, #193a51, #0a1722 75%);
+  border-color: #5e91b4;
+}
+:root[data-accent="blue"] .app-shell:has(.fusion-inicio-integrado) .nav-item {
+  background: linear-gradient(145deg, #38546966, #0d202e);
+  border-color: #52778e;
+}
+:root[data-accent="blue"]
+  .app-shell:has(.fusion-inicio-integrado)
+  .nav-item.active {
+  background: linear-gradient(145deg, #146991, #07344e);
+  border-color: #67bded;
+  box-shadow:
+    inset 0 1px 3px #b7e7ff77,
+    0 0 9px #0088bf33;
+}
+/* Named color choices: not color-only indicators, no hover-only controls. */
+.fusion-appearance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.fusion-accent-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #64748b;
+  border-radius: 10px;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+}
+.fusion-accent-choice[aria-pressed="true"] {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+.fusion-accent-choice:focus-visible {
+  outline: 3px solid #c89028;
+  outline-offset: 3px;
+}
+.fusion-accent-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0b755c;
+  box-shadow:
+    inset 0 1px 2px #ffffffaa,
+    0 1px 2px #0005;
+}
+.fusion-accent-blue .fusion-accent-swatch {
+  background: #116b9b;
+}
+:root[data-theme="dark"] .fusion-accent-choice {
+  color: #f5f7fa;
+  background: #15232b;
+  border-color: #8195a4;
+}
+:root[data-accent="blue"] .fusion-inicio-integrado {
+  --fi-accent: #126b9a;
+  --fi-edge: #8eb2c6;
+}
+:root[data-theme="dark"][data-accent="blue"] .fusion-inicio-integrado {
+  --fi-accent: #56bfff;
+  --fi-edge: #5e91b4;
+}
+.fusion-preferences {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+}
+.fusion-preferences small {
+  flex-basis: 100%;
+  font-size: 12px;
+}
+.fusion-preferences select {
+  min-height: 36px;
+  max-width: 100%;
+}
+/* Colores de marca limitados a Inicio: sin elevar prioridad mediante important. */
+.app-shell:has(.fusion-inicio-integrado) {
+  --primary: #11684f;
+  --primary-soft: #d9eee5;
+}
+:root[data-theme="dark"] .app-shell:has(.fusion-inicio-integrado) {
+  --primary: #9be3bd;
+  --primary-soft: #163f32;
+}
+:root[data-accent="blue"] .app-shell:has(.fusion-inicio-integrado) {
+  --primary: #155e85;
+  --primary-soft: #dcecf7;
+}
+:root[data-theme="dark"][data-accent="blue"]
+  .app-shell:has(.fusion-inicio-integrado) {
+  --primary: #a9dcff;
+  --primary-soft: #16405a;
+}
+.app-shell:has(.fusion-inicio-integrado)
+  :is(.brand-icon, .avatar, .store-avatar) {
+  background: var(--primary-soft);
+  color: var(--primary);
+  box-shadow:
+    inset 0 1px 1px #fff5,
+    0 3px 8px #0002;
+}
+.app-shell:has(.fusion-inicio-integrado) .brand-icon span {
+  color: #c5a155;
+}
+.fusion-inicio-integrado .banner-chip {
+  color: var(--fi-ink);
+}
+.fusion-inicio-integrado .banner-chip .live-dot {
+  background: var(--fi-accent);
+}
+.fusion-inicio-integrado .bag-shape {
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--fi-accent) 70%, white),
+    var(--fi-accent)
+  );
+  box-shadow:
+    inset 1px 2px 1px #fff6,
+    10px 12px 0 #0002,
+    12px 22px 22px #0003;
+}
+.fusion-inicio-integrado .bag-shape:after {
+  border-left-color: color-mix(in srgb, var(--fi-accent) 60%, black);
+}
+.fusion-inicio-integrado .bag-handle {
+  border-color: var(--fi-accent);
+  box-shadow: inset 2px 0 0 #fff6;
+}
+.fusion-inicio-integrado .bag-shape > span span {
+  color: var(--fi-gold);
+}
+.fusion-inicio-integrado :is(.floating-tag, .floating-ticket) {
+  background: var(--fi-surface);
+  color: var(--fi-accent);
+  border: 1px solid var(--fi-edge);
+}
+.fusion-inicio-integrado .floating-tag :is(span, strong) {
+  color: var(--fi-ink);
+}
+.fusion-inicio-integrado .banner-spark {
+  color: var(--fi-gold);
+}

@@ -1,3 +1,4 @@
+import { t, useLanguage, money, invoiceLabel } from "./inicioLanguage";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { can } from "@fitstore/shared";
@@ -17,6 +18,7 @@ function useBusinessDay() {
 }
 
 export function KpiStrip() {
+  useLanguage();
   const user = useStore((s) => s.user)!;
   const date = useBusinessDay();
   const day = useQuery({
@@ -35,14 +37,14 @@ export function KpiStrip() {
     dayStatus: day.status,
   });
   return (
-    <section aria-label="Resumen de hoy" className="kpi-strip">
+    <section aria-label={t("Resumen de hoy")} className="kpi-strip">
       {kpis.map((k) => (
         <article key={k.key} className="kpi-strip-card">
-          <h2>{k.label}</h2>
+          <h2>{t(k.label)}</h2>
           <strong className="amount">
-            <CountUp text={k.value} />
+            <CountUp text={k.key === "ventas" && day.data ? money(Number(day.data.revenue ?? 0)) : k.value} />
           </strong>
-          <small>{k.note}</small>
+          <small>{k.note.endsWith(" facturas") ? invoiceLabel(Number(day.data?.invoices ?? 0)) : t(k.note)}</small>
         </article>
       ))}
     </section>

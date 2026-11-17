@@ -1,10 +1,11 @@
+import { t, useLanguage, money as formatMoney, monthLabel } from "./inicioLanguage";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { can, formatMoney } from "@fitstore/shared";
+import { can } from "@fitstore/shared";
 import { api, useStore } from "./api";
 import { today } from "./helpers";
-import { monthNames, monthRange, monthShares } from "./year-report-utils";
+import { monthRange, monthShares } from "./year-report-utils";
 
 type Month = {
   month: number;
@@ -29,6 +30,7 @@ const colors = [
 ];
 
 export function YearPie({ go }: { go: (page: string) => void }) {
+  const language = useLanguage();
   const user = useStore((s) => s.user)!;
   const showProfit = can(user.permissions, "profit:read");
   const thisYear = Number(today().slice(0, 4));
@@ -55,13 +57,13 @@ export function YearPie({ go }: { go: (page: string) => void }) {
     <section className="panel year-pie" aria-labelledby="year-pie-title">
       <div className="panel-heading">
         <div>
-          <h2 id="year-pie-title">Ventas del año por mes</h2>
+          <h2 id="year-pie-title">{t("Ventas del año por mes")}</h2>
           <p>
-            El círculo es el 100 % de {year}. Toca un mes para ver su desglose.
+            {t("El círculo es el 100 % de")} {year}{t(". Toca un mes para ver su desglose.")}
           </p>
         </div>
         <select
-          aria-label="Año"
+          aria-label={t("Año")}
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
         >
@@ -73,7 +75,7 @@ export function YearPie({ go }: { go: (page: string) => void }) {
         </select>
       </div>
       <div className="year-pie-body">
-        <div className="year-pie-chart" role="img" aria-label="Ventas por mes">
+        <div className="year-pie-chart" role="img" aria-label={t("Ventas por mes")}>
           {slices.length ? (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -99,11 +101,11 @@ export function YearPie({ go }: { go: (page: string) => void }) {
                     if (!m) return null;
                     return (
                       <div className="year-pie-tip">
-                        <strong>{monthNames[m.month - 1]}</strong>
-                        <span>{m.invoices ?? 0} ventas</span>
-                        <span>Bruta {formatMoney(m.revenue)}</span>
+                        <strong>{monthLabel(m.month)}</strong>
+                        <span>{m.invoices ?? 0} {t("ventas")}</span>
+                        <span>{t("Bruta")} {formatMoney(m.revenue)}</span>
                         {showProfit && (
-                          <span>Neta {formatMoney(m.profit ?? 0)}</span>
+                          <span>{t("Neta")} {formatMoney(m.profit ?? 0)}</span>
                         )}
                       </div>
                     );
@@ -114,21 +116,21 @@ export function YearPie({ go }: { go: (page: string) => void }) {
           ) : (
             <p className="muted" role={query.isError ? "alert" : undefined}>
               {query.isError
-                ? "No se pudo cargar las ventas del año."
+                ? t("No se pudo cargar las ventas del año.")
                 : query.isPending
-                  ? "Cargando…"
-                  : `Sin ventas en ${year}.`}
+                  ? t("Cargando…")
+                  : language === "en" ? `No sales in ${year}.` : `Sin ventas en ${year}.`}
             </p>
           )}
         </div>
         {picked && (
           <div className="year-pie-tip" role="status">
-            <strong>{monthNames[picked.month - 1]}</strong>
-            <span>{picked.invoices ?? 0} ventas</span>
-            <span>Bruta {formatMoney(picked.revenue)}</span>
-            {showProfit && <span>Neta {formatMoney(picked.profit ?? 0)}</span>}
+            <strong>{monthLabel(picked.month)}</strong>
+            <span>{picked.invoices ?? 0} {t("ventas")}</span>
+            <span>{t("Bruta")} {formatMoney(picked.revenue)}</span>
+            {showProfit && <span>{t("Neta")} {formatMoney(picked.profit ?? 0)}</span>}
             <button type="button" onClick={() => open(picked.month)}>
-              Ver detalle del mes
+              {t("Ver detalle del mes")}
             </button>
           </div>
         )}
@@ -138,16 +140,16 @@ export function YearPie({ go }: { go: (page: string) => void }) {
               <button
                 type="button"
                 onClick={() => open(m.month)}
-                aria-label={`Ver el desglose de ${monthNames[m.month - 1]}`}
+                aria-label={`${language === "en" ? "View breakdown for" : "Ver el desglose de"} ${monthLabel(m.month)}`}
               >
                 <span
                   className="year-pie-dot"
                   style={{ background: colors[i] }}
                   aria-hidden="true"
                 />
-                <strong>{monthNames[m.month - 1]}</strong>
-                <span>Bruta {formatMoney(m.revenue)}</span>
-                {showProfit && <span>Neta {formatMoney(m.profit ?? 0)}</span>}
+                <strong>{monthLabel(m.month)}</strong>
+                <span>{t("Bruta")} {formatMoney(m.revenue)}</span>
+                {showProfit && <span>{t("Neta")} {formatMoney(m.profit ?? 0)}</span>}
               </button>
             </li>
           ))}
@@ -155,8 +157,7 @@ export function YearPie({ go }: { go: (page: string) => void }) {
       </div>
       {showProfit && (
         <p className="muted year-pie-note">
-          Bruta = lo vendido (devoluciones descontadas). Neta = bruta − costo,
-          sin restar ITBIS ni gastos.
+          {t("Bruta = lo vendido (devoluciones descontadas). Neta = bruta − costo, sin restar ITBIS ni gastos.")}
         </p>
       )}
     </section>

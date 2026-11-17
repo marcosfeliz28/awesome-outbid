@@ -1,3 +1,6 @@
+import { t, useLanguage, money as formatMoney, locale, dateLabel, invoiceLabel } from "./inicioLanguage";
+import "./fusion-inicio-integrado.css";
+import { chartSalesLabel } from "./chartSalesLabel";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,7 +29,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button, Badge, Modal } from "@fitstore/ui";
-import { formatMoney, can, weekStart } from "@fitstore/shared";
+import { can, weekStart } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
@@ -48,6 +51,7 @@ function DayFigures({
   title: string;
   tone: "yesterday" | "today" | "other";
 }) {
+  useLanguage();
   const user = useStore((s) => s.user)!;
   const showProfit = can(user.permissions, "profit:read");
   const query = useQuery({
@@ -67,13 +71,13 @@ function DayFigures({
         <strong>—</strong>
         {query.isError ? (
           <small role="alert">
-            No se pudo cargar.{" "}
+            {t("No se pudo cargar.")}{" "}
             <button type="button" onClick={() => query.refetch()}>
-              Reintentar
+              {t("Reintentar")}
             </button>
           </small>
         ) : (
-          <small>Cargando…</small>
+          <small>{t("Cargando…")}</small>
         )}
       </div>
     );
@@ -81,12 +85,12 @@ function DayFigures({
     <div className={"day-figures day-" + tone}>
       <span className="day-title">{title}</span>
       <strong>{formatMoney(revenue)}</strong>
-      <small>{data?.invoices ?? 0} facturas</small>
+      <small>{invoiceLabel(data?.invoices ?? 0)}</small>
       {showProfit && (
         <>
-          <small>Costo {formatMoney(cost)}</small>
+          <small>{t("Costo")} {formatMoney(cost)}</small>
           <small className="day-profit">
-            Ganancia (venta − costo) <b>{formatMoney(revenue - cost)}</b>
+            {t("Ganancia (venta − costo)")} <b>{formatMoney(revenue - cost)}</b>
           </small>
         </>
       )}
@@ -95,17 +99,18 @@ function DayFigures({
 }
 
 function DayCard() {
+  useLanguage();
   const to = today(),
     yesterday = dayBefore(to);
   const [day, setDay] = useState(yesterday);
   return (
-    <section className="panel day-card" aria-label="Ventas por día">
+    <section className="panel day-card" aria-label={t("Ventas por día")}>
       <div className="day-card-row">
-        <DayFigures date={yesterday} title="Ayer" tone="yesterday" />
-        <DayFigures date={to} title="Hoy" tone="today" />
+        <DayFigures date={yesterday} title={t("Ayer")} tone="yesterday" />
+        <DayFigures date={to} title={t("Hoy")} tone="today" />
         <div className="day-figures day-other">
           <label>
-            Buscar otro día
+            {t("Buscar otro día")}
             <input
               type="date"
               value={day}
@@ -115,7 +120,7 @@ function DayCard() {
           </label>
           <DayFigures
             date={day}
-            title={day.split("-").reverse().join("/")}
+            title={dateLabel(day)}
             tone="other"
           />
         </div>
@@ -125,6 +130,7 @@ function DayCard() {
 }
 
 export function Dashboard({ go }: { go: (page: string) => void }) {
+  const language = useLanguage();
   const user = useStore((s) => s.user)!;
   const [period, setPeriod] = useState("month");
   const [day, setDay] = useState(today());
@@ -158,64 +164,64 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
   const showProfit = can(user.permissions, "profit:read");
   const metric = [
     {
-      label: "Ventas del período",
+      label: t("Ventas del período"),
       value: formatMoney(data?.revenue ?? 0),
       icon: ShoppingBag,
       tone: "violet",
-      note: "vs. período anterior",
+      note: t("vs. período anterior"),
       trend: data?.trend,
     },
     {
-      label: showProfit ? "Ganancia bruta" : "Inventario a la venta",
+      label: showProfit ? t("Ganancia bruta") : t("Inventario a la venta"),
       value: formatMoney(
         showProfit ? (data?.profit ?? 0) : (data?.inventoryRetail ?? 0),
       ),
       icon: TrendingUp,
       tone: "green",
       note: showProfit
-        ? `${data?.margin ?? 0}% de margen`
-        : "Valor del stock disponible",
+        ? `${data?.margin ?? 0}% ${language === "en" ? "margin" : "de margen"}`
+        : t("Valor del stock disponible"),
     },
     {
-      label: "Ventas registradas",
-      value: (data?.invoices ?? 0).toLocaleString("es-DO"),
+      label: t("Ventas registradas"),
+      value: (data?.invoices ?? 0).toLocaleString(locale()),
       icon: ReceiptText,
       tone: "pink",
-      note: "Cada venta cuenta",
+      note: t("Cada venta cuenta"),
     },
     {
-      label: "Ticket promedio",
+      label: t("Ticket promedio"),
       value: formatMoney(data?.ticketAverage ?? 0),
       icon: Wallet,
       tone: "orange",
-      note: "Por cada visita a tu tienda",
+      note: t("Por cada visita a tu tienda"),
     },
   ];
   return (
-    <>
+    <div className="fusion-inicio-integrado">
       <div className="page-heading">
         <div>
-          <div className="eyebrow">EL PULSO DE TU NEGOCIO</div>
+          <div className="eyebrow">{t("EL PULSO DE TU NEGOCIO")}</div>
           <h1>
-            Hola, {user.name.split(" ")[0]} <span className="wave">✦</span>
+            {t("Hola,")} {user.name.split(" ")[0]} <span className="wave">✦</span>
           </h1>
-          <p>Un vistazo a tu tienda. Un paso más hacia tus metas.</p>
+          <p>{t("Un vistazo a tu tienda. Un paso más hacia tus metas.")}</p>
         </div>
         <div className="heading-actions">
           <select
-            aria-label="Período del resumen"
+            aria-label={t("Período del resumen")}
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
           >
-            <option value="month">Este mes</option>
-            <option value="week">Últimos 7 días</option>
-            <option value="today">Hoy</option>
-            <option value="day">Otro día…</option>
+            <option value="month">{t("Este mes")}</option>
+            <option value="week">{t("Últimos 7 días")}</option>
+            <option value="today">{t("Hoy")}</option>
+            <option value="day">{t("Otro día…")}</option>
           </select>
           {period === "day" && (
             <input
               type="date"
-              aria-label="Día del resumen"
+              aria-label={t("Día del resumen")}
               value={day}
               max={today()}
               onChange={(e) => e.target.value && setDay(e.target.value)}
@@ -231,12 +237,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             }
           >
             <Download size={16} />
-            Exportar
+            {t("Exportar")}
           </Button>
           {can(user.permissions, "sale:write") && (
             <Button onClick={() => go("pos")}>
               <Plus size={17} />
-              Nueva venta
+              {t("Nueva venta")}
             </Button>
           )}
         </div>
@@ -244,23 +250,25 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
       {can(user.permissions, "*") && !!voidRequests.data?.length && (
         <section
           className="void-request-dashboard"
-          aria-label="Solicitudes de anulación pendientes"
+          aria-label={t("Solicitudes de anulación pendientes")}
         >
           <div>
             <strong>
+              {language === "en" ? `${voidRequests.data.length} pending cancellation request${voidRequests.data.length === 1 ? "" : "s"}` : <>
               {voidRequests.data.length} solicitud
               {voidRequests.data.length === 1 ? "" : "es"} de anulación
               pendiente{voidRequests.data.length === 1 ? "" : "s"}
+              </>}
             </strong>
-            <p>Revisa la venta antes de aprobar o rechazar.</p>
+            <p>{t("Revisa la venta antes de aprobar o rechazar.")}</p>
           </div>
           <Button onClick={() => go("void-requests")}>
-            Revisar solicitudes
+            {t("Revisar solicitudes")}
           </Button>
           {voidRequests.data.slice(0, 3).map((row) => (
             <div className="void-request-dashboard-row" key={row.id}>
               <span>
-                Factura {row.sale.number} · {row.requester.name}
+                {t("Factura")} {row.sale.number} · {row.requester.name}
               </span>
               <Button
                 variant="secondary"
@@ -270,10 +278,10 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   setVoidToApprove(row);
                 }}
               >
-                Anular venta
+                {t("Anular venta")}
               </Button>
               {row.approvalBlocker && (
-                <small>No se puede anular: {row.approvalBlocker}</small>
+                <small>{t("No se puede anular:")} {row.approvalBlocker}</small>
               )}
             </div>
           ))}
@@ -282,11 +290,11 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
       {voidToApprove && (
         <Modal
           open
-          title={"Anular factura " + voidToApprove.sale.number}
+          title={t("Anular factura ") + voidToApprove.sale.number}
           onClose={() => setVoidToApprove(null)}
         >
           <p>
-            Confirma la anulación. Se revertirán los movimientos de esta venta.
+            {t("Confirma la anulación. Se revertirán los movimientos de esta venta.")}
           </p>
           {voidError && (
             <p role="alert" className="danger-text">
@@ -295,7 +303,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           )}
           <div className="void-request-actions">
             <Button variant="secondary" onClick={() => setVoidToApprove(null)}>
-              Cancelar
+              {t("Cancelar")}
             </Button>
             <Button
               disabled={voidBusy}
@@ -309,7 +317,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   );
                   await queryClient.invalidateQueries();
                   setVoidToApprove(null);
-                  toast("Venta anulada y solicitud aprobada.");
+                  toast(t("Venta anulada y solicitud aprobada."));
                 } catch (error: any) {
                   setVoidError(error.message);
                 } finally {
@@ -317,7 +325,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                 }
               }}
             >
-              Confirmar anulación
+              {t("Confirmar anulación")}
             </Button>
           </div>
         </Modal>
@@ -328,16 +336,16 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           <div>
             <span className="banner-chip">
               <span className="live-dot" />
-              Tu tienda está en movimiento
+              {t("Tu tienda está en movimiento")}
             </span>
             <h2>
-              Pequeñas decisiones.
+              {t("Pequeñas decisiones.")}
               <br />
-              <span>Grandes resultados.</span>
+              <span>{t("Grandes resultados.")}</span>
             </h2>
-            <p>Todo lo que necesitas para vender mejor, en un solo lugar.</p>
+            <p>{t("Todo lo que necesitas para vender mejor, en un solo lugar.")}</p>
             <button onClick={() => go("reports")}>
-              Explorar mis reportes <ArrowRight size={16} />
+              {t("Explorar mis reportes")} <ArrowRight size={16} />
             </button>
           </div>
           {/* Ilustración decorativa: el lector de pantalla la omite. */}
@@ -345,7 +353,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             <div className="floating-tag">
               <TrendingUp size={20} />
               <span>
-                Tu siguiente meta<strong>Seguir creciendo</strong>
+                {t("Tu siguiente meta")}<strong>{t("Seguir creciendo")}</strong>
               </span>
             </div>
             <div className="bag-shape">
@@ -368,7 +376,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         <DayCard />
         <div className="kpi-grid tablero-kpis">
           {metric.map((m) => (
-            <article className="kpi-card" key={m.label}>
+            <article className="kpi-card" key={m.label} tabIndex={0}>
               <div className="kpi-top">
                 <span>{m.label}</span>
                 <div className={`metric-icon ${m.tone}`}>
@@ -400,12 +408,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           <section className="panel sales-chart">
             <div className="panel-heading">
               <div>
-                <h2>Así van tus ventas</h2>
-                <p>Una historia de crecimiento, día a día.</p>
+                <h2>{t("Así van tus ventas")}</h2>
+                <p>{t("Una historia de crecimiento, día a día.")}</p>
               </div>
               <Badge tone="violet">
                 <span className="chart-key" />
-                Ventas
+                {t("Ventas")}
               </Badge>
             </div>
             <div className="chart-wrap">
@@ -418,12 +426,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                     <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
                       <stop
                         offset="0%"
-                        stopColor="#8b5cf6"
+                        stopColor="var(--fi-accent, #8b5cf6)"
                         stopOpacity={0.23}
                       />
                       <stop
                         offset="95%"
-                        stopColor="#8b5cf6"
+                        stopColor="var(--fi-accent, #8b5cf6)"
                         stopOpacity={0.01}
                       />
                     </linearGradient>
@@ -452,7 +460,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   />
                   <Tooltip
                     formatter={(v) => formatMoney(Number(v))}
-                    labelFormatter={(v) => "Día " + String(v).slice(8)}
+                    labelFormatter={(v) => t("Día ") + String(v).slice(8)}
                     contentStyle={{
                       borderRadius: 12,
                       border: "1px solid var(--border)",
@@ -462,9 +470,26 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   <Area
                     type="monotone"
                     dataKey="total"
-                    stroke="#8b5cf6"
+                    stroke="var(--fi-accent, #8b5cf6)"
                     strokeWidth={3}
                     fill="url(#salesFill)"
+                    dot={(point: {
+                      cx?: number;
+                      cy?: number;
+                      value?: unknown;
+                      payload?: { total?: unknown };
+                    }) => (
+                      <circle
+                        cx={point.cx}
+                        cy={point.cy}
+                        r={5}
+                        className="fi-chart-point"
+                        tabIndex={0}
+                        aria-label={chartSalesLabel(point, formatMoney, language)}
+                      >
+                        <title>{chartSalesLabel(point, formatMoney, language)}</title>
+                      </circle>
+                    )}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -472,18 +497,18 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             <div className="chart-bottom">
               <span>
                 <span className="live-dot" />
-                Datos de ventas registradas
+                {t("Datos de ventas registradas")}
               </span>
               <button onClick={() => go("reports")}>
-                Ver detalle <ChevronRight size={15} />
+                {t("Ver detalle")} <ChevronRight size={15} />
               </button>
             </div>
           </section>
           <section className="panel alerts-panel">
             <div className="panel-heading">
               <div>
-                <h2>Un poco de atención</h2>
-                <p>Lo importante, antes de que sea urgente.</p>
+                <h2>{t("Un poco de atención")}</h2>
+                <p>{t("Lo importante, antes de que sea urgente.")}</p>
               </div>
               <span className="alert-counter">{data?.alerts?.length || 0}</span>
             </div>
@@ -508,14 +533,14 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   <div>
                     <strong>
                       {a.type === "low_stock"
-                        ? "Stock para reponer"
+                        ? t("Stock para reponer")
                         : a.type === "expiring"
-                          ? "Fecha de vencimiento cerca"
+                          ? t("Fecha de vencimiento cerca")
                           : a.type === "no_movement"
-                            ? "Tiempo de una nueva oportunidad"
+                            ? t("Tiempo de una nueva oportunidad")
                             : a.type === "expense_budget"
-                              ? "Revisa tu presupuesto"
-                              : "Requiere tu atención"}
+                              ? t("Revisa tu presupuesto")
+                              : t("Requiere tu atención")}
                     </strong>
                     <p>{a.message}</p>
                   </div>
@@ -524,12 +549,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               ))}
               {!data?.alerts?.length && (
                 <p className="empty-small">
-                  Todo en orden. Tu tienda está al día.
+                  {t("Todo en orden. Tu tienda está al día.")}
                 </p>
               )}
             </div>
             <button className="panel-link" onClick={() => go("alerts")}>
-              Ver todas las alertas <ArrowRight size={16} />
+              {t("Ver todas las alertas")} <ArrowRight size={16} />
             </button>
           </section>
         </div>
@@ -537,21 +562,21 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           <section className="panel">
             <div className="panel-heading">
               <div>
-                <h2>Los favoritos de tu tienda</h2>
-                <p>Productos que tus clientes eligen una y otra vez.</p>
+                <h2>{t("Los favoritos de tu tienda")}</h2>
+                <p>{t("Productos que tus clientes eligen una y otra vez.")}</p>
               </div>
               <button className="text-link" onClick={() => go("products")}>
-                Ver productos <ChevronRight size={15} />
+                {t("Ver productos")} <ChevronRight size={15} />
               </button>
             </div>
             <div className="table-wrap" tabIndex={0}>
               <table>
                 <thead>
                   <tr>
-                    <th>PRODUCTO</th>
-                    <th>CATEGORÍA</th>
-                    <th>UNIDADES</th>
-                    <th className="right">VENTAS</th>
+                    <th>{t("PRODUCTO")}</th>
+                    <th>{t("CATEGORÍA")}</th>
+                    <th>{t("UNIDADES")}</th>
+                    <th className="right">{t("VENTAS")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -579,8 +604,8 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
           <section className="panel category-panel">
             <div className="panel-heading">
               <div>
-                <h2>Cada categoría cuenta</h2>
-                <p>La mezcla que mueve tu tienda.</p>
+                <h2>{t("Cada categoría cuenta")}</h2>
+                <p>{t("La mezcla que mueve tu tienda.")}</p>
               </div>
             </div>
             {data?.category?.map((c: any) => {
@@ -609,7 +634,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
             <div className="insight-note">
               <Sparkles size={19} />
               <p>
-                Conoce tu mezcla de ventas y dale espacio a lo que funciona.
+                {t("Conoce tu mezcla de ventas y dale espacio a lo que funciona.")}
               </p>
             </div>
           </section>
@@ -617,39 +642,39 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <h2>Comparativo anual</h2>
-              <p>Mismo período del año anterior</p>
+              <h2>{t("Comparativo anual")}</h2>
+              <p>{t("Mismo período del año anterior")}</p>
             </div>
           </div>
           <p>
             {formatMoney(data?.previousYearRevenue ?? 0)} ·{" "}
             {data?.yearOverYear == null
-              ? "Sin base comparable"
-              : data.yearOverYear + "% de variación"}
+              ? t("Sin base comparable")
+              : data.yearOverYear + t("% de variación")}
           </p>
         </section>
         <section className="panel">
           <div className="panel-heading">
             <div>
-              <h2>Horas pico</h2>
-              <p>Ventas por día y hora · Santo Domingo</p>
+              <h2>{t("Horas pico")}</h2>
+              <p>{t("Ventas por día y hora · Santo Domingo")}</p>
             </div>
           </div>
           <div
             className="heatmap"
             role="table"
-            aria-label="Ventas por día y hora"
+            aria-label={t("Ventas por día y hora")}
             tabIndex={0}
           >
             <div className="heatmap-row" role="row">
-              <span role="columnheader">Hora</span>
+              <span role="columnheader">{t("Hora")}</span>
               {Array.from({ length: 24 }, (_, hour) => (
                 <span role="columnheader" key={hour}>
                   {hour}
                 </span>
               ))}
             </div>
-            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map(
+            {[t("Lun"), t("Mar"), t("Mié"), t("Jue"), t("Vie"), t("Sáb"), t("Dom")].map(
               (day, index) => (
                 <div className="heatmap-row" role="row" key={day}>
                   <strong role="rowheader">{day}</strong>
@@ -666,7 +691,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                       <span
                         key={hour}
                         role="cell"
-                        title={day + " " + hour + ":00 · " + count + " ventas"}
+                        title={day + " " + hour + ":00 · " + count + t(" ventas")}
                         style={{
                           // Tope de 0.62: con más color, el número de la celda más
                           // fuerte pasaba de 4.5:1 a unos 4.4:1 según los datos.
@@ -685,25 +710,25 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         {showProfit && (
           <div className="financial-strip">
             <div>
-              <span>Gastos del período</span>
+              <span>{t("Gastos del período")}</span>
               <strong>{formatMoney(data?.expenses ?? 0)}</strong>
             </div>
             <div>
-              <span>Comisiones bancarias</span>
+              <span>{t("Comisiones bancarias")}</span>
               <strong>{formatMoney(data?.fees ?? 0)}</strong>
             </div>
             <div>
-              <span>Mermas, ajustes y devoluciones a proveedor (a costo)</span>
+              <span>{t("Mermas, ajustes y devoluciones a proveedor (a costo)")}</span>
               <strong>{formatMoney(data?.inventoryLoss ?? 0)}</strong>
             </div>
             {!!data?.countCorrections && (
               <div>
-                <span>Correcciones del conteo de inventario (no restan)</span>
+                <span>{t("Correcciones del conteo de inventario (no restan)")}</span>
                 <strong>{formatMoney(data.countCorrections)}</strong>
               </div>
             )}
             <div>
-              <span>Ganancia neta</span>
+              <span>{t("Ganancia neta")}</span>
               <strong
                 className={
                   (data?.netProfit ?? 0) >= 0 ? "green-text" : "danger-text"
@@ -713,12 +738,12 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
               </strong>
             </div>
             <div>
-              <span>Inventario a costo</span>
+              <span>{t("Inventario a costo")}</span>
               <strong>{formatMoney(data?.inventoryCost ?? 0)}</strong>
             </div>
           </div>
         )}
       </QueryState>
-    </>
+    </div>
   );
 }

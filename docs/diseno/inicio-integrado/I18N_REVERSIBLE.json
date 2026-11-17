@@ -1,0 +1,438 @@
+[
+  {
+    "before": "Inventario a costo",
+    "after": "{t(\"Inventario a costo\")}"
+  },
+  {
+    "before": "Ganancia neta",
+    "after": "{t(\"Ganancia neta\")}"
+  },
+  {
+    "before": "Correcciones del conteo de inventario (no restan)",
+    "after": "{t(\"Correcciones del conteo de inventario (no restan)\")}"
+  },
+  {
+    "before": "Mermas, ajustes y devoluciones a proveedor (a costo)",
+    "after": "{t(\"Mermas, ajustes y devoluciones a proveedor (a costo)\")}"
+  },
+  {
+    "before": "Comisiones bancarias",
+    "after": "{t(\"Comisiones bancarias\")}"
+  },
+  {
+    "before": "Gastos del período",
+    "after": "{t(\"Gastos del período\")}"
+  },
+  {
+    "before": "\" ventas\"",
+    "after": "t(\" ventas\")"
+  },
+  {
+    "before": "\"Dom\"",
+    "after": "t(\"Dom\")"
+  },
+  {
+    "before": "\"Sáb\"",
+    "after": "t(\"Sáb\")"
+  },
+  {
+    "before": "\"Vie\"",
+    "after": "t(\"Vie\")"
+  },
+  {
+    "before": "\"Jue\"",
+    "after": "t(\"Jue\")"
+  },
+  {
+    "before": "\"Mié\"",
+    "after": "t(\"Mié\")"
+  },
+  {
+    "before": "\"Mar\"",
+    "after": "t(\"Mar\")"
+  },
+  {
+    "before": "\"Lun\"",
+    "after": "t(\"Lun\")"
+  },
+  {
+    "before": "Hora",
+    "after": "{t(\"Hora\")}"
+  },
+  {
+    "before": "\"Ventas por día y hora\"",
+    "after": "{t(\"Ventas por día y hora\")}"
+  },
+  {
+    "before": "Ventas por día y hora · Santo Domingo",
+    "after": "{t(\"Ventas por día y hora · Santo Domingo\")}"
+  },
+  {
+    "before": "Horas pico",
+    "after": "{t(\"Horas pico\")}"
+  },
+  {
+    "before": "\"% de variación\"",
+    "after": "t(\"% de variación\")"
+  },
+  {
+    "before": "\"Sin base comparable\"",
+    "after": "t(\"Sin base comparable\")"
+  },
+  {
+    "before": "Mismo período del año anterior",
+    "after": "{t(\"Mismo período del año anterior\")}"
+  },
+  {
+    "before": "Comparativo anual",
+    "after": "{t(\"Comparativo anual\")}"
+  },
+  {
+    "before": "\n                Conoce tu mezcla de ventas y dale espacio a lo que funciona.\n              ",
+    "after": "\n                {t(\"Conoce tu mezcla de ventas y dale espacio a lo que funciona.\")}\n              "
+  },
+  {
+    "before": "La mezcla que mueve tu tienda.",
+    "after": "{t(\"La mezcla que mueve tu tienda.\")}"
+  },
+  {
+    "before": "Cada categoría cuenta",
+    "after": "{t(\"Cada categoría cuenta\")}"
+  },
+  {
+    "before": "VENTAS",
+    "after": "{t(\"VENTAS\")}"
+  },
+  {
+    "before": "UNIDADES",
+    "after": "{t(\"UNIDADES\")}"
+  },
+  {
+    "before": "CATEGORÍA",
+    "after": "{t(\"CATEGORÍA\")}"
+  },
+  {
+    "before": "PRODUCTO",
+    "after": "{t(\"PRODUCTO\")}"
+  },
+  {
+    "before": "\n                Ver productos ",
+    "after": "\n                {t(\"Ver productos\")} "
+  },
+  {
+    "before": "Productos que tus clientes eligen una y otra vez.",
+    "after": "{t(\"Productos que tus clientes eligen una y otra vez.\")}"
+  },
+  {
+    "before": "Los favoritos de tu tienda",
+    "after": "{t(\"Los favoritos de tu tienda\")}"
+  },
+  {
+    "before": "\n              Ver todas las alertas ",
+    "after": "\n              {t(\"Ver todas las alertas\")} "
+  },
+  {
+    "before": "\n                  Todo en orden. Tu tienda está al día.\n                ",
+    "after": "\n                  {t(\"Todo en orden. Tu tienda está al día.\")}\n                "
+  },
+  {
+    "before": "\"Requiere tu atención\"",
+    "after": "t(\"Requiere tu atención\")"
+  },
+  {
+    "before": "\"Revisa tu presupuesto\"",
+    "after": "t(\"Revisa tu presupuesto\")"
+  },
+  {
+    "before": "\"Tiempo de una nueva oportunidad\"",
+    "after": "t(\"Tiempo de una nueva oportunidad\")"
+  },
+  {
+    "before": "\"Fecha de vencimiento cerca\"",
+    "after": "t(\"Fecha de vencimiento cerca\")"
+  },
+  {
+    "before": "\"Stock para reponer\"",
+    "after": "t(\"Stock para reponer\")"
+  },
+  {
+    "before": "Lo importante, antes de que sea urgente.",
+    "after": "{t(\"Lo importante, antes de que sea urgente.\")}"
+  },
+  {
+    "before": "Un poco de atención",
+    "after": "{t(\"Un poco de atención\")}"
+  },
+  {
+    "before": "\n                Ver detalle ",
+    "after": "\n                {t(\"Ver detalle\")} "
+  },
+  {
+    "before": "\n                Datos de ventas registradas\n              ",
+    "after": "\n                {t(\"Datos de ventas registradas\")}\n              "
+  },
+  {
+    "before": "\"Día \"",
+    "after": "t(\"Día \")"
+  },
+  {
+    "before": "\n                Ventas\n              ",
+    "after": "\n                {t(\"Ventas\")}\n              "
+  },
+  {
+    "before": "Una historia de crecimiento, día a día.",
+    "after": "{t(\"Una historia de crecimiento, día a día.\")}"
+  },
+  {
+    "before": "Así van tus ventas",
+    "after": "{t(\"Así van tus ventas\")}"
+  },
+  {
+    "before": "Seguir creciendo",
+    "after": "{t(\"Seguir creciendo\")}"
+  },
+  {
+    "before": "\n                Tu siguiente meta",
+    "after": "\n                {t(\"Tu siguiente meta\")}"
+  },
+  {
+    "before": "\n              Explorar mis reportes ",
+    "after": "\n              {t(\"Explorar mis reportes\")} "
+  },
+  {
+    "before": "Todo lo que necesitas para vender mejor, en un solo lugar.",
+    "after": "{t(\"Todo lo que necesitas para vender mejor, en un solo lugar.\")}"
+  },
+  {
+    "before": "Grandes resultados.",
+    "after": "{t(\"Grandes resultados.\")}"
+  },
+  {
+    "before": "\n              Pequeñas decisiones.\n              ",
+    "after": "\n              {t(\"Pequeñas decisiones.\")}\n              "
+  },
+  {
+    "before": "\n              Tu tienda está en movimiento\n            ",
+    "after": "\n              {t(\"Tu tienda está en movimiento\")}\n            "
+  },
+  {
+    "before": "\n              Confirmar anulación\n            ",
+    "after": "\n              {t(\"Confirmar anulación\")}\n            "
+  },
+  {
+    "before": "\"Venta anulada y solicitud aprobada.\"",
+    "after": "t(\"Venta anulada y solicitud aprobada.\")"
+  },
+  {
+    "before": "\n              Cancelar\n            ",
+    "after": "\n              {t(\"Cancelar\")}\n            "
+  },
+  {
+    "before": "\n            Confirma la anulación. Se revertirán los movimientos de esta venta.\n          ",
+    "after": "\n            {t(\"Confirma la anulación. Se revertirán los movimientos de esta venta.\")}\n          "
+  },
+  {
+    "before": "\"Anular factura \"",
+    "after": "t(\"Anular factura \")"
+  },
+  {
+    "before": "No se puede anular: ",
+    "after": "{t(\"No se puede anular:\")} "
+  },
+  {
+    "before": "\n                Anular venta\n              ",
+    "after": "\n                {t(\"Anular venta\")}\n              "
+  },
+  {
+    "before": "\n                Factura ",
+    "after": "\n                {t(\"Factura\")} "
+  },
+  {
+    "before": "\n            Revisar solicitudes\n          ",
+    "after": "\n            {t(\"Revisar solicitudes\")}\n          "
+  },
+  {
+    "before": "Revisa la venta antes de aprobar o rechazar.",
+    "after": "{t(\"Revisa la venta antes de aprobar o rechazar.\")}"
+  },
+  {
+    "before": "\"Solicitudes de anulación pendientes\"",
+    "after": "{t(\"Solicitudes de anulación pendientes\")}"
+  },
+  {
+    "before": "\n              Nueva venta\n            ",
+    "after": "\n              {t(\"Nueva venta\")}\n            "
+  },
+  {
+    "before": "\n            Exportar\n          ",
+    "after": "\n            {t(\"Exportar\")}\n          "
+  },
+  {
+    "before": "\"Día del resumen\"",
+    "after": "{t(\"Día del resumen\")}"
+  },
+  {
+    "before": "Otro día…",
+    "after": "{t(\"Otro día…\")}"
+  },
+  {
+    "before": "Hoy",
+    "after": "{t(\"Hoy\")}"
+  },
+  {
+    "before": "Últimos 7 días",
+    "after": "{t(\"Últimos 7 días\")}"
+  },
+  {
+    "before": "Este mes",
+    "after": "{t(\"Este mes\")}"
+  },
+  {
+    "before": "\"Período del resumen\"",
+    "after": "{t(\"Período del resumen\")}"
+  },
+  {
+    "before": "Un vistazo a tu tienda. Un paso más hacia tus metas.",
+    "after": "{t(\"Un vistazo a tu tienda. Un paso más hacia tus metas.\")}"
+  },
+  {
+    "before": "\n            Hola, ",
+    "after": "\n            {t(\"Hola,\")} "
+  },
+  {
+    "before": "EL PULSO DE TU NEGOCIO",
+    "after": "{t(\"EL PULSO DE TU NEGOCIO\")}"
+  },
+  {
+    "before": "\"Por cada visita a tu tienda\"",
+    "after": "t(\"Por cada visita a tu tienda\")"
+  },
+  {
+    "before": "\"Ticket promedio\"",
+    "after": "t(\"Ticket promedio\")"
+  },
+  {
+    "before": "\"Cada venta cuenta\"",
+    "after": "t(\"Cada venta cuenta\")"
+  },
+  {
+    "before": "\"Ventas registradas\"",
+    "after": "t(\"Ventas registradas\")"
+  },
+  {
+    "before": "\"Valor del stock disponible\"",
+    "after": "t(\"Valor del stock disponible\")"
+  },
+  {
+    "before": "\"Inventario a la venta\"",
+    "after": "t(\"Inventario a la venta\")"
+  },
+  {
+    "before": "\"Ganancia bruta\"",
+    "after": "t(\"Ganancia bruta\")"
+  },
+  {
+    "before": "\"vs. período anterior\"",
+    "after": "t(\"vs. período anterior\")"
+  },
+  {
+    "before": "\"Ventas del período\"",
+    "after": "t(\"Ventas del período\")"
+  },
+  {
+    "before": "\n            Buscar otro día\n            ",
+    "after": "\n            {t(\"Buscar otro día\")}\n            "
+  },
+  {
+    "before": "\"Hoy\"",
+    "after": "{t(\"Hoy\")}"
+  },
+  {
+    "before": "\"Ayer\"",
+    "after": "{t(\"Ayer\")}"
+  },
+  {
+    "before": "\"Ventas por día\"",
+    "after": "{t(\"Ventas por día\")}"
+  },
+  {
+    "before": "\n            Ganancia (venta − costo) ",
+    "after": "\n            {t(\"Ganancia (venta − costo)\")} "
+  },
+  {
+    "before": "Costo ",
+    "after": "{t(\"Costo\")} "
+  },
+  {
+    "before": " facturas",
+    "after": " {t(\"facturas\")}"
+  },
+  {
+    "before": "Cargando…",
+    "after": "{t(\"Cargando…\")}"
+  },
+  {
+    "before": "\n              Reintentar\n            ",
+    "after": "\n              {t(\"Reintentar\")}\n            "
+  },
+  {
+    "before": "\n            No se pudo cargar.",
+    "after": "\n            {t(\"No se pudo cargar.\")}"
+  },
+  {
+    "before": "function DayCard() {",
+    "after": "function DayCard() {\n  useLanguage();"
+  },
+  {
+    "before": "  const user = useStore((s) => s.user)!;",
+    "after": "  useLanguage();\n  const user = useStore((s) => s.user)!;"
+  },
+  {
+    "before": "export function Dashboard({ go }: { go: (page: string) => void }) {",
+    "after": "export function Dashboard({ go }: { go: (page: string) => void }) {\n  useLanguage();"
+  },
+  {
+    "before": "import { formatMoney, can, weekStart }",
+    "after": "import { can, weekStart }"
+  },
+  {
+    "before": "",
+    "after": "import { t, useLanguage, money as formatMoney, locale } from \"./inicioLanguage\";\n"
+  },
+  {
+    "before": ".toLocaleString(\"es-DO\")",
+    "after": ".toLocaleString(locale())"
+  },
+  {
+    "before": "export function Dashboard({ go }: { go: (page: string) => void }) {\n  useLanguage();",
+    "after": "export function Dashboard({ go }: { go: (page: string) => void }) {\n  const language = useLanguage();"
+  },
+  {
+    "before": "`${data?.margin ?? 0}% de margen`",
+    "after": "`${data?.margin ?? 0}% ${language === \"en\" ? \"margin\" : \"de margen\"}`"
+  },
+  {
+    "before": "chartSalesLabel(point, formatMoney)",
+    "after": "chartSalesLabel(point, formatMoney, language)"
+  },
+  {
+    "before": "chartSalesLabel(point, formatMoney)",
+    "after": "chartSalesLabel(point, formatMoney, language)"
+  },
+  {
+    "before": "money as formatMoney, locale }",
+    "after": "money as formatMoney, locale, dateLabel, invoiceLabel }"
+  },
+  {
+    "before": "{data?.invoices ?? 0} {t(\"facturas\")}",
+    "after": "{invoiceLabel(data?.invoices ?? 0)}"
+  },
+  {
+    "before": "title={day.split(\"-\").reverse().join(\"/\")}",
+    "after": "title={dateLabel(day)}"
+  },
+  {
+    "before": "              {voidRequests.data.length} solicitud\n              {voidRequests.data.length === 1 ? \"\" : \"es\"} de anulación\n              pendiente{voidRequests.data.length === 1 ? \"\" : \"s\"}",
+    "after": "              {language === \"en\" ? `${voidRequests.data.length} pending cancellation request${voidRequests.data.length === 1 ? \"\" : \"s\"}` : <>\n              {voidRequests.data.length} solicitud\n              {voidRequests.data.length === 1 ? \"\" : \"es\"} de anulación\n              pendiente{voidRequests.data.length === 1 ? \"\" : \"s\"}\n              </>}"
+  }
+]

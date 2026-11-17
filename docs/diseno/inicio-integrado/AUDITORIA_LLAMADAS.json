@@ -1,0 +1,26 @@
+[
+  {
+    "file": "App.tsx",
+    "protectedCalls": 18,
+    "identical": true,
+    "sha256": "c41ec33ffa397ab3bb62388d3c3fd7501c19b650f14f9b5306cac86d4a11941c"
+  },
+  {
+    "file": "Dashboard.tsx",
+    "protectedCalls": 12,
+    "identical": true,
+    "sha256": "17bab8501648ca543c555ef156e4d00b89cce82172cb77209489f59bab939919"
+  },
+  {
+    "file": "KpiStrip.tsx",
+    "protectedCalls": 4,
+    "identical": true,
+    "sha256": "fe4946aeb792067bf373fe9b01b2c3a3fc29f33cf22579cf361b704fa1476cc9"
+  },
+  {
+    "file": "YearPie.tsx",
+    "protectedCalls": 3,
+    "identical": true,
+    "sha256": "2a5205e80582bad7bd0f702221200e2c7ab43dc3574bf5baf8b8a6575ac76a61"
+  }
+]

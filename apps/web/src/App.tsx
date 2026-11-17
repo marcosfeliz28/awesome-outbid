@@ -1,3 +1,5 @@
+import { t, useLanguage, setLanguage } from "./inicioLanguage";
+import { AppearanceControls } from "./AppearanceControls";
 import {
   DeviceGate,
   useRealtime,
@@ -161,19 +163,19 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
     }
   };
   return (
-    <Modal open={open} onClose={onClose} title="Acerca de Norexos" wide>
+    <Modal open={open} onClose={onClose} title="Acerca de Noxeros" wide>
       <div className="about">
         <p>
           <strong>Versión {__NEXORA_VERSION__}</strong>
         </p>
         <p className="about-fiscal">
           <strong>Documento no fiscal.</strong> Los recibos, notas y reportes de
-          Norexos son documentos internos y no sustituyen un comprobante fiscal
+          Noxeros son documentos internos y no sustituyen un comprobante fiscal
           (NCF/e-CF).
         </p>
         <h3>Privacidad</h3>
         <p className="about-privacy">
-          Norexos guarda los datos de clientes que registra la tienda (nombre y,
+          Noxeros guarda los datos de clientes que registra la tienda (nombre y,
           si se dan, teléfono, correo y cédula/RNC) sólo para sus ventas,
           garantías y créditos. Cada recibo lo recuerda en el pie.{" "}
           <a href="/privacidad.html" target="_blank" rel="noopener">
@@ -293,7 +295,7 @@ const navigation = [
   // Visible solo si la API tiene la llave de IA y la persona puede usarla.
   {
     id: "assistant",
-    label: "Preguntar a Norexos",
+    label: "Preguntar a Noxeros",
     icon: AssistantIcon,
     permission: "authenticated",
   },
@@ -358,7 +360,7 @@ function Login() {
           <div className="brand-icon">
             n<span>•</span>
           </div>
-          <span>Norexos</span>
+          <span>Noxeros</span>
         </div>
         <div>
           <span className="eyebrow light">GRUPO MACGEN · GV MAKEUP STUDIO</span>
@@ -639,6 +641,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
 }
 
 function Shell() {
+  const language = useLanguage();
   const { user, online, theme, toggleTheme, setOnline } = useStore();
   const alertBell = useQuery({
     queryKey: ["alert-bell"],
@@ -995,7 +998,7 @@ function Shell() {
       {menu && (
         <button
           className="sidebar-backdrop"
-          aria-label="Cerrar menú"
+          aria-label={t("Cerrar menú")}
           onClick={() => {
             setMenu(false);
             menuButton.current?.focus();
@@ -1008,7 +1011,7 @@ function Shell() {
         page !== "pos" && (
           <nav className="goods-mobile-bar">
             <Button onClick={() => go("merchandise")}>
-              <Truck size={24} /> Mercancía
+              <Truck size={24} /> {t("Mercancía")}
             </Button>
           </nav>
         )}
@@ -1024,28 +1027,29 @@ function Shell() {
           <div className="brand-icon">
             n<span>•</span>
           </div>
-          <span>Norexos</span>
+          <span>Noxeros</span>
         </a>
         <div className="store-switch">
           <div className="store-avatar">
             <ShoppingBag size={18} />
           </div>
           <div>
-            <strong>Tienda principal</strong>
-            <small>República Dominicana</small>
+            <strong>{t("Tienda principal")}</strong>
+            <small>{t("República Dominicana")}</small>
           </div>
           <ChevronDown size={15} />
         </div>
-        <div className="nav-caption">TU NEGOCIO</div>
+        <div className="nav-caption">{t("TU NEGOCIO")}</div>
         <nav>
           {allowed.map((n) => (
             <button
               key={n.id}
+              aria-label={t(n.label)}
               className={`nav-item ${page === n.id ? "active" : ""}`}
               onClick={() => go(n.id)}
             >
               <n.icon size={19} />
-              <span>{n.label}</span>
+              <span>{t(n.label)}</span>
               {page === n.id && <span className="nav-dot" />}
             </button>
           ))}
@@ -1053,13 +1057,13 @@ function Shell() {
         <div className="sidebar-bottom">
           <div className="help-card">
             <div className="help-symbol">✦</div>
-            <strong>Ayuda para trabajar</strong>
+            <strong>{t("Ayuda para trabajar")}</strong>
             <p>
-              Consulta los pasos de venta
-              <br />y los atajos de tu caja.
+              {t("Consulta los pasos de venta")}
+              <br />{t("y los atajos de tu caja.")}
             </p>
             <button onClick={() => setHelp(true)}>
-              Ver ayuda <ArrowUpRight size={15} />
+              {t("Ver ayuda")} <ArrowUpRight size={15} />
             </button>
           </div>
           {can(user.permissions, "sale:manage") && (
@@ -1068,7 +1072,7 @@ function Shell() {
               onClick={() => go("settings")}
             >
               <Settings size={19} />
-              Configuración
+              {t("Configuración")}
             </button>
           )}
           <button
@@ -1079,17 +1083,22 @@ function Shell() {
             }}
           >
             <Info size={19} />
-            Acerca de
+            {t("Acerca de")}
           </button>
           {SHOW_STYLE_GUIDE && (
             <button className="nav-item" onClick={() => go("styles")}>
               <Palette size={19} />
-              Guía de estilos
+              {t("Guía de estilos")}
             </button>
           )}
         </div>
       </aside>
       <div className="main-shell">
+        <div className="fusion-preferences">
+          <label>{language === "en" ? "Language" : "Idioma"} <select aria-label={language === "en" ? "Interface language" : "Idioma de la interfaz"} value={language} onChange={(e) => setLanguage(e.target.value === "en" ? "en" : "es")}><option value="es">Español</option><option value="en">English</option></select></label>
+          {page === "dashboard" && <AppearanceControls language={language} />}
+          <small role="status">{language === "en" ? "English covers Overview and main navigation. Other pages, store data and server messages retain their original language." : "Traducción disponible: Inicio y navegación principal. Las demás pantallas, datos de tienda y mensajes del servidor conservan su idioma original."}</small>
+        </div>
         <header className="topbar">
           <div className="topbar-left">
             <button
@@ -1097,28 +1106,28 @@ function Shell() {
               className="icon-button mobile-menu"
               aria-expanded={mobile ? menu : undefined}
               onClick={() => setMenu(true)}
-              aria-label="Abrir menú"
+              aria-label={t("Abrir menú")}
             >
               <Menu />
             </button>
             <span className="breadcrumb">
               <span className="breadcrumb-parent">
-                Mi tienda <span>/</span>
+                {t("Mi tienda")} <span>/</span>
               </span>
               <strong>
-                {current?.label ||
+                {(current?.label ? t(current.label) : "") ||
                   (page === "styles"
-                    ? "Guía de estilos"
+                    ? t("Guía de estilos")
                     : page === "demo"
-                      ? "Demostración"
-                      : "Configuración")}
+                      ? t("Demostración")
+                      : t("Configuración"))}
               </strong>
             </span>
           </div>
           <div className="topbar-right">
             <button className="global-search" onClick={() => setCommands(true)}>
               <Search size={17} />
-              <span>Buscar en Norexos</span>
+              <span>{t("Buscar en Noxeros")}</span>
               <kbd>⌘ K</kbd>
             </button>
             <button
@@ -1126,10 +1135,10 @@ function Shell() {
               onClick={synchronize}
               title={
                 pending
-                  ? `${pending} ventas pendientes`
+                  ? `${pending} ${language === "en" ? "pending sales" : "ventas pendientes"}`
                   : online
-                    ? "Conectado"
-                    : "Sin conexión"
+                    ? t("Conectado")
+                    : t("Sin conexión")
               }
             >
               {syncing ? (
@@ -1141,10 +1150,8 @@ function Shell() {
               )}
               <span>
                 {syncing
-                  ? "Sincronizando"
-                  : online
-                    ? "En línea"
-                    : "Sin conexión"}
+                  ? t("Sincronizando")
+                  : t(online ? "En línea" : "Sin conexión")}
                 {pending ? ` · ${pending}` : ""}
               </span>
             </button>
@@ -1157,7 +1164,7 @@ function Shell() {
                 })
               }
               aria-label={
-                theme === "light" ? "Activar modo oscuro" : "Activar modo claro"
+                theme === "light" ? t("Activar modo oscuro") : t("Activar modo claro")
               }
             >
               {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
@@ -1166,10 +1173,10 @@ function Shell() {
               <button
                 className="icon-button notification-bell"
                 onClick={() => go("alerts")}
-                aria-label={`Ver alertas${alertCount ? ": " + alertCount + " nuevas" : ""}`}
+                aria-label={`${language === "en" ? "View alerts" : "Ver alertas"}${alertCount ? ": " + alertCount + (language === "en" ? " new" : " nuevas") : ""}`}
               >
                 <Bell size={20} />
-                {alertCount > 0 && <i title={`${alertCount} alertas nuevas`} />}
+                {alertCount > 0 && <i title={`${alertCount} ${language === "en" ? "new alerts" : "alertas nuevas"}`} />}
               </button>
             )}
             <div className="topbar-separator" />
@@ -1179,10 +1186,10 @@ function Shell() {
                 <strong>{user.name}</strong>
                 <small>
                   {{
-                    admin: "Administradora",
-                    manager: "Gerente",
-                    seller: "Vendedora",
-                    warehouse: "Almacén",
+                    admin: t("Administradora"),
+                    manager: t("Gerente"),
+                    seller: t("Vendedora"),
+                    warehouse: t("Almacén"),
                   }[user.role] || user.role}
                 </small>
               </div>
@@ -1210,7 +1217,7 @@ function Shell() {
                       }
                     }}
                   >
-                    Cambiar de usuario con PIN
+                    {t("Cambiar de usuario con PIN")}
                   </button>
                 )}
                 <button
@@ -1220,7 +1227,7 @@ function Shell() {
                   }}
                 >
                   <KeyRound size={16} />
-                  Cambiar mi contraseña
+                  {t("Cambiar mi contraseña")}
                 </button>
                 <button
                   onClick={async () => {
@@ -1233,7 +1240,7 @@ function Shell() {
                   }}
                 >
                   <LogOut size={16} />
-                  Cerrar sesión
+                  {t("Cerrar sesión")}
                 </button>
               </div>
             )}
@@ -1253,20 +1260,20 @@ function Shell() {
           </PageErrorBoundary>
         </main>
         <footer className="app-footer">
-          <span>Norexos · Tu negocio, en movimiento.</span>
-          <span>RD$ · ITBIS incluido · Documento interno</span>
+          <span>{t("Noxeros · Tu negocio, en movimiento.")}</span>
+          <span>{t("RD$ · ITBIS incluido · Documento interno")}</span>
         </footer>
       </div>
       <Modal
         open={commands}
         onClose={() => setCommands(false)}
-        title="¿A dónde quieres ir?"
+        title={t("¿A dónde quieres ir?")}
       >
         <label className="field">
           <input
             autoFocus
-            aria-label="Buscar pantalla"
-            placeholder="Buscar pantalla…"
+            aria-label={t("Buscar pantalla")}
+            placeholder={t("Buscar pantalla…")}
             value={commandQuery}
             onChange={(e) => setCommandQuery(e.target.value)}
           />
@@ -1274,12 +1281,13 @@ function Shell() {
         <div className="command-list">
           {allowed
             .filter((n) =>
-              n.label.toLowerCase().includes(commandQuery.toLowerCase()),
+              n.label.toLowerCase().includes(commandQuery.toLowerCase()) ||
+              t(n.label).toLowerCase().includes(commandQuery.toLowerCase()),
             )
             .map((n) => (
               <button onClick={() => go(n.id)} key={n.id}>
                 <n.icon size={20} />
-                {n.label}
+                {t(n.label)}
                 <ArrowUpRight size={16} />
               </button>
             ))}
