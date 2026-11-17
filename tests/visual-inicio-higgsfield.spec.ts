@@ -57,7 +57,7 @@ async function setup(
   await page.addInitScript(
     ({ theme, language, accent }) => {
       localStorage.setItem("fitstore-theme", theme);
-      localStorage.setItem("noxeros-overview-language", language);
+      localStorage.setItem("norexos-overview-language", language);
       localStorage.setItem("noxeros-visual-accent", accent);
     },
     { theme, language, accent },
@@ -205,7 +205,7 @@ test("accesos rápidos reales: teclado, navegación y volver sin cambios de dato
   });
   const shortcut = page
     .locator(".fi-quick-access")
-    .getByRole("button", { name: "Abrir Reportes", exact: true });
+    .getByRole("button", { name: "Ir a Reportes", exact: true });
   await expect(shortcut).toBeVisible();
   await shortcut.focus();
   await page.keyboard.press("Enter");
@@ -273,7 +273,7 @@ test("atajos tienen nombre de acción único sin duplicar navegación", async ({
     page.getByRole("button", { name: "Punto de venta", exact: true }),
   ).toHaveCount(1);
   const shortcut = page.getByRole("button", {
-    name: "Abrir Punto de venta",
+    name: "Ir a Punto de venta",
     exact: true,
   });
   await expect(shortcut).toHaveCount(1);

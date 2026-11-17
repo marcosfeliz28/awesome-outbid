@@ -1,5 +1,6 @@
 import { chartSalesLabel } from "../apps/web/src/chartSalesLabel";
 import {
+  readLanguagePreference,
   english,
   translate,
   setLanguage,
@@ -13,12 +14,12 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 describe("Inicio integrado: preservación", () => {
-  it("limita preferencias a Inicio y respeta la marca Noxeros en el diálogo", () => {
+  it("limita preferencias a Inicio y conserva el diálogo legal existente", () => {
     const source = readFileSync("apps/web/src/App.tsx", "utf8");
     expect(source).toContain(
       '{page === "dashboard" && <div className="fusion-preferences"',
     );
-    expect(source).toContain('title="Acerca de Noxeros"');
+    expect(source).toContain('title="Acerca de Norexos"');
     const css = readFileSync(
       "apps/web/src/fusion-inicio-integrado.css",
       "utf8",
@@ -208,4 +209,34 @@ it("Fusión 02 limita el acabado negro a Inicio y respeta movimiento reducido", 
     "delete document.documentElement.dataset.overviewSurface",
   );
   expect(source).toContain('["light", "dark", "black"]');
+});
+
+it("migra idioma legado a Norexos sin pisar preferencia actual ni fallar sin storage", () => {
+  const values = new Map<string, string>([["noxeros-overview-language", "en"]]);
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      values.set(key, value);
+    },
+  };
+  expect(readLanguagePreference(storage)).toBe("en");
+  expect(values.get("norexos-overview-language")).toBe("en");
+  values.set("norexos-overview-language", "es");
+  expect(readLanguagePreference(storage)).toBe("es");
+  expect(
+    readLanguagePreference({
+      getItem: () => {
+        throw new Error("disabled");
+      },
+      setItem: () => {},
+    }),
+  ).toBe("es");
+  expect(
+    readLanguagePreference({
+      getItem: (key) => (key === "noxeros-overview-language" ? "en" : null),
+      setItem: () => {
+        throw new Error("readonly");
+      },
+    }),
+  ).toBe("en");
 });
