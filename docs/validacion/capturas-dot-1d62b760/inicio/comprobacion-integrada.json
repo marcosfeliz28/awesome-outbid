@@ -1,0 +1,145 @@
+{
+  "commit": "1d62b760e5ea7707bfb8753cf4b60895094ace8b",
+  "completedAt": "2026-11-17T19:48:24.926Z",
+  "servicesStopped": true,
+  "screenshots": [
+    {
+      "file": "inicio-1440-claro.png",
+      "theme": "light",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dimensions": [
+        1440,
+        4023
+      ],
+      "banner": {
+        "heightPx": 201,
+        "overflowY": "hidden",
+        "headingClippedPx": 0,
+        "copyVisiblePx": 25,
+        "buttonHeightPx": 21,
+        "buttonVisiblePx": 21
+      },
+      "sha256": "fdc061e07f45272fa62974091c93ffeb03a2bb471be5a8f15b646fc6190d1d27"
+    },
+    {
+      "file": "inicio-1440-oscuro.png",
+      "theme": "dark",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dimensions": [
+        1440,
+        4023
+      ],
+      "banner": {
+        "heightPx": 201,
+        "overflowY": "hidden",
+        "headingClippedPx": 0,
+        "copyVisiblePx": 25,
+        "buttonHeightPx": 21,
+        "buttonVisiblePx": 21
+      },
+      "sha256": "2ea192fcfd66b972a9ca5ec545021abab1b32ab11c5085eb695846c6f2c0ac67"
+    },
+    {
+      "file": "inicio-390-claro.png",
+      "theme": "light",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        7751
+      ],
+      "banner": {
+        "heightPx": 353,
+        "overflowY": "hidden",
+        "headingClippedPx": 0,
+        "copyVisiblePx": 67,
+        "buttonHeightPx": 44,
+        "buttonVisiblePx": 44
+      },
+      "sha256": "29995c8c0ea8293770f334d609e5d872dcf4f2ff5fcc634cf9dd75b85fc21376"
+    },
+    {
+      "file": "inicio-390-oscuro.png",
+      "theme": "dark",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        7751
+      ],
+      "banner": {
+        "heightPx": 353,
+        "overflowY": "hidden",
+        "headingClippedPx": 0,
+        "copyVisiblePx": 67,
+        "buttonHeightPx": 44,
+        "buttonVisiblePx": 44
+      },
+      "sha256": "6c47010e46e442d9123bb06e5d6c76cf9dbee08958bc3f0c25cd4ae6235d57fb"
+    },
+    {
+      "file": "acerca-de-1440.png",
+      "theme": "oscuro",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "e7cddcf214ba5bb8d76941a23a3fd249b645e4f397f8eca44c06c46cc06e54d5"
+    },
+    {
+      "file": "acerca-de-390.png",
+      "theme": "oscuro",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "80f5e220ba74120bdc2e227cb299aa249f44d38f7df1cfa6d1a23c62dba4c177"
+    }
+  ],
+  "checks": {
+    "1440": {
+      "brand": {
+        "navigation": "Noxeros",
+        "about": "Acerca de Noxeros"
+      },
+      "aboutOpenAndClose": "pasa",
+      "reportsFromBanner": "pasa",
+      "dashboardResponses": {
+        "/api/dashboard/summary": 200,
+        "/api/dashboard/year": 200
+      },
+      "pageErrors": 0
+    },
+    "390": {
+      "brand": {
+        "navigation": "Noxeros",
+        "about": "Acerca de Noxeros"
+      },
+      "aboutOpenAndClose": "pasa",
+      "reportsFromBanner": "pasa",
+      "dashboardResponses": {
+        "/api/dashboard/summary": 200,
+        "/api/dashboard/year": 200
+      },
+      "pageErrors": 0
+    }
+  }
+}

@@ -276,3 +276,12 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+
+## 2026-11-17 · ChatGPT PC · Noxeros en Inicio
+
+- Comprobé en `dot/correccion-marca-noxeros-17nov` (`1d62b760e5ea7707bfb8753cf4b60895094ace8b`) que el menú
+  y «Acerca de» muestran Noxeros a 1440 y 390 px. Las seis capturas, sus huellas y las comprobaciones de Inicio
+  están en [el informe de la rama de evidencia](../validacion/capturas-dot-1d62b760/inicio/COMPARACION.md).
+- La prioridad indicada por Marcos es Inicio y los efectos de la segunda lámina de Higgsfield. La siguiente
+  revisión de fidelidad y movimiento espera el commit de esa implementación.
