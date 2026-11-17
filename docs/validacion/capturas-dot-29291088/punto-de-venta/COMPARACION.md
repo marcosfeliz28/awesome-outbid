@@ -28,7 +28,15 @@ Una segunda ejecución aislada usó la misma revisión con API simulada. Pasaron
 | Media | Al pasar la pantalla a inglés, la acción visible cambia de idioma y el lector de pantalla sigue recibiendo «Cobrar» y, en móvil, «Ver carrito». |
 | Baja | El contador visible dice «1 artículos» con una unidad. El texto de ayuda de búsqueda aparece cortado a 1440 × 900. Ambos detalles se ven en la captura de escritorio. |
 
-Al guardar esta evidencia, los controles del instalador y de imágenes pasaron. La verificación general seguía en curso. [Ejecución de GitHub del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44177247852)
+La [ejecución de GitHub del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44177247852) terminó con instalador e imágenes aprobados y `verify` fallido. El [registro de la verificación](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44177247852/job/134371957688) muestra 1091 pruebas unitarias aprobadas, 3 omitidas, 656 de integración aprobadas y 148 de las 155 de navegador aprobadas.
+
+| Casos fallidos de navegador | Evidencia del CI |
+| --- | --- |
+| A5 · carrito a 1366 × 768 | Con cinco artículos se vio una fila completa. Se esperan al menos tres. La primera fila midió 115 px, frente al máximo de 100 px. [Prueba A5](https://github.com/marcosfeliz28/awesome-outbid/blob/292910889821bee22640110defc86bdf0f570b4b/tests/e2e/caja-web.spec.ts#L334-L338) |
+| W5 · nombres largos en cuatro tamaños | El contenedor principal desbordó 265 px a 1280 × 720, 195 px a 1366 × 768, 140 px a 1536 × 864 y 504 px a 1024 × 768 después de probar un nombre de producto y una etiqueta de categoría largos. [Prueba W5](https://github.com/marcosfeliz28/awesome-outbid/blob/292910889821bee22640110defc86bdf0f570b4b/tests/e2e/pos-pantalla.spec.ts#L64-L72) |
+| U1 · total del carrito a 390 y 1280 px | El navegador usó Georgia y la prueba exige Plus Jakarta Sans. [Prueba U1](https://github.com/marcosfeliz28/awesome-outbid/blob/292910889821bee22640110defc86bdf0f570b4b/tests/e2e/u1-pos.spec.ts#L35-L38) |
+
+El botón de cobro se mantuvo visible en el recorrido local con un artículo. El cierre técnico de Punto de venta queda pendiente del carrito con varios artículos, los textos largos y la tipografía.
 
 ## Capturas de la aplicación
 
