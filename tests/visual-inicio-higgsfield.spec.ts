@@ -205,7 +205,7 @@ test("accesos rápidos reales: teclado, navegación y volver sin cambios de dato
   });
   const shortcut = page
     .locator(".fi-quick-access")
-    .getByRole("button", { name: "Reportes", exact: true });
+    .getByRole("button", { name: "Abrir Reportes", exact: true });
   await expect(shortcut).toBeVisible();
   await shortcut.focus();
   await page.keyboard.press("Enter");
@@ -263,4 +263,20 @@ test("responsive resize preserves one shortcut group and visible greeting", asyn
       ).toHaveCount(1);
     }
   }
+});
+
+test("atajos tienen nombre de acción único sin duplicar navegación", async ({
+  page,
+}) => {
+  await setup(page, "dark", "green");
+  await expect(
+    page.getByRole("button", { name: "Punto de venta", exact: true }),
+  ).toHaveCount(1);
+  const shortcut = page.getByRole("button", {
+    name: "Abrir Punto de venta",
+    exact: true,
+  });
+  await expect(shortcut).toHaveCount(1);
+  await expect(shortcut).toBeVisible();
+  await expect(shortcut).toContainText("Punto de venta");
 });

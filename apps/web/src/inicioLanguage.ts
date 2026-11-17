@@ -33,6 +33,7 @@ export function useLanguage() {
 }
 /** Only UI copy is translated. Product names and server messages remain verbatim. */
 export const english: Record<string, string> = {
+  Abrir: "Open",
   "No se pudo cargar.": "Unable to load.",
   "No se pudo cargar": "Unable to load",
   Reintentar: "Retry",
