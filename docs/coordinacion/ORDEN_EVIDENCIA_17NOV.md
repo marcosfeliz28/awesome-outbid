@@ -20,6 +20,12 @@ Un commit en una rama propia (nunca en `nexora-cloud`) con: SHA, archivos, captu
 3. Evidencia mínima por lote: cuántas fotos reales hay (no filas), cuántas faltan y por qué, y una hoja de contacto (`lote-N/contacto.png`) para revisarlas de un vistazo.
 4. Ninguna foto se sube a la tienda hasta que Claude nube la revise y Marcos o Dot la aprueben.
 
+## ChatGPT PC — apoyo en la PC (fotos y verificación del diseño)
+
+1. Ayudar a ChatGPT nube con las fotos: descargar y recortar las imágenes de su lote asignado y subirlas en `chatgpt-pc/fotos-lote-N` con la misma estructura (`docs/fotos/lote-N/<sku>.webp` + CSV + `contacto.png`). Repartirse los lotes con ChatGPT nube por escrito en `RESULTADOS_CHATGPT.md`, sin duplicar.
+2. Cuando Dot entregue una rama `dot/rediseno-*`: correr la app en la PC, tomar capturas reales en 1440 y 390 (claro y oscuro) de Caja, Inicio, Productos y GV, y subirlas en `chatgpt-pc/capturas-dot-<SHA>`.
+3. Evidencia mínima: SHA, archivos, capturas y una línea en `docs/coordinacion/RESULTADOS_CHATGPT.md`.
+
 ## Claude nube
 
 Revisa cada entrega el mismo día que aparezca y le informa a Marcos y a Dot: aprobado, rechazado y por qué. No despliega nada de esto sin los 3 CI en verde y la orden de Dot.
