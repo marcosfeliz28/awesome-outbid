@@ -1,0 +1,141 @@
+{
+  "commit": "1d0d0dcdfcbb1bf45cfd3164f8145d337a7419a4",
+  "completedAt": "2026-11-17T20:00:34.426Z",
+  "servicesStopped": true,
+  "captures": [
+    {
+      "file": "inicio-1440-claro.png",
+      "theme": "light",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dimensions": [
+        1440,
+        4301
+      ],
+      "sha256": "768896af2d4a6bfa163e412160640ca3cca88d468d565f04a46527b8af058251"
+    },
+    {
+      "file": "inicio-1440-oscuro.png",
+      "theme": "dark",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dimensions": [
+        1440,
+        4301
+      ],
+      "sha256": "19a5cf9981b1100446725e4033c1b3da606b27865fb8091a702c5fd73e686947"
+    },
+    {
+      "file": "inicio-390-claro.png",
+      "theme": "light",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        8480
+      ],
+      "sha256": "6adeac39f4bd8fd0d36d73a1eec3015345e9db01f955dc18a38a89736eb051ba"
+    },
+    {
+      "file": "inicio-390-oscuro.png",
+      "theme": "dark",
+      "viewport": [
+        390,
+        844
+      ],
+      "dimensions": [
+        390,
+        8480
+      ],
+      "sha256": "1d12400601e77dfe084276541125962887f071795282f0fbf2260cf07b9dd150"
+    }
+  ],
+  "realApi": {
+    "1440": {
+      "visualStructure": "pasa",
+      "quickReports": "pasa",
+      "overviewSurfaces": "pasa",
+      "reportsFromBanner": "pasa",
+      "language": "pasa",
+      "accent": "pasa",
+      "brandLabels": "pasa",
+      "composition": {
+        "heading": "Resumen / Tu negocio, de un vistazo",
+        "viewportWidth": 1440,
+        "overflowPx": 0,
+        "kpis": 4,
+        "kpisTop": 541,
+        "quickAccessTop": 834,
+        "welcomeTop": 2246
+      },
+      "themes": {
+        "oscuro": "#06110e",
+        "negro": "#020504"
+      },
+      "dashboardResponses": {
+        "/api/dashboard/summary": 200,
+        "/api/dashboard/year": 200
+      },
+      "pageErrors": 0
+    },
+    "390": {
+      "visualStructure": "pasa",
+      "quickReports": "pasa",
+      "overviewSurfaces": "pasa",
+      "reportsFromBanner": "pasa",
+      "language": "pasa",
+      "accent": "pasa",
+      "brandLabels": "pasa",
+      "composition": {
+        "heading": "Resumen / Tu negocio, de un vistazo",
+        "viewportWidth": 390,
+        "overflowPx": 0,
+        "kpis": 4,
+        "kpisTop": 1046,
+        "quickAccessTop": 2116,
+        "welcomeTop": 5062
+      },
+      "themes": {
+        "oscuro": "#06110e",
+        "negro": "#020504"
+      },
+      "dashboardResponses": {
+        "/api/dashboard/summary": 200,
+        "/api/dashboard/year": 200
+      },
+      "pageErrors": 0
+    }
+  },
+  "motion": {
+    "rest": {
+      "translateY": 0,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.267) 0px -2px 1px 0px inset, rgba(0, 0, 0, 0.6) 0px 5px 9px 0px"
+    },
+    "hover": {
+      "translateY": -3,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgb(41, 239, 163) 0px 0px 0px 1px, rgba(0, 0, 0, 0.6) 0px 8px 16px 0px, rgba(0, 229, 154, 0.2) 0px 0px 18px 0px"
+    },
+    "press": {
+      "translateY": 1,
+      "transitionDuration": "0.16s, 0.16s",
+      "shadow": "rgba(0, 0, 0, 0.333) 0px 2px 5px 0px inset"
+    },
+    "reduced": {
+      "translateY": 0,
+      "transitionDuration": "0s",
+      "shadow": "rgba(231, 255, 239, 0.733) 0px 1px 1px 0px inset, rgb(41, 239, 163) 0px 0px 0px 1px, rgba(0, 0, 0, 0.6) 0px 8px 16px 0px, rgba(0, 229, 154, 0.2) 0px 0px 18px 0px"
+    }
+  },
+  "visualSuiteWithSimulatedApi": {
+    "passed": 11,
+    "failed": 0
+  }
+}

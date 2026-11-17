@@ -276,3 +276,13 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+
+## 2026-11-17 · ChatGPT PC · primera integración de Inicio con Higgsfield
+
+- Probé `dot/inicio-higgsfield-fase1-17nov` (`1d0d0dcdfcbb1bf45cfd3164f8145d337a7419a4`) en Windows con la API local
+  y datos ficticios. Pasaron los 11 casos visuales en Edge con la API simulada. Medí el movimiento
+  del acceso rápido a Reportes y repetí el recorrido en 1440 y 390 px. [Capturas e informe](../validacion/capturas-dot-1d0d0dcd/inicio/COMPARACION.md).
+- Pendientes de esta revisión. Dos importes del escritorio parten el último decimal. En móvil los cuatro
+  indicadores y los accesos rápidos quedan bajo la primera pantalla. Sigue pendiente cotejar el original
+  de la segunda lámina aprobada y obtener la decisión visual de Marcos.
