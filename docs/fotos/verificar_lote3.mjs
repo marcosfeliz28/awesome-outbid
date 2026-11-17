@@ -38,7 +38,9 @@ function parseCsv(text) {
   }
   const [headers = [], ...values] = rows;
   return values.map((cells) =>
-    Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ""])),
+    Object.fromEntries(
+      headers.map((header, index) => [header, cells[index] ?? ""]),
+    ),
   );
 }
 
@@ -63,10 +65,13 @@ const required = [
 ];
 
 for (const key of required) {
-  if (photos.length && !(key in photos[0])) failures.push(`fotos.csv: falta columna ${key}`);
+  if (photos.length && !(key in photos[0]))
+    failures.push(`fotos.csv: falta columna ${key}`);
 }
 if (photos.length + missing.length !== 60) {
-  failures.push(`conteo: ${photos.length} fotos + ${missing.length} faltantes; se esperaban 60`);
+  failures.push(
+    `conteo: ${photos.length} fotos + ${missing.length} faltantes; se esperaban 60`,
+  );
 }
 
 const seen = new Set();
@@ -83,7 +88,8 @@ for (const row of photos) {
   if (row.coincide_marca !== "sí" || row["coincide_presentación"] !== "sí") {
     failures.push(`${row.sku}: coincidencia no exacta`);
   }
-  if (!row.archivo.endsWith(".webp")) failures.push(`${row.sku}: archivo no WebP`);
+  if (!row.archivo.endsWith(".webp"))
+    failures.push(`${row.sku}: archivo no WebP`);
   const image = path.join(lot, row.archivo);
   try {
     const dimensions = execFileSync("identify", ["-format", "%w %h", image], {
@@ -103,7 +109,8 @@ for (const row of photos) {
 try {
   const files = await readdir(lot);
   const actual = files.filter((file) => file.endsWith(".webp")).length;
-  if (actual !== photos.length) failures.push(`${actual} WebP para ${photos.length} filas`);
+  if (actual !== photos.length)
+    failures.push(`${actual} WebP para ${photos.length} filas`);
   execFileSync("identify", [path.join(lot, "contacto.png")]);
 } catch {
   failures.push("contacto.png: ausente o inválida");
@@ -114,4 +121,6 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`PASS: lote 3 completo, ${photos.length} fotos reales y ${missing.length} faltantes`);
+console.log(
+  `PASS: lote 3 completo, ${photos.length} fotos reales y ${missing.length} faltantes`,
+);

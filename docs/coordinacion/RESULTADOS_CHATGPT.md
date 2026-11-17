@@ -276,3 +276,11 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT NUBE · evidencia fotográfica, lote 3
+
+- Entregué en `chatgpt-nube/fotos-lote3-17nov` las filas 121–180: **44 fotografías WebP reales ≥800 × 800 y 16 faltantes justificados**, más `fotos.csv`, `faltantes.csv` y una hoja de contacto. Commit de evidencia: `6be9d6d4b2f94c0ecbe3b10db6fb66c097412599`.
+- La regresión falló antes por ausencia total de la entrega y después pasa con 44 + 16 = 60, SKU únicos, dimensiones decodificadas y correspondencia exacta entre CSV y archivos.
+- La autoauditoría descartó etiquetas o marcas incompatibles, variantes ambiguas, reversos, baja resolución y composiciones promocionales. El permiso de reutilización y la vigencia del envase siguen sin comprobarse; no se ha autorizado subir estas candidatas a la tienda. El diff final se reconstruyó sobre la base vigente y no repite los lotes 1–2.
+- `pnpm check` terminó con código 0 después de generar el cliente Prisma local: typecheck, ESLint, 123 archivos/1,069 pruebas pasaron, 1 archivo/10 pruebas se omitieron y los builds pasaron. No se conectó ni migró una base.
+- No se tocó aplicación, inventario, precios, dinero, producción, Render, base ni credenciales; sin mezcla ni despliegue. Detalle en `docs/coordinacion/RESULTADOS_CHATGPT_NUBE.md` y `docs/fotos/lote-3/README.md`.
