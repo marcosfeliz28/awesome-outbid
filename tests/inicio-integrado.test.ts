@@ -13,6 +13,21 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 describe("Inicio integrado: preservación", () => {
+  it("limita preferencias a Inicio y conserva el diálogo legal existente", () => {
+    const source = readFileSync("apps/web/src/App.tsx", "utf8");
+    expect(source).toContain(
+      '{page === "dashboard" && <div className="fusion-preferences"',
+    );
+    expect(source).toContain('title="Acerca de Norexos"');
+    const css = readFileSync(
+      "apps/web/src/fusion-inicio-integrado.css",
+      "utf8",
+    );
+    expect(css).toMatch(/@media \(max-width: 360px\)/);
+    expect(css).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(css).toContain("overflow-wrap: anywhere");
+  });
+
   it("fecha vacía, inválida o inexistente no lanza ni inventa otra fecha", () => {
     for (const value of [
       "",
@@ -147,4 +162,13 @@ describe("Inicio integrado: preservación", () => {
         "Ventas: dato no disponible",
       );
   });
+});
+it("permite crecer a la bienvenida móvil para no ocultar la acción de reportes", () => {
+  const css = readFileSync("apps/web/src/fusion-inicio-integrado.css", "utf8");
+  expect(css).toMatch(
+    /@media \(max-width: 560px\)\s*\{\s*\.fusion-inicio-integrado \.welcome-banner\s*\{\s*height: auto;\s*min-height: 187px;/,
+  );
+  expect(css).toMatch(
+    /\.welcome-banner button\s*\{\s*min-height: 44px;\s*white-space: normal;/,
+  );
 });

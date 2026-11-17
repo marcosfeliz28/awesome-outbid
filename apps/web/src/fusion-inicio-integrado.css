@@ -542,3 +542,51 @@
 .fusion-inicio-integrado .banner-spark {
   color: var(--fi-gold);
 }
+/* En celulares angostos, mantener importes completos sin forzar dos columnas. */
+@media (max-width: 360px) {
+  .fusion-inicio-integrado .financial-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fusion-inicio-integrado .financial-strip > div {
+    min-width: 0;
+    padding: 0;
+    border-right: 0;
+    overflow-wrap: anywhere;
+  }
+}
+@media (max-width: 360px) {
+  .fusion-inicio-integrado .kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fusion-inicio-integrado .kpi-card > strong {
+    overflow-wrap: anywhere;
+  }
+}
+/* La bienvenida móvil crece con el texto; su CTA nunca queda recortado. */
+@media (max-width: 560px) {
+  .fusion-inicio-integrado .welcome-banner {
+    height: auto;
+    min-height: 187px;
+  }
+  .fusion-inicio-integrado .welcome-banner > div:first-child {
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .fusion-inicio-integrado .welcome-banner button {
+    min-height: 44px;
+    white-space: normal;
+    text-align: left;
+  }
+}
+@media (min-width: 361px) and (max-width: 560px) {
+  .fusion-inicio-integrado .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fusion-inicio-integrado .kpi-card {
+    min-width: 0;
+  }
+  .fusion-inicio-integrado .kpi-card > strong {
+    overflow-wrap: anywhere;
+  }
+}
