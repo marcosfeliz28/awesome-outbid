@@ -293,6 +293,10 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - Marcos aprobó la vista de prueba de Inicio en «Your dot» y pidió seguir el rediseño por fases.
   El concepto inicial de Punto de venta está en revisión. La comprobación de su versión funcional
   queda a la espera de la lámina aprobada y de la rama de Dot.
-- La ejecución vigente de Inicio corresponde a `eb20caab`. La decisión de marca de Marcos es Noxeros.
-  El seguimiento de los controles y las grafías compartidas está en
-  [el informe de Inicio](../validacion/capturas-dot-eb20caab/inicio/COMPARACION.md).
+- Las capturas de Inicio corresponden a `eb20caab` y muestran la grafía «Noxeros» de esa versión.
+  Cerca de las 21:02 UTC, Marcos indicó que la marca vigente se queda **Norexos** y pidió alinear
+  las pruebas y los accesos. Dot publicó el ajuste en `0641409`.
+  [Rama de Dot](https://github.com/marcosfeliz28/awesome-outbid/tree/dot/norexos-marca-canonica-17nov), [commit exacto](https://github.com/marcosfeliz28/awesome-outbid/commit/0641409cc82f81df01337a72cded4061f1f560a5).
+- A las 21:07 UTC habían pasado `render-images` y `windows-installer` de `0641409`. `verify` seguía en
+  curso. [Controles del ajuste](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44175161578),
+  [informe y capturas históricas de Inicio](../validacion/capturas-dot-eb20caab/inicio/COMPARACION.md).

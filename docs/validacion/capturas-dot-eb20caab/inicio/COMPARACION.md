@@ -1,4 +1,4 @@
-# Inicio de Noxeros con los accesos móviles arriba
+# Inicio con los accesos móviles arriba · revisión eb20caab
 
 Probé `eb20caabff932de4f523e0190a1a8df087227036` de `dot/inicio-accesos-movil-17nov` en Windows con Edge,
 una API local y PostgreSQL temporal con datos ficticios. La prueba terminó el 17 de noviembre de 2026
@@ -61,12 +61,13 @@ lámina que Marcos apruebe y de una rama funcional con capturas de la aplicació
 
 El control `verify` de `46ae8830` también terminó con 105 pruebas esperando el saludo «Hola,».
 La restauración del saludo se comprobó en la aplicación de `eb20caab`. Su ejecución de GitHub
-es la que determina el cierre técnico de Inicio.
+se conserva como antecedente de esta revisión.
 [Control anterior](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44164527303/job/134326932194),
-[controles vigentes](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44169472399).
+[controles de la revisión capturada](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44169472399).
 
-Marcos eligió **Noxeros**. La auditoría de la web ubicó textos de marca anteriores. Confirmé la grafía
-«Norexos» en el nombre visible al instalar la web y en el aviso compartido de actualización.
+Al probar `eb20caab`, la lámina y la pantalla de Inicio mostraban «Noxeros». En ese mismo commit,
+la auditoría ubicó «Norexos» en el nombre visible al instalar la web y en el aviso compartido de
+actualización.
 [Auditoría actualizada](https://github.com/marcosfeliz28/awesome-outbid/blob/03593f280c038cf96e0dcebbeea97f53ae969594/docs/diseno/inicio-integrado/AUDITORIA_CLAUDE_4e4bb76f.md#L35),
 [nombre de la web](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/apps/web/vite.config.ts#L46),
 [aviso de actualización](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/apps/web/src/pwaUpdatePolicy.ts#L43).
@@ -79,8 +80,17 @@ integración, además de `windows-installer` y `render-images`.
 [Log del caso restante](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44169472399/job/134344378836),
 [búsqueda del botón](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/tests/e2e/store.spec.ts#L185).
 
-Cuando el asistente está disponible, el menú dice «Preguntar a Noxeros» y la pantalla abre con
+En `eb20caab`, cuando el asistente está disponible, el menú dice «Preguntar a Noxeros» y la pantalla abre con
 el encabezado «Preguntar a Norexos». El nombre de instalación «Norexos» también se comprobó en
 el manifiesto generado por la compilación local de ese SHA.
 [Entrada](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/apps/web/src/App.tsx#L298),
 [encabezado](https://github.com/marcosfeliz28/awesome-outbid/blob/eb20caabff932de4f523e0190a1a8df087227036/apps/web/src/AssistantPanel.tsx#L46).
+
+## Decisión de marca vigente
+
+Cerca de las 21:02 UTC del 17 de noviembre, Marcos indicó en «Your dot» que la marca se queda
+**Norexos** y pidió alinear las pruebas y los accesos. Dot publicó el ajuste en `0641409`.
+[Rama de Dot](https://github.com/marcosfeliz28/awesome-outbid/tree/dot/norexos-marca-canonica-17nov), [commit exacto](https://github.com/marcosfeliz28/awesome-outbid/commit/0641409cc82f81df01337a72cded4061f1f560a5).
+
+A las 21:07 UTC, `render-images` y `windows-installer` de ese commit habían pasado. `verify`
+seguía en curso. [Controles del ajuste](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44175161578).
