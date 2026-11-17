@@ -21,4 +21,6 @@ En ambos tamaños funcionaron el inicio de sesión, los cambios de tema y de ace
 
 ## Alcance pendiente
 
-Esta entrega cubre Inicio. Caja, Productos y GV quedan para sus respectivas ramas. Quedan pendientes el recorrido de cajera, la revisión completa de accesibilidad y la aceptación visual. La ejecución de GitHub asociada al commit anterior tenía `render-images` y `windows-installer` en verde y `verify` en curso al preparar este informe. [Controles de GitHub](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44138111994).
+Esta entrega cubre Inicio. Caja, Productos y GV quedan para sus respectivas ramas. Quedan pendientes el recorrido de cajera, la revisión completa de accesibilidad y la aceptación visual.
+
+En `4e4bb76f`, `render-images` y `windows-installer` pasaron. `verify` terminó en rojo a las 17:54 UTC. Su paso de pruebas de navegador registró 11 fallos en Acerca de, Caja web, el ajuste de la barra superior a 320 px, el encuadre de Punto de venta y la solicitud de anulación. Es el resultado de GitHub para ese commit. [Registro de verify](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44138111994/job/134233136556).
