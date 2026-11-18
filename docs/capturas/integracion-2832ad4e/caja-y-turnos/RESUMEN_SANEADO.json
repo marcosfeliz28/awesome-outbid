@@ -1,0 +1,75 @@
+{
+  "candidate": "2832ad4e0a884efa2496718b6b970368ce5a0966",
+  "previousCandidate": "7b9348dc",
+  "scope": "Portal visual de cuadre y cierre de Caja/turnos",
+  "environment": {
+    "application": "UI real del candidato",
+    "api": "respuestas simuladas en loopback",
+    "data": "usuario, terminal, sesión e importes ficticios",
+    "externalHosts": "bloqueados",
+    "businessWrites": 0,
+    "actions": ["abrir portal", "desplazar", "cancelar"]
+  },
+  "result": {
+    "tests": 4,
+    "passed": 4,
+    "durationSeconds": 7.8,
+    "screenshots": 6
+  },
+  "scenarios": [
+    {
+      "viewport": "1440x1000",
+      "theme": "light",
+      "documentWidth": 1440,
+      "dialog": "540x900",
+      "dialogScrollHeight": 1502,
+      "primaryVariable": "#176b51",
+      "primaryHeight": 52.5625,
+      "closeHeight": 44
+    },
+    {
+      "viewport": "1440x1000",
+      "theme": "dark",
+      "documentWidth": 1440,
+      "dialog": "540x900",
+      "dialogScrollHeight": 1502,
+      "primaryVariable": "#61e4b2",
+      "primaryHeight": 52.5625,
+      "closeHeight": 44
+    },
+    {
+      "viewport": "390x844",
+      "theme": "light",
+      "documentWidth": 390,
+      "dialog": "366x776.46875",
+      "dialogScrollHeight": 2190,
+      "primaryVariable": "#176b51",
+      "primaryHeight": 81.125,
+      "closeHeight": 44
+    },
+    {
+      "viewport": "390x844",
+      "theme": "dark",
+      "documentWidth": 390,
+      "dialog": "366x776.46875",
+      "dialogScrollHeight": 2190,
+      "primaryVariable": "#61e4b2",
+      "primaryHeight": 81.125,
+      "closeHeight": 44
+    }
+  ],
+  "palette": {
+    "ctaGradient": ["#f9dc8e", "#dcb45b", "#f6d687"],
+    "ctaText": "#241d0b",
+    "minimumCtaContrast": 8.54,
+    "lightDialogTextContrast": 15.99,
+    "darkDialogTextContrast": 13.92
+  },
+  "observations": [
+    "El portal queda dentro del ancho del viewport y no crea desbordamiento horizontal.",
+    "El formulario es largo y usa desplazamiento interno; el CTA final y Cancelar son alcanzables en móvil.",
+    "El cierre se canceló en los cuatro escenarios y no se envió ninguna operación.",
+    "La comparación con el candidato anterior se hizo en fuente: el cambio nuevo limita verde/dorado al portal sin modificar su geometría."
+  ],
+  "findings": []
+}

@@ -1,0 +1,52 @@
+{
+  "scenario": {
+    "width": 1440,
+    "height": 1000,
+    "theme": "dark"
+  },
+  "metrics": {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "documentWidth": 1440,
+    "dialog": {
+      "x": 450,
+      "y": 50,
+      "width": 540,
+      "height": 900,
+      "scrollHeight": 1502
+    },
+    "palette": {
+      "dialogBackground": "rgb(21, 27, 43)",
+      "dialogText": "rgb(226, 232, 240)",
+      "primaryBackground": "rgba(0, 0, 0, 0)",
+      "primaryBackgroundImage": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+      "primaryText": "rgb(36, 29, 11)",
+      "primaryVariable": "#61e4b2"
+    },
+    "controls": {
+      "primary": {
+        "x": 633.765625,
+        "y": 1476.046875,
+        "width": 331.234375,
+        "height": 52.5625,
+        "top": 1476.046875,
+        "right": 965,
+        "bottom": 1528.609375,
+        "left": 633.765625
+      },
+      "close": {
+        "x": 921,
+        "y": 75,
+        "width": 44,
+        "height": 44,
+        "top": 75,
+        "right": 965,
+        "bottom": 119,
+        "left": 921
+      }
+    }
+  },
+  "writes": []
+}

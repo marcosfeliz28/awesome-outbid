@@ -1,0 +1,52 @@
+{
+  "scenario": {
+    "width": 390,
+    "height": 844,
+    "theme": "dark"
+  },
+  "metrics": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "documentWidth": 390,
+    "dialog": {
+      "x": 12,
+      "y": 33.765625,
+      "width": 366,
+      "height": 776.46875,
+      "scrollHeight": 2190
+    },
+    "palette": {
+      "dialogBackground": "rgb(21, 27, 43)",
+      "dialogText": "rgb(226, 232, 240)",
+      "primaryBackground": "rgba(0, 0, 0, 0)",
+      "primaryBackgroundImage": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+      "primaryText": "rgb(36, 29, 11)",
+      "primaryVariable": "#61e4b2"
+    },
+    "controls": {
+      "primary": {
+        "x": 33,
+        "y": 652.484375,
+        "width": 324,
+        "height": 81.125,
+        "top": 652.484375,
+        "right": 357,
+        "bottom": 733.609375,
+        "left": 33
+      },
+      "close": {
+        "x": 313,
+        "y": -1361.234375,
+        "width": 44,
+        "height": 44,
+        "top": -1361.234375,
+        "right": 357,
+        "bottom": -1317.234375,
+        "left": 313
+      }
+    }
+  },
+  "writes": []
+}

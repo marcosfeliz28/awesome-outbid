@@ -1,0 +1,930 @@
+{
+  "commit": "2832ad4e0a884efa2496718b6b970368ce5a0966",
+  "comparado_con": "adb789cb43f950398d3ab6ecf4de0f29979eb3f1",
+  "branch": "dot/15areas-sobre-prod-18nov",
+  "browser": "157.0.4341.60",
+  "tipo": "Aplicación Edge con API local y base de demostración descartable",
+  "capturas": [
+    {
+      "filename": "1440-claro-suplementos.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "scenario": "Suplementos seleccionado en Punto de venta con base de demostración",
+      "sha256": "e7aef2444f8fbbd0e1cab0e5d3e3bde5e80bcd9c24a457268491030cef36525f"
+    },
+    {
+      "filename": "1440-oscuro-suplementos.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "scenario": "Suplementos seleccionado en Punto de venta con base de demostración",
+      "sha256": "485bf568b39a43aa25b30612d5197cc8f08a51cc10c787704987476f913a665e"
+    },
+    {
+      "filename": "390-claro-suplementos.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "scenario": "Suplementos seleccionado en Punto de venta con base de demostración",
+      "sha256": "5e5b93d564628cd88d834757f9fce7206b97dceef125dce9eb5234de50e1f4a0"
+    },
+    {
+      "filename": "390-oscuro-suplementos.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "scenario": "Suplementos seleccionado en Punto de venta con base de demostración",
+      "sha256": "6c41461fc0844a973e191d7bbfac35585aee61a7b5f67ac8a61826180ef9e8ab"
+    }
+  ],
+  "mediciones": {
+    "390": {
+      "light": {
+        "adb789cb": {
+          "initial": {
+            "activeCount": 1,
+            "active": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green"
+          },
+          "selected": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 123.94,
+              "heightPx": 44,
+              "leftPx": 198.53,
+              "rightPx": 322.47,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(255, 255, 255)",
+              "borderColor": "rgb(234, 234, 242)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green"
+          },
+          "filtered": {
+            "beforeCount": 60,
+            "afterCount": 12,
+            "displayedProductsChanged": true
+          }
+        },
+        "2832ad4e": {
+          "initial": {
+            "activeCount": 1,
+            "active": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "linear-gradient(145deg, rgb(203, 236, 220), rgb(213, 224, 215))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(121, 83, 15)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "linear-gradient(145deg, rgb(203, 236, 220), rgb(213, 224, 215))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(121, 83, 15)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "contraste_extremos": [
+              11.53,
+              10.77
+            ]
+          },
+          "selected": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 123.94,
+              "heightPx": 44,
+              "leftPx": 198.53,
+              "rightPx": 322.47,
+              "lineHeight": "21px",
+              "background": "linear-gradient(145deg, rgb(203, 236, 220), rgb(213, 224, 215))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(121, 83, 15)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(255, 255, 255)",
+              "borderColor": "rgb(234, 234, 242)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "contraste_extremos": [
+              11.53,
+              10.77
+            ]
+          },
+          "filtered": {
+            "beforeCount": 60,
+            "afterCount": 12,
+            "displayedProductsChanged": true
+          }
+        },
+        "solicitudes_operativas": 0,
+        "errores_de_pagina": 0
+      },
+      "dark": {
+        "adb789cb": {
+          "initial": {
+            "activeCount": 1,
+            "active": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green"
+          },
+          "selected": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 123.94,
+              "heightPx": 44,
+              "leftPx": 198.53,
+              "rightPx": 322.47,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(21, 27, 43)",
+              "borderColor": "rgb(41, 50, 71)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green"
+          },
+          "filtered": {
+            "beforeCount": 60,
+            "afterCount": 12,
+            "displayedProductsChanged": true
+          }
+        },
+        "2832ad4e": {
+          "initial": {
+            "activeCount": 1,
+            "active": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "linear-gradient(145deg, rgb(6, 63, 40), rgb(3, 12, 8))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(240, 210, 145)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "linear-gradient(145deg, rgb(6, 63, 40), rgb(3, 12, 8))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(240, 210, 145)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "contraste_extremos": [
+              10.84,
+              17.89
+            ]
+          },
+          "selected": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 123.94,
+              "heightPx": 44,
+              "leftPx": 198.53,
+              "rightPx": 322.47,
+              "lineHeight": "21px",
+              "background": "linear-gradient(145deg, rgb(6, 63, 40), rgb(3, 12, 8))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(240, 210, 145)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(21, 27, 43)",
+              "borderColor": "rgb(41, 50, 71)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "contraste_extremos": [
+              10.84,
+              17.89
+            ]
+          },
+          "filtered": {
+            "beforeCount": 60,
+            "afterCount": 12,
+            "displayedProductsChanged": true
+          },
+          "focusSample": {
+            "search": {
+              "before": "campo de producto",
+              "openedAndClosed": true,
+              "queryInitiallyFocused": true,
+              "onlyDialogFocused": true,
+              "resultFound": true,
+              "restoredTrigger": false,
+              "after": "body"
+            },
+            "checkout": {
+              "closed": true,
+              "restored": false,
+              "after": "body",
+              "cartRows": 3,
+              "totalRetained": true
+            }
+          },
+          "forcedColors": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 123.94,
+              "heightPx": 44,
+              "leftPx": 198.53,
+              "rightPx": 322.47,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(55, 0, 110)",
+              "borderColor": "rgb(55, 0, 110)",
+              "textColor": "rgb(255, 255, 255)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 161.53,
+              "heightPx": 44,
+              "leftPx": 29,
+              "rightPx": 190.53,
+              "lineHeight": "21px",
+              "background": "none",
+              "backgroundColor": "rgb(255, 255, 255)",
+              "borderColor": "rgb(0, 0, 0)",
+              "textColor": "rgb(0, 0, 0)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 332,
+            "railContentWidthPx": 805,
+            "railScrollX": 0,
+            "viewport": [
+              390,
+              844
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "media": {
+              "forcedColors": true,
+              "reducedMotion": true
+            },
+            "contraste": 15.13
+          }
+        },
+        "solicitudes_operativas": 0,
+        "errores_de_pagina": 0
+      }
+    },
+    "1440": {
+      "light": {
+        "adb789cb": {
+          "initial": {
+            "activeCount": 1,
+            "active": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 730,
+            "railContentWidthPx": 825,
+            "railScrollX": 0,
+            "viewport": [
+              1440,
+              900
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green"
+          },
+          "selected": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 127.11,
+              "heightPx": 44,
+              "leftPx": 433.69,
+              "rightPx": 560.8,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(255, 255, 255)",
+              "borderColor": "rgb(234, 234, 242)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 730,
+            "railContentWidthPx": 825,
+            "railScrollX": 0,
+            "viewport": [
+              1440,
+              900
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green"
+          },
+          "filtered": {
+            "beforeCount": 60,
+            "afterCount": 12,
+            "displayedProductsChanged": true
+          }
+        },
+        "2832ad4e": {
+          "initial": {
+            "activeCount": 1,
+            "active": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "linear-gradient(145deg, rgb(203, 236, 220), rgb(213, 224, 215))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(121, 83, 15)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "linear-gradient(145deg, rgb(203, 236, 220), rgb(213, 224, 215))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(121, 83, 15)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 730,
+            "railContentWidthPx": 825,
+            "railScrollX": 0,
+            "viewport": [
+              1440,
+              900
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "contraste_extremos": [
+              11.53,
+              10.77
+            ]
+          },
+          "selected": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 127.11,
+              "heightPx": 44,
+              "leftPx": 433.69,
+              "rightPx": 560.8,
+              "lineHeight": "21.7728px",
+              "background": "linear-gradient(145deg, rgb(203, 236, 220), rgb(213, 224, 215))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(121, 83, 15)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(255, 255, 255)",
+              "borderColor": "rgb(234, 234, 242)",
+              "textColor": "rgb(23, 45, 36)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 730,
+            "railContentWidthPx": 825,
+            "railScrollX": 0,
+            "viewport": [
+              1440,
+              900
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "contraste_extremos": [
+              11.53,
+              10.77
+            ]
+          },
+          "filtered": {
+            "beforeCount": 60,
+            "afterCount": 12,
+            "displayedProductsChanged": true
+          }
+        },
+        "solicitudes_operativas": 0,
+        "errores_de_pagina": 0
+      },
+      "dark": {
+        "adb789cb": {
+          "initial": {
+            "activeCount": 1,
+            "active": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 730,
+            "railContentWidthPx": 825,
+            "railScrollX": 0,
+            "viewport": [
+              1440,
+              900
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green"
+          },
+          "selected": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 127.11,
+              "heightPx": 44,
+              "leftPx": 433.69,
+              "rightPx": 560.8,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(124, 58, 237)",
+              "borderColor": "rgb(124, 58, 237)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(21, 27, 43)",
+              "borderColor": "rgb(41, 50, 71)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 730,
+            "railContentWidthPx": 825,
+            "railScrollX": 0,
+            "viewport": [
+              1440,
+              900
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green"
+          },
+          "filtered": {
+            "beforeCount": 60,
+            "afterCount": 12,
+            "displayedProductsChanged": true
+          }
+        },
+        "2832ad4e": {
+          "initial": {
+            "activeCount": 1,
+            "active": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "linear-gradient(145deg, rgb(6, 63, 40), rgb(3, 12, 8))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(240, 210, 145)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": true,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "linear-gradient(145deg, rgb(6, 63, 40), rgb(3, 12, 8))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(240, 210, 145)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 730,
+            "railContentWidthPx": 825,
+            "railScrollX": 0,
+            "viewport": [
+              1440,
+              900
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "contraste_extremos": [
+              10.84,
+              17.89
+            ]
+          },
+          "selected": {
+            "activeCount": 1,
+            "active": {
+              "name": "Suplementos",
+              "active": true,
+              "widthPx": 127.11,
+              "heightPx": 44,
+              "leftPx": 433.69,
+              "rightPx": 560.8,
+              "lineHeight": "21.7728px",
+              "background": "linear-gradient(145deg, rgb(6, 63, 40), rgb(3, 12, 8))",
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "borderColor": "rgb(240, 210, 145)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "firstVisible": {
+              "name": "Todos los productos",
+              "active": false,
+              "widthPx": 166.47,
+              "heightPx": 44,
+              "leftPx": 259.22,
+              "rightPx": 425.69,
+              "lineHeight": "21.7728px",
+              "background": "none",
+              "backgroundColor": "rgb(21, 27, 43)",
+              "borderColor": "rgb(41, 50, 71)",
+              "textColor": "rgb(244, 244, 233)",
+              "centerReachable": true,
+              "horizontallyInsideRail": true
+            },
+            "railVisibleWidthPx": 730,
+            "railContentWidthPx": 825,
+            "railScrollX": 0,
+            "viewport": [
+              1440,
+              900
+            ],
+            "horizontalOverflowPx": 0,
+            "accent": "green",
+            "contraste_extremos": [
+              10.84,
+              17.89
+            ]
+          },
+          "filtered": {
+            "beforeCount": 60,
+            "afterCount": 12,
+            "displayedProductsChanged": true
+          },
+          "focusSample": {
+            "search": {
+              "before": "botón de búsqueda",
+              "openedAndClosed": true,
+              "queryInitiallyFocused": true,
+              "onlyDialogFocused": true,
+              "resultFound": true,
+              "restoredTrigger": false,
+              "after": "body"
+            },
+            "checkout": {
+              "closed": true,
+              "restored": false,
+              "after": "body",
+              "cartRows": 3,
+              "totalRetained": true
+            }
+          }
+        },
+        "solicitudes_operativas": 0,
+        "errores_de_pagina": 0
+      }
+    }
+  },
+  "cierre": [
+    {
+      "commit": "adb789cb43f950398d3ab6ecf4de0f29979eb3f1",
+      "fecha_utc": "2026-11-18T16:50:28.469Z",
+      "procesos_propios_restantes": 0,
+      "puertos_de_prueba_activos": false,
+      "salidas_forzadas": 0
+    },
+    {
+      "commit": "2832ad4e0a884efa2496718b6b970368ce5a0966",
+      "fecha_utc": "2026-11-18T16:51:39.439Z",
+      "procesos_propios_restantes": 0,
+      "puertos_de_prueba_activos": false,
+      "salidas_forzadas": 0
+    }
+  ]
+}

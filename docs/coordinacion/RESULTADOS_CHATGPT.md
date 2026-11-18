@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · colores de Punto de venta y cierre de Caja
+
+- **Candidato y evidencia.** `dot/15areas-sobre-prod-18nov` en `2832ad4e0a884efa2496718b6b970368ce5a0966`. Rama `chatgpt-pc/capturas-dot-2832ad4e` desde `ee78690c`. [Informe, 10 capturas y mediciones](../capturas/integracion-2832ad4e/LECTURA.md).
+- **Punto de venta.** Categoría seleccionada verde y dorada en ambas anchuras y temas. Suplementos conserva sus 44 px y filtra 60→12. La repetición en oscuro sigue dejando el foco en el documento al cerrar el buscador y Cobrar. El carrito queda intacto.
+- **Caja y turnos.** Abrir, recorrer y cancelar pasó 4/4. La acción de cierre es dorada y se alcanza por desplazamiento interno en móvil. Las pruebas terminaron con cero escrituras y cerramos sus procesos.
+- **Fotos y CI.** Las 316 fotos coinciden byte por byte con la base, incluidas las dos incorporaciones de tenis. Pasaron 4/4 focales, `pnpm check`, instalador e imágenes. `verify` completo seguía en curso a las 16:56 UTC. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44350425176).
+- **Siguiente entrega.** Completar retorno de foco e idioma, conservar las fotos, y adjuntar SHA, tres controles y demostración privada.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
