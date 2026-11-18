@@ -1,0 +1,65 @@
+{
+  "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+  "completedAt": "2026-11-18T02:30:16.812Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "actualizacion-en-inicio.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "b1f22d793a4dfac213dd845b88398a6d87e84d5814b3598dafc564c6bec40abd"
+    },
+    {
+      "file": "carrito-conservado-version-anterior.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "2e3dbf3b5cd6ab01c2e971b1d68cb2008edd7e6e33d5dcb38b76809e733a444b"
+    },
+    {
+      "file": "pos-tras-quitar-ultimo-articulo.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "918c8843cea3f075d908f8233cbfd2f96f6beab77807e57914f1c2650366f8a1"
+    }
+  ],
+  "checks": {
+    "builds": [
+      {
+        "commit": "92d131f8847c1bd338b48c34231bf3c6ae82cb5b",
+        "viteMode": "production",
+        "serviceWorkerSha256": "e3e6e6e04aa52c69394f345d8cc56c147b1e1d8e4d83efad0953f59f5c462eb5",
+        "cssAssets": [
+          "/assets/index-9KkoIy7C.css"
+        ],
+        "appModule": "/assets/index-CwNp-4gy.js"
+      },
+      {
+        "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+        "viteMode": "production",
+        "serviceWorkerSha256": "144a528f369cf39e0f9add2f4159b86ae124bf4c3cbad7c214dfed734834ff4a",
+        "cssAssets": [
+          "/assets/index-9KkoIy7C.css"
+        ],
+        "appModule": "/assets/index-P42AbmCC.js"
+      }
+    ],
+    "idleReloadedOntoNewBuild": true,
+    "busyControllerChanged": true,
+    "addedThroughCatalogWithoutEditingInput": true,
+    "busyDocumentItemAndTotalPreservedAfter16s": true,
+    "busyLoadedNewBuildAfterRemovingItem": true,
+    "visibleItemsAfterReload": 1,
+    "removedItemAndTotalReappeared": true,
+    "cashStillShownOpen": true,
+    "saleRequests": 0
+  },
+  "servicesStopped": true,
+  "salePosts": 0,
+  "pageErrorCount": 0
+}
