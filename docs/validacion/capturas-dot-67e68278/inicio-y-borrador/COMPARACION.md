@@ -28,4 +28,4 @@ Confirmé los cuatro medallones dorados, el acabado de bordes en claro y oscuro,
 
 Pasaron `verify`, `windows-installer` y `render-images` en el push de `67e68278`. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44221333410)
 
-La rama `nexora-cloud` avanzó a este mismo SHA. Su push tiene una ejecución de GitHub distinta. [Controles en la rama base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44225903426)
+La rama `nexora-cloud` avanzó a este mismo SHA. Los tres controles del push de la rama base también terminaron en verde. [Controles en la rama base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44225903426)
