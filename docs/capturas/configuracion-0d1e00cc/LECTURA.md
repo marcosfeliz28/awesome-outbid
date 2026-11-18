@@ -41,7 +41,7 @@ Los tres controles de `0f3667ed` pasaron. `verify` terminó a las 19:00:06 UTC. 
 
 La rama de Dot avanzó a `94f11b31ca4f6c659c6fc3a6399de850744ecf8f`. Incorpora `nb-530-crema-rosado-real.webp` desde la base `0fc775a6`. Los árboles completos de recursos públicos y de API coinciden con la base. Hay 319 fotos WebP. El código web y los componentes de interfaz siguen coincidiendo con `0d1e00cc`, cuyo recorrido está documentado en este informe. [Comparación con la integración anterior](https://github.com/marcosfeliz28/awesome-outbid/compare/0f3667ed...94f11b31)
 
-Al corte de las 19:18 UTC, las imágenes pasaron en el nuevo candidato y en su base. Instalador y `verify` seguían en curso. Los pendientes de foco, idioma y contraste siguen abiertos en ese código. [CI de Dot](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44378441807) · [CI de la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44377260775)
+El candidato `94f11b31` y la base `0fc775a6` pasaron los tres controles. Sus `verify` terminaron a las 19:47:02 y 19:32:26 UTC, respectivamente. Los pendientes de foco, idioma y contraste siguen abiertos en ese código. [CI de Dot](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44378441807) · [CI de la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44377260775)
 
 ## Siguiente entrega de Dot
 
