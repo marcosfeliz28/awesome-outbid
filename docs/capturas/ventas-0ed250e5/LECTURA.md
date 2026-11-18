@@ -12,7 +12,7 @@ En inglés, se cambió el idioma desde el control real de Inicio: título, busca
 
 La lámina original `norexos-ventas-higgsfield-01.png` muestra el comprobante junto al listado en escritorio. Al seleccionar una venta en la aplicación, la previa queda debajo de 20 filas: a 1440 px comienza 1.631,83 px por debajo del borde inferior del viewport; a 390 px, 9.683,94 px. El clic/toque no desplaza la página (delta 0). El detalle sí se abre tras desplazarse hasta la previa. La captura de lámina es un concepto, no un requisito para inventar cifras; el diseño implementado usa tres conteos de resultados cargados.
 
-No se verificaron el aviso de caja ni el formulario de anulación: hacerlo requería llevar la sesión a estados que no se ejercitaron. No se verificaron contraste cuantitativo ni lector de pantalla.
+Un recorrido posterior comprobó el aviso de devolución con caja cerrada y el formulario de anulación directa en español e inglés, con el tema claro y sin confirmar operaciones. Quedan pendientes la solicitud de anulación del perfil de caja, el aviso de abonos, el contraste cuantitativo y el lector de pantalla. [Ocho capturas adicionales](avisos-y-anulacion/LECTURA.md)
 
 La regresión A12 pasó localmente para este SHA. También aprobaron los tres controles del push, `verify`, `windows-installer` y `render-images`. [Ejecución 44230587628](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44230587628)
 

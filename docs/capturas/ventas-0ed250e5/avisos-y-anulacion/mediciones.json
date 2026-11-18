@@ -1,0 +1,132 @@
+{
+  "commit": "0ed250e501bb04c13156776973fb1c446906f9e7",
+  "screenshots": [
+    {
+      "filename": "anulacion-es-1440.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "stage": "void-dialog"
+    },
+    {
+      "filename": "caja-cerrada-es-1440.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "stage": "register-notice"
+    },
+    {
+      "filename": "anulacion-en-1440.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "stage": "void-dialog"
+    },
+    {
+      "filename": "caja-cerrada-en-1440.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "stage": "register-notice"
+    },
+    {
+      "filename": "anulacion-es-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "stage": "void-dialog"
+    },
+    {
+      "filename": "caja-cerrada-es-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "stage": "register-notice"
+    },
+    {
+      "filename": "anulacion-en-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "stage": "void-dialog"
+    },
+    {
+      "filename": "caja-cerrada-en-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "stage": "register-notice"
+    }
+  ],
+  "checks": {
+    "390": {
+      "themes": {
+        "es": {
+          "listStatus": 200,
+          "listedDemoRows": 100,
+          "voidForm": true,
+          "registerNotice": true
+        },
+        "en": {
+          "listStatus": 200,
+          "listedDemoRows": 100,
+          "voidForm": true,
+          "registerNotice": true
+        }
+      },
+      "operationalWrites": [],
+      "pageErrors": [],
+      "externalRequestsBlocked": 0
+    },
+    "1440": {
+      "themes": {
+        "es": {
+          "listStatus": 200,
+          "listedDemoRows": 100,
+          "voidForm": true,
+          "registerNotice": true
+        },
+        "en": {
+          "listStatus": 200,
+          "listedDemoRows": 100,
+          "voidForm": true,
+          "registerNotice": true
+        }
+      },
+      "operationalWrites": [],
+      "pageErrors": [],
+      "externalRequestsBlocked": 0
+    }
+  },
+  "stages": [
+    "PostgreSQL temporal en loopback",
+    "Migraciones de la base de demostración",
+    "Generación de registros ficticios",
+    "API local real",
+    "Aplicación web del SHA publicado"
+  ],
+  "servicesStopped": true,
+  "browser": "157.0.4341.60",
+  "ports": {
+    "postgres": 15493,
+    "api": 14293,
+    "web": 14393
+  },
+  "completedAt": "2026-11-18T04:27:26.840Z"
+}
