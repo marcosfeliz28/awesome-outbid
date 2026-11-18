@@ -33,3 +33,4 @@
 | 18-nov | Banreservas +950 Ana Daysi Díaz, +3,950 sin nombre, −1,700 Javier Mordan | Pueden ser de otros días; los −1,700 son del mensajero nuevo. Cerrado. |
 | 18-nov | BHD −3,050 «Devolución» (16-nov) | Cerrado: ese pedido ya se anuló. |
 | 18-nov | Kenia, cobro doble de 800 (16-nov, GV) | Se deja así, la clienta no se quejó. |
+| 18-nov | Lista «Ventas suplementos» 31-oct a 17-nov: Isopure vainilla 3 lb del 12-nov no se saca (estaba en casa de la dueña); Isoflex 2 lb del martes 17 no se saca (hay que devolverla); Gold Standard Casein e Isopure 3 lb vainilla del martes 17 sacadas | Cerrado. 3 Isopure vainilla 3 lb del 10-nov sin respuesta de la dueña (se asumen cubiertas por la venta FS-539). |
