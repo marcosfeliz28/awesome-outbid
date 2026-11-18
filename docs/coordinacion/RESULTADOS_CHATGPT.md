@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · Configuración, Incentivos y encuesta
+
+- **Candidato y evidencia.** `dot/15areas-sobre-prod-18nov` en `0d1e00ccfedf2db6e5e082a5f1c40a84198dc49c`. Rama `chatgpt-pc/capturas-dot-0d1e00cc` desde `dcf61af2`. [Informe, diez capturas y mediciones](../capturas/configuracion-0d1e00cc/LECTURA.md).
+- **Configuración.** Negocio y reglas pasa 8/8 en 1440/390, claro/oscuro, ES/EN. Impuestos, recibo, plazos, cajas y cajeros localizados. Las tarifas y el resumen de encuesta también traducen sus controles.
+- **Pendientes.** Incentivos tiene contraste 2,91:1 en Recibo PDF móvil oscuro y etiqueta de unidades partida dentro de palabras. El cuestionario de Punto de venta sigue en español en EN, igual que el título/acción del cierre de Incentivos y el nombre accesible del PDF. La pérdida de foco sigue pendiente de un cambio.
+- **Controles.** Cuatro focales estáticas pasaron, también instalador, imágenes y `pnpm check`. `verify` seguía en curso a las 18:08 UTC. Conserva 316 fotos y la base agrega dos Adidas, para 318. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44364498009).
+- **Seguimiento.** Corregir los pendientes, preservar las fotos y entregar SHA, tres controles y demo privada. Se cerraron navegadores y procesos de prueba. Cero operaciones de negocio.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

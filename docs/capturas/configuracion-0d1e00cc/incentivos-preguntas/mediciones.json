@@ -1,0 +1,1070 @@
+{
+  "commit": "0d1e00ccfedf2db6e5e082a5f1c40a84198dc49c",
+  "branch": "dot/15areas-sobre-prod-18nov",
+  "browser": "157.0.4341.60",
+  "tipo": "Interfaz real con API simulada en el navegador",
+  "capturas": [
+    {
+      "filename": "incentivos-1440-claro-en.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "language": "en",
+      "theme": "light",
+      "scenario": "informe mensual simulado",
+      "sha256": "77e9e847155329c214a483994a7b7f7d45c77a340fb3a01c08ebc94f3bc0d57e"
+    },
+    {
+      "filename": "incentivos-390-oscuro-es.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "language": "es",
+      "theme": "dark",
+      "scenario": "informe mensual simulado",
+      "sha256": "094d4a6decc2ca05b262071a515ecee3cfa027bcd2cca992f41c63afd2e19930"
+    },
+    {
+      "filename": "preguntas-1440-claro-es.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "language": "es",
+      "theme": "light",
+      "scenario": "formulario de encuesta desde Punto de venta",
+      "sha256": "fa60632008397a2a984ba399ba1f5e41b718dabfe2bfd6a514c771f9cd4d0d49"
+    },
+    {
+      "filename": "tarifas-1440-oscuro-en.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "language": "en",
+      "theme": "dark",
+      "scenario": "tarifas de incentivo de Configuración",
+      "sha256": "c6d480db4c75facecb0cbf46b26fd8fd1403aa62ebaed4c922aceb2bc8f339b8"
+    },
+    {
+      "filename": "resumen-encuesta-390-claro-en.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "language": "en",
+      "theme": "light",
+      "scenario": "resumen de encuesta de Configuración",
+      "sha256": "1b86f02f31e5e8311ad6fb4a5a60b2a054484d51019fa1f9bb441761da87d87e"
+    },
+    {
+      "filename": "preguntas-390-oscuro-en.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "language": "en",
+      "theme": "dark",
+      "scenario": "formulario de encuesta desde Punto de venta",
+      "sha256": "d64a9189a4d1415a1373c44de57db1e8e79622f4b6f0676b5de53d2634f751d6"
+    }
+  ],
+  "mediciones": [
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "tema": "light",
+      "idioma": "es",
+      "incentivos": {
+        "title": "Incentivos",
+        "pending": "Mes abierto · cifras preliminares",
+        "exportLabel": "Exportar Excel",
+        "table": {
+          "documentOverflowPx": 0,
+          "wrap": {
+            "width": 1151,
+            "scrollWidth": 1332
+          },
+          "table": {
+            "width": 1332,
+            "scrollWidth": 1332
+          },
+          "overflowX": "auto",
+          "internalScrollAtEndPx": 181,
+          "headers": [
+            "CAJERA",
+            "VENTAS",
+            "UNIDADES POR CATEGORÍA",
+            "BRUTO",
+            "DEVOLUCIONES Y ANULACIONES",
+            "AL POR MAYOR",
+            "NETO",
+            "POR COBRAR"
+          ]
+        },
+        "pdf": {
+          "text": "Recibo PDF",
+          "ariaLabel": "Recibo para firmar de Cajera DEMO"
+        },
+        "preview": {
+          "title": "Cerrar Período DEMO",
+          "confirmationLabel": "Cerrar el mes",
+          "cancelLabel": "Cancelar",
+          "closed": true
+        }
+      },
+      "configuracion": {
+        "rates": {
+          "heading": "Incentivos por categoría",
+          "rateLabel": "Incentivo por unidad de Suplementos DEMO",
+          "shownRate": "7.5",
+          "defaultLabel": "Por defecto",
+          "saveLabel": "Guardar tarifas",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 849,
+              "scrollWidth": 849
+            },
+            "table": {
+              "width": 849,
+              "scrollWidth": 849
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "CATEGORÍA",
+              "RD$ POR UNIDAD"
+            ]
+          }
+        },
+        "summary": {
+          "heading": "Encuesta de la caja",
+          "responseCount": "3 personas respondieron.",
+          "firstQuestion": "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+          "score": "Promedio 3.67 · 3: 1 · 4: 2",
+          "answer": "Sí: 2 · No: 1",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 909,
+              "scrollWidth": 909
+            },
+            "table": {
+              "width": 909,
+              "scrollWidth": 909
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "PREGUNTA",
+              "RESPUESTAS"
+            ]
+          }
+        }
+      },
+      "preguntas": {
+        "launcherText": "Preguntas",
+        "launcherAria": "Preguntas rápidas sin IA",
+        "modalTitle": "Preguntas rápidas",
+        "formTitle": "Encuesta de la caja",
+        "questionCount": 30,
+        "firstLegend": "1. ¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+        "yesText": "Sí",
+        "save": "Guardar respuestas",
+        "return": "Otra pregunta",
+        "geometry": {
+          "width": 540,
+          "height": 810,
+          "viewportWidth": 1440,
+          "scrollHeight": 3957,
+          "viewportHeight": 900,
+          "internalHorizontalOverflow": 0,
+          "documentOverflowPx": 0
+        },
+        "returnedToQuestions": true,
+        "dialogClosed": true
+      },
+      "solicitudes_de_negocio": 0,
+      "errores_de_pagina": 0
+    },
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "tema": "light",
+      "idioma": "en",
+      "incentivos": {
+        "title": "Incentives",
+        "pending": "Open month · preliminary amounts",
+        "exportLabel": "Export Excel",
+        "table": {
+          "documentOverflowPx": 0,
+          "wrap": {
+            "width": 1151,
+            "scrollWidth": 1162
+          },
+          "table": {
+            "width": 1162,
+            "scrollWidth": 1162
+          },
+          "overflowX": "auto",
+          "internalScrollAtEndPx": 11,
+          "headers": [
+            "CASHIER",
+            "SALES",
+            "UNITS BY CATEGORY",
+            "GROSS",
+            "RETURNS AND VOIDS",
+            "WHOLESALE",
+            "NET",
+            "TO COLLECT"
+          ]
+        },
+        "pdf": {
+          "text": "PDF receipt",
+          "ariaLabel": "Recibo para firmar de Cajera DEMO"
+        },
+        "preview": {
+          "title": "Cerrar Período DEMO",
+          "confirmationLabel": "Cerrar el mes",
+          "cancelLabel": "Cancel",
+          "closed": true
+        }
+      },
+      "configuracion": {
+        "rates": {
+          "heading": "Incentives by category",
+          "rateLabel": "Per-unit incentive for Suplementos DEMO",
+          "shownRate": "7.5",
+          "defaultLabel": "Default",
+          "saveLabel": "Save rates",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 849,
+              "scrollWidth": 849
+            },
+            "table": {
+              "width": 849,
+              "scrollWidth": 849
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "CATEGORY",
+              "RD$ PER UNIT"
+            ]
+          }
+        },
+        "summary": {
+          "heading": "Cashier survey",
+          "responseCount": "3 people responded.",
+          "firstQuestion": "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+          "score": "Average 3.67 · 3: 1 · 4: 2",
+          "answer": "Yes: 2 · No: 1",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 909,
+              "scrollWidth": 909
+            },
+            "table": {
+              "width": 909,
+              "scrollWidth": 909
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "QUESTION",
+              "RESPONSES"
+            ]
+          }
+        }
+      },
+      "preguntas": {
+        "launcherText": "Questions",
+        "launcherAria": "Preguntas rápidas sin IA",
+        "modalTitle": "Preguntas rápidas",
+        "formTitle": "Encuesta de la caja",
+        "questionCount": 30,
+        "firstLegend": "1. ¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+        "yesText": "Sí",
+        "save": "Guardar respuestas",
+        "return": "Otra pregunta",
+        "geometry": {
+          "width": 540,
+          "height": 810,
+          "viewportWidth": 1440,
+          "scrollHeight": 3957,
+          "viewportHeight": 900,
+          "internalHorizontalOverflow": 0,
+          "documentOverflowPx": 0
+        },
+        "returnedToQuestions": true,
+        "dialogClosed": true
+      },
+      "solicitudes_de_negocio": 0,
+      "errores_de_pagina": 0
+    },
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "tema": "dark",
+      "idioma": "es",
+      "incentivos": {
+        "title": "Incentivos",
+        "pending": "Mes abierto · cifras preliminares",
+        "exportLabel": "Exportar Excel",
+        "table": {
+          "documentOverflowPx": 0,
+          "wrap": {
+            "width": 1151,
+            "scrollWidth": 1332
+          },
+          "table": {
+            "width": 1332,
+            "scrollWidth": 1332
+          },
+          "overflowX": "auto",
+          "internalScrollAtEndPx": 181,
+          "headers": [
+            "CAJERA",
+            "VENTAS",
+            "UNIDADES POR CATEGORÍA",
+            "BRUTO",
+            "DEVOLUCIONES Y ANULACIONES",
+            "AL POR MAYOR",
+            "NETO",
+            "POR COBRAR"
+          ]
+        },
+        "pdf": {
+          "text": "Recibo PDF",
+          "ariaLabel": "Recibo para firmar de Cajera DEMO"
+        },
+        "preview": {
+          "title": "Cerrar Período DEMO",
+          "confirmationLabel": "Cerrar el mes",
+          "cancelLabel": "Cancelar",
+          "closed": true
+        }
+      },
+      "configuracion": {
+        "rates": {
+          "heading": "Incentivos por categoría",
+          "rateLabel": "Incentivo por unidad de Suplementos DEMO",
+          "shownRate": "7.5",
+          "defaultLabel": "Por defecto",
+          "saveLabel": "Guardar tarifas",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 849,
+              "scrollWidth": 849
+            },
+            "table": {
+              "width": 849,
+              "scrollWidth": 849
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "CATEGORÍA",
+              "RD$ POR UNIDAD"
+            ]
+          }
+        },
+        "summary": {
+          "heading": "Encuesta de la caja",
+          "responseCount": "3 personas respondieron.",
+          "firstQuestion": "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+          "score": "Promedio 3.67 · 3: 1 · 4: 2",
+          "answer": "Sí: 2 · No: 1",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 909,
+              "scrollWidth": 909
+            },
+            "table": {
+              "width": 909,
+              "scrollWidth": 909
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "PREGUNTA",
+              "RESPUESTAS"
+            ]
+          }
+        }
+      },
+      "preguntas": {
+        "launcherText": "Preguntas",
+        "launcherAria": "Preguntas rápidas sin IA",
+        "modalTitle": "Preguntas rápidas",
+        "formTitle": "Encuesta de la caja",
+        "questionCount": 30,
+        "firstLegend": "1. ¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+        "yesText": "Sí",
+        "save": "Guardar respuestas",
+        "return": "Otra pregunta",
+        "geometry": {
+          "width": 540,
+          "height": 810,
+          "viewportWidth": 1440,
+          "scrollHeight": 3957,
+          "viewportHeight": 900,
+          "internalHorizontalOverflow": 0,
+          "documentOverflowPx": 0
+        },
+        "returnedToQuestions": true,
+        "dialogClosed": true
+      },
+      "solicitudes_de_negocio": 0,
+      "errores_de_pagina": 0
+    },
+    {
+      "viewport": [
+        1440,
+        900
+      ],
+      "tema": "dark",
+      "idioma": "en",
+      "incentivos": {
+        "title": "Incentives",
+        "pending": "Open month · preliminary amounts",
+        "exportLabel": "Export Excel",
+        "table": {
+          "documentOverflowPx": 0,
+          "wrap": {
+            "width": 1151,
+            "scrollWidth": 1162
+          },
+          "table": {
+            "width": 1162,
+            "scrollWidth": 1162
+          },
+          "overflowX": "auto",
+          "internalScrollAtEndPx": 11,
+          "headers": [
+            "CASHIER",
+            "SALES",
+            "UNITS BY CATEGORY",
+            "GROSS",
+            "RETURNS AND VOIDS",
+            "WHOLESALE",
+            "NET",
+            "TO COLLECT"
+          ]
+        },
+        "pdf": {
+          "text": "PDF receipt",
+          "ariaLabel": "Recibo para firmar de Cajera DEMO"
+        },
+        "preview": {
+          "title": "Cerrar Período DEMO",
+          "confirmationLabel": "Cerrar el mes",
+          "cancelLabel": "Cancel",
+          "closed": true
+        }
+      },
+      "configuracion": {
+        "rates": {
+          "heading": "Incentives by category",
+          "rateLabel": "Per-unit incentive for Suplementos DEMO",
+          "shownRate": "7.5",
+          "defaultLabel": "Default",
+          "saveLabel": "Save rates",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 849,
+              "scrollWidth": 849
+            },
+            "table": {
+              "width": 849,
+              "scrollWidth": 849
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "CATEGORY",
+              "RD$ PER UNIT"
+            ]
+          }
+        },
+        "summary": {
+          "heading": "Cashier survey",
+          "responseCount": "3 people responded.",
+          "firstQuestion": "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+          "score": "Average 3.67 · 3: 1 · 4: 2",
+          "answer": "Yes: 2 · No: 1",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 909,
+              "scrollWidth": 909
+            },
+            "table": {
+              "width": 909,
+              "scrollWidth": 909
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "QUESTION",
+              "RESPONSES"
+            ]
+          }
+        }
+      },
+      "preguntas": {
+        "launcherText": "Questions",
+        "launcherAria": "Preguntas rápidas sin IA",
+        "modalTitle": "Preguntas rápidas",
+        "formTitle": "Encuesta de la caja",
+        "questionCount": 30,
+        "firstLegend": "1. ¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+        "yesText": "Sí",
+        "save": "Guardar respuestas",
+        "return": "Otra pregunta",
+        "geometry": {
+          "width": 540,
+          "height": 810,
+          "viewportWidth": 1440,
+          "scrollHeight": 3957,
+          "viewportHeight": 900,
+          "internalHorizontalOverflow": 0,
+          "documentOverflowPx": 0
+        },
+        "returnedToQuestions": true,
+        "dialogClosed": true
+      },
+      "solicitudes_de_negocio": 0,
+      "errores_de_pagina": 0
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "tema": "light",
+      "idioma": "es",
+      "incentivos": {
+        "title": "Incentivos",
+        "pending": "Mes abierto · cifras preliminares",
+        "exportLabel": "Exportar Excel",
+        "table": {
+          "documentOverflowPx": 0,
+          "wrap": {
+            "width": 356,
+            "scrollWidth": 356
+          },
+          "table": {
+            "width": 356,
+            "scrollWidth": 356
+          },
+          "overflowX": "auto",
+          "internalScrollAtEndPx": 0,
+          "headers": [
+            "CAJERA",
+            "VENTAS",
+            "UNIDADES POR CATEGORÍA",
+            "BRUTO",
+            "DEVOLUCIONES Y ANULACIONES",
+            "AL POR MAYOR",
+            "NETO",
+            "POR COBRAR"
+          ]
+        },
+        "pdf": {
+          "text": "Recibo PDF",
+          "ariaLabel": "Recibo para firmar de Cajera DEMO"
+        },
+        "preview": {
+          "title": "Cerrar Período DEMO",
+          "confirmationLabel": "Cerrar el mes",
+          "cancelLabel": "Cancelar",
+          "closed": true
+        }
+      },
+      "configuracion": {
+        "rates": {
+          "heading": "Incentivos por categoría",
+          "rateLabel": "Incentivo por unidad de Suplementos DEMO",
+          "shownRate": "7.5",
+          "defaultLabel": "Por defecto",
+          "saveLabel": "Guardar tarifas",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 324,
+              "scrollWidth": 324
+            },
+            "table": {
+              "width": 324,
+              "scrollWidth": 324
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "CATEGORÍA",
+              "RD$ POR UNIDAD"
+            ]
+          }
+        },
+        "summary": {
+          "heading": "Encuesta de la caja",
+          "responseCount": "3 personas respondieron.",
+          "firstQuestion": "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+          "score": "Promedio 3.67 · 3: 1 · 4: 2",
+          "answer": "Sí: 2 · No: 1",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 356,
+              "scrollWidth": 356
+            },
+            "table": {
+              "width": 356,
+              "scrollWidth": 356
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "PREGUNTA",
+              "RESPUESTAS"
+            ]
+          }
+        }
+      },
+      "preguntas": {
+        "launcherText": "Preguntas",
+        "launcherAria": "Preguntas rápidas sin IA",
+        "modalTitle": "Preguntas rápidas",
+        "formTitle": "Encuesta de la caja",
+        "questionCount": 30,
+        "firstLegend": "1. ¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+        "yesText": "Sí",
+        "save": "Guardar respuestas",
+        "return": "Otra pregunta",
+        "geometry": {
+          "width": 366,
+          "height": 776,
+          "viewportWidth": 390,
+          "scrollHeight": 4674,
+          "viewportHeight": 844,
+          "internalHorizontalOverflow": 0,
+          "documentOverflowPx": 0
+        },
+        "returnedToQuestions": true,
+        "dialogClosed": true
+      },
+      "solicitudes_de_negocio": 0,
+      "errores_de_pagina": 0
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "tema": "light",
+      "idioma": "en",
+      "incentivos": {
+        "title": "Incentives",
+        "pending": "Open month · preliminary amounts",
+        "exportLabel": "Export Excel",
+        "table": {
+          "documentOverflowPx": 0,
+          "wrap": {
+            "width": 356,
+            "scrollWidth": 356
+          },
+          "table": {
+            "width": 356,
+            "scrollWidth": 356
+          },
+          "overflowX": "auto",
+          "internalScrollAtEndPx": 0,
+          "headers": [
+            "CASHIER",
+            "SALES",
+            "UNITS BY CATEGORY",
+            "GROSS",
+            "RETURNS AND VOIDS",
+            "WHOLESALE",
+            "NET",
+            "TO COLLECT"
+          ]
+        },
+        "pdf": {
+          "text": "PDF receipt",
+          "ariaLabel": "Recibo para firmar de Cajera DEMO"
+        },
+        "preview": {
+          "title": "Cerrar Período DEMO",
+          "confirmationLabel": "Cerrar el mes",
+          "cancelLabel": "Cancel",
+          "closed": true
+        }
+      },
+      "configuracion": {
+        "rates": {
+          "heading": "Incentives by category",
+          "rateLabel": "Per-unit incentive for Suplementos DEMO",
+          "shownRate": "7.5",
+          "defaultLabel": "Default",
+          "saveLabel": "Save rates",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 324,
+              "scrollWidth": 324
+            },
+            "table": {
+              "width": 324,
+              "scrollWidth": 324
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "CATEGORY",
+              "RD$ PER UNIT"
+            ]
+          }
+        },
+        "summary": {
+          "heading": "Cashier survey",
+          "responseCount": "3 people responded.",
+          "firstQuestion": "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+          "score": "Average 3.67 · 3: 1 · 4: 2",
+          "answer": "Yes: 2 · No: 1",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 356,
+              "scrollWidth": 356
+            },
+            "table": {
+              "width": 356,
+              "scrollWidth": 356
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "QUESTION",
+              "RESPONSES"
+            ]
+          }
+        }
+      },
+      "preguntas": {
+        "launcherText": "Questions",
+        "launcherAria": "Preguntas rápidas sin IA",
+        "modalTitle": "Preguntas rápidas",
+        "formTitle": "Encuesta de la caja",
+        "questionCount": 30,
+        "firstLegend": "1. ¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+        "yesText": "Sí",
+        "save": "Guardar respuestas",
+        "return": "Otra pregunta",
+        "geometry": {
+          "width": 366,
+          "height": 776,
+          "viewportWidth": 390,
+          "scrollHeight": 4674,
+          "viewportHeight": 844,
+          "internalHorizontalOverflow": 0,
+          "documentOverflowPx": 0
+        },
+        "returnedToQuestions": true,
+        "dialogClosed": true
+      },
+      "solicitudes_de_negocio": 0,
+      "errores_de_pagina": 0
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "tema": "dark",
+      "idioma": "es",
+      "incentivos": {
+        "title": "Incentivos",
+        "pending": "Mes abierto · cifras preliminares",
+        "exportLabel": "Exportar Excel",
+        "table": {
+          "documentOverflowPx": 0,
+          "wrap": {
+            "width": 356,
+            "scrollWidth": 356
+          },
+          "table": {
+            "width": 356,
+            "scrollWidth": 356
+          },
+          "overflowX": "auto",
+          "internalScrollAtEndPx": 0,
+          "headers": [
+            "CAJERA",
+            "VENTAS",
+            "UNIDADES POR CATEGORÍA",
+            "BRUTO",
+            "DEVOLUCIONES Y ANULACIONES",
+            "AL POR MAYOR",
+            "NETO",
+            "POR COBRAR"
+          ]
+        },
+        "pdf": {
+          "text": "Recibo PDF",
+          "ariaLabel": "Recibo para firmar de Cajera DEMO"
+        },
+        "preview": {
+          "title": "Cerrar Período DEMO",
+          "confirmationLabel": "Cerrar el mes",
+          "cancelLabel": "Cancelar",
+          "closed": true
+        }
+      },
+      "configuracion": {
+        "rates": {
+          "heading": "Incentivos por categoría",
+          "rateLabel": "Incentivo por unidad de Suplementos DEMO",
+          "shownRate": "7.5",
+          "defaultLabel": "Por defecto",
+          "saveLabel": "Guardar tarifas",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 324,
+              "scrollWidth": 324
+            },
+            "table": {
+              "width": 324,
+              "scrollWidth": 324
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "CATEGORÍA",
+              "RD$ POR UNIDAD"
+            ]
+          }
+        },
+        "summary": {
+          "heading": "Encuesta de la caja",
+          "responseCount": "3 personas respondieron.",
+          "firstQuestion": "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+          "score": "Promedio 3.67 · 3: 1 · 4: 2",
+          "answer": "Sí: 2 · No: 1",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 356,
+              "scrollWidth": 356
+            },
+            "table": {
+              "width": 356,
+              "scrollWidth": 356
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "PREGUNTA",
+              "RESPUESTAS"
+            ]
+          }
+        }
+      },
+      "preguntas": {
+        "launcherText": "Preguntas",
+        "launcherAria": "Preguntas rápidas sin IA",
+        "modalTitle": "Preguntas rápidas",
+        "formTitle": "Encuesta de la caja",
+        "questionCount": 30,
+        "firstLegend": "1. ¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+        "yesText": "Sí",
+        "save": "Guardar respuestas",
+        "return": "Otra pregunta",
+        "geometry": {
+          "width": 366,
+          "height": 776,
+          "viewportWidth": 390,
+          "scrollHeight": 4674,
+          "viewportHeight": 844,
+          "internalHorizontalOverflow": 0,
+          "documentOverflowPx": 0
+        },
+        "returnedToQuestions": true,
+        "dialogClosed": true
+      },
+      "solicitudes_de_negocio": 0,
+      "errores_de_pagina": 0
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "tema": "dark",
+      "idioma": "en",
+      "incentivos": {
+        "title": "Incentives",
+        "pending": "Open month · preliminary amounts",
+        "exportLabel": "Export Excel",
+        "table": {
+          "documentOverflowPx": 0,
+          "wrap": {
+            "width": 356,
+            "scrollWidth": 356
+          },
+          "table": {
+            "width": 356,
+            "scrollWidth": 356
+          },
+          "overflowX": "auto",
+          "internalScrollAtEndPx": 0,
+          "headers": [
+            "CASHIER",
+            "SALES",
+            "UNITS BY CATEGORY",
+            "GROSS",
+            "RETURNS AND VOIDS",
+            "WHOLESALE",
+            "NET",
+            "TO COLLECT"
+          ]
+        },
+        "pdf": {
+          "text": "PDF receipt",
+          "ariaLabel": "Recibo para firmar de Cajera DEMO"
+        },
+        "preview": {
+          "title": "Cerrar Período DEMO",
+          "confirmationLabel": "Cerrar el mes",
+          "cancelLabel": "Cancel",
+          "closed": true
+        }
+      },
+      "configuracion": {
+        "rates": {
+          "heading": "Incentives by category",
+          "rateLabel": "Per-unit incentive for Suplementos DEMO",
+          "shownRate": "7.5",
+          "defaultLabel": "Default",
+          "saveLabel": "Save rates",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 324,
+              "scrollWidth": 324
+            },
+            "table": {
+              "width": 324,
+              "scrollWidth": 324
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "CATEGORY",
+              "RD$ PER UNIT"
+            ]
+          }
+        },
+        "summary": {
+          "heading": "Cashier survey",
+          "responseCount": "3 people responded.",
+          "firstQuestion": "¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+          "score": "Average 3.67 · 3: 1 · 4: 2",
+          "answer": "Yes: 2 · No: 1",
+          "table": {
+            "documentOverflowPx": 0,
+            "wrap": {
+              "width": 356,
+              "scrollWidth": 356
+            },
+            "table": {
+              "width": 356,
+              "scrollWidth": 356
+            },
+            "overflowX": "auto",
+            "internalScrollAtEndPx": 0,
+            "headers": [
+              "QUESTION",
+              "RESPONSES"
+            ]
+          }
+        }
+      },
+      "preguntas": {
+        "launcherText": "Questions",
+        "launcherAria": "Preguntas rápidas sin IA",
+        "modalTitle": "Preguntas rápidas",
+        "formTitle": "Encuesta de la caja",
+        "questionCount": 30,
+        "firstLegend": "1. ¿Qué tan rápido es cobrar una venta? (1 lento, 5 muy rápido)",
+        "yesText": "Sí",
+        "save": "Guardar respuestas",
+        "return": "Otra pregunta",
+        "geometry": {
+          "width": 366,
+          "height": 776,
+          "viewportWidth": 390,
+          "scrollHeight": 4674,
+          "viewportHeight": 844,
+          "internalHorizontalOverflow": 0,
+          "documentOverflowPx": 0
+        },
+        "returnedToQuestions": true,
+        "dialogClosed": true
+      },
+      "solicitudes_de_negocio": 0,
+      "errores_de_pagina": 0
+    }
+  ],
+  "contraste_movil_oscuro": {
+    "captura": "incentivos-390-oscuro-es.png",
+    "region_px": [
+      271,
+      569,
+      346,
+      603
+    ],
+    "texto_rgb": [
+      19,
+      114,
+      84
+    ],
+    "fondo_rgb": [
+      21,
+      27,
+      43
+    ],
+    "contraste": 2.91
+  },
+  "cierre": [
+    {
+      "fecha_utc": "2026-11-18T18:04:46.889Z",
+      "procesos_propios_restantes": 0,
+      "puertos_de_prueba_activos": false,
+      "salidas_forzadas": 0
+    },
+    {
+      "fecha_utc": "2026-11-18T18:05:07.878Z",
+      "procesos_propios_restantes": 0,
+      "puertos_de_prueba_activos": false,
+      "salidas_forzadas": 0
+    }
+  ]
+}

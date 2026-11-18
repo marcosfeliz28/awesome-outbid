@@ -1,0 +1,64 @@
+{
+  "candidate": "0d1e00ccfedf2db6e5e082a5f1c40a84198dc49c",
+  "baseCandidate": "81f31094",
+  "baseIsAncestor": true,
+  "scope": "Configuración > Negocio y reglas",
+  "environment": {
+    "application": "UI real del candidato",
+    "api": "respuestas completamente sintéticas en loopback",
+    "externalHosts": "bloqueados",
+    "businessWrites": 0,
+    "actions": ["navegar", "leer"]
+  },
+  "result": {
+    "tests": 8,
+    "passed": 8,
+    "durationSeconds": 10.7,
+    "screenshots": 4
+  },
+  "coverage": {
+    "viewports": ["1440x1000", "390x844"],
+    "themes": ["light", "dark"],
+    "languages": ["es", "en"]
+  },
+  "layout": {
+    "desktop": {
+      "documentWidth": 1440,
+      "workspaceWidth": 1152.8,
+      "activeTab": "206x42",
+      "summaryWidth": 908.8,
+      "rulesWidth": 908.8
+    },
+    "mobile": {
+      "documentWidth": 390,
+      "workspaceWidth": 358,
+      "activeTabSpanish": "169x44",
+      "activeTabEnglish": "169x55",
+      "summaryWidth": 356,
+      "rulesWidth": 356
+    }
+  },
+  "verifiedCopy": {
+    "es": [
+      "Negocio y reglas",
+      "ITBIS 18% incluido · Ticket 80 mm",
+      "Sin rotación 45 días",
+      "Por vencer 60 días",
+      "Devolución 7 días"
+    ],
+    "en": [
+      "Business and rules",
+      "ITBIS 18% included · Receipt 80 mm",
+      "No turnover 45 days",
+      "Expiring soon 60 days",
+      "Returns 7 days"
+    ]
+  },
+  "observations": [
+    "El tab inglés ocupa 55 px de alto en móvil por su salto natural de línea, sin recorte ni desbordamiento.",
+    "Resumen y reglas caben dentro de 390 px y conservan la apariencia clara y oscura.",
+    "Cajas, cajeros, logo y avisos visibles usan el idioma seleccionado en las comprobaciones realizadas.",
+    "La corrección respecto de 81f31094 traduce incluido/adicional, Receipt y la unidad days."
+  ],
+  "findings": []
+}

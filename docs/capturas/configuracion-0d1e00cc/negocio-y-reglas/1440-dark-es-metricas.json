@@ -1,0 +1,48 @@
+{
+  "scenario": {
+    "width": 1440,
+    "height": 1000,
+    "theme": "dark",
+    "language": "es",
+    "capture": "none"
+  },
+  "metrics": {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "documentWidth": 1440,
+    "workspaceWidth": 1152.796875,
+    "activeTab": {
+      "x": 262.1875,
+      "y": 266.328125,
+      "width": 206,
+      "height": 42,
+      "top": 266.328125,
+      "right": 468.1875,
+      "bottom": 308.328125,
+      "left": 262.1875
+    },
+    "summary": {
+      "x": 498.1875,
+      "y": 260.328125,
+      "width": 908.796875,
+      "height": 253.40625,
+      "top": 260.328125,
+      "right": 1406.984375,
+      "bottom": 513.734375,
+      "left": 498.1875
+    },
+    "rules": {
+      "x": 498.1875,
+      "y": 513.734375,
+      "width": 908.796875,
+      "height": 160.921875,
+      "top": 513.734375,
+      "right": 1406.984375,
+      "bottom": 674.65625,
+      "left": 498.1875
+    }
+  },
+  "writes": []
+}
