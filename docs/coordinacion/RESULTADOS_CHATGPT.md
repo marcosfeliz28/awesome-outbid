@@ -2,6 +2,10 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · recibo y Mercancía 6e8eb624
+
+Catorce capturas, con dos muestras del estilo del recibo rotuladas. Cobrar abre y cierra conservando el carrito de prueba. Las confirmaciones y la ayuda de Mercancía se tradujeron. Quedan campos y avisos en español al elegir inglés. Cero operaciones. Pasaron 11 pruebas focales. El candidato debe conservar las 39 WebP de tenis de `2d87290b`. [Informes y capturas](../capturas/recibo-mercancia-6e8eb624/LECTURA.md)
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

@@ -1,0 +1,465 @@
+{
+  "commit": "6e8eb624ede4d1544be615e7ebc22277fe2c67da",
+  "branch": "dot/15areas-integracion-18nov",
+  "capturedAt": "2026-11-18T14:52:09.620Z",
+  "browser": {
+    "name": "Edge",
+    "version": "157.0.4341.60"
+  },
+  "data": "API local y PostgreSQL descartable con datos ficticios",
+  "views": {
+    "1440": {
+      "light": {
+        "shell": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "theme": "light",
+          "brandText": "Norexos",
+          "logo": {
+            "background": "linear-gradient(135deg, rgb(255, 240, 168), rgb(198, 151, 54), rgb(255, 229, 151))",
+            "color": "rgb(57, 41, 5)",
+            "borderColor": "rgb(229, 196, 109)",
+            "width": 35,
+            "height": 35
+          },
+          "active": {
+            "background": "linear-gradient(145deg, rgb(203, 236, 220), rgb(213, 224, 215))",
+            "color": "rgb(23, 45, 36)",
+            "borderColor": "rgb(121, 83, 15)",
+            "width": 186.1875,
+            "height": 54
+          },
+          "activeLabel": "Punto de venta",
+          "primary": "#08764b",
+          "accent": "#08764b",
+          "ink": "#172d24",
+          "horizontalOverflowPx": 0
+        },
+        "checkoutOpenedAndClosed": true,
+        "cartRowsRetained": 3,
+        "totalRetained": true,
+        "receipt": {
+          "kind": "muestra-dom-inerte",
+          "normal": {
+            "directChildOfBody": true,
+            "print": {
+              "background": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+              "color": "rgb(36, 29, 11)",
+              "border": "rgb(160, 128, 54)",
+              "fill": "rgba(0, 0, 0, 0)",
+              "shadow": "rgba(255, 255, 255, 0.533) 0px 1px 0px 0px inset, rgba(112, 80, 21, 0.267) 0px -2px 0px 0px inset, rgba(0, 0, 0, 0.133) 0px 3px 8px 0px"
+            },
+            "next": {
+              "background": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+              "color": "rgb(36, 29, 11)",
+              "border": "rgb(160, 128, 54)",
+              "fill": "rgba(0, 0, 0, 0)",
+              "shadow": "rgba(255, 255, 255, 0.533) 0px 1px 0px 0px inset, rgba(112, 80, 21, 0.267) 0px -2px 0px 0px inset, rgba(0, 0, 0, 0.133) 0px 3px 8px 0px"
+            },
+            "secondary": {
+              "background": "none",
+              "color": "rgb(27, 33, 52)",
+              "border": "rgb(234, 234, 242)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "controlWithoutSaleSuccess": {
+              "background": "none",
+              "color": "rgb(255, 255, 255)",
+              "border": "rgba(0, 0, 0, 0)",
+              "fill": "rgb(124, 58, 237)",
+              "shadow": "rgba(124, 58, 237, 0.086) 0px 3px 7px 0px"
+            }
+          },
+          "forcedColors": {
+            "directChildOfBody": true,
+            "print": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "next": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "secondary": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "controlWithoutSaleSuccess": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            }
+          }
+        }
+      },
+      "dark": {
+        "shell": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "theme": "dark",
+          "brandText": "Norexos",
+          "logo": {
+            "background": "linear-gradient(135deg, rgb(255, 240, 168), rgb(198, 151, 54), rgb(255, 229, 151))",
+            "color": "rgb(57, 41, 5)",
+            "borderColor": "rgb(229, 196, 109)",
+            "width": 35,
+            "height": 35
+          },
+          "active": {
+            "background": "linear-gradient(145deg, rgb(6, 63, 40), rgb(3, 12, 8))",
+            "color": "rgb(244, 244, 233)",
+            "borderColor": "rgb(240, 210, 145)",
+            "width": 186.1875,
+            "height": 54
+          },
+          "activeLabel": "Punto de venta",
+          "primary": "#5ff1a7",
+          "accent": "#5ff1a7",
+          "ink": "#f4f4e9",
+          "horizontalOverflowPx": 0
+        },
+        "checkoutOpenedAndClosed": true,
+        "cartRowsRetained": 3,
+        "totalRetained": true,
+        "receipt": {
+          "kind": "muestra-dom-inerte",
+          "normal": {
+            "directChildOfBody": true,
+            "print": {
+              "background": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+              "color": "rgb(36, 29, 11)",
+              "border": "rgb(160, 128, 54)",
+              "fill": "rgba(0, 0, 0, 0)",
+              "shadow": "rgba(255, 255, 255, 0.533) 0px 1px 0px 0px inset, rgba(112, 80, 21, 0.267) 0px -2px 0px 0px inset, rgba(0, 0, 0, 0.133) 0px 3px 8px 0px"
+            },
+            "next": {
+              "background": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+              "color": "rgb(36, 29, 11)",
+              "border": "rgb(160, 128, 54)",
+              "fill": "rgba(0, 0, 0, 0)",
+              "shadow": "rgba(255, 255, 255, 0.533) 0px 1px 0px 0px inset, rgba(112, 80, 21, 0.267) 0px -2px 0px 0px inset, rgba(0, 0, 0, 0.133) 0px 3px 8px 0px"
+            },
+            "secondary": {
+              "background": "none",
+              "color": "rgb(226, 232, 240)",
+              "border": "rgb(41, 50, 71)",
+              "fill": "rgb(21, 27, 43)",
+              "shadow": "none"
+            },
+            "controlWithoutSaleSuccess": {
+              "background": "none",
+              "color": "rgb(255, 255, 255)",
+              "border": "rgba(0, 0, 0, 0)",
+              "fill": "rgb(124, 58, 237)",
+              "shadow": "rgba(124, 58, 237, 0.086) 0px 3px 7px 0px"
+            }
+          },
+          "forcedColors": {
+            "directChildOfBody": true,
+            "print": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "next": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "secondary": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "controlWithoutSaleSuccess": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            }
+          }
+        }
+      }
+    },
+    "390": {
+      "light": {
+        "shell": {
+          "viewport": [
+            390,
+            844
+          ],
+          "theme": "light",
+          "brandText": "Norexos",
+          "logo": {
+            "background": "linear-gradient(135deg, rgb(255, 240, 168), rgb(198, 151, 54), rgb(255, 229, 151))",
+            "color": "rgb(57, 41, 5)",
+            "borderColor": "rgb(229, 196, 109)",
+            "width": 35,
+            "height": 35
+          },
+          "active": {
+            "background": "linear-gradient(145deg, rgb(203, 236, 220), rgb(213, 224, 215))",
+            "color": "rgb(23, 45, 36)",
+            "borderColor": "rgb(121, 83, 15)",
+            "width": 210,
+            "height": 54
+          },
+          "activeLabel": "Punto de venta",
+          "primary": "#08764b",
+          "accent": "#08764b",
+          "ink": "#172d24",
+          "horizontalOverflowPx": 0
+        },
+        "checkoutOpenedAndClosed": true,
+        "cartRowsRetained": 3,
+        "totalRetained": true,
+        "receipt": {
+          "kind": "muestra-dom-inerte",
+          "normal": {
+            "directChildOfBody": true,
+            "print": {
+              "background": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+              "color": "rgb(36, 29, 11)",
+              "border": "rgb(160, 128, 54)",
+              "fill": "rgba(0, 0, 0, 0)",
+              "shadow": "rgba(255, 255, 255, 0.533) 0px 1px 0px 0px inset, rgba(112, 80, 21, 0.267) 0px -2px 0px 0px inset, rgba(0, 0, 0, 0.133) 0px 3px 8px 0px"
+            },
+            "next": {
+              "background": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+              "color": "rgb(36, 29, 11)",
+              "border": "rgb(160, 128, 54)",
+              "fill": "rgba(0, 0, 0, 0)",
+              "shadow": "rgba(255, 255, 255, 0.533) 0px 1px 0px 0px inset, rgba(112, 80, 21, 0.267) 0px -2px 0px 0px inset, rgba(0, 0, 0, 0.133) 0px 3px 8px 0px"
+            },
+            "secondary": {
+              "background": "none",
+              "color": "rgb(27, 33, 52)",
+              "border": "rgb(234, 234, 242)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "controlWithoutSaleSuccess": {
+              "background": "none",
+              "color": "rgb(255, 255, 255)",
+              "border": "rgba(0, 0, 0, 0)",
+              "fill": "rgb(124, 58, 237)",
+              "shadow": "rgba(124, 58, 237, 0.086) 0px 3px 7px 0px"
+            }
+          },
+          "forcedColors": {
+            "directChildOfBody": true,
+            "print": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "next": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "secondary": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "controlWithoutSaleSuccess": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            }
+          }
+        }
+      },
+      "dark": {
+        "shell": {
+          "viewport": [
+            390,
+            844
+          ],
+          "theme": "dark",
+          "brandText": "Norexos",
+          "logo": {
+            "background": "linear-gradient(135deg, rgb(255, 240, 168), rgb(198, 151, 54), rgb(255, 229, 151))",
+            "color": "rgb(57, 41, 5)",
+            "borderColor": "rgb(229, 196, 109)",
+            "width": 35,
+            "height": 35
+          },
+          "active": {
+            "background": "linear-gradient(145deg, rgb(6, 63, 40), rgb(3, 12, 8))",
+            "color": "rgb(244, 244, 233)",
+            "borderColor": "rgb(240, 210, 145)",
+            "width": 210,
+            "height": 54
+          },
+          "activeLabel": "Punto de venta",
+          "primary": "#5ff1a7",
+          "accent": "#5ff1a7",
+          "ink": "#f4f4e9",
+          "horizontalOverflowPx": 0
+        },
+        "checkoutOpenedAndClosed": true,
+        "cartRowsRetained": 3,
+        "totalRetained": true,
+        "receipt": {
+          "kind": "muestra-dom-inerte",
+          "normal": {
+            "directChildOfBody": true,
+            "print": {
+              "background": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+              "color": "rgb(36, 29, 11)",
+              "border": "rgb(160, 128, 54)",
+              "fill": "rgba(0, 0, 0, 0)",
+              "shadow": "rgba(255, 255, 255, 0.533) 0px 1px 0px 0px inset, rgba(112, 80, 21, 0.267) 0px -2px 0px 0px inset, rgba(0, 0, 0, 0.133) 0px 3px 8px 0px"
+            },
+            "next": {
+              "background": "linear-gradient(120deg, rgb(249, 220, 142), rgb(220, 180, 91) 50%, rgb(246, 214, 135))",
+              "color": "rgb(36, 29, 11)",
+              "border": "rgb(160, 128, 54)",
+              "fill": "rgba(0, 0, 0, 0)",
+              "shadow": "rgba(255, 255, 255, 0.533) 0px 1px 0px 0px inset, rgba(112, 80, 21, 0.267) 0px -2px 0px 0px inset, rgba(0, 0, 0, 0.133) 0px 3px 8px 0px"
+            },
+            "secondary": {
+              "background": "none",
+              "color": "rgb(226, 232, 240)",
+              "border": "rgb(41, 50, 71)",
+              "fill": "rgb(21, 27, 43)",
+              "shadow": "none"
+            },
+            "controlWithoutSaleSuccess": {
+              "background": "none",
+              "color": "rgb(255, 255, 255)",
+              "border": "rgba(0, 0, 0, 0)",
+              "fill": "rgb(124, 58, 237)",
+              "shadow": "rgba(124, 58, 237, 0.086) 0px 3px 7px 0px"
+            }
+          },
+          "forcedColors": {
+            "directChildOfBody": true,
+            "print": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "next": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "secondary": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            },
+            "controlWithoutSaleSuccess": {
+              "background": "none",
+              "color": "rgb(0, 0, 0)",
+              "border": "rgb(0, 0, 0)",
+              "fill": "rgb(255, 255, 255)",
+              "shadow": "none"
+            }
+          }
+        }
+      }
+    }
+  },
+  "screenshots": {
+    "pos-1440-claro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "theme": "claro",
+      "scenario": "pos-real",
+      "sha256": "2f128df5c917fdfa3d7fe366089054104b65545bb1be2cb0101a850bd2f74767"
+    },
+    "pos-1440-oscuro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "theme": "oscuro",
+      "scenario": "pos-real",
+      "sha256": "da1967e8e028499f671b4a6ef0b493724ee6a51367213d13487829ef0195546c"
+    },
+    "recibo-muestra-1440-oscuro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "theme": "oscuro",
+      "scenario": "recibo-fixture-dom",
+      "sha256": "da05d00dbb324a94b5b103a7bfb74c69258e52e5776a029edb61bc43086efc54"
+    },
+    "pos-390-claro-menu.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "claro",
+      "scenario": "pos-menu-abierto",
+      "sha256": "c09be12ae5f41b214668bd00d3b8d832278c1a38faea8a8e6a39c95d02dcef47"
+    },
+    "recibo-muestra-390-claro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "claro",
+      "scenario": "recibo-fixture-dom",
+      "sha256": "69081df1957146741f6c05335f74bb2da80242ea582621c62b786f3e24b72d5b"
+    },
+    "pos-390-oscuro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "oscuro",
+      "scenario": "pos-real",
+      "sha256": "260a3ef5d05b6cb14cbd4426fe7b9d9ead5703389a3213239b429b8a315de8cf"
+    }
+  },
+  "pageErrors": 0,
+  "operationalWrites": 0,
+  "servicesStopped": true,
+  "ownProcessesRemaining": 0,
+  "listenersRemaining": 0
+}

@@ -1,0 +1,277 @@
+{
+  "sha": "6e8eb624ede4d1544be615e7ebc22277fe2c67da",
+  "api": "simulada",
+  "data": "ficticia",
+  "records": [
+    {
+      "state": "entry-document-open",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "scanCta": {
+        "text": "Sumar una unidad",
+        "height": 45,
+        "color": "rgb(48, 32, 5)",
+        "backgroundImage": "linear-gradient(165deg, rgb(255, 240, 176), rgb(233, 191, 87) 58%, rgb(197, 143, 40))",
+        "contrastToGradientStops": [
+          13.75,
+          9.03,
+          5.5
+        ],
+        "minContrast": 5.5
+      },
+      "confirm": {
+        "text": "Confirmar entrada",
+        "height": 45,
+        "disabled": true
+      },
+      "englishSpanish": [],
+      "spanishPlaceholderInEnglish": null,
+      "writes": []
+    },
+    {
+      "state": "exit",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "scanCta": {
+        "text": "Sumar una unidad",
+        "height": 45,
+        "color": "rgb(48, 32, 5)",
+        "backgroundImage": "linear-gradient(165deg, rgb(255, 240, 176), rgb(233, 191, 87) 58%, rgb(197, 143, 40))",
+        "contrastToGradientStops": [
+          13.75,
+          9.03,
+          5.5
+        ],
+        "minContrast": 5.5
+      },
+      "confirm": {
+        "text": "Confirmar salida",
+        "height": 45,
+        "disabled": true
+      },
+      "englishSpanish": [],
+      "spanishPlaceholderInEnglish": null,
+      "writes": []
+    },
+    {
+      "state": "entry-document-open",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "scanCta": {
+        "text": "Add one unit",
+        "height": 45,
+        "color": "rgb(48, 32, 5)",
+        "backgroundImage": "linear-gradient(165deg, rgb(255, 240, 176), rgb(233, 191, 87) 58%, rgb(197, 143, 40))",
+        "contrastToGradientStops": [
+          13.75,
+          9.03,
+          5.5
+        ],
+        "minContrast": 5.5
+      },
+      "confirm": {
+        "text": "Confirm receipt",
+        "height": 45,
+        "disabled": true
+      },
+      "englishSpanish": [
+        "Buscar producto",
+        "Sin productos",
+        "Todavía no hay recepciones.",
+        "Número de factura",
+        "NCF del proveedor",
+        "Fecha de la factura",
+        "Condición de pago",
+        "Según el proveedor",
+        "Contado",
+        "Crédito",
+        "ITBIS de la factura",
+        "Para la contable; no cambia el costo."
+      ],
+      "spanishPlaceholderInEnglish": "Nombre, SKU, sabor, talla o color",
+      "writes": []
+    },
+    {
+      "state": "exit",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "scanCta": {
+        "text": "Add one unit",
+        "height": 45,
+        "color": "rgb(48, 32, 5)",
+        "backgroundImage": "linear-gradient(165deg, rgb(255, 240, 176), rgb(233, 191, 87) 58%, rgb(197, 143, 40))",
+        "contrastToGradientStops": [
+          13.75,
+          9.03,
+          5.5
+        ],
+        "minContrast": 5.5
+      },
+      "confirm": {
+        "text": "Confirm stock removal",
+        "height": 45,
+        "disabled": true
+      },
+      "englishSpanish": [
+        "Buscar producto",
+        "Sin productos",
+        "Todavía no hay recepciones.",
+        "Merma",
+        "Dañado",
+        "Vencido",
+        "Muestra o probador",
+        "Uso interno",
+        "Devolución a proveedor"
+      ],
+      "spanishPlaceholderInEnglish": "Nombre, SKU, sabor, talla o color",
+      "writes": []
+    },
+    {
+      "state": "entry-document-open",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "scanCta": {
+        "text": "Sumar una unidad",
+        "height": 57,
+        "color": "rgb(48, 32, 5)",
+        "backgroundImage": "linear-gradient(165deg, rgb(255, 240, 176), rgb(233, 191, 87) 58%, rgb(197, 143, 40))",
+        "contrastToGradientStops": [
+          13.75,
+          9.03,
+          5.5
+        ],
+        "minContrast": 5.5
+      },
+      "confirm": {
+        "text": "Confirmar entrada",
+        "height": 45,
+        "disabled": true
+      },
+      "englishSpanish": [],
+      "spanishPlaceholderInEnglish": null,
+      "writes": []
+    },
+    {
+      "state": "exit",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "scanCta": {
+        "text": "Sumar una unidad",
+        "height": 57,
+        "color": "rgb(48, 32, 5)",
+        "backgroundImage": "linear-gradient(165deg, rgb(255, 240, 176), rgb(233, 191, 87) 58%, rgb(197, 143, 40))",
+        "contrastToGradientStops": [
+          13.75,
+          9.03,
+          5.5
+        ],
+        "minContrast": 5.5
+      },
+      "confirm": {
+        "text": "Confirmar salida",
+        "height": 45,
+        "disabled": true
+      },
+      "englishSpanish": [],
+      "spanishPlaceholderInEnglish": null,
+      "writes": []
+    },
+    {
+      "state": "entry-document-open",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "scanCta": {
+        "text": "Add one unit",
+        "height": 57,
+        "color": "rgb(48, 32, 5)",
+        "backgroundImage": "linear-gradient(165deg, rgb(255, 240, 176), rgb(233, 191, 87) 58%, rgb(197, 143, 40))",
+        "contrastToGradientStops": [
+          13.75,
+          9.03,
+          5.5
+        ],
+        "minContrast": 5.5
+      },
+      "confirm": {
+        "text": "Confirm receipt",
+        "height": 45,
+        "disabled": true
+      },
+      "englishSpanish": [
+        "Buscar producto",
+        "Sin productos",
+        "Todavía no hay recepciones.",
+        "Número de factura",
+        "NCF del proveedor",
+        "Fecha de la factura",
+        "Condición de pago",
+        "Según el proveedor",
+        "Contado",
+        "Crédito",
+        "ITBIS de la factura",
+        "Para la contable; no cambia el costo."
+      ],
+      "spanishPlaceholderInEnglish": "Nombre, SKU, sabor, talla o color",
+      "writes": []
+    },
+    {
+      "state": "exit",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "scanCta": {
+        "text": "Add one unit",
+        "height": 57,
+        "color": "rgb(48, 32, 5)",
+        "backgroundImage": "linear-gradient(165deg, rgb(255, 240, 176), rgb(233, 191, 87) 58%, rgb(197, 143, 40))",
+        "contrastToGradientStops": [
+          13.75,
+          9.03,
+          5.5
+        ],
+        "minContrast": 5.5
+      },
+      "confirm": {
+        "text": "Confirm stock removal",
+        "height": 45,
+        "disabled": true
+      },
+      "englishSpanish": [
+        "Buscar producto",
+        "Sin productos",
+        "Todavía no hay recepciones.",
+        "Merma",
+        "Dañado",
+        "Vencido",
+        "Muestra o probador",
+        "Uso interno",
+        "Devolución a proveedor"
+      ],
+      "spanishPlaceholderInEnglish": "Nombre, SKU, sabor, talla o color",
+      "writes": []
+    }
+  ]
+}
