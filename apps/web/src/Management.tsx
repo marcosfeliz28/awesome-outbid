@@ -1,3 +1,5 @@
+import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
+import { useLanguage } from "./inicioLanguage";
 import {
   CashElsewhere,
   Equipment,
@@ -188,10 +190,12 @@ function DataTable({
   );
 }
 function Heading({
+  eyebrow = "TU NEGOCIO, CON CLARIDAD",
   title,
   caption,
   children,
 }: {
+  eyebrow?: string;
   title: string;
   caption: string;
   children?: ReactNode;
@@ -199,7 +203,7 @@ function Heading({
   return (
     <div className="page-heading">
       <div>
-        <span className="eyebrow">TU NEGOCIO, CON CLARIDAD</span>
+        <span className="eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
         <p>{caption}</p>
       </div>
@@ -3219,6 +3223,8 @@ const saleMoney = (s: any, value: unknown) =>
   s.hiddenUntilClose ? HIDDEN_AMOUNT : formatMoney(value as any);
 
 export function SalesHistory() {
+  const en = useLanguage() === "en";
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const user = useStore((s) => s.user)!;
   const [selected, setSelected] = useState<any>(null),
     [voiding, setVoiding] = useState<any>(null),
@@ -3252,198 +3258,269 @@ export function SalesHistory() {
   const session = sessions.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
   );
+  const preview = query.data?.find((sale: any) => sale.id === previewId);
   return (
-    <>
+    <section className="sales-fusion">
       <Heading
-        title="Cada venta tiene una historia"
-        caption="Consulta recibos, pagos y movimientos sin perder el detalle."
+        eyebrow={
+          en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"
+        }
+        title={
+          en ? "Every sale tells a story" : "Cada venta tiene una historia"
+        }
+        caption={
+          en
+            ? "Search, filter and review every sale in detail."
+            : "Consulta, filtra y revisa el detalle de tus ventas."
+        }
       />
-      <div className="panel">
-        <div className="table-toolbar">
-          <Filter
-            value={search}
-            onChange={setSearch}
-            placeholder="Buscar número de venta"
-          />
-          <label className="table-search">
-            <span>Fecha</span>
-            <input
-              type="date"
-              value={saleDate}
-              onChange={(event) => setSaleDate(event.target.value)}
-              aria-label="Buscar ventas de una fecha"
+      {!query.isPending && !query.isError && (
+        <SalesFusionStats rows={query.data || []} />
+      )}
+      <div className="sales-fusion-layout">
+        <div className="panel sales-fusion-list">
+          <div className="table-toolbar">
+            <Filter
+              value={search}
+              onChange={setSearch}
+              placeholder={en ? "Search sale number" : "Buscar número de venta"}
             />
-          </label>
-        </div>
-        <QueryState query={query}>
-          <DataTable
-            rows={query.data || []}
-            columns={[
-              {
-                label: "Venta n.º",
-                render: (s) => <strong>{s.number}</strong>,
-              },
-              { label: "Cliente", render: (s) => s.customerName ?? "—" },
-              { label: "Fecha", render: (s) => dateLabel(s.createdAt) },
-              {
-                label: "Estado",
-                render: (s) => (
-                  <>
-                    <Badge tone={s.status === "voided" ? "danger" : "success"}>
-                      {s.status === "voided" ? "Anulada" : "Completada"}
-                    </Badge>
-                    {s.voidRequest && (
-                      <small>
-                        {" "}
-                        · Solicitud{" "}
-                        {
-                          (
-                            {
-                              pending: "pendiente",
-                              approved: "aprobada",
-                              rejected: "rechazada",
-                              cancelled: "cancelada",
-                            } as Record<string, string>
-                          )[s.voidRequest.status]
-                        }
-                      </small>
-                    )}
-                  </>
-                ),
-              },
-              { label: "Total", render: (s) => saleMoney(s, s.total) },
-              {
-                label: "Saldo pendiente",
-                render: (s) => saleMoney(s, s.creditBalance ?? 0),
-              },
-              {
-                label: "Pagos",
-                render: (s) =>
-                  s.hiddenUntilClose
-                    ? "Se ve al cerrar tu caja"
-                    : s.payments
-                        .map(
-                          (p: any) =>
-                            paymentOptions.find((o) => o.value === p.method)
-                              ?.label,
-                        )
-                        .join(" + "),
-              },
-              {
-                label: "Acciones",
-                render: (s) => (
-                  <div className="table-actions">
+            <label className="table-search">
+              <span>{en ? "Date" : "Fecha"}</span>
+              <input
+                type="date"
+                value={saleDate}
+                onChange={(event) => setSaleDate(event.target.value)}
+                aria-label={
+                  en ? "Search sales by date" : "Buscar ventas de una fecha"
+                }
+              />
+            </label>
+          </div>
+          <QueryState query={query}>
+            <DataTable
+              rows={query.data || []}
+              columns={[
+                {
+                  label: en ? "Sale no." : "Venta n.º",
+                  render: (s) => (
                     <button
-                      onClick={() => setSelected(s)}
-                      aria-label={"Ver " + s.number}
+                      type="button"
+                      className="sales-fusion-number"
+                      aria-pressed={previewId === s.id}
+                      onClick={() => setPreviewId(s.id)}
                     >
-                      <Eye size={18} />
+                      {s.number}
                     </button>
-                    <button
-                      onClick={() =>
-                        download(
-                          "/sales/" + s.id + "/receipt.pdf",
-                          s.number + ".pdf",
-                        ).catch((e) => toast(e.message, true))
-                      }
-                      aria-label={"PDF de " + s.number}
-                    >
-                      <Download size={18} />
-                    </button>
-                    <button
-                      onClick={() =>
-                        printPdf("/sales/" + s.id + "/receipt.pdf").catch((e) =>
-                          toast(e.message, true),
-                        )
-                      }
-                      aria-label={"Reimprimir " + s.number}
-                      title="Reimprimir"
-                    >
-                      <Printer size={18} />
-                    </button>
-                    {can(user.permissions, "*") &&
-                      s.status === "completed" &&
-                      Number(s.creditBalance) > 0 && (
-                        <button
-                          className="text-link"
-                          onClick={() => {
-                            if (!session) {
-                              toast(
-                                "Abre tu caja para registrar abonos.",
-                                true,
-                              );
-                              return;
-                            }
-                            setInstallment({
-                              ...s,
-                              offlineUuid: crypto.randomUUID(),
-                            });
-                          }}
-                        >
-                          Registrar abono
-                        </button>
-                      )}
-                    {!can(user.permissions, "*") &&
-                      s.sellerId === user.id &&
-                      s.status === "completed" &&
-                      s.voidRequest?.status !== "pending" && (
-                        <button
-                          className="text-link"
-                          onClick={() =>
-                            setRequestingVoid({
-                              ...s,
-                              operationId: crypto.randomUUID(),
-                            })
+                  ),
+                },
+                {
+                  label: en ? "Customer" : "Cliente",
+                  render: (s) => s.customerName ?? "—",
+                },
+                {
+                  label: en ? "Date" : "Fecha",
+                  render: (s) =>
+                    new Date(s.createdAt).toLocaleDateString(
+                      en ? "en-US" : "es-DO",
+                      {
+                        timeZone: "America/Santo_Domingo",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      },
+                    ),
+                },
+                {
+                  label: en ? "Status" : "Estado",
+                  render: (s) => (
+                    <>
+                      <Badge
+                        tone={s.status === "voided" ? "danger" : "success"}
+                      >
+                        {s.status === "voided"
+                          ? en
+                            ? "Voided"
+                            : "Anulada"
+                          : en
+                            ? "Completed"
+                            : "Completada"}
+                      </Badge>
+                      {s.voidRequest && (
+                        <small>
+                          {" "}
+                          · {en ? "Request" : "Solicitud"}{" "}
+                          {
+                            (
+                              {
+                                pending: en ? "pending" : "pendiente",
+                                approved: en ? "approved" : "aprobada",
+                                rejected: en ? "rejected" : "rechazada",
+                                cancelled: en ? "cancelled" : "cancelada",
+                              } as Record<string, string>
+                            )[s.voidRequest.status]
                           }
-                        >
-                          Solicitar anulación
-                        </button>
+                        </small>
                       )}
-                    {can(user.permissions, "sale:manage") &&
-                      s.status === "completed" && (
-                        <button
-                          className="text-link"
-                          onClick={() => {
-                            if (!session) {
-                              toast(
-                                "Abre tu caja para procesar devoluciones.",
-                                true,
-                              );
-                              return;
+                    </>
+                  ),
+                },
+                { label: "Total", render: (s) => saleMoney(s, s.total) },
+                {
+                  label: en ? "Outstanding balance" : "Saldo pendiente",
+                  render: (s) => saleMoney(s, s.creditBalance ?? 0),
+                },
+                {
+                  label: en ? "Payments" : "Pagos",
+                  render: (s) =>
+                    s.hiddenUntilClose
+                      ? en
+                        ? "Visible after closing your register"
+                        : "Se ve al cerrar tu caja"
+                      : s.payments
+                          .map((p: any) =>
+                            en
+                              ? ((
+                                  {
+                                    cash: "Cash",
+                                    card: "Card",
+                                    transfer: "Transfer",
+                                  } as Record<string, string>
+                                )[p.method] ?? p.method)
+                              : paymentOptions.find((o) => o.value === p.method)
+                                  ?.label,
+                          )
+                          .join(" + "),
+                },
+                {
+                  label: en ? "Actions" : "Acciones",
+                  render: (s) => (
+                    <div className="table-actions">
+                      <button
+                        onClick={() => setSelected(s)}
+                        aria-label={(en ? "View " : "Ver ") + s.number}
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          download(
+                            "/sales/" + s.id + "/receipt.pdf",
+                            s.number + ".pdf",
+                          ).catch((e) => toast(e.message, true))
+                        }
+                        aria-label={(en ? "PDF for " : "PDF de ") + s.number}
+                      >
+                        <Download size={18} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          printPdf("/sales/" + s.id + "/receipt.pdf").catch(
+                            (e) => toast(e.message, true),
+                          )
+                        }
+                        aria-label={
+                          (en ? "Reprint " : "Reimprimir ") + s.number
+                        }
+                        title={en ? "Reprint" : "Reimprimir"}
+                      >
+                        <Printer size={18} />
+                      </button>
+                      {can(user.permissions, "*") &&
+                        s.status === "completed" &&
+                        Number(s.creditBalance) > 0 && (
+                          <button
+                            className="text-link"
+                            onClick={() => {
+                              if (!session) {
+                                toast(
+                                  en
+                                    ? "Open your register to record payments."
+                                    : "Abre tu caja para registrar abonos.",
+                                  true,
+                                );
+                                return;
+                              }
+                              setInstallment({
+                                ...s,
+                                offlineUuid: crypto.randomUUID(),
+                              });
+                            }}
+                          >
+                            {en ? "Record payment" : "Registrar abono"}
+                          </button>
+                        )}
+                      {!can(user.permissions, "*") &&
+                        s.sellerId === user.id &&
+                        s.status === "completed" &&
+                        s.voidRequest?.status !== "pending" && (
+                          <button
+                            className="text-link"
+                            onClick={() =>
+                              setRequestingVoid({
+                                ...s,
+                                operationId: crypto.randomUUID(),
+                              })
                             }
-                            // Un UUID por formulario: si la respuesta se pierde y
-                            // se vuelve a guardar, la API devuelve la misma
-                            // devolución en vez de repetirla (R9-A01).
-                            setReturning({
-                              ...s,
-                              operationId: crypto.randomUUID(),
-                            });
-                          }}
-                        >
-                          Devolver
-                        </button>
-                      )}
-                    {can(user.permissions, "*") &&
-                      s.status === "completed" &&
-                      !s.returns?.length &&
-                      !s.payments?.some(
-                        (p: any) =>
-                          p.entryType === "installment" &&
-                          p.status !== "rejected",
-                      ) && (
-                        <button
-                          className="text-link danger-text"
-                          onClick={() => setVoiding(s)}
-                        >
-                          Anular
-                        </button>
-                      )}
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </QueryState>
+                          >
+                            {en ? "Request void" : "Solicitar anulación"}
+                          </button>
+                        )}
+                      {can(user.permissions, "sale:manage") &&
+                        s.status === "completed" && (
+                          <button
+                            className="text-link"
+                            onClick={() => {
+                              if (!session) {
+                                toast(
+                                  en
+                                    ? "Open your register to process returns."
+                                    : "Abre tu caja para procesar devoluciones.",
+                                  true,
+                                );
+                                return;
+                              }
+                              // Un UUID por formulario: si la respuesta se pierde y
+                              // se vuelve a guardar, la API devuelve la misma
+                              // devolución en vez de repetirla (R9-A01).
+                              setReturning({
+                                ...s,
+                                operationId: crypto.randomUUID(),
+                              });
+                            }}
+                          >
+                            {en ? "Return" : "Devolver"}
+                          </button>
+                        )}
+                      {can(user.permissions, "*") &&
+                        s.status === "completed" &&
+                        !s.returns?.length &&
+                        !s.payments?.some(
+                          (p: any) =>
+                            p.entryType === "installment" &&
+                            p.status !== "rejected",
+                        ) && (
+                          <button
+                            className="text-link danger-text"
+                            onClick={() => setVoiding(s)}
+                          >
+                            {en ? "Void" : "Anular"}
+                          </button>
+                        )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </QueryState>
+        </div>
+        <SalesFusionPreview
+          number={preview?.number}
+          total={preview ? saleMoney(preview, preview.total) : undefined}
+          status={preview?.status}
+          customer={preview?.customerName}
+          onOpen={() => preview && setSelected(preview)}
+        />
       </div>
       <Modal
         open={!!selected}
@@ -3477,15 +3554,24 @@ export function SalesHistory() {
             )}
             {can(user.permissions, "sale:manage") && (
               <div className="panel">
-                <h3>Envío del mensajero</h3>
+                <h3>{en ? "Courier delivery" : "Envío del mensajero"}</h3>
                 <p>
-                  Separado del total de la factura y de la caja.{" "}
-                  {selected.courierPaidAt ? "Pagado." : "Pendiente de pago."}
+                  {en
+                    ? "Separate from the invoice total and register."
+                    : "Separado del total de la factura y de la caja."}{" "}
+                  {selected.courierPaidAt
+                    ? en
+                      ? "Paid."
+                      : "Pagado."
+                    : en
+                      ? "Payment pending."
+                      : "Pendiente de pago."}
                 </p>
                 {can(user.permissions, "*") &&
                 editableNow(selected) &&
                 !selected.courierPaidAt ? (
                   <CourierFeeEditor
+                    english={en}
                     key={selected.id}
                     saleId={selected.id}
                     initialFee={String(selected.courierFee ?? 0)}
@@ -3500,7 +3586,10 @@ export function SalesHistory() {
                     }}
                   />
                 ) : (
-                  <p>Envío: {formatMoney(Number(selected.courierFee ?? 0))}</p>
+                  <p>
+                    {en ? "Delivery:" : "Envío:"}{" "}
+                    {formatMoney(Number(selected.courierFee ?? 0))}
+                  </p>
                 )}
               </div>
             )}
@@ -3516,33 +3605,46 @@ export function SalesHistory() {
                     ).catch((e) => toast(e.message, true))
                   }
                 >
-                  Imprimir nota {r.number}
+                  {en ? "Print credit note" : "Imprimir nota"} {r.number}
                 </Button>
               ))}
             <DataTable
               rows={selected.items}
               columns={[
-                { label: "Producto", render: (i) => i.variant.product.name },
                 {
-                  label: "Variante",
+                  label: en ? "Product" : "Producto",
+                  render: (i) => i.variant.product.name,
+                },
+                {
+                  label: en ? "Variant" : "Variante",
                   render: (i) => attrLabel(i.variant.attributes),
                 },
-                { label: "Cantidad", render: (i) => i.qty },
-                { label: "Devuelta", render: (i) => i.returnedQty },
+                { label: en ? "Quantity" : "Cantidad", render: (i) => i.qty },
+                {
+                  label: en ? "Returned" : "Devuelta",
+                  render: (i) => i.returnedQty,
+                },
                 {
                   label: "Total",
                   render: (i) => saleMoney(selected, i.lineTotal),
                 },
               ]}
             />
-            <h3>Pagos registrados</h3>
-            {selected.hiddenUntilClose && <p>Se ve al cerrar tu caja.</p>}
+            <h3>{en ? "Recorded payments" : "Pagos registrados"}</h3>
+            {selected.hiddenUntilClose && (
+              <p>
+                {en
+                  ? "Visible after closing your register."
+                  : "Se ve al cerrar tu caja."}
+              </p>
+            )}
             {Number(selected.discountTotal) > 0 && (
               <p>
-                Descuento: {saleMoney(selected, selected.discountTotal)} ·
-                Motivo: {selected.discountReason}
+                {en ? "Discount:" : "Descuento:"}{" "}
+                {saleMoney(selected, selected.discountTotal)} ·
+                {en ? "Reason:" : "Motivo:"} {selected.discountReason}
                 {selected.discountApprovedName
-                  ? ` · Autorizó: ${selected.discountApprovedName}`
+                  ? ` · ${en ? "Approved by:" : "Autorizó:"} ${selected.discountApprovedName}`
                   : ""}
               </p>
             )}
@@ -3550,11 +3652,26 @@ export function SalesHistory() {
               <div className="payment-list" key={p.id}>
                 <div>
                   <span>
-                    {METHOD_LABEL[p.method] ??
-                      paymentOptions.find((o) => o.value === p.method)?.label ??
-                      p.method}{" "}
-                    · Recibido: {saleMoney(selected, p.tendered ?? p.amount)} ·
-                    Aplicado: {saleMoney(selected, p.amount)} · Cambio:{" "}
+                    {en
+                      ? ((
+                          {
+                            cash: "Cash",
+                            card: "Card",
+                            transfer: "Transfer",
+                            credit: "Credit",
+                            cod: "Cash on delivery",
+                            credit_note: "Credit note",
+                          } as Record<string, string>
+                        )[p.method] ?? p.method)
+                      : (METHOD_LABEL[p.method] ??
+                        paymentOptions.find((o) => o.value === p.method)
+                          ?.label ??
+                        p.method)}{" "}
+                    · {en ? "Received:" : "Recibido:"}{" "}
+                    {saleMoney(selected, p.tendered ?? p.amount)} ·
+                    {en ? "Applied:" : "Aplicado:"}{" "}
+                    {saleMoney(selected, p.amount)} ·{" "}
+                    {en ? "Change:" : "Cambio:"}{" "}
                     {saleMoney(selected, p.change ?? 0)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
@@ -3569,7 +3686,9 @@ export function SalesHistory() {
                           setCorrectingTransfer(p);
                         }}
                       >
-                        Corregir banco y referencia
+                        {en
+                          ? "Correct bank and reference"
+                          : "Corregir banco y referencia"}
                       </button>
                     )}
                   {p.method === "transfer" &&
@@ -3583,7 +3702,9 @@ export function SalesHistory() {
                           setUnverifying(p);
                         }}
                       >
-                        Des-verificar transferencia
+                        {en
+                          ? "Undo transfer verification"
+                          : "Des-verificar transferencia"}
                       </button>
                     )}
                   {p.cashSessionId &&
@@ -3596,13 +3717,21 @@ export function SalesHistory() {
                           setMoving(p);
                         }}
                       >
-                        Mover cobro a otra caja
+                        {en
+                          ? "Move payment to another register"
+                          : "Mover cobro a otra caja"}
                       </button>
                     )}
                   {p.entryType === "installment" &&
                     can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
-                        {p.hasProof ? "Cambiar foto" : "Subir foto"}
+                        {p.hasProof
+                          ? en
+                            ? "Change photo"
+                            : "Cambiar foto"
+                          : en
+                            ? "Upload photo"
+                            : "Subir foto"}
                         <input
                           type="file"
                           className="sr-only"
@@ -3615,7 +3744,11 @@ export function SalesHistory() {
                               await uploadProof(p.id, file);
                               setSelected(null);
                               await client.invalidateQueries();
-                              toast("Foto de la evidencia guardada.");
+                              toast(
+                                en
+                                  ? "Payment evidence photo saved."
+                                  : "Foto de la evidencia guardada.",
+                              );
                             } catch (err: any) {
                               toast(err.message, true);
                             }
@@ -3633,10 +3766,16 @@ export function SalesHistory() {
                     }
                   >
                     {p.status === "ok"
-                      ? "Verificado"
+                      ? en
+                        ? "Verified"
+                        : "Verificado"
                       : p.status === "rejected"
-                        ? "Rechazada"
-                        : "Pendiente de verificar"}
+                        ? en
+                          ? "Rejected"
+                          : "Rechazada"
+                        : en
+                          ? "Pending verification"
+                          : "Pendiente de verificar"}
                   </Badge>
                   {p.method === "transfer" &&
                     p.status === "pending_verification" &&
@@ -3648,13 +3787,17 @@ export function SalesHistory() {
                             await post("/payments/" + p.id + "/verify", {});
                             setSelected(null);
                             await client.invalidateQueries();
-                            toast("Transferencia verificada.");
+                            toast(
+                              en
+                                ? "Transfer verified."
+                                : "Transferencia verificada.",
+                            );
                           } catch (e: any) {
                             toast(e.message, true);
                           }
                         }}
                       >
-                        Verificar
+                        {en ? "Verify" : "Verificar"}
                       </button>
                     )}
                   {/* Un abono por transferencia que no llegó se rechaza: si no,
@@ -3671,7 +3814,7 @@ export function SalesHistory() {
                           setRejecting(p);
                         }}
                       >
-                        Rechazar
+                        {en ? "Reject" : "Rechazar"}
                       </button>
                     )}
                 </div>
@@ -3683,39 +3826,60 @@ export function SalesHistory() {
       </Modal>
       {voiding && (
         <ConfirmModal
-          title={"Anular " + voiding.number}
-          description="Solo un administrador puede hacerlo. La venta se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
-          confirmLabel="Sí, anular venta"
+          english={en}
+          title={(en ? "Void " : "Anular ") + voiding.number}
+          description={
+            en
+              ? "Only an administrator can do this. The sale is retained with its reason and responsible user, inventory is reversed, and it no longer counts toward sales. An open register is required only if this sale’s register has already closed and the sale included cash: the refund comes from your own register, which must be open with sufficient cash."
+              : "Solo un administrador puede hacerlo. La venta se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
+          }
+          confirmLabel={en ? "Yes, void sale" : "Sí, anular venta"}
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
             await post("/sales/" + voiding.id + "/void", {
               reason,
             });
             await client.invalidateQueries();
-            toast("Venta anulada.");
+            toast(en ? "Sale voided." : "Venta anulada.");
           }}
         />
       )}
       {requestingVoid && (
         <FormModal
-          title={"Solicitar anulación · " + requestingVoid.number}
+          english={en}
+          title={
+            (en ? "Request void · " : "Solicitar anulación · ") +
+            requestingVoid.number
+          }
           fields={[
             {
               key: "reasonCode",
-              label: "Tipo de motivo",
+              label: en ? "Reason type" : "Tipo de motivo",
               type: "select",
               required: true,
               options: [
-                { value: "customer_request", label: "Solicitud del cliente" },
-                { value: "duplicate", label: "Venta duplicada" },
-                { value: "payment_error", label: "Error de pago" },
-                { value: "item_error", label: "Error de artículo" },
-                { value: "other", label: "Otro" },
+                {
+                  value: "customer_request",
+                  label: en ? "Customer request" : "Solicitud del cliente",
+                },
+                {
+                  value: "duplicate",
+                  label: en ? "Duplicate sale" : "Venta duplicada",
+                },
+                {
+                  value: "payment_error",
+                  label: en ? "Payment error" : "Error de pago",
+                },
+                {
+                  value: "item_error",
+                  label: en ? "Item error" : "Error de artículo",
+                },
+                { value: "other", label: en ? "Other" : "Otro" },
               ],
             },
             {
               key: "reason",
-              label: "Explica el motivo",
+              label: en ? "Explain the reason" : "Explica el motivo",
               type: "textarea",
               required: true,
             },
@@ -3732,30 +3896,56 @@ export function SalesHistory() {
       )}
       {rejecting && (
         <ConfirmModal
-          title={"Rechazar transferencia de " + formatMoney(rejecting.amount)}
+          english={en}
+          title={
+            (en ? "Reject transfer of " : "Rechazar transferencia de ") +
+            formatMoney(rejecting.amount)
+          }
           description={
             rejecting.entryType === "sale"
-              ? "Úsalo cuando el dinero no llegó al banco. La mercancía ya se entregó: el importe pasa a cuenta por cobrar del cliente y deja de contar en la caja; cuando pague, registra un abono."
-              : "Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
+              ? en
+                ? "Use when the money did not reach the bank. The goods were already delivered: the amount becomes a customer receivable and no longer counts in the register; record a payment when it is received."
+                : "Úsalo cuando el dinero no llegó al banco. La mercancía ya se entregó: el importe pasa a cuenta por cobrar del cliente y deja de contar en la caja; cuando pague, registra un abono."
+              : en
+                ? "Use when the money did not reach the bank. This payment does not reduce the debt or enter the register; if the customer pays again, record a new payment."
+                : "Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
           }
+          confirmLabel={en ? "Confirm" : "Confirmar"}
           onClose={() => setRejecting(null)}
           onConfirm={async (reason) => {
             await post("/payments/" + rejecting.id + "/reject", { reason });
             await client.invalidateQueries();
-            toast("Transferencia rechazada.");
+            toast(en ? "Transfer rejected." : "Transferencia rechazada.");
           }}
         />
       )}
       {correctingTransfer && (
         <FormModal
-          title="Corregir referencia de transferencia"
-          notice="La corrección queda en la bitácora. El importe y el estado del pago no cambian."
+          english={en}
+          title={
+            en
+              ? "Correct transfer reference"
+              : "Corregir referencia de transferencia"
+          }
+          notice={
+            en
+              ? "The correction is recorded in the audit log. The payment amount and status do not change."
+              : "La corrección queda en la bitácora. El importe y el estado del pago no cambian."
+          }
           fields={[
-            { key: "bank", label: "Banco correcto", required: true },
-            { key: "reference", label: "Referencia correcta", required: true },
+            {
+              key: "bank",
+              label: en ? "Correct bank" : "Banco correcto",
+              required: true,
+            },
+            {
+              key: "reference",
+              label: en ? "Correct reference" : "Referencia correcta",
+              required: true,
+            },
             {
               key: "reason",
-              label: "Motivo de la corrección",
+              label: en ? "Reason for correction" : "Motivo de la corrección",
               type: "textarea",
               required: true,
             },
@@ -3782,12 +3972,19 @@ export function SalesHistory() {
       )}
       {unverifying && (
         <FormModal
-          title="Des-verificar transferencia"
-          notice="La transferencia vuelve a «por verificar» y deja de contar como cobrada. Queda en la bitácora."
+          english={en}
+          title={
+            en ? "Undo transfer verification" : "Des-verificar transferencia"
+          }
+          notice={
+            en
+              ? "The transfer returns to pending verification and no longer counts as collected. This is recorded in the audit log."
+              : "La transferencia vuelve a «por verificar» y deja de contar como cobrada. Queda en la bitácora."
+          }
           fields={[
             {
               key: "reason",
-              label: "Motivo",
+              label: en ? "Reason" : "Motivo",
               type: "textarea",
               required: true,
             },
@@ -3804,24 +4001,31 @@ export function SalesHistory() {
       )}
       {moving && (
         <FormModal
-          title="Mover cobro a otra caja"
-          notice="El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
+          english={en}
+          title={
+            en ? "Move payment to another register" : "Mover cobro a otra caja"
+          }
+          notice={
+            en
+              ? "The payment moves to another register. The sale, debt and inventory do not change. This is recorded in the audit log."
+              : "El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
+          }
           fields={[
             {
               key: "cashSessionId",
-              label: "Caja destino",
+              label: en ? "Destination register" : "Caja destino",
               type: "select",
               required: true,
               options: (cashSessionsForMove.data || [])
                 .filter((s: any) => s.id !== moving.cashSessionId)
                 .map((s: any) => ({
-                  label: `${s.registerName ?? "Caja"} · ${s.closedAt ? "cerrada" : "abierta"} · ${new Date(s.openedAt).toLocaleString("es-DO")}`,
+                  label: `${s.registerName ?? (en ? "Register" : "Caja")} · ${s.closedAt ? (en ? "closed" : "cerrada") : en ? "open" : "abierta"} · ${new Date(s.openedAt).toLocaleString(en ? "en-US" : "es-DO")}`,
                   value: s.id,
                 })),
             },
             {
               key: "reason",
-              label: "Motivo",
+              label: en ? "Reason" : "Motivo",
               type: "textarea",
               required: true,
             },
@@ -3839,11 +4043,12 @@ export function SalesHistory() {
       )}
       {returning && (
         <FormModal
-          title={"Devolución · " + returning.number}
+          english={en}
+          title={(en ? "Return · " : "Devolución · ") + returning.number}
           fields={[
             {
               key: "saleItemId",
-              label: "Artículo a devolver",
+              label: en ? "Item to return" : "Artículo a devolver",
               type: "select",
               required: true,
               options: returning.items
@@ -3860,35 +4065,59 @@ export function SalesHistory() {
             // mínimo de 0.001, el navegador rechazaba devolver 1 unidad
             // («valores válidos: 0.991 y 1.001») (R9-dinero-3-ui).
             {
-              ...requiredNumber("qty", "Cantidad", 1),
+              ...requiredNumber("qty", en ? "Quantity" : "Cantidad", 1),
               min: 0.001,
               step: "0.001",
             },
             {
               key: "reason",
-              label: "Motivo",
+              label: en ? "Reason" : "Motivo",
               type: "textarea",
               required: true,
             },
             {
               key: "refundMethod",
-              label: "Método de reembolso",
+              label: en ? "Refund method" : "Método de reembolso",
               type: "select",
               required: true,
               initial: "cash",
               options: [
-                ...paymentOptions,
-                { label: "Nota de crédito", value: "credit_note" },
+                ...paymentOptions.map((o) => ({
+                  ...o,
+                  label: en
+                    ? (
+                        {
+                          cash: "Cash",
+                          card: "Card",
+                          transfer: "Transfer",
+                        } as Record<string, string>
+                      )[o.value]
+                    : o.label,
+                })),
+                {
+                  label: en ? "Credit note" : "Nota de crédito",
+                  value: "credit_note",
+                },
               ],
             },
             {
               key: "restock",
-              label: "Reingresar al stock vendible",
+              label: en
+                ? "Return to sellable stock"
+                : "Reingresar al stock vendible",
               type: "checkbox",
               initial: true,
             },
-            { key: "opened", label: "Producto abierto", type: "checkbox" },
-            { key: "damaged", label: "Producto dañado", type: "checkbox" },
+            {
+              key: "opened",
+              label: en ? "Opened product" : "Producto abierto",
+              type: "checkbox",
+            },
+            {
+              key: "damaged",
+              label: en ? "Damaged product" : "Producto dañado",
+              type: "checkbox",
+            },
           ]}
           onClose={() => setReturning(null)}
           onSubmit={(data) =>
@@ -3913,26 +4142,58 @@ export function SalesHistory() {
       )}
       {installment && (
         <FormModal
+          english={en}
           title={
-            "Registrar pago de crédito / contraentrega · " + installment.number
+            (en
+              ? "Record credit / cash-on-delivery payment · "
+              : "Registrar pago de crédito / contraentrega · ") +
+            installment.number
           }
           fields={[
             {
-              ...requiredNumber("amount", "Monto del abono"),
+              ...requiredNumber(
+                "amount",
+                en ? "Payment amount" : "Monto del abono",
+              ),
               max: Number(installment.creditBalance),
             },
             {
               key: "method",
-              label: "Método",
+              label: en ? "Method" : "Método",
               type: "select",
               required: true,
               initial: "cash",
-              options: paymentOptions,
+              options: paymentOptions.map((o) => ({
+                ...o,
+                label: en
+                  ? (
+                      {
+                        cash: "Cash",
+                        card: "Card",
+                        transfer: "Transfer",
+                      } as Record<string, string>
+                    )[o.value]
+                  : o.label,
+              })),
             },
-            { key: "bank", label: "Banco (transferencia)" },
-            { key: "reference", label: "Referencia (transferencia)" },
-            { key: "cardLast4", label: "Últimos 4 dígitos (tarjeta)" },
-            { key: "approvalCode", label: "Aprobación (tarjeta)" },
+            {
+              key: "bank",
+              label: en ? "Bank (transfer)" : "Banco (transferencia)",
+            },
+            {
+              key: "reference",
+              label: en ? "Reference (transfer)" : "Referencia (transferencia)",
+            },
+            {
+              key: "cardLast4",
+              label: en
+                ? "Last 4 digits (card)"
+                : "Últimos 4 dígitos (tarjeta)",
+            },
+            {
+              key: "approvalCode",
+              label: en ? "Approval (card)" : "Aprobación (tarjeta)",
+            },
           ]}
           onClose={() => setInstallment(null)}
           onSubmit={(data) =>
@@ -3950,7 +4211,7 @@ export function SalesHistory() {
           }
         />
       )}
-    </>
+    </section>
   );
 }
 

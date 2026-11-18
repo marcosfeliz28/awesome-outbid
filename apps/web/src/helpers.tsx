@@ -248,6 +248,7 @@ export function CustomerPrivacyNotice() {
 }
 export function FormModal({
   title,
+  english = false,
   fields,
   onSubmit,
   onClose,
@@ -256,6 +257,7 @@ export function FormModal({
   onFieldChange,
 }: {
   title: string;
+  english?: boolean;
   fields: Field[] | ((values: Record<string, any>) => Field[]);
   onSubmit: (data: Record<string, any>) => Promise<unknown>;
   onClose: () => void;
@@ -328,7 +330,7 @@ export function FormModal({
                   changeField(f.key, e.target.value, f.resetFieldsOnChange)
                 }
               >
-                <option value="">Seleccionar…</option>
+                <option value="">{english ? "Select…" : "Seleccionar…"}</option>
                 {f.options?.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -374,9 +376,17 @@ export function FormModal({
         )}
         <div className="modal-footer full">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancelar
+            {english ? "Cancel" : "Cancelar"}
           </Button>
-          <Button disabled={busy}>{busy ? "Guardando…" : "Guardar"}</Button>
+          <Button disabled={busy}>
+            {busy
+              ? english
+                ? "Saving…"
+                : "Guardando…"
+              : english
+                ? "Save"
+                : "Guardar"}
+          </Button>
         </div>
       </form>
     </Modal>
@@ -384,12 +394,14 @@ export function FormModal({
 }
 export function ConfirmModal({
   title,
+  english = false,
   description,
   confirmLabel = "Confirmar",
   onConfirm,
   onClose,
 }: {
   title: string;
+  english?: boolean;
   description: string;
   confirmLabel?: string;
   onConfirm: (reason: string) => Promise<void>;
@@ -415,7 +427,7 @@ export function ConfirmModal({
         }}
       >
         <label className="field">
-          <span>Motivo obligatorio</span>
+          <span>{english ? "Reason required" : "Motivo obligatorio"}</span>
           <textarea
             minLength={3}
             required
@@ -426,10 +438,10 @@ export function ConfirmModal({
         {error && <p className="form-error">{error}</p>}
         <div className="modal-footer">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancelar
+            {english ? "Cancel" : "Cancelar"}
           </Button>
           <Button variant="danger" disabled={busy}>
-            {busy ? "Procesando…" : confirmLabel}
+            {busy ? (english ? "Processing…" : "Procesando…") : confirmLabel}
           </Button>
         </div>
       </form>

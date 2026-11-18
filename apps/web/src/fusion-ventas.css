@@ -1,0 +1,339 @@
+/* Ventas: relieve ligero, sin imágenes ni lógica de cobro. */
+.app-shell:has(.sales-fusion) {
+  --sv-surface: #f6faf7;
+  --sv-deep: #e2eee7;
+  --sv-ink: #173a2b;
+  --sv-muted: #466253;
+  --sv-gold: #87621d;
+  --sv-accent: #08784b;
+  --sv-glow: #19bf8030;
+  color: var(--sv-ink);
+  min-width: 0;
+}
+:root[data-theme="dark"] .app-shell:has(.sales-fusion) {
+  --sv-surface: #10291e;
+  --sv-deep: #04130c;
+  --sv-ink: #f2f5ea;
+  --sv-muted: #bed1c5;
+  --sv-gold: #dbc589;
+  --sv-accent: #67ecaa;
+  --sv-glow: #19df8540;
+}
+:root[data-accent="blue"] .app-shell:has(.sales-fusion) {
+  --sv-surface: #edf5ff;
+  --sv-deep: #dbe9f7;
+  --sv-ink: #19354c;
+  --sv-muted: #486177;
+  --sv-accent: #1765a9;
+  --sv-glow: #458eff30;
+}
+:root[data-theme="dark"][data-accent="blue"] .app-shell:has(.sales-fusion) {
+  --sv-surface: #112b42;
+  --sv-deep: #05111f;
+  --sv-ink: #eff6ff;
+  --sv-muted: #bcd0e3;
+  --sv-accent: #8dcaff;
+  --sv-glow: #458eff40;
+}
+:root[data-theme="dark"][data-overview-surface="black"]
+  .app-shell:has(.sales-fusion) {
+  --sv-surface: #131916;
+  --sv-deep: #020403;
+}
+.sales-fusion :is(.panel, .sales-fusion-preview, .sales-fusion-stat) {
+  color: var(--sv-ink);
+  background:
+    radial-gradient(ellipse at 20% 0, var(--sv-glow), transparent 65%),
+    linear-gradient(145deg, var(--sv-surface), var(--sv-deep));
+  border: 1px solid var(--sv-gold);
+  box-shadow:
+    inset 0 2px 1px #ffffff44,
+    inset 0 -3px 3px #0003,
+    0 10px 22px #0002;
+  border-radius: 20px;
+}
+.sales-fusion-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.sales-fusion-stat {
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  transition:
+    transform 180ms,
+    box-shadow 180ms;
+}
+.sales-fusion-stat svg {
+  color: var(--sv-gold);
+  filter: drop-shadow(1px 3px 1px #0005);
+  flex-shrink: 0;
+}
+.sales-fusion-stat span {
+  display: block;
+  color: var(--sv-muted);
+  font-size: 13px;
+}
+.sales-fusion-stat strong {
+  display: block;
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+.sales-fusion-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  gap: 20px;
+  align-items: start;
+}
+.sales-fusion-list {
+  min-width: 0;
+  overflow: hidden;
+}
+.sales-fusion .table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.sales-fusion .table-toolbar > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.sales-fusion .table-search {
+  color: var(--sv-ink);
+  background: var(--sv-deep);
+  border-color: var(--sv-gold);
+}
+.sales-fusion .table-search input {
+  color: var(--sv-ink);
+  color-scheme: inherit;
+}
+.sales-fusion :is(th, td) {
+  color: var(--sv-ink);
+  border-color: color-mix(in srgb, var(--sv-gold) 28%, transparent);
+}
+.sales-fusion th {
+  background: var(--sv-deep);
+}
+.sales-fusion tbody tr:hover {
+  background: var(--sv-glow);
+}
+.sales-fusion-number {
+  color: var(--sv-accent);
+  background: transparent;
+  border: 0;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  padding: 10px 4px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.sales-fusion-number[aria-pressed="true"] {
+  color: var(--sv-ink);
+  background: var(--sv-glow);
+  border-radius: 8px;
+}
+.sales-fusion-preview {
+  padding: 24px;
+  overflow-wrap: anywhere;
+}
+.sales-fusion-preview h2 {
+  margin: 0 0 8px;
+  font-size: 25px;
+}
+.sales-fusion-preview :is(p, small) {
+  color: var(--sv-muted);
+  line-height: 1.6;
+}
+.sales-fusion-preview small {
+  display: block;
+  margin-top: 14px;
+}
+.sales-fusion-preview h3 {
+  font-size: 26px;
+  margin: 8px 0 24px;
+}
+.sales-fusion-receipt {
+  display: grid;
+  place-items: center;
+  width: 116px;
+  height: 116px;
+  margin: 22px 0;
+  border: 1px solid var(--sv-gold);
+  border-radius: 22px;
+  color: var(--sv-gold);
+  background: linear-gradient(135deg, var(--sv-surface), var(--sv-deep));
+  box-shadow:
+    inset 1px 2px 2px #fff6,
+    0 8px 15px #0003;
+}
+.sales-fusion-receipt svg {
+  filter: drop-shadow(3px 5px 2px #0007);
+}
+.sales-fusion-preview dl > div {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  border-top: 1px solid var(--sv-gold);
+  padding: 16px 0;
+}
+.sales-fusion-preview dd {
+  margin: 0;
+  text-align: right;
+}
+.sales-fusion-total {
+  font-weight: 750;
+  font-size: 20px;
+}
+.sales-fusion-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px;
+  color: var(--sv-ink);
+  border: 1px solid var(--sv-gold);
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--sv-glow), var(--sv-deep));
+  box-shadow:
+    inset 0 2px 2px #fff5,
+    0 5px 8px #0003;
+  cursor: pointer;
+  transition:
+    transform 160ms,
+    box-shadow 160ms;
+}
+.sales-fusion button:focus-visible {
+  outline: 3px solid var(--sv-accent);
+  outline-offset: 4px;
+}
+@media (hover: hover) {
+  .sales-fusion-stat:hover,
+  .sales-fusion-open:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 2px 1px #fff5,
+      0 8px 20px var(--sv-glow);
+  }
+}
+.sales-fusion-open:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 3px 6px #0004;
+}
+@media (max-width: 1600px) {
+  .sales-fusion-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sales-fusion-preview {
+    margin-top: 0;
+  }
+}
+@media (max-width: 540px) {
+  .sales-fusion-stats {
+    gap: 8px;
+  }
+  .sales-fusion-stat {
+    padding: 12px 8px;
+    display: block;
+    border-radius: 14px;
+  }
+  .sales-fusion-stat svg {
+    width: 22px;
+    height: 22px;
+  }
+  .sales-fusion-stat span {
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+  .sales-fusion-stat strong {
+    font-size: 24px;
+  }
+  .sales-fusion-preview {
+    padding: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sales-fusion * {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Keep the same accent on shell and operational links, without changing actions. */
+.app-shell:has(.sales-fusion) {
+  --primary: var(--sv-accent);
+  --primary-soft: var(--sv-glow);
+}
+.app-shell:has(.sales-fusion) :is(.sidebar, .main-shell, .topbar) {
+  color: var(--sv-ink);
+  background: linear-gradient(145deg, var(--sv-surface), var(--sv-deep));
+}
+.app-shell:has(.sales-fusion) .brand-icon,
+.app-shell:has(.sales-fusion) .goods-mobile-bar .button,
+.sales-fusion .button.primary {
+  color: var(--sv-ink);
+  border: 1px solid var(--sv-gold);
+  background: linear-gradient(145deg, var(--sv-glow), var(--sv-deep));
+  box-shadow:
+    inset 0 1px 2px #fff4,
+    0 4px 10px #0002;
+}
+.app-shell:has(.sales-fusion) .brand-icon,
+.app-shell:has(.sales-fusion) .brand-icon span {
+  color: var(--sv-gold);
+}
+.sales-fusion .table-actions button:not(.button) {
+  color: var(--sv-accent);
+  min-height: 44px;
+  min-width: 44px;
+}
+/* Actions stay in view even when unusually long data require horizontal scroll.
+   Natural column sizing preserves monetary digits rather than shrinking them. */
+@media (min-width: 769px) {
+  .sales-fusion .table-wrap {
+    position: relative;
+  }
+  .sales-fusion :is(th, td):last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: var(--sv-surface);
+    box-shadow: -4px 0 8px #0002;
+  }
+  .sales-fusion th:last-child {
+    z-index: 2;
+  }
+}
+
+/* Dialogs are portalled outside the app shell: preserve the active Sales accent. */
+:root:has(.sales-fusion) .modal {
+  --primary: #08784b;
+  --primary-soft: #19bf8030;
+}
+:root[data-theme="dark"]:has(.sales-fusion) .modal {
+  --primary: #67ecaa;
+}
+:root[data-accent="blue"]:has(.sales-fusion) .modal {
+  --primary: #1765a9;
+  --primary-soft: #458eff30;
+}
+:root[data-theme="dark"][data-accent="blue"]:has(.sales-fusion) .modal {
+  --primary: #8dcaff;
+}
+:root:has(.sales-fusion) .modal .button.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow:
+    inset 0 1px 1px #fff4,
+    0 3px 8px #0002;
+}
+:root[data-theme="dark"]:has(.sales-fusion) .modal .button.primary {
+  color: #10291e;
+}
