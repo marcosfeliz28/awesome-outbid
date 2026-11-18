@@ -276,3 +276,8 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-18 · ChatGPT PC · Ventas 2addfd68
+
+- Doce capturas de Ventas, vista previa y ficha en 1440 y 390 px. Pasaron filtros y consulta en español. Aún no se desplaza la pantalla al elegir folio y la previa cae debajo del listado en ambos tamaños. Cero escrituras operativas y errores de página. [Informe](../validacion/capturas-dot-2addfd68/ventas/COMPARACION.md).
+- Instalador e imágenes en verde. Reproduje el fallo de `verify` en `tests/claude-round2.test.ts:78` por el literal «Autorizó:». [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44229216750). Quedan pendientes la revisión en inglés y el recorrido de avisos y formularios.
