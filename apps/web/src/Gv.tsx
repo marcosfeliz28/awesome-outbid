@@ -539,18 +539,17 @@ function CourseDetail({ id, back }: { id: string; back: () => void }) {
           </div>
           <div className="panel">
             <div className="table-wrap" tabIndex={0}>
-              <table className="gv-table">
+              <table className="gv-table gv-enrollments">
                 <thead>
                   <tr>
                     <th>CLIENTA</th>
-                    <th>TELÉFONO</th>
+                    <th>PAGO</th>
                     <th className="num">PRECIO</th>
                     <th className="num">PAGADO</th>
                     <th className="num">PENDIENTE</th>
                     <th>ESTADO</th>
                     <th>ASISTIÓ</th>
                     <th>SET</th>
-                    <th />
                   </tr>
                 </thead>
                 <tbody>
@@ -558,22 +557,11 @@ function CourseDetail({ id, back }: { id: string; back: () => void }) {
                     <tr key={e.id}>
                       <td>
                         <strong>{e.clientName}</strong>
-                        {e.instagram && <small> {e.instagram}</small>}
+                        <small className="gv-sub">
+                          {e.phone}
+                          {e.instagram && " · " + e.instagram}
+                        </small>
                       </td>
-                      <td>{e.phone}</td>
-                      <td className="num">{money(e.agreedPrice)}</td>
-                      <td className="num">
-                        {money(e.paid)}
-                        {Number(e.unverified) > 0 && (
-                          <small> ({money(e.unverified)} por verificar)</small>
-                        )}
-                      </td>
-                      <td className="num">{money(e.pending)}</td>
-                      <td>{STATUS[e.status]}</td>
-                      <td>
-                        {e.attended === null ? "—" : e.attended ? "Sí" : "No"}
-                      </td>
-                      <td>{e.boughtBrushSet ? "Sí" : "No"}</td>
                       <td className="gv-actions">
                         <Button
                           variant="secondary"
@@ -589,6 +577,21 @@ function CourseDetail({ id, back }: { id: string; back: () => void }) {
                           Editar
                         </Button>
                       </td>
+                      <td className="num">{money(e.agreedPrice)}</td>
+                      <td className="num">
+                        {money(e.paid)}
+                        {Number(e.unverified) > 0 && (
+                          <small className="gv-sub">
+                            {money(e.unverified)} por verificar
+                          </small>
+                        )}
+                      </td>
+                      <td className="num">{money(e.pending)}</td>
+                      <td>{STATUS[e.status]}</td>
+                      <td>
+                        {e.attended === null ? "—" : e.attended ? "Sí" : "No"}
+                      </td>
+                      <td>{e.boughtBrushSet ? "Sí" : "No"}</td>
                     </tr>
                   ))}
                 </tbody>

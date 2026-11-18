@@ -307,7 +307,7 @@
 .norexos-premium-workspace .settings-workspace-layout { display:grid; grid-template-columns:220px minmax(0,1fr); align-items:start; gap:22px; }
 .norexos-premium-workspace .settings-workspace-layout > .tabs { flex-direction:column; margin:0; }
 .norexos-premium-workspace .settings-workspace-layout > .tabs button { text-align:left; white-space:normal; }
-.norexos-premium-workspace .gv-workspace-layout { display:grid; grid-template-columns:minmax(260px,.8fr) minmax(0,1.5fr); gap:22px; align-items:start; }
+.norexos-premium-workspace .gv-workspace-layout { display:grid; grid-template-columns:minmax(230px,.55fr) minmax(0,1.9fr); gap:22px; align-items:start; }
 .norexos-premium-workspace .gv-course-list .gv-cards { grid-template-columns:minmax(0,1fr); }
 .norexos-premium-workspace .gv-course-detail { min-width:0; }
 .norexos-premium-workspace .gv-course-detail > .panel { padding:22px; margin-bottom:16px; }
