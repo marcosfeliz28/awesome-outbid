@@ -26,4 +26,4 @@ Confirmé los cuatro medallones dorados, el acabado de bordes en claro y oscuro,
 
 [Mediciones de Inicio](inicio/comprobacion-integrada.json)
 
-Instalador e imágenes pasaron. `verify` seguía en curso al guardar el informe. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44221333410)
+Pasaron `verify`, `windows-installer` y `render-images` en el push de `67e68278`. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44221333410)
