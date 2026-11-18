@@ -119,10 +119,13 @@ test("SW real: otra pestaña actualiza; carrito y pago no se recargan", async ({
     await expect(
       free.getByRole("button", { name: "Actualizar ahora" }),
     ).toBeVisible();
-    await free.getByRole("button", { name: "Actualizar ahora" }).click();
-    await expect
-      .poll(() => free.evaluate(() => (window as any).harness?.loads))
-      .toBe(2);
+    // El SW provoca una navegación real a la MISMA URL. Registrar la espera
+    // antes del clic evita evaluar el documento que Chromium está destruyendo.
+    await Promise.all([
+      free.waitForNavigation({ waitUntil: "load" }),
+      free.getByRole("button", { name: "Actualizar ahora" }).click(),
+    ]);
+    expect(await free.evaluate(() => (window as any).harness.loads)).toBe(2);
     await active.waitForTimeout(500);
     expect(await active.evaluate(() => (window as any).harness.loads)).toBe(
       loads,
@@ -132,14 +135,20 @@ test("SW real: otra pestaña actualiza; carrito y pago no se recargan", async ({
     expect(await active.evaluate(() => (window as any).harness.loads)).toBe(
       loads,
     );
-    await active.evaluate(() => {
-      (window as any).harness.setPayment(false);
-      (window as any).harness.setCart(1);
-      (window as any).harness.setCart(0);
-    });
-    await expect
-      .poll(() => active.evaluate(() => (window as any).harness?.loads))
-      .toBe(loads + 1);
+    // También la pestaña ocupada debe recargar exactamente una vez, pero solo
+    // tras retirar AMBAS barreras. Sin navegación, la espera falla: no se oculta
+    // ninguna excepción ni se rebaja el conteo para hacer pasar la prueba.
+    await Promise.all([
+      active.waitForNavigation({ waitUntil: "load" }),
+      active.evaluate(() => {
+        (window as any).harness.setPayment(false);
+        (window as any).harness.setCart(1);
+        (window as any).harness.setCart(0);
+      }),
+    ]);
+    expect(await active.evaluate(() => (window as any).harness.loads)).toBe(
+      loads + 1,
+    );
   } finally {
     await context.close();
   }
