@@ -1,0 +1,40 @@
+{
+  "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+  "completedAt": "2026-11-18T02:53:57.058Z",
+  "browser": "157.0.4341.60",
+  "checks": {
+    "builds": [
+      {
+        "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+        "viteMode": "production",
+        "serviceWorkerSha256": "144a528f369cf39e0f9add2f4159b86ae124bf4c3cbad7c214dfed734834ff4a",
+        "cssAssets": [
+          "/assets/index-9KkoIy7C.css"
+        ],
+        "appModule": "/assets/index-P42AbmCC.js"
+      },
+      {
+        "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+        "viteMode": "qa-segunda-compilacion",
+        "serviceWorkerSha256": "a19506c312427f0f7564252329fe6d3a33209b83e93c21ad2a5505ab25097df6",
+        "cssAssets": [
+          "/assets/index-9KkoIy7C.css"
+        ],
+        "appModule": "/assets/index-Ddu27GDq.js"
+      }
+    ],
+    "idleReloadedOntoNewBuild": true,
+    "busyControllerChanged": true,
+    "addedThroughCatalogWithoutEditingInput": true,
+    "busyDocumentItemAndTotalPreservedAfter16s": true,
+    "busyLoadedNewBuildAfterRemovingItem": true,
+    "visibleItemsAfterReload": 0,
+    "removedItemAndTotalReappeared": false,
+    "cashStillShownOpen": true,
+    "sameOpenTurnIdAndOpenedAtInDisposablePostgres": true,
+    "saleRequests": 0
+  },
+  "pageErrorCount": 0,
+  "servicesStopped": true,
+  "salePosts": 0
+}

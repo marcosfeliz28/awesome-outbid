@@ -7,7 +7,7 @@ Validé `67e682788ecb046f355a943b61eca8bbe391352b` de `dot/pwa-draft-flush-18nov
 - **Antes del arreglo.** En `92d131f8`, quitar el último artículo durante una actualización provocaba que el artículo y el total reaparecieran después de recargar. [Evidencia del fallo](https://github.com/marcosfeliz28/awesome-outbid/blob/fa6ae3cb44c037383be2146e7cac99a5b5ac8b49/docs/validacion/capturas-dot-92d131f8/inicio-y-actualizacion/COMPARACION.md).
 - **Con el arreglo ya cargado.** Compilé el mismo `67e68278` dos veces, en modo normal y en un modo local de prueba. Comprobé que los JavaScript principales y los service workers tenían archivos distintos. La pestaña libre se actualizó. La ocupada conservó el artículo y el total durante 16 segundos. Al quitar el último artículo en Punto de venta, la pestaña cargó la segunda compilación y quedó en cero artículos. La caja siguió mostrando «Caja abierta».
 - **Primera actualización desde el código anterior.** Con `92d131f8` cargado y el carrito vacío en las dos pestañas, seleccioné «Actualizar ahora» para pasar a `67e68278`. Las dos pestañas abrieron la compilación nueva. Punto de venta seguía indicando caja abierta y permitió agregar un artículo ficticio. La protección empieza cuando se carga el código nuevo. En una corrida separada del mismo cambio, inicié la actualización con un artículo en la pestaña antigua. Cuando lo quité, la pestaña recargó y restauró el artículo y su total. Para la primera actualización desde esa versión, la comprobación favorable requiere que todas las pestañas estén libres antes de activar el cambio.
-- Cero solicitudes de venta y cero errores JavaScript. Cerré las pestañas, navegadores, procesos y bases de prueba. El caso de cobro real sin conexión y la identidad persistente del turno siguen sin comprobarse.
+- Cero solicitudes de venta y cero errores JavaScript. Cerré las pestañas, navegadores, procesos y bases de prueba. Repetí el cambio con el arreglo ya cargado. PostgreSQL descartable confirmó que seguían abiertos el mismo registro de turno y la misma hora de apertura. El carrito quedó vacío otra vez. Las mediciones guardan el resultado de la comparación y omiten el identificador. Queda pendiente el reintento de cobros sin conexión. [Comprobación del turno](turno-persistente.json)
 
 | Comprobación | Evidencia |
 | --- | --- |
@@ -27,3 +27,5 @@ Confirmé los cuatro medallones dorados, el acabado de bordes en claro y oscuro,
 [Mediciones de Inicio](inicio/comprobacion-integrada.json)
 
 Pasaron `verify`, `windows-installer` y `render-images` en el push de `67e68278`. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44221333410)
+
+La rama `nexora-cloud` avanzó a este mismo SHA. Su push tiene una ejecución de GitHub distinta. [Controles en la rama base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44225903426)
