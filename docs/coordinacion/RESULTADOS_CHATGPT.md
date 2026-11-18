@@ -2,6 +2,10 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · Inventario 20c60b2f
+
+Recorrido con datos ficticios y capturas ES/EN, claro/oscuro, 1440/390; cantidades y alcance de indicadores coinciden con API. Alertas y movimientos quedan lejos bajo la tabla; vencimiento EN aún aparece en español. Detalles en `docs/capturas/inventario-20c60b2f/LECTURA.md`. CI verify reportado rojo por cita invertida. Sin producción ni escrituras operativas.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
