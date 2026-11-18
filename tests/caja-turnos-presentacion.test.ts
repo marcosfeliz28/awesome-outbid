@@ -51,3 +51,10 @@ it("aplica acento coherente y permite envolver las acciones del historial", () =
   expect(css).toContain("white-space: normal");
   expect(css).not.toContain("Georgia");
 });
+
+it("reserva ancho y apilado para acciones móviles y acento de Mercancía", () => {
+  const css = readFileSync("apps/web/src/fusion-caja-turnos.css", "utf8");
+  expect(css).toContain('td[data-label="Acciones"]');
+  expect(css).toContain(".goods-mobile-bar .button");
+  expect(css).toContain("flex-shrink: 0");
+});

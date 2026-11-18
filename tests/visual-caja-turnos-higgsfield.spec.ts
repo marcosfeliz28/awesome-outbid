@@ -156,6 +156,50 @@ for (const width of [1440, 390])
           content: document.documentElement.scrollWidth,
         }));
         expect(size.content).toBeLessThanOrEqual(size.viewport + 1);
+        const actions = page.locator('td[data-label="Acciones"]');
+        for (const cell of await actions.all()) {
+          const buttons = await cell.getByRole("button").all();
+          const bounds = await cell.boundingBox();
+          let previous: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          } | null = null;
+          for (const button of buttons) {
+            const box = await button.boundingBox();
+            expect(box).not.toBeNull();
+            expect(bounds).not.toBeNull();
+            if (box && bounds) {
+              expect(box.width).toBeGreaterThanOrEqual(
+                width === 390 ? 120 : 44,
+              );
+              expect(box.x).toBeGreaterThanOrEqual(bounds.x - 1);
+              expect(box.x + box.width).toBeLessThanOrEqual(
+                bounds.x + bounds.width + 1,
+              );
+              if (previous)
+                expect(box.y).toBeGreaterThanOrEqual(
+                  previous.y + previous.height - 1,
+                );
+              previous = box;
+            }
+          }
+        }
+        for (const button of await actions.getByRole("button").all()) {
+          await button.scrollIntoViewIfNeeded();
+          await expect(button).toBeEnabled();
+          const hit = await button.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            const center = document.elementFromPoint(
+              r.x + r.width / 2,
+              r.y + r.height / 2,
+            );
+            return center !== null && el.contains(center);
+          });
+          expect(hit).toBeTruthy();
+        }
+        await page.evaluate(() => scrollTo(0, 0));
         await page.evaluate(() => document.fonts.ready);
         await mkdir("test-results/higgsfield-caja-turnos/capturas", {
           recursive: true,
