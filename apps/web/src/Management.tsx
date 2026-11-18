@@ -2993,6 +2993,7 @@ export function Reports() {
       <div className="report-premium-heading">
       <ReportEmblem />
       <Heading
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
         title={en ? "Reports" : "Reportes"}
         caption={en ? "Explore your store records and make informed decisions." : "Transforma tus datos en decisiones para el pr\u00f3ximo paso."}
       />

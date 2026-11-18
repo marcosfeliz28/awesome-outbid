@@ -60,3 +60,8 @@ describe("premium reporting presentation boundaries", () => {
   expect(source).toContain('"/dashboard/breakdown?from="');
  });
 });
+
+it("Reportes explicitly translates the Heading eyebrow instead of using its Spanish default", () => {
+ const reports=read("./Management.tsx").split("export function Reports()")[1].split("export function Alerts")[0];
+ expect(reports).toContain('eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}');
+});

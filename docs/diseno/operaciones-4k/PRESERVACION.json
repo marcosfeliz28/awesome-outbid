@@ -269,6 +269,10 @@
     {
       "before": "  ];\n  return (\n    <PremiumWorkspace area=\"configuration\">\n      <Heading\n        title={ot(\"A la medida de tu negocio\")}\n        caption={ot(\"Define cómo trabaja tu tienda, desde los impuestos hasta los permisos.\")}\n      />\n      <div className=\"settings-workspace-layout\">\n      <div className=\"tabs outside\">\n        {[\n          [\"business\", ot(\"Negocio y reglas\")],\n          [\"users\", ot(\"Usuarios y permisos\")],\n          [\"audit\", ot(\"Bitácora\")],\n          [\"equipment\", ot(\"Equipos\")],\n          [\"appearance\", ot(\"Apariencia\")],\n        ].map(([id, label]) => (\n          <button\n            className={tab === id ? \"active\" : \"\"}\n            onClick={() => setTab(id)}\n            key={id}\n          >\n            {label}\n          </button>\n        ))}\n      </div>\n      <div className=\"panel\">\n",
       "after": "  ];\n  return (\n    <PremiumWorkspace area=\"configuration\">\n      <Heading\n        eyebrow={en ? \"YOUR BUSINESS, WITH CLARITY\" : \"TU NEGOCIO, CON CLARIDAD\"}\n        title={ot(\"A la medida de tu negocio\")}\n        caption={ot(\"Define cómo trabaja tu tienda, desde los impuestos hasta los permisos.\")}\n      />\n      <div className=\"settings-workspace-layout\">\n      <div className=\"tabs outside\">\n        {[\n          [\"business\", \"Negocio y reglas\"],\n          [\"users\", \"Usuarios y permisos\"],\n          [\"audit\", \"Bitácora\"],\n          [\"equipment\", \"Equipos\"],\n          [\"appearance\", \"Apariencia\"],\n        ].map(([id, label]) => (\n          <button\n            className={tab === id ? \"active\" : \"\"}\n            onClick={() => setTab(id)}\n            key={id}\n          >\n            {ot(label)}\n          </button>\n        ))}\n      </div>\n      <div className=\"panel\">\n"
+    },
+    {
+      "before": "      <Heading\n        title={en ? \"Reports\" : \"Reportes\"}",
+      "after": "      <Heading\n        eyebrow={en ? \"YOUR BUSINESS, WITH CLARITY\" : \"TU NEGOCIO, CON CLARIDAD\"}\n        title={en ? \"Reports\" : \"Reportes\"}"
     }
   ]
 }
