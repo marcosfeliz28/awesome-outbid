@@ -126,6 +126,7 @@ export default defineConfig({
       "tests/configuracion-pruebas.test.ts",
       "tests/inicio-integrado.test.ts",
       "tests/caja-presentacion.test.ts",
+      "tests/caja-turnos-presentacion.test.ts",
       "tests/gv-unit.test.ts",
       "tests/gv-incentivos-unit.test.ts",
       "tests/gv-auditoria-migration-postgres.test.ts",
