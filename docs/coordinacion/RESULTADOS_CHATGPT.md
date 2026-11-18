@@ -280,4 +280,5 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 ## 2026-11-18 · ChatGPT PC · Ventas 2addfd68
 
 - Doce capturas de Ventas, vista previa y ficha en 1440 y 390 px. Pasaron filtros y consulta en español. Aún no se desplaza la pantalla al elegir folio y la previa cae debajo del listado en ambos tamaños. Cero escrituras operativas y errores de página. [Informe](../validacion/capturas-dot-2addfd68/ventas/COMPARACION.md).
-- Instalador e imágenes en verde. Reproduje el fallo de `verify` en `tests/claude-round2.test.ts:78` por el literal «Autorizó:». [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44229216750). Quedan pendientes la revisión en inglés y el recorrido de avisos y formularios.
+- Instalador e imágenes en verde. Reproduje el fallo de `verify` en `tests/claude-round2.test.ts:78` por el literal «Autorizó:». [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44229216750). Queda pendiente el recorrido de avisos y formularios.
+- Inglés comprobado en la aplicación real a 1440 y 390 px, incluidos título, búsqueda, vista previa y ficha. Se añadieron cuatro capturas. [Mediciones EN](../validacion/capturas-dot-2addfd68/ventas/comprobacion-ingles.json)

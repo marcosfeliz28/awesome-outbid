@@ -1,0 +1,66 @@
+{
+  "commit": "2addfd688a4bc3029b4b61c8e1b35845ce8ea695",
+  "completedAt": "2026-11-18T03:41:35.337Z",
+  "browser": "157.0.4341.60",
+  "servicesStopped": true,
+  "screenshots": [
+    {
+      "file": "ventas-en-previa-1440.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "3e9ec5ec40d10243f2972310b3a07aeeca1167619d11070caf900a73fca1304e"
+    },
+    {
+      "file": "ventas-en-ficha-1440.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "733b36280e70092c4ba22b906bdb240ec2ea2828f11c0e7305cf274400537db6"
+    },
+    {
+      "file": "ventas-en-previa-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "sha256": "279b85bc6880db01cc71f3f6bfc27eb9bd5032cc7885e6b7d90a4c8e5410f25d"
+    },
+    {
+      "file": "ventas-en-ficha-390.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "sha256": "dfe181b3d5f08438ead6ce12ac3dfc6f6b162490e01a84c1d2b9c78f648dbcee"
+    }
+  ],
+  "english": {
+    "1440": {
+      "title": "Every sale tells a story",
+      "receiptLabelsVerified": {
+        "Courier delivery": true,
+        "Recorded payments": true,
+        "Received": true,
+        "Applied": true,
+        "Change": true
+      },
+      "operationalWrites": 0,
+      "pageErrors": 0
+    },
+    "390": {
+      "title": "Every sale tells a story",
+      "receiptLabelsVerified": {
+        "Courier delivery": true,
+        "Recorded payments": true,
+        "Received": true,
+        "Applied": true,
+        "Change": true
+      },
+      "operationalWrites": 0,
+      "pageErrors": 0
+    }
+  }
+}
