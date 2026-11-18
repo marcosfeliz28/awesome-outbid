@@ -15,7 +15,7 @@ Candidato `adb789cb43f950398d3ab6ecf4de0f29979eb3f1` de `dot/15areas-sobre-prod-
 
 ## CI y fotos
 
-Al corte de las 15:56 UTC pasaron instalador, imágenes y `pnpm check`. `verify` completo seguía en curso. En local pasaron 3/3 focales de Escape y etiquetas y comprobé las 25 citas de `App.tsx`. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44339189628)
+El candidato pasó los tres controles de GitHub: `verify`, `windows-installer` y `render-images`. El control `verify` terminó a las 16:17:52 UTC, con `pnpm check` y `node scripts/verify.mjs` aprobados. Los fallos de foco descritos arriba siguen comprobados en el recorrido manual. En local pasaron 3/3 focales de Escape y etiquetas y comprobé las 25 citas de `App.tsx`. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44339189628)
 
 `e9a738bb` terminó con instalador e imágenes verdes y `verify` falló en `node scripts/verify.mjs`; la anotación pública muestra código de salida 1. En la versión anterior se observaron dos diferencias con las expectativas de pruebas: Escape cerraba ambas capas y el rótulo de la cola esperaba «Pendiente · Entrada» con esa capitalización. El informe del CI público no permite atribuirle cada caso. [Verify anterior](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44332519806/job/134900465117)
 
