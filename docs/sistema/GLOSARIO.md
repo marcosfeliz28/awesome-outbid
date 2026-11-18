@@ -2,7 +2,7 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su cita; los que son jerga de la dueña sin cita en el código se marcan «uso interno».
 
-**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:4107`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3531`).
+**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:4107`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3533`).
 
 **Aprobar con PIN / PIN de gerente** — Código de 6 dígitos de un usuario con `sale:manage` que autoriza una operación de riesgo (descuento grande, crédito grande, descuadre, vale…). No puede ser el de quien pide, salvo la dueña (`apps/api/src/security.ts:81-136`). Ver `ROLES_Y_PERMISOS.md` §5.
 
@@ -68,11 +68,11 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:77-84`) y tipo de ajuste en Inventario (`Management.tsx:1129`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:727-734`).
 
-**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3701`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3689`).
+**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3701`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3691`).
 
-**NCF / e-CF** — Número de comprobante fiscal (DGII, República Dominicana). **Este sistema no lo emite**: los recibos son internos y solo se puede preparar la solicitud (`apps/web/src/Prints.tsx:508`; `apps/web/src/Management.tsx:4720-4728`). El «NCF del proveedor» sí se guarda en las compras (`apps/web/src/Purchases.tsx:90-100`).
+**NCF / e-CF** — Número de comprobante fiscal (DGII, República Dominicana). **Este sistema no lo emite**: los recibos son internos y solo se puede preparar la solicitud (`apps/web/src/Prints.tsx:508`; `apps/web/src/Management.tsx:4722-4730`). El «NCF del proveedor» sí se guarda en las compras (`apps/web/src/Purchases.tsx:90-100`).
 
-**Norexos / Nexora POS** — Norexos es el nombre nuevo del producto (plan maestro); el código aún muestra «Nexora POS» hasta que se haga el cambio de marca (etapa E1) (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:1`, `:11`; `apps/web/src/App.tsx:1254`).
+**Norexos / Nexora POS** — Norexos es el nombre nuevo del producto (plan maestro); el código aún muestra «Nexora POS» hasta que se haga el cambio de marca (etapa E1) (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:1`, `:11`; `apps/web/src/App.tsx:1256`).
 
 **Nexora-cloud / producto-nexora** — Ramas: la primera es la tienda en vivo; la segunda el producto multiempresa. Ver `README.md` §5.
 
@@ -86,7 +86,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Recepción** — Registro de lo que llegó de una orden de compra o factura (`GoodsReceipt`) (`apps/web/src/Purchases.tsx:338-453`).
 
-**Reembolsada (GV)** — Estado final de una inscripción o cita: se devolvió dinero; exige monto y fecha y se resta de los ingresos (`apps/web/src/Gv.tsx:801-810`).
+**Reembolsada (GV)** — Estado final de una inscripción o cita: se devolvió dinero; exige monto y fecha y se resta de los ingresos (`apps/web/src/Gv.tsx:802-811`).
 
 **RNC** — Registro Nacional del Contribuyente (identificación de empresa). Campo `legalId` de cliente, proveedor y del negocio (`apps/api/prisma/schema.prisma:292-300`).
 
@@ -94,7 +94,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **SKU / código de barras** — Códigos únicos de cada variante; la caja busca por ambos sin distinguir mayúsculas (`apps/web/src/POS.tsx:730-747`; `apps/api/prisma/schema.prisma:120-130`).
 
-**Solicitud de anulación** — Pedido de una cajera para anular su venta; la aprueba la administración (`apps/web/src/Management.tsx:3522`, `apps/web/src/VoidRequests.tsx:21`).
+**Solicitud de anulación** — Pedido de una cajera para anular su venta; la aprueba la administración (`apps/web/src/Management.tsx:3524`, `apps/web/src/VoidRequests.tsx:21`).
 
 **Traspaso** — Mover mercancía entre Casa y Tienda en una sola operación (resta del origen, suma al destino) (`apps/web/src/WarehousesPanel.tsx:132-224`; `apps/api/src/warehouses.ts:112-360`).
 
@@ -104,4 +104,4 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Variante** — Combinación concreta de un producto (talla, color, sabor) con su propio código, precio y existencia (`apps/api/prisma/schema.prisma:120`).
 
-**Venta (estado `voided`)** — Anulada: se conserva con motivo y usuario, se revierte inventario y deja de contar (`apps/web/src/Management.tsx:3884`). «Cerrar» una cuenta por cobrar = ya se cobró; una factura de prueba se **anula** (`.claude/skills/comunicacion/SKILL.md` lista de órdenes del 29-oct).
+**Venta (estado `voided`)** — Anulada: se conserva con motivo y usuario, se revierte inventario y deja de contar (`apps/web/src/Management.tsx:3886`). «Cerrar» una cuenta por cobrar = ya se cobró; una factura de prueba se **anula** (`.claude/skills/comunicacion/SKILL.md` lista de órdenes del 29-oct).

@@ -2667,7 +2667,7 @@ export function Promotions() {
                 {
                   label: ot("Vigencia"),
                   render: (p) =>
-                    dateLabel(p.startsAt) + " – " + dateLabel(p.endsAt),
+                    dateLabel(p.startsAt, en ? "en-US" : "es-DO") + " – " + dateLabel(p.endsAt, en ? "en-US" : "es-DO"),
                 },
                 {
                   label: ot("Estado"),
@@ -3192,6 +3192,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
   return (
     <PremiumWorkspace area="alerts">
       <Heading
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
         title={en ? "What matters, on time" : "Lo importante, a tiempo"}
         caption={en ? "An attention center to keep your store one step ahead." : "Un centro de atención para mantener tu tienda un paso adelante."}
       >
@@ -3233,7 +3234,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                 <div>
                   <button className="alert-detail-trigger" aria-expanded={selectedId === a.id} onClick={() => setSelectedId(selectedId === a.id ? null : a.id)}><strong>{a.message}</strong></button>
                   <p>
-                    {dateLabel(a.createdAt)} · {alertTypeLabel(a.type)}
+                    {dateLabel(a.createdAt, en ? "en-US" : "es-DO")} · {alertTypeLabel(a.type)}
                   </p>
                 </div>
                 <Badge tone={a.severity === "high" ? "danger" : "warning"}>
@@ -3294,7 +3295,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
           <aside className="alert-detail panel" aria-live="polite">
             {selected ? <>
               <h2>{selected.message}</h2>
-              <dl><dt>{en ? "Date" : "Fecha"}</dt><dd>{dateLabel(selected.createdAt)}</dd>
+              <dl><dt>{en ? "Date" : "Fecha"}</dt><dd>{dateLabel(selected.createdAt, en ? "en-US" : "es-DO")}</dd>
               <dt>{en ? "Category" : "Categoría"}</dt><dd>{alertTypeLabel(selected.type)}</dd>
               <dt>{en ? "Priority" : "Prioridad"}</dt><dd>{selected.severity === "high" ? (en ? "High" : "Prioritaria") : (en ? "Attention" : "Atención")}</dd></dl>
               <Button variant="secondary" onClick={() => setSelectedId(null)}>{en ? "Close details" : "Cerrar detalle"}</Button>
@@ -4736,24 +4737,25 @@ export function Configuration() {
   return (
     <PremiumWorkspace area="configuration">
       <Heading
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
         title={ot("A la medida de tu negocio")}
         caption={ot("Define cómo trabaja tu tienda, desde los impuestos hasta los permisos.")}
       />
       <div className="settings-workspace-layout">
       <div className="tabs outside">
         {[
-          ["business", ot("Negocio y reglas")],
-          ["users", ot("Usuarios y permisos")],
-          ["audit", ot("Bitácora")],
-          ["equipment", ot("Equipos")],
-          ["appearance", ot("Apariencia")],
+          ["business", "Negocio y reglas"],
+          ["users", "Usuarios y permisos"],
+          ["audit", "Bitácora"],
+          ["equipment", "Equipos"],
+          ["appearance", "Apariencia"],
         ].map(([id, label]) => (
           <button
             className={tab === id ? "active" : ""}
             onClick={() => setTab(id)}
             key={id}
           >
-            {label}
+            {ot(label)}
           </button>
         ))}
       </div>

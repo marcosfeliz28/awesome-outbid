@@ -19,7 +19,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 | `gv`                    | Empleada de GV (p. ej. Clary) | `gv:read`, `gv:write`, `gv:reports`                                                                                                                                                                                                                                                            |
 | `gerente_gv`            | Gerente de seguimiento GV     | `gv:read`, `gv:reports`, `gv:verify` (exactos; sin `gv:write`: no cobra ni abre caja; sin costos, inventario, configuración, usuarios ni MacGen). La dueña le crea el usuario; nadie lo trae asignado. No puede verificar la transferencia que ella misma registró (`apps/api/src/gv.ts:582`). |
 
-- **Nota (permisos de producción):** la dueña puede editar los permisos de cada rol desde Configuración › «Usuarios y permisos» › «Permisos por rol» (`apps/web/src/Management.tsx:4881-4892`, `:4468-4492`; API `PUT /roles/:id`, `apps/api/src/admin.ts:1309-1330`). Los permisos reales de producción pueden ser distintos de la tabla de fábrica; para la verdad exacta hay que mirar esa pantalla (no se leyó la base). El rol `admin` no puede perder el `*` (`admin.ts:1321`).
+- **Nota (permisos de producción):** la dueña puede editar los permisos de cada rol desde Configuración › «Usuarios y permisos» › «Permisos por rol» (`apps/web/src/Management.tsx:4884-4895`, `:4468-4492`; API `PUT /roles/:id`, `apps/api/src/admin.ts:1309-1330`). Los permisos reales de producción pueden ser distintos de la tabla de fábrica; para la verdad exacta hay que mirar esa pantalla (no se leyó la base). El rol `admin` no puede perder el `*` (`admin.ts:1321`).
 
 ## 2. Qué significa cada permiso (y dónde se usa)
 
@@ -65,7 +65,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 ### Cajero/a (`seller`)
 
 - Ve: Punto de venta, Ventas, Solicitudes de anulación (para cancelar las suyas), Caja, Productos (solo lectura), Clientes. No ve Mercancía (bloqueada también en la API, `merchandise.ts:156-158`), ni Reportes, ni costos (`common.ts:368`).
-- **Contraseña de 6 números** y obligación de cambiarla al entrar (`apps/api/src/password-policy.ts:11-13`; `Management.tsx:4993-4996`). Cualquier otro rol usa contraseña fuerte (12 o más caracteres con mayúscula, minúscula, número y símbolo, `password-policy.ts:66-72`).
+- **Contraseña de 6 números** y obligación de cambiarla al entrar (`apps/api/src/password-policy.ts:11-13`; `Management.tsx:4996-4999`). Cualquier otro rol usa contraseña fuerte (12 o más caracteres con mayúscula, minúscula, número y símbolo, `password-policy.ts:66-72`).
 - Caja ciega: no ve los montos esperados de su caja (`common.ts:70-72`, `apps/web/src/managementMessages.ts:41-44`).
 - Necesita el **PIN de gerente** para: descuentos sobre el límite, crédito/contraentrega sobre los topes, nota de crédito sin código, salidas de efectivo sobre RD$ 1,000 del turno, cerrar con descuadre, vale de caja, trasladar la caja a otro equipo, descartar una venta sin conexión en conflicto, y registrar efectivo que «ya tiene la dueña» (ver §5).
 - Solo cobra créditos **en efectivo** (`apps/api/src/sales.ts:4541-4546`). Pide anulaciones; no las ejecuta.
@@ -107,7 +107,7 @@ Nota (pendiente de comprobar en vivo): el botón «Configuración» lo ve un ger
 
 ## 5. PIN de gerente: cuándo se pide y quién puede darlo
 
-- **Qué es:** un PIN de **6 dígitos** por usuario (los de 4-5 dígitos antiguos aún sirven y quedan marcados en la bitácora para cambiarlos) (`apps/api/src/admin.ts:208`; `Management.tsx:5008-5010`). Se crea al crear el usuario y se cambia en «Editar usuario · …» (`Management.tsx:4927-4939`).
+- **Qué es:** un PIN de **6 dígitos** por usuario (los de 4-5 dígitos antiguos aún sirven y quedan marcados en la bitácora para cambiarlos) (`apps/api/src/admin.ts:208`; `Management.tsx:5011-5013`). Se crea al crear el usuario y se cambia en «Editar usuario · …» (`Management.tsx:4930-4942`).
 - **Quién puede aprobar:** cualquier usuario activo de la sucursal con `sale:manage` (o `*`), **que no sea quien pide** (salvo la dueña `*`). Mensaje: «El PIN debe ser de otra persona con permiso; no puedes aprobar tu propia operación.» (`apps/api/src/security.ts:81-82`, `:92-136`).
 - **Límite de intentos:** 10 fallos por hora por solicitante; 30 por hora para los PIN cortos de la sucursal (`apps/api/src/security.ts:51-56`).
 - **Cuándo lo pide el sistema:**

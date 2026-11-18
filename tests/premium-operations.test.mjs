@@ -77,3 +77,14 @@ test('visual QA fixes missing photo, English expiry and dark alert action contra
  assert.match(management,/rows.length === 1 \? "alerta" : "alertas"/);
  assert.match(css,/\.alert-row \.text-link\s*\{\s*color: var\(--premium-text\)/);
 });
+
+test('alert and configuration headings follow language and dates retain existing formatter', () => {
+ for (const name of ['Alerts','Configuration']) {
+  const start=management.indexOf('export function '+name+'(');
+  const end=management.indexOf('\nexport function ',start+1);
+  const section=management.slice(start,end<0?undefined:end);
+  assert.match(section,/eyebrow=\{en \? "YOUR BUSINESS, WITH CLARITY"/);
+ }
+ assert.match(management,/dateLabel\(a.createdAt, en \? "en-US" : "es-DO"\)/);
+ assert.match(management,/dateLabel\(selected.createdAt, en \? "en-US" : "es-DO"\)/);
+});

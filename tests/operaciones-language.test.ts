@@ -6,7 +6,24 @@ import { OPERACIONES_EN, operacionesText, customerAnonymizationText } from "../a
 
 const source = readFileSync("apps/web/src/Management.tsx", "utf8");
 const ledger = JSON.parse(readFileSync("docs/diseno/operaciones-4k/PRESERVACION.json", "utf8"));
-const updates = ledger.changes.slice(-3) as { before: string; after: string }[];
+// Recover the complete verified baseline, then select named declarations, never
+// ledger positions: composing unrelated views can append arbitrary edit groups.
+let baseline = source;
+for (const edit of [...ledger.changes].reverse()) {
+  if (baseline.split(edit.after).length !== 2) throw new Error("Non-unique preservation edit");
+  baseline = baseline.replace(edit.after, edit.before);
+}
+if (createHash("sha256").update(baseline).digest("hex") !== ledger.base_sha256)
+  throw new Error("Preservation baseline mismatch");
+function declaration(text: string, name: string) {
+  const file = ts.createSourceFile("Management.tsx", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const node = file.statements.find((item) => ts.isFunctionDeclaration(item) && item.name?.text === name);
+  if (!node) throw new Error("Missing function " + name);
+  return node.getText(file);
+}
+const updates = ["Purchases", "Expenses", "Customers"].map((name) => ({
+ before: declaration(baseline, name), after: declaration(source, name),
+}));
 const compact = (value: string) => value.replace(/\s+/g, " ").trim();
 function calls(value: string, names: string[]) {
   const file = ts.createSourceFile("view.tsx", value, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

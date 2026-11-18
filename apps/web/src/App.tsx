@@ -776,9 +776,7 @@ function Shell() {
       !(pantalla === "settings" && can(user.permissions, "sale:manage")) &&
       // El desglose del mes se abre desde el panel anual; lo ve quien tiene reportes.
       !(pantalla === "month-report" && can(user.permissions, "reports:read")) &&
-      !(page.split("?")[0] === "month-report"
-                    ? (language === "en" ? "Monthly report" : "Informe mensual")
-                    : page === "styles" && SHOW_STYLE_GUIDE) &&
+      !(page === "styles" && SHOW_STYLE_GUIDE) &&
       // Demostración (datos de ejemplo) solo para el administrador.
       !(page === "demo" && can(user.permissions, "*"))
     )
