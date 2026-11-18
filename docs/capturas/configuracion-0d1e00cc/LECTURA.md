@@ -47,6 +47,12 @@ El candidato `94f11b31` y la base `0fc775a6` pasaron los tres controles. Sus `ve
 
 `origin/nexora-cloud` avanzó por una actualización externa a `94f11b31ca4f6c659c6fc3a6399de850744ecf8f`, el mismo SHA de Dot. Su nuevo control de push es `44385086652`. Su ejecución terminó con los tres controles aprobados. `verify` cerró a las 20:26:29 UTC. La ejecución anterior de la rama Dot sobre ese SHA ya aprobó los tres controles. Los hallazgos visuales y de teclado de este informe siguen abiertos. El estado del sitio servido queda pendiente de comprobación. [CI del push a la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44385086652)
 
+## Cambio paralelo de GV en la base
+
+La base avanzó a `e95364deafddc33b91912c6fcc8018bec6ba6123`, cuyo autor figura como Claude. El cambio ajusta la presentación de la planilla de inscripciones de GV, con pago junto a la clienta. Cambia `Gv.tsx`, `gv.css` y un selector de distribución de GV en `premiumOperations.css`, además de la nota de cambios. Mantiene la API y las 319 fotos del candidato Dot `94f11b31`. Pasó sus tres controles. [Cambios de GV](https://github.com/marcosfeliz28/awesome-outbid/compare/94f11b31...e95364de) · [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44405850602)
+
+Dot sigue en `94f11b31`. Su próxima integración debe conservar también este cambio paralelo. El recorrido visual de la planilla GV queda pendiente. Los hallazgos de este informe siguen abiertos.
+
 ## Siguiente entrega de Dot
 
 Corregir el contraste y la partición de etiquetas de Incentivos, completar los textos de interfaz en inglés y el retorno de foco. Conservar las 319 fotos de la integración, entregar el resumen por pantalla del ensayo general y adjuntar rama, SHA, tres controles y demostración privada.
