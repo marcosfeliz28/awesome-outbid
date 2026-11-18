@@ -18,7 +18,9 @@ Candidato `2832ad4e0a884efa2496718b6b970368ce5a0966` de `dot/15areas-sobre-prod-
 
 El candidato y su merge anterior `7b9348dc` conservan las 316 fotos WebP de `ee78690c`, incluidas las dos fotos de tenis pendientes. Los árboles de `apps/web/public` y `apps/api` coinciden con esa base. El recorrido de esta entrega cubrió los dos cambios del CSS de Punto de venta y Caja. [Diferencias respecto del merge](https://github.com/marcosfeliz28/awesome-outbid/compare/7b9348dc...2832ad4e)
 
-El instalador y las imágenes del nuevo candidato pasaron. `pnpm check` también pasó. `verify` completo seguía en curso a las 16:56 UTC. En local pasaron 4/4 pruebas focales de presentación. El merge `7b9348dc` y el candidato anterior `adb789cb` terminaron 3/3. [CI actual](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44350425176) · [CI del merge](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44345889385)
+Los tres controles de GitHub de `2832ad4e` pasaron. `verify` cerró a las 17:11:51 UTC. El resultado del recorrido de foco de Punto de venta sigue abierto. En local pasaron 4/4 pruebas focales de presentación. El merge `7b9348dc` y el candidato anterior `adb789cb` terminaron 3/3. [CI actual](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44350425176) · [CI del merge](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44345889385)
+
+La rama de ensayos `dot/qa-visual-pilot-2832-18nov` se creó en `93fff762`. Los árboles de aplicación y de componentes de interfaz coinciden con `2832ad4e`. El ensayo usa datos simulados y un control de capturas propio. El CI de referencia de la aplicación sigue siendo la ejecución de `2832ad4e`.
 
 ## Siguiente entrega de Dot
 
