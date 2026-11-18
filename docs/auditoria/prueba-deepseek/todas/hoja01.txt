@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #1 a #20 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#1: Mutant Mass Extreme 2500 - Vanilla / 12 lb
+#2: L-Carnitine 3000 - Nutrex - Sour Gummy Worms / 31 serv.
+#3: Magnesium Citrate - NOW - 90 softgels (con glicinato y malato)
+#4: Creatine Monohydrate Essential - Nutrex - 60 servicios; unflavored (envase blanco)
+#5: Nitro-Tech - RIPPED - VANILLA CREAM / 4 lb
+#6: Essential Amino Energy + Hydration + Focus - Optimum Nutrition - Fruit Punch / 30 servicios
+#7: ISO100 Hydrolyzed - Dymatize - Gourmet Chocolate / 5 lb
+#8: D3 K2 Walnut Oil Drops - Lecrano - 60 ml
+#9: Tribulus 1400 - Nutrex - 90 cápsulas
+#10: Opti-Men - Optimum Nutrition - 150 tabletas / 50 servicios
+#11: Opti-Men - Optimum Nutrition - 90 tabletas / 30 servicios
+#12: Opti-Men - Optimum Nutrition - 240 tabletas / 80 servicios
+#13: Essential Digestive Enzymes - Horbäach - 1000 mg / 100 cápsulas
+#14: Horny Goat Weed - dr.bo. - 60 cápsulas
+#15: Oil of Oregano - Carlyle - 4000 mg equivalentes / 150 softgels
+#16: Garlic Oil - Puritans Pride - 5000 mg
+#17: Chromium Picolinate - Horbäach - 1000 mcg / 240 tabletas
+#18: Testosterone Booster - Six Star - 60 caplets
+#19: L-Carnitine 3000 - Nutrex - Strawberry Watermelon / 31 serv.
+#20: L-Carnitine 3000 - Nutrex - Orange Mango / 31 serv.

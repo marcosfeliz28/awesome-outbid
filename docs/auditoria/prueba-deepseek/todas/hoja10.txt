@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #181 a #200 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#181: Gold Standard 100% Whey - Optimum Nutrition - Vanilla Ice Cream / 5 lb
+#182: Gold Standard 100% Whey - Optimum Nutrition - Vanilla Ice Cream / 2 lb
+#183: Gold Standard 100% Whey - Optimum Nutrition - French Vanilla Creme / 2 lb
+#184: Gold Standard 100% Whey - Optimum Nutrition - Double Rich Chocolate / 2 lb
+#185: Gold Standard 100% Whey - Optimum Nutrition - Vanilla Ice Cream / 1.5 lb (bolsa)
+#186: Carnivor Mass - MuscleMeds - Chocolate Fudge / 5.83 lb
+#187: Carnivor Mass - MuscleMeds - Vanilla Caramel / 5.83 lb
+#188: Super Mass Gainer - Dymatize - Rich Chocolate / 6 lb
+#189: Super Mass Gainer - Dymatize - Gourmet Vanilla / 6 lb
+#190: 100% Mass Gainer - MuscleTech - Vanilla Milkshake / 5.15 lb
+#191: 100% Mass Gainer - MuscleTech - Chocolate Fudge Brownie / 5.15 lb
+#192: Serious Mass - Optimum Nutrition - Vanilla / 6 lb
+#193: Mass-Tech Extreme - MuscleTech - Vanilla / 6 lb
+#194: Mutant Mass Extreme 2500 - Vanilla / 6 lb
+#195: Isoflex - ALLMAX - Vanilla / 2 lb
+#196: Isoflex - ALLMAX - Chocolate / 2 lb
+#197: Isoflex - ALLMAX - Chocolate / 5 lb
+#198: IsoWhey - MuscleTech - Vanilla / 5 lb
+#199: Nitro-Tech - MuscleTech - Cookies & Cream / 4 lb
+#200: Nitro-Tech Whey Gold - MuscleTech - Vanilla Cream / 2 lb

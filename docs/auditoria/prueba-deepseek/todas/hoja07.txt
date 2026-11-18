@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #121 a #140 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#121: Klean Multivitamin - Klean Athlete - 60 tabletas
+#122: Klean Zinc - Klean Athlete - Natural Orange / 100 tabletas masticables
+#123: Klean Magnesium - Klean Athlete - 90 cápsulas vegetarianas
+#124: Klean Ashwagandha - Klean Athlete - 60 cápsulas
+#125: Klean Calcium (Citrate) - Klean Athlete - 120 cápsulas
+#126: Klean Melatonin - Klean Athlete - 50 ml / spray
+#127: Klean Creatine - Klean Athlete - 315 g / polvo
+#128: Klean Essential Aminos + HMB - Klean Athlete - Orange Cream / 30 servicios
+#129: Klean Isolate - Klean Athlete - Natural Vanilla / 516 g
+#130: Platinum Multi Vitamin - MuscleTech - 90 tabletas
+#131: Lipo-6 Hers Ultra Concentrate - Nutrex
+#132: Lipo-6 Diuretic - Nutrex - 80 cápsulas
+#133: Hydroxycut Hardcore Elite - MuscleTech - 100 cápsulas
+#134: Lipo-6 Nighttime - Nutrex - 30 cápsulas
+#135: Lipo-6 Black Ultra Concentrate - Nutrex
+#136: Lipo-6 Hardcore - Nutrex
+#137: Lipo-6 Intense Ultra Concentrate - Nutrex
+#138: Carnivor Beef Aminos - MuscleMeds - 300 tabletas
+#139: Feast Mode - MuscleMeds - 90 cápsulas
+#140: DIM Diindolylmethane - Force Factor - 30 cápsulas vegetarianas

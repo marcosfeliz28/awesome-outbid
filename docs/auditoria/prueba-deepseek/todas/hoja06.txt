@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #101 a #120 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#101: Creatine - Rule One - 240 cápsulas
+#102: Micronized Creatine Capsules - Optimum Nutrition - 200 cápsulas
+#103: Yohimbe Extract - Puritans Pride - 50 cápsulas
+#104: Yohimbine - Nutricost - 5 mg / 120 cápsulas
+#105: PhedraCut Advanced - USN - 60 cápsulas
+#106: BCAA 5000 Recovery - Nutrex - Fruit Punch / 30 servicios
+#107: The Jinx Hydra BCAA+ - JINX! - Lemon Lime / 300 g
+#108: The Jinx Hydra BCAA+ - JINX! - Blue Raspberry / 300 g
+#109: Amino Cuts - ALLMAX - Orange / 30 servicios
+#110: The Original 7 g BCAA - XTEND - Knockout Fruit Punch / 30 servicios
+#111: Best BCAA Pump - BPI Sports - Candy Land / 25 servicios
+#112: Amino X - BSN - Blue Raz / 30 servicios
+#113: Fish Oil - Luma Nutrition - 2,500 mg / 60 softgels
+#114: Omega-3 Fish Oil - Puritans Pride - 1,000 mg / 100 softgels
+#115: Vita Multi-Vitamin - JYM Supplement Science
+#116: Opti-Women - Optimum Nutrition - 120 cápsulas / 60 servicios
+#117: Plant Amino Power - BioSteel - Citrus Twist / 30 servicios
+#118: Plant Amino Power - BioSteel - Berry Fusion / 30 servicios
+#119: BCAA 5000 Recovery - Nutrex - Watermelon / 30 servicios
+#120: Klean B-Complex - Klean Athlete - 60 cápsulas vegetarianas

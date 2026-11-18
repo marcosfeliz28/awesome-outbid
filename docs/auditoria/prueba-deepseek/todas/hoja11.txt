@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #201 a #220 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#201: Nitro-Tech Whey Gold - MuscleTech - Vanilla Cream / 5 lb
+#202: Animal 100% Whey Protein - Vanilla
+#203: Carnivor Shred - MuscleMeds - Vanilla Caramel / 2 lb
+#204: Carnivor Shred - MuscleMeds - Vanilla Caramel / 3.8 lb
+#205: Muscle Milk Genuine - Cookies & Crème / 30.9 oz (875 g)
+#206: Muscle Milk Pro Series - Vanilla / 32 oz (2 lb)
+#207: Niacin - NOW - 500 mg / 250 tabletas
+#208: Gold Standard 100% Whey - Optimum Nutrition - Vanilla / 2 lb
+#209: Serious Mass - Optimum Nutrition - Vanilla / 4 lb
+#210: Serious Mass - Optimum Nutrition - Chocolate / 4 lb
+#211: Isoflex - ALLMAX - Vanilla / 5 lb
+#212: EAA Plus - RAW Nutrition - Icy Lemon Slush / 30 servicios
+#213: Omega-3 Fish Oil - Puritans Pride - 1,200 mg / 100 softgels
+#214: Vitamin K2+D3 - Bronson Basics - Envase blanco / 60 cápsulas
+#215: JYM Plus Pre-Workout - JYM Supplement Science - Fruit Punch Blast
+#216: Isopure Zero Carb - Creamy Vanilla / bolsa 16.4 oz (1.02 lb)
+#217: Creatine+ Enhanced 3-in-1 Formula - Optimum Nutrition - Orange Passion Fruit / 80 servicios
+#218: GLUTAMINA - MUSCLETECH - PRESENTACIÓN NO INDICADA
+#219: GOLD STANDARD 100% WHEY - OPTIMUM NUTRITION - STRAWBERRY / 2 LB
+#220: NITRO-TECH WHEY GOLD - MUSCLETECH - COOKIES & CREAM / 2 LB

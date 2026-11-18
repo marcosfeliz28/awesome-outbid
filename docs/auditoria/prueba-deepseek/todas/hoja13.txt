@@ -1,0 +1,19 @@
+Te mando una imagen con 17 fotos de productos numeradas #241 a #257 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#241: Essential Amino Energy - Optimum Nutrition - Blue Raspberry / 30 servicios
+#242: Essential Amino Energy + Hydration + Focus - Optimum Nutrition - Concord Grape / 30 servicios
+#243: CALM Magnesium Citrate - Natural Vitality - Watermelon / 8 oz (227 g)
+#244: CALM Magnesium Citrate - Natural Vitality - Sin sabor / 8 oz (227 g)
+#245: CALM Magnesium Citrate - Natural Vitality - Raspberry Lemon / 8 oz (227 g)
+#246: Creatine Monohydrate - Dymatize - 60 servicios / 300 g; unflavored
+#247: Creatine Monohydrate - Isopure - 100 servicios / 500 g; unflavored
+#248: Essentials Protein Powder - Isopure - Chocolate Mousse (peso por confirmar)
+#249: Magnesium Glycinate con B6 - Vitabod - 90 tabletas
+#250: Testosterone Booster Extreme Power - ASKA Nutrition - 60 cápsulas
+#251: L-Arginine Free Form - Puritans Pride - 1000 mg / 100 cápsulas
+#252: ISO100 Hydrolyzed - Dymatize - Cocoa Pebbles / 3 lb
+#253: ISO100 Hydrolyzed - Dymatize - Cinnamon Cereal / 1.34 lb
+#254: ISO100 Hydrolyzed - Dymatize - Fruity Pebbles / 1.34 lb
+#255: Carnivor Beef Protein Isolate - MuscleMeds - Vanilla Caramel / 3.9 lb
+#256: Isopure Zero Carb - Dutch Chocolate / 1 lb
+#257: Isopure Zero Carb - Strawberries & Cream / 3 lb

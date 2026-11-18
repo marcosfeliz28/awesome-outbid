@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #41 a #60 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#41: Potassium plus Iodine - NOW - 180 tabletas
+#42: Flush-Free Niacin - NOW - 250 mg / 90 cápsulas vegetales
+#43: Inositol - NOW - 500 mg / 100 cápsulas vegetales
+#44: Glycine - NOW - 1000 mg / 100 cápsulas vegetales
+#45: Choline & Inositol - NOW - 100 cápsulas vegetales
+#46: DHEA - Force Factor - 50 mg / 100 cápsulas vegetales
+#47: 5-HTP - Force Factor - 100 mg / 120 cápsulas vegetales
+#48: Selenium - Bronson Basics - 200 mcg / 250 tabletas vegetarianas
+#49: Boron (glycinate) - Pure Encapsulations - 60 cápsulas
+#50: Copper (glycinate) - Pure Encapsulations - 60 cápsulas
+#51: L-Theanine - Puritans Pride - 200 mg por servicio / 60 cápsulas
+#52: GABA - Puritans Pride - 750 mg / 90 cápsulas
+#53: Soy Lecithin - Puritans Pride - 520 mg / 100 softgels
+#54: Berberine - Puritans Pride - 500 mg / 60 cápsulas vegetales
+#55: Potassium Citrate - Puritans Pride - 99 mg / 100 tabletas
+#56: Turmeric - Puritans Pride - 800 mg / 100 cápsulas
+#57: Vitamin E - Puritans Pride - 450 mg / 50 softgels
+#58: Vitamin K2+D3 - Bronson Basics - Envase blanco / 120 cápsulas
+#59: Ultra Mega Biotin - Puritans Pride - 10,000 mcg / 100 softgels
+#60: Milk Thistle Extract - Puritans Pride - 1000 mg equivalentes / 30 softgels

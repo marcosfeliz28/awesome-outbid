@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #21 a #40 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#21: CLA 1000 - Nutrex - 1,000 mg / 90 softgels
+#22: Anabol Hardcore - Nutrex - 60 liqui-caps
+#23: Anabol Ripped - Nutrex - 60 liqui-caps
+#24: Anabol Nighttime - Nutrex - 60 cápsulas
+#25: Testrol Gold ES - GAT Sport - 60 tabletas
+#26: Mens Multi+Test Essentials - GAT Sport - 60 tabletas
+#27: L-Carnitine 3000 - Nutrex - Berry Blast / 31 serv.
+#28: ZM-Complex - Gaspari Nutrition - 90 cápsulas / 30 servicios
+#29: Magnesium Citrate - NOW - 120 cápsulas vegetales
+#30: C-1000 - NOW - 100 cápsulas vegetales
+#31: High Potency Selenium - Puritans Pride - 200 mcg / 250 tabletas
+#32: Zinc Picolinate - Puritans Pride - 25 mg / 100 caplets
+#33: C-500 con bioflavonoides y rosa mosqueta - Puritans Pride - 500 mg / 100 caplets
+#34: Methyl Folate - Jarrow Formulas - 400 mcg / 60 cápsulas vegetales
+#35: 100 Billion Probiotic - Natures Peak - 60 cápsulas
+#36: Triple Magnesium Complex - Flowing Health - Glicinato, malato y citrato
+#37: Kids Chewables Magnesium - California Gold Nutrition - Sabor cherry
+#38: Kids DHA Chewables - California Gold Nutrition - DHA de bacalao ártico
+#39: GABA - NOW - 500 mg / 100 cápsulas vegetales
+#40: Potassium Citrate - NOW - 99 mg / 180 cápsulas vegetales

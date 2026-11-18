@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #161 a #180 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#161: Isopure Zero Carb - Cookies & Cream / 3 lb
+#162: ISO100 Hydrolyzed - Dymatize - Gourmet Vanilla / 5 lb
+#163: ISO100 Hydrolyzed - Dymatize - Cookies & Cream / 5 lb
+#164: ISO100 Hydrolyzed - Dymatize - Fudge Brownie / 5 lb
+#165: ISO100 Hydrolyzed - Dymatize - Fruity Pebbles Birthday Cake / 5 lb
+#166: ISO100 Hydrolyzed - Dymatize - Strawberry / 1.34 lb
+#167: ISO100 Hydrolyzed - Dymatize - Vanilla / 1.34 lb
+#168: ISO100 Hydrolyzed - Dymatize - Gourmet Chocolate / 1.34 lb
+#169: ISO100 Hydrolyzed - Dymatize - Chocolate Peanut Butter / 1.34 lb
+#170: ISO100 Hydrolyzed - Dymatize - Dunkin Cappuccino / 1.34 lb
+#171: ISO100 Hydrolyzed - Dymatize - Dunkin Mocha Latte / 1.34 lb
+#172: ISO100 Hydrolyzed - Dymatize - Fruity Pebbles Birthday Cake / 1.34 lb
+#173: ISO100 Hydrolyzed - Dymatize - Gourmet Vanilla / 3 lb
+#174: ISO100 Hydrolyzed - Dymatize - Fruity Pebbles / 3 lb
+#175: Isopure Low Carb - Dutch Chocolate / 4.5 lb
+#176: Isopure Zero Carb - Creamy Vanilla / 3 lb
+#177: Isopure Low Carb - Dutch Chocolate / 3 lb
+#178: Isopure Zero Carb - Creamy Vanilla / 1 lb
+#179: Vegan Protein - Alpha - Vanilla Milkshake
+#180: Gold Standard 100% Isolate - Optimum Nutrition - Rich Vanilla / 2.91 lb

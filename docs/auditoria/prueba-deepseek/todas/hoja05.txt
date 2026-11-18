@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #81 a #100 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#81: Womens Probiotic Prebiotic - OMOGS - 90 billion CFUs, 18 strains / 90 tabletas
+#82: Micronized Creatine Powder - Optimum Nutrition - 60 servicios; unflavored
+#83: Platinum Creatine Monohydrate - MuscleTech - 80 servicios / 400 g; unflavored
+#84: Micronized Creatine Powder - Optimum Nutrition - 120 servicios; unflavored
+#85: Pro Series Creatine - Muscle Milk - 100 servicios / 500 g; unflavored
+#86: Creatine Monohydrate - Nutrex - 60 servicios; unflavored
+#87: Creatine Monohydrate - Forzagen - 72 servicios; unflavored
+#88: Essential Amino Energy - Optimum Nutrition - Concord Grape / 30 servicios
+#89: EAA+ Hydration - Nutrex - Strawberry Watermelon / 30 servicios
+#90: C4 Original Pre-Workout - Fruit Punch / 30 servicios
+#91: C4 Original Pre-Workout - Icy Blue Razz / 60 servicios
+#92: One More Rep - BPI Sports - Fruit Punch / 25 servicios
+#93: C4 Sport Certified - Blue Raspberry / 30 servicios
+#94: Gold Standard Pre-Workout - Optimum Nutrition - Blueberry Lemonade / 30 servicios
+#95: Outrage UltraStim Pre-Workout - Nutrex - Lemon Lime
+#96: Outrage UltraStim Pre-Workout - Nutrex - Fruit Punch
+#97: Gorilla Mode Pre-Workout - Fruit Punch / 40 servicios
+#98: CBUM Essential Pre-Workout - RAW Nutrition - Blue Raspberry / 30 servicios
+#99: CBUM Essential Pre-Workout - RAW Nutrition - Fruit Burst / 30 servicios
+#100: EAA Plus - RAW Nutrition - Watermelon Grape / 30 servicios

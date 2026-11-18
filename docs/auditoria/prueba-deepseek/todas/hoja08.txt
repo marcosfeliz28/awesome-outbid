@@ -1,0 +1,22 @@
+Te mando una imagen con 20 fotos de productos numeradas #141 a #160 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#141: Creatine 3000 Capsules - ALLMAX - 120 cápsulas
+#142: Collagen Peptides - Rule One - Vanilla Creme / 20 servicios / 230 g
+#143: EAA+ Hydration - Nutrex - Fruit Punch / 30 servicios
+#144: Syneburn - PrimaForce - 10 mg / 180 cápsulas
+#145: Creatine+ Enhanced 3-in-1 Formula - Optimum Nutrition - Strawberry Peach / 80 servicios
+#146: Creatine+ Enhanced 3-in-1 Formula - Optimum Nutrition - Orange Passion Fruit / 40 servicios
+#147: Cor-Performance Creatine - Cellucor - Blue Raspberry / 50 servicios
+#148: Cor-Performance Creatine - Cellucor - Unflavored / 72 servicios
+#149: Creatine - GAT Sport - Unflavored / 100 servicios / 500 g
+#150: Creatine Monohydrate - Nutrex - Unflavored / 400 servicios
+#151: Gold Standard 100% Whey - Optimum Nutrition - Naturally Flavored Vanilla / 2 lb
+#152: Gold Standard 100% Casein - Optimum Nutrition - Chocolate Supreme
+#153: Platinum HydroWhey - Optimum Nutrition - Velocity Vanilla
+#154: Animal Pak - 44 packs
+#155: IsoFit Protein - Nutrex - Vanilla Bean Ice Cream / 30 servicios
+#156: Cell-Tech Creatine - MuscleTech - Fruit Punch / 1.32 kg
+#157: Shaker negro - Color negro
+#158: Shaker transparente - Color transparente
+#159: Animal Isolate Loaded Whey Protein - Vanilla / 4 lb
+#160: Isopure Zero Carb - Banana Cream / 3 lb
