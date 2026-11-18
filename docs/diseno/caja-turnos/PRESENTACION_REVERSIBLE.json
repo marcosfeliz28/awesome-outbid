@@ -11,12 +11,253 @@
     },
     {
       "before": "render: (s) => {\n                  const expected = s.expectedCash ?? s.expected?.cash;",
-      "after": "render: (s) => {\n                  if (!canSeeExpected) return \"\u2014\";\n                  const expected = s.expectedCash ?? s.expected?.cash;"
+      "after": "render: (s) => {\n                  if (!canSeeExpected) return \"—\";\n                  const expected = s.expectedCash ?? s.expected?.cash;"
     },
     {
-      "before": "label: \"Diferencias por m\u00e9todo\",\n                render: (s) =>\n                  s.closedAt &&",
-      "after": "label: \"Diferencias por m\u00e9todo\",\n                render: (s) =>\n                  canSeeExpected &&\n                  s.closedAt &&"
+      "before": "label: \"Diferencias por método\",\n                render: (s) =>\n                  s.closedAt &&",
+      "after": "label: \"Diferencias por método\",\n                render: (s) =>\n                  canSeeExpected &&\n                  s.closedAt &&"
+    },
+    {
+      "before": "import { useLanguage } from \"./inicioLanguage\";\n",
+      "after": "import { useLanguage } from \"./inicioLanguage\";\nimport { inventoryText } from \"./inventoryLanguage\";\nimport { useInventoryAppearance } from \"./inventoryAppearance\";\nimport { InventoryProduct } from \"./InventoryProduct\";\nimport { InventoryAlerts } from \"./InventoryAlerts\";\nimport { InventoryMovements } from \"./InventoryMovements\";\nimport { InventorySummary } from \"./InventorySummary\";\nimport \"./fusion-inventory.css\";\n"
+    },
+    {
+      "before": "};\nfunction QueryState({ query, children }: { query: any; children: ReactNode }) {\n",
+      "after": "};\nfunction QueryState({ query, children, english = false }: { query: any; children: ReactNode; english?: boolean }) {\n"
+    },
+    {
+      "before": "    <BaseQueryState\n",
+      "after": "    <BaseQueryState\n      english={english}\n"
+    },
+    {
+      "before": "}\nfunction Kardex({ variantId }: { variantId: string }) {\n",
+      "after": "}\nfunction Kardex({ variantId, english = false }: { variantId: string; english?: boolean }) {\n  const t = (text: string) => inventoryText(text, english ? \"en\" : \"es\");\n"
+    },
+    {
+      "before": "  return (\n    <QueryState query={query}>\n",
+      "after": "  return (\n    <QueryState query={query} english={english}>\n"
+    },
+    {
+      "before": "        rows={query.data || []}\n",
+      "after": "        rows={query.data || []}\n        empty={english ? \"No stock movements\" : undefined}\n        emptyDescription={english ? \"Recorded movements will appear here.\" : undefined}\n"
+    },
+    {
+      "before": "        columns={[\n          { label: \"Fecha\", render: (m) => dateLabel(m.createdAt) },\n          { label: \"Tipo\", render: (m) => <Badge>{m.type}</Badge> },\n          { label: \"Cantidad\", render: (m) => m.qty },\n          { label: \"Saldo\", render: (m) => m.balanceAfter },\n          { label: \"Motivo\", render: (m) => m.reason },\n",
+      "after": "        columns={[\n          { label: t(\"Fecha\"), render: (m) => dateLabel(m.createdAt) },\n          { label: t(\"Tipo\"), render: (m) => <Badge>{m.type}</Badge> },\n          { label: t(\"Cantidad\"), render: (m) => m.qty },\n          { label: t(\"Saldo\"), render: (m) => m.balanceAfter },\n          { label: t(\"Motivo\"), render: (m) => m.reason },\n"
+    },
+    {
+      "before": "export function Inventory() {\n",
+      "after": "export function Inventory() {\n  useInventoryAppearance();\n  const inventoryLanguage = useLanguage();\n  const translateInventory = (text: string) => inventoryText(text, inventoryLanguage);\n"
+    },
+    {
+      "before": "  return (\n    <>\n",
+      "after": "  return (\n    <section className=\"fusion-inventory\" aria-label={translateInventory(\"Inventario\")}>\n"
+    },
+    {
+      "before": "      <Heading\n        title=\"Cada unidad, bajo control\"\n        caption=\"El inventario correcto hace espacio para mejores decisiones.\"\n",
+      "after": "      <Heading\n        eyebrow={inventoryLanguage === \"en\" ? \"YOUR BUSINESS, WITH CLARITY\" : \"TU NEGOCIO, CON CLARIDAD\"}\n        title={translateInventory(\"Cada unidad, bajo control\")}\n        caption={translateInventory(\"El inventario correcto hace espacio para mejores decisiones.\")}\n"
+    },
+    {
+      "before": "      />\n",
+      "after": "      />\n      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === \"stock\" && (\n        <InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} scope={selectedWarehouse?.name || (inventoryLanguage === \"en\" ? \"In store\" : \"En Tienda\")} />\n      )}\n"
+    },
+    {
+      "before": "      <div className=\"panel\">\n        <label htmlFor=\"warehouse-view\">Almacén</label>\n",
+      "after": "      <div className=\"panel\">\n        <label htmlFor=\"warehouse-view\">{translateInventory(\"Almacén\")}</label>\n"
+    },
+    {
+      "before": "        >\n          <option value=\"all\">Todos</option>\n",
+      "after": "        >\n          <option value=\"all\">{translateInventory(\"Todos\")}</option>\n"
+    },
+    {
+      "before": "            >\n              Stock actual\n",
+      "after": "            >\n              {translateInventory(\"Stock actual\")}\n"
+    },
+    {
+      "before": "            >\n              Conteos físicos\n",
+      "after": "            >\n              {translateInventory(\"Conteos físicos\")}\n"
+    },
+    {
+      "before": "            onChange={setSearch}\n            placeholder=\"Buscar producto o código\"\n",
+      "after": "            onChange={setSearch}\n            placeholder={translateInventory(\"Buscar producto o código\")}\n"
+    },
+    {
+      "before": "        </div>\n        <QueryState query={query}>\n",
+      "after": "        </div>\n        <QueryState query={query} english={inventoryLanguage === \"en\"}>\n"
+    },
+    {
+      "before": "              rows={rows}\n              empty=\"No encontramos artículos en el inventario\"\n              emptyDescription=\"Revisa la búsqueda o registra una entrada de mercancía.\"\n",
+      "after": "              rows={rows}\n              empty={translateInventory(\"No encontramos artículos en el inventario\")}\n              emptyDescription={translateInventory(\"Revisa la búsqueda o registra una entrada de mercancía.\")}\n"
+    },
+    {
+      "before": "                {\n                  label: \"Producto / Variante\",\n",
+      "after": "                {\n                  label: translateInventory(\"Producto / Variante\"),\n"
+    },
+    {
+      "before": "                  render: (v) => (\n                    <span>\n                      <strong>{v.product.name}</strong>\n",
+      "after": "                  render: (v) => (\n                    <InventoryProduct name={v.product.name} image={v.product.imageUrl}>\n"
+    },
+    {
+      "before": "                      <small>\n                        {v.sku} · {attrLabel(v.attributes)}\n",
+      "after": "                      <small>\n                        {v.sku} · {attrLabel(v.attributes, inventoryLanguage === \"en\" ? \"Standard variant\" : \"Única\")}\n"
+    },
+    {
+      "before": "                      </small>\n                    </span>\n",
+      "after": "                      </small>\n                    </InventoryProduct>\n"
+    },
+    {
+      "before": "                },\n                { label: \"Precio\", render: (v) => formatMoney(v.price) },\n",
+      "after": "                },\n                { label: translateInventory(\"Precio\"), render: (v) => formatMoney(v.price) },\n"
+    },
+    {
+      "before": "                      {\n                        label: \"Costo\",\n",
+      "after": "                      {\n                        label: translateInventory(\"Costo\"),\n"
+    },
+    {
+      "before": "                  label: selectedWarehouse\n                    ? \"En \" + selectedWarehouse.name\n                    : \"En Tienda\",\n",
+      "after": "                  label: selectedWarehouse\n                    ? (inventoryLanguage === \"en\" ? \"In \" : \"En \") + selectedWarehouse.name\n                    : translateInventory(\"En Tienda\"),\n"
+    },
+    {
+      "before": "                },\n                { label: \"Total\", render: (v) => v.totalStock },\n",
+      "after": "                },\n                { label: translateInventory(\"Total\"), render: (v) => v.totalStock },\n"
+    },
+    {
+      "before": "                {\n                  label: \"Lote en Tienda\",\n",
+      "after": "                {\n                  label: translateInventory(\"Lote en Tienda\"),\n"
+    },
+    {
+      "before": "                    v.lots.find((l: any) => Number(l.qty) > 0)?.lotNumber ||\n                    \"Sin lote\",\n",
+      "after": "                    v.lots.find((l: any) => Number(l.qty) > 0)?.lotNumber ||\n                    translateInventory(\"Sin lote\"),\n"
+    },
+    {
+      "before": "                {\n                  label: \"Vencimiento\",\n",
+      "after": "                {\n                  label: translateInventory(\"Vencimiento\"),\n"
+    },
+    {
+      "before": "                      )[0];\n                    return lot ? dateLabel(lot.expiryDate) : \"No aplica\";\n",
+      "after": "                      )[0];\n                    return lot ? dateLabel(lot.expiryDate) : translateInventory(\"No aplica\");\n"
+    },
+    {
+      "before": "                {\n                  label: \"Acciones\",\n",
+      "after": "                {\n                  label: translateInventory(\"Acciones\"),\n"
+    },
+    {
+      "before": "                      >\n                        Ajustar\n",
+      "after": "                      >\n                        {translateInventory(\"Ajustar\")}\n"
+    },
+    {
+      "before": "                      <button className=\"text-link\" onClick={() => setCount(v)}>\n                        Contar\n",
+      "after": "                      <button className=\"text-link\" onClick={() => setCount(v)}>\n                        {translateInventory(\"Contar\")}\n"
+    },
+    {
+      "before": "                        onClick={() => setKardex(v)}\n                        aria-label={\"Kardex de \" + v.product.name}\n",
+      "after": "                        onClick={() => setKardex(v)}\n                        aria-label={(inventoryLanguage === \"en\" ? \"Stock ledger for \" : \"Kardex de \") + v.product.name}\n"
+    },
+    {
+      "before": "          ) : (\n            <QueryState query={counts}>\n",
+      "after": "          ) : (\n            <QueryState query={counts} english={inventoryLanguage === \"en\"}>\n"
+    },
+    {
+      "before": "                rows={counts.data || []}\n                empty=\"Todavía no hay conteos físicos\"\n                emptyDescription=\"Pulsa Contar junto a un artículo para registrar su existencia real.\"\n",
+      "after": "                rows={counts.data || []}\n                empty={translateInventory(\"Todavía no hay conteos físicos\")}\n                emptyDescription={translateInventory(\"Pulsa Contar junto a un artículo para registrar su existencia real.\")}\n"
+    },
+    {
+      "before": "                columns={[\n                  { label: \"Fecha\", render: (c) => dateLabel(c.createdAt) },\n                  { label: \"Artículos\", render: (c) => c.items.length },\n",
+      "after": "                columns={[\n                  { label: translateInventory(\"Fecha\"), render: (c) => dateLabel(c.createdAt) },\n                  { label: translateInventory(\"Artículos\"), render: (c) => c.items.length },\n"
+    },
+    {
+      "before": "                  {\n                    label: \"Estado\",\n",
+      "after": "                  {\n                    label: translateInventory(\"Estado\"),\n"
+    },
+    {
+      "before": "                      >\n                        {c.status === \"applied\" ? \"Aplicado\" : \"Pendiente\"}\n",
+      "after": "                      >\n                        {c.status === \"applied\" ? translateInventory(\"Aplicado\") : translateInventory(\"Pendiente\")}\n"
+    },
+    {
+      "before": "                  {\n                    label: \"Acción\",\n",
+      "after": "                  {\n                    label: translateInventory(\"Acción\"),\n"
+    },
+    {
+      "before": "                        >\n                          Aprobar ajuste\n",
+      "after": "                        >\n                          {translateInventory(\"Aprobar ajuste\")}\n"
+    },
+    {
+      "before": "      </div>\n",
+      "after": "      </div>\n      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === \"stock\" && (\n        <div className=\"inventory-insights\">\n          <InventoryAlerts rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} scope={selectedWarehouse?.name || (inventoryLanguage === \"en\" ? \"In store\" : \"En Tienda\")} onInspect={setKardex} />\n          <InventoryMovements en={inventoryLanguage === \"en\"} />\n        </div>\n      )}\n"
+    },
+    {
+      "before": "        <FormModal\n          title={\"Ajustar · \" + adjust.product.name}\n",
+      "after": "        <FormModal\n          english={inventoryLanguage === \"en\"}\n          title={translateInventory(\"Ajustar\") + \" · \" + adjust.product.name}\n"
+    },
+    {
+      "before": "              key: \"warehouseId\",\n              label: \"Almacén\",\n",
+      "after": "              key: \"warehouseId\",\n              label: translateInventory(\"Almacén\"),\n"
+    },
+    {
+      "before": "            {\n              ...requiredNumber(\"qty\", \"Cantidad (+ entrada / − salida)\"),\n",
+      "after": "            {\n              ...requiredNumber(\"qty\", translateInventory(\"Cantidad (+ entrada / − salida)\")),\n"
+    },
+    {
+      "before": "              key: \"type\",\n              label: \"Tipo\",\n",
+      "after": "              key: \"type\",\n              label: translateInventory(\"Tipo\"),\n"
+    },
+    {
+      "before": "              options: [\n                { label: \"Ajuste\", value: \"adjustment\" },\n                { label: \"Merma\", value: \"waste\" },\n                { label: \"Devolución a proveedor\", value: \"supplier_return\" },\n",
+      "after": "              options: [\n                { label: translateInventory(\"Ajuste\"), value: \"adjustment\" },\n                { label: translateInventory(\"Merma\"), value: \"waste\" },\n                { label: translateInventory(\"Devolución a proveedor\"), value: \"supplier_return\" },\n"
+    },
+    {
+      "before": "              key: \"supplierId\",\n              label: \"Proveedor (solo en devolución a proveedor)\",\n",
+      "after": "              key: \"supplierId\",\n              label: translateInventory(\"Proveedor (solo en devolución a proveedor)\"),\n"
+    },
+    {
+      "before": "              label:\n                \"Referencia de la devolución (documento o nota de crédito)\",\n",
+      "after": "              label:\n                translateInventory(\"Referencia de la devolución (documento o nota de crédito)\"),\n"
+    },
+    {
+      "before": "              key: \"lotId\",\n              label: \"Lote de salida\",\n",
+      "after": "              key: \"lotId\",\n              label: translateInventory(\"Lote de salida\"),\n"
+    },
+    {
+      "before": "              options: adjust.lots.map((l: any) => ({\n                label: l.lotNumber + \" · \" + l.qty + \" unidades\",\n",
+      "after": "              options: adjust.lots.map((l: any) => ({\n                label: l.lotNumber + \" · \" + l.qty + \" \" + translateInventory(\"unidades\"),\n"
+    },
+    {
+      "before": "            },\n            { key: \"lotNumber\", label: \"Lote de entrada\" },\n",
+      "after": "            },\n            { key: \"lotNumber\", label: translateInventory(\"Lote de entrada\") },\n"
+    },
+    {
+      "before": "              key: \"expiryDate\",\n              label: \"Vencimiento de entrada\",\n",
+      "after": "              key: \"expiryDate\",\n              label: translateInventory(\"Vencimiento de entrada\"),\n"
+    },
+    {
+      "before": "              key: \"reason\",\n              label: \"Motivo\",\n",
+      "after": "              key: \"reason\",\n              label: translateInventory(\"Motivo\"),\n"
+    },
+    {
+      "before": "        <FormModal\n          title={\"Conteo físico · \" + count.product.name}\n",
+      "after": "        <FormModal\n          english={inventoryLanguage === \"en\"}\n          title={translateInventory(\"Conteo físico\") + \" · \" + count.product.name}\n"
+    },
+    {
+      "before": "              key: \"warehouseId\",\n              label: \"Almacén\",\n",
+      "after": "              key: \"warehouseId\",\n              label: translateInventory(\"Almacén\"),\n"
+    },
+    {
+      "before": "              \"counted\",\n              \"Cantidad contada\",\n",
+      "after": "              \"counted\",\n              translateInventory(\"Cantidad contada\"),\n"
+    },
+    {
+      "before": "        onClose={() => setKardex(null)}\n        title={\"Kardex · \" + (kardex?.product.name || \"\")}\n",
+      "after": "        onClose={() => setKardex(null)}\n        title={(inventoryLanguage === \"en\" ? \"Stock ledger · \" : \"Kardex · \") + (kardex?.product.name || \"\")}\n"
+    },
+    {
+      "before": "      >\n        {kardex && <Kardex variantId={kardex.id} />}\n",
+      "after": "      >\n        {kardex && <Kardex variantId={kardex.id} english={inventoryLanguage === \"en\"} />}\n"
+    },
+    {
+      "before": "      </Modal>\n    </>\n",
+      "after": "      </Modal>\n    </section>\n"
     }
   ],
-  "base_commit": "0ed250e501bb04c13156776973fb1c446906f9e7"
+  "base_commit": "0ed250e501bb04c13156776973fb1c446906f9e7",
+  "integration_note": "Inventory presentation layered over exact Caja tree0559703c; reversing all edits restores unchanged original0ed hash. Cash and SalesHistory byte-identical."
 }

@@ -70,11 +70,11 @@ export function Empty({
     </div>
   );
 }
-export function Loading() {
+export function Loading({ label = "Cargando datos…" }: { label?: string } = {}) {
   return (
     <div className="loading" role="status">
       <LoaderCircle className="spin" />
-      <span>Cargando datos…</span>
+      <span>{label}</span>
       <div className="loading-skeleton" aria-hidden="true">
         <i />
         <i />

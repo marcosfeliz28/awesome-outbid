@@ -1,5 +1,12 @@
 import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
+import { inventoryText } from "./inventoryLanguage";
+import { useInventoryAppearance } from "./inventoryAppearance";
+import { InventoryProduct } from "./InventoryProduct";
+import { InventoryAlerts } from "./InventoryAlerts";
+import { InventoryMovements } from "./InventoryMovements";
+import { InventorySummary } from "./InventorySummary";
+import "./fusion-inventory.css";
 import {
   CashElsewhere,
   Equipment,
@@ -106,9 +113,10 @@ type Column = {
   render: (row: any) => ReactNode;
   className?: string;
 };
-function QueryState({ query, children }: { query: any; children: ReactNode }) {
+function QueryState({ query, children, english = false }: { query: any; children: ReactNode; english?: boolean }) {
   return (
     <BaseQueryState
+      english={english}
       query={
         query.error
           ? { ...query, error: { message: managementQueryError(query.error) } }
@@ -785,21 +793,24 @@ export function Barcode({ value }: { value: string }) {
     </svg>
   );
 }
-function Kardex({ variantId }: { variantId: string }) {
+function Kardex({ variantId, english = false }: { variantId: string; english?: boolean }) {
+  const t = (text: string) => inventoryText(text, english ? "en" : "es");
   const query = useQuery({
     queryKey: ["movements", variantId],
     queryFn: () => api("/inventory/movements?variantId=" + variantId),
   });
   return (
-    <QueryState query={query}>
+    <QueryState query={query} english={english}>
       <DataTable
         rows={query.data || []}
+        empty={english ? "No stock movements" : undefined}
+        emptyDescription={english ? "Recorded movements will appear here." : undefined}
         columns={[
-          { label: "Fecha", render: (m) => dateLabel(m.createdAt) },
-          { label: "Tipo", render: (m) => <Badge>{m.type}</Badge> },
-          { label: "Cantidad", render: (m) => m.qty },
-          { label: "Saldo", render: (m) => m.balanceAfter },
-          { label: "Motivo", render: (m) => m.reason },
+          { label: t("Fecha"), render: (m) => dateLabel(m.createdAt) },
+          { label: t("Tipo"), render: (m) => <Badge>{m.type}</Badge> },
+          { label: t("Cantidad"), render: (m) => m.qty },
+          { label: t("Saldo"), render: (m) => m.balanceAfter },
+          { label: t("Motivo"), render: (m) => m.reason },
         ]}
       />
     </QueryState>
@@ -807,6 +818,9 @@ function Kardex({ variantId }: { variantId: string }) {
 }
 
 export function Inventory() {
+  useInventoryAppearance();
+  const inventoryLanguage = useLanguage();
+  const translateInventory = (text: string) => inventoryText(text, inventoryLanguage);
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
   const query = useQuery({
@@ -862,22 +876,26 @@ export function Inventory() {
       .includes(search.toLowerCase()),
   );
   return (
-    <>
+    <section className="fusion-inventory" aria-label={translateInventory("Inventario")}>
       <Heading
-        title="Cada unidad, bajo control"
-        caption="El inventario correcto hace espacio para mejores decisiones."
+        eyebrow={inventoryLanguage === "en" ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={translateInventory("Cada unidad, bajo control")}
+        caption={translateInventory("El inventario correcto hace espacio para mejores decisiones.")}
       />
+      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === "stock" && (
+        <InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} />
+      )}
       {user.role !== "seller" && can(user.permissions, "profit:read") && (
         <WithoutCostCard />
       )}
       <div className="panel">
-        <label htmlFor="warehouse-view">Almacén</label>
+        <label htmlFor="warehouse-view">{translateInventory("Almacén")}</label>
         <select
           id="warehouse-view"
           value={warehouseView}
           onChange={(e) => setWarehouseView(e.target.value)}
         >
-          <option value="all">Todos</option>
+          <option value="all">{translateInventory("Todos")}</option>
           {(warehouses.data || []).map((w: any) => (
             <option key={w.id} value={w.id}>
               {w.name}
@@ -890,52 +908,51 @@ export function Inventory() {
               className={mode === "stock" ? "active" : ""}
               onClick={() => setMode("stock")}
             >
-              Stock actual
+              {translateInventory("Stock actual")}
             </button>
             <button
               className={mode === "counts" ? "active" : ""}
               onClick={() => setMode("counts")}
             >
-              Conteos físicos
+              {translateInventory("Conteos físicos")}
             </button>
           </div>
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar producto o código"
+            placeholder={translateInventory("Buscar producto o código")}
           />
         </div>
-        <QueryState query={query}>
+        <QueryState query={query} english={inventoryLanguage === "en"}>
           {mode === "stock" ? (
             <DataTable
               rows={rows}
-              empty="No encontramos artículos en el inventario"
-              emptyDescription="Revisa la búsqueda o registra una entrada de mercancía."
+              empty={translateInventory("No encontramos artículos en el inventario")}
+              emptyDescription={translateInventory("Revisa la búsqueda o registra una entrada de mercancía.")}
               columns={[
                 {
-                  label: "Producto / Variante",
+                  label: translateInventory("Producto / Variante"),
                   render: (v) => (
-                    <span>
-                      <strong>{v.product.name}</strong>
+                    <InventoryProduct name={v.product.name} image={v.product.imageUrl}>
                       <small>
-                        {v.sku} · {attrLabel(v.attributes)}
+                        {v.sku} · {attrLabel(v.attributes, inventoryLanguage === "en" ? "Standard variant" : "Única")}
                       </small>
-                    </span>
+                    </InventoryProduct>
                   ),
                 },
-                { label: "Precio", render: (v) => formatMoney(v.price) },
+                { label: translateInventory("Precio"), render: (v) => formatMoney(v.price) },
                 ...(can(user.permissions, "profit:read")
                   ? [
                       {
-                        label: "Costo",
+                        label: translateInventory("Costo"),
                         render: (v: any) => formatMoney(v.costAvg),
                       },
                     ]
                   : []),
                 {
                   label: selectedWarehouse
-                    ? "En " + selectedWarehouse.name
-                    : "En Tienda",
+                    ? (inventoryLanguage === "en" ? "In " : "En ") + selectedWarehouse.name
+                    : translateInventory("En Tienda"),
                   render: (v) => (
                     <Badge
                       tone={
@@ -950,15 +967,15 @@ export function Inventory() {
                     </Badge>
                   ),
                 },
-                { label: "Total", render: (v) => v.totalStock },
+                { label: translateInventory("Total"), render: (v) => v.totalStock },
                 {
-                  label: "Lote en Tienda",
+                  label: translateInventory("Lote en Tienda"),
                   render: (v) =>
                     v.lots.find((l: any) => Number(l.qty) > 0)?.lotNumber ||
-                    "Sin lote",
+                    translateInventory("Sin lote"),
                 },
                 {
-                  label: "Vencimiento",
+                  label: translateInventory("Vencimiento"),
                   render: (v) => {
                     const lot = v.lots
                       .filter((l: any) => Number(l.qty) > 0 && l.expiryDate)
@@ -966,25 +983,25 @@ export function Inventory() {
                         (a: any, b: any) =>
                           +new Date(a.expiryDate) - +new Date(b.expiryDate),
                       )[0];
-                    return lot ? dateLabel(lot.expiryDate) : "No aplica";
+                    return lot ? dateLabel(lot.expiryDate) : translateInventory("No aplica");
                   },
                 },
                 {
-                  label: "Acciones",
+                  label: translateInventory("Acciones"),
                   render: (v) => (
                     <div className="table-actions">
                       <button
                         className="text-link"
                         onClick={() => setAdjust(v)}
                       >
-                        Ajustar
+                        {translateInventory("Ajustar")}
                       </button>
                       <button className="text-link" onClick={() => setCount(v)}>
-                        Contar
+                        {translateInventory("Contar")}
                       </button>
                       <button
                         onClick={() => setKardex(v)}
-                        aria-label={"Kardex de " + v.product.name}
+                        aria-label={(inventoryLanguage === "en" ? "Stock ledger for " : "Kardex de ") + v.product.name}
                       >
                         <Eye size={17} />
                       </button>
@@ -994,26 +1011,26 @@ export function Inventory() {
               ]}
             />
           ) : (
-            <QueryState query={counts}>
+            <QueryState query={counts} english={inventoryLanguage === "en"}>
               <DataTable
                 rows={counts.data || []}
-                empty="Todavía no hay conteos físicos"
-                emptyDescription="Pulsa Contar junto a un artículo para registrar su existencia real."
+                empty={translateInventory("Todavía no hay conteos físicos")}
+                emptyDescription={translateInventory("Pulsa Contar junto a un artículo para registrar su existencia real.")}
                 columns={[
-                  { label: "Fecha", render: (c) => dateLabel(c.createdAt) },
-                  { label: "Artículos", render: (c) => c.items.length },
+                  { label: translateInventory("Fecha"), render: (c) => dateLabel(c.createdAt) },
+                  { label: translateInventory("Artículos"), render: (c) => c.items.length },
                   {
-                    label: "Estado",
+                    label: translateInventory("Estado"),
                     render: (c) => (
                       <Badge
                         tone={c.status === "applied" ? "success" : "warning"}
                       >
-                        {c.status === "applied" ? "Aplicado" : "Pendiente"}
+                        {c.status === "applied" ? translateInventory("Aplicado") : translateInventory("Pendiente")}
                       </Badge>
                     ),
                   },
                   {
-                    label: "Acción",
+                    label: translateInventory("Acción"),
                     render: (c) =>
                       c.status === "pending" &&
                       can(user.permissions, "sale:manage") && (
@@ -1035,7 +1052,7 @@ export function Inventory() {
                             }
                           }}
                         >
-                          Aprobar ajuste
+                          {translateInventory("Aprobar ajuste")}
                         </Button>
                       ),
                   },
@@ -1045,14 +1062,21 @@ export function Inventory() {
           )}
         </QueryState>
       </div>
+      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === "stock" && (
+        <div className="inventory-insights">
+          <InventoryAlerts rows={rows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} onInspect={setKardex} />
+          <InventoryMovements en={inventoryLanguage === "en"} />
+        </div>
+      )}
       <WarehousesPanel rows={rows} warehouseId={warehouseView} />
       {adjust && (
         <FormModal
-          title={"Ajustar · " + adjust.product.name}
+          english={inventoryLanguage === "en"}
+          title={translateInventory("Ajustar") + " · " + adjust.product.name}
           fields={[
             {
               key: "warehouseId",
-              label: "Almacén",
+              label: translateInventory("Almacén"),
               type: "select",
               required: true,
               initial: countWarehouseId,
@@ -1062,24 +1086,24 @@ export function Inventory() {
               })),
             },
             {
-              ...requiredNumber("qty", "Cantidad (+ entrada / − salida)"),
+              ...requiredNumber("qty", translateInventory("Cantidad (+ entrada / − salida)")),
               min: -100000,
               initial: 1,
             },
             {
               key: "type",
-              label: "Tipo",
+              label: translateInventory("Tipo"),
               type: "select",
               initial: "adjustment",
               options: [
-                { label: "Ajuste", value: "adjustment" },
-                { label: "Merma", value: "waste" },
-                { label: "Devolución a proveedor", value: "supplier_return" },
+                { label: translateInventory("Ajuste"), value: "adjustment" },
+                { label: translateInventory("Merma"), value: "waste" },
+                { label: translateInventory("Devolución a proveedor"), value: "supplier_return" },
               ],
             },
             {
               key: "supplierId",
-              label: "Proveedor (solo en devolución a proveedor)",
+              label: translateInventory("Proveedor (solo en devolución a proveedor)"),
               type: "select",
               options: (adjustSuppliers.data || []).map((x: any) => ({
                 label: x.name,
@@ -1089,26 +1113,26 @@ export function Inventory() {
             {
               key: "reference",
               label:
-                "Referencia de la devolución (documento o nota de crédito)",
+                translateInventory("Referencia de la devolución (documento o nota de crédito)"),
             },
             {
               key: "lotId",
-              label: "Lote de salida",
+              label: translateInventory("Lote de salida"),
               type: "select",
               options: adjust.lots.map((l: any) => ({
-                label: l.lotNumber + " · " + l.qty + " unidades",
+                label: l.lotNumber + " · " + l.qty + " " + translateInventory("unidades"),
                 value: l.id,
               })),
             },
-            { key: "lotNumber", label: "Lote de entrada" },
+            { key: "lotNumber", label: translateInventory("Lote de entrada") },
             {
               key: "expiryDate",
-              label: "Vencimiento de entrada",
+              label: translateInventory("Vencimiento de entrada"),
               type: "date",
             },
             {
               key: "reason",
-              label: "Motivo",
+              label: translateInventory("Motivo"),
               required: true,
               type: "textarea",
             },
@@ -1137,11 +1161,12 @@ export function Inventory() {
       )}
       {count && (
         <FormModal
-          title={"Conteo físico · " + count.product.name}
+          english={inventoryLanguage === "en"}
+          title={translateInventory("Conteo físico") + " · " + count.product.name}
           fields={[
             {
               key: "warehouseId",
-              label: "Almacén",
+              label: translateInventory("Almacén"),
               type: "select",
               required: true,
               initial:
@@ -1156,7 +1181,7 @@ export function Inventory() {
             },
             requiredNumber(
               "counted",
-              "Cantidad contada",
+              translateInventory("Cantidad contada"),
               stockAtWarehouse(count, countWarehouseId),
             ),
           ]}
@@ -1177,12 +1202,12 @@ export function Inventory() {
       <Modal
         open={!!kardex}
         onClose={() => setKardex(null)}
-        title={"Kardex · " + (kardex?.product.name || "")}
+        title={(inventoryLanguage === "en" ? "Stock ledger · " : "Kardex · ") + (kardex?.product.name || "")}
         wide
       >
-        {kardex && <Kardex variantId={kardex.id} />}
+        {kardex && <Kardex variantId={kardex.id} english={inventoryLanguage === "en"} />}
       </Modal>
-    </>
+    </section>
   );
 }
 
