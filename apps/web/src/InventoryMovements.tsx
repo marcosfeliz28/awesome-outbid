@@ -128,7 +128,7 @@ export function InventoryMovements({ en }: { en: boolean }) {
                     {Number.isNaN(date.getTime()) ? "—" : dates.format(date)}
                   </time>
                 </div>
-                <span className="inventory-movement-qty">
+                <span className="inventory-movement-qty" data-direction={qty === null || qty === 0 ? "neutral" : qty > 0 ? "incoming" : "outgoing"}>
                   {qty === null ? "—" : formatter.format(qty)}
                 </span>
               </li>

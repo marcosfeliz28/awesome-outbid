@@ -72,7 +72,7 @@ export function InventoryAlerts({
           </p>
           <ul>
             {alerts.slice(0, 5).map(({ row, raw, minimum }, index) => (
-              <li key={row.id || row.sku || index}>
+              <li key={row.id || row.sku || index} data-stock-tone={Number(raw) <= 0 ? "empty" : "low"}>
                 <div>
                   <strong>{row.product?.name}</strong>
                   <small>
