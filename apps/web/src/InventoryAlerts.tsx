@@ -66,7 +66,9 @@ export function InventoryAlerts({
         <>
           <p>
             {alerts.length}{" "}
-            {en ? "variants to review" : "variantes por revisar"}
+            {en
+              ? alerts.length === 1 ? "variant to review" : "variants to review"
+              : alerts.length === 1 ? "variante por revisar" : "variantes por revisar"}
           </p>
           <ul>
             {alerts.slice(0, 5).map(({ row, raw, minimum }, index) => (

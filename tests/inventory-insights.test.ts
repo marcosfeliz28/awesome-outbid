@@ -26,3 +26,9 @@ it("loads bounded permission-scoped history without polling or writes", () => {
   expect(s).toContain("query.data.slice(0, 5)");
   expect(s).not.toMatch(/\bpost\(/);
 });
+
+it("keeps mobile product identity full width beside its image", () => {
+  const css = readFileSync("apps/web/src/fusion-inventory.css", "utf8");
+  expect(css).toMatch(/td:has\(\.inventory-product\)\s*\{[^}]*flex-direction: column/);
+  expect(css).toMatch(/td:has\(\.inventory-product\)::before\s*\{[^}]*width: 100%/);
+});

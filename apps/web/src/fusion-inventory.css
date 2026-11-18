@@ -584,3 +584,22 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+/* Keep the mobile catalog identity full-width, not squeezed beside a 38% label. */
+@media (max-width: 600px) {
+  .fusion-inventory td:has(.inventory-product) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .fusion-inventory td:has(.inventory-product)::before {
+    flex: none;
+    width: 100%;
+  }
+  .inventory-product > div:last-child {
+    min-width: 0;
+    flex: 1;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+}
