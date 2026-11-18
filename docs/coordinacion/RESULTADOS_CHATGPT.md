@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · antetítulo en Reportes y ensayos de capturas
+
+- **Candidato y evidencia.** `dot/15areas-sobre-prod-18nov` en `f5cb900a82cabbd81b66420714994600eec9dd94`. Rama `chatgpt-pc/capturas-dot-f5cb900a` desde `dcf61af2`. [Informe, cuatro capturas y mediciones](../capturas/reportes-f5cb900a/LECTURA.md).
+- **Reportes.** 8/8 escenarios muestran el antetítulo correcto en español e inglés, en una línea y sin desborde a 1440 y 390 px. La navegación de lectura al reporte de Cierres y diferencias pasó. Cero escrituras y procesos cerrados.
+- **Ensayos.** El de 15 pantallas falla en el paso de captura, con código 1 y sin detalle público. El selectivo pasa los 32 casos de Asistente, GV, Incentivos y Configuración. Los artefactos requieren acceso autenticado.
+- **Fotos y CI.** El candidato mantiene 316 fotos y está por detrás de las dos incorporaciones Adidas de la base de 318. API idéntica. Pasaron 5/5 focales, instalador, imágenes y `pnpm check`. `verify` se canceló al avanzar la rama a `81f31094`. [CI candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44358877340).
+- **Siguiente entrega.** Preservar las dos fotos, resolver el foco y entregar los casos por pantalla y el primer fallo concreto del ensayo general.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

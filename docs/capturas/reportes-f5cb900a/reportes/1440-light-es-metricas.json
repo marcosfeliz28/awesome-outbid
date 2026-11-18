@@ -1,0 +1,35 @@
+{
+  "scenario": {
+    "width": 1440,
+    "height": 1000,
+    "theme": "light",
+    "language": "es",
+    "capture": true
+  },
+  "metrics": {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "documentWidth": 1440,
+    "text": "TU NEGOCIO, CON CLARIDAD",
+    "box": {
+      "x": 351.1875,
+      "y": 110,
+      "width": 249.828125,
+      "height": 17,
+      "top": 110,
+      "right": 601.015625,
+      "bottom": 127,
+      "left": 351.1875
+    },
+    "lines": 1,
+    "fontSize": "14px",
+    "letterSpacing": "1.96px",
+    "color": "rgb(18, 101, 78)"
+  },
+  "navigation": {
+    "selectedReportTitle": "Cierres y diferencias"
+  },
+  "writes": []
+}

@@ -1,0 +1,35 @@
+{
+  "scenario": {
+    "width": 1440,
+    "height": 1000,
+    "theme": "light",
+    "language": "en",
+    "capture": false
+  },
+  "metrics": {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "documentWidth": 1440,
+    "text": "YOUR BUSINESS, WITH CLARITY",
+    "box": {
+      "x": 351.1875,
+      "y": 110,
+      "width": 277.625,
+      "height": 17,
+      "top": 110,
+      "right": 628.8125,
+      "bottom": 127,
+      "left": 351.1875
+    },
+    "lines": 1,
+    "fontSize": "14px",
+    "letterSpacing": "1.96px",
+    "color": "rgb(18, 101, 78)"
+  },
+  "navigation": {
+    "selectedReportTitle": "Closings and discrepancies"
+  },
+  "writes": []
+}

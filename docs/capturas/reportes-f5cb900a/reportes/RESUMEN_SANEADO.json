@@ -1,0 +1,55 @@
+{
+  "candidate": "f5cb900a",
+  "fullCandidate": "f5cb900a82cabbd81b66420714994600eec9dd94",
+  "parent": "2832ad4e0a884efa2496718b6b970368ce5a0966",
+  "parentIsDirectAncestor": true,
+  "scope": "Rótulo de cabecera de Reportes y navegación básica de lectura",
+  "environment": {
+    "application": "UI real del candidato",
+    "api": "respuestas sintéticas en loopback",
+    "externalHosts": "bloqueados",
+    "businessWrites": 0,
+    "data": "usuario, terminal, reporte e importes ficticios"
+  },
+  "result": {
+    "tests": 8,
+    "passed": 8,
+    "durationSeconds": 9.8,
+    "screenshots": 4
+  },
+  "coverage": {
+    "viewports": ["1440x1000", "390x844"],
+    "themes": ["light", "dark"],
+    "languages": ["es", "en"]
+  },
+  "header": {
+    "es": {
+      "eyebrow": "TU NEGOCIO, CON CLARIDAD",
+      "title": "Reportes",
+      "width": 249.83,
+      "lines": 1
+    },
+    "en": {
+      "eyebrow": "YOUR BUSINESS, WITH CLARITY",
+      "title": "Reports",
+      "width": 277.62,
+      "lines": 1
+    },
+    "mobileX": 80,
+    "desktopX": 351.19,
+    "fontSize": "14px"
+  },
+  "navigation": {
+    "es": "Cierres y diferencias",
+    "en": "Closings and discrepancies",
+    "method": "abrir el segundo grupo y seleccionar su primer reporte",
+    "writes": 0
+  },
+  "observations": [
+    "El rótulo correcto ocupa una sola línea en los ocho escenarios.",
+    "No hubo desbordamiento horizontal: ancho del documento igual al viewport.",
+    "La navegación básica cambió al reporte esperado en ambos idiomas sin emitir escrituras.",
+    "El estado visual 2832ad4e es el padre directo del candidato y se conserva por ascendencia."
+  ],
+  "findings": []
+}
