@@ -276,3 +276,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-18 · ChatGPT PC · Caja y turnos con importes largos
+
+- **Evidencia** `chatgpt-pc/capturas-dot-4aaf5952` compara `4aaf59529b79bf968a30151d84ce6d3c29346b61` con `0dda9c31c64036a0676f0347973f2554def2c8b7` usando cinco importes ficticios de 12 cifras, con ocho PNG en claro y oscuro. [Informe](../validacion/capturas-dot-4aaf5952/caja-y-turnos/COMPARACION.md)
+- **Resultado** En 1440 los importes completos pasan de tres líneas contando la moneda a una. La tabla admite 152 px de desplazamiento horizontal interno y hay 0 px de desborde de página. En 390 los números y centavos permanecen en una línea con `RD$` en la anterior. Los botones se alcanzan y los diálogos comprobados abren y cierran. El caso largo estrecha la columna Equipo en escritorio.
+- **Cierre** Cero operaciones enviadas y procesos de prueba cerrados. `windows-installer` y `render-images` verdes y `verify` en ejecución a las 03:25 UTC. [CI de la rama de Dot](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44229736753)

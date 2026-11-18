@@ -1,0 +1,902 @@
+{
+  "sourceBranch": "dot/caja-turnos-live-18nov",
+  "data": "misma semilla ficticia en dos bases PostgreSQL distintas y descartables",
+  "screenshots": {
+    "antes-1440-claro.png": {
+      "commit": "0dda9c31c64036a0676f0347973f2554def2c8b7",
+      "theme": "light",
+      "format": "PNG",
+      "size": [
+        1440,
+        900
+      ],
+      "sha256": "9bcc45258bb8503e3165fa634a751c0f6e483376f1bfb3bb701f26f621bf324b"
+    },
+    "antes-1440-oscuro.png": {
+      "commit": "0dda9c31c64036a0676f0347973f2554def2c8b7",
+      "theme": "dark",
+      "format": "PNG",
+      "size": [
+        1440,
+        900
+      ],
+      "sha256": "d633752a06d355969a298a58a093181cd5a0db853b24a54a0afb8b21b9c92654"
+    },
+    "antes-390-claro.png": {
+      "commit": "0dda9c31c64036a0676f0347973f2554def2c8b7",
+      "theme": "light",
+      "format": "PNG",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "4f12f6a9623893aca764c80bf141856d2d4141fb4417d8f90b60920025b2e1cd"
+    },
+    "antes-390-oscuro.png": {
+      "commit": "0dda9c31c64036a0676f0347973f2554def2c8b7",
+      "theme": "dark",
+      "format": "PNG",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "5e56c59fc505b6841bab6958897ce61b2d1c9341903ae341f36dafd82e6de994"
+    },
+    "despues-1440-claro.png": {
+      "commit": "4aaf59529b79bf968a30151d84ce6d3c29346b61",
+      "theme": "light",
+      "format": "PNG",
+      "size": [
+        1440,
+        900
+      ],
+      "sha256": "1a23e6597c00c4a41fe17a14757d53e100cfd0943c52b6649f0e776c9bb7cc3f"
+    },
+    "despues-1440-oscuro.png": {
+      "commit": "4aaf59529b79bf968a30151d84ce6d3c29346b61",
+      "theme": "dark",
+      "format": "PNG",
+      "size": [
+        1440,
+        900
+      ],
+      "sha256": "96877e0587eebe32b76c0814de4a96cb10b6197853cf6bae900cdcd8b0bfb3c2"
+    },
+    "despues-390-claro.png": {
+      "commit": "4aaf59529b79bf968a30151d84ce6d3c29346b61",
+      "theme": "light",
+      "format": "PNG",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "b5fdcbf804e44c7ce7f3c8d80e4dbd5724345a79b1c11243e3d23ceea97d1046"
+    },
+    "despues-390-oscuro.png": {
+      "commit": "4aaf59529b79bf968a30151d84ce6d3c29346b61",
+      "theme": "dark",
+      "format": "PNG",
+      "size": [
+        390,
+        844
+      ],
+      "sha256": "511681360c1a08aa5c9bec2531416472620c48657840d1c113b1e9691f32bd2a"
+    }
+  },
+  "comparison": {
+    "antes": {
+      "commit": "0dda9c31c64036a0676f0347973f2554def2c8b7",
+      "capturedAt": "2026-11-18T03:24:56.277Z",
+      "edgeVersion": "157.0.4341.60",
+      "views": {
+        "1440": {
+          "interactions": {
+            "movementDialog": true,
+            "cashCloseDialog": true,
+            "historyReadOnlyPreview": true
+          },
+          "pageErrors": 0,
+          "operationalRequests": 0,
+          "themes": {
+            "light": {
+              "viewport": [
+                1440,
+                900
+              ],
+              "tableLayout": "fixed",
+              "horizontalOverflowPx": {
+                "document": 0,
+                "main": 0,
+                "table": 0
+              },
+              "amounts": [
+                {
+                  "field": "expectedCash",
+                  "label": "Efectivo esperado",
+                  "displayed": "RD$ 123,456,789,012.34",
+                  "digitsAndCents": "123,456,789,012.34",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 85.59,
+                  "cellWidth": 117.75,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "countedCash",
+                  "label": "Contado",
+                  "displayed": "RD$ 987,654,321,098.76",
+                  "digitsAndCents": "987,654,321,098.76",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 84.2,
+                  "cellWidth": 117.75,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCash",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 864,197,532,086.42",
+                  "digitsAndCents": "864,197,532,086.42",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 83.27,
+                  "cellWidth": 117.81,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCard",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ -100,000,000,000.00",
+                  "digitsAndCents": "100,000,000,000.00",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 81.97,
+                  "cellWidth": 117.81,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceTransfer",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 200,000,000,000.00",
+                  "digitsAndCents": "200,000,000,000.00",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 86.91,
+                  "cellWidth": 117.81,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                }
+              ],
+              "actions": {
+                "cells": 5,
+                "buttonCount": 15,
+                "minWidth": 145.23,
+                "minHeight": 45,
+                "allContained": true,
+                "allStacked": true,
+                "allHit": true
+              }
+            },
+            "dark": {
+              "viewport": [
+                1440,
+                900
+              ],
+              "tableLayout": "fixed",
+              "horizontalOverflowPx": {
+                "document": 0,
+                "main": 0,
+                "table": 0
+              },
+              "amounts": [
+                {
+                  "field": "expectedCash",
+                  "label": "Efectivo esperado",
+                  "displayed": "RD$ 123,456,789,012.34",
+                  "digitsAndCents": "123,456,789,012.34",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 85.59,
+                  "cellWidth": 117.75,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "countedCash",
+                  "label": "Contado",
+                  "displayed": "RD$ 987,654,321,098.76",
+                  "digitsAndCents": "987,654,321,098.76",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 84.2,
+                  "cellWidth": 117.75,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCash",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 864,197,532,086.42",
+                  "digitsAndCents": "864,197,532,086.42",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 83.27,
+                  "cellWidth": 117.81,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCard",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ -100,000,000,000.00",
+                  "digitsAndCents": "100,000,000,000.00",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 81.97,
+                  "cellWidth": 117.81,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceTransfer",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 200,000,000,000.00",
+                  "digitsAndCents": "200,000,000,000.00",
+                  "numericLines": 2,
+                  "currencyAndNumberLines": 3,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 86.91,
+                  "cellWidth": 117.81,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                }
+              ],
+              "actions": {
+                "cells": 5,
+                "buttonCount": 15,
+                "minWidth": 145.23,
+                "minHeight": 45,
+                "allContained": true,
+                "allStacked": true,
+                "allHit": true
+              }
+            }
+          }
+        },
+        "390": {
+          "interactions": {
+            "movementDialog": true,
+            "cashCloseDialog": true,
+            "historyReadOnlyPreview": true
+          },
+          "pageErrors": 0,
+          "operationalRequests": 0,
+          "themes": {
+            "light": {
+              "viewport": [
+                390,
+                844
+              ],
+              "tableLayout": "auto",
+              "horizontalOverflowPx": {
+                "document": 0,
+                "main": 0,
+                "table": 0
+              },
+              "amounts": [
+                {
+                  "field": "expectedCash",
+                  "label": "Efectivo esperado",
+                  "displayed": "RD$ 123,456,789,012.34",
+                  "digitsAndCents": "123,456,789,012.34",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.09,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "countedCash",
+                  "label": "Contado",
+                  "displayed": "RD$ 987,654,321,098.76",
+                  "digitsAndCents": "987,654,321,098.76",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.36,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCash",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 864,197,532,086.42",
+                  "digitsAndCents": "864,197,532,086.42",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.7,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCard",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ -100,000,000,000.00",
+                  "digitsAndCents": "100,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 142.03,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceTransfer",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 200,000,000,000.00",
+                  "digitsAndCents": "200,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 138.41,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                }
+              ],
+              "actions": {
+                "cells": 5,
+                "buttonCount": 15,
+                "minWidth": 264,
+                "minHeight": 45,
+                "allContained": true,
+                "allStacked": true,
+                "allHit": true
+              }
+            },
+            "dark": {
+              "viewport": [
+                390,
+                844
+              ],
+              "tableLayout": "auto",
+              "horizontalOverflowPx": {
+                "document": 0,
+                "main": 0,
+                "table": 0
+              },
+              "amounts": [
+                {
+                  "field": "expectedCash",
+                  "label": "Efectivo esperado",
+                  "displayed": "RD$ 123,456,789,012.34",
+                  "digitsAndCents": "123,456,789,012.34",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.09,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "countedCash",
+                  "label": "Contado",
+                  "displayed": "RD$ 987,654,321,098.76",
+                  "digitsAndCents": "987,654,321,098.76",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.36,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCash",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 864,197,532,086.42",
+                  "digitsAndCents": "864,197,532,086.42",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.7,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCard",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ -100,000,000,000.00",
+                  "digitsAndCents": "100,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 142.03,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceTransfer",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 200,000,000,000.00",
+                  "digitsAndCents": "200,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 138.41,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                }
+              ],
+              "actions": {
+                "cells": 5,
+                "buttonCount": 15,
+                "minWidth": 264,
+                "minHeight": 45,
+                "allContained": true,
+                "allStacked": true,
+                "allHit": true
+              }
+            }
+          }
+        }
+      },
+      "servicesStopped": true
+    },
+    "despues": {
+      "commit": "4aaf59529b79bf968a30151d84ce6d3c29346b61",
+      "capturedAt": "2026-11-18T03:25:49.089Z",
+      "edgeVersion": "157.0.4341.60",
+      "views": {
+        "1440": {
+          "interactions": {
+            "movementDialog": true,
+            "cashCloseDialog": true,
+            "historyReadOnlyPreview": true
+          },
+          "pageErrors": 0,
+          "operationalRequests": 0,
+          "themes": {
+            "light": {
+              "viewport": [
+                1440,
+                900
+              ],
+              "tableLayout": "auto",
+              "horizontalOverflowPx": {
+                "document": 0,
+                "main": 0,
+                "table": 152
+              },
+              "amounts": [
+                {
+                  "field": "expectedCash",
+                  "label": "Efectivo esperado",
+                  "displayed": "RD$ 123,456,789,012.34",
+                  "digitsAndCents": "123,456,789,012.34",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 162.09,
+                  "cellWidth": 190.09,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "nowrap"
+                },
+                {
+                  "field": "countedCash",
+                  "label": "Contado",
+                  "displayed": "RD$ 987,654,321,098.76",
+                  "digitsAndCents": "987,654,321,098.76",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 162.34,
+                  "cellWidth": 190.34,
+                  "wrapperScrollLeft": 114,
+                  "whiteSpace": "nowrap"
+                },
+                {
+                  "field": "differenceCash",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 864,197,532,086.42",
+                  "digitsAndCents": "864,197,532,086.42",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 162.69,
+                  "cellWidth": 297.8,
+                  "wrapperScrollLeft": 152,
+                  "whiteSpace": "nowrap"
+                },
+                {
+                  "field": "differenceCard",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ -100,000,000,000.00",
+                  "digitsAndCents": "100,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 174.02,
+                  "cellWidth": 297.8,
+                  "wrapperScrollLeft": 152,
+                  "whiteSpace": "nowrap"
+                },
+                {
+                  "field": "differenceTransfer",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 200,000,000,000.00",
+                  "digitsAndCents": "200,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 170.39,
+                  "cellWidth": 297.8,
+                  "wrapperScrollLeft": 152,
+                  "whiteSpace": "nowrap"
+                }
+              ],
+              "actions": {
+                "cells": 5,
+                "buttonCount": 15,
+                "minWidth": 145.23,
+                "minHeight": 45,
+                "allContained": true,
+                "allStacked": true,
+                "allHit": true
+              }
+            },
+            "dark": {
+              "viewport": [
+                1440,
+                900
+              ],
+              "tableLayout": "auto",
+              "horizontalOverflowPx": {
+                "document": 0,
+                "main": 0,
+                "table": 152
+              },
+              "amounts": [
+                {
+                  "field": "expectedCash",
+                  "label": "Efectivo esperado",
+                  "displayed": "RD$ 123,456,789,012.34",
+                  "digitsAndCents": "123,456,789,012.34",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 162.09,
+                  "cellWidth": 190.09,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "nowrap"
+                },
+                {
+                  "field": "countedCash",
+                  "label": "Contado",
+                  "displayed": "RD$ 987,654,321,098.76",
+                  "digitsAndCents": "987,654,321,098.76",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 162.34,
+                  "cellWidth": 190.34,
+                  "wrapperScrollLeft": 114,
+                  "whiteSpace": "nowrap"
+                },
+                {
+                  "field": "differenceCash",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 864,197,532,086.42",
+                  "digitsAndCents": "864,197,532,086.42",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 162.69,
+                  "cellWidth": 297.8,
+                  "wrapperScrollLeft": 152,
+                  "whiteSpace": "nowrap"
+                },
+                {
+                  "field": "differenceCard",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ -100,000,000,000.00",
+                  "digitsAndCents": "100,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 174.02,
+                  "cellWidth": 297.8,
+                  "wrapperScrollLeft": 152,
+                  "whiteSpace": "nowrap"
+                },
+                {
+                  "field": "differenceTransfer",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 200,000,000,000.00",
+                  "digitsAndCents": "200,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 1,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 170.39,
+                  "cellWidth": 297.8,
+                  "wrapperScrollLeft": 152,
+                  "whiteSpace": "nowrap"
+                }
+              ],
+              "actions": {
+                "cells": 5,
+                "buttonCount": 15,
+                "minWidth": 145.23,
+                "minHeight": 45,
+                "allContained": true,
+                "allStacked": true,
+                "allHit": true
+              }
+            }
+          }
+        },
+        "390": {
+          "interactions": {
+            "movementDialog": true,
+            "cashCloseDialog": true,
+            "historyReadOnlyPreview": true
+          },
+          "pageErrors": 0,
+          "operationalRequests": 0,
+          "themes": {
+            "light": {
+              "viewport": [
+                390,
+                844
+              ],
+              "tableLayout": "auto",
+              "horizontalOverflowPx": {
+                "document": 0,
+                "main": 0,
+                "table": 0
+              },
+              "amounts": [
+                {
+                  "field": "expectedCash",
+                  "label": "Efectivo esperado",
+                  "displayed": "RD$ 123,456,789,012.34",
+                  "digitsAndCents": "123,456,789,012.34",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.09,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "countedCash",
+                  "label": "Contado",
+                  "displayed": "RD$ 987,654,321,098.76",
+                  "digitsAndCents": "987,654,321,098.76",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.36,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCash",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 864,197,532,086.42",
+                  "digitsAndCents": "864,197,532,086.42",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.7,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCard",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ -100,000,000,000.00",
+                  "digitsAndCents": "100,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 142.03,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceTransfer",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 200,000,000,000.00",
+                  "digitsAndCents": "200,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 138.41,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                }
+              ],
+              "actions": {
+                "cells": 5,
+                "buttonCount": 15,
+                "minWidth": 264,
+                "minHeight": 45,
+                "allContained": true,
+                "allStacked": true,
+                "allHit": true
+              }
+            },
+            "dark": {
+              "viewport": [
+                390,
+                844
+              ],
+              "tableLayout": "auto",
+              "horizontalOverflowPx": {
+                "document": 0,
+                "main": 0,
+                "table": 0
+              },
+              "amounts": [
+                {
+                  "field": "expectedCash",
+                  "label": "Efectivo esperado",
+                  "displayed": "RD$ 123,456,789,012.34",
+                  "digitsAndCents": "123,456,789,012.34",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.09,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "countedCash",
+                  "label": "Contado",
+                  "displayed": "RD$ 987,654,321,098.76",
+                  "digitsAndCents": "987,654,321,098.76",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.36,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCash",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 864,197,532,086.42",
+                  "digitsAndCents": "864,197,532,086.42",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 130.7,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceCard",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ -100,000,000,000.00",
+                  "digitsAndCents": "100,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 142.03,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                },
+                {
+                  "field": "differenceTransfer",
+                  "label": "Diferencias por método",
+                  "displayed": "RD$ 200,000,000,000.00",
+                  "digitsAndCents": "200,000,000,000.00",
+                  "numericLines": 1,
+                  "currencyAndNumberLines": 2,
+                  "numericFullyVisible": true,
+                  "currencyAndNumberFullyVisible": true,
+                  "textWidth": 138.41,
+                  "cellWidth": 292,
+                  "wrapperScrollLeft": 0,
+                  "whiteSpace": "normal"
+                }
+              ],
+              "actions": {
+                "cells": 5,
+                "buttonCount": 15,
+                "minWidth": 264,
+                "minHeight": 45,
+                "allContained": true,
+                "allStacked": true,
+                "allHit": true
+              }
+            }
+          }
+        }
+      },
+      "servicesStopped": true
+    }
+  },
+  "githubActions": {
+    "commit": "4aaf59529b79bf968a30151d84ce6d3c29346b61",
+    "url": "https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44229736753",
+    "observedAt": "2026-11-18T03:25:03.5976675Z",
+    "jobs": {
+      "verify": "currently running",
+      "windows-installer": "completed successfully",
+      "render-images": "completed successfully"
+    }
+  }
+}
