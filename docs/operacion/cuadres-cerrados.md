@@ -27,3 +27,4 @@
 | 16-nov | FS-685 Wilmer 3,700 y FS-686 Mavel Rivera 6,250 (contra entregas de Jade) | Se cobran el 17-nov (dueña). No volver a mencionarlas hasta que llegue el cobro o pasen más de 3 días. |
 | 17-nov | Transferencias FS-691 (1,850), FS-700 (5,950), FS-702 (5,800), FS-704 (3,950) | Verificadas con extracto Popular (FS-704 anotada en Génesis ···9797, cayó en este Popular). |
 | 17-nov | Cardnet lote 167 (14,800) | Depósito 14,230.20 en Banreservas = 14,800 − 3.85 %. |
+| 17-nov | Cierres de caja Jade, Wendy y Lizbeth + vouchers GPRO lote 168 (3,500) y GV lote 018 (5,000) | Cuadran con la dueña (fotos). Efectivo Jade +50 aprobado. Lizbeth escribió lote «118» (es 018); no editable. Cobros COD de Jade 16,650 en efectivo = FS-694 3,900 + FS-695 9,050 + FS-685 3,700. |
