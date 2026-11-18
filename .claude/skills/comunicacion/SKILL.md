@@ -81,3 +81,6 @@ Copiadas a `.claude/skills/` para que toda sesión que lea el repo (nube y lapto
 
 ## Lección 29-oct: ramas de documentos de la PC
 Las ramas `claude-pc/cola-*` pueden partir de `producto-nexora` (el producto) o de `nexora-cloud` (la tienda). **Antes de mezclar una en `nexora-cloud`, comprobar** `git diff --name-only origin/nexora-cloud...<rama> | grep -vc '^docs/'`: si da cientos, parte del producto y mezclarla arrastra el producto entero a la tienda (conflictos, riesgo). En ese caso se copian solo los documentos nuevos (`git diff --diff-filter=AM $(git merge-base ...)`). Nunca empujar con una mezcla a medias: `git merge --abort` y verificar `git status`.
+
+## Orden 18-nov (Marcos): usar siempre el máximo de agentes disponibles
+Con trabajo repartible (búsquedas, revisiones, lotes, auditorías), Claude nube abre **el máximo de agentes/sesiones disponibles** (hoy 10 en paralelo, Sonnet 5.5 salvo orden distinta), cada uno con lote propio, rama propia y carpeta propia, y sin tocar tienda/API/`nexora-cloud`. No se trabaja en serie lo que se puede repartir. Límites que no cambian: nada de publicar, asignar ni desplegar sin los 3 CI y la orden explícita del SHA y de quién despliega; no duplicar búsquedas ya hechas; el costo se avisa si pasa del tope de Anthropic.
