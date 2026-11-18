@@ -88,6 +88,51 @@
   border-color: var(--ct-gold);
 }
 
+/* Scope legacy accent variables too: navigation uses !important declarations. */
+.app-shell:has(.cash-page.fusion-cash-turnos) {
+  --primary: var(--ct-accent);
+  --primary-soft: var(--ct-pressed);
+}
+.app-shell:has(.cash-page.fusion-cash-turnos) .brand-icon {
+  color: var(--ct-gold);
+  background: linear-gradient(145deg, var(--ct-surface), var(--ct-deep));
+  border: 1px solid var(--ct-gold);
+  box-shadow:
+    inset 0 1px 2px var(--ct-glint),
+    0 4px 8px var(--ct-shadow);
+}
+.app-shell:has(.cash-page.fusion-cash-turnos) .brand-icon span {
+  color: var(--ct-accent);
+}
+.cash-page.fusion-cash-turnos .button.primary {
+  background: linear-gradient(145deg, var(--ct-pressed), var(--ct-surface));
+  color: var(--ct-ink);
+  border-color: var(--ct-gold);
+}
+.cash-page.fusion-cash-turnos .cash-history-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+.cash-page.fusion-cash-turnos .cash-history-actions .button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding-inline: 8px;
+}
+@media (min-width: 1101px) {
+  .cash-page.fusion-cash-turnos table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  .cash-page.fusion-cash-turnos :is(th, td) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding-inline: 8px;
+  }
+  .cash-page.fusion-cash-turnos :is(th, td):last-child {
+    width: 22%;
+  }
+}
+
 /* Caja y turnos: estados y cifras originales, presentación exclusivamente. */
 .cash-page.fusion-cash-turnos {
   color: var(--ct-ink);
@@ -111,7 +156,7 @@
 }
 .cash-page.fusion-cash-turnos :is(h1, h2) {
   color: var(--ct-ink);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
   text-wrap: balance;
 }
 .cash-page.fusion-cash-turnos h1 {
@@ -155,7 +200,7 @@
 .cash-page.fusion-cash-turnos .cash-main > strong {
   display: block;
   color: var(--ct-ink);
-  font-family: Georgia, serif;
+  font-family: Inter, system-ui, sans-serif;
   font-size: clamp(25px, 2.6vw, 40px);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -186,7 +231,7 @@
 }
 .cash-page.fusion-cash-turnos .cash-methods strong {
   color: var(--ct-ink);
-  font-family: Georgia, serif;
+  font-family: Inter, system-ui, sans-serif;
   font-size: clamp(23px, 2.1vw, 32px);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

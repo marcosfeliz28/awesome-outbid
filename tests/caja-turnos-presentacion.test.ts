@@ -41,3 +41,13 @@ it("historial no expone importes esperados ni diferencias sin permiso", () => {
     /label: "Diferencias por método",\s*render: \(s\) =>\s*canSeeExpected &&/,
   );
 });
+
+it("aplica acento coherente y permite envolver las acciones del historial", () => {
+  const css = readFileSync("apps/web/src/fusion-caja-turnos.css", "utf8");
+  expect(css).toContain("--primary: var(--ct-accent)");
+  expect(css).toContain(".button.primary");
+  expect(css).toContain(".brand-icon");
+  expect(css).toContain("table-layout: fixed");
+  expect(css).toContain("white-space: normal");
+  expect(css).not.toContain("Georgia");
+});

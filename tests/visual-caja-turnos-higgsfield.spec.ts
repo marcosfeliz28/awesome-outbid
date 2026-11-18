@@ -95,6 +95,7 @@ async function setup(
     else if (p === "/api/users") body = [user];
     else if (
       [
+        "/api/cod/pending",
         "/api/customers",
         "/api/alerts",
         "/api/void-requests",
@@ -122,6 +123,7 @@ async function setup(
   await expect(page.locator(".fusion-cash-turnos table")).toContainText(
     "Terminal DEMO",
   );
+  await expect(page.locator(".cod-panel")).not.toContainText("Cargando datos");
   return writes;
 }
 for (const width of [1440, 390])
