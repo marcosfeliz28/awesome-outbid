@@ -104,3 +104,10 @@ it("localizes merchandise summaries and queue controls but keeps queue data and 
   expect(source).toContain('status: "pending",');
   expect(source).toContain('await syncMerchandise();');
 });
+
+it("preserves the exact Spanish queued entry text required after offline reload", () => {
+  expect(`${merchandiseText.pending.es} · ${merchandiseText.queuedEntry.es}`).toBe("Pendiente · Entrada");
+  expect(`${merchandiseText.pending.es} · ${merchandiseText.queuedExit.es}`).toBe("Pendiente · Salida");
+  expect(merchandiseText.entry.es).toBe("ENTRADA");
+  expect(source).toContain('row.input.direction === "entry" ? t("queuedEntry") : t("queuedExit")');
+});

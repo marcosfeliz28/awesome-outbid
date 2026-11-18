@@ -47,6 +47,20 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(redirect({permissions: []}, [], "styles", "styles", false, can)).toBe(true);
     expect(redirect({permissions: []}, [], "styles", "styles", true, can)).toBe(false);
   });
+  it("records modal ownership before Escape bubbling can remove the dialog", () => {
+    expect(app).toContain('new WeakSet<KeyboardEvent>()');
+    expect(app).toContain('window.addEventListener("keydown", rememberModalEvent, true)');
+    expect(app).toContain('window.removeEventListener("keydown", rememberModalEvent, true)');
+    expect(app).toContain('modalKeyEvents.current.add(event)');
+    expect(app).toContain('event.key !== "Escape" || modalKeyEvents.current.has(event)');
+    expect(app).toContain('e.key === "Escape" && !modalKeyEvents.current.has(e)');
+    // A captured event remains owned by the modal even after its DOM is removed.
+    const events = new WeakSet<Event>();
+    const escape = new Event("keydown");
+    events.add(escape);
+    expect(events.has(escape)).toBe(true);
+    expect(events.has(new Event("keydown"))).toBe(false);
+  });
   it("la ayuda explica tareas reales sin prometer ventas offline siempre", () => {
     expect(app).toContain("Ayuda para trabajar");
     expect(app).toContain("Si tu tienda permite ventas sin internet");

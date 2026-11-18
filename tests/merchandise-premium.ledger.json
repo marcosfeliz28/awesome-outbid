@@ -292,6 +292,10 @@
     {
       "before": "{result.units} unidad(es) · {result.variantIds?.length ?? 0}{\" \"}\n              producto(s)",
       "after": "{result.units} {t(\"unitCount\")} · {result.variantIds?.length ?? 0}{\" \"}\n              {t(\"productCount\")}"
+    },
+    {
+      "before": "{row.input.direction === \"entry\" ? t(\"entry\") : t(\"exit\")}",
+      "after": "{row.input.direction === \"entry\" ? t(\"queuedEntry\") : t(\"queuedExit\")}"
     }
   ]
 }

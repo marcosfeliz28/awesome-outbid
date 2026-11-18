@@ -1366,7 +1366,7 @@ export function Merchandise() {
                     {row.status === "conflict"
                       ? t("needsReview")
                       : t("pending")}{" "}
-                    · {row.input.direction === "entry" ? t("entry") : t("exit")}
+                    · {row.input.direction === "entry" ? t("queuedEntry") : t("queuedExit")}
                   </strong>
                   <small>{row.message ?? when(row.createdAt)}</small>
                 </span>

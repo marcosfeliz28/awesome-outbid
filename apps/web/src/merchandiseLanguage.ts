@@ -299,5 +299,13 @@ export const merchandiseText = {
   "exitRegistered": {
     "es": "Salida registrada",
     "en": "Stock removal recorded"
+  },
+  "queuedEntry": {
+    "es": "Entrada",
+    "en": "Receipt"
+  },
+  "queuedExit": {
+    "es": "Salida",
+    "en": "Removal"
   }
 } as const;

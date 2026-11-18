@@ -679,6 +679,7 @@ function Shell() {
     [ownPassword, setOwnPassword] = useState(false);
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
+  const modalKeyEvents = useRef(new WeakSet<KeyboardEvent>());
   const menuWasOpen = useRef(false);
   const accountButton = useRef<HTMLButtonElement>(null);
   const accountPanel = useRef<HTMLDivElement>(null);
@@ -704,11 +705,20 @@ function Shell() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+  // Snapshot in capture phase: Radix can remove the dialog before window bubbling.
+  useEffect(() => {
+    const rememberModalEvent = (event: KeyboardEvent) => {
+      if (document.querySelector('[role="dialog"][data-state="open"]'))
+        modalKeyEvents.current.add(event);
+    };
+    window.addEventListener("keydown", rememberModalEvent, true);
+    return () => window.removeEventListener("keydown", rememberModalEvent, true);
+  }, []);
   useEffect(() => {
     if (!account) return;
     accountPanel.current?.querySelector<HTMLButtonElement>("button")?.focus();
     const closeAccount = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || document.querySelector('[role="dialog"][data-state="open"]')) return;
+      if (event.key !== "Escape" || modalKeyEvents.current.has(event) || document.querySelector('[role="dialog"][data-state="open"]')) return;
       setAccount(false);
       accountButton.current?.focus();
     };
@@ -718,7 +728,7 @@ function Shell() {
   useEffect(() => {
     if (!mobile || !menu) return;
     const containTab = (event: KeyboardEvent) => {
-      if (event.key !== "Tab" || document.querySelector('[role="dialog"][data-state="open"]')) return;
+      if (event.key !== "Tab" || modalKeyEvents.current.has(event) || document.querySelector('[role="dialog"][data-state="open"]')) return;
       const controls = Array.from(sidebar.current?.querySelectorAll<HTMLElement>(
         'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex="0"]',
       ) ?? []).filter((element) => element.getClientRects().length > 0);
@@ -880,7 +890,7 @@ function Shell() {
         e.preventDefault();
         setCommands(true);
       }
-      if (e.key === "Escape" && !document.querySelector('[role="dialog"][data-state="open"]')) {
+      if (e.key === "Escape" && !modalKeyEvents.current.has(e) && !document.querySelector('[role="dialog"][data-state="open"]')) {
         setCommands(false);
         setMenu(false);
         // El foco vuelve al botón que abrió el menú (G12).
