@@ -61,9 +61,9 @@ function element() {
   };
   return e;
 }
-async function start() {
+async function start(beforeReload?: () => Promise<boolean>) {
   const { startPwaUpdates } = await import("../apps/web/src/pwaUpdate");
-  startPwaUpdates();
+  startPwaUpdates(beforeReload);
   for (let i = 0; i < 8; i++) await Promise.resolve();
   expect(env.controlling).toBeTypeOf("function");
 }
@@ -110,10 +110,10 @@ describe("PWA real · carreras de activación sin perder trabajo", () => {
     env.state.cart = [{}];
     env.controlling!({ isUpdate: true });
     sw.dispatchEvent(new Event("controllerchange"));
-    vi.advanceTimersByTime(60_000);
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(reload).not.toHaveBeenCalled();
     env.state.cart = [];
-    vi.advanceTimersByTime(15_000);
+    await vi.advanceTimersByTimeAsync(15_000);
     expect(reload).toHaveBeenCalledTimes(1);
   });
   it("otra pestaña activa SW: esta pestaña conserva carrito incluso sin persistencia", async () => {
@@ -132,7 +132,7 @@ describe("PWA real · carreras de activación sin perder trabajo", () => {
     win.dispatchEvent(new Event("nexora:check-update"));
     env.controlling!({ isUpdate: true });
     sw.dispatchEvent(new Event("controllerchange"));
-    vi.advanceTimersByTime(60_000);
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(env.update).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
   });
@@ -149,7 +149,41 @@ describe("PWA real · carreras de activación sin perder trabajo", () => {
     await start();
     sw.dispatchEvent(new Event("controllerchange"));
     sw.dispatchEvent(new Event("controllerchange"));
-    vi.advanceTimersByTime(60_000);
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+  it("fallo durable bloquea recarga y una nueva venta durante await también", async () => {
+    let release: (ready: boolean) => void = () => {};
+    await start(
+      () =>
+        new Promise<boolean>((done) => {
+          release = done;
+        }),
+    );
+    sw.dispatchEvent(new Event("controllerchange"));
+    release(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(reload).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(15_000);
+    env.state.cart = [{}];
+    release(true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("un cambio de usuario durante persistencia bloquea recarga", async () => {
+    let release: (ready: boolean) => void = () => {};
+    (env.state as any).user = { id: "a" };
+    await start(
+      () =>
+        new Promise<boolean>((done) => {
+          release = done;
+        }),
+    );
+    sw.dispatchEvent(new Event("controllerchange"));
+    (env.state as any).user = { id: "b" };
+    release(true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(reload).not.toHaveBeenCalled();
   });
 });

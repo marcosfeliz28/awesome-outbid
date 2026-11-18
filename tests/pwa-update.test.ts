@@ -74,7 +74,7 @@ describe("PWA · actualización sin cortar ventas", () => {
     expect(vite).toContain("clientsClaim: true");
     expect(vite).not.toMatch(/skipWaiting:\s*true/);
     const main = read("apps/web/src/main.tsx");
-    expect(main).toContain("startPwaUpdates();");
+    expect(main).toContain("startPwaUpdates(flushEmptyDraftBeforeReload);");
     expect(main).not.toContain("registerSW(");
     const module = read("apps/web/src/pwaUpdate.ts");
     // La única forma de aplicar (updateSW) comprueba antes el carrito.

@@ -23,7 +23,10 @@ const ACTIVITY_EVENTS = [
   "touchstart",
 ] as const;
 
-export function startPwaUpdates() {
+export function startPwaUpdates(
+  beforeReload: () => Promise<boolean> = async () => true,
+) {
+  let checkingReload = false;
   let lastActivity = Date.now();
   // 05-N9: la última vez que se escribió en un campo (formularios a medias).
   let lastInput = -Infinity;
@@ -69,9 +72,27 @@ export function startPwaUpdates() {
 
   const reloadIfFree = () => {
     if (!reloadWanted || reloading || workInProgress()) return;
-    clearInterval(reloadTimer);
-    reloading = true;
-    window.location.reload();
+    if (checkingReload) return;
+    checkingReload = true;
+    const userId = useStore.getState().user?.id;
+    void beforeReload()
+      .then((ready) => {
+        if (
+          !ready ||
+          workInProgress() ||
+          useStore.getState().user?.id !== userId
+        )
+          return;
+        clearInterval(reloadTimer);
+        reloading = true;
+        window.location.reload();
+      })
+      .catch(() => {
+        // Persistencia incierta: nunca recargar para intentar arreglarla.
+      })
+      .finally(() => {
+        checkingReload = false;
+      });
   };
   const requestSafeReload = () => {
     reloadWanted = true;
