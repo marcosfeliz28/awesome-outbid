@@ -15,3 +15,9 @@ En la posición inicial, tras 20 filas, ambos paneles comienzan 2.317 px bajo el
 Ruta directa y recarga conservaron azul/negro y ES/EN. EN sigue mostrando fecha de vencimiento en español («11 feb de 2027»); movimientos usan fecha localizada en su propio componente, sin validación independiente de todas las fechas. No se comprobó el lector de pantalla, contraste cuantitativo ni todos los controles. No se encontró la lámina original exacta para cotejo.
 
 Coordinación comunicó 16/16 pruebas focales aprobadas y `verify` rojo por la cita invertida `WarehousesPanel.tsx:316-300` en `docs/sistema/FLUJO_MERCANCIA.md:61`; `render-images` y el instalador están verdes según su última comprobación. No se modificó el candidato ni se realizó despliegue. Mediciones completas: `comprobacion-integrada.json`.
+
+## Siguiente revisión para Dot
+
+Dejar una entrada visible a Alertas y Movimientos junto a los indicadores en escritorio y móvil. Comprobar con una lista de 20 filas que se accede a ambos paneles desde el primer cuadro a 1440 y 390 px y que se puede volver al listado conservando la búsqueda. Mantener el alcance de almacén para alertas y el de sucursal para movimientos.
+
+Formatear el vencimiento según el idioma elegido y corregir la cita del historial de traspasos a `WarehousesPanel.tsx:316-348`. Adjuntar rama, SHA exacto, tres controles verdes y enlace a la demostración privada del candidato. [CI de 20c60b2f](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44240212752)
