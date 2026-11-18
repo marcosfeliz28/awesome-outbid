@@ -1,0 +1,2 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({testDir:'.',testMatch:'capture.spec.ts',workers:2,retries:0,timeout:10000,globalTimeout:240000,outputDir:'qa-evidence/runner',reporter:[['list'],['html',{outputFolder:'qa-evidence/report',open:'never'}]],use:{baseURL:'http://127.0.0.1:5215',serviceWorkers:'block',trace:'retain-on-failure'},webServer:{command:'pnpm --filter @fitstore/web exec vite preview --host 127.0.0.1 --port 5215 --strictPort',url:'http://127.0.0.1:5215',reuseExistingServer:false}});
