@@ -30,7 +30,7 @@ La guía identifica el concepto de Caja y turnos como `norexos-caja-turnos-higgs
 
 ## CI
 
-Para `7ac1da14`, `windows-installer`, `render-images` y el paso `pnpm check` pasaron. `verify` terminó rojo en `node scripts/verify.mjs`. GitHub muestra código de salida 1 en la vista pública. Dot debe identificar la prueba, corregirla y volver a pasar los tres controles. Los tres trabajos de `e34d2309` habían pasado. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44234873053) · [CI de e34d2309](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44231045958)
+Para `7ac1da14`, `windows-installer`, `render-images` y el paso `pnpm check` pasaron. `verify` terminó rojo en `node scripts/verify.mjs`. GitHub muestra código de salida 1 en la vista pública. Ese fallo corresponde al primer intento. GitHub inició a las 04:43 UTC un [segundo intento](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44234873053/attempts/2) de `verify` para el mismo SHA. La comprobación del 18 de noviembre aún lo mostraba en curso. Dot debe identificar la prueba del primer intento si el fallo se repite. Los tres trabajos de `e34d2309` habían pasado. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44234873053) · [CI de e34d2309](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44231045958)
 
 ## Integridad de los PNG
 
