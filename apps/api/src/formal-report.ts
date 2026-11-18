@@ -13,6 +13,7 @@ import {
   denied,
 } from "./common";
 import { cashExpectedMany } from "./cash";
+import { gvTotals, saleNotGvSql, saleNotGvWhere } from "./gv-scope";
 import { incomeOptions, incomeSummary } from "./income-report";
 import { formalPeriod, reportMargin, isTestRegister } from "./formal-period";
 
@@ -25,15 +26,18 @@ const testSessionWhere: Prisma.CashSessionWhereInput = {
     registerId: { startsWith: prefix, mode: "insensitive" },
   })),
 };
+// Sin cajas de prueba y sin GV (otra empresa, va aparte en `gv`).
 const realSaleWhere: Prisma.SaleWhereInput = {
   OR: [
     { cashSessionId: null },
     { cashSession: { is: { NOT: testSessionWhere } } },
   ],
+  ...saleNotGvWhere,
 };
 const utc = (date: Date) =>
   Prisma.sql`(${date}::timestamptz AT TIME ZONE 'UTC')`;
 const real = Prisma.sql`COALESCE(cs."registerId",'') !~* '^(qa|test|prueba)[-_]'`;
+const realMacgen = Prisma.sql`${real} AND ${saleNotGvSql()}`;
 const num = (v: unknown) => Number(v ?? 0);
 const capped = 500;
 const money2 = (value: unknown) => formatMoney(num(value));
@@ -69,6 +73,8 @@ export class FormalReportController {
       sellerRows,
       categoryRows,
       productRows,
+      dailyWithGv,
+      gv,
     ] = await Promise.all([
       incomeSummary(this.db, actor, opt),
       this.db.$queryRaw<
@@ -83,7 +89,7 @@ export class FormalReportController {
         SELECT COALESCE(SUM(s.total),0) sold,COALESCE(SUM(s."costTotal"),0) cost,
           COALESCE(SUM(s."taxTotal"),0) tax,COALESCE(SUM(s."discountTotal"),0) discount,COUNT(*)::bigint count
         FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen}
           AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}`),
       this.db.$queryRaw<
         { total: unknown; cost: unknown; tax: unknown; count: bigint }[]
@@ -92,14 +98,14 @@ export class FormalReportController {
           COALESCE(SUM(r."taxTotal"),0) tax,COUNT(*)::bigint count
         FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
           LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
-        WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+        WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen}
           AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}`),
       this.db.$queryRaw<
         { userId: string; sold: unknown; count: bigint }[]
       >(Prisma.sql`
         SELECT s."sellerId"::text AS "userId",SUM(s.total) sold,COUNT(*)::bigint count
         FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen}
           AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
         GROUP BY s."sellerId" ORDER BY SUM(s.total) DESC LIMIT 500`),
       this.db.$queryRaw<
@@ -111,7 +117,7 @@ export class FormalReportController {
           JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId"
           JOIN "Category" c ON c.id=p."categoryId"
           LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen}
           AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
         GROUP BY c.id ORDER BY sold DESC`),
       this.db.$queryRaw<
@@ -119,13 +125,20 @@ export class FormalReportController {
       >(Prisma.sql`
         SELECT c.id::text AS "categoryId",c.name,COUNT(p.id)::bigint products
         FROM "Category" c LEFT JOIN "Product" p ON p."categoryId"=c.id AND p.active=true AND p."branchId"=${actor.branchId}
-        WHERE c."branchId"=${actor.branchId} GROUP BY c.id,c.name ORDER BY c.name`),
+        WHERE c."branchId"=${actor.branchId} AND c.name NOT LIKE 'GV %' GROUP BY c.id,c.name ORDER BY c.name`),
+      // El arqueo de las cajas vio también lo cobrado de GV.
+      incomeSummary(this.db, actor, { ...opt, gv: "include" }),
+      gvTotals(this.db, actor, range),
     ]);
     const sales = salesAmounts[0],
       returned = returnsAmounts[0];
     const sold = num(sales?.sold) - num(returned?.total);
     const cost = num(sales?.cost) - num(returned?.cost);
     const moneyIn = daily.reduce((sum, row) => sum + row.moneyIn, 0);
+    const registerMoneyIn = dailyWithGv.reduce(
+      (sum, row) => sum + row.moneyIn,
+      0,
+    );
     const cashIn = daily.reduce(
       (sum, row) => sum + row.cash + row.collectionCash,
       0,
@@ -326,9 +339,9 @@ export class FormalReportController {
       );
     }, 0);
     const cashReconciliation = {
-      moneyIn: Number(moneyIn.toFixed(2)),
+      moneyIn: Number(registerMoneyIn.toFixed(2)),
       sessionMoney: Number(sessionMoney.toFixed(2)),
-      difference: Number((moneyIn - sessionMoney).toFixed(2)),
+      difference: Number((registerMoneyIn - sessionMoney).toFixed(2)),
       comparable:
         sessions.length <= capped &&
         sessions.every(
@@ -465,6 +478,8 @@ export class FormalReportController {
         bankIn,
         creditGenerated: daily.reduce((sum, r) => sum + r.creditGenerated, 0),
       },
+      // GV es otra empresa: aparte, no suma en los totales de arriba.
+      gv,
       cash,
       cashReconciliation,
       findings,
@@ -569,6 +584,10 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
   line(
     `Banco esperado por pagos: ${fmt(report.totals.bankIn)} · Efectivo ingresado para caja: ${fmt(report.totals.cashIn)} · Devoluciones: ${report.totals.returns} · Descuentos: ${fmt(report.totals.discounts)}`,
   );
+  if (report.gv?.count)
+    line(
+      `GV (aparte, no suma): vendido neto ${fmt(report.gv.total)} en ${report.gv.count} ventas.`,
+    );
   section("Por día y forma de pago");
   line(
     "Dinero de cada día: la devolución se resta el día en que se hizo. El vendido neto del resumen la resta en el período de la venta original.",

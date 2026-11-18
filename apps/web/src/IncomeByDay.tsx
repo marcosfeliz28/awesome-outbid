@@ -246,6 +246,13 @@ export function IncomeByDay() {
                   </tbody>
                 </table>
               </div>
+              {query.data.gv && (query.data.gv.total || query.data.gv.moneyIn) ? (
+                <div className="cod-hint" role="status">
+                  <strong>{en ? "GV (separate, not added)" : "GV (aparte, no suma)"}</strong>{" "}
+                  · {en ? "Net sold" : "Vendido neto"} {formatMoney(query.data.gv.total)} ·{" "}
+                  {en ? "Money in" : "Dinero ingresado"} {formatMoney(query.data.gv.moneyIn)}
+                </div>
+              ) : null}
               {reconciliation && (
                 <div className="cod-hint" role="status">
                   {reconciliation.comparable ? (

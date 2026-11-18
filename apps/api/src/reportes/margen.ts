@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { Actor } from "../common";
+import { saleNotGvSql } from "../gv-scope";
 import { local, num, pct, utc, type Range, type ReportDef } from "./base";
 
 // Ventas netas de devoluciones, como dashboard/breakdown. Margen de la dueña:
@@ -7,8 +8,9 @@ import { local, num, pct, utc, type Range, type ReportDef } from "./base";
 const line = Prisma.sql`i."lineTotal"*(1-i."returnedQty"/i.qty)`;
 const units = Prisma.sql`(i.qty-i."returnedQty")`;
 const cost = Prisma.sql`(i.qty-i."returnedQty")*i."unitCost"`;
-const sold = (actor: Actor, range: Range) =>
-  Prisma.sql`FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" LEFT JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
+// GV es otra empresa: fuera de Macgen salvo en «por empresa», que la muestra aparte.
+const sold = (actor: Actor, range: Range, withGv = false) =>
+  Prisma.sql`FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" LEFT JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}${withGv ? Prisma.empty : Prisma.sql` AND ${saleNotGvSql()}`}`;
 const MIN = 15;
 
 const money = (venta: unknown, costo: unknown) => ({
@@ -20,10 +22,10 @@ const money = (venta: unknown, costo: unknown) => ({
 
 // Margen agrupado por una columna (producto, categoría, marca, cajera).
 const by =
-  (header: string, key: Prisma.Sql): ReportDef["run"] =>
+  (header: string, key: Prisma.Sql, withGv = false): ReportDef["run"] =>
   async (db, actor, range) =>
     (
-      await db.$queryRaw`SELECT ${key} AS k, SUM(${units}) AS units, SUM(${line}) AS venta, SUM(${cost}) AS costo ${sold(actor, range)} GROUP BY 1 HAVING SUM(${units}) > 0 ORDER BY venta DESC`
+      await db.$queryRaw`SELECT ${key} AS k, SUM(${units}) AS units, SUM(${line}) AS venta, SUM(${cost}) AS costo ${sold(actor, range, withGv)} GROUP BY 1 HAVING SUM(${units}) > 0 ORDER BY venta DESC`
     ).map((r: any) => ({
       [header]: r.k,
       Unidades: num(r.units),
@@ -52,6 +54,7 @@ export const margen: Record<string, ReportDef> = {
     run: by(
       "Empresa",
       Prisma.sql`CASE WHEN c.name ILIKE 'GV %' THEN 'GV Makeup Studio' ELSE 'MacGen' END`,
+      true,
     ),
   },
   "margen-por-marca": {

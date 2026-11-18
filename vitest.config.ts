@@ -71,6 +71,7 @@ export default defineConfig({
       "tests/warehouses-postgres.test.ts",
       "tests/anular-caja-abierta-postgres.test.ts",
       "tests/mis-ventas-preguntas-postgres.test.ts",
+      "tests/gv-aparte-postgres.test.ts",
       "tests/portabilidad.test.ts",
       "tests/e2e-higiene.test.ts",
       "tests/offline-policy.test.ts",

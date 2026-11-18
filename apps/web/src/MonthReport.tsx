@@ -195,6 +195,12 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                 `${data.invoices} ${en ? "invoices" : "facturas"}`,
               )}
               {kpi(t("Unidades vendidas", "Units sold"), data.units.toLocaleString("es-DO"))}
+              {data.gv?.count > 0 &&
+                kpi(
+                  t("GV (aparte, no suma)", "GV (separate, not added)"),
+                  formatMoney(data.gv.total),
+                  `${data.gv.count} ${en ? "invoices" : "facturas"}`,
+                )}
             </div>
             <div className="month-insights-grid">
             <section className="panel month-category-panel">

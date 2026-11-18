@@ -595,6 +595,14 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                 </div>
               );
             })}
+            {data?.gv?.count > 0 && (
+              <div className="category-row">
+                <div>
+                  <span>{t("GV (aparte, no suma)")}</span>
+                  <strong>{formatMoney(data.gv.total)}</strong>
+                </div>
+              </div>
+            )}
             <div className="insight-note">
               <Sparkles size={19} />
               <p>

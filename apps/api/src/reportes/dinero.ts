@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { canViewCashExpected, denied, type Actor } from "../common";
+import { saleNotGvSql } from "../gv-scope";
 import {
   local,
   num,
@@ -11,8 +12,9 @@ import {
 } from "./base";
 
 // Grupo «Dinero» de los 40 reportes (orden 18-oct). Sin costo ni margen.
+// GV es otra empresa: sus ventas no se suman con Macgen (dueña, 18-nov).
 const sold = (actor: Actor, range: Range) =>
-  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
+  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()} AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
 const returned = (actor: Actor, range: Range) =>
   Prisma.sql`r."branchId" = ${actor.branchId} AND r."createdAt" >= ${utc(range.gte)} AND r."createdAt" <= ${utc(range.lte)}`;
 const month = (column: Prisma.Sql) =>
@@ -137,7 +139,7 @@ export const dinero: Record<string, ReportDef> = {
                COALESCE(NULLIF(TRIM(p.bank), ''), 'Sin indicar') AS cuenta,
                SUM(p.amount) AS amount, COUNT(*) AS n
           FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId"
-          WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed'
+          WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()}
             AND p."createdAt" >= ${utc(range.gte)} AND p."createdAt" <= ${utc(range.lte)}
             AND p.method IN ('cash', 'card', 'transfer') AND p.status <> 'rejected'
           GROUP BY 1, 2, 3`;
