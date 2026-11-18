@@ -2,6 +2,9 @@ import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
 import { inventoryText } from "./inventoryLanguage";
 import { useInventoryAppearance } from "./inventoryAppearance";
+import { InventoryProduct } from "./InventoryProduct";
+import { InventoryAlerts } from "./InventoryAlerts";
+import { InventoryMovements } from "./InventoryMovements";
 import { InventorySummary } from "./InventorySummary";
 import "./fusion-inventory.css";
 import {
@@ -929,12 +932,11 @@ export function Inventory() {
                 {
                   label: translateInventory("Producto / Variante"),
                   render: (v) => (
-                    <span>
-                      <strong>{v.product.name}</strong>
+                    <InventoryProduct name={v.product.name} image={v.product.imageUrl}>
                       <small>
                         {v.sku} · {attrLabel(v.attributes, inventoryLanguage === "en" ? "Standard variant" : "Única")}
                       </small>
-                    </span>
+                    </InventoryProduct>
                   ),
                 },
                 { label: translateInventory("Precio"), render: (v) => formatMoney(v.price) },
@@ -1059,6 +1061,12 @@ export function Inventory() {
           )}
         </QueryState>
       </div>
+      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === "stock" && (
+        <div className="inventory-insights">
+          <InventoryAlerts rows={rows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} onInspect={setKardex} />
+          <InventoryMovements en={inventoryLanguage === "en"} />
+        </div>
+      )}
       <WarehousesPanel rows={rows} warehouseId={warehouseView} />
       {adjust && (
         <FormModal

@@ -12,6 +12,7 @@ export default defineConfig({
       "tests/inventory-language.test.ts",
       "tests/inventory-appearance.test.ts",
       "tests/inventory-summary.test.ts",
+      "tests/inventory-insights.test.ts",
       "tests/docs-sistema-indice.test.ts",
       "tests/login-legible.test.ts",
       "tests/login-animacion.test.ts",

@@ -253,6 +253,18 @@
     {
       "before": "<InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} />",
       "after": "<InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} scope={selectedWarehouse?.name || (inventoryLanguage === \"en\" ? \"In store\" : \"En Tienda\")} />"
+    },
+    {
+      "before": "                    <span>\n                      <strong>{v.product.name}</strong>\n                      <small>\n                        {v.sku} · {attrLabel(v.attributes, inventoryLanguage === \"en\" ? \"Standard variant\" : \"Única\")}\n                      </small>\n                    </span>",
+      "after": "                    <InventoryProduct name={v.product.name} image={v.product.imageUrl}>\n                      <small>\n                        {v.sku} · {attrLabel(v.attributes, inventoryLanguage === \"en\" ? \"Standard variant\" : \"Única\")}\n                      </small>\n                    </InventoryProduct>"
+    },
+    {
+      "before": "      <WarehousesPanel rows={rows} warehouseId={warehouseView} />",
+      "after": "      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === \"stock\" && (\n        <div className=\"inventory-insights\">\n          <InventoryAlerts rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} scope={selectedWarehouse?.name || (inventoryLanguage === \"en\" ? \"In store\" : \"En Tienda\")} onInspect={setKardex} />\n          <InventoryMovements />\n        </div>\n      )}\n      <WarehousesPanel rows={rows} warehouseId={warehouseView} />"
+    },
+    {
+      "before": "<InventoryMovements />",
+      "after": "<InventoryMovements en={inventoryLanguage === \"en\"} />"
     }
   ]
 }

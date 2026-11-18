@@ -57,3 +57,9 @@ Referencia PNG aprobada inspeccionada en nube contra páginas renderizadas del P
 Se añaden tres tarjetas de unidades físicas, variantes con stock bajo y variantes sin existencias, exclusivamente a partir de las filas cargadas/filtradas ya autorizadas y el almacén visible. API stock usa findMany sin paginación (inventory.ts:581), pero el texto declara siempre alcance cargado/búsqueda, nunca total global. No se calculan valores monetarios ni movimientos inventados; cantidades ocultas/invalidas suprimen resumen. Se mantienen pendientes fotos, composición de alertas/movimientos y revisión final de fidelidad.
 
 EN: fallback de variante y carga ahora opt-in inglés; otros consumidores conservan español. Verificación local: 41 pruebas focales pasan, tipado web/lint/build pasan con @fitstore/ui apuntando al paquete exacto de este worktree, no dependencia de otro checkout. Nueva QA aún pendiente. Sin producción.
+
+## Fotos, alertas y movimientos respaldados
+
+Las filas usan únicamente product.imageUrl ya servido por stock; lazyload, decoding async y fallback neutro de paquete si falta/falla, no otra foto de producto. Alertas derivadas de existencias visibles y mínimos de los resultados cargados; lista top5 abre Kardex ya existente sin nueva escritura. Panel movimientos usa GET existente con permiso catalog:read, sucursal/usuario en clave caché, sin polling, stale60s, máximo5 de los200 últimos registros del contrato. Expresa alcance sucursal y hora Santo Domingo; no inventa actividad diaria ni mezcla el almacén seleccionado con todo el historial. Sin costos, motivos ni usuarios en resumen.
+
+Composición suma dos paneles de información respaldada y miniaturas; queda pendiente validar fidelidad/layout con nuevas capturas. No se garantiza identidad exacta con referencia ni se altera operación. Sin despliegue.
