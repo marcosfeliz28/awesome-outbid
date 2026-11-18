@@ -4,7 +4,7 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 
 ## 2026-11-18 · ChatGPT PC · carrito móvil 6d8caee0
 
-Seis capturas y 12 variantes de carrito móvil en claro/oscuro y ES/EN. Abre con foco, traduce singular/plural y las tres acciones quedan completas y alcanzables con Tab. Cero operaciones. El cobro de escritorio sigue visible con dos filas completas. El nombre accesible de «Charge» aún empieza con «Cobrar». El candidato conserva 275 fotos y debe incorporar la nueva base `00ebc590`, con 31 fotos de tenis adicionales. [Informe y pruebas](../capturas/carrito-6d8caee0/LECTURA.md)
+Seis capturas y 12 variantes de carrito móvil en claro/oscuro y ES/EN. Abre con foco, traduce singular/plural y las tres acciones quedan completas y alcanzables con Tab. Cero operaciones. El cobro de escritorio sigue visible con dos filas completas. El nombre accesible de «Charge» aún empieza con «Cobrar». El candidato pasó los tres controles. Conserva 275 fotos y debe incorporar las 39 fotos de tenis de la base `2d87290b`. [Informe y pruebas](../capturas/carrito-6d8caee0/LECTURA.md)
 
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 

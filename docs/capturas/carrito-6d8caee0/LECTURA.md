@@ -20,8 +20,10 @@ Hubo 0 px de desbordamiento horizontal de página, 0 errores de página y 0 soli
 
 ## CI e integración
 
-En el SHA exacto `6d8caee0`, instalador, imágenes y el paso `pnpm check` pasaron. El control `verify` completo sigue en curso. La prueba de navegador incorporada por Dot comprueba los tres botones a 390 × 844, en tema claro y español. Este informe añade la comprobación de teclado, tamaños e idiomas descrita arriba. [CI de Dot](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44320558493)
+En el SHA exacto `6d8caee0` terminaron en verde `verify`, `windows-installer` y `render-images`. La prueba de navegador incorporada por Dot comprueba los tres botones a 390 × 844, en tema claro y español. Este informe añade la comprobación de teclado, tamaños e idiomas descrita arriba. [CI de Dot](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44320558493)
 
-`6d8caee0` conserva byte por byte las 275 fotos de `e1a2e935` y su API. Mientras se hacía la revisión, `nexora-cloud` reemplazó el conjunto anterior de tenis de `f63e5f39` y avanzó a `00ebc590`. La comparación con el candidato muestra 31 WebP adicionales en la base, que deben conservarse en el siguiente candidato. [Comparación](https://github.com/marcosfeliz28/awesome-outbid/compare/6d8caee0...00ebc590) · [CI de la base vigente](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44324007386)
+`6d8caee0` conserva byte por byte las 275 fotos de `e1a2e935` y su API. Mientras se hacía la revisión, `nexora-cloud` reemplazó el conjunto anterior de tenis de `f63e5f39` y avanzó a `00ebc590`. La comparación con el candidato muestra 31 WebP adicionales en la base, que deben conservarse en el siguiente candidato. [Comparación](https://github.com/marcosfeliz28/awesome-outbid/compare/6d8caee0...00ebc590) · [CI de la primera base de 31 fotos](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44324007386)
 
 Queda pendiente que «Cobrar» anuncie «Charge» cuando se elige inglés y aumentar el área útil del carrito de escritorio a 1280 × 720 sin cubrir el cobro. Adjuntar rama, SHA exacto, tres controles y demostración privada.
+
+Seguimiento posterior. La ejecución de `00ebc590` quedó cancelada al avanzar a `2d87290b`, que añade ocho fotos. El candidato de carrito, anterior a los dos lotes, conserva 275 y requiere mantener las 39 fotos de tenis de la rama base. [CI de 2d87290b](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44326058976)
