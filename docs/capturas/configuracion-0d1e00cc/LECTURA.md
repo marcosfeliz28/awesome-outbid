@@ -35,10 +35,16 @@ El artefacto publicado requiere acceso autenticado. Sus capturas y resultados in
 
 Dot publicó `0f3667edee1e04b04ed2a4574bf444a45afcef29` en la misma rama. Incorpora las dos fotos Adidas de la base `dcf61af2` y sus 318 WebP coinciden byte por byte. El árbol de API también coincide. Los árboles de código web y de componentes de interfaz son iguales a los de `0d1e00cc`. Las capturas de este informe corresponden al SHA comprobado que consta en cada recorrido. [Comparación de la integración](https://github.com/marcosfeliz28/awesome-outbid/compare/0d1e00cc...0f3667ed)
 
-El instalador y las imágenes de `0f3667ed` pasaron. Su `verify` seguía en curso al corte de las 18:50 UTC. Los pendientes de idioma, contraste y foco descritos arriba siguen abiertos. [CI de la integración](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44370782286)
+Los tres controles de `0f3667ed` pasaron. `verify` terminó a las 19:00:06 UTC. Los pendientes de idioma, contraste y foco descritos arriba siguen abiertos. [CI de la integración](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44370782286)
+
+## Foto NB 530 incorporada
+
+La rama de Dot avanzó a `94f11b31ca4f6c659c6fc3a6399de850744ecf8f`. Incorpora `nb-530-crema-rosado-real.webp` desde la base `0fc775a6`. Los árboles completos de recursos públicos y de API coinciden con la base. Hay 319 fotos WebP. El código web y los componentes de interfaz siguen coincidiendo con `0d1e00cc`, cuyo recorrido está documentado en este informe. [Comparación con la integración anterior](https://github.com/marcosfeliz28/awesome-outbid/compare/0f3667ed...94f11b31)
+
+Al corte de las 19:18 UTC, las imágenes pasaron en el nuevo candidato y en su base. Instalador y `verify` seguían en curso. Los pendientes de foco, idioma y contraste siguen abiertos en ese código. [CI de Dot](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44378441807) · [CI de la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44377260775)
 
 ## Siguiente entrega de Dot
 
-Corregir el contraste y la partición de etiquetas de Incentivos, completar los textos de interfaz en inglés y el retorno de foco. Conservar las 318 fotos de la integración, entregar el resumen por pantalla del ensayo general y adjuntar rama, SHA, tres controles y demostración privada.
+Corregir el contraste y la partición de etiquetas de Incentivos, completar los textos de interfaz en inglés y el retorno de foco. Conservar las 319 fotos de la integración, entregar el resumen por pantalla del ensayo general y adjuntar rama, SHA, tres controles y demostración privada.
 
 Se cerraron los navegadores y servicios que se abrieron durante la revisión.
