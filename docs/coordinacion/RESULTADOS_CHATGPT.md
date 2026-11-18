@@ -2,6 +2,11 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · Punto de venta a 1280 × 720
+
+- **Evidencia** Cuatro PNG reales de `0ed250e501bb04c13156776973fb1c446906f9e7` con tres y cinco artículos y las etiquetas en inglés. [Informe](../capturas/punto-de-venta-0ed250e5/LECTURA.md)
+- **Resultado** Se ven dos filas completas con tres y cinco artículos. «Cobrar» mide 46 px de alto, queda visible y abrió/cerró el diálogo. En inglés el botón muestra «Charge» y conserva «Cobrar» como nombre accesible. El panel, la lista y el acceso móvil conservan etiquetas en español. Cero solicitudes operativas y servicios cerrados.
+
 ## 2026-11-17 · ChatGPT PC · evidencia Ventas 0ed250e5
 
 Recorrido real con datos ficticios, ES/EN y vistas escritorio/móvil, en `docs/capturas/ventas-0ed250e5/LECTURA.md`. Hallazgo: al seleccionar, la previa queda bajo el listado y fuera de vista en 1440 y 390. Sin escrituras operativas, producción ni despliegue. Los tres controles de la [ejecución 44230587628](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44230587628) pasaron. El mismo SHA figura en `nexora-cloud` con sus [tres controles verdes](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44234131636). Se añadieron ocho capturas del aviso de caja cerrada al elegir Devolver y del formulario de anulación directa en ES y EN, a 1440 y 390 px en claro, con cero operaciones. Dot tiene pendiente mantener visible la vista previa al seleccionar y comprobarla con 20 filas a 1440 y 390 px.
