@@ -1,3 +1,4 @@
+import { catalogText } from "./catalogLanguage";
 import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
 import { inventoryText } from "./inventoryLanguage";
@@ -7,6 +8,7 @@ import { InventoryAlerts } from "./InventoryAlerts";
 import { InventoryMovements } from "./InventoryMovements";
 import { InventorySummary } from "./InventorySummary";
 import "./fusion-inventory.css";
+import { CatalogPresentation } from "./CatalogPresentation";
 import {
   CashElsewhere,
   Equipment,
@@ -119,7 +121,7 @@ function QueryState({ query, children, english = false }: { query: any; children
       english={english}
       query={
         query.error
-          ? { ...query, error: { message: managementQueryError(query.error) } }
+          ? { ...query, error: { status: query.error.status, message: managementQueryError(query.error) } }
           : query
       }
     >
@@ -130,11 +132,13 @@ function QueryState({ query, children, english = false }: { query: any; children
 function DataTable({
   rows,
   columns,
+  english = false,
   empty = "Todavía no hay registros",
   emptyDescription = "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.",
 }: {
   rows: any[];
   columns: Column[];
+  english?: boolean;
   empty?: string;
   emptyDescription?: string;
 }) {
@@ -175,27 +179,27 @@ function DataTable({
       {totalPages > 1 && (
         <div className="pagination">
           <span>
-            {rows.length} registros · Página {page} de {totalPages}
+            {english ? `${rows.length} records · Page ${page} of ${totalPages}` : `${rows.length} registros · Página ${page} de ${totalPages}`}
           </span>
           <Button
             variant="ghost"
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
           >
-            Anterior
+            {english ? "Previous" : "Anterior"}
           </Button>
           <Button
             variant="ghost"
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
           >
-            Siguiente
+            {english ? "Next" : "Siguiente"}
           </Button>
         </div>
       )}
     </>
   ) : (
-    <Empty title={empty} description={emptyDescription} />
+    <Empty title={english && empty === "Todavía no hay registros" ? "No records yet" : empty} description={english && emptyDescription === "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla." ? "Check the search and filters, or add a new record from this page." : emptyDescription} />
   );
 }
 function Heading({
@@ -256,6 +260,8 @@ const paymentOptions = [
 ];
 
 export function Catalog() {
+  const en = useLanguage() === "en";
+  const ct = (text: string) => catalogText(en, text);
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
   const query = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
@@ -273,7 +279,7 @@ export function Catalog() {
   const withMargin = (list: Field[]) => (values: Record<string, any>) =>
     list.map((f) =>
       f.key === "costAvg"
-        ? { ...f, help: marginHint(values.price, values.costAvg, lowMargin) }
+        ? { ...f, help: marginHint(values.price, values.costAvg, lowMargin, en) }
         : f,
     );
   const [search, setSearch] = useState(""),
@@ -295,37 +301,39 @@ export function Catalog() {
           .includes(search.toLowerCase()),
     ) || [];
   const fields: Field[] = [
-    { key: "name", label: "Nombre del producto", required: true },
+    { key: "name", label: ct("Nombre del producto"), required: true },
     { key: "sku", label: "SKU", required: true },
     {
       key: "categoryId",
-      label: "Categoría",
+      label: ct("Categoría"),
       type: "select",
       required: true,
       options: cats.data?.map((c: any) => ({ label: c.name, value: c.id })),
     },
-    { key: "brand", label: "Marca", initial: "Nexora" },
-    { key: "barcode", label: "Código de barras", required: true },
-    requiredNumber("price", "Precio de venta"),
-    requiredNumber("costAvg", "Costo de entrada"),
-    requiredNumber("minStock", "Stock mínimo", 5),
+    { key: "brand", label: ct("Marca"), initial: "Nexora" },
+    { key: "barcode", label: ct("Código de barras"), required: true },
+    requiredNumber("price", ct("Precio de venta")),
+    requiredNumber("costAvg", ct("Costo de entrada")),
+    requiredNumber("minStock", ct("Stock mínimo"), 5),
     {
       key: "service",
-      label: "Es un servicio (se vende sin existencia)",
+      label: ct("Es un servicio (se vende sin existencia)"),
       type: "checkbox",
     },
     {
       key: "imageUrl",
-      label: "URL de la foto",
+      label: ct("URL de la foto"),
       initial: "/products/accessories.svg",
     },
-    { key: "description", label: "Descripción", type: "textarea" },
+    { key: "description", label: ct("Descripción"), type: "textarea" },
   ];
   return (
     <>
+      <CatalogPresentation products={rows} loading={query.isPending} failed={query.isError} onDetail={(p) => { setDetail(p); setTab("General"); }}>
       <Heading
-        title="Tu catálogo, con personalidad"
-        caption="Cada producto, cada variante y cada oportunidad, en su lugar."
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={ct("Tu catálogo, con personalidad")}
+        caption={ct("Cada producto, cada variante y cada oportunidad, en su lugar.")}
       >
         {write && (
           <>
@@ -337,18 +345,18 @@ export function Catalog() {
                   "plantilla-productos.xlsx",
                 ).catch(() =>
                   toast(
-                    "No pudimos descargar la plantilla. Revisa tu conexión e inténtalo de nuevo.",
+                    ct("No pudimos descargar la plantilla. Revisa tu conexión e inténtalo de nuevo."),
                     true,
                   ),
                 )
               }
             >
               <Download size={16} />
-              Plantilla
+              {ct("Plantilla")}
             </Button>
             <label className="button secondary">
               <Upload size={16} />
-              Importar Excel
+              {ct("Importar Excel")}
               <input
                 type="file"
                 accept=".xlsx"
@@ -363,11 +371,11 @@ export function Catalog() {
                         method: "POST",
                         body: data,
                       });
-                      toast(`${result.imported} productos importados.`);
+                      toast(en ? `${result.imported} products imported.` : `${result.imported} productos importados.`);
                       await client.invalidateQueries();
                     } catch {
                       toast(
-                        "No pudimos importar el archivo. Revisa las columnas y los datos de la plantilla antes de volver a intentar.",
+                        ct("No pudimos importar el archivo. Revisa las columnas y los datos de la plantilla antes de volver a intentar."),
                         true,
                       );
                     }
@@ -381,7 +389,7 @@ export function Catalog() {
             )}
             <Button onClick={() => setCreate(true)}>
               <Plus size={17} />
-              Nuevo producto
+              {ct("Nuevo producto")}
             </Button>
           </>
         )}
@@ -391,30 +399,31 @@ export function Catalog() {
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar nombre, SKU o marca"
+            placeholder={ct("Buscar nombre, SKU o marca")}
           />
           <select
-            aria-label="Filtrar por categoría"
+            aria-label={ct("Filtrar por categoría")}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            <option value="">Todas las categorías</option>
+            <option value="">{ct("Todas las categorías")}</option>
             {cats.data?.map((c: any) => (
               <option value={c.id} key={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
-          <Badge tone="violet">{rows.length} productos</Badge>
+          <Badge tone="violet">{rows.length} {en ? "products" : "productos"}</Badge>
         </div>
-        <QueryState query={query}>
+        <QueryState query={query} english={en}>
           <DataTable
+            english={en}
             rows={rows}
-            empty="No encontramos productos"
-            emptyDescription="Revisa los filtros o agrega un producto con Nuevo producto."
+            empty={ct("No encontramos productos")}
+            emptyDescription={ct("Revisa los filtros o agrega un producto con Nuevo producto.")}
             columns={[
               {
-                label: "Producto",
+                label: ct("Producto"),
                 render: (p) => (
                   <div className="table-product">
                     <img
@@ -431,12 +440,12 @@ export function Catalog() {
                 ),
               },
               {
-                label: "Categoría",
+                label: ct("Categoría"),
                 render: (p) => <Badge>{p.category.name}</Badge>,
               },
-              { label: "Variantes", render: (p) => p.variants.length },
+              { label: ct("Variantes"), render: (p) => p.variants.length },
               {
-                label: "Precio",
+                label: ct("Precio"),
                 render: (p) => formatMoney(p.variants[0]?.price || 0),
               },
               {
@@ -450,17 +459,17 @@ export function Catalog() {
                     <Badge
                       tone={stock <= Number(p.minStock) ? "warning" : "success"}
                     >
-                      {stock} unidades
+                      {stock} {en ? "units" : "unidades"}
                     </Badge>
                   );
                 },
               },
               {
-                label: "Acciones",
+                label: ct("Acciones"),
                 render: (p) => (
                   <div className="table-actions">
                     <button
-                      aria-label={"Ver " + p.name}
+                      aria-label={ct("Ver ") + p.name}
                       onClick={() => {
                         setDetail(p);
                         setTab("General");
@@ -469,14 +478,14 @@ export function Catalog() {
                       <Eye size={17} />
                     </button>
                     <button
-                      aria-label={"Etiquetas de " + p.name}
+                      aria-label={ct("Etiquetas de ") + p.name}
                       onClick={() => setLabels(p)}
                     >
                       <Printer size={17} />
                     </button>
                     {write && (
                       <button
-                        aria-label={"Variantes de " + p.name}
+                        aria-label={ct("Variantes de ") + p.name}
                         onClick={() => setMatrix(p)}
                       >
                         <Boxes size={17} />
@@ -489,9 +498,11 @@ export function Catalog() {
           />
         </QueryState>
       </div>
+      </CatalogPresentation>
       {create && (
         <FormModal
-          title="Un nuevo producto para tu tienda"
+          english={en}
+          title={ct("Un nuevo producto para tu tienda")}
           fields={withMargin(fields)}
           onClose={() => setCreate(false)}
           onSubmit={(values) => {
@@ -506,30 +517,31 @@ export function Catalog() {
       )}
       {matrix && (
         <FormModal
-          title={"Crear variantes · " + matrix.name}
+          english={en}
+          title={ct("Crear variantes · ") + matrix.name}
           fields={[
             {
               key: "attribute1",
-              label: "Primer atributo",
+              label: ct("Primer atributo"),
               initial: "talla",
               required: true,
             },
             {
               key: "values1",
-              label: "Valores separados por coma",
+              label: ct("Valores separados por coma"),
               initial: "S,M,L",
               required: true,
             },
-            { key: "attribute2", label: "Segundo atributo", initial: "color" },
+            { key: "attribute2", label: ct("Segundo atributo"), initial: "color" },
             {
               key: "values2",
-              label: "Valores separados por coma",
+              label: ct("Valores separados por coma"),
               initial: "Negro,Azul",
             },
-            requiredNumber("price", "Precio", Number(matrix.variants[0].price)),
+            requiredNumber("price", ct("Precio"), Number(matrix.variants[0].price)),
             requiredNumber(
               "costAvg",
-              "Costo",
+              ct("Costo"),
               Number(matrix.variants[0].costAvg || 0),
             ),
           ]}
@@ -555,9 +567,10 @@ export function Catalog() {
         />
       )}
       <Modal
+        closeLabel={en ? "Close" : "Cerrar"}
         open={!!detail}
         onClose={() => setDetail(null)}
-        title={detail?.name || "Producto"}
+        title={detail?.name || ct("Producto")}
         wide
       >
         <div className="tabs">
@@ -567,7 +580,7 @@ export function Catalog() {
               key={t}
               onClick={() => setTab(t)}
             >
-              {t}
+              {ct(t)}
             </button>
           ))}
         </div>
@@ -582,7 +595,7 @@ export function Catalog() {
                   {detail.brand} · {detail.sku}
                 </p>
                 <p>
-                  Stock mínimo: {detail.minStock} · Stock máximo:{" "}
+                  {ct("Stock mínimo")}: {detail.minStock} · {ct("Stock máximo")}:{" "}
                   {detail.maxStock}
                 </p>
                 <p>ITBIS: {detail.taxRate}%</p>
@@ -594,18 +607,19 @@ export function Catalog() {
                     }
                   >
                     <Pencil size={16} />
-                    Editar producto
+                    {ct("Editar producto")}
                   </Button>
                 )}
               </div>
             </div>
           ) : tab === "Variantes" ? (
             <DataTable
+            english={en}
               rows={detail.variants}
               columns={[
-                { label: "Variante", render: (v) => attrLabel(v.attributes) },
+                { label: ct("Variante"), render: (v) => attrLabel(v.attributes, en ? "Standard variant" : "Única") },
                 {
-                  label: "SKU / Código",
+                  label: ct("SKU / Código"),
                   render: (v) => (
                     <span>
                       {v.sku}
@@ -613,25 +627,25 @@ export function Catalog() {
                     </span>
                   ),
                 },
-                { label: "Precio", render: (v) => formatMoney(v.price) },
+                { label: ct("Precio"), render: (v) => formatMoney(v.price) },
                 { label: "Stock", render: (v) => v.stock },
                 ...(can(user.permissions, "profit:read")
                   ? [
                       {
-                        label: "Costo",
+                        label: ct("Costo"),
                         render: (v: any) => formatMoney(v.costAvg),
                       },
                     ]
                   : []),
                 {
-                  label: "Acción",
+                  label: ct("Acción"),
                   render: (v) =>
                     write && (
                       <button
                         className="text-link"
                         onClick={() => setEditing({ type: "variant", data: v })}
                       >
-                        Editar precio
+                        {ct("Editar precio")}
                       </button>
                     ),
                 },
@@ -639,46 +653,48 @@ export function Catalog() {
             />
           ) : tab === "Lotes" ? (
             <DataTable
+            english={en}
               rows={detail.variants.flatMap((v) =>
                 (v.lots || []).map((l) => ({ ...l, sku: v.sku })),
               )}
               columns={[
                 { label: "SKU", render: (l) => l.sku },
-                { label: "Lote", render: (l) => l.lotNumber },
+                { label: ct("Lote"), render: (l) => l.lotNumber },
                 {
-                  label: "Vencimiento",
+                  label: ct("Vencimiento"),
                   render: (l) =>
-                    l.expiryDate ? dateLabel(l.expiryDate) : "No aplica",
+                    l.expiryDate ? dateLabel(l.expiryDate, en ? "en-US" : "es-DO") : ct("No aplica"),
                 },
-                { label: "Cantidad", render: (l) => l.qty },
+                { label: ct("Cantidad"), render: (l) => l.qty },
               ]}
             />
           ) : (
-            <Kardex variantId={detail.variants[0].id} />
+            <Kardex variantId={detail.variants[0].id} english={en} />
           ))}
       </Modal>
       {editing && (
         <FormModal
+          english={en}
           title={
             editing.type === "product"
-              ? "Editar producto"
-              : "Editar variante y precio"
+              ? ct("Editar producto")
+              : ct("Editar variante y precio")
           }
           initial={editing.data}
           fields={
             editing.type === "product"
               ? [
-                  { key: "name", label: "Nombre", required: true },
-                  { key: "brand", label: "Marca" },
-                  requiredNumber("minStock", "Stock mínimo"),
-                  requiredNumber("maxStock", "Stock máximo"),
-                  { key: "imageUrl", label: "Foto URL" },
-                  { key: "active", label: "Producto activo", type: "checkbox" },
+                  { key: "name", label: ct("Nombre"), required: true },
+                  { key: "brand", label: ct("Marca") },
+                  requiredNumber("minStock", ct("Stock mínimo")),
+                  requiredNumber("maxStock", ct("Stock máximo")),
+                  { key: "imageUrl", label: ct("Foto URL") },
+                  { key: "active", label: ct("Producto activo"), type: "checkbox" },
                 ]
               : withMargin([
-                  requiredNumber("price", "Precio"),
-                  requiredNumber("costAvg", "Costo promedio"),
-                  { key: "barcode", label: "Código de barras", required: true },
+                  requiredNumber("price", ct("Precio")),
+                  requiredNumber("costAvg", ct("Costo promedio")),
+                  { key: "barcode", label: ct("Código de barras"), required: true },
                 ])
           }
           onClose={() => setEditing(null)}
@@ -696,17 +712,18 @@ export function Catalog() {
         />
       )}
       <Modal
+        closeLabel={en ? "Close" : "Cerrar"}
         open={!!labels}
         onClose={() => setLabels(null)}
-        title="Etiquetas de código de barras"
+        title={ct("Etiquetas de código de barras")}
       >
-        <p>Imprime las etiquetas de cada variante.</p>
+        <p>{ct("Imprime las etiquetas de cada variante.")}</p>
         <div className="barcode-labels receipt-only-on-print">
           {labels?.variants.map((v) => (
             <div className="barcode-label" key={v.id}>
               <strong>{labels.name}</strong>
-              <small>{attrLabel(v.attributes)}</small>
-              <Barcode value={v.barcode} />
+              <small>{attrLabel(v.attributes, en ? "Standard variant" : "Única")}</small>
+              <Barcode value={v.barcode} english={en} />
               <span>{v.barcode}</span>
               <b>{formatMoney(v.price)}</b>
             </div>
@@ -714,13 +731,13 @@ export function Catalog() {
         </div>
         <Button onClick={() => window.print()}>
           <Printer size={17} />
-          Imprimir etiquetas
+          {ct("Imprimir etiquetas")}
         </Button>
       </Modal>
     </>
   );
 }
-export function Barcode({ value }: { value: string }) {
+export function Barcode({ value, english = false }: { value: string; english?: boolean }) {
   const patterns = [
     "nnnwwnwnn",
     "wnnwnnnnw",
@@ -787,7 +804,7 @@ export function Barcode({ value }: { value: string }) {
     <svg
       viewBox={`-10 0 ${x + 20} 40`}
       height="42"
-      aria-label={"Código de barras " + value}
+      aria-label={(english ? "Barcode " : "Código de barras ") + value}
     >
       {bars}
     </svg>
@@ -802,11 +819,12 @@ function Kardex({ variantId, english = false }: { variantId: string; english?: b
   return (
     <QueryState query={query} english={english}>
       <DataTable
+        english={english}
         rows={query.data || []}
         empty={english ? "No stock movements" : undefined}
         emptyDescription={english ? "Recorded movements will appear here." : undefined}
         columns={[
-          { label: t("Fecha"), render: (m) => dateLabel(m.createdAt) },
+          { label: t("Fecha"), render: (m) => dateLabel(m.createdAt, english ? "en-US" : "es-DO") },
           { label: t("Tipo"), render: (m) => <Badge>{m.type}</Badge> },
           { label: t("Cantidad"), render: (m) => m.qty },
           { label: t("Saldo"), render: (m) => m.balanceAfter },

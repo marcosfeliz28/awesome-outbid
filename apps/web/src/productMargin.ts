@@ -10,6 +10,7 @@ export function marginHint(
   price: unknown,
   cost: unknown,
   threshold: unknown = DEFAULT_LOW_MARGIN,
+  english = false,
 ): string {
   if (price === "" || price == null || cost === "" || cost == null) return "";
   const p = Number(price);
@@ -19,6 +20,10 @@ export function marginHint(
     ? Number(threshold)
     : DEFAULT_LOW_MARGIN;
   const value = margin(p, c);
+  if (english) {
+    const text = `Margin: ${value} % (price − cost) ÷ price, without subtracting ITBIS.`;
+    return value < min ? `${text} Below the minimum of ${min} %.` : `${text} Meets the minimum of ${min} %.`;
+  }
   const text = `Margen: ${value} % (precio − costo) ÷ precio, sin restar ITBIS.`;
   return value < min
     ? `${text} Está por debajo del mínimo de ${min} %.`

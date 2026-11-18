@@ -11,8 +11,8 @@ import {
 
 export const today = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" });
-export const dateLabel = (value: string) =>
-  new Date(value).toLocaleDateString("es-DO", {
+export const dateLabel = (value: string, locale = "es-DO") =>
+  new Date(value).toLocaleDateString(locale, {
     timeZone: "America/Santo_Domingo",
     day: "2-digit",
     month: "short",
@@ -180,8 +180,8 @@ export function QueryState({
   english = false,
 }: {
   query: any;
-  english?: boolean;
   children: ReactNode;
+  english?: boolean;
 }) {
   // 05-M3: sin conexión React Query deja en pausa las consultas al servidor:
   // antes quedaba «Cargando datos…» para siempre.
@@ -200,7 +200,7 @@ export function QueryState({
     return (
       <div className="error-panel" role="alert">
         <AlertCircle />
-        <p>{managementQueryError(query.error)}</p>
+        <p>{english ? (query.error?.status === 401 ? "Your session ended. Sign in again to continue." : query.error?.status === 403 ? "You do not have access to this information. Ask management for help." : "We could not load this information. Check your connection and retry.") : managementQueryError(query.error)}</p>
         <Button variant="secondary" onClick={() => query.refetch()}>
           {english ? "Retry" : "Reintentar"}
         </Button>
@@ -304,7 +304,7 @@ export function FormModal({
         if (f.type === "number") data[f.key] = Number(data[f.key]);
       await onSubmit(data);
       await client.invalidateQueries();
-      toast("Cambios guardados.");
+      toast(english ? "Changes saved." : "Cambios guardados.");
       onClose();
     } catch (e: any) {
       setError(businessErrorMessage(e));
@@ -313,7 +313,7 @@ export function FormModal({
     }
   }
   return (
-    <Modal open onClose={onClose} title={title}>
+    <Modal open onClose={onClose} title={title} closeLabel={english ? "Close" : "Cerrar"}>
       <form onSubmit={submit} className="form-grid">
         {resolvedFields.map((f) => (
           <label
@@ -373,7 +373,9 @@ export function FormModal({
         {notice}
         {error && (
           <p className="form-error full" role="alert">
-            {error}
+            {english && error === businessErrorMessage(null)
+              ? "We could not complete the operation. Check the information and your connection, then try again. If it continues, ask management for help."
+              : error}
           </p>
         )}
         <div className="modal-footer full">
