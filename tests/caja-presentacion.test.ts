@@ -63,3 +63,14 @@ describe("Caja Fusión: pintura reversible", () => {
     expect(source).not.toContain("background-image: url");
   });
 });
+
+it("overrides legacy violet active category without losing contrast and scopes the close portal", () => {
+ const css=readFileSync("apps/web/src/fusion-caja-higgsfield.css","utf8");
+ expect(css).toMatch(/\.category-tabs button\.active\s*\{[^}]*background:[^;]+!important;[^}]*border-color:[^;]+!important;[^}]*color: var\(--fc-ink\)/);
+ const scope='body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash)';
+ expect(css).toContain(scope+' .button.primary');
+ expect(css).toContain(scope+' :is(button,input,textarea):focus-visible');
+ const portalRules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(r=>r[1].includes('.modal:has(.close-cash)'));
+ for (const rule of portalRules) expect(rule[2]).not.toMatch(/(?:display|position|width|height|overflow|pointer-events|visibility)\s*:/);
+ expect(css).toContain('background:Highlight !important;color:HighlightText');
+});

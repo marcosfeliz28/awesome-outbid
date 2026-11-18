@@ -201,8 +201,10 @@
   padding: 10px 16px;
 }
 .pos-layout.fusion-caja-integrada .category-tabs button.active {
-  background: linear-gradient(145deg, var(--fc-pressed), var(--fc-deep));
-  border-color: var(--fc-gold);
+  /* Legacy category rules are important; retain semantic active contrast in every theme. */
+  background: linear-gradient(145deg, var(--fc-pressed), var(--fc-deep)) !important;
+  border-color: var(--fc-gold) !important;
+  color: var(--fc-ink);
   box-shadow:
     inset 0 2px 2px var(--fc-accent),
     0 0 12px var(--fc-glow);
@@ -935,4 +937,26 @@ body:has(.pos-layout.fusion-caja-integrada) .modal:has(.sale-success) .button.pr
  body:has(.pos-layout.fusion-caja-integrada) .modal:has(.sale-success) .button.primary {
   background: ButtonFace; color: ButtonText; border-color: ButtonText; box-shadow: none;
  }
+}
+
+/* Close-register dialog is a portal, outside the palette-owning app shell.
+   Only recolor that dialog on redesigned POS/register pages; never change geometry. */
+body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash) {
+  --primary:#176b51;
+  --primary-soft:#e5f4ed;
+}
+:root[data-accent="blue"] body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash) {--primary:#236da5;--primary-soft:#e7f2fc}
+:root[data-theme="dark"] body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash) {--primary:#61e4b2;--primary-soft:#123d2d}
+:root[data-theme="dark"][data-accent="blue"] body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash) {--primary:#83c9ff;--primary-soft:#153850}
+body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash) .button.primary {
+  background:linear-gradient(120deg,#f9dc8e,#dcb45b 50%,#f6d687);
+  color:#241d0b;
+  border-color:#a08036;
+  box-shadow:inset 0 1px #fff8,inset 0 -2px #70501544,0 3px 8px #0002;
+}
+body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash) :is(button,input,textarea):focus-visible {outline:3px solid var(--primary);outline-offset:2px}
+@media(forced-colors:active) {
+  .pos-layout.fusion-caja-integrada .category-tabs button.active {background:Highlight !important;color:HighlightText;border-color:Highlight !important;box-shadow:none}
+  body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash) .button.primary {background:ButtonFace;color:ButtonText;border-color:ButtonText;box-shadow:none}
+  body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash) :is(button,input,textarea):focus-visible {outline-color:Highlight}
 }
