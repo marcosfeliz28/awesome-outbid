@@ -276,3 +276,10 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-18 · ChatGPT PC · Caja y turnos sobre Ventas
+
+- **Evidencia** `chatgpt-pc/capturas-dot-7ac1da14` documenta el candidato `7ac1da1437d221410fe04e3ca491b472a8a8cfae` sobre `0ed250e501bb04c13156776973fb1c446906f9e7`. La función de Caja, sus estilos y la prueba visual coinciden con `e34d2309`. Diez PNG reales a 1440 × 900 y 390 × 844 con claro y oscuro. [Informe](../validacion/capturas-dot-7ac1da14/caja-y-turnos/COMPARACION.md)
+- **Resultado** Cinco importes largos completos en ambos tamaños. Escritorio conserva moneda, signo y centavos en una línea, con 152 px de desplazamiento interno de tabla. Móvil conserva dígitos y centavos juntos con `RD$` en la línea anterior, sin desborde horizontal. Los botones se alcanzaron al desplazarse y Movimiento, Arqueo y vista de Cuadre abrieron y cerraron. Cero operaciones enviadas y servicios cerrados. Sigue pendiente cotejar el PNG de Caja y turnos aprobado.
+
+- **CI** Instalador e imágenes pasaron para `7ac1da14`. A las 04:25 UTC seguía `verify` tras pasar `pnpm check`. [Ejecución 44234873053](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44234873053)
