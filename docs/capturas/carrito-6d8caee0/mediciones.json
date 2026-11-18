@@ -1,0 +1,4242 @@
+{
+  "commit": "6d8caee0d6c6894de1c5b182d04c2a91eac34294",
+  "branch": "dot/15areas-integracion-18nov",
+  "capturedAt": "2026-11-18T14:23:31.042Z",
+  "browser": {
+    "name": "Edge",
+    "version": "157.0.4341.60"
+  },
+  "data": "API y PostgreSQL descartables con datos ficticios",
+  "mobile": {
+    "0-light-es": {
+      "count": 0,
+      "theme": "light",
+      "locale": "es",
+      "cartName": "Ver carrito (0 artículos)",
+      "badge": "0 artículos",
+      "checkoutVisibleText": "Carrito vacío · Busca un artículo",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10999.5,
+          "right": 376,
+          "bottom": 11764.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 11660.48,
+              "right": 131.66,
+              "bottom": 11718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 11660.48,
+              "right": 246.33,
+              "bottom": 11718.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 11660.48,
+              "right": 360.98,
+              "bottom": 11718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11000,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 764.88,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 764.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 660.48,
+              "right": 131.66,
+              "bottom": 718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 660.48,
+              "right": 246.33,
+              "bottom": 718.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 660.48,
+              "right": 360.98,
+              "bottom": 718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11181,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -181.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "returnedToCatalogY": 0
+    },
+    "0-light-en": {
+      "count": 0,
+      "theme": "light",
+      "locale": "en",
+      "cartName": "View cart (0 items)",
+      "badge": "0 items",
+      "checkoutVisibleText": "Empty cart · Search for an item",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10947.5,
+          "right": 376,
+          "bottom": 11712.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 11608.48,
+              "right": 131.66,
+              "bottom": 11666.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 11608.48,
+              "right": 246.33,
+              "bottom": 11666.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 11608.48,
+              "right": 360.98,
+              "bottom": 11666.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 10948,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 764.88,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 764.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 660.48,
+              "right": 131.66,
+              "bottom": 718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 660.48,
+              "right": 246.33,
+              "bottom": 718.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 660.48,
+              "right": 360.98,
+              "bottom": 718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11129,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -181.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "returnedToCatalogY": 0
+    },
+    "0-dark-es": {
+      "count": 0,
+      "theme": "dark",
+      "locale": "es",
+      "cartName": "Ver carrito (0 artículos)",
+      "badge": "0 artículos",
+      "checkoutVisibleText": "Carrito vacío · Busca un artículo",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10999.5,
+          "right": 376,
+          "bottom": 11764.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 11660.48,
+              "right": 131.66,
+              "bottom": 11718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 11660.48,
+              "right": 246.33,
+              "bottom": 11718.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 11660.48,
+              "right": 360.98,
+              "bottom": 11718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11000,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 764.88,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 764.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 660.48,
+              "right": 131.66,
+              "bottom": 718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 660.48,
+              "right": 246.33,
+              "bottom": 718.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 660.48,
+              "right": 360.98,
+              "bottom": 718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11181,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -181.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "returnedToCatalogY": 0
+    },
+    "0-dark-en": {
+      "count": 0,
+      "theme": "dark",
+      "locale": "en",
+      "cartName": "View cart (0 items)",
+      "badge": "0 items",
+      "checkoutVisibleText": "Empty cart · Search for an item",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10947.5,
+          "right": 376,
+          "bottom": 11712.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 11608.48,
+              "right": 131.66,
+              "bottom": 11666.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 11608.48,
+              "right": 246.33,
+              "bottom": 11666.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 11608.48,
+              "right": 360.98,
+              "bottom": 11666.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 10948,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 764.88,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 764.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 660.48,
+              "right": 131.66,
+              "bottom": 718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 660.48,
+              "right": 246.33,
+              "bottom": 718.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 660.48,
+              "right": 360.98,
+              "bottom": 718.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11129,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -181.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 765.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": true,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 190,
+          "scrollHeight": 190,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": true,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "returnedToCatalogY": 0
+    },
+    "1-light-es": {
+      "count": 1,
+      "theme": "light",
+      "locale": "es",
+      "cartName": "Ver carrito (1 artículo)",
+      "badge": "1 artículo",
+      "checkoutVisibleText": "Cobrar · RD$ 1,700.00",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10999.5,
+          "right": 376,
+          "bottom": 11724.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 11620.48,
+              "right": 131.66,
+              "bottom": 11678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 11620.48,
+              "right": 246.33,
+              "bottom": 11678.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 11620.48,
+              "right": 360.98,
+              "bottom": 11678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11000,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 724.88,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 724.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 620.48,
+              "right": 131.66,
+              "bottom": 678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 620.48,
+              "right": 246.33,
+              "bottom": 678.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 620.48,
+              "right": 360.98,
+              "bottom": 678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11141,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -141.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "returnedToCatalogY": 0
+    },
+    "1-light-en": {
+      "count": 1,
+      "theme": "light",
+      "locale": "en",
+      "cartName": "View cart (1 item)",
+      "badge": "1 item",
+      "checkoutVisibleText": "Charge · RD$ 1,700.00",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10947.5,
+          "right": 376,
+          "bottom": 11672.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 11568.48,
+              "right": 131.66,
+              "bottom": 11626.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 11568.48,
+              "right": 246.33,
+              "bottom": 11626.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 11568.48,
+              "right": 360.98,
+              "bottom": 11626.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 10948,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 724.88,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 724.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 620.48,
+              "right": 131.66,
+              "bottom": 678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 620.48,
+              "right": 246.33,
+              "bottom": 678.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 620.48,
+              "right": 360.98,
+              "bottom": 678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11089,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -141.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "returnedToCatalogY": 0
+    },
+    "1-dark-es": {
+      "count": 1,
+      "theme": "dark",
+      "locale": "es",
+      "cartName": "Ver carrito (1 artículo)",
+      "badge": "1 artículo",
+      "checkoutVisibleText": "Cobrar · RD$ 1,700.00",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10999.5,
+          "right": 376,
+          "bottom": 11724.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 11620.48,
+              "right": 131.66,
+              "bottom": 11678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 11620.48,
+              "right": 246.33,
+              "bottom": 11678.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 11620.48,
+              "right": 360.98,
+              "bottom": 11678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11000,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 724.88,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 724.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 620.48,
+              "right": 131.66,
+              "bottom": 678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 620.48,
+              "right": 246.33,
+              "bottom": 678.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 620.48,
+              "right": 360.98,
+              "bottom": 678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11141,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -141.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "returnedToCatalogY": 0
+    },
+    "1-dark-en": {
+      "count": 1,
+      "theme": "dark",
+      "locale": "en",
+      "cartName": "View cart (1 item)",
+      "badge": "1 item",
+      "checkoutVisibleText": "Charge · RD$ 1,700.00",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10947.5,
+          "right": 376,
+          "bottom": 11672.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 11568.48,
+              "right": 131.66,
+              "bottom": 11626.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 11568.48,
+              "right": 246.33,
+              "bottom": 11626.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 11568.48,
+              "right": 360.98,
+              "bottom": 11626.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 10948,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 724.88,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 724.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 620.48,
+              "right": 131.66,
+              "bottom": 678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 620.48,
+              "right": 246.33,
+              "bottom": 678.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 620.48,
+              "right": 360.98,
+              "bottom": 678.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "cartAccess": "Enter",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11089,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -141.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 725.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 150,
+          "scrollHeight": 150,
+          "scrollTop": 0
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "fixedTabMovesToCharge": true,
+      "returnedToCatalogY": 0
+    },
+    "3-light-es": {
+      "count": 3,
+      "theme": "light",
+      "locale": "es",
+      "cartName": "Ver carrito (3 artículos)",
+      "badge": "3 artículos",
+      "checkoutVisibleText": "Cobrar · RD$ 6,450.00",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10999.5,
+          "right": 376,
+          "bottom": 11914.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 11810.48,
+              "right": 131.66,
+              "bottom": 11868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 11810.48,
+              "right": 246.33,
+              "bottom": 11868.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 11810.48,
+              "right": 360.98,
+              "bottom": 11868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11000,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 844,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 914.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 810.48,
+              "right": 131.66,
+              "bottom": 868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.24
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 810.48,
+              "right": 246.33,
+              "bottom": 868.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.46
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 810.48,
+              "right": 360.98,
+              "bottom": 868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.03
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11331,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -331.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "actionsFollowTabOrder": [
+        true,
+        true,
+        true
+      ],
+      "checkoutOpenedAndClosed": true,
+      "cartKept": true,
+      "returnedToCatalogY": 0
+    },
+    "3-light-en": {
+      "count": 3,
+      "theme": "light",
+      "locale": "en",
+      "cartName": "View cart (3 items)",
+      "badge": "3 items",
+      "checkoutVisibleText": "Charge · RD$ 6,450.00",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10947.5,
+          "right": 376,
+          "bottom": 11862.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 11758.48,
+              "right": 131.66,
+              "bottom": 11816.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 11758.48,
+              "right": 246.33,
+              "bottom": 11816.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 11758.48,
+              "right": 360.98,
+              "bottom": 11816.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 10948,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 844,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 914.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 810.48,
+              "right": 131.66,
+              "bottom": 868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.24
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 810.48,
+              "right": 246.33,
+              "bottom": 868.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.46
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 810.48,
+              "right": 360.98,
+              "bottom": 868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.03
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11279,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -331.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "actionsFollowTabOrder": [
+        true,
+        true,
+        true
+      ],
+      "checkoutOpenedAndClosed": true,
+      "cartKept": true,
+      "returnedToCatalogY": 0
+    },
+    "3-dark-es": {
+      "count": 3,
+      "theme": "dark",
+      "locale": "es",
+      "cartName": "Ver carrito (3 artículos)",
+      "badge": "3 artículos",
+      "checkoutVisibleText": "Cobrar · RD$ 6,450.00",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10999.5,
+          "right": 376,
+          "bottom": 11914.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 11810.48,
+              "right": 131.66,
+              "bottom": 11868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 11810.48,
+              "right": 246.33,
+              "bottom": 11868.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 11810.48,
+              "right": 360.98,
+              "bottom": 11868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11000,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 844,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 914.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 810.48,
+              "right": 131.66,
+              "bottom": 868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.24
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 810.48,
+              "right": 246.33,
+              "bottom": 868.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.46
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 810.48,
+              "right": 360.98,
+              "bottom": 868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.03
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11331,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -331.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "En espera",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Cotizar",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Limpiar",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "actionsFollowTabOrder": [
+        true,
+        true,
+        true
+      ],
+      "checkoutOpenedAndClosed": true,
+      "cartKept": true,
+      "returnedToCatalogY": 0
+    },
+    "3-dark-en": {
+      "count": 3,
+      "theme": "dark",
+      "locale": "en",
+      "cartName": "View cart (3 items)",
+      "badge": "3 items",
+      "checkoutVisibleText": "Charge · RD$ 6,450.00",
+      "checkoutAccessiblePrefix": "Cobrar",
+      "atCatalog": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 0,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": false,
+        "cartVisibleHeight": 0,
+        "cart": {
+          "left": 14,
+          "top": 10947.5,
+          "right": 376,
+          "bottom": 11862.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 11758.48,
+              "right": 131.66,
+              "bottom": 11816.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 11758.48,
+              "right": 246.33,
+              "bottom": 11816.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 11758.48,
+              "right": 360.98,
+              "bottom": 11816.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": false,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "afterCart": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 10948,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 844,
+        "cart": {
+          "left": 14,
+          "top": -0.5,
+          "right": 376,
+          "bottom": 914.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 810.48,
+              "right": 131.66,
+              "bottom": 868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.24
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 810.48,
+              "right": 246.33,
+              "bottom": 868.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.46
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 810.48,
+              "right": 360.98,
+              "bottom": 868.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 2209.03
+          }
+        ]
+      },
+      "cartAccess": "clic",
+      "atActions": {
+        "viewport": [
+          390,
+          844
+        ],
+        "documentScrollY": 11279,
+        "documentOverflowPx": 0,
+        "merchandiseBarExists": false,
+        "merchandiseBar": null,
+        "merchandiseOverlapPx2": 0,
+        "cartPanelFocused": true,
+        "cartVisibleHeight": 583.88,
+        "cart": {
+          "left": 14,
+          "top": -331.5,
+          "right": 376,
+          "bottom": 583.88,
+          "width": 362,
+          "height": 915.38
+        },
+        "bar": {
+          "left": 12,
+          "top": 766,
+          "right": 378,
+          "bottom": 832,
+          "width": 366,
+          "height": 66
+        },
+        "cartButton": {
+          "frame": {
+            "left": 12,
+            "top": 766,
+            "right": 84,
+            "bottom": 822,
+            "width": 72,
+            "height": 56
+          },
+          "centerReachable": true
+        },
+        "chargeButton": {
+          "frame": {
+            "left": 92,
+            "top": 766,
+            "right": 378,
+            "bottom": 822,
+            "width": 286,
+            "height": 56
+          },
+          "disabled": false,
+          "centerReachable": true
+        },
+        "cartList": {
+          "height": 340,
+          "scrollHeight": 438,
+          "scrollTop": 98
+        },
+        "actionButtons": [
+          {
+            "text": "On hold",
+            "frame": {
+              "left": 29,
+              "top": 479.48,
+              "right": 131.66,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Quote",
+            "frame": {
+              "left": 143.66,
+              "top": 479.48,
+              "right": 246.33,
+              "bottom": 537.48,
+              "width": 102.67,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          },
+          {
+            "text": "Clear",
+            "frame": {
+              "left": 258.33,
+              "top": 479.48,
+              "right": 360.98,
+              "bottom": 537.48,
+              "width": 102.66,
+              "height": 58
+            },
+            "disabled": false,
+            "centerReachable": true,
+            "textFits": true,
+            "insideGroup": true,
+            "overlapsFixedBarPx2": 0
+          }
+        ]
+      },
+      "actionsFollowTabOrder": [
+        true,
+        true,
+        true
+      ],
+      "checkoutOpenedAndClosed": true,
+      "cartKept": true,
+      "returnedToCatalogY": 0
+    }
+  },
+  "merchandise": {
+    "overview": {
+      "merchandiseVisible": true,
+      "merchandiseGeometry": {
+        "x": 0,
+        "y": 776,
+        "width": 390,
+        "height": 68
+      },
+      "mobileCartBarCount": 0
+    },
+    "returnToPos": {
+      "merchandiseBarCount": 0,
+      "cartRows": 3
+    }
+  },
+  "desktop": {
+    "states": {
+      "threeEsLight": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "documentOverflowPx": 0,
+        "windowScrollY": 0,
+        "rows": [
+          {
+            "number": 1,
+            "visible": false,
+            "height": 85
+          },
+          {
+            "number": 2,
+            "visible": true,
+            "height": 85
+          },
+          {
+            "number": 3,
+            "visible": true,
+            "height": 85
+          }
+        ],
+        "cartList": {
+          "height": 209,
+          "scrollHeight": 255,
+          "scrollTop": 46
+        },
+        "checkout": {
+          "top": 615,
+          "bottom": 661,
+          "width": 349.390625,
+          "height": 46,
+          "fullyVisible": true,
+          "centerReachable": true
+        }
+      },
+      "fiveEnDark": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "documentOverflowPx": 0,
+        "windowScrollY": 0,
+        "rows": [
+          {
+            "number": 1,
+            "visible": false,
+            "height": 85
+          },
+          {
+            "number": 2,
+            "visible": false,
+            "height": 85
+          },
+          {
+            "number": 3,
+            "visible": false,
+            "height": 85
+          },
+          {
+            "number": 4,
+            "visible": true,
+            "height": 85
+          },
+          {
+            "number": 5,
+            "visible": true,
+            "height": 85
+          }
+        ],
+        "cartList": {
+          "height": 218,
+          "scrollHeight": 425,
+          "scrollTop": 207
+        },
+        "checkout": {
+          "top": 615,
+          "bottom": 661,
+          "width": 349.390625,
+          "height": 46,
+          "fullyVisible": true,
+          "centerReachable": true
+        }
+      },
+      "fiveAtTop": {
+        "viewport": [
+          1280,
+          720
+        ],
+        "documentOverflowPx": 0,
+        "windowScrollY": 0,
+        "rows": [
+          {
+            "number": 1,
+            "visible": true,
+            "height": 85
+          },
+          {
+            "number": 2,
+            "visible": true,
+            "height": 85
+          },
+          {
+            "number": 3,
+            "visible": false,
+            "height": 85
+          },
+          {
+            "number": 4,
+            "visible": false,
+            "height": 85
+          },
+          {
+            "number": 5,
+            "visible": false,
+            "height": 85
+          }
+        ],
+        "cartList": {
+          "height": 218,
+          "scrollHeight": 425,
+          "scrollTop": 0
+        },
+        "checkout": {
+          "top": 615,
+          "bottom": 661,
+          "width": 349.390625,
+          "height": 46,
+          "fullyVisible": true,
+          "centerReachable": true
+        }
+      }
+    },
+    "checkoutOpenedAndClosed": true,
+    "cartKept": true
+  },
+  "pageErrors": 0,
+  "operationalWrites": 0,
+  "servicesStopped": true,
+  "ownProcessesRemaining": 0,
+  "listenersRemaining": 0,
+  "screenshots": {
+    "carrito-390-es-claro-0.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "claro",
+      "scenario": "catalogo-carrito-vacio",
+      "sha256": "79aaf389d9ae4acde7a7b7f47b0d97d8929f1dc2d2db1a89d88b3416eefdc469"
+    },
+    "carrito-390-en-oscuro-1.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "oscuro",
+      "scenario": "carrito-con-un-articulo",
+      "sha256": "75fadb6007a21db62e3d62b0be7be3f7e9a95636b1cec1aad3d8ea1e38da6d4e"
+    },
+    "acciones-390-en-claro-3.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "claro",
+      "scenario": "acciones-de-carrito",
+      "sha256": "48b30b8d36e92ca4a85037e1862ca3a02cc60181fff129151ff9ee4f64b60bf2"
+    },
+    "acciones-390-es-oscuro-3.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "oscuro",
+      "scenario": "acciones-de-carrito",
+      "sha256": "32ed2ad96050f55ba9ddb35d817d2c0ef4ed28c08f6a01f74bc5b91839a70b34"
+    },
+    "escritorio-1280-es-claro-3.png": {
+      "dimensions": [
+        1280,
+        720
+      ],
+      "theme": "claro",
+      "scenario": "escritorio-tres",
+      "sha256": "3bb54a9beb9780c3dd4ed6a9b2ec802baee65e9cb3351ced3e5adb6af49fd17b"
+    },
+    "escritorio-1280-en-oscuro-5.png": {
+      "dimensions": [
+        1280,
+        720
+      ],
+      "theme": "oscuro",
+      "scenario": "escritorio-cinco",
+      "sha256": "287d21cb650f883593565b0aa2c8fd71606d15cedbf9da7631eba5c9fc7e203b"
+    }
+  }
+}

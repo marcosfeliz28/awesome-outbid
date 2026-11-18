@@ -2,6 +2,10 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · carrito móvil 6d8caee0
+
+Seis capturas y 12 variantes de carrito móvil en claro/oscuro y ES/EN. Abre con foco, traduce singular/plural y las tres acciones quedan completas y alcanzables con Tab. Cero operaciones. El cobro de escritorio sigue visible con dos filas completas. El nombre accesible de «Charge» aún empieza con «Cobrar». El candidato conserva 275 fotos y debe incorporar la nueva base `00ebc590`, con 31 fotos de tenis adicionales. [Informe y pruebas](../capturas/carrito-6d8caee0/LECTURA.md)
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
