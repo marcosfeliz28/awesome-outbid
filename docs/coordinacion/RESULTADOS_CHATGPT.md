@@ -2,6 +2,9 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · Caja y turnos e34d2309
+
+Pasaron 8 de 8 pruebas visuales locales de importes largos con datos simulados. Los tres controles de GitHub terminaron en verde para este mismo commit. [Capturas del código de aplicación y seguimiento de la prueba](../validacion/capturas-dot-4aaf5952/caja-y-turnos/COMPARACION.md) · [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44231045958)
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
