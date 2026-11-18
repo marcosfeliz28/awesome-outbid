@@ -9,3 +9,5 @@
 Verificadas a ojo (marca, producto, potencia, conteo). Ninguna cumple ≥800 px: decide la dueña si sirven como provisionales o se espera mejor fuente.
 Fuentes que dieron bloqueo: puritan.com, eBay, Vitamin Shoppe, Walgreens (403/reto), Walmart, OFF (503), desertcart/samedaysupplements (403). Bing Images devolvió ruido ("Puritans" históricos).
 Detalle en `candidatas.csv`; vista en `contacto.png`.
+
+Extra INV-1207 Serious Mass Chocolate 4 lb: discrepancia (solo 6/12/3 lb en listados; sin imagen). Fila en CSV; contacto.png no actualizado.
