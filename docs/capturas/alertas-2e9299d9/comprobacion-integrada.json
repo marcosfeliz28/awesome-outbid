@@ -1,0 +1,93 @@
+{
+  "commit": "2e9299d95533399af59ec34baf51d9cc1cf534ba",
+  "screenshots": [
+    {
+      "file": "alertas-fechas-1440-es.png",
+      "width": 1440,
+      "height": 900,
+      "lang": "es"
+    },
+    {
+      "file": "alertas-fechas-1440-en.png",
+      "width": 1440,
+      "height": 900,
+      "lang": "en"
+    },
+    {
+      "file": "alertas-fechas-390-es.png",
+      "width": 390,
+      "height": 844,
+      "lang": "es"
+    },
+    {
+      "file": "alertas-fechas-390-en.png",
+      "width": 390,
+      "height": 844,
+      "lang": "en"
+    }
+  ],
+  "checks": {
+    "390": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "es": {
+        "listDate": "18 nov de 2026 · login unapproved device",
+        "detailDate": "18 nov de 2026",
+        "position": {
+          "top": 33691,
+          "below": 32847,
+          "scroll": 0
+        },
+        "promotionsText": "TU NEGOCIO, CON CLARIDAD\nDale una nueva oportunidad\n\nLibera espacio, recupera capital y sorprende a tus clientes.\n\nNueva promoción\nEl momento perfecto para una oferta\n\nPrioriza productos sin rotación o próximos a vencer. El descuento sugerido protege tu costo.\n\nCandidatos a liquidación\nMis promociones\n✦\nTodavía no hay registros\n\nRevisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla."
+      },
+      "en": {
+        "listDate": "Nov 18, 2026 · login unapproved device",
+        "detailDate": "Nov 18, 2026",
+        "position": {
+          "top": 33691,
+          "below": 32720,
+          "scroll": 127
+        },
+        "promotionsText": "YOUR BUSINESS, WITH CLARITY\nGive products a new opportunity\n\nFree up space, recover capital and surprise your customers.\n\nNew promotion\nThe right moment for an offer\n\nPrioritize slow-moving or expiring products. The suggested discount protects your cost.\n\nClearance candidates\nMy promotions\n✦\nNo records yet\n\nCheck the search and filters, or add a new record from this page."
+      }
+    },
+    "1440": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "es": {
+        "listDate": "18 nov de 2026 · Ventas bajas",
+        "detailDate": "18 nov de 2026",
+        "position": {
+          "top": 368,
+          "below": 0,
+          "scroll": 0
+        },
+        "promotionsText": "TU NEGOCIO, CON CLARIDAD\nDale una nueva oportunidad\n\nLibera espacio, recupera capital y sorprende a tus clientes.\n\nNueva promoción\nEl momento perfecto para una oferta\n\nPrioriza productos sin rotación o próximos a vencer. El descuento sugerido protege tu costo.\n\n86 oportunidades\nCandidatos a liquidación\nMis promociones\n✦\nTodavía no hay registros\n\nRevisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla."
+      },
+      "en": {
+        "listDate": "Nov 18, 2026 · Ventas bajas",
+        "detailDate": "Nov 18, 2026",
+        "position": {
+          "top": 368,
+          "below": 0,
+          "scroll": 0
+        },
+        "promotionsText": "YOUR BUSINESS, WITH CLARITY\nGive products a new opportunity\n\nFree up space, recover capital and surprise your customers.\n\nNew promotion\nThe right moment for an offer\n\nPrioritize slow-moving or expiring products. The suggested discount protects your cost.\n\n86 opportunities\nClearance candidates\nMy promotions\n✦\nNo records yet\n\nCheck the search and filters, or add a new record from this page."
+      }
+    }
+  },
+  "stages": [
+    "PostgreSQL temporal en loopback",
+    "Migraciones de la base de demostración",
+    "Generación de registros ficticios",
+    "API local real",
+    "Aplicación web del SHA publicado"
+  ],
+  "servicesStopped": true,
+  "ports": {
+    "postgres": 15492,
+    "api": 14292,
+    "web": 14392
+  },
+  "completedAt": "2026-11-18T12:28:25.584Z"
+}
