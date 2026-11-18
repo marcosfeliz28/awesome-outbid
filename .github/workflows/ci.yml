@@ -1,173 +1,31 @@
-name: FitStore checks
-on: [push, pull_request]
-# M10: el GITHUB_TOKEN de este workflow sólo puede leer el repositorio. Las
-# acciones se fijan por SHA (comentario con la versión); Dependabot las
-# actualiza (.github/dependabot.yml). N7 (auditoría 04 v2): cada SHA se
-# verificó contra el repositorio de la acción con
-#   git ls-remote --tags https://github.com/<dueño>/<acción>.git
-# y coincide con el tag del comentario (v4.4.0, v4.3.0, v4.4.0, v4.6.2); si se
-# cambia uno, repetir la comprobación (el SHA de un tag anotado es el de
-# `<tag>^{}`, no el del objeto tag).
+name: Isolated synthetic visual pilot
+on:
+  push:
+    branches: [dot/qa-visual-pilot-2832-18nov]
 permissions:
   contents: read
-# 29-oct-2026: un empuje nuevo a la misma rama cancela la ejecución anterior
-# (solo cuenta el último SHA). Sin esto, cada empuje de las sesiones apilaba
-# una ejecución completa de ~35 min y saturaba los ejecutores.
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
-  verify:
+  visual:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17.11@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
-        env:
-          POSTGRES_USER: fitstore
-          POSTGRES_PASSWORD: fitstore_ci
-          POSTGRES_DB: fitstore
-        ports: ["5434:5432"]
-        options: >-
-          --health-cmd "pg_isready -U fitstore"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      DATABASE_URL: postgresql://fitstore:fitstore_ci@localhost:5434/fitstore
-      JWT_SECRET: fitstore-ci-secret-for-isolated-tests-only-2026
-      SEED_DEMO_PASSWORD: FitStore-Demo-2026!
-      BACKUP_TEST_ADMIN_URL: postgresql://fitstore:fitstore_ci@localhost:5434/postgres
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
-        with:
-          version: 11.19.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm db:generate
-      - run: pnpm db:migrate
-      - run: pnpm db:seed
-      - name: Respaldo y restauración real (PostgreSQL 17)
-        run: |
-          set -euo pipefail
-          # El runner trae el cliente 16 y pg_dump se niega a respaldar un servidor 17.
-          sudo apt-get install -y -qq postgresql-common
-          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-          sudo apt-get install -y -qq postgresql-client-17
-          # También para los pasos siguientes (tests/backup-restore.test.ts usa pg_dump del PATH).
-          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
-          export PATH="/usr/lib/postgresql/17/bin:$PATH"
-          pg_dump --version
-          B="$RUNNER_TEMP/backup"
-          NEXORA_BACKUP_DIR="$B" node scripts/backup.mjs
-          createdb -h localhost -p 5434 -U fitstore restore_check
-          RESTORE_DATABASE_URL=postgresql://fitstore:fitstore_ci@localhost:5434/restore_check \
-            node scripts/restore.mjs "$B"/nexora-fitstore-*.dump
-          q="select table_name||':'||(xpath('/row/c/text()', query_to_xml('select count(*) c from public.'||quote_ident(table_name), false, true, '')))[1]::text from information_schema.tables where table_schema='public' and table_type='BASE TABLE' order by 1"
-          psql "$DATABASE_URL" -At -c "$q" > "$RUNNER_TEMP/a.txt"
-          psql postgresql://fitstore:fitstore_ci@localhost:5434/restore_check -At -c "$q" > "$RUNNER_TEMP/b.txt"
-          test -s "$RUNNER_TEMP/a.txt"
-          diff "$RUNNER_TEMP/a.txt" "$RUNNER_TEMP/b.txt"
-          echo "Tablas restauradas: $(wc -l < "$RUNNER_TEMP/a.txt"), conteos idénticos."
-        env:
-          PGPASSWORD: fitstore_ci
-      - run: pnpm check
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: node scripts/verify.mjs
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: always()
-        with:
-          name: fitstore-test-evidence
-          path: |
-            playwright-report
-            test-results
-  # A4: construye las imágenes de Render (sin publicarlas) y las arranca como
-  # en un despliegue: web antes que la API, migraciones con el preDeployCommand
-  # de render.yaml y post-deploy-check.mjs a través de la web.
-  render-images:
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 24
-      - name: Construir la imagen de la API (Render, sin publicar)
-        run: docker build -f deploy/render/Dockerfile.api -t nexora-pos-api:ci .
-      - name: Construir la imagen web (Render, sin publicar)
-        run: docker build -f deploy/render/Dockerfile.web -t nexora-pos-web:ci .
-      - name: Arranque como en Render y comprobación posterior al despliegue
-        run: bash deploy/render/ci-smoke.sh
-  windows-installer:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 11.19.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
-          cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm db:generate
-      - name: Exigir PostgreSQL real para recuperación del instalador
-        shell: pwsh
-        run: |
-          $pgBin = $env:PGBIN
-          if (-not $pgBin) {
-            $version = Get-ChildItem 'C:\Program Files\PostgreSQL' -Directory | Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
-            if (-not $version) { throw 'No hay PostgreSQL instalado en el runner Windows.' }
-            $pgBin = Join-Path $version.FullName 'bin'
-          }
-          foreach ($tool in @('initdb.exe', 'pg_ctl.exe', 'psql.exe', 'pg_dump.exe', 'pg_restore.exe')) {
-            if (-not (Test-Path -LiteralPath (Join-Path $pgBin $tool) -PathType Leaf)) { throw "Falta $tool en PGBIN." }
-          }
-          "PGBIN=$pgBin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          & (Join-Path $pgBin 'psql.exe') --version
-      - run: node -e "if(process.platform!=='win32') process.exit(1)"
-      - run: pnpm exec vitest run tests/portabilidad.test.ts --reporter=verbose
-      - run: pnpm instalador:validar
-      # Entrega el .exe (sin firma de código) como artefacto, solo en empujes a
-      # nexora-cloud, claude-pc/* y chatgpt-*/*. Corre en paralelo con verify
-      # (~35 min), así que no alarga el total. Sin secretos. Firma pendiente:
-      # instalador/README.md, «Compilado en CI y firma de código».
-      - name: Instalar NSIS si falta (Chocolatey del runner)
-        id: nsis
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/nexora-cloud' || startsWith(github.ref, 'refs/heads/claude-pc/') || startsWith(github.ref, 'refs/heads/chatgpt-'))
-        shell: pwsh
-        run: |
-          $nsis = @("${env:ProgramFiles(x86)}\NSIS\makensis.exe", "$env:ProgramFiles\NSIS\makensis.exe") | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-          if (-not $nsis) {
-            choco install nsis --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { throw "No se pudo instalar NSIS con Chocolatey." }
-          }
-      - name: Compilar el instalador (sin firma)
-        id: exe
-        if: steps.nsis.outcome == 'success'
-        timeout-minutes: 30
-        shell: pwsh
-        run: |
-          $version = (Get-Content -LiteralPath instalador/VERSION -Raw).Trim()
-          powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -SinInstalarNSIS
-          if ($LASTEXITCODE -ne 0) { throw "La compilación del instalador falló ($LASTEXITCODE)." }
-          $name = "Nexora-POS-Setup-$version.exe"
-          $hash = (Get-FileHash -LiteralPath "instalador/dist/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash *$name" | Set-Content -LiteralPath "instalador/dist/$name.sha256.txt" -Encoding ascii
-          "SHA-256 de ${name}: $hash"
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: steps.exe.outcome == 'success'
+      - run: pnpm --filter @fitstore/web build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Capture synthetic roots only
+        run: pnpm exec playwright test --config qa/visual15/playwright.config.ts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
         with:
-          name: Nexora-POS-Setup-${{ steps.exe.outputs.version }}
-          path: |
-            instalador/dist/Nexora-POS-Setup-${{ steps.exe.outputs.version }}.exe
-            instalador/dist/Nexora-POS-Setup-${{ steps.exe.outputs.version }}.exe.sha256.txt
-          if-no-files-found: error
+          name: synthetic-15areas-2832-pilot
+          path: qa-evidence
           retention-days: 7
-          compression-level: 0
