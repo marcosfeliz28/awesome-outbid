@@ -3434,7 +3434,9 @@ export function SalesHistory() {
                             onClick={() => {
                               if (!session) {
                                 toast(
-                                  "Abre tu caja para registrar abonos.",
+                                  en
+                                    ? "Open your register to record payments."
+                                    : "Abre tu caja para registrar abonos.",
                                   true,
                                 );
                                 return;
@@ -3471,7 +3473,9 @@ export function SalesHistory() {
                             onClick={() => {
                               if (!session) {
                                 toast(
-                                  "Abre tu caja para procesar devoluciones.",
+                                  en
+                                    ? "Open your register to process returns."
+                                    : "Abre tu caja para procesar devoluciones.",
                                   true,
                                 );
                                 return;
@@ -3740,7 +3744,11 @@ export function SalesHistory() {
                               await uploadProof(p.id, file);
                               setSelected(null);
                               await client.invalidateQueries();
-                              toast("Foto de la evidencia guardada.");
+                              toast(
+                                en
+                                  ? "Payment evidence photo saved."
+                                  : "Foto de la evidencia guardada.",
+                              );
                             } catch (err: any) {
                               toast(err.message, true);
                             }
@@ -3779,7 +3787,11 @@ export function SalesHistory() {
                             await post("/payments/" + p.id + "/verify", {});
                             setSelected(null);
                             await client.invalidateQueries();
-                            toast("Transferencia verificada.");
+                            toast(
+                              en
+                                ? "Transfer verified."
+                                : "Transferencia verificada.",
+                            );
                           } catch (e: any) {
                             toast(e.message, true);
                           }
@@ -3828,7 +3840,7 @@ export function SalesHistory() {
               reason,
             });
             await client.invalidateQueries();
-            toast("Venta anulada.");
+            toast(en ? "Sale voided." : "Venta anulada.");
           }}
         />
       )}
@@ -3903,7 +3915,7 @@ export function SalesHistory() {
           onConfirm={async (reason) => {
             await post("/payments/" + rejecting.id + "/reject", { reason });
             await client.invalidateQueries();
-            toast("Transferencia rechazada.");
+            toast(en ? "Transfer rejected." : "Transferencia rechazada.");
           }}
         />
       )}

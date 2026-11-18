@@ -46,6 +46,9 @@ assert.match(view, /Visible after closing your register\./);
 assert.match(view, /Item to return/);
 assert.match(view, /Refund method/);
 assert.match(view, /english=\{en\}/);
+assert.match(view, /Open your register to record payments/);
+assert.match(view, /Open your register to process returns/);
+assert.match(css, /:root:has\(\.sales-fusion\) \.modal/);
 log(
-  "PASS: 30 presentation, permissions, blind cash and accessibility contracts",
+  "PASS: 33 presentation, permissions, blind cash and accessibility contracts",
 );

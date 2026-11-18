@@ -35,7 +35,8 @@
   --sv-accent: #8dcaff;
   --sv-glow: #458eff40;
 }
-:root[data-theme="dark"][data-overview-surface="black"] .app-shell:has(.sales-fusion) {
+:root[data-theme="dark"][data-overview-surface="black"]
+  .app-shell:has(.sales-fusion) {
   --sv-surface: #131916;
   --sv-deep: #020403;
 }
@@ -279,7 +280,9 @@
   color: var(--sv-ink);
   border: 1px solid var(--sv-gold);
   background: linear-gradient(145deg, var(--sv-glow), var(--sv-deep));
-  box-shadow: inset 0 1px 2px #fff4, 0 4px 10px #0002;
+  box-shadow:
+    inset 0 1px 2px #fff4,
+    0 4px 10px #0002;
 }
 .app-shell:has(.sales-fusion) .brand-icon,
 .app-shell:has(.sales-fusion) .brand-icon span {
@@ -293,7 +296,9 @@
 /* Actions stay in view even when unusually long data require horizontal scroll.
    Natural column sizing preserves monetary digits rather than shrinking them. */
 @media (min-width: 769px) {
-  .sales-fusion .table-wrap { position: relative; }
+  .sales-fusion .table-wrap {
+    position: relative;
+  }
   .sales-fusion :is(th, td):last-child {
     position: sticky;
     right: 0;
@@ -301,5 +306,34 @@
     background: var(--sv-surface);
     box-shadow: -4px 0 8px #0002;
   }
-  .sales-fusion th:last-child { z-index: 2; }
+  .sales-fusion th:last-child {
+    z-index: 2;
+  }
+}
+
+/* Dialogs are portalled outside the app shell: preserve the active Sales accent. */
+:root:has(.sales-fusion) .modal {
+  --primary: #08784b;
+  --primary-soft: #19bf8030;
+}
+:root[data-theme="dark"]:has(.sales-fusion) .modal {
+  --primary: #67ecaa;
+}
+:root[data-accent="blue"]:has(.sales-fusion) .modal {
+  --primary: #1765a9;
+  --primary-soft: #458eff30;
+}
+:root[data-theme="dark"][data-accent="blue"]:has(.sales-fusion) .modal {
+  --primary: #8dcaff;
+}
+:root:has(.sales-fusion) .modal .button.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow:
+    inset 0 1px 1px #fff4,
+    0 3px 8px #0002;
+}
+:root[data-theme="dark"]:has(.sales-fusion) .modal .button.primary {
+  color: #10291e;
 }
