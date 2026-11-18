@@ -1,6 +1,22 @@
 import type { Language } from "./inicioLanguage";
 
 export const inventoryEnglish: Record<string, string> = {
+  "Conteo físico": "Physical count",
+  "Cantidad (+ entrada / − salida)": "Quantity (+ incoming / \u2212 outgoing)",
+  "Tipo": "Type",
+  "Ajuste": "Adjustment",
+  "Merma": "Waste",
+  "Devolución a proveedor": "Supplier return",
+  "Proveedor (solo en devolución a proveedor)": "Supplier (supplier returns only)",
+  "Referencia de la devolución (documento o nota de crédito)": "Return reference (document or credit note)",
+  "Lote de salida": "Outgoing batch",
+  "Lote de entrada": "Incoming batch",
+  "Vencimiento de entrada": "Incoming expiry date",
+  "Motivo": "Reason",
+  "unidades": "units",
+  "Cantidad": "Quantity",
+  "Saldo": "Balance",
+
   "Cada unidad, bajo control": "Every unit, under control",
   "El inventario correcto hace espacio para mejores decisiones.":
     "Accurate inventory makes room for better decisions.",

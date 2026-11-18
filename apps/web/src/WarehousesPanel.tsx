@@ -1,3 +1,4 @@
+import { useLanguage } from "./inicioLanguage";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@fitstore/ui";
@@ -13,6 +14,7 @@ export function WarehousesPanel({
   rows: any[];
   warehouseId: string;
 }) {
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
   const warehouses = useQuery<Warehouse[]>({
@@ -58,12 +60,18 @@ export function WarehousesPanel({
       else {
         setPreview(null);
         setFile(null);
-        toast("Levantamiento de Casa aplicado.");
+        toast(
+          en ? "Home stock count applied." : "Levantamiento de Casa aplicado.",
+        );
         await client.invalidateQueries();
       }
     } catch (e) {
       toast(
-        e instanceof Error ? e.message : "No se pudo cargar el archivo.",
+        e instanceof Error
+          ? e.message
+          : en
+            ? "The file could not be uploaded."
+            : "No se pudo cargar el archivo.",
         true,
       );
       setPreview(null);
@@ -72,23 +80,34 @@ export function WarehousesPanel({
     }
   }
   return (
-    <section className="panel" aria-label="Almacenes y traspasos">
-      <h2>Dónde está la mercancía</h2>
+    <section
+      className="panel"
+      aria-label={en ? "Warehouses and transfers" : "Almacenes y traspasos"}
+    >
+      <h2>{en ? "Where the goods are" : "Dónde está la mercancía"}</h2>
       <div className="table-toolbar">
         <span>
-          Producto · Tienda · Casa · Total
-          {can(user.permissions, "profit:read") ? " · Valor a costo" : ""}
+          {en
+            ? "Product · Store · Home · Total"
+            : "Producto · Tienda · Casa · Total"}
+          {can(user.permissions, "profit:read")
+            ? en
+              ? " · Value at cost"
+              : " · Valor a costo"
+            : ""}
         </span>
       </div>
       <div className="table-wrap" tabIndex={0}>
         <table>
           <thead>
             <tr>
-              <th>Producto</th>
-              <th>Tienda</th>
-              <th>Casa</th>
+              <th>{en ? "Product" : "Producto"}</th>
+              <th>{en ? "Store" : "Tienda"}</th>
+              <th>{en ? "Home" : "Casa"}</th>
               <th>Total</th>
-              {can(user.permissions, "profit:read") && <th>Valor a costo</th>}
+              {can(user.permissions, "profit:read") && (
+                <th>{en ? "Value at cost" : "Valor a costo"}</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -112,18 +131,23 @@ export function WarehousesPanel({
       </div>
       {user.permissions.includes("*") && (
         <>
-          <h2>Traspasar mercancía</h2>
+          <h2>{en ? "Transfer goods" : "Traspasar mercancía"}</h2>
           <p>
-            El movimiento resta del origen y suma al destino en una sola
-            operación.
+            {en
+              ? "The movement subtracts from the source and adds to the destination in a single operation."
+              : "El movimiento resta del origen y suma al destino en una sola operación."}
           </p>
-          <label htmlFor="transfer-product">Producto</label>
+          <label htmlFor="transfer-product">
+            {en ? "Product" : "Producto"}
+          </label>
           <select
             id="transfer-product"
             value={variantId}
             onChange={(e) => setVariantId(e.target.value)}
           >
-            <option value="">Elige un producto</option>
+            <option value="">
+              {en ? "Choose a product" : "Elige un producto"}
+            </option>
             {rows.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.product.name} · {v.sku}
@@ -137,16 +161,17 @@ export function WarehousesPanel({
               setOperationId(crypto.randomUUID());
             }}
           >
-            Traspasar
+            {en ? "Transfer" : "Traspasar"}
           </Button>
           {transfer && (
             <FormModal
-              title={`Traspasar · ${transfer.product.name}`}
+              english={en}
+              title={`${en ? "Transfer" : "Traspasar"} · ${transfer.product.name}`}
               onClose={() => setTransfer(null)}
               fields={[
                 {
                   key: "fromId",
-                  label: "Desde",
+                  label: en ? "From" : "Desde",
                   type: "select",
                   required: true,
                   initial: defaultFrom,
@@ -157,7 +182,7 @@ export function WarehousesPanel({
                 },
                 {
                   key: "toId",
-                  label: "Hasta",
+                  label: en ? "To" : "Hasta",
                   type: "select",
                   required: true,
                   initial: defaultTo,
@@ -168,7 +193,7 @@ export function WarehousesPanel({
                 },
                 {
                   key: "qty",
-                  label: "Cantidad",
+                  label: en ? "Quantity" : "Cantidad",
                   type: "number",
                   required: true,
                   min: 0.001,
@@ -176,7 +201,7 @@ export function WarehousesPanel({
                 },
                 {
                   key: "lotId",
-                  label: "Lote (si aplica)",
+                  label: en ? "Batch (if applicable)" : "Lote (si aplica)",
                   type: "select",
                   options: transfer.lots.map((l: any) => ({
                     label: l.lotNumber,
@@ -185,7 +210,7 @@ export function WarehousesPanel({
                 },
                 {
                   key: "reason",
-                  label: "Motivo",
+                  label: en ? "Reason" : "Motivo",
                   required: true,
                   type: "textarea",
                 },
@@ -207,13 +232,17 @@ export function WarehousesPanel({
               }}
             />
           )}
-          <h2>Levantamiento inicial de Casa</h2>
+          <h2>
+            {en ? "Initial Home stock count" : "Levantamiento inicial de Casa"}
+          </h2>
           <p>
-            El Excel usa las columnas ID, EXISTENCIA, COSTO y PRECIODETALLE. Los
-            productos nuevos se crean con cero unidades en Tienda. Los productos
-            con lote se cuentan por lote.
+            {en
+              ? "The spreadsheet uses columns ID, EXISTENCIA, COSTO and PRECIODETALLE. New products are created with zero units in Store. Batch-tracked products are counted by batch."
+              : "El Excel usa las columnas ID, EXISTENCIA, COSTO y PRECIODETALLE. Los productos nuevos se crean con cero unidades en Tienda. Los productos con lote se cuentan por lote."}
           </p>
-          <label htmlFor="casa-excel">Excel de Casa</label>
+          <label htmlFor="casa-excel">
+            {en ? "Home spreadsheet" : "Excel de Casa"}
+          </label>
           <input
             id="casa-excel"
             type="file"
@@ -224,22 +253,37 @@ export function WarehousesPanel({
             }}
           />
           <Button disabled={!file || busy} onClick={() => upload("preview")}>
-            Revisar archivo
+            {en ? "Review file" : "Revisar archivo"}
           </Button>
           {preview && (
             <div role="status">
               <p>
-                {preview.rows} filas · {preview.blocking.length} problemas
+                {preview.rows} {en ? "rows" : "filas"} ·{" "}
+                {preview.blocking.length} {en ? "issues" : "problemas"}
               </p>
               {preview.changes?.length > 0 && (
                 <div className="table-wrap" tabIndex={0}>
-                  <table aria-label="Cambios del levantamiento de Casa">
+                  <table
+                    aria-label={
+                      en
+                        ? "Home stock count changes"
+                        : "Cambios del levantamiento de Casa"
+                    }
+                  >
                     <thead>
                       <tr>
                         <th>ID</th>
-                        <th>Producto</th>
-                        <th>Existencia actual en Casa</th>
-                        <th>Existencia después de cargar</th>
+                        <th>{en ? "Product" : "Producto"}</th>
+                        <th>
+                          {en
+                            ? "Current stock at Home"
+                            : "Existencia actual en Casa"}
+                        </th>
+                        <th>
+                          {en
+                            ? "Stock after import"
+                            : "Existencia después de cargar"}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -257,36 +301,40 @@ export function WarehousesPanel({
               )}
               {preview.blocking.map((b: any, i: number) => (
                 <p key={i}>
-                  Fila {b.row}: {b.message}
+                  {en ? "Row" : "Fila"} {b.row}: {b.message}
                 </p>
               ))}
               {preview.canApply && (
                 <Button disabled={busy} onClick={() => upload("apply")}>
-                  Cargar en Casa
+                  {en ? "Import into Home" : "Cargar en Casa"}
                 </Button>
               )}
             </div>
           )}
         </>
       )}
-      <h2>Historial de traspasos</h2>
+      <h2>{en ? "Transfer history" : "Historial de traspasos"}</h2>
       <div className="table-wrap" tabIndex={0}>
         <table>
           <thead>
             <tr>
-              <th>Fecha</th>
-              <th>Desde</th>
-              <th>Hasta</th>
-              <th>Producto</th>
-              <th>Cantidad</th>
-              <th>Motivo</th>
+              <th>{en ? "Date" : "Fecha"}</th>
+              <th>{en ? "From" : "Desde"}</th>
+              <th>{en ? "To" : "Hasta"}</th>
+              <th>{en ? "Product" : "Producto"}</th>
+              <th>{en ? "Quantity" : "Cantidad"}</th>
+              <th>{en ? "Reason" : "Motivo"}</th>
             </tr>
           </thead>
           <tbody>
             {(transfers.data || []).flatMap((t) =>
               t.lines.map((l: any) => (
                 <tr key={l.id}>
-                  <td>{dateLabel(t.createdAt)}</td>
+                  <td>
+                    {en
+                      ? new Date(t.createdAt).toLocaleString("en-US")
+                      : dateLabel(t.createdAt)}
+                  </td>
                   <td>{t.from.name}</td>
                   <td>{t.to.name}</td>
                   <td>{l.variant.product.name}</td>

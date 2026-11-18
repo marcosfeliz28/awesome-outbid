@@ -161,6 +161,74 @@
     {
       "before": "aria-label={\"Kardex de \" + v.product.name}",
       "after": "aria-label={(inventoryLanguage === \"en\" ? \"Stock ledger for \" : \"Kardex de \") + v.product.name}"
+    },
+    {
+      "before": "<FormModal\n          title={\"Ajustar · \" + adjust.product.name}",
+      "after": "<FormModal\n          english={inventoryLanguage === \"en\"}\n          title={translateInventory(\"Ajustar\") + \" · \" + adjust.product.name}"
+    },
+    {
+      "before": "<FormModal\n          title={\"Conteo físico · \" + count.product.name}",
+      "after": "<FormModal\n          english={inventoryLanguage === \"en\"}\n          title={translateInventory(\"Conteo físico\") + \" · \" + count.product.name}"
+    },
+    {
+      "before": "\"Cantidad (+ entrada / − salida)\"",
+      "after": "translateInventory(\"Cantidad (+ entrada / − salida)\")"
+    },
+    {
+      "before": "\"Tipo\"",
+      "after": "translateInventory(\"Tipo\")"
+    },
+    {
+      "before": "\"Ajuste\"",
+      "after": "translateInventory(\"Ajuste\")"
+    },
+    {
+      "before": "\"Merma\"",
+      "after": "translateInventory(\"Merma\")"
+    },
+    {
+      "before": "\"Devolución a proveedor\"",
+      "after": "translateInventory(\"Devolución a proveedor\")"
+    },
+    {
+      "before": "\"Proveedor (solo en devolución a proveedor)\"",
+      "after": "translateInventory(\"Proveedor (solo en devolución a proveedor)\")"
+    },
+    {
+      "before": "\"Referencia de la devolución (documento o nota de crédito)\"",
+      "after": "translateInventory(\"Referencia de la devolución (documento o nota de crédito)\")"
+    },
+    {
+      "before": "\"Lote de salida\"",
+      "after": "translateInventory(\"Lote de salida\")"
+    },
+    {
+      "before": "\"Lote de entrada\"",
+      "after": "translateInventory(\"Lote de entrada\")"
+    },
+    {
+      "before": "\"Vencimiento de entrada\"",
+      "after": "translateInventory(\"Vencimiento de entrada\")"
+    },
+    {
+      "before": "\"Motivo\"",
+      "after": "translateInventory(\"Motivo\")"
+    },
+    {
+      "before": "l.qty + \" unidades\"",
+      "after": "l.qty + \" \" + translateInventory(\"unidades\")"
+    },
+    {
+      "before": "title={\"Kardex · \" + (kardex?.product.name || \"\")}",
+      "after": "title={(inventoryLanguage === \"en\" ? \"Stock ledger · \" : \"Kardex · \") + (kardex?.product.name || \"\")}"
+    },
+    {
+      "before": "<Kardex variantId={kardex.id} />",
+      "after": "<Kardex variantId={kardex.id} english={inventoryLanguage === \"en\"} />"
+    },
+    {
+      "before": "export function Inventory() {",
+      "after": "export function Inventory() {\n  useInventoryAppearance();"
     }
   ]
 }

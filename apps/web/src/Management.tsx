@@ -1,6 +1,7 @@
 import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
 import { inventoryText } from "./inventoryLanguage";
+import { useInventoryAppearance } from "./inventoryAppearance";
 import "./fusion-inventory.css";
 import {
   CashElsewhere,
@@ -786,7 +787,8 @@ export function Barcode({ value }: { value: string }) {
     </svg>
   );
 }
-function Kardex({ variantId }: { variantId: string }) {
+function Kardex({ variantId, english = false }: { variantId: string; english?: boolean }) {
+  const t = (text: string) => inventoryText(text, english ? "en" : "es");
   const query = useQuery({
     queryKey: ["movements", variantId],
     queryFn: () => api("/inventory/movements?variantId=" + variantId),
@@ -795,12 +797,14 @@ function Kardex({ variantId }: { variantId: string }) {
     <QueryState query={query}>
       <DataTable
         rows={query.data || []}
+        empty={english ? "No stock movements" : undefined}
+        emptyDescription={english ? "Recorded movements will appear here." : undefined}
         columns={[
-          { label: "Fecha", render: (m) => dateLabel(m.createdAt) },
-          { label: "Tipo", render: (m) => <Badge>{m.type}</Badge> },
-          { label: "Cantidad", render: (m) => m.qty },
-          { label: "Saldo", render: (m) => m.balanceAfter },
-          { label: "Motivo", render: (m) => m.reason },
+          { label: t("Fecha"), render: (m) => dateLabel(m.createdAt) },
+          { label: t("Tipo"), render: (m) => <Badge>{m.type}</Badge> },
+          { label: t("Cantidad"), render: (m) => m.qty },
+          { label: t("Saldo"), render: (m) => m.balanceAfter },
+          { label: t("Motivo"), render: (m) => m.reason },
         ]}
       />
     </QueryState>
@@ -808,6 +812,7 @@ function Kardex({ variantId }: { variantId: string }) {
 }
 
 export function Inventory() {
+  useInventoryAppearance();
   const inventoryLanguage = useLanguage();
   const translateInventory = (text: string) => inventoryText(text, inventoryLanguage);
   const user = useStore((s) => s.user)!;
@@ -1052,7 +1057,8 @@ export function Inventory() {
       <WarehousesPanel rows={rows} warehouseId={warehouseView} />
       {adjust && (
         <FormModal
-          title={"Ajustar · " + adjust.product.name}
+          english={inventoryLanguage === "en"}
+          title={translateInventory("Ajustar") + " · " + adjust.product.name}
           fields={[
             {
               key: "warehouseId",
@@ -1066,24 +1072,24 @@ export function Inventory() {
               })),
             },
             {
-              ...requiredNumber("qty", "Cantidad (+ entrada / − salida)"),
+              ...requiredNumber("qty", translateInventory("Cantidad (+ entrada / − salida)")),
               min: -100000,
               initial: 1,
             },
             {
               key: "type",
-              label: "Tipo",
+              label: translateInventory("Tipo"),
               type: "select",
               initial: "adjustment",
               options: [
-                { label: "Ajuste", value: "adjustment" },
-                { label: "Merma", value: "waste" },
-                { label: "Devolución a proveedor", value: "supplier_return" },
+                { label: translateInventory("Ajuste"), value: "adjustment" },
+                { label: translateInventory("Merma"), value: "waste" },
+                { label: translateInventory("Devolución a proveedor"), value: "supplier_return" },
               ],
             },
             {
               key: "supplierId",
-              label: "Proveedor (solo en devolución a proveedor)",
+              label: translateInventory("Proveedor (solo en devolución a proveedor)"),
               type: "select",
               options: (adjustSuppliers.data || []).map((x: any) => ({
                 label: x.name,
@@ -1093,26 +1099,26 @@ export function Inventory() {
             {
               key: "reference",
               label:
-                "Referencia de la devolución (documento o nota de crédito)",
+                translateInventory("Referencia de la devolución (documento o nota de crédito)"),
             },
             {
               key: "lotId",
-              label: "Lote de salida",
+              label: translateInventory("Lote de salida"),
               type: "select",
               options: adjust.lots.map((l: any) => ({
-                label: l.lotNumber + " · " + l.qty + " unidades",
+                label: l.lotNumber + " · " + l.qty + " " + translateInventory("unidades"),
                 value: l.id,
               })),
             },
-            { key: "lotNumber", label: "Lote de entrada" },
+            { key: "lotNumber", label: translateInventory("Lote de entrada") },
             {
               key: "expiryDate",
-              label: "Vencimiento de entrada",
+              label: translateInventory("Vencimiento de entrada"),
               type: "date",
             },
             {
               key: "reason",
-              label: "Motivo",
+              label: translateInventory("Motivo"),
               required: true,
               type: "textarea",
             },
@@ -1141,7 +1147,8 @@ export function Inventory() {
       )}
       {count && (
         <FormModal
-          title={"Conteo físico · " + count.product.name}
+          english={inventoryLanguage === "en"}
+          title={translateInventory("Conteo físico") + " · " + count.product.name}
           fields={[
             {
               key: "warehouseId",
@@ -1181,10 +1188,10 @@ export function Inventory() {
       <Modal
         open={!!kardex}
         onClose={() => setKardex(null)}
-        title={"Kardex · " + (kardex?.product.name || "")}
+        title={(inventoryLanguage === "en" ? "Stock ledger · " : "Kardex · ") + (kardex?.product.name || "")}
         wide
       >
-        {kardex && <Kardex variantId={kardex.id} />}
+        {kardex && <Kardex variantId={kardex.id} english={inventoryLanguage === "en"} />}
       </Modal>
     </section>
   );

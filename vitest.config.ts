@@ -10,6 +10,7 @@ export default defineConfig({
     include: [
       "tests/inventario-presentacion.test.ts",
       "tests/inventory-language.test.ts",
+      "tests/inventory-appearance.test.ts",
       "tests/docs-sistema-indice.test.ts",
       "tests/login-legible.test.ts",
       "tests/login-animacion.test.ts",

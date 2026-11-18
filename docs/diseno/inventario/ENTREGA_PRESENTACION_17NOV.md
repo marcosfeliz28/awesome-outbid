@@ -45,3 +45,7 @@ Se conecta el cuerpo principal Inventory a la preferencia ES/EN existente: cabec
 Rama `dot/inventario-produccion-revision-18nov`. Solo corte de presentación: conserva Ventas, PWA, fotos, API y Caja de esa base. La aprobación del concepto proviene del lote de cuatro áreas aceptado por Marcos; referencia `norexos-inventario-higgsfield-01.png` inspeccionada. No equivale todavía a reproducción completa del PNG: KPI, alertas/movimientos y fotos del concepto no se inventan como datos.
 
 Se corrigen además nombre accesible, sobretítulo EN, prefijo de almacén, fallback sin lote y aria de Kardex; la prueba reversible de Inventory sigue pasando. 6/6 pruebas focalizadas, tipado web, lint focal y build web pasan. Pruebas CI y capturas de este SHA pendientes. EN compartido/modales aún parcial. Sin despliegue.
+
+## Corrección QA posterior
+
+Acceso directo restaura preferencia azul/negro sin pasar por Inicio. Logo y modales usan acento de Inventario; títulos sans y acciones móvil mínimo44px. Traducciones ES/EN de Ajustar, Contar, Kardex y Almacenes/traspasos/importación, sin traducir códigos Excel, datos del catálogo ni respuestas del servidor. Prueba reversible conserva hash funcional original. Continúan pendientes capturas nuevas y evaluación de fidelidad del concepto, no se declara reproducción completa ni producción.
