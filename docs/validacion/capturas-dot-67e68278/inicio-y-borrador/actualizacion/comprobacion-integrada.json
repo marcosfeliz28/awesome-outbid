@@ -1,0 +1,77 @@
+{
+  "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+  "completedAt": "2026-11-18T02:25:04.598Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "actualizacion-en-inicio.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "f5b1830262e4cbf87c6a80509b8f5c4d051517a2a83ada319c7dd89ad72df2b2"
+    },
+    {
+      "file": "carrito-conservado-version-anterior.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "b0dc89849fc885d90cc894830430bd4136506f7549c24a6ca53d80e4c70a8dbe"
+    },
+    {
+      "file": "pos-tras-quitar-ultimo-articulo.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "ab5e67b02db6f4605d8ad661c08601d749f5a2862bba785494969286355c11c5"
+    }
+  ],
+  "checks": {
+    "builds": [
+      {
+        "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+        "viteMode": "production",
+        "serviceWorkerSha256": "144a528f369cf39e0f9add2f4159b86ae124bf4c3cbad7c214dfed734834ff4a",
+        "cssAssets": [
+          "/assets/index-9KkoIy7C.css"
+        ],
+        "appModule": "/assets/index-P42AbmCC.js"
+      },
+      {
+        "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+        "viteMode": "qa-segunda-compilacion",
+        "serviceWorkerSha256": "a19506c312427f0f7564252329fe6d3a33209b83e93c21ad2a5505ab25097df6",
+        "cssAssets": [
+          "/assets/index-9KkoIy7C.css"
+        ],
+        "appModule": "/assets/index-Ddu27GDq.js"
+      }
+    ],
+    "idleReloadedOntoNewBuild": true,
+    "busyControllerChanged": true,
+    "addedThroughCatalogWithoutEditingInput": true,
+    "busyDocumentItemAndTotalPreservedAfter16s": true,
+    "busyLoadedNewBuildAfterRemovingItem": true,
+    "visibleItemsAfterReload": 0,
+    "removedItemAndTotalReappeared": false,
+    "cashStillShownOpen": true,
+    "saleRequests": 0
+  },
+  "servicesStopped": true,
+  "salePosts": 0,
+  "pageErrorCount": 0
+}

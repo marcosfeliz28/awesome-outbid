@@ -1,0 +1,66 @@
+{
+  "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+  "completedAt": "2026-11-18T02:26:30.957Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "antes-de-actualizar.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "b1f22d793a4dfac213dd845b88398a6d87e84d5814b3598dafc564c6bec40abd"
+    },
+    {
+      "file": "punto-de-venta-en-version-nueva.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "ab5e67b02db6f4605d8ad661c08601d749f5a2862bba785494969286355c11c5"
+    },
+    {
+      "file": "carrito-de-prueba-en-version-nueva.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "7624ad39dd937cb666772d8cac9f8453ee536afb1b11da22678948a144cfdbb8"
+    }
+  ],
+  "checks": {
+    "builds": [
+      {
+        "commit": "92d131f8847c1bd338b48c34231bf3c6ae82cb5b",
+        "serviceWorkerSha256": "e3e6e6e04aa52c69394f345d8cc56c147b1e1d8e4d83efad0953f59f5c462eb5",
+        "appModule": "/assets/index-CwNp-4gy.js"
+      },
+      {
+        "commit": "67e682788ecb046f355a943b61eca8bbe391352b",
+        "serviceWorkerSha256": "144a528f369cf39e0f9add2f4159b86ae124bf4c3cbad7c214dfed734834ff4a",
+        "appModule": "/assets/index-P42AbmCC.js"
+      }
+    ],
+    "bothTabsReloadedFromEarlierBuild": true,
+    "bothTabsLoadedNewAppModule": true,
+    "cashStillShownOpen": true,
+    "cartWasEmptyBeforeAndAfter": true,
+    "canAddSampleItemAfterUpdate": true,
+    "saleRequests": 0
+  },
+  "servicesStopped": true,
+  "salePosts": 0,
+  "pageErrorCount": 0
+}
