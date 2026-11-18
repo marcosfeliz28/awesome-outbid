@@ -4773,8 +4773,8 @@ export function Configuration() {
                   {query.data?.address || ot("Configura la dirección de tu tienda")}
                 </p>
                 <p>
-                  ITBIS 18% {query.data?.taxIncluded ? "incluido" : "adicional"}{" "}
-                  · Ticket {query.data?.receiptWidth} mm
+                  ITBIS 18% {query.data?.taxIncluded ? (en ? "included" : "incluido") : (en ? "additional" : "adicional")}{" "}
+                  · {en ? "Receipt" : "Ticket"} {query.data?.receiptWidth} mm
                 </p>
                 <p>
                   {ot("NCF/e-CF reservado para integración futura. Los recibos son internos.")}</p>
@@ -4786,10 +4786,10 @@ export function Configuration() {
             <div className="settings-rules">
               {[
                 [ot("Descuento vendedor"), query.data?.sellerDiscountLimit + "%"],
-                [ot("Sin rotación"), query.data?.idleDays + " días"],
-                [ot("Por vencer"), query.data?.expiryDays + " días"],
+                [ot("Sin rotación"), query.data?.idleDays + (en ? " days" : " días")],
+                [ot("Por vencer"), query.data?.expiryDays + (en ? " days" : " días")],
                 [ot("Margen bajo"), query.data?.lowMargin + "%"],
-                [ot("Devolución"), query.data?.returnDays + " días"],
+                [ot("Devolución"), query.data?.returnDays + (en ? " days" : " días")],
               ].map(([label, value]) => (
                 <div key={label}>
                   <span>{label}</span>

@@ -70,3 +70,12 @@ it("localizes Telegram config without changing test-message authorization, value
  expect(source).toContain('TELEGRAM_CHAT_ID');
  expect(source).toContain('data.lastError.message');
 });
+
+it("localizes settings tax and period suffixes without changing values", () => {
+ const source=read("apps/web/src/Management.tsx");
+ expect(source).toContain('ITBIS 18% {query.data?.taxIncluded ? (en ? "included" : "incluido") : (en ? "additional" : "adicional")}');
+ for (const field of ["idleDays", "expiryDays", "returnDays"]) {
+  expect(source).toContain(`query.data?.${field} + (en ? " days" : " días")`);
+ }
+ expect(source).toContain('{en ? "Receipt" : "Ticket"} {query.data?.receiptWidth} mm');
+});
