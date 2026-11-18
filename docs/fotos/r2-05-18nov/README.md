@@ -11,3 +11,5 @@ Fuentes que dieron bloqueo: puritan.com, eBay, Vitamin Shoppe, Walgreens (403/re
 Detalle en `candidatas.csv`; vista en `contacto.png`.
 
 Extra INV-1207 Serious Mass Chocolate 4 lb: discrepancia (solo 6/12/3 lb en listados; sin imagen). Fila en CSV; contacto.png no actualizado.
+
+Intento ≥800 px (INV-1047/1049): sin éxito. Amazon (variantes _SL1500_/_AC_/_SX1000_) y stls.store devuelven el mismo tamaño (~255x500); Open Food Facts 503; Swanson no lista estos productos. Las dos siguen "coincide" de baja resolución. contacto.png ya incluye INV-1207 (gris SIN IMAGEN).
