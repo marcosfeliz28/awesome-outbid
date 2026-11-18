@@ -1,0 +1,14 @@
+Te mando una imagen con 12 fotos de productos numeradas #1 a #12 (en rojo). Abajo está la lista con el nombre que tiene cada número en mi catálogo. Para cada número dime: COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con la marca y el sabor.
+
+#1: Anabol Hardcore - Nutrex - 60 liqui-caps
+#2: Anabol Ripped - Nutrex - 60 liqui-caps
+#3: Anabol Nighttime - Nutrex - 60 cápsulas
+#4: Ashwagandha - Horbäach - 450 mg extracto 10:1 / 120 cápsulas
+#5: 100 Billion Probiotic - Natures Peak - 60 cápsulas
+#6: 15 Day Colon Detox - dr.bo. - 30 cápsulas
+#7: Boron (glycinate) - Pure Encapsulations - 60 cápsulas
+#8: Berberine - Puritans Pride - 500 mg / 60 cápsulas vegetales
+#9: C-1000 - NOW - 100 cápsulas vegetales
+#10: Betaine Hydrochloride - Horbäach - 1200 mg por servicio / 180 cápsulas
+#11: 5-HTP - Force Factor - 100 mg / 120 cápsulas vegetales
+#12: C4 Original Pre-Workout - Fruit Punch / 30 servicios
