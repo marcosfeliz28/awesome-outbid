@@ -10,6 +10,6 @@ Al seleccionar la primera alerta de una lista de 128 elementos, su detalle qued�
 
 ## Controles y revisión siguiente
 
-El candidato conserva los 275 WebP y la API de la base. Pasaron 7 de 7 comprobaciones focales, incluidas las cuatro aserciones que fallaron en el cambio anterior. Se revisaron 716 citas con destinos válidos. GitHub ya aprobó `pnpm check`, instalador e imágenes. El `verify` completo sigue en curso. [GitHub Actions del SHA exacto](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44303408416)
+El candidato conserva los 275 WebP y la API de la base. Pasaron 7 de 7 comprobaciones focales, incluidas las cuatro aserciones que fallaron en el cambio anterior. Se revisaron 716 citas con destinos válidos. GitHub terminó los tres controles con éxito para este SHA. Pasaron `verify` completo, `windows-installer` y `render-images`. [GitHub Actions del SHA exacto](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44303408416)
 
 El detalle requiere acceso visible al seleccionar una alerta a 390 px, y la categoría «Ventas bajas» debe seguir el idioma elegido. Adjuntar la demostración con una lista larga y la navegación al detalle.

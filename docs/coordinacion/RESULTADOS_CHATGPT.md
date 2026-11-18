@@ -4,7 +4,7 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 
 ## 2026-11-18 · ChatGPT PC · fechas de Alertas 2e9299d9
 
-Cuatro capturas de Alertas en ES/EN a 1440 y 390, sobre datos ficticios. Fecha localizada en lista y detalle. La categoría «Ventas bajas» sigue en español en EN y el detalle queda más de 32.000 px por debajo del primer cuadro en móvil. Pasaron las cuatro aserciones anteriores y tres focales más. El control completo de GitHub está en curso. [Informe](../capturas/alertas-2e9299d9/LECTURA.md)
+Cuatro capturas de Alertas en ES/EN a 1440 y 390, sobre datos ficticios. Fecha localizada en lista y detalle. La categoría «Ventas bajas» sigue en español en EN y el detalle queda más de 32.000 px por debajo del primer cuadro en móvil. Pasaron las cuatro aserciones anteriores y tres focales más. El [control completo de GitHub](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44303408416) terminó con los tres trabajos en verde. [Informe](../capturas/alertas-2e9299d9/LECTURA.md)
 
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
