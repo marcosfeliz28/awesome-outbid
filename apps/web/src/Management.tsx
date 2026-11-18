@@ -2,6 +2,7 @@ import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
 import { inventoryText } from "./inventoryLanguage";
 import { useInventoryAppearance } from "./inventoryAppearance";
+import { InventorySummary } from "./InventorySummary";
 import "./fusion-inventory.css";
 import {
   CashElsewhere,
@@ -108,9 +109,10 @@ type Column = {
   render: (row: any) => ReactNode;
   className?: string;
 };
-function QueryState({ query, children }: { query: any; children: ReactNode }) {
+function QueryState({ query, children, english = false }: { query: any; children: ReactNode; english?: boolean }) {
   return (
     <BaseQueryState
+      english={english}
       query={
         query.error
           ? { ...query, error: { message: managementQueryError(query.error) } }
@@ -794,7 +796,7 @@ function Kardex({ variantId, english = false }: { variantId: string; english?: b
     queryFn: () => api("/inventory/movements?variantId=" + variantId),
   });
   return (
-    <QueryState query={query}>
+    <QueryState query={query} english={english}>
       <DataTable
         rows={query.data || []}
         empty={english ? "No stock movements" : undefined}
@@ -876,6 +878,9 @@ export function Inventory() {
         title={translateInventory("Cada unidad, bajo control")}
         caption={translateInventory("El inventario correcto hace espacio para mejores decisiones.")}
       />
+      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === "stock" && (
+        <InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} />
+      )}
       {user.role !== "seller" && can(user.permissions, "profit:read") && (
         <WithoutCostCard />
       )}
@@ -914,7 +919,7 @@ export function Inventory() {
             placeholder={translateInventory("Buscar producto o código")}
           />
         </div>
-        <QueryState query={query}>
+        <QueryState query={query} english={inventoryLanguage === "en"}>
           {mode === "stock" ? (
             <DataTable
               rows={rows}
@@ -927,7 +932,7 @@ export function Inventory() {
                     <span>
                       <strong>{v.product.name}</strong>
                       <small>
-                        {v.sku} · {attrLabel(v.attributes)}
+                        {v.sku} · {attrLabel(v.attributes, inventoryLanguage === "en" ? "Standard variant" : "Única")}
                       </small>
                     </span>
                   ),
@@ -1003,7 +1008,7 @@ export function Inventory() {
               ]}
             />
           ) : (
-            <QueryState query={counts}>
+            <QueryState query={counts} english={inventoryLanguage === "en"}>
               <DataTable
                 rows={counts.data || []}
                 empty={translateInventory("Todavía no hay conteos físicos")}

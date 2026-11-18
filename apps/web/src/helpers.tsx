@@ -18,7 +18,7 @@ export const dateLabel = (value: string) =>
     month: "short",
     year: "numeric",
   });
-export const attrLabel = (attributes: Record<string, string>) =>
+export const attrLabel = (attributes: Record<string, string>, fallback = "Única") =>
   [
     ...new Set([
       "talla",
@@ -31,7 +31,7 @@ export const attrLabel = (attributes: Record<string, string>) =>
   ]
     .filter((key) => attributes[key])
     .map((key) => attributes[key])
-    .join(" · ") || "Única";
+    .join(" · ") || fallback;
 type ToastAction = { label: string; run: () => void };
 let toastHandler: (
   message: string,
@@ -177,8 +177,10 @@ export function Toasts() {
 export function QueryState({
   query,
   children,
+  english = false,
 }: {
   query: any;
+  english?: boolean;
   children: ReactNode;
 }) {
   // 05-M3: sin conexión React Query deja en pausa las consultas al servidor:
@@ -187,20 +189,20 @@ export function QueryState({
     return (
       <div className="error-panel" role="status">
         <WifiOff />
-        <p>Sin conexión: esta información necesita internet.</p>
+        <p>{english ? "Offline: this information needs an internet connection." : "Sin conexión: esta información necesita internet."}</p>
         <Button variant="secondary" onClick={() => query.refetch()}>
-          Reintentar
+          {english ? "Retry" : "Reintentar"}
         </Button>
       </div>
     );
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Loading label={english ? "Loading data…" : undefined} />;
   if (query.error)
     return (
       <div className="error-panel" role="alert">
         <AlertCircle />
         <p>{managementQueryError(query.error)}</p>
         <Button variant="secondary" onClick={() => query.refetch()}>
-          Reintentar
+          {english ? "Retry" : "Reintentar"}
         </Button>
       </div>
     );

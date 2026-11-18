@@ -229,6 +229,30 @@
     {
       "before": "export function Inventory() {",
       "after": "export function Inventory() {\n  useInventoryAppearance();"
+    },
+    {
+      "before": "<QueryState query={query}>",
+      "after": "<QueryState query={query} english={inventoryLanguage === \"en\"}>"
+    },
+    {
+      "before": "<QueryState query={counts}>",
+      "after": "<QueryState query={counts} english={inventoryLanguage === \"en\"}>"
+    },
+    {
+      "before": "attrLabel(v.attributes)",
+      "after": "attrLabel(v.attributes, inventoryLanguage === \"en\" ? \"Standard variant\" : \"Única\")"
+    },
+    {
+      "before": "      {user.role !== \"seller\" && can(user.permissions, \"profit:read\") && (",
+      "after": "      {!query.isPending && !query.error && mode === \"stock\" && (\n        <InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} />\n      )}\n      {user.role !== \"seller\" && can(user.permissions, \"profit:read\") && ("
+    },
+    {
+      "before": "!query.isPending && !query.error && mode === \"stock\" && (",
+      "after": "!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === \"stock\" && ("
+    },
+    {
+      "before": "<InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} />",
+      "after": "<InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} scope={selectedWarehouse?.name || (inventoryLanguage === \"en\" ? \"In store\" : \"En Tienda\")} />"
     }
   ]
 }

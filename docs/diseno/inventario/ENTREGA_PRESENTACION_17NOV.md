@@ -49,3 +49,11 @@ Se corrigen además nombre accesible, sobretítulo EN, prefijo de almacén, fall
 ## Corrección QA posterior
 
 Acceso directo restaura preferencia azul/negro sin pasar por Inicio. Logo y modales usan acento de Inventario; títulos sans y acciones móvil mínimo44px. Traducciones ES/EN de Ajustar, Contar, Kardex y Almacenes/traspasos/importación, sin traducir códigos Excel, datos del catálogo ni respuestas del servidor. Prueba reversible conserva hash funcional original. Continúan pendientes capturas nuevas y evaluación de fidelidad del concepto, no se declara reproducción completa ni producción.
+
+## Cotejo personal de referencia y mejora de resumen
+
+Referencia PNG aprobada inspeccionada en nube contra páginas renderizadas del PDF QA c664 (`libfile_fde3_f-fd18c5757c7c819183636b206e4445af_00021c7591648191a2873caeaff1ea36`). Brechas reales: el corte c664 tiene tabla larga y paneles apilados, sin fotos en filas, sin resumen de stock ni columna de alertas/movimientos; no reproduce el concepto completo. Relieve, bordes metálicos y paleta sí están presentes; tipografía sans mejora legibilidad operativa.
+
+Se añaden tres tarjetas de unidades físicas, variantes con stock bajo y variantes sin existencias, exclusivamente a partir de las filas cargadas/filtradas ya autorizadas y el almacén visible. API stock usa findMany sin paginación (inventory.ts:581), pero el texto declara siempre alcance cargado/búsqueda, nunca total global. No se calculan valores monetarios ni movimientos inventados; cantidades ocultas/invalidas suprimen resumen. Se mantienen pendientes fotos, composición de alertas/movimientos y revisión final de fidelidad.
+
+EN: fallback de variante y carga ahora opt-in inglés; otros consumidores conservan español. Verificación local: 41 pruebas focales pasan, tipado web/lint/build pasan con @fitstore/ui apuntando al paquete exacto de este worktree, no dependencia de otro checkout. Nueva QA aún pendiente. Sin producción.

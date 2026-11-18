@@ -5,6 +5,7 @@ export default defineConfig({
       "tests/inventario-presentacion.test.ts",
       "tests/inventory-language.test.ts",
       "tests/inventory-appearance.test.ts",
+      "tests/inventory-summary.test.ts",
     ],
   },
 });
