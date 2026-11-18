@@ -240,3 +240,21 @@ it("migra idioma legado a Norexos sin pisar preferencia actual ni fallar sin sto
     }),
   ).toBe("en");
 });
+
+describe("Inicio: acabado premium sin alterar geometría", () => {
+  const css = readFileSync("apps/web/src/fusion-higgsfield.css", "utf8");
+  it("unifica los medallones con suficiente especificidad sobre los tonos heredados", () => {
+    expect(css).toContain(
+      ":root[data-theme] .app-shell .fusion-inicio-integrado .metric-icon",
+    );
+    expect(css).toContain("/* Acabado premium 18-nov");
+  });
+  it("mantiene el acabado decorativo fuera del flujo y sin bloquear clics", () => {
+    const finish = css.split("/* Acabado premium 18-nov")[1] || "";
+    expect(finish).toContain("pointer-events: none");
+    expect(finish).toContain("position: absolute");
+    expect(finish).not.toMatch(
+      /\b(?:width|height|min-height|padding|font-size):/,
+    );
+  });
+});

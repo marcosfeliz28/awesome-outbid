@@ -477,3 +477,88 @@
     gap: 10px;
   }
 }
+
+/* Acabado premium 18-nov · luz y material sin cambiar geometría ni datos. */
+:root[data-theme] .app-shell .fusion-inicio-integrado .metric-icon {
+  color: var(--fh-gold);
+  background:
+    radial-gradient(ellipse at 28% 12%, #fff2bb40, transparent 54%),
+    linear-gradient(145deg, var(--fh-surface), var(--fh-deep));
+  box-shadow:
+    inset 0 1px 1px var(--fh-glint),
+    inset 0 -3px 3px #0005,
+    0 3px 0 var(--fh-deep),
+    0 7px 12px var(--fh-shadow);
+}
+.app-shell .fusion-inicio-integrado .metric-icon svg {
+  filter: drop-shadow(0 1px 0 #fff5) drop-shadow(0 2px 1px #0007);
+}
+.app-shell .fusion-inicio-integrado :is(.panel, .kpi-card, .kpi-strip-card) {
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 var(--fh-glint),
+    inset 0 -1px 0 var(--fh-gold),
+    0 3px 0 var(--fh-deep),
+    0 9px 18px var(--fh-shadow);
+}
+.app-shell .fusion-inicio-integrado :is(.kpi-card, .kpi-strip-card)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    #ffffff0b,
+    transparent 32%,
+    transparent 75%,
+    var(--fh-glow)
+  );
+  pointer-events: none;
+}
+.app-shell .fusion-inicio-integrado .fi-shortcut-icon {
+  box-shadow:
+    inset 0 1px 1px var(--fh-glint),
+    inset 0 -2px 1px #0005,
+    0 3px 0 var(--fh-deep),
+    0 6px 8px var(--fh-shadow);
+}
+@media (forced-colors: active) {
+  .app-shell
+    .fusion-inicio-integrado
+    :is(.panel, .kpi-card, .kpi-strip-card, .metric-icon, .fi-shortcut-icon) {
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+  .app-shell .fusion-inicio-integrado :is(.kpi-card, .kpi-strip-card)::after {
+    display: none;
+  }
+  .app-shell .fusion-inicio-integrado .metric-icon svg {
+    filter: none;
+  }
+}
+
+/* Mercancía conserva posición, permisos y acción; sólo hereda material de Inicio. */
+.app-shell:has(.fusion-inicio-integrado) .goods-mobile-bar {
+  background: var(--fh-deep);
+  border-top-color: var(--fh-line);
+}
+.app-shell:has(.fusion-inicio-integrado) .goods-mobile-bar .button {
+  color: var(--fh-ink);
+  border-color: var(--fh-accent);
+  background: linear-gradient(145deg, var(--fh-surface), var(--fh-deep));
+  box-shadow:
+    inset 0 1px 1px var(--fh-glint),
+    0 3px 8px var(--fh-shadow);
+}
+.app-shell:has(.fusion-inicio-integrado) .goods-mobile-bar .button svg {
+  color: var(--fh-gold);
+}
+@media (forced-colors: active) {
+  :root[data-theme] .app-shell .fusion-inicio-integrado .metric-icon,
+  .app-shell:has(.fusion-inicio-integrado) .goods-mobile-bar .button {
+    color: ButtonText;
+    background: ButtonFace;
+    box-shadow: none;
+  }
+}
