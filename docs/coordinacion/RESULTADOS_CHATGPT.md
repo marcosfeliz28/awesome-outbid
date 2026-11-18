@@ -276,3 +276,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-18 · ChatGPT PC · Ventas de Dot
+
+- **Evidencia** `chatgpt-pc/capturas-dot-8edc2b8e` documenta `dot/ventas-integrada-18nov` en `8edc2b8e3bb4d5c9929ec96f98655d718ddbb937`. Doce PNG con historial, vista previa y ficha a 1440 × 900 y 390 × 844 en claro y oscuro. [Informe](../validacion/capturas-dot-8edc2b8e/ventas/COMPARACION.md)
+- **Verificación** API y PostgreSQL locales con datos ficticios. Pasaron búsqueda por folio, estado vacío, fecha, selección y apertura/cierre de la ficha. Cero operaciones de venta, edición o roles. Puertos y procesos cerrados.
+- **Pendiente visual** La vista previa quedó a 9.683,94 px del borde inferior inicial a 390 px y a 1.631,83 px a 1440 px, sin desplazamiento automático al seleccionar. La referencia aprobada muestra detalle a la derecha en escritorio. El ticket conserva 116 × 116 px más 44 px de margen vertical. El CI seguía pendiente. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44226648117)

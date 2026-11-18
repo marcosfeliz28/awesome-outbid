@@ -1,0 +1,1131 @@
+{
+  "sourceCommit": "8edc2b8e3bb4d5c9929ec96f98655d718ddbb937",
+  "sourceBranch": "dot/ventas-integrada-18nov",
+  "capturedAt": "2026-11-18T02:59:07.339Z",
+  "browser": {
+    "name": "Edge",
+    "version": "157.0.4341.60"
+  },
+  "sourceData": "semilla de demostración en PostgreSQL con API local",
+  "approvedReference": {
+    "file": "norexos-ventas-higgsfield-01.png",
+    "dimensions": [
+      2688,
+      1520
+    ],
+    "sha256": "4ccc1a6c101e34f55bc3b782476af5d39a7a6590144864d5fb54ce8ac90b766a"
+  },
+  "screenshots": {
+    "ventas-1440-claro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "format": "PNG",
+      "theme": "light",
+      "stage": "historial",
+      "sha256": "92d9839858e267d502a772ad8e5e79f1db4bfb1217dbec384ec50936d4dc1a88"
+    },
+    "previa-1440-claro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "format": "PNG",
+      "theme": "light",
+      "stage": "previa",
+      "sha256": "335871b6cd2d508ec205ac5396b998c8190e801c006b3a04c25f0e96bd967367"
+    },
+    "ficha-1440-claro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "format": "PNG",
+      "theme": "light",
+      "stage": "ficha",
+      "sha256": "029a0b78c8fe91f3e9139ea670bf1335e3ea32b6338c7d5f0e7776804f30d5c8"
+    },
+    "ventas-1440-oscuro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "format": "PNG",
+      "theme": "dark",
+      "stage": "historial",
+      "sha256": "1860b0dbdcf3eb0e14462cc8d647b9fe200e6e8ff0e93cc9d53df33b287a218c"
+    },
+    "previa-1440-oscuro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "format": "PNG",
+      "theme": "dark",
+      "stage": "previa",
+      "sha256": "f28e28fbf22b42030dbecdb522676208645ce47d101d18805e1e5c0ebfcf0a11"
+    },
+    "ficha-1440-oscuro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "format": "PNG",
+      "theme": "dark",
+      "stage": "ficha",
+      "sha256": "3ee41fa5cbc35917f41f14fac366bde3e0b56ebd15df859ececc6e8c6f67552f"
+    },
+    "ventas-390-claro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "format": "PNG",
+      "theme": "light",
+      "stage": "historial",
+      "sha256": "15ce797223b8f5258b3687323d08a091964b80048535617bb8aa680b7dedd424"
+    },
+    "previa-390-claro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "format": "PNG",
+      "theme": "light",
+      "stage": "previa",
+      "sha256": "663b90a209364f579eb5b8eaa91aa03a7909a97c51e489909827aaba4a5e28d2"
+    },
+    "ficha-390-claro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "format": "PNG",
+      "theme": "light",
+      "stage": "ficha",
+      "sha256": "ac7fd540b39d64c7cfda08d5d33f3848a2ef861b85a2c155ab79f9e49b5befd4"
+    },
+    "ventas-390-oscuro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "format": "PNG",
+      "theme": "dark",
+      "stage": "historial",
+      "sha256": "790ce9bd2fb338a188f04034bdcbf7b04529fb2bdfd8337952a5f2f2f3ce598e"
+    },
+    "previa-390-oscuro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "format": "PNG",
+      "theme": "dark",
+      "stage": "previa",
+      "sha256": "ce596141de4e2344af60027e618b0a87f8b249498f5baebb358c28580e6c021c"
+    },
+    "ficha-390-oscuro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "format": "PNG",
+      "theme": "dark",
+      "stage": "ficha",
+      "sha256": "26ea612d241e911fcfe39d8f585218499e83c859070cfd32c3c5c85ba94a387c"
+    }
+  },
+  "measurements": {
+    "1440": {
+      "filters": {
+        "byNumber": {
+          "status": 200,
+          "counts": [
+            1,
+            1,
+            0
+          ]
+        },
+        "empty": {
+          "status": 200,
+          "counts": [
+            0,
+            0,
+            0
+          ],
+          "clearedPreview": true
+        },
+        "byDate": {
+          "status": 200,
+          "counts": [
+            3,
+            3,
+            0
+          ],
+          "checkedLocalDate": true
+        }
+      },
+      "pageErrorCount": 0,
+      "operationalWriteCount": 0,
+      "themes": {
+        "light": {
+          "initialHttp": 200,
+          "loadedCounts": [
+            100,
+            100,
+            0
+          ],
+          "selection": {
+            "method": "clic",
+            "pressed": true,
+            "scrollDeltaPx": 0
+          },
+          "detailOpenedAndClosed": true,
+          "initial": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "scrollY": 0,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 57,
+            "list": {
+              "x": 255.19,
+              "y": 350.83,
+              "absoluteY": 350.83,
+              "width": 1152.8,
+              "height": 2161,
+              "right": 1407.98,
+              "bottom": 2511.83,
+              "visibleHeight": 549.17
+            },
+            "preview": {
+              "x": 255.19,
+              "y": 2531.83,
+              "absoluteY": 2531.83,
+              "width": 1152.8,
+              "height": 314.69,
+              "right": 1407.98,
+              "bottom": 2846.52,
+              "visibleHeight": 0
+            },
+            "receipt": {
+              "x": 280.19,
+              "y": 2649.92,
+              "absoluteY": 2649.92,
+              "width": 116,
+              "height": 116,
+              "right": 396.19,
+              "bottom": 2765.92,
+              "visibleHeight": 0
+            },
+            "folio": null,
+            "openDetails": null,
+            "previewActionFirstRow": {
+              "x": 1089,
+              "y": 508.33,
+              "absoluteY": 508.33,
+              "width": 44,
+              "height": 44,
+              "right": 1133,
+              "bottom": 552.33,
+              "visibleHeight": 44
+            },
+            "actionCellSticky": true,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 1631.83
+          },
+          "afterSelection": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "scrollY": 0,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 57,
+            "list": {
+              "x": 255.19,
+              "y": 350.83,
+              "absoluteY": 350.83,
+              "width": 1152.8,
+              "height": 2161,
+              "right": 1407.98,
+              "bottom": 2511.83,
+              "visibleHeight": 549.17
+            },
+            "preview": {
+              "x": 255.19,
+              "y": 2531.83,
+              "absoluteY": 2531.83,
+              "width": 1152.8,
+              "height": 641.48,
+              "right": 1407.98,
+              "bottom": 3173.31,
+              "visibleHeight": 0
+            },
+            "receipt": {
+              "x": 280.19,
+              "y": 2649.92,
+              "absoluteY": 2649.92,
+              "width": 116,
+              "height": 116,
+              "right": 396.19,
+              "bottom": 2765.92,
+              "visibleHeight": 0
+            },
+            "folio": {
+              "x": 280.19,
+              "y": 2819.92,
+              "absoluteY": 2819.92,
+              "width": 1102.8,
+              "height": 39,
+              "right": 1382.98,
+              "bottom": 2858.92,
+              "visibleHeight": 0
+            },
+            "openDetails": {
+              "x": 280.19,
+              "y": 3059.92,
+              "absoluteY": 3059.92,
+              "width": 1102.8,
+              "height": 52,
+              "right": 1382.98,
+              "bottom": 3111.92,
+              "visibleHeight": 0
+            },
+            "previewActionFirstRow": {
+              "x": 1089,
+              "y": 508.33,
+              "absoluteY": 508.33,
+              "width": 44,
+              "height": 44,
+              "right": 1133,
+              "bottom": 552.33,
+              "visibleHeight": 44
+            },
+            "actionCellSticky": true,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 1631.83
+          },
+          "visiblePreview": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "scrollY": 2358,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 57,
+            "list": {
+              "x": 255.19,
+              "y": -2007.17,
+              "absoluteY": 350.83,
+              "width": 1152.8,
+              "height": 2161,
+              "right": 1407.98,
+              "bottom": 153.83,
+              "visibleHeight": 153.83
+            },
+            "preview": {
+              "x": 255.19,
+              "y": 173.83,
+              "absoluteY": 2531.83,
+              "width": 1152.8,
+              "height": 641.48,
+              "right": 1407.98,
+              "bottom": 815.31,
+              "visibleHeight": 641.48
+            },
+            "receipt": {
+              "x": 280.19,
+              "y": 291.92,
+              "absoluteY": 2649.92,
+              "width": 116,
+              "height": 116,
+              "right": 396.19,
+              "bottom": 407.92,
+              "visibleHeight": 116
+            },
+            "folio": {
+              "x": 280.19,
+              "y": 461.92,
+              "absoluteY": 2819.92,
+              "width": 1102.8,
+              "height": 39,
+              "right": 1382.98,
+              "bottom": 500.92,
+              "visibleHeight": 39
+            },
+            "openDetails": {
+              "x": 280.19,
+              "y": 701.92,
+              "absoluteY": 3059.92,
+              "width": 1102.8,
+              "height": 52,
+              "right": 1382.98,
+              "bottom": 753.92,
+              "visibleHeight": 52
+            },
+            "previewActionFirstRow": {
+              "x": 1089,
+              "y": -1849.67,
+              "absoluteY": 508.33,
+              "width": 44,
+              "height": 44,
+              "right": 1133,
+              "bottom": -1805.67,
+              "visibleHeight": 0
+            },
+            "actionCellSticky": true,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 0
+          }
+        },
+        "dark": {
+          "initialHttp": 200,
+          "loadedCounts": [
+            100,
+            100,
+            0
+          ],
+          "selection": {
+            "method": "clic",
+            "pressed": true,
+            "scrollDeltaPx": 0
+          },
+          "detailOpenedAndClosed": true,
+          "initial": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "scrollY": 0,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 57,
+            "list": {
+              "x": 255.19,
+              "y": 350.83,
+              "absoluteY": 350.83,
+              "width": 1152.8,
+              "height": 2161,
+              "right": 1407.98,
+              "bottom": 2511.83,
+              "visibleHeight": 549.17
+            },
+            "preview": {
+              "x": 255.19,
+              "y": 2531.83,
+              "absoluteY": 2531.83,
+              "width": 1152.8,
+              "height": 314.69,
+              "right": 1407.98,
+              "bottom": 2846.52,
+              "visibleHeight": 0
+            },
+            "receipt": {
+              "x": 280.19,
+              "y": 2649.92,
+              "absoluteY": 2649.92,
+              "width": 116,
+              "height": 116,
+              "right": 396.19,
+              "bottom": 2765.92,
+              "visibleHeight": 0
+            },
+            "folio": null,
+            "openDetails": null,
+            "previewActionFirstRow": {
+              "x": 1089,
+              "y": 508.33,
+              "absoluteY": 508.33,
+              "width": 44,
+              "height": 44,
+              "right": 1133,
+              "bottom": 552.33,
+              "visibleHeight": 44
+            },
+            "actionCellSticky": true,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 1631.83
+          },
+          "afterSelection": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "scrollY": 0,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 57,
+            "list": {
+              "x": 255.19,
+              "y": 350.83,
+              "absoluteY": 350.83,
+              "width": 1152.8,
+              "height": 2161,
+              "right": 1407.98,
+              "bottom": 2511.83,
+              "visibleHeight": 549.17
+            },
+            "preview": {
+              "x": 255.19,
+              "y": 2531.83,
+              "absoluteY": 2531.83,
+              "width": 1152.8,
+              "height": 641.48,
+              "right": 1407.98,
+              "bottom": 3173.31,
+              "visibleHeight": 0
+            },
+            "receipt": {
+              "x": 280.19,
+              "y": 2649.92,
+              "absoluteY": 2649.92,
+              "width": 116,
+              "height": 116,
+              "right": 396.19,
+              "bottom": 2765.92,
+              "visibleHeight": 0
+            },
+            "folio": {
+              "x": 280.19,
+              "y": 2819.92,
+              "absoluteY": 2819.92,
+              "width": 1102.8,
+              "height": 39,
+              "right": 1382.98,
+              "bottom": 2858.92,
+              "visibleHeight": 0
+            },
+            "openDetails": {
+              "x": 280.19,
+              "y": 3059.92,
+              "absoluteY": 3059.92,
+              "width": 1102.8,
+              "height": 52,
+              "right": 1382.98,
+              "bottom": 3111.92,
+              "visibleHeight": 0
+            },
+            "previewActionFirstRow": {
+              "x": 1089,
+              "y": 508.33,
+              "absoluteY": 508.33,
+              "width": 44,
+              "height": 44,
+              "right": 1133,
+              "bottom": 552.33,
+              "visibleHeight": 44
+            },
+            "actionCellSticky": true,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 1631.83
+          },
+          "visiblePreview": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "scrollY": 2358,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 57,
+            "list": {
+              "x": 255.19,
+              "y": -2007.17,
+              "absoluteY": 350.83,
+              "width": 1152.8,
+              "height": 2161,
+              "right": 1407.98,
+              "bottom": 153.83,
+              "visibleHeight": 153.83
+            },
+            "preview": {
+              "x": 255.19,
+              "y": 173.83,
+              "absoluteY": 2531.83,
+              "width": 1152.8,
+              "height": 641.48,
+              "right": 1407.98,
+              "bottom": 815.31,
+              "visibleHeight": 641.48
+            },
+            "receipt": {
+              "x": 280.19,
+              "y": 291.92,
+              "absoluteY": 2649.92,
+              "width": 116,
+              "height": 116,
+              "right": 396.19,
+              "bottom": 407.92,
+              "visibleHeight": 116
+            },
+            "folio": {
+              "x": 280.19,
+              "y": 461.92,
+              "absoluteY": 2819.92,
+              "width": 1102.8,
+              "height": 39,
+              "right": 1382.98,
+              "bottom": 500.92,
+              "visibleHeight": 39
+            },
+            "openDetails": {
+              "x": 280.19,
+              "y": 701.92,
+              "absoluteY": 3059.92,
+              "width": 1102.8,
+              "height": 52,
+              "right": 1382.98,
+              "bottom": 753.92,
+              "visibleHeight": 52
+            },
+            "previewActionFirstRow": {
+              "x": 1089,
+              "y": -1849.67,
+              "absoluteY": 508.33,
+              "width": 44,
+              "height": 44,
+              "right": 1133,
+              "bottom": -1805.67,
+              "visibleHeight": 0
+            },
+            "actionCellSticky": true,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 0
+          }
+        }
+      }
+    },
+    "390": {
+      "filters": {
+        "byNumber": {
+          "status": 200,
+          "counts": [
+            1,
+            1,
+            0
+          ]
+        },
+        "empty": {
+          "status": 200,
+          "counts": [
+            0,
+            0,
+            0
+          ],
+          "clearedPreview": true
+        },
+        "byDate": {
+          "status": 200,
+          "counts": [
+            3,
+            3,
+            0
+          ],
+          "checkedLocalDate": true
+        }
+      },
+      "pageErrorCount": 0,
+      "operationalWriteCount": 0,
+      "themes": {
+        "light": {
+          "initialHttp": 200,
+          "loadedCounts": [
+            100,
+            100,
+            0
+          ],
+          "selection": {
+            "method": "toque",
+            "pressed": true,
+            "scrollDeltaPx": 0
+          },
+          "detailOpenedAndClosed": true,
+          "initial": {
+            "viewport": [
+              390,
+              844
+            ],
+            "scrollY": 0,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 0,
+            "list": {
+              "x": 16,
+              "y": 350.06,
+              "absoluteY": 350.06,
+              "width": 358,
+              "height": 10157.88,
+              "right": 374,
+              "bottom": 10507.94,
+              "visibleHeight": 493.94
+            },
+            "preview": {
+              "x": 16,
+              "y": 10527.94,
+              "absoluteY": 10527.94,
+              "width": 358,
+              "height": 328.28,
+              "right": 374,
+              "bottom": 10856.22,
+              "visibleHeight": 0
+            },
+            "receipt": {
+              "x": 35,
+              "y": 10665.63,
+              "absoluteY": 10665.63,
+              "width": 116,
+              "height": 116,
+              "right": 151,
+              "bottom": 10781.63,
+              "visibleHeight": 0
+            },
+            "folio": null,
+            "openDetails": null,
+            "previewActionFirstRow": {
+              "x": 167.88,
+              "y": 844.66,
+              "absoluteY": 844.66,
+              "width": 44,
+              "height": 44,
+              "right": 211.88,
+              "bottom": 888.66,
+              "visibleHeight": 0
+            },
+            "actionCellSticky": false,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 9683.94
+          },
+          "afterSelection": {
+            "viewport": [
+              390,
+              844
+            ],
+            "scrollY": 0,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 0,
+            "list": {
+              "x": 16,
+              "y": 350.06,
+              "absoluteY": 350.06,
+              "width": 358,
+              "height": 10157.88,
+              "right": 374,
+              "bottom": 10507.94,
+              "visibleHeight": 493.94
+            },
+            "preview": {
+              "x": 16,
+              "y": 10527.94,
+              "absoluteY": 10527.94,
+              "width": 358,
+              "height": 699.06,
+              "right": 374,
+              "bottom": 11227,
+              "visibleHeight": 0
+            },
+            "receipt": {
+              "x": 35,
+              "y": 10691.22,
+              "absoluteY": 10691.22,
+              "width": 116,
+              "height": 116,
+              "right": 151,
+              "bottom": 10807.22,
+              "visibleHeight": 0
+            },
+            "folio": {
+              "x": 35,
+              "y": 10861.22,
+              "absoluteY": 10861.22,
+              "width": 320,
+              "height": 39,
+              "right": 355,
+              "bottom": 10900.22,
+              "visibleHeight": 0
+            },
+            "openDetails": {
+              "x": 35,
+              "y": 11101.22,
+              "absoluteY": 11101.22,
+              "width": 320,
+              "height": 48,
+              "right": 355,
+              "bottom": 11149.22,
+              "visibleHeight": 0
+            },
+            "previewActionFirstRow": {
+              "x": 167.88,
+              "y": 844.66,
+              "absoluteY": 844.66,
+              "width": 44,
+              "height": 44,
+              "right": 211.88,
+              "bottom": 888.66,
+              "visibleHeight": 0
+            },
+            "actionCellSticky": false,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 9683.94
+          },
+          "visiblePreview": {
+            "viewport": [
+              390,
+              844
+            ],
+            "scrollY": 10454,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 0,
+            "list": {
+              "x": 16,
+              "y": -10103.94,
+              "absoluteY": 350.06,
+              "width": 358,
+              "height": 10157.88,
+              "right": 374,
+              "bottom": 53.94,
+              "visibleHeight": 53.94
+            },
+            "preview": {
+              "x": 16,
+              "y": 73.94,
+              "absoluteY": 10527.94,
+              "width": 358,
+              "height": 699.06,
+              "right": 374,
+              "bottom": 773,
+              "visibleHeight": 699.06
+            },
+            "receipt": {
+              "x": 35,
+              "y": 237.22,
+              "absoluteY": 10691.22,
+              "width": 116,
+              "height": 116,
+              "right": 151,
+              "bottom": 353.22,
+              "visibleHeight": 116
+            },
+            "folio": {
+              "x": 35,
+              "y": 407.22,
+              "absoluteY": 10861.22,
+              "width": 320,
+              "height": 39,
+              "right": 355,
+              "bottom": 446.22,
+              "visibleHeight": 39
+            },
+            "openDetails": {
+              "x": 35,
+              "y": 647.22,
+              "absoluteY": 11101.22,
+              "width": 320,
+              "height": 48,
+              "right": 355,
+              "bottom": 695.22,
+              "visibleHeight": 48
+            },
+            "previewActionFirstRow": {
+              "x": 167.88,
+              "y": -9609.34,
+              "absoluteY": 844.66,
+              "width": 44,
+              "height": 44,
+              "right": 211.88,
+              "bottom": -9565.34,
+              "visibleHeight": 0
+            },
+            "actionCellSticky": false,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 0
+          }
+        },
+        "dark": {
+          "initialHttp": 200,
+          "loadedCounts": [
+            100,
+            100,
+            0
+          ],
+          "selection": {
+            "method": "toque",
+            "pressed": true,
+            "scrollDeltaPx": 0
+          },
+          "detailOpenedAndClosed": true,
+          "initial": {
+            "viewport": [
+              390,
+              844
+            ],
+            "scrollY": 0,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 0,
+            "list": {
+              "x": 16,
+              "y": 350.06,
+              "absoluteY": 350.06,
+              "width": 358,
+              "height": 10157.88,
+              "right": 374,
+              "bottom": 10507.94,
+              "visibleHeight": 493.94
+            },
+            "preview": {
+              "x": 16,
+              "y": 10527.94,
+              "absoluteY": 10527.94,
+              "width": 358,
+              "height": 328.28,
+              "right": 374,
+              "bottom": 10856.22,
+              "visibleHeight": 0
+            },
+            "receipt": {
+              "x": 35,
+              "y": 10665.63,
+              "absoluteY": 10665.63,
+              "width": 116,
+              "height": 116,
+              "right": 151,
+              "bottom": 10781.63,
+              "visibleHeight": 0
+            },
+            "folio": null,
+            "openDetails": null,
+            "previewActionFirstRow": {
+              "x": 167.88,
+              "y": 844.66,
+              "absoluteY": 844.66,
+              "width": 44,
+              "height": 44,
+              "right": 211.88,
+              "bottom": 888.66,
+              "visibleHeight": 0
+            },
+            "actionCellSticky": false,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 9683.94
+          },
+          "afterSelection": {
+            "viewport": [
+              390,
+              844
+            ],
+            "scrollY": 0,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 0,
+            "list": {
+              "x": 16,
+              "y": 350.06,
+              "absoluteY": 350.06,
+              "width": 358,
+              "height": 10157.88,
+              "right": 374,
+              "bottom": 10507.94,
+              "visibleHeight": 493.94
+            },
+            "preview": {
+              "x": 16,
+              "y": 10527.94,
+              "absoluteY": 10527.94,
+              "width": 358,
+              "height": 699.06,
+              "right": 374,
+              "bottom": 11227,
+              "visibleHeight": 0
+            },
+            "receipt": {
+              "x": 35,
+              "y": 10691.22,
+              "absoluteY": 10691.22,
+              "width": 116,
+              "height": 116,
+              "right": 151,
+              "bottom": 10807.22,
+              "visibleHeight": 0
+            },
+            "folio": {
+              "x": 35,
+              "y": 10861.22,
+              "absoluteY": 10861.22,
+              "width": 320,
+              "height": 39,
+              "right": 355,
+              "bottom": 10900.22,
+              "visibleHeight": 0
+            },
+            "openDetails": {
+              "x": 35,
+              "y": 11101.22,
+              "absoluteY": 11101.22,
+              "width": 320,
+              "height": 48,
+              "right": 355,
+              "bottom": 11149.22,
+              "visibleHeight": 0
+            },
+            "previewActionFirstRow": {
+              "x": 167.88,
+              "y": 844.66,
+              "absoluteY": 844.66,
+              "width": 44,
+              "height": 44,
+              "right": 211.88,
+              "bottom": 888.66,
+              "visibleHeight": 0
+            },
+            "actionCellSticky": false,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 9683.94
+          },
+          "visiblePreview": {
+            "viewport": [
+              390,
+              844
+            ],
+            "scrollY": 10454,
+            "pageOverflowPx": 0,
+            "mainOverflowPx": 0,
+            "tableInternalOverflowPx": 0,
+            "list": {
+              "x": 16,
+              "y": -10103.94,
+              "absoluteY": 350.06,
+              "width": 358,
+              "height": 10157.88,
+              "right": 374,
+              "bottom": 53.94,
+              "visibleHeight": 53.94
+            },
+            "preview": {
+              "x": 16,
+              "y": 73.94,
+              "absoluteY": 10527.94,
+              "width": 358,
+              "height": 699.06,
+              "right": 374,
+              "bottom": 773,
+              "visibleHeight": 699.06
+            },
+            "receipt": {
+              "x": 35,
+              "y": 237.22,
+              "absoluteY": 10691.22,
+              "width": 116,
+              "height": 116,
+              "right": 151,
+              "bottom": 353.22,
+              "visibleHeight": 116
+            },
+            "folio": {
+              "x": 35,
+              "y": 407.22,
+              "absoluteY": 10861.22,
+              "width": 320,
+              "height": 39,
+              "right": 355,
+              "bottom": 446.22,
+              "visibleHeight": 39
+            },
+            "openDetails": {
+              "x": 35,
+              "y": 647.22,
+              "absoluteY": 11101.22,
+              "width": 320,
+              "height": 48,
+              "right": 355,
+              "bottom": 695.22,
+              "visibleHeight": 48
+            },
+            "previewActionFirstRow": {
+              "x": 167.88,
+              "y": -9609.34,
+              "absoluteY": 844.66,
+              "width": 44,
+              "height": 44,
+              "right": 211.88,
+              "bottom": -9565.34,
+              "visibleHeight": 0
+            },
+            "actionCellSticky": false,
+            "previewReceiptMarginsPx": [
+              22,
+              22
+            ],
+            "tableRows": 20,
+            "previewDistanceFromFoldPx": 0
+          }
+        }
+      }
+    }
+  },
+  "servicesStopped": true,
+  "ownProcessesRemaining": 0,
+  "localListenersRemaining": 0,
+  "githubActions": {
+    "commit": "8edc2b8e3bb4d5c9929ec96f98655d718ddbb937",
+    "url": "https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44226648117",
+    "observedAt": "2026-11-18T03:00:31.2529806Z",
+    "jobs": {
+      "verify": "queued",
+      "windows-installer": "currently running",
+      "render-images": "currently running"
+    }
+  }
+}
