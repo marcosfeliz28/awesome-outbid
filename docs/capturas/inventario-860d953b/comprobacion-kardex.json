@@ -1,0 +1,81 @@
+{
+  "commit": "860d953b6c4212f883d81ed6fb03db6d81c07d8e",
+  "screenshots": [
+    {
+      "file": "kardex-1440-es.png",
+      "width": 1440,
+      "height": 900,
+      "lang": "es"
+    },
+    {
+      "file": "kardex-1440-en.png",
+      "width": 1440,
+      "height": 900,
+      "lang": "en"
+    },
+    {
+      "file": "kardex-390-es.png",
+      "width": 390,
+      "height": 844,
+      "lang": "es"
+    },
+    {
+      "file": "kardex-390-en.png",
+      "width": 390,
+      "height": 844,
+      "lang": "en"
+    }
+  ],
+  "checks": {
+    "390": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "es": {
+        "sku": "FIT-0009-1",
+        "product": "Glutamina Pure",
+        "sameVariantRequest": true,
+        "http": 200,
+        "searchPreserved": true
+      },
+      "en": {
+        "sku": "FIT-0009-1",
+        "product": "Glutamina Pure",
+        "sameVariantRequest": true,
+        "http": 200,
+        "searchPreserved": true
+      }
+    },
+    "1440": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "es": {
+        "sku": "FIT-0009-1",
+        "product": "Glutamina Pure",
+        "sameVariantRequest": true,
+        "http": 200,
+        "searchPreserved": true
+      },
+      "en": {
+        "sku": "FIT-0009-1",
+        "product": "Glutamina Pure",
+        "sameVariantRequest": true,
+        "http": 200,
+        "searchPreserved": true
+      }
+    }
+  },
+  "stages": [
+    "PostgreSQL temporal en loopback",
+    "Migraciones de la base de demostración",
+    "Generación de registros ficticios",
+    "API local real",
+    "Aplicación web del SHA publicado"
+  ],
+  "servicesStopped": true,
+  "ports": {
+    "postgres": 15492,
+    "api": 14292,
+    "web": 14392
+  },
+  "completedAt": "2026-11-18T08:07:48.540Z"
+}

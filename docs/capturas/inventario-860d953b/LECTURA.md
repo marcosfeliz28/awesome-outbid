@@ -6,7 +6,9 @@ Código probado `860d953b6c4212f883d81ed6fb03db6d81c07d8e`; rama de evidencia ba
 
 Con los mismos datos de demostración, las medidas de la primera fila son iguales a las registradas en [20c60b2f](https://github.com/marcosfeliz28/awesome-outbid/tree/chatgpt-pc/capturas-dot-20c60b2f/docs/capturas/inventario-20c60b2f): a 390, bloque de producto 276 × 62 y botón Ajustar 85 × 44 px; a 1440, 180 × 91 y 49 × 44 px. No se solapan en ese ejemplo; Ajustar abrió y cerró en español e inglés sin guardar. No es una verificación de todos los nombres.
 
-Las alertas y movimientos también permanecen tras las 20 filas: al inicio, 2.317 px bajo el viewport en 1440; en 390, alertas 10.284 px y movimientos 11.301 px. La prueba no ejercitó un acceso alterno ni el botón «Ver movimientos». El seed mostró 25 variantes alertadas con cinco visibles y cinco movimientos recientes de ventas ficticias.
+Las alertas y movimientos también permanecen tras las 20 filas: al inicio, 2.317 px bajo el viewport en 1440; en 390, alertas 10.284 px y movimientos 11.301 px. La prueba no ejercitó un acceso alterno. El seed mostró 25 variantes alertadas con cinco visibles y cinco movimientos recientes de ventas ficticias.
+
+En una corrida adicional se buscó la variante ficticia `FIT-0009-1` y se pulsó «Ver movimientos» / «View movements» de su alerta. En 1440 y 390, el Kardex abrió para el producto correspondiente y la petición GET confirmó el identificador de esa misma variante con respuesta 200; al cerrar con Escape, la búsqueda permaneció intacta. Cero escrituras operativas o errores JS y servicios cerrados. Las cuatro capturas `kardex-*` y `comprobacion-kardex.json` registran esta prueba.
 
 Las tarjetas coincidieron con cálculo independiente de la respuesta real de stock demo en ambos idiomas y anchos: Tienda 4.165 unidades, 25 variantes bajas y 0 sin existencia (228 filas); Casa 0, 0 y 228. El filtro de una variante actualizó el alcance y su cantidad. Son datos de prueba, no cifras de una tienda.
 
