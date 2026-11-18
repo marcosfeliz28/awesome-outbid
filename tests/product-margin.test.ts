@@ -56,5 +56,11 @@ it("los formularios de alta de producto y de edición de variante usan el aviso"
   expect(src).toContain("fields={withMargin(fields)}");
   expect(src).toContain("withMargin([");
   expect(src).toContain('f.key === "costAvg"');
-  expect(src).toContain("marginHint(values.price, values.costAvg, lowMargin)");
+  expect(src).toContain("marginHint(values.price, values.costAvg, lowMargin, en)");
+});
+
+it("English keeps the same margin and threshold, only labels change", () => {
+  expect(marginHint(100,86,15,true)).toBe("Margin: 14 % (price − cost) ÷ price, without subtracting ITBIS. Below the minimum of 15 %.");
+  expect(marginHint(100,85,15,true)).toContain("Meets the minimum of 15 %.");
+  expect(marginHint("",85,15,true)).toBe("");
 });

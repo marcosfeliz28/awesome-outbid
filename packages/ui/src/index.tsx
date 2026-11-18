@@ -70,11 +70,11 @@ export function Empty({
     </div>
   );
 }
-export function Loading() {
+export function Loading({ label = "Cargando datos…" }: { label?: string } = {}) {
   return (
     <div className="loading" role="status">
       <LoaderCircle className="spin" />
-      <span>Cargando datos…</span>
+      <span>{label}</span>
       <div className="loading-skeleton" aria-hidden="true">
         <i />
         <i />
@@ -123,6 +123,7 @@ export function Modal({
   children,
   wide = false,
   hasData = false,
+  closeLabel = "Cerrar",
 }: {
   open: boolean;
   onClose: () => void;
@@ -131,6 +132,7 @@ export function Modal({
   wide?: boolean;
   /** Si es true, cerrar pregunta antes de descartar lo escrito. */
   hasData?: boolean;
+  closeLabel?: string;
 }) {
   const [asking, setAsking] = useState(false);
   useEffect(() => {
@@ -152,7 +154,7 @@ export function Modal({
           <div className="modal-heading">
             <Dialog.Title>{title}</Dialog.Title>
             <Dialog.Close asChild>
-              <button className="icon-button" aria-label="Cerrar">
+              <button className="icon-button" aria-label={closeLabel}>
                 <X size={20} />
               </button>
             </Dialog.Close>

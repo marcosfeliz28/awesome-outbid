@@ -11,14 +11,14 @@ import {
 
 export const today = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" });
-export const dateLabel = (value: string) =>
-  new Date(value).toLocaleDateString("es-DO", {
+export const dateLabel = (value: string, locale = "es-DO") =>
+  new Date(value).toLocaleDateString(locale, {
     timeZone: "America/Santo_Domingo",
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-export const attrLabel = (attributes: Record<string, string>) =>
+export const attrLabel = (attributes: Record<string, string>, fallback = "Única") =>
   [
     ...new Set([
       "talla",
@@ -31,7 +31,7 @@ export const attrLabel = (attributes: Record<string, string>) =>
   ]
     .filter((key) => attributes[key])
     .map((key) => attributes[key])
-    .join(" · ") || "Única";
+    .join(" · ") || fallback;
 type ToastAction = { label: string; run: () => void };
 let toastHandler: (
   message: string,
@@ -177,9 +177,11 @@ export function Toasts() {
 export function QueryState({
   query,
   children,
+  english = false,
 }: {
   query: any;
   children: ReactNode;
+  english?: boolean;
 }) {
   // 05-M3: sin conexión React Query deja en pausa las consultas al servidor:
   // antes quedaba «Cargando datos…» para siempre.
@@ -187,20 +189,20 @@ export function QueryState({
     return (
       <div className="error-panel" role="status">
         <WifiOff />
-        <p>Sin conexión: esta información necesita internet.</p>
+        <p>{english ? "Offline: this information requires internet." : "Sin conexión: esta información necesita internet."}</p>
         <Button variant="secondary" onClick={() => query.refetch()}>
-          Reintentar
+          {english ? "Retry" : "Reintentar"}
         </Button>
       </div>
     );
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Loading label={english ? "Loading data…" : "Cargando datos…"} />;
   if (query.error)
     return (
       <div className="error-panel" role="alert">
         <AlertCircle />
-        <p>{managementQueryError(query.error)}</p>
+        <p>{english ? (query.error?.status === 401 ? "Your session ended. Sign in again to continue." : query.error?.status === 403 ? "You do not have access to this information. Ask management for help." : "We could not load this information. Check your connection and retry.") : managementQueryError(query.error)}</p>
         <Button variant="secondary" onClick={() => query.refetch()}>
-          Reintentar
+          {english ? "Retry" : "Reintentar"}
         </Button>
       </div>
     );
@@ -302,7 +304,7 @@ export function FormModal({
         if (f.type === "number") data[f.key] = Number(data[f.key]);
       await onSubmit(data);
       await client.invalidateQueries();
-      toast("Cambios guardados.");
+      toast(english ? "Changes saved." : "Cambios guardados.");
       onClose();
     } catch (e: any) {
       setError(businessErrorMessage(e));
@@ -311,7 +313,7 @@ export function FormModal({
     }
   }
   return (
-    <Modal open onClose={onClose} title={title}>
+    <Modal open onClose={onClose} title={title} closeLabel={english ? "Close" : "Cerrar"}>
       <form onSubmit={submit} className="form-grid">
         {resolvedFields.map((f) => (
           <label
@@ -371,7 +373,9 @@ export function FormModal({
         {notice}
         {error && (
           <p className="form-error full" role="alert">
-            {error}
+            {english && error === businessErrorMessage(null)
+              ? "We could not complete the operation. Check the information and your connection, then try again. If it continues, ask management for help."
+              : error}
           </p>
         )}
         <div className="modal-footer full">
