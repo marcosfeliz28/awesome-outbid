@@ -276,3 +276,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · Acabado y actualización entre compilaciones con carrito
+
+- Probé `01772bf1` con claro y oscuro a 1440 y 390 px. Confirmé acabado dorado, botones, alto contraste, movimiento reducido y 14 pruebas focales de Inicio. [Siete capturas y mediciones](../validacion/capturas-dot-01772bf1/inicio-y-actualizacion/COMPARACION.md).
+- Bloqueo para Dot. De `5cadaa81` a `01772bf1` el carrito se conservó mientras otra pestaña instalaba la versión nueva. Al quitar el último artículo, Punto de venta se recargó y restauró el artículo eliminado en 2/2 corridas con clics de catálogo. Cero ventas. Falta asegurar que el borrador vacío se persista antes de autorizar la recarga.
+- La corrección de la prueba `8ef8ff15` pasó cinco repeticiones locales de Chromium y CI de push. La ejecución de pull request sigue roja. `01772bf1` también sigue con verify en rojo.

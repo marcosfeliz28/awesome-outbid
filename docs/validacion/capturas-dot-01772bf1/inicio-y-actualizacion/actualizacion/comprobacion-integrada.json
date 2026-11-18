@@ -1,0 +1,75 @@
+{
+  "commit": "01772bf1d20a38f3cd9e5f2d26c0c1e3bc2ca102",
+  "completedAt": "2026-11-18T00:59:01.371Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "actualizacion-en-inicio.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "0d5a890cd9906ff7fe9a512de2e35168d469127b92220a167bf9821150d8c144"
+    },
+    {
+      "file": "carrito-conservado-version-anterior.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "74d9437dbea936e7f9fdc3535e538c43be0eb20408f8c8f6a36abf0a6f4ce327"
+    },
+    {
+      "file": "pos-tras-quitar-ultimo-articulo.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "pngDimensions": [
+        1440,
+        900
+      ],
+      "sha256": "ff4ddf7a49a0b4aa46c10605f532e1a3736f9cd26d40fcf7c443c0b8be24ff1b"
+    }
+  ],
+  "checks": {
+    "builds": [
+      {
+        "commit": "5cadaa81d9f440e8dadf31adc70f20df5e1c626c",
+        "serviceWorkerSha256": "b9fb5a15b064ca36b205cbe48da4eff2753d013c842dd09d45011012dc425639",
+        "cssAssets": [
+          "/assets/index-C2y3TKaP.css"
+        ],
+        "appModule": "/assets/index-Dx-dpXmk.js"
+      },
+      {
+        "commit": "01772bf1d20a38f3cd9e5f2d26c0c1e3bc2ca102",
+        "serviceWorkerSha256": "e3e6e6e04aa52c69394f345d8cc56c147b1e1d8e4d83efad0953f59f5c462eb5",
+        "cssAssets": [
+          "/assets/index-9KkoIy7C.css"
+        ],
+        "appModule": "/assets/index-CwNp-4gy.js"
+      }
+    ],
+    "idleReloadedOntoNewBuild": true,
+    "busyControllerChanged": true,
+    "addedThroughCatalogWithoutEditingInput": true,
+    "busyDocumentItemAndTotalPreservedAfter16s": true,
+    "busyLoadedNewBuildAfterRemovingItem": true,
+    "visibleItemsAfterReload": 1,
+    "removedItemAndTotalReappeared": true,
+    "cashStillShownOpen": true,
+    "saleRequests": 0
+  },
+  "servicesStopped": true,
+  "salePosts": 0,
+  "pageErrorCount": 0
+}
