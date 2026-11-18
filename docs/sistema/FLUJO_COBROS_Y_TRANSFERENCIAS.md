@@ -74,7 +74,7 @@ Dos caminos:
 5. Si el envío del mensajero explica la diferencia: «Usar RD$ X como envío» (`:321`) o «Editar envío».
 6. **«Rechazar»** una factura: «Motivo del rechazo» + «Confirmar rechazo» (`:359`).
 
-**B) Desde «Ventas»** abriendo la factura (ojo): por cada transferencia pendiente, botones **«Verificar»** (`apps/web/src/Management.tsx:3730`), **«Rechazar»** (`:3530`) y **«Corregir banco y referencia»** (`:3455`; bloque de transferencias en `:3445`).
+**B) Desde «Ventas»** abriendo la factura (ojo): por cada transferencia pendiente, botones **«Verificar»** (`apps/web/src/Management.tsx:3788`), **«Rechazar»** (`:3530`) y **«Corregir banco y referencia»** (`:3455`; bloque de transferencias en `:3445`).
 
 API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales.ts:3136`). Efecto:
 
@@ -85,14 +85,14 @@ API de verificar: `POST /payments/:id/verify` (permiso `*`) (`apps/api/src/sales
 
 ### 4.3 Rechazar (el dinero no llegó)
 
-- Botón «Rechazar» → «Rechazar transferencia de RD$ …» con motivo (`apps/web/src/Management.tsx:3773`; textos de ayuda en `:3594-3596`). API `POST /payments/:id/reject` (`*`) (`apps/api/src/sales.ts:3462`).
+- Botón «Rechazar» → «Rechazar transferencia de RD$ …» con motivo (`apps/web/src/Management.tsx:3831`; textos de ayuda en `:3594-3596`). API `POST /payments/:id/reject` (`*`) (`apps/api/src/sales.ts:3462`).
 - Transferencia **de una venta**: la mercancía ya salió, así que ese importe **pasa a cuenta por cobrar del cliente** y sale del esperado de la caja; si la caja ya cerró, se recalcula (`sales.ts:3462` y siguientes; auditoría `rejected_after_close` en `:3207`). Si parte ya se devolvió y no se puede cobrar, crea la alerta `transfer_rejected_loss` (`:3173`).
-- Transferencia **de un abono**: no descuenta deuda ni entra a caja (`apps/web/src/Management.tsx:3777`).
+- Transferencia **de un abono**: no descuenta deuda ni entra a caja (`apps/web/src/Management.tsx:3835`).
 - Solo se rechaza una `pending_verification`.
 
 ### 4.4 Corregir banco y referencia
 
-- «Corregir banco y referencia» (`*`; pago `pending_verification` u `ok`): campos «Banco correcto», «Referencia correcta», «Motivo de la corrección» (`apps/web/src/Management.tsx:3822-3854`, etiqueta en `:3614`); no cambia importe ni estado y queda en la bitácora. API `POST /payments/:id/correct-transfer` (`apps/api/src/sales.ts:3389`). Si otra persona la corrigió antes: «Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.» (`apps/api/src/sales.ts:3431`).
+- «Corregir banco y referencia» (`*`; pago `pending_verification` u `ok`): campos «Banco correcto», «Referencia correcta», «Motivo de la corrección» (`apps/web/src/Management.tsx:3880-3912`, etiqueta en `:3614`); no cambia importe ni estado y queda en la bitácora. API `POST /payments/:id/correct-transfer` (`apps/api/src/sales.ts:3389`). Si otra persona la corrigió antes: «Otro usuario corrigió la transferencia. Actualiza la venta antes de continuar.» (`apps/api/src/sales.ts:3431`).
 
 ## 5. Cuando la caja ya cerró
 

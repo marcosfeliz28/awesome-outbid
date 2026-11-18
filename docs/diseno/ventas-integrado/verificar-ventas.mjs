@@ -40,6 +40,9 @@ assert.match(view, /YOUR BUSINESS, WITH CLARITY/);
 assert.match(view, /en-US/);
 assert.match(view, /View /);
 assert.match(view, /Cash/);
+assert.match(view, /Recorded payments/);
+assert.match(view, /Courier delivery/);
+assert.match(view, /Visible after closing your register\./);
 log(
-  "PASS: 24 presentation, permissions, blind cash and accessibility contracts",
+  "PASS: 27 presentation, permissions, blind cash and accessibility contracts",
 );

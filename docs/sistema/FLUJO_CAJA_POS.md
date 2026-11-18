@@ -114,7 +114,7 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 ## 6. Recibo, comprobante e impresión
 
 - **El recibo se genera solo** al finalizar y se muestra la ventana **«¡Una venta más, una meta más cerca!»** con el total, el número FS-xxxxxxx, el badge «Venta registrada» y el «Cambio» (`POS.tsx:2432-2475`). Si hubo crédito: «CRÉDITO · PENDIENTE DE PAGO» y el monto pendiente (`:2363-2375`).
-- **¿Se imprime solo?** Depende de Configuración › «Imprimir el recibo automáticamente al cobrar» (`apps/web/src/Management.tsx:4162-4163`; por defecto apagado, `apps/api/src/admin.ts:125`). Si está activo: `printSoon()` (`POS.tsx:2363-2364`). Si no, se pulsa **«Imprimir recibo»** (`:2381-2384`, llama `window.print()`).
+- **¿Se imprime solo?** Depende de Configuración › «Imprimir el recibo automáticamente al cobrar» (`apps/web/src/Management.tsx:4220-4221`; por defecto apagado, `apps/api/src/admin.ts:125`). Si está activo: `printSoon()` (`POS.tsx:2363-2364`). Si no, se pulsa **«Imprimir recibo»** (`:2381-2384`, llama `window.print()`).
 - Otros botones: **«Recibo PDF»** (`:2385-2398`; API `apps/api/src/sales.ts:4801`), **«WhatsApp»** y **«Correo»** con el texto del recibo (`:2399-2426`), **«Nueva venta»** (`:2428-2430`).
 - Ancho del ticket 80 mm o 58 mm según Configuración (`POS.tsx:2527`; `admin.ts:91`).
 - El recibo es **«DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL»**; el NCF solo se imprime si la venta ya trae uno y el modo es electrónico (`apps/web/src/Prints.tsx:509-510`, `:546-553`). Con solicitud B01/B02 imprime «Solicitud NCF … · pendiente de emisión fiscal» (`:625-626`). No hay NCF real emitido por este sistema.
@@ -134,7 +134,7 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 
 - **Cajera:** en **Ventas**, solo sobre una venta suya completada y sin solicitud pendiente: **«Solicitar anulación»** → «Tipo de motivo» (Solicitud del cliente, Venta duplicada, Error de pago, Error de artículo, Otro) + «Explica el motivo» (`Management.tsx:3451-3466`, `:3555-3587`; API `apps/api/src/sales.ts:1915`).
 - **Administración (`*`):** en **Ventas** › **«Anular»** (si no tiene devoluciones ni abonos válidos) con motivo → «Sí, anular venta» (`Management.tsx:3491-3504`, `:3540-3554`; API `POST /sales/:id/void`, `apps/api/src/sales.ts:2381-2389`). O en **Solicitudes de anulación** › **«Aprobar y anular»** (`apps/web/src/VoidRequests.tsx:125-131`). Nadie aprueba su propia solicitud (`sales.ts:2081`, `:2404`).
-- Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:3725`; `sales.ts:2780-2792`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2773-2778`).
+- Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:3783`; `sales.ts:2780-2792`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2773-2778`).
 
 ## 9. Movimientos de efectivo durante el día
 

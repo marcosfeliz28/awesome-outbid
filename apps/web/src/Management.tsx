@@ -3550,15 +3550,24 @@ export function SalesHistory() {
             )}
             {can(user.permissions, "sale:manage") && (
               <div className="panel">
-                <h3>Envío del mensajero</h3>
+                <h3>{en ? "Courier delivery" : "Envío del mensajero"}</h3>
                 <p>
-                  Separado del total de la factura y de la caja.{" "}
-                  {selected.courierPaidAt ? "Pagado." : "Pendiente de pago."}
+                  {en
+                    ? "Separate from the invoice total and register."
+                    : "Separado del total de la factura y de la caja."}{" "}
+                  {selected.courierPaidAt
+                    ? en
+                      ? "Paid."
+                      : "Pagado."
+                    : en
+                      ? "Payment pending."
+                      : "Pendiente de pago."}
                 </p>
                 {can(user.permissions, "*") &&
                 editableNow(selected) &&
                 !selected.courierPaidAt ? (
                   <CourierFeeEditor
+                    english={en}
                     key={selected.id}
                     saleId={selected.id}
                     initialFee={String(selected.courierFee ?? 0)}
@@ -3573,7 +3582,10 @@ export function SalesHistory() {
                     }}
                   />
                 ) : (
-                  <p>Envío: {formatMoney(Number(selected.courierFee ?? 0))}</p>
+                  <p>
+                    {en ? "Delivery:" : "Envío:"}{" "}
+                    {formatMoney(Number(selected.courierFee ?? 0))}
+                  </p>
                 )}
               </div>
             )}
@@ -3589,33 +3601,46 @@ export function SalesHistory() {
                     ).catch((e) => toast(e.message, true))
                   }
                 >
-                  Imprimir nota {r.number}
+                  {en ? "Print credit note" : "Imprimir nota"} {r.number}
                 </Button>
               ))}
             <DataTable
               rows={selected.items}
               columns={[
-                { label: "Producto", render: (i) => i.variant.product.name },
                 {
-                  label: "Variante",
+                  label: en ? "Product" : "Producto",
+                  render: (i) => i.variant.product.name,
+                },
+                {
+                  label: en ? "Variant" : "Variante",
                   render: (i) => attrLabel(i.variant.attributes),
                 },
-                { label: "Cantidad", render: (i) => i.qty },
-                { label: "Devuelta", render: (i) => i.returnedQty },
+                { label: en ? "Quantity" : "Cantidad", render: (i) => i.qty },
+                {
+                  label: en ? "Returned" : "Devuelta",
+                  render: (i) => i.returnedQty,
+                },
                 {
                   label: "Total",
                   render: (i) => saleMoney(selected, i.lineTotal),
                 },
               ]}
             />
-            <h3>Pagos registrados</h3>
-            {selected.hiddenUntilClose && <p>Se ve al cerrar tu caja.</p>}
+            <h3>{en ? "Recorded payments" : "Pagos registrados"}</h3>
+            {selected.hiddenUntilClose && (
+              <p>
+                {en
+                  ? "Visible after closing your register."
+                  : "Se ve al cerrar tu caja."}
+              </p>
+            )}
             {Number(selected.discountTotal) > 0 && (
               <p>
-                Descuento: {saleMoney(selected, selected.discountTotal)} ·
-                Motivo: {selected.discountReason}
+                {en ? "Discount:" : "Descuento:"}{" "}
+                {saleMoney(selected, selected.discountTotal)} ·
+                {en ? "Reason:" : "Motivo:"} {selected.discountReason}
                 {selected.discountApprovedName
-                  ? ` · Autorizó: ${selected.discountApprovedName}`
+                  ? ` · ${en ? "Approved by" : "Autorizó"}: ${selected.discountApprovedName}`
                   : ""}
               </p>
             )}
@@ -3623,11 +3648,26 @@ export function SalesHistory() {
               <div className="payment-list" key={p.id}>
                 <div>
                   <span>
-                    {METHOD_LABEL[p.method] ??
-                      paymentOptions.find((o) => o.value === p.method)?.label ??
-                      p.method}{" "}
-                    · Recibido: {saleMoney(selected, p.tendered ?? p.amount)} ·
-                    Aplicado: {saleMoney(selected, p.amount)} · Cambio:{" "}
+                    {en
+                      ? ((
+                          {
+                            cash: "Cash",
+                            card: "Card",
+                            transfer: "Transfer",
+                            credit: "Credit",
+                            cod: "Cash on delivery",
+                            credit_note: "Credit note",
+                          } as Record<string, string>
+                        )[p.method] ?? p.method)
+                      : (METHOD_LABEL[p.method] ??
+                        paymentOptions.find((o) => o.value === p.method)
+                          ?.label ??
+                        p.method)}{" "}
+                    · {en ? "Received:" : "Recibido:"}{" "}
+                    {saleMoney(selected, p.tendered ?? p.amount)} ·
+                    {en ? "Applied:" : "Aplicado:"}{" "}
+                    {saleMoney(selected, p.amount)} ·{" "}
+                    {en ? "Change:" : "Cambio:"}{" "}
                     {saleMoney(selected, p.change ?? 0)}
                     <small>{p.reference || p.approvalCode}</small>
                   </span>
@@ -3642,7 +3682,9 @@ export function SalesHistory() {
                           setCorrectingTransfer(p);
                         }}
                       >
-                        Corregir banco y referencia
+                        {en
+                          ? "Correct bank and reference"
+                          : "Corregir banco y referencia"}
                       </button>
                     )}
                   {p.method === "transfer" &&
@@ -3656,7 +3698,9 @@ export function SalesHistory() {
                           setUnverifying(p);
                         }}
                       >
-                        Des-verificar transferencia
+                        {en
+                          ? "Undo transfer verification"
+                          : "Des-verificar transferencia"}
                       </button>
                     )}
                   {p.cashSessionId &&
@@ -3669,13 +3713,21 @@ export function SalesHistory() {
                           setMoving(p);
                         }}
                       >
-                        Mover cobro a otra caja
+                        {en
+                          ? "Move payment to another register"
+                          : "Mover cobro a otra caja"}
                       </button>
                     )}
                   {p.entryType === "installment" &&
                     can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
-                        {p.hasProof ? "Cambiar foto" : "Subir foto"}
+                        {p.hasProof
+                          ? en
+                            ? "Change photo"
+                            : "Cambiar foto"
+                          : en
+                            ? "Upload photo"
+                            : "Subir foto"}
                         <input
                           type="file"
                           className="sr-only"
@@ -3706,10 +3758,16 @@ export function SalesHistory() {
                     }
                   >
                     {p.status === "ok"
-                      ? "Verificado"
+                      ? en
+                        ? "Verified"
+                        : "Verificado"
                       : p.status === "rejected"
-                        ? "Rechazada"
-                        : "Pendiente de verificar"}
+                        ? en
+                          ? "Rejected"
+                          : "Rechazada"
+                        : en
+                          ? "Pending verification"
+                          : "Pendiente de verificar"}
                   </Badge>
                   {p.method === "transfer" &&
                     p.status === "pending_verification" &&
@@ -3727,7 +3785,7 @@ export function SalesHistory() {
                           }
                         }}
                       >
-                        Verificar
+                        {en ? "Verify" : "Verificar"}
                       </button>
                     )}
                   {/* Un abono por transferencia que no llegó se rechaza: si no,
@@ -3744,7 +3802,7 @@ export function SalesHistory() {
                           setRejecting(p);
                         }}
                       >
-                        Rechazar
+                        {en ? "Reject" : "Rechazar"}
                       </button>
                     )}
                 </div>
