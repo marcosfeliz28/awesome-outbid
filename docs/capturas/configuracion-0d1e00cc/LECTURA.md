@@ -53,8 +53,14 @@ La base avanzó a `e95364deafddc33b91912c6fcc8018bec6ba6123`, cuyo autor figura 
 
 Dot sigue en `94f11b31`. Su próxima integración debe conservar también este cambio paralelo. El recorrido visual de la planilla GV queda pendiente. Los hallazgos de este informe siguen abiertos.
 
+## Cuatro fotos añadidas a la base
+
+La base avanzó a `8014355b4f7e64a3f2ad2606305793c4d20f15e3`. Incluye cuatro WebP nuevas desde `e95364de`: `nb-1906r-blanco-y-crema-real.webp`, `adidas-campus-rosados-real.webp`, `nike-p6000-negros-real.webp` y `nike-p6000-blanco-negro-real.webp`. Suma 323 WebP. La API coincide con la rama de Dot. Pasaron sus tres controles. [Cambios de fotos](https://github.com/marcosfeliz28/awesome-outbid/compare/e95364de...8014355b) · [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44410610578)
+
+Dot sigue en `94f11b31`, con 319 fotos. La próxima integración debe conservar estas cuatro incorporaciones y la planilla GV ya registrada. Los pendientes visuales siguen abiertos.
+
 ## Siguiente entrega de Dot
 
-Corregir el contraste y la partición de etiquetas de Incentivos, completar los textos de interfaz en inglés y el retorno de foco. Conservar las 319 fotos de la integración, entregar el resumen por pantalla del ensayo general y adjuntar rama, SHA, tres controles y demostración privada.
+Corregir el contraste y la partición de etiquetas de Incentivos, completar los textos de interfaz en inglés y el retorno de foco. Conservar las 323 fotos de la base, entregar el resumen por pantalla del ensayo general y adjuntar rama, SHA, tres controles y demostración privada.
 
 Se cerraron los navegadores y servicios que se abrieron durante la revisión.

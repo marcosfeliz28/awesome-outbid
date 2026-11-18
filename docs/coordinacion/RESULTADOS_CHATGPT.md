@@ -11,6 +11,7 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 - **Ensayo de Dot.** El control de 16 casos simulados de Configuración e Incentivos en `4922796f` pasó. La app es idéntica al candidato. Artefactos individuales pendientes de inspección. [Ensayo](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44364699567).
 - **Base actual.** A las 20:18 UTC `nexora-cloud` ya apunta externamente a `94f11b31`. Su push `44385086652` terminó con los tres controles aprobados. `verify` cerró a las 20:26:29 UTC. Pendientes visuales abiertos y sitio servido sin comprobar. [CI de base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44385086652).
 - **Cambio paralelo.** Base `e95364de` incorpora la planilla compacta de GV, con autor Claude y tres controles verdes. Conserva API y 319 fotos. Dot sigue en `94f11b31` y debe preservar este cambio al integrar. Recorrido visual GV pendiente. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44405850602).
+- **Fotos más recientes.** Base `8014355b` suma cuatro fotos reales de tenis, para 323 WebP, con tres controles aprobados. Dot mantiene 319 fotos en `94f11b31`. Preservar estas incorporaciones y el cambio GV en la siguiente integración. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44410610578).
 - **Seguimiento.** Corregir los pendientes, preservar las fotos y entregar SHA, tres controles y demo privada. Se cerraron navegadores y procesos de prueba. Cero operaciones de negocio.
 
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
