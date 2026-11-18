@@ -19,6 +19,17 @@ describe("Caja Fusión: pintura reversible", () => {
       record.base_sha256,
     );
   });
+  it("mobile actions preserve labels and count singular without changing handlers", () => {
+    const source = readFileSync("apps/web/src/POS.tsx", "utf8");
+    const css = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
+    expect(source).toContain('units === 1 ? "artículo" : "artículos"');
+    expect(source).toContain('units === 1 ? "item" : "items"');
+    expect(source).toContain('onClick={clearWithUndo}');
+    expect(source).toContain('onClick={() => saveHeld()}');
+    expect(source).toContain('onClick={() => saveHeld("quote")}');
+    expect(css).toContain('grid-template-columns: repeat(3,minmax(0,1fr))');
+    expect(css).toContain('min-width: 0; min-height: 44px; padding: 8px 4px');
+  });
   it("preferencias no escriben ni recargan carrito o cobran", () => {
     const source = readFileSync(
       "apps/web/src/CajaVisualPreferences.tsx",

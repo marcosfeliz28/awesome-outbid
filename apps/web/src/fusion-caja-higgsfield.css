@@ -898,3 +898,19 @@
     gap: 3px;
   }
 }
+
+/* Mobile cart actions retain every label and touch target without horizontal clipping. */
+@media(max-width: 600px) {
+ .pos-layout.fusion-caja-integrada .cart-bottom-actions {
+  display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px;
+ }
+ .pos-layout.fusion-caja-integrada .cart-bottom-actions button {
+  min-width: 0; min-height: 44px; padding: 8px 4px;
+  flex-direction: column; justify-content: center; white-space: normal; overflow-wrap: anywhere;
+ }
+ .pos-layout.fusion-caja-integrada .cart-bottom-actions button svg { flex-shrink: 0; }
+}
+.pos-layout.fusion-caja-integrada .cart-heading .badge.violet {
+ color: var(--fc-ink); background: var(--fc-deep); border: 1px solid var(--fc-edge);
+}
+.pos-layout.fusion-caja-integrada .customer-avatar { background: var(--fc-deep); }
