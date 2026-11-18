@@ -1,0 +1,22 @@
+{
+  "base_sha256": "ae1ad088b229238573cdc597adaa55ab1b9b9e98f055775f715992e610cd74df",
+  "changes": [
+    {
+      "before": "import \"./passwordChange.css\";",
+      "after": "import \"./passwordChange.css\";\nimport \"./fusion-caja-turnos.css\";"
+    },
+    {
+      "before": "<div className=\"cash-page\">",
+      "after": "<div className=\"cash-page fusion-cash-turnos\">"
+    },
+    {
+      "before": "render: (s) => {\n                  const expected = s.expectedCash ?? s.expected?.cash;",
+      "after": "render: (s) => {\n                  if (!canSeeExpected) return \"\u2014\";\n                  const expected = s.expectedCash ?? s.expected?.cash;"
+    },
+    {
+      "before": "label: \"Diferencias por m\u00e9todo\",\n                render: (s) =>\n                  s.closedAt &&",
+      "after": "label: \"Diferencias por m\u00e9todo\",\n                render: (s) =>\n                  canSeeExpected &&\n                  s.closedAt &&"
+    }
+  ],
+  "base_commit": "0ed250e501bb04c13156776973fb1c446906f9e7"
+}
