@@ -1,0 +1,362 @@
+{
+  "commit": "e9a738bb5eea4bb98a5cc765bf302f57b7b2649c",
+  "branch": "dot/15areas-sobre-prod-18nov",
+  "browser": "157.0.4341.60",
+  "tipo": "Aplicación Edge con API local y base de demostración descartable",
+  "capturas": [
+    {
+      "filename": "1440-claro-cuenta.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "scenario": "foco inicial en primera acción de cuenta",
+      "sha256": "b736f3bfe03769b2af732f2c89b9de0e15d00a7c1ac9c5798dc07671dd3f88d8"
+    },
+    {
+      "filename": "1440-claro-cobrar.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "scenario": "diálogo real de Cobrar con tres artículos ficticios",
+      "sha256": "ec072e6199c254ee9db8e256a553cec3ced9c8c6527cb4cdb328208161072ea5"
+    },
+    {
+      "filename": "1440-oscuro-cobrar.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "scenario": "diálogo real de Cobrar con tres artículos ficticios",
+      "sha256": "46d5aad1f43aa5422f691a98ef760fbc041fefa5fc3b43360ac42e3013935ba4"
+    },
+    {
+      "filename": "390-claro-menu.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "scenario": "menú móvil abierto y primera opción enfocada",
+      "sha256": "c09be12ae5f41b214668bd00d3b8d832278c1a38faea8a8e6a39c95d02dcef47"
+    },
+    {
+      "filename": "390-oscuro-busqueda-sobre-menu.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "scenario": "búsqueda global abierta por teclado sobre menú",
+      "sha256": "6b8072b641ac777c45502ca246c0d9f8c4133ee559dc18ac158372103dc6f2aa"
+    },
+    {
+      "filename": "390-oscuro-cobrar.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "scenario": "diálogo real de Cobrar con tres artículos ficticios",
+      "sha256": "dcbae788ab1d4f6a4fd5233c3311061736a8a6f8be7bb3fb50345b11dd85c088"
+    }
+  ],
+  "mediciones": {
+    "390": {
+      "light": {
+        "secuencia": {
+          "menu": {
+            "initialFocus": true,
+            "backgroundInertWhileOpen": true,
+            "buttonRestored": true,
+            "focusAfterEscape": "botón de menú",
+            "tabMoves": 37,
+            "focusEscapes": [],
+            "keptOpenAfterDialog": false,
+            "shellInertAfterDialog": false,
+            "search": {
+              "before": "dentro del menú",
+              "openedAndClosed": true,
+              "queryInitiallyFocused": true,
+              "onlyDialogFocused": true,
+              "resultFound": true,
+              "restoredTrigger": false,
+              "after": "botón de menú"
+            }
+          },
+          "account": {
+            "initialFocus": true,
+            "buttonRestored": true,
+            "focusAfterEscape": "botón de cuenta",
+            "keptOpenAfterDialog": false,
+            "search": {
+              "before": "dentro de cuenta",
+              "openedAndClosed": true,
+              "queryInitiallyFocused": true,
+              "onlyDialogFocused": true,
+              "resultFound": true,
+              "restoredTrigger": false,
+              "after": "botón de cuenta"
+            }
+          },
+          "search": {
+            "before": "campo de producto",
+            "openedAndClosed": true,
+            "queryInitiallyFocused": true,
+            "onlyDialogFocused": true,
+            "resultFound": true,
+            "restoredTrigger": false,
+            "after": "body"
+          },
+          "checkout": {
+            "Escape": {
+              "focusOnOpen": "dentro del diálogo",
+              "dialogClosed": true,
+              "focusRestored": false,
+              "focusAfterClose": "body",
+              "rowsRetained": 3,
+              "totalRetained": true
+            },
+            "Cerrar": {
+              "focusOnOpen": "dentro del diálogo",
+              "dialogClosed": true,
+              "focusRestored": false,
+              "focusAfterClose": "body",
+              "rowsRetained": 3,
+              "totalRetained": true
+            }
+          }
+        },
+        "escape_directo": {
+          "account": {
+            "before": "dentro de cuenta",
+            "closed": true,
+            "restored": true,
+            "after": "botón de cuenta"
+          },
+          "menu": {
+            "before": "dentro del menú",
+            "closed": true,
+            "restored": true,
+            "after": "botón de menú"
+          }
+        },
+        "solicitudes_operativas": 0,
+        "errores_de_pagina": 0
+      },
+      "dark": {
+        "secuencia": {
+          "menu": {
+            "initialFocus": true,
+            "backgroundInertWhileOpen": true,
+            "buttonRestored": true,
+            "focusAfterEscape": "botón de menú",
+            "tabMoves": 37,
+            "focusEscapes": [],
+            "keptOpenAfterDialog": false,
+            "shellInertAfterDialog": false,
+            "search": {
+              "before": "dentro del menú",
+              "openedAndClosed": true,
+              "queryInitiallyFocused": true,
+              "onlyDialogFocused": true,
+              "resultFound": true,
+              "restoredTrigger": false,
+              "after": "botón de menú"
+            }
+          },
+          "account": {
+            "initialFocus": true,
+            "buttonRestored": true,
+            "focusAfterEscape": "botón de cuenta",
+            "keptOpenAfterDialog": false,
+            "search": {
+              "before": "dentro de cuenta",
+              "openedAndClosed": true,
+              "queryInitiallyFocused": true,
+              "onlyDialogFocused": true,
+              "resultFound": true,
+              "restoredTrigger": false,
+              "after": "botón de cuenta"
+            }
+          },
+          "search": {
+            "before": "campo de producto",
+            "openedAndClosed": true,
+            "queryInitiallyFocused": true,
+            "onlyDialogFocused": true,
+            "resultFound": true,
+            "restoredTrigger": false,
+            "after": "body"
+          },
+          "checkout": {
+            "Escape": {
+              "focusOnOpen": "dentro del diálogo",
+              "dialogClosed": true,
+              "focusRestored": false,
+              "focusAfterClose": "body",
+              "rowsRetained": 3,
+              "totalRetained": true
+            },
+            "Cerrar": {
+              "focusOnOpen": "dentro del diálogo",
+              "dialogClosed": true,
+              "focusRestored": false,
+              "focusAfterClose": "body",
+              "rowsRetained": 3,
+              "totalRetained": true
+            }
+          }
+        },
+        "escape_directo": {
+          "account": {
+            "before": "dentro de cuenta",
+            "closed": true,
+            "restored": true,
+            "after": "botón de cuenta"
+          },
+          "menu": {
+            "before": "dentro del menú",
+            "closed": true,
+            "restored": true,
+            "after": "botón de menú"
+          }
+        },
+        "solicitudes_operativas": 0,
+        "errores_de_pagina": 0
+      }
+    },
+    "1440": {
+      "light": {
+        "secuencia": {
+          "account": {
+            "initialFocus": true,
+            "buttonRestored": true,
+            "focusAfterEscape": "botón de cuenta",
+            "keptOpenAfterDialog": false,
+            "search": {
+              "before": "dentro de cuenta",
+              "openedAndClosed": true,
+              "queryInitiallyFocused": true,
+              "onlyDialogFocused": true,
+              "resultFound": true,
+              "restoredTrigger": false,
+              "after": "botón de cuenta"
+            }
+          },
+          "search": {
+            "before": "botón de búsqueda",
+            "openedAndClosed": true,
+            "queryInitiallyFocused": true,
+            "onlyDialogFocused": true,
+            "resultFound": true,
+            "restoredTrigger": false,
+            "after": "body"
+          },
+          "checkout": {
+            "Escape": {
+              "focusOnOpen": "dentro del diálogo",
+              "dialogClosed": true,
+              "focusRestored": false,
+              "focusAfterClose": "body",
+              "rowsRetained": 3,
+              "totalRetained": true
+            },
+            "Cerrar": {
+              "focusOnOpen": "dentro del diálogo",
+              "dialogClosed": true,
+              "focusRestored": false,
+              "focusAfterClose": "body",
+              "rowsRetained": 3,
+              "totalRetained": true
+            }
+          }
+        },
+        "escape_directo": {
+          "account": {
+            "before": "dentro de cuenta",
+            "closed": true,
+            "restored": true,
+            "after": "botón de cuenta"
+          }
+        },
+        "solicitudes_operativas": 0,
+        "errores_de_pagina": 0
+      },
+      "dark": {
+        "secuencia": {
+          "account": {
+            "initialFocus": true,
+            "buttonRestored": true,
+            "focusAfterEscape": "botón de cuenta",
+            "keptOpenAfterDialog": false,
+            "search": {
+              "before": "dentro de cuenta",
+              "openedAndClosed": true,
+              "queryInitiallyFocused": true,
+              "onlyDialogFocused": true,
+              "resultFound": true,
+              "restoredTrigger": false,
+              "after": "botón de cuenta"
+            }
+          },
+          "search": {
+            "before": "botón de búsqueda",
+            "openedAndClosed": true,
+            "queryInitiallyFocused": true,
+            "onlyDialogFocused": true,
+            "resultFound": true,
+            "restoredTrigger": false,
+            "after": "body"
+          },
+          "checkout": {
+            "Escape": {
+              "focusOnOpen": "dentro del diálogo",
+              "dialogClosed": true,
+              "focusRestored": false,
+              "focusAfterClose": "body",
+              "rowsRetained": 3,
+              "totalRetained": true
+            },
+            "Cerrar": {
+              "focusOnOpen": "dentro del diálogo",
+              "dialogClosed": true,
+              "focusRestored": false,
+              "focusAfterClose": "body",
+              "rowsRetained": 3,
+              "totalRetained": true
+            }
+          }
+        },
+        "escape_directo": {
+          "account": {
+            "before": "dentro de cuenta",
+            "closed": true,
+            "restored": true,
+            "after": "botón de cuenta"
+          }
+        },
+        "solicitudes_operativas": 0,
+        "errores_de_pagina": 0
+      }
+    }
+  },
+  "cierre": [
+    {
+      "fecha_utc": "2026-11-18T15:22:34.097Z",
+      "procesos_propios_restantes": 0,
+      "puertos_de_prueba_activos": false,
+      "salidas_forzadas": 0
+    },
+    {
+      "fecha_utc": "2026-11-18T15:24:25.943Z",
+      "procesos_propios_restantes": 0,
+      "puertos_de_prueba_activos": false,
+      "salidas_forzadas": 0
+    }
+  ]
+}

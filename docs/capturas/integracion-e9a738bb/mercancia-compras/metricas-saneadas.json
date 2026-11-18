@@ -1,0 +1,446 @@
+{
+  "sha": "e9a738bb5eea4bb98a5cc765bf302f57b7b2649c",
+  "app": "3700d06a",
+  "sourceBase": "2d87290b",
+  "api": "simulada",
+  "records": [
+    {
+      "screen": "merchandise-entry-doc",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": null,
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "merchandise-exit",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": null,
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "purchase-editor",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": {
+        "width": 850,
+        "left": 295,
+        "right": 1145,
+        "top": 152.609375,
+        "bottom": 847.390625,
+        "height": 694.78125,
+        "clientHeight": 693,
+        "scrollHeight": 693,
+        "closeLabel": "Cerrar",
+        "closeRect": {
+          "left": 1076,
+          "right": 1120,
+          "top": 177.609375,
+          "bottom": 221.609375,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "receipt-editor",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": {
+        "width": 540,
+        "left": 450,
+        "right": 990,
+        "top": 50,
+        "bottom": 950,
+        "height": 900,
+        "clientHeight": 898,
+        "scrollHeight": 964,
+        "closeLabel": "Cerrar",
+        "closeRect": {
+          "left": 921,
+          "right": 965,
+          "top": 75,
+          "bottom": 119,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "receipt-detail",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": {
+        "width": 850,
+        "left": 295,
+        "right": 1145,
+        "top": 223.671875,
+        "bottom": 776.328125,
+        "height": 552.65625,
+        "clientHeight": 551,
+        "scrollHeight": 551,
+        "closeLabel": "Cerrar",
+        "closeRect": {
+          "left": 1076,
+          "right": 1120,
+          "top": 248.671875,
+          "bottom": 292.671875,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "merchandise-entry-doc",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": null,
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "merchandise-exit",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": null,
+      "spanishVisibleInEnglish": [
+        "Merma",
+        "Dañado",
+        "Vencido",
+        "Muestra o probador",
+        "Uso interno",
+        "Devolución a proveedor"
+      ],
+      "writes": []
+    },
+    {
+      "screen": "purchase-editor",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": {
+        "width": 850,
+        "left": 295,
+        "right": 1145,
+        "top": 152.609375,
+        "bottom": 847.390625,
+        "height": 694.78125,
+        "clientHeight": 693,
+        "scrollHeight": 693,
+        "closeLabel": "Cerrar",
+        "closeRect": {
+          "left": 1076,
+          "right": 1120,
+          "top": 177.609375,
+          "bottom": 221.609375,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "receipt-editor",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": {
+        "width": 540,
+        "left": 450,
+        "right": 990,
+        "top": 50,
+        "bottom": 950,
+        "height": 900,
+        "clientHeight": 898,
+        "scrollHeight": 964,
+        "closeLabel": "Close",
+        "closeRect": {
+          "left": 921,
+          "right": 965,
+          "top": 75,
+          "bottom": 119,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "receipt-detail",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "dialog": {
+        "width": 850,
+        "left": 295,
+        "right": 1145,
+        "top": 223.671875,
+        "bottom": 776.328125,
+        "height": 552.65625,
+        "clientHeight": 551,
+        "scrollHeight": 551,
+        "closeLabel": "Close",
+        "closeRect": {
+          "left": 1076,
+          "right": 1120,
+          "top": 248.671875,
+          "bottom": 292.671875,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "merchandise-entry-doc",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": null,
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "merchandise-exit",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": null,
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "purchase-editor",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": {
+        "width": 366,
+        "left": 12,
+        "right": 378,
+        "top": 40,
+        "bottom": 960,
+        "height": 920,
+        "clientHeight": 918,
+        "scrollHeight": 1053,
+        "closeLabel": "Cerrar",
+        "closeRect": {
+          "left": 313,
+          "right": 357,
+          "top": 61,
+          "bottom": 105,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "receipt-editor",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": {
+        "width": 366,
+        "left": 12,
+        "right": 378,
+        "top": 40,
+        "bottom": 960,
+        "height": 920,
+        "clientHeight": 918,
+        "scrollHeight": 1491,
+        "closeLabel": "Cerrar",
+        "closeRect": {
+          "left": 313,
+          "right": 357,
+          "top": 65.875,
+          "bottom": 109.875,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "receipt-detail",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": {
+        "width": 366,
+        "left": 12,
+        "right": 378,
+        "top": 47,
+        "bottom": 953,
+        "height": 906,
+        "clientHeight": 904,
+        "scrollHeight": 904,
+        "closeLabel": "Cerrar",
+        "closeRect": {
+          "left": 313,
+          "right": 357,
+          "top": 68,
+          "bottom": 112,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "merchandise-entry-doc",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": null,
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "merchandise-exit",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": null,
+      "spanishVisibleInEnglish": [
+        "Merma",
+        "Dañado",
+        "Vencido",
+        "Muestra o probador",
+        "Uso interno",
+        "Devolución a proveedor"
+      ],
+      "writes": []
+    },
+    {
+      "screen": "purchase-editor",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": {
+        "width": 366,
+        "left": 12,
+        "right": 378,
+        "top": 40,
+        "bottom": 960,
+        "height": 920,
+        "clientHeight": 918,
+        "scrollHeight": 1076,
+        "closeLabel": "Cerrar",
+        "closeRect": {
+          "left": 313,
+          "right": 357,
+          "top": 61,
+          "bottom": 105,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "receipt-editor",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": {
+        "width": 366,
+        "left": 12,
+        "right": 378,
+        "top": 40,
+        "bottom": 960,
+        "height": 920,
+        "clientHeight": 918,
+        "scrollHeight": 1526,
+        "closeLabel": "Close",
+        "closeRect": {
+          "left": 313,
+          "right": 357,
+          "top": 61,
+          "bottom": 105,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    },
+    {
+      "screen": "receipt-detail",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "dialog": {
+        "width": 366,
+        "left": 12,
+        "right": 378,
+        "top": 58.25,
+        "bottom": 941.75,
+        "height": 883.5,
+        "clientHeight": 882,
+        "scrollHeight": 882,
+        "closeLabel": "Close",
+        "closeRect": {
+          "left": 313,
+          "right": 357,
+          "top": 79.25,
+          "bottom": 123.25,
+          "height": 44
+        }
+      },
+      "spanishVisibleInEnglish": [],
+      "writes": []
+    }
+  ]
+}

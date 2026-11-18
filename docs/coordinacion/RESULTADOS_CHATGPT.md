@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · navegación e idioma del candidato integrado
+
+- **Candidato y evidencia.** `dot/15areas-sobre-prod-18nov` en `e9a738bb5eea4bb98a5cc765bf302f57b7b2649c`. Rama `chatgpt-pc/capturas-dot-e9a738bb` desde `ee78690c`. [Informe, 30 capturas y mediciones](../capturas/integracion-e9a738bb/LECTURA.md).
+- **Teclado.** Cuenta y menú móvil devuelven el foco en 6/6 cierres directos. Con el buscador encima, un Escape cierra ambas capas en 6/6. Cobrar y buscador directo pierden el foco en 8/8 y 4/4 cierres, respectivamente. El carrito conserva los tres artículos y el total.
+- **Idioma.** Cuatro variantes confirmaron el buscador, los vacíos, los documentos, el historial y los editores de Mercancía y Compras. Quedan los motivos de salida y el nombre accesible del cierre del editor de orden en inglés.
+- **Fotos y controles.** El candidato integra las 39 fotos de tenis de `2d87290b` y conserva sus 314 WebP. `ee78690c` agrega dos adicionales. Pasaron 13/13 pruebas focales, instalador e imágenes. Al corte de las 15:26 UTC, `verify` completo seguía en curso. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44332519806).
+- **Pendiente para Dot.** Corregir el orden de cierre y la devolución de foco, completar el idioma y preservar las dos fotos más recientes. Entregar el nuevo SHA, sus tres controles y la demostración privada. Se cerraron todos los procesos de los recorridos.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
