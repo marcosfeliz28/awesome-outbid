@@ -14,4 +14,4 @@ En la posición inicial, tras 20 filas, ambos paneles comienzan 2.317 px bajo el
 
 Ruta directa y recarga conservaron azul/negro y ES/EN. EN sigue mostrando fecha de vencimiento en español («11 feb de 2027»); movimientos usan fecha localizada en su propio componente, sin validación independiente de todas las fechas. No se comprobó el lector de pantalla, contraste cuantitativo ni todos los controles. No se encontró la lámina original exacta para cotejo.
 
-Coordinación comunicó 16/16 pruebas focales aprobadas y `verify` rojo por la cita invertida `WarehousesPanel.tsx:316-300` en `docs/sistema/FLUJO_MERCANCIA.md:61`; `render-images` verde. El estado del instalador no se confirmó en este recorrido. No se modificó el candidato ni se realizó despliegue. Mediciones completas: `comprobacion-integrada.json`.
+Coordinación comunicó 16/16 pruebas focales aprobadas y `verify` rojo por la cita invertida `WarehousesPanel.tsx:316-300` en `docs/sistema/FLUJO_MERCANCIA.md:61`; `render-images` y el instalador están verdes según su última comprobación. No se modificó el candidato ni se realizó despliegue. Mediciones completas: `comprobacion-integrada.json`.
