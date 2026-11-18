@@ -130,7 +130,7 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
           <div className="eyebrow">{t("DESGLOSE DE VENTAS", "SALES BREAKDOWN")}</div>
           <h1>{t("Informe mensual", "Monthly report")}</h1>
           <div className="report-period-title">{title}</div>
-          <p>{t("Se actualiza solo cada minuto con las ventas de hoy.", "Refreshes automatically every minute for the selected period.")}</p>
+          <p>{t("Se actualiza automáticamente cada minuto para el período seleccionado.", "Refreshes automatically every minute for the selected period.")}</p>
         </div>
         <div className="heading-actions">
           <Button variant="secondary" onClick={() => go("dashboard")}>

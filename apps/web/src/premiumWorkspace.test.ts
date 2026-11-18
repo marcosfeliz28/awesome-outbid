@@ -45,6 +45,12 @@ describe("premium reporting presentation boundaries", () => {
   expect(source).toContain('disabled={page >= pages || query.isFetching}');
   expect(source).toContain('setPage(1)');
  });
+ it("keeps monthly money cards wide and route title accurate", () => {
+  expect(read("./premiumWorkspace.css")).toContain('.kpi-grid { grid-template-columns: minmax(0,1fr); }');
+  expect(read("./premiumWorkspace.css")).toContain('.heading-actions .button.primary');
+  expect(read("./MonthReport.tsx")).not.toContain("ventas de hoy");
+  expect(read("./App.tsx")).toContain('page.split("?")[0] === "month-report"');
+ });
  it("retains monthly profit guards and date boundaries", () => {
   const source = read("./MonthReport.tsx");
   expect(source).toContain('can(user.permissions, "profit:read")');

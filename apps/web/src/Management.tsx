@@ -2555,6 +2555,7 @@ export function Promotions() {
   return (
     <PremiumWorkspace area="promotions">
       <Heading
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
         title={ot("Dale una nueva oportunidad")}
         caption={ot("Libera espacio, recupera capital y sorprende a tus clientes.")}
       >
@@ -2591,7 +2592,7 @@ export function Promotions() {
             {query.data?.map((c: any) => (
               <article className="panel clearance-card" key={c.variantId}>
                 <div className="clearance-top">
-                  <img src={c.imageUrl} alt={c.name} />
+                  <img src={c.imageUrl || "/products/accessories.svg"} alt={c.name} onError={(event) => handleCatalogImageError(event.currentTarget)} />
                   <div>
                     <Badge
                       tone={
@@ -2601,8 +2602,8 @@ export function Promotions() {
                       }
                     >
                       {c.daysToExpiry !== null
-                        ? `${c.daysToExpiry} días para vencer`
-                        : `${c.daysIdle} días sin venta`}
+                        ? (en ? `${c.daysToExpiry} days to expiry` : `${c.daysToExpiry} días para vencer`)
+                        : (en ? `${c.daysIdle} days without sales` : `${c.daysIdle} días sin venta`)}
                     </Badge>
                     <h3>{c.name}</h3>
                     <small>
@@ -3217,7 +3218,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
               </button>
             ))}
           </div>
-          <Badge tone="warning">{rows.length} {en ? "alerts" : "alertas"}</Badge>
+          <Badge tone="warning">{rows.length} {en ? (rows.length === 1 ? "alert" : "alerts") : (rows.length === 1 ? "alerta" : "alertas")}</Badge>
         </div>
         <QueryState english={en} query={query}>
           <div className="alerts-workspace-layout">

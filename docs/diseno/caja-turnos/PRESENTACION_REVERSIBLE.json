@@ -536,6 +536,22 @@
     {
       "before": "            )\n          }\n        />\n      )}\n    </>\n  );\n}\n\nexport function StyleGuide() {\n",
       "after": "            )\n          }\n        />\n      )}\n    </PremiumWorkspace>\n  );\n}\n\nexport function StyleGuide() {\n"
+    },
+    {
+      "before": "    [create, setCreate] = useState(false);\n  return (\n    <PremiumWorkspace area=\"promotions\">\n      <Heading\n        title={ot(\"Dale una nueva oportunidad\")}\n        caption={ot(\"Libera espacio, recupera capital y sorprende a tus clientes.\")}\n      >\n        <Button onClick={() => setCreate(true)}>\n",
+      "after": "    [create, setCreate] = useState(false);\n  return (\n    <PremiumWorkspace area=\"promotions\">\n      <Heading\n        eyebrow={en ? \"YOUR BUSINESS, WITH CLARITY\" : \"TU NEGOCIO, CON CLARIDAD\"}\n        title={ot(\"Dale una nueva oportunidad\")}\n        caption={ot(\"Libera espacio, recupera capital y sorprende a tus clientes.\")}\n      >\n        <Button onClick={() => setCreate(true)}>\n"
+    },
+    {
+      "before": "          <div className=\"clearance-grid\">\n            {query.data?.map((c: any) => (\n              <article className=\"panel clearance-card\" key={c.variantId}>\n                <div className=\"clearance-top\">\n                  <img src={c.imageUrl} alt={c.name} />\n                  <div>\n                    <Badge\n                      tone={\n                        c.daysToExpiry !== null && c.daysToExpiry < 30\n",
+      "after": "          <div className=\"clearance-grid\">\n            {query.data?.map((c: any) => (\n              <article className=\"panel clearance-card\" key={c.variantId}>\n                <div className=\"clearance-top\">\n                  <img src={c.imageUrl || \"/products/accessories.svg\"} alt={c.name} onError={(event) => handleCatalogImageError(event.currentTarget)} />\n                  <div>\n                    <Badge\n                      tone={\n                        c.daysToExpiry !== null && c.daysToExpiry < 30\n"
+    },
+    {
+      "before": "                          : \"violet\"\n                      }\n                    >\n                      {c.daysToExpiry !== null\n                        ? `${c.daysToExpiry} días para vencer`\n                        : `${c.daysIdle} días sin venta`}\n                    </Badge>\n                    <h3>{c.name}</h3>\n                    <small>\n                      {c.sku} · {c.category}\n",
+      "after": "                          : \"violet\"\n                      }\n                    >\n                      {c.daysToExpiry !== null\n                        ? (en ? `${c.daysToExpiry} days to expiry` : `${c.daysToExpiry} días para vencer`)\n                        : (en ? `${c.daysIdle} days without sales` : `${c.daysIdle} días sin venta`)}\n                    </Badge>\n                    <h3>{c.name}</h3>\n                    <small>\n                      {c.sku} · {c.category}\n"
+    },
+    {
+      "before": "                {label}\n              </button>\n            ))}\n          </div>\n          <Badge tone=\"warning\">{rows.length} {en ? \"alerts\" : \"alertas\"}</Badge>\n        </div>\n        <QueryState english={en} query={query}>\n          <div className=\"alerts-workspace-layout\">\n          <div className=\"alerts-list\">\n",
+      "after": "                {label}\n              </button>\n            ))}\n          </div>\n          <Badge tone=\"warning\">{rows.length} {en ? (rows.length === 1 ? \"alert\" : \"alerts\") : (rows.length === 1 ? \"alerta\" : \"alertas\")}</Badge>\n        </div>\n        <QueryState english={en} query={query}>\n          <div className=\"alerts-workspace-layout\">\n          <div className=\"alerts-list\">\n"
     }
   ],
   "base_commit": "0ed250e501bb04c13156776973fb1c446906f9e7",

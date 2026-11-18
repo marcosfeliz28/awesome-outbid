@@ -108,3 +108,13 @@
 /* Keep inactive navigation icons legible on the dark premium sidebar. */
 :root[data-premium-workspace="true"][data-theme="dark"] .sidebar .nav-item:not(.active) svg { color: #73e4bc; }
 :root[data-premium-workspace="true"][data-theme="dark"][data-accent="blue"] .sidebar .nav-item:not(.active) svg { color: #8bcbff; }
+
+/* Monthly export and full-width mobile money cards preserve long monetary values. */
+.norexos-premium-workspace[data-premium-area="month-report"] .heading-actions .button.primary {
+ background: linear-gradient(120deg,#f9dc8e,#dcb45b 50%,#f6d687); color: #241d0b;
+ border-color: #d8b55f; box-shadow: inset 0 1px #fff8,0 3px 9px #0002;
+}
+@media(max-width: 600px) {
+ .norexos-premium-workspace[data-premium-area="month-report"] .kpi-grid { grid-template-columns: minmax(0,1fr); }
+ .norexos-premium-workspace[data-premium-area="month-report"] .kpi-card strong { font-size: clamp(20px,6vw,28px); }
+}

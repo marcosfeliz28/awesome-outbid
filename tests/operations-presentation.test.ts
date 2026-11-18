@@ -43,3 +43,17 @@ it("gold active tabs override legacy global important backgrounds within this sc
   const css=read("apps/web/src/operationsPresentation.css");
   expect(css).toMatch(/\.operations-premium \.tabs button\.active\s*\{[^}]*background:\s*linear-gradient\([^;]+\)\s*!important/);
 });
+
+it("styles the mobile merchandise shell shortcut only while premium is active without changing layout", () => {
+  const css=read("apps/web/src/operationsPresentation.css");
+  const rules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(match=>match[1].includes(".goods-mobile-bar"));
+  expect(rules.length).toBeGreaterThan(5);
+  for(const rule of rules) {
+    expect(rule[1]).toContain(':root[data-premium-workspace="true"]');
+    expect(rule[2]).not.toMatch(/(?:position|display|width|height|padding|bottom|z-index)\s*:/);
+    expect(rule[2]).not.toMatch(/#7c3aed|#6d28d9/);
+  }
+  expect(rules.some(rule=>rule[1].includes(".button.primary") && rule[2].includes("linear-gradient"))).toBe(true);
+  expect(rules.some(rule=>rule[1].includes('data-accent="blue"'))).toBe(true);
+  expect(rules.some(rule=>rule[1].includes('data-overview-surface="black"'))).toBe(true);
+});

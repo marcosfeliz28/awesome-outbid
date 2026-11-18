@@ -309,6 +309,7 @@ function MyIncentive() {
 }
 
 function Courses({ open }: { open: (id: string) => void }) {
+  const en = useLanguage() === "en";
   const courses = useQuery<Course[]>({
     queryKey: ["gv-courses"],
     queryFn: () => api("/gv/courses"),
@@ -317,9 +318,9 @@ function Courses({ open }: { open: (id: string) => void }) {
   return (
     <>
       <div className="gv-toolbar">
-        <Button onClick={() => setCreating(true)}>Nuevo curso</Button>
+        <Button onClick={() => setCreating(true)}>{en ? "New course" : "Nuevo curso"}</Button>
       </div>
-      <QueryState query={courses}>
+      <QueryState english={en} query={courses}>
         <div className="gv-cards">
           {courses.data?.map((c) => (
             <button
@@ -329,18 +330,18 @@ function Courses({ open }: { open: (id: string) => void }) {
             >
               <strong>{c.name}</strong>
               <span>
-                {TYPES[c.type]} · {dateText(c.date)}
-                {!c.active && " · inactivo"}
+                {en ? ({ automaquillaje: "Self makeup", brazilian: "Brazilian", personalizado: "Personalized", otro: "Other" }[c.type] ?? c.type) : TYPES[c.type]} · {dateText(c.date)}
+                {!c.active && (en ? " · inactive" : " · inactivo")}
               </span>
               <span>
-                {c.enrolled} / {c.capacity} inscritas · {money(c.price)}
+                {c.enrolled} / {c.capacity} {en ? "enrolled" : "inscritas"} · {money(c.price)}
               </span>
               <span>
-                Pagado {money(c.paid)} · Pendiente {money(c.pending)}
+                {en ? "Paid" : "Pagado"} {money(c.paid)} · {en ? "Pending" : "Pendiente"} {money(c.pending)}
               </span>
             </button>
           ))}
-          {!courses.data?.length && <p>Todavía no hay cursos.</p>}
+          {!courses.data?.length && <p>{en ? "No courses yet." : "Todavía no hay cursos."}</p>}
         </div>
       </QueryState>
       {creating && <CourseForm onClose={() => setCreating(false)} />}

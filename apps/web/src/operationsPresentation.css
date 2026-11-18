@@ -113,3 +113,28 @@
 }
 .operations-premium td.operations-money {white-space:nowrap;overflow-wrap:normal;font-variant-numeric:tabular-nums}
 @media(max-width:600px){.operations-premium td.operations-money {width:auto}}
+
+/* The mobile shortcut is a shell sibling, so use the existing premium lifecycle flag.
+   Keep its fixed position, safe-area padding and visibility rules unchanged. */
+:root[data-premium-workspace="true"] .goods-mobile-bar {
+  background:#f7fbf8;
+  border-top:1px solid #a88e4c;
+  box-shadow:0 -4px 16px #143c2726;
+}
+:root[data-premium-workspace="true"][data-theme="dark"] .goods-mobile-bar {background:#08291f}
+:root[data-premium-workspace="true"][data-accent="blue"] .goods-mobile-bar {background:#edf5fc}
+:root[data-premium-workspace="true"][data-theme="dark"][data-accent="blue"] .goods-mobile-bar {background:#0a2334}
+:root[data-premium-workspace="true"][data-overview-surface="black"] .goods-mobile-bar {background:#0d1312}
+:root[data-premium-workspace="true"] .goods-mobile-bar .button.primary {
+  background:linear-gradient(120deg,#f9dc8e,#dcb45b 50%,#f6d687);
+  color:#241d0b;
+  border:1px solid #ba923d;
+  box-shadow:inset 0 1px #fff9,inset 0 -2px #61440d55,0 3px 8px #0002;
+}
+:root[data-premium-workspace="true"] .goods-mobile-bar .button:focus-visible {outline:3px solid #176b51;outline-offset:2px}
+:root[data-premium-workspace="true"][data-theme="dark"] .goods-mobile-bar .button:focus-visible {outline-color:#f4d481}
+@media(forced-colors:active) {
+  :root[data-premium-workspace="true"] .goods-mobile-bar,
+  :root[data-premium-workspace="true"] .goods-mobile-bar .button.primary {background:Canvas;color:CanvasText;border-color:ButtonText;box-shadow:none}
+  :root[data-premium-workspace="true"] .goods-mobile-bar .button:focus-visible {outline-color:Highlight}
+}

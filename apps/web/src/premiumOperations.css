@@ -328,3 +328,12 @@
 }
 .norexos-premium-workspace[data-premium-area="alerts"] .alert-row { flex-wrap:wrap; }
 .norexos-premium-workspace[data-premium-area="alerts"] .alert-row .table-actions { flex-basis:100%; }
+
+/* Operational links must stay legible over the dark premium cards. */
+.norexos-premium-workspace[data-premium-area="alerts"] .alert-row .text-link {
+  color: var(--premium-text) !important;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-weight: 650;
+}

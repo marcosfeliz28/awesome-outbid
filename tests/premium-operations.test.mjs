@@ -1,3 +1,4 @@
+import { URL } from "node:url";
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -67,4 +68,12 @@ test('localized roots pass language to query, table and modal states', () => {
   if(name!=='Alerts') assert.match(section,/<FormModal english=\{en\}/);
  }
  assert.match(read('Incentives.tsx'),/<QueryState english=\{en\}/);
+});
+
+test('visual QA fixes missing photo, English expiry and dark alert action contrast', () => {
+ assert.match(management,/src=\{c.imageUrl \|\| "\/products\/accessories.svg"\}/);
+ assert.match(management,/handleCatalogImageError\(event.currentTarget\)/);
+ assert.match(management,/days to expiry/);
+ assert.match(management,/rows.length === 1 \? "alerta" : "alertas"/);
+ assert.match(css,/\.alert-row \.text-link\s*\{\s*color: var\(--premium-text\)/);
 });
