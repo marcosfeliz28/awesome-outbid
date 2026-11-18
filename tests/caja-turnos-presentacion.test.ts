@@ -58,3 +58,10 @@ it("reserva ancho y apilado para acciones móviles y acento de Mercancía", () =
   expect(css).toContain(".goods-mobile-bar .button");
   expect(css).toContain("flex-shrink: 0");
 });
+
+it("importe principal se adapta a su tarjeta, no al viewport", () => {
+  const css = readFileSync("apps/web/src/fusion-caja-turnos.css", "utf8");
+  expect(css).toContain("container-type: inline-size");
+  expect(css).toContain("font-size: clamp(18px, 9cqw, 40px)");
+  expect(css).toContain("overflow-x: auto");
+});

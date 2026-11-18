@@ -184,6 +184,7 @@
   margin: 0;
 }
 .cash-page.fusion-cash-turnos .cash-main {
+  container-type: inline-size;
   padding: 26px;
   position: relative;
   overflow: hidden;
@@ -202,7 +203,9 @@
   display: block;
   color: var(--ct-ink);
   font-family: Inter, system-ui, sans-serif;
-  font-size: clamp(25px, 2.6vw, 40px);
+  font-size: clamp(18px, 9cqw, 40px);
+  max-width: 100%;
+  overflow-x: auto;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   margin: 18px 0 8px;
