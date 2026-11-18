@@ -141,3 +141,5 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - Casos: **FS-0000328** (7,500; transferencia Banreservas 7,800, ref 43376075790) y «la otra» (FS-0000302, ya corregida el 26-oct). Revisar si hay más del mismo tipo al verificar las transferencias de octubre.
 - Herramienta ya publicada (30-oct 02:32 UTC): correct-method para cobros/abonos, `payments/:id/unverify`, `payments/:id/move-cash-session`.
 - Falta la confirmación de la dueña para aplicar FS-328, FS-288 (volver a por verificar) y FS-304 (mover el cobro con tarjeta a la caja de Wendy) con las 3 verificaciones.
+
+- **Fotos aproximadas de tenis (18-nov-2026):** 10 modelos con stock usan foto web aproximada (Nike Free Negro, Free Crema, NB 530 Crema y Rosado, Asics Gris y Verde, P6000 Blanco Negro y Azul, Ocloud Negro y Blanco, Asics Gris Plateado, NB 1906R Gris y Azul, P6000 Blanco y Negro Azul, NB 740 Gris). La dueña dice que se queden así; si ve uno distinto en tienda, cambiar por foto de la empleada (hoja `docs/fotos/tenis-web/`).
