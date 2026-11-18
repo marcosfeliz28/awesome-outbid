@@ -1,5 +1,5 @@
 {
-  "base_sha256": "ae1ad088b229238573cdc597adaa55ab1b9b9e98f055775f715992e610cd74df",
+  "base_sha256": "f033de051ae1ffcc25aac88bb5868778bdba90a787211bab2999f8eb43bb46b2",
   "changes": [
     {
       "before": "import \"./passwordChange.css\";",
@@ -18,5 +18,5 @@
       "after": "label: \"Diferencias por m\u00e9todo\",\n                render: (s) =>\n                  canSeeExpected &&\n                  s.closedAt &&"
     }
   ],
-  "base_commit": "0ed250e501bb04c13156776973fb1c446906f9e7"
+  "base_commit": "7ac1da1437d221410fe04e3ca491b472a8a8cfae + CatalogPresentation wrapper"
 }

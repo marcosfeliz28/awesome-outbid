@@ -1,5 +1,6 @@
 import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
+import { CatalogPresentation } from "./CatalogPresentation";
 import {
   CashElsewhere,
   Equipment,
@@ -315,6 +316,7 @@ export function Catalog() {
   ];
   return (
     <>
+      <CatalogPresentation products={rows} loading={query.isLoading} failed={query.isError} onDetail={(p) => { setDetail(p); setTab("General"); }}>
       <Heading
         title="Tu catálogo, con personalidad"
         caption="Cada producto, cada variante y cada oportunidad, en su lugar."
@@ -481,6 +483,7 @@ export function Catalog() {
           />
         </QueryState>
       </div>
+      </CatalogPresentation>
       {create && (
         <FormModal
           title="Un nuevo producto para tu tienda"
