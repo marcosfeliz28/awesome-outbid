@@ -322,7 +322,7 @@ export function Catalog() {
   ];
   return (
     <>
-      <CatalogPresentation products={rows} loading={query.isLoading} failed={query.isError} onDetail={(p) => { setDetail(p); setTab("General"); }}>
+      <CatalogPresentation products={rows} loading={query.isPending} failed={query.isError} onDetail={(p) => { setDetail(p); setTab("General"); }}>
       <Heading
         eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
         title={ct("Tu catálogo, con personalidad")}

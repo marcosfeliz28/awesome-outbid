@@ -17,7 +17,7 @@ describe("Productos: presentación sin mutaciones", () => {
   });
 
   it("usa filas filtradas y errores, sin datos de demostración", () => {
-    expect(management).toContain("products={rows} loading={query.isLoading} failed={query.isError}");
+    expect(management).toContain("products={rows} loading={query.isPending} failed={query.isError}");
     expect(view).toContain('available ? value : "—"');
     expect(view).not.toMatch(/DEMO|128|\bfetch\(|\bpost\(|\bapi\(/);
   });
