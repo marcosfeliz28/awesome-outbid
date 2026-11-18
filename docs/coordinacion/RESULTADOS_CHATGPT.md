@@ -4,7 +4,7 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 
 ## 2026-11-17 · ChatGPT PC · evidencia Ventas 0ed250e5
 
-Recorrido real con datos ficticios, ES/EN y vistas escritorio/móvil, en `docs/capturas/ventas-0ed250e5/LECTURA.md`. Hallazgo: al seleccionar, la previa queda bajo el listado y fuera de vista en 1440 y 390. Sin escrituras operativas, producción ni despliegue. Los tres controles de la [ejecución 44230587628](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44230587628) pasaron. Dot tiene pendiente mantener visible la vista previa al seleccionar y comprobarla con 20 filas a 1440 y 390 px.
+Recorrido real con datos ficticios, ES/EN y vistas escritorio/móvil, en `docs/capturas/ventas-0ed250e5/LECTURA.md`. Hallazgo: al seleccionar, la previa queda bajo el listado y fuera de vista en 1440 y 390. Sin escrituras operativas, producción ni despliegue. Los tres controles de la [ejecución 44230587628](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44230587628) pasaron. El mismo SHA figura en `nexora-cloud` con sus [tres controles verdes](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44234131636). Dot tiene pendiente mantener visible la vista previa al seleccionar y comprobarla con 20 filas a 1440 y 390 px.
 
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 

@@ -16,4 +16,6 @@ No se verificaron el aviso de caja ni el formulario de anulación: hacerlo reque
 
 La regresión A12 pasó localmente para este SHA. También aprobaron los tres controles del push, `verify`, `windows-installer` y `render-images`. [Ejecución 44230587628](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44230587628)
 
+El 18 de noviembre, la referencia remota de `nexora-cloud` avanzó al mismo `0ed250e5`. Su ejecución independiente pasó los tres controles. Confirmé que el árbol de API, el árbol de fotos y los archivos de guardado del carrito y actualización PWA coinciden con `67e68278`. [Ejecución de la rama base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44234131636)
+
 Siguiente ajuste para Dot. Mantener la vista previa visible al seleccionar un folio a 1440 y 390 px. Comprobar con 20 filas que ambas vistas permiten llegar a la ficha al seleccionar y que el escritorio conserva la disposición lateral de la lámina.
