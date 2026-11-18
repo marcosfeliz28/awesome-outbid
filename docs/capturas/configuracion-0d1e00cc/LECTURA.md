@@ -19,7 +19,7 @@ Comprobé en el código el cambio de idioma de estados y acciones de Respaldo y 
 
 ## Fotos y controles
 
-Pasaron cuatro pruebas estáticas seleccionadas de idioma. En GitHub pasaron instalador, imágenes y `pnpm check`. La base `dcf61af2` pasó los tres controles. Su `verify` terminó a las 18:13:58 UTC. El candidato `0d1e00cc` mantiene instalador e imágenes aprobados y `verify` en curso al corte de las 18:19 UTC. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44364498009) · [CI de la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44362984444)
+Pasaron cuatro pruebas estáticas seleccionadas de idioma. En GitHub pasaron instalador, imágenes y `pnpm check`. La base `dcf61af2` pasó los tres controles. Su `verify` terminó a las 18:13:58 UTC. El candidato `0d1e00cc` pasó los tres controles. Su `verify` terminó a las 18:31:15 UTC. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44364498009) · [CI de la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44362984444)
 
 La base `dcf61af2` tiene 318 fotos WebP. El candidato conserva las 316 anteriores, con las mismas imágenes y API. Faltan `adidas-samba-blancos-real.webp` y `adidas-campus-gris-real.webp`. [Comparación con la base](https://github.com/marcosfeliz28/awesome-outbid/compare/0d1e00cc...dcf61af2)
 
@@ -31,8 +31,14 @@ La rama de ensayos `dot/qa-config-incentivos-0d1e-18nov`, SHA `4922796fd09b78a7d
 
 El artefacto publicado requiere acceso autenticado. Sus capturas y resultados individuales quedan pendientes de inspección. El ensayo comprueba carga, dibujo, ausencia de desborde y una muestra de movimiento. Los hallazgos de contraste, idioma y foco descritos en los recorridos independientes siguen abiertos.
 
+## Integración posterior con las fotos vigentes
+
+Dot publicó `0f3667edee1e04b04ed2a4574bf444a45afcef29` en la misma rama. Incorpora las dos fotos Adidas de la base `dcf61af2` y sus 318 WebP coinciden byte por byte. El árbol de API también coincide. Los árboles de código web y de componentes de interfaz son iguales a los de `0d1e00cc`. Las capturas de este informe corresponden al SHA comprobado que consta en cada recorrido. [Comparación de la integración](https://github.com/marcosfeliz28/awesome-outbid/compare/0d1e00cc...0f3667ed)
+
+El instalador y las imágenes de `0f3667ed` pasaron. Su `verify` seguía en curso al corte de las 18:50 UTC. Los pendientes de idioma, contraste y foco descritos arriba siguen abiertos. [CI de la integración](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44370782286)
+
 ## Siguiente entrega de Dot
 
-Corregir el contraste y la partición de etiquetas de Incentivos, completar los textos de interfaz en inglés y el retorno de foco. Conservar las dos fotos nuevas, entregar el resumen por pantalla del ensayo general y adjuntar rama, SHA, tres controles y demostración privada.
+Corregir el contraste y la partición de etiquetas de Incentivos, completar los textos de interfaz en inglés y el retorno de foco. Conservar las 318 fotos de la integración, entregar el resumen por pantalla del ensayo general y adjuntar rama, SHA, tres controles y demostración privada.
 
 Se cerraron los navegadores y servicios que se abrieron durante la revisión.
