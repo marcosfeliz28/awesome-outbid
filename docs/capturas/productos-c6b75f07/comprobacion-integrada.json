@@ -1,0 +1,628 @@
+{
+  "commit": "c6b75f070afd2f17de690ce703bac47cb95b34a3",
+  "screenshots": [
+    {
+      "file": "productos-1440-claro.png",
+      "theme": "light",
+      "title": "Productos visibles\n60\nCategorías visibles\n5\nSin fotografía\n60\nTU NEGOCIO, CON CLARIDAD\nTu catálogo, con personalidad\n\nCada producto, cada variante y cada oportunidad, en su lugar.\n\nPlantilla\nImportar Excel\nImportar inventario\nNuevo producto\nTodas las categorías\nSuplementos\nRopa deportiva\nFajas\nAcces",
+      "overflow": 0,
+      "buttons": [
+        {
+          "name": "Plantilla",
+          "disabled": false
+        },
+        {
+          "name": "Importar inventario",
+          "disabled": false
+        },
+        {
+          "name": "Nuevo producto",
+          "disabled": false
+        },
+        {
+          "name": "Ver Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Ver Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Ver BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Ver Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Ver Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Ver Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Ver Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Ver Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaqueta Warm Up",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaqueta Warm Up",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "file": "productos-1440-oscuro.png",
+      "theme": "dark",
+      "title": "Productos visibles\n60\nCategorías visibles\n5\nSin fotografía\n60\nTU NEGOCIO, CON CLARIDAD\nTu catálogo, con personalidad\n\nCada producto, cada variante y cada oportunidad, en su lugar.\n\nPlantilla\nImportar Excel\nImportar inventario\nNuevo producto\nTodas las categorías\nSuplementos\nRopa deportiva\nFajas\nAcces",
+      "overflow": 0,
+      "buttons": [
+        {
+          "name": "Plantilla",
+          "disabled": false
+        },
+        {
+          "name": "Importar inventario",
+          "disabled": false
+        },
+        {
+          "name": "Nuevo producto",
+          "disabled": false
+        },
+        {
+          "name": "Ver Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Ver Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Ver BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Ver Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Ver Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Ver Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Ver Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Ver Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaqueta Warm Up",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaqueta Warm Up",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "file": "productos-390-claro.png",
+      "theme": "light",
+      "title": "Productos visibles\n60\nCategorías visibles\n5\nSin fotografía\n60\nTU NEGOCIO, CON CLARIDAD\nTu catálogo, con personalidad\n\nCada producto, cada variante y cada oportunidad, en su lugar.\n\nPlantilla\nImportar Excel\nImportar inventario\nNuevo producto\nTodas las categorías\nSuplementos\nRopa deportiva\nFajas\nAcces",
+      "overflow": 0,
+      "buttons": [
+        {
+          "name": "Plantilla",
+          "disabled": false
+        },
+        {
+          "name": "Importar inventario",
+          "disabled": false
+        },
+        {
+          "name": "Nuevo producto",
+          "disabled": false
+        },
+        {
+          "name": "Ver Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Ver Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Ver BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Ver Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Ver Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Ver Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Ver Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Ver Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaqueta Warm Up",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaqueta Warm Up",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "file": "productos-390-oscuro.png",
+      "theme": "dark",
+      "title": "Productos visibles\n60\nCategorías visibles\n5\nSin fotografía\n60\nTU NEGOCIO, CON CLARIDAD\nTu catálogo, con personalidad\n\nCada producto, cada variante y cada oportunidad, en su lugar.\n\nPlantilla\nImportar Excel\nImportar inventario\nNuevo producto\nTodas las categorías\nSuplementos\nRopa deportiva\nFajas\nAcces",
+      "overflow": 0,
+      "buttons": [
+        {
+          "name": "Plantilla",
+          "disabled": false
+        },
+        {
+          "name": "Importar inventario",
+          "disabled": false
+        },
+        {
+          "name": "Nuevo producto",
+          "disabled": false
+        },
+        {
+          "name": "Ver Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Bandas Resistance",
+          "disabled": false
+        },
+        {
+          "name": "Ver Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Base Skin Glow",
+          "disabled": false
+        },
+        {
+          "name": "Ver BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de BCAA Recovery",
+          "disabled": false
+        },
+        {
+          "name": "Ver Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Biker Short",
+          "disabled": false
+        },
+        {
+          "name": "Ver Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Body Flex",
+          "disabled": false
+        },
+        {
+          "name": "Ver Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Bolso Gym Day",
+          "disabled": false
+        },
+        {
+          "name": "Ver Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Botella Hydrate",
+          "disabled": false
+        },
+        {
+          "name": "Ver Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Camiseta Training",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Chaleco Posture",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Variantes de Chaleco Sculpt",
+          "disabled": false
+        },
+        {
+          "name": "Ver Chaqueta Warm Up",
+          "disabled": false
+        },
+        {
+          "name": "Etiquetas de Chaqueta Warm Up",
+          "disabled": false
+        }
+      ]
+    }
+  ],
+  "checks": {
+    "390": {
+      "pageErrors": [],
+      "busqueda": "pasa",
+      "categoria": "pasa",
+      "paginacion": "pasa",
+      "ficha": "pasa"
+    },
+    "1440": {
+      "pageErrors": [],
+      "busqueda": "pasa",
+      "categoria": "pasa",
+      "paginacion": "pasa",
+      "ficha": "pasa"
+    }
+  },
+  "stages": [
+    "PostgreSQL temporal en loopback",
+    "Migraciones de la base de demostración",
+    "Generación de registros ficticios",
+    "API local real",
+    "Aplicación web del SHA publicado"
+  ],
+  "servicesStopped": true,
+  "browser": "157.0.4341.60",
+  "ports": {
+    "postgres": 15492,
+    "api": 14292,
+    "web": 14392
+  },
+  "completedAt": "2026-11-18T02:27:03.388Z"
+}
