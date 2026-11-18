@@ -1,0 +1,32 @@
+Te mando una imagen con 30 fotos de productos numeradas #211 a #240 (en rojo, arriba a la izquierda de cada foto). Abajo está el nombre que tiene cada número en mi catálogo. Para cada número dime COINCIDE, DUDA o NO COINCIDE, y en una frase qué ves en la foto (marca, producto, sabor, tamaño si se lee). Sé estricto con marca y sabor. Al final lista solo los números con DUDA o NO COINCIDE.
+
+#211: Isoflex - ALLMAX - Vanilla / 5 lb
+#212: EAA Plus - RAW Nutrition - Icy Lemon Slush / 30 servicios
+#213: Omega-3 Fish Oil - Puritans Pride - 1,200 mg / 100 softgels
+#214: Vitamin K2+D3 - Bronson Basics - Envase blanco / 60 cápsulas
+#215: JYM Plus Pre-Workout - JYM Supplement Science - Fruit Punch Blast
+#216: Isopure Zero Carb - Creamy Vanilla / bolsa 16.4 oz (1.02 lb)
+#217: Creatine+ Enhanced 3-in-1 Formula - Optimum Nutrition - Orange Passion Fruit / 80 servicios
+#218: GLUTAMINA - MUSCLETECH - PRESENTACIÓN NO INDICADA
+#219: GOLD STANDARD 100% WHEY - OPTIMUM NUTRITION - STRAWBERRY / 2 LB
+#220: NITRO-TECH WHEY GOLD - MUSCLETECH - COOKIES & CREAM / 2 LB
+#221: ISOPURE - VANILLA / 4.5 LB
+#222: NITRO WHEY PROTEIN - VANILLA / 4 LB
+#223: Muscle Milk Pro Series Gainer - Vanilla / 5 lb
+#224: SAL DEL HIMALAYA - PRESENTACIÓN NO INDICADA
+#225: Creatine Monohydrate - Nutrex -200 servicios; unflavored
+#226: ISO100 HYDROLYZED - DYMATIZE - FUDGE BROWNIE /3 LB
+#227: ISO100 HYDROLYZED - DYMATIZE - MINT CHOCOLATE CHIP / 1.34 LB
+#228: Nitro-Tech - RIPPED - CHOCOLATE FUDGE / 4 lb
+#229: Platinum Multi Vitamin - MuscleTech - 180 tabletas
+#230: Isopure - Chocolate Peanut Butter / 3 lb
+#231: Isopure - Vanilla Salted Caramel / 3 lb
+#232: Isopure - Chocolate / 3 lb
+#233: Muscle Milk Pro Series Gainer - Chocolate / 5 lb
+#234: Vitamin E - Nature's Truth - 90 mg / 100 cápsulas
+#235: Vitamin C - BioSteel
+#236: Grass Fed Whey Protein - Levels
+#237: Micronized Creatine Powder - Optimum Nutrition - Blueberry Lemonade / 60 servicios
+#238: Serious Mass - Optimum Nutrition - Chocolate / 6 lb
+#239: Serious Mass - Optimum Nutrition - Chocolate Peanut Butter / 6 lb
+#240: Collagen Peptides - Rule One - Sin sabor / 25 servicios
