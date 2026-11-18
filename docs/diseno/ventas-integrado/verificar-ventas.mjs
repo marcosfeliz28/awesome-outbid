@@ -43,6 +43,9 @@ assert.match(view, /Cash/);
 assert.match(view, /Recorded payments/);
 assert.match(view, /Courier delivery/);
 assert.match(view, /Visible after closing your register\./);
+assert.match(view, /Item to return/);
+assert.match(view, /Refund method/);
+assert.match(view, /english=\{en\}/);
 log(
-  "PASS: 27 presentation, permissions, blind cash and accessibility contracts",
+  "PASS: 30 presentation, permissions, blind cash and accessibility contracts",
 );

@@ -6,7 +6,7 @@ Alcance acordado con la dueña (8-nov): **por ahora no se bloquea ninguna venta*
 
 ## 1. Bloqueo de venta (apagado por defecto)
 
-- Configuración › «No vender productos sin costo» (`blockZeroCostSales`, `apps/api/src/admin.ts:98`, `apps/web/src/Management.tsx:4472`). Por defecto **apagado**. Un guardado de Configuración desde una pantalla vieja que no manda la clave conserva el valor guardado.
+- Configuración › «No vender productos sin costo» (`blockZeroCostSales`, `apps/api/src/admin.ts:98`, `apps/web/src/Management.tsx:4590`). Por defecto **apagado**. Un guardado de Configuración desde una pantalla vieja que no manda la clave conserva el valor guardado.
 - Encendido, la caja no vende una variante activa con `costAvg` 0. Mensaje: «Este producto no tiene costo: pídele a la administración que lo complete. Producto: <nombre>.» (`apps/api/src/sales.ts:631-632`, `:995-999`).
 - Todo camino que crea una venta pasa por `SalesController.complete` (`POST /sales`, `POST /sales/sync` y la revisión de ventas sin conexión `apps/api/src/offline-sale-review.ts:253`). No hay otra escritura de `Sale`/`SaleItem` (GV cobra cursos y servicios en sus propias tablas).
 - Combos: se mira el costo de cada componente.

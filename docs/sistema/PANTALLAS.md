@@ -31,13 +31,13 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1061-1091`):
 
 - **Ver ayuda** (tarjeta «Ayuda para trabajar»): abre «Tu tienda, en movimiento» con los atajos (`apps/web/src/App.tsx:1061-1063`, `:1230-1262`).
-- **Configuración**: solo si tiene `sale:manage` (`apps/web/src/App.tsx:1066-1073`). Componente `Configuration` (`apps/web/src/Management.tsx:4225`). Aquí viven «Usuarios y permisos», «Bitácora» y «Equipos».
+- **Configuración**: solo si tiene `sale:manage` (`apps/web/src/App.tsx:1066-1073`). Componente `Configuration` (`apps/web/src/Management.tsx:4343`). Aquí viven «Usuarios y permisos», «Bitácora» y «Equipos».
 - **Acerca de** (`apps/web/src/App.tsx:1075-1083`): versión, aviso de privacidad, licencias.
 - **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1089-1094`); no es de uso diario.
 - Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1269-1295`, atajo `:797`).
 - F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:852`).
 
-**No existe** en este menú: «Primeros pasos» ni «Plan y facturación» (solo en `producto-nexora`, ver `RESPUESTAS_A_TALLER.md` pregunta 9). Tampoco existe un ítem llamado «Gestión» ni uno llamado «Usuarios»: la gestión de usuarios es la pestaña «Usuarios y permisos» dentro de Configuración (`apps/web/src/Management.tsx:4424`). NO ENCONTRADO como etiqueta de menú.
+**No existe** en este menú: «Primeros pasos» ni «Plan y facturación» (solo en `producto-nexora`, ver `RESPUESTAS_A_TALLER.md` pregunta 9). Tampoco existe un ítem llamado «Gestión» ni uno llamado «Usuarios»: la gestión de usuarios es la pestaña «Usuarios y permisos» dentro de Configuración (`apps/web/src/Management.tsx:4542`). NO ENCONTRADO como etiqueta de menú.
 
 ---
 
@@ -140,7 +140,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1061-1091`):
 
 ## Configuración (lo que el equipo llama «gestión»)
 
-- **Etiqueta:** «Configuración» (botón al fondo del menú, `sale:manage`). **Componente:** `apps/web/src/Management.tsx:4225`. Título «A la medida de tu negocio» (`:4150`).
+- **Etiqueta:** «Configuración» (botón al fondo del menú, `sale:manage`). **Componente:** `apps/web/src/Management.tsx:4343`. Título «A la medida de tu negocio» (`:4150`).
 - **Pestañas** (`:4155-4158`):
   - **Negocio y reglas:** datos del negocio, «Editar configuración» (descuento vendedor 10 %, margen bajo 15 %, devolución, tasa del dólar, cuentas de banco para transferencias, terminales de tarjeta, imprimir el recibo automáticamente, ventas sin conexión, «No vender productos sin costo» (apagado por defecto; aún no desplegado, ver `VENTA_SIN_COSTO.md`), ventas a crédito, preparación de NCF, ITBIS incluido: `:4026-4141`), cajas y cajeros (`apps/web/src/Tienda.tsx:1273-1405`), avisos por Telegram, respaldo a Drive, tasas de incentivos y encuesta de caja (`:4223-4227`).
   - **Usuarios y permisos:** «Crear usuario», Editar, «Restablecer contraseña», Activar/Desactivar y «Permisos por rol» (`:4230-4310`).

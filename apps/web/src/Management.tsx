@@ -3814,9 +3814,14 @@ export function SalesHistory() {
       </Modal>
       {voiding && (
         <ConfirmModal
-          title={"Anular " + voiding.number}
-          description="Solo un administrador puede hacerlo. La venta se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
-          confirmLabel="Sí, anular venta"
+          english={en}
+          title={(en ? "Void " : "Anular ") + voiding.number}
+          description={
+            en
+              ? "Only an administrator can do this. The sale is retained with its reason and responsible user, inventory is reversed, and it no longer counts toward sales. An open register is required only if this sale’s register has already closed and the sale included cash: the refund comes from your own register, which must be open with sufficient cash."
+              : "Solo un administrador puede hacerlo. La venta se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
+          }
+          confirmLabel={en ? "Yes, void sale" : "Sí, anular venta"}
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
             await post("/sales/" + voiding.id + "/void", {
@@ -3829,24 +3834,40 @@ export function SalesHistory() {
       )}
       {requestingVoid && (
         <FormModal
-          title={"Solicitar anulación · " + requestingVoid.number}
+          english={en}
+          title={
+            (en ? "Request void · " : "Solicitar anulación · ") +
+            requestingVoid.number
+          }
           fields={[
             {
               key: "reasonCode",
-              label: "Tipo de motivo",
+              label: en ? "Reason type" : "Tipo de motivo",
               type: "select",
               required: true,
               options: [
-                { value: "customer_request", label: "Solicitud del cliente" },
-                { value: "duplicate", label: "Venta duplicada" },
-                { value: "payment_error", label: "Error de pago" },
-                { value: "item_error", label: "Error de artículo" },
-                { value: "other", label: "Otro" },
+                {
+                  value: "customer_request",
+                  label: en ? "Customer request" : "Solicitud del cliente",
+                },
+                {
+                  value: "duplicate",
+                  label: en ? "Duplicate sale" : "Venta duplicada",
+                },
+                {
+                  value: "payment_error",
+                  label: en ? "Payment error" : "Error de pago",
+                },
+                {
+                  value: "item_error",
+                  label: en ? "Item error" : "Error de artículo",
+                },
+                { value: "other", label: en ? "Other" : "Otro" },
               ],
             },
             {
               key: "reason",
-              label: "Explica el motivo",
+              label: en ? "Explain the reason" : "Explica el motivo",
               type: "textarea",
               required: true,
             },
@@ -3863,12 +3884,21 @@ export function SalesHistory() {
       )}
       {rejecting && (
         <ConfirmModal
-          title={"Rechazar transferencia de " + formatMoney(rejecting.amount)}
+          english={en}
+          title={
+            (en ? "Reject transfer of " : "Rechazar transferencia de ") +
+            formatMoney(rejecting.amount)
+          }
           description={
             rejecting.entryType === "sale"
-              ? "Úsalo cuando el dinero no llegó al banco. La mercancía ya se entregó: el importe pasa a cuenta por cobrar del cliente y deja de contar en la caja; cuando pague, registra un abono."
-              : "Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
+              ? en
+                ? "Use when the money did not reach the bank. The goods were already delivered: the amount becomes a customer receivable and no longer counts in the register; record a payment when it is received."
+                : "Úsalo cuando el dinero no llegó al banco. La mercancía ya se entregó: el importe pasa a cuenta por cobrar del cliente y deja de contar en la caja; cuando pague, registra un abono."
+              : en
+                ? "Use when the money did not reach the bank. This payment does not reduce the debt or enter the register; if the customer pays again, record a new payment."
+                : "Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
           }
+          confirmLabel={en ? "Confirm" : "Confirmar"}
           onClose={() => setRejecting(null)}
           onConfirm={async (reason) => {
             await post("/payments/" + rejecting.id + "/reject", { reason });
@@ -3879,14 +3909,31 @@ export function SalesHistory() {
       )}
       {correctingTransfer && (
         <FormModal
-          title="Corregir referencia de transferencia"
-          notice="La corrección queda en la bitácora. El importe y el estado del pago no cambian."
+          english={en}
+          title={
+            en
+              ? "Correct transfer reference"
+              : "Corregir referencia de transferencia"
+          }
+          notice={
+            en
+              ? "The correction is recorded in the audit log. The payment amount and status do not change."
+              : "La corrección queda en la bitácora. El importe y el estado del pago no cambian."
+          }
           fields={[
-            { key: "bank", label: "Banco correcto", required: true },
-            { key: "reference", label: "Referencia correcta", required: true },
+            {
+              key: "bank",
+              label: en ? "Correct bank" : "Banco correcto",
+              required: true,
+            },
+            {
+              key: "reference",
+              label: en ? "Correct reference" : "Referencia correcta",
+              required: true,
+            },
             {
               key: "reason",
-              label: "Motivo de la corrección",
+              label: en ? "Reason for correction" : "Motivo de la corrección",
               type: "textarea",
               required: true,
             },
@@ -3913,12 +3960,19 @@ export function SalesHistory() {
       )}
       {unverifying && (
         <FormModal
-          title="Des-verificar transferencia"
-          notice="La transferencia vuelve a «por verificar» y deja de contar como cobrada. Queda en la bitácora."
+          english={en}
+          title={
+            en ? "Undo transfer verification" : "Des-verificar transferencia"
+          }
+          notice={
+            en
+              ? "The transfer returns to pending verification and no longer counts as collected. This is recorded in the audit log."
+              : "La transferencia vuelve a «por verificar» y deja de contar como cobrada. Queda en la bitácora."
+          }
           fields={[
             {
               key: "reason",
-              label: "Motivo",
+              label: en ? "Reason" : "Motivo",
               type: "textarea",
               required: true,
             },
@@ -3935,24 +3989,31 @@ export function SalesHistory() {
       )}
       {moving && (
         <FormModal
-          title="Mover cobro a otra caja"
-          notice="El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
+          english={en}
+          title={
+            en ? "Move payment to another register" : "Mover cobro a otra caja"
+          }
+          notice={
+            en
+              ? "The payment moves to another register. The sale, debt and inventory do not change. This is recorded in the audit log."
+              : "El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
+          }
           fields={[
             {
               key: "cashSessionId",
-              label: "Caja destino",
+              label: en ? "Destination register" : "Caja destino",
               type: "select",
               required: true,
               options: (cashSessionsForMove.data || [])
                 .filter((s: any) => s.id !== moving.cashSessionId)
                 .map((s: any) => ({
-                  label: `${s.registerName ?? "Caja"} · ${s.closedAt ? "cerrada" : "abierta"} · ${new Date(s.openedAt).toLocaleString("es-DO")}`,
+                  label: `${s.registerName ?? (en ? "Register" : "Caja")} · ${s.closedAt ? (en ? "closed" : "cerrada") : en ? "open" : "abierta"} · ${new Date(s.openedAt).toLocaleString(en ? "en-US" : "es-DO")}`,
                   value: s.id,
                 })),
             },
             {
               key: "reason",
-              label: "Motivo",
+              label: en ? "Reason" : "Motivo",
               type: "textarea",
               required: true,
             },
@@ -3970,11 +4031,12 @@ export function SalesHistory() {
       )}
       {returning && (
         <FormModal
-          title={"Devolución · " + returning.number}
+          english={en}
+          title={(en ? "Return · " : "Devolución · ") + returning.number}
           fields={[
             {
               key: "saleItemId",
-              label: "Artículo a devolver",
+              label: en ? "Item to return" : "Artículo a devolver",
               type: "select",
               required: true,
               options: returning.items
@@ -3991,35 +4053,59 @@ export function SalesHistory() {
             // mínimo de 0.001, el navegador rechazaba devolver 1 unidad
             // («valores válidos: 0.991 y 1.001») (R9-dinero-3-ui).
             {
-              ...requiredNumber("qty", "Cantidad", 1),
+              ...requiredNumber("qty", en ? "Quantity" : "Cantidad", 1),
               min: 0.001,
               step: "0.001",
             },
             {
               key: "reason",
-              label: "Motivo",
+              label: en ? "Reason" : "Motivo",
               type: "textarea",
               required: true,
             },
             {
               key: "refundMethod",
-              label: "Método de reembolso",
+              label: en ? "Refund method" : "Método de reembolso",
               type: "select",
               required: true,
               initial: "cash",
               options: [
-                ...paymentOptions,
-                { label: "Nota de crédito", value: "credit_note" },
+                ...paymentOptions.map((o) => ({
+                  ...o,
+                  label: en
+                    ? (
+                        {
+                          cash: "Cash",
+                          card: "Card",
+                          transfer: "Transfer",
+                        } as Record<string, string>
+                      )[o.value]
+                    : o.label,
+                })),
+                {
+                  label: en ? "Credit note" : "Nota de crédito",
+                  value: "credit_note",
+                },
               ],
             },
             {
               key: "restock",
-              label: "Reingresar al stock vendible",
+              label: en
+                ? "Return to sellable stock"
+                : "Reingresar al stock vendible",
               type: "checkbox",
               initial: true,
             },
-            { key: "opened", label: "Producto abierto", type: "checkbox" },
-            { key: "damaged", label: "Producto dañado", type: "checkbox" },
+            {
+              key: "opened",
+              label: en ? "Opened product" : "Producto abierto",
+              type: "checkbox",
+            },
+            {
+              key: "damaged",
+              label: en ? "Damaged product" : "Producto dañado",
+              type: "checkbox",
+            },
           ]}
           onClose={() => setReturning(null)}
           onSubmit={(data) =>
@@ -4044,26 +4130,58 @@ export function SalesHistory() {
       )}
       {installment && (
         <FormModal
+          english={en}
           title={
-            "Registrar pago de crédito / contraentrega · " + installment.number
+            (en
+              ? "Record credit / cash-on-delivery payment · "
+              : "Registrar pago de crédito / contraentrega · ") +
+            installment.number
           }
           fields={[
             {
-              ...requiredNumber("amount", "Monto del abono"),
+              ...requiredNumber(
+                "amount",
+                en ? "Payment amount" : "Monto del abono",
+              ),
               max: Number(installment.creditBalance),
             },
             {
               key: "method",
-              label: "Método",
+              label: en ? "Method" : "Método",
               type: "select",
               required: true,
               initial: "cash",
-              options: paymentOptions,
+              options: paymentOptions.map((o) => ({
+                ...o,
+                label: en
+                  ? (
+                      {
+                        cash: "Cash",
+                        card: "Card",
+                        transfer: "Transfer",
+                      } as Record<string, string>
+                    )[o.value]
+                  : o.label,
+              })),
             },
-            { key: "bank", label: "Banco (transferencia)" },
-            { key: "reference", label: "Referencia (transferencia)" },
-            { key: "cardLast4", label: "Últimos 4 dígitos (tarjeta)" },
-            { key: "approvalCode", label: "Aprobación (tarjeta)" },
+            {
+              key: "bank",
+              label: en ? "Bank (transfer)" : "Banco (transferencia)",
+            },
+            {
+              key: "reference",
+              label: en ? "Reference (transfer)" : "Referencia (transferencia)",
+            },
+            {
+              key: "cardLast4",
+              label: en
+                ? "Last 4 digits (card)"
+                : "Últimos 4 dígitos (tarjeta)",
+            },
+            {
+              key: "approvalCode",
+              label: en ? "Approval (card)" : "Aprobación (tarjeta)",
+            },
           ]}
           onClose={() => setInstallment(null)}
           onSubmit={(data) =>
