@@ -47,7 +47,8 @@
 .goods-premium .goods-mode { background: var(--goods-field); border-color: var(--goods-gold); }
 .goods-premium .goods-mode button { color: var(--goods-ink); }
 .goods-premium .goods-mode button.active:not(.exit),
-.goods-premium .goods-confirm:not(.exit) {
+.goods-premium .goods-confirm:not(.exit),
+.goods-premium .goods-scan-actions .button.primary {
   color: #302005;
   background: linear-gradient(165deg, #fff0b0, #e9bf57 58%, #c58f28);
   border: 1px solid #b48a32;

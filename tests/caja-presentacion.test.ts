@@ -30,6 +30,13 @@ describe("Caja Fusión: pintura reversible", () => {
     expect(css).toContain('grid-template-columns: repeat(3,minmax(0,1fr))');
     expect(css).toContain('min-width: 0; min-height: 44px; padding: 8px 4px');
   });
+  it("receipt portal and active shell override violet only during checkout", () => {
+    const css = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
+    expect(css).toContain('body:has(.pos-layout.fusion-caja-integrada) .modal:has(.sale-success) .button.primary');
+    expect(css).toContain('var(--fc-deep)) !important');
+    expect(css).toContain('--primary-soft: var(--fc-pressed)');
+    expect(css).toContain('background: ButtonFace; color: ButtonText');
+  });
   it("preferencias no escriben ni recargan carrito o cobran", () => {
     const source = readFileSync(
       "apps/web/src/CajaVisualPreferences.tsx",

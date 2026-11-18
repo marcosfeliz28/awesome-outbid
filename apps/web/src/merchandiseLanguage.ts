@@ -207,5 +207,21 @@ export const merchandiseText = {
   "quickVariant": {
     "es": "Variante (sabor, talla, color…)",
     "en": "Variant (flavor, size, color…)"
+  },
+  "documentHint": {
+    "es": "Factura, NCF y condición de pago para la contable. Puedes completarlo después desde el historial.",
+    "en": "Invoice, NCF and payment terms for the accountant. You can complete this later from the history."
+  },
+  "registering": {
+    "es": "Registrando…",
+    "en": "Recording…"
+  },
+  "confirmEntry": {
+    "es": "Confirmar entrada",
+    "en": "Confirm receipt"
+  },
+  "confirmExit": {
+    "es": "Confirmar salida",
+    "en": "Confirm stock removal"
   }
 } as const;

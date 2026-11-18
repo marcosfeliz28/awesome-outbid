@@ -823,8 +823,7 @@ export function Merchandise() {
           <details className="goods-document">
             <summary>{t("supplierDocument")}</summary>
             <p className="goods-cost-note">
-              Factura, NCF y condición de pago para la contable. Puedes
-              completarlo después desde el historial.
+              {t("documentHint")}
             </p>
             <DocumentFields value={doc} onChange={setDoc} />
           </details>
@@ -1309,10 +1308,10 @@ export function Merchandise() {
           onClick={confirm}
         >
           {busy
-            ? "Registrando…"
+            ? t("registering")
             : direction === "entry"
-              ? "Confirmar entrada"
-              : "Confirmar salida"}
+              ? t("confirmEntry")
+              : t("confirmExit")}
         </Button>
       </div>
 

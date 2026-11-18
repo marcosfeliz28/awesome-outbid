@@ -50,3 +50,14 @@ it("translates quick-create labels without translating the stored variant value"
   for(const key of ['quickCreate','quickName','quickCategory','quickBarcode','quickPrice','quickCost','quickVariant']) expect(form).toContain(`t("${key}")`);
   expect(form).toContain('initial: "Única"');
 });
+
+it("translates receipt confirmation and document guidance without changing submit handlers", () => {
+  for (const key of ["documentHint", "registering", "confirmEntry", "confirmExit"] as const) {
+    expect(source).toContain(`t("${key}")`);
+    expect(merchandiseText[key].en).not.toBe(merchandiseText[key].es);
+  }
+  expect(merchandiseText.documentHint.en).toContain("NCF");
+  expect(source).toContain('onClick={confirm}');
+  expect(source).toContain('<Button type="submit">{t("addUnit")}</Button>');
+  expect(css).toMatch(/\.goods-premium \.goods-scan-actions \.button\.primary\s*\{[^}]*background:\s*linear-gradient/);
+});

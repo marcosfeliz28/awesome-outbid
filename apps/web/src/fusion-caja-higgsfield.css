@@ -914,3 +914,25 @@
  color: var(--fc-ink); background: var(--fc-deep); border: 1px solid var(--fc-edge);
 }
 .pos-layout.fusion-caja-integrada .customer-avatar { background: var(--fc-deep); }
+/* Scoped checkout shell and receipt portal: beat legacy violet without changing actions. */
+.app-shell:has(.pos-layout.fusion-caja-integrada) {
+ --primary: var(--fc-accent); --primary-soft: var(--fc-pressed);
+}
+.app-shell:has(.pos-layout.fusion-caja-integrada) .sidebar .nav-item.active {
+ background: linear-gradient(145deg,var(--fc-pressed),var(--fc-deep)) !important;
+ color: var(--fc-ink) !important;
+}
+.app-shell:has(.pos-layout.fusion-caja-integrada) .brand-icon {
+ background: linear-gradient(135deg,#fff0a8,#c69736,#ffe597); color: #392905;
+ border: 1px solid #e5c46d; box-shadow: inset 0 1px #fff9,0 3px 7px #0003;
+}
+body:has(.pos-layout.fusion-caja-integrada) .modal:has(.sale-success) .button.primary {
+ background: linear-gradient(120deg,#f9dc8e,#dcb45b 50%,#f6d687);
+ color: #241d0b; border-color: #a08036;
+ box-shadow: inset 0 1px #fff8,inset 0 -2px #70501544,0 3px 8px #0002;
+}
+@media(forced-colors: active) {
+ body:has(.pos-layout.fusion-caja-integrada) .modal:has(.sale-success) .button.primary {
+  background: ButtonFace; color: ButtonText; border-color: ButtonText; box-shadow: none;
+ }
+}
