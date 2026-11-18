@@ -265,6 +265,22 @@
     {
       "before": "<InventoryMovements />",
       "after": "<InventoryMovements en={inventoryLanguage === \"en\"} />"
+    },
+    {
+      "before": "dateLabel(lot.expiryDate) : translateInventory",
+      "after": "dateLabel(lot.expiryDate, inventoryLanguage === \"en\" ? \"en-US\" : \"es-DO\") : translateInventory"
+    },
+    {
+      "before": "render: (c) => dateLabel(c.createdAt) },",
+      "after": "render: (c) => dateLabel(c.createdAt, inventoryLanguage === \"en\" ? \"en-US\" : \"es-DO\") },"
+    },
+    {
+      "before": "<DataTable\n              rows={rows}\n              empty={translateInventory",
+      "after": "<DataTable\n              english={inventoryLanguage === \"en\"}\n              rows={rows}\n              empty={translateInventory"
+    },
+    {
+      "before": "<DataTable\n                rows={counts.data || []}",
+      "after": "<DataTable\n                english={inventoryLanguage === \"en\"}\n                rows={counts.data || []}"
     }
   ]
 }

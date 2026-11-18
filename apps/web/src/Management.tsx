@@ -1,4 +1,5 @@
 import { catalogText } from "./catalogLanguage";
+import { handleCatalogImageError } from "./catalogImage";
 import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
 import { inventoryText } from "./inventoryLanguage";
@@ -427,7 +428,9 @@ export function Catalog() {
                 render: (p) => (
                   <div className="table-product">
                     <img
+                      key={p.imageUrl}
                       src={p.imageUrl || "/products/accessories.svg"}
+                      onError={(event) => handleCatalogImageError(event.currentTarget)}
                       alt=""
                     />
                     <div>
@@ -944,6 +947,7 @@ export function Inventory() {
         <QueryState query={query} english={inventoryLanguage === "en"}>
           {mode === "stock" ? (
             <DataTable
+              english={inventoryLanguage === "en"}
               rows={rows}
               empty={translateInventory("No encontramos artículos en el inventario")}
               emptyDescription={translateInventory("Revisa la búsqueda o registra una entrada de mercancía.")}
@@ -1001,7 +1005,7 @@ export function Inventory() {
                         (a: any, b: any) =>
                           +new Date(a.expiryDate) - +new Date(b.expiryDate),
                       )[0];
-                    return lot ? dateLabel(lot.expiryDate) : translateInventory("No aplica");
+                    return lot ? dateLabel(lot.expiryDate, inventoryLanguage === "en" ? "en-US" : "es-DO") : translateInventory("No aplica");
                   },
                 },
                 {
@@ -1031,11 +1035,12 @@ export function Inventory() {
           ) : (
             <QueryState query={counts} english={inventoryLanguage === "en"}>
               <DataTable
+                english={inventoryLanguage === "en"}
                 rows={counts.data || []}
                 empty={translateInventory("Todavía no hay conteos físicos")}
                 emptyDescription={translateInventory("Pulsa Contar junto a un artículo para registrar su existencia real.")}
                 columns={[
-                  { label: translateInventory("Fecha"), render: (c) => dateLabel(c.createdAt) },
+                  { label: translateInventory("Fecha"), render: (c) => dateLabel(c.createdAt, inventoryLanguage === "en" ? "en-US" : "es-DO") },
                   { label: translateInventory("Artículos"), render: (c) => c.items.length },
                   {
                     label: translateInventory("Estado"),

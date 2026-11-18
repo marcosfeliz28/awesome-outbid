@@ -280,6 +280,30 @@
     {
       "before": "function Kardex({ variantId, english = false }: { variantId: string; english?: boolean }) {\n  const t = (text: string) => inventoryText(text, english ? \"en\" : \"es\");\n  const query = useQuery({\n    queryKey: [\"movements\", variantId],\n    queryFn: () => api(\"/inventory/movements?variantId=\" + variantId),\n  });\n  return (\n    <QueryState query={query} english={english}>\n      <DataTable\n        rows={query.data || []}\n        empty={english ? \"No stock movements\" : undefined}\n        emptyDescription={english ? \"Recorded movements will appear here.\" : undefined}\n        columns={[\n          { label: t(\"Fecha\"), render: (m) => dateLabel(m.createdAt) },\n          { label: t(\"Tipo\"), render: (m) => <Badge>{m.type}</Badge> },\n          { label: t(\"Cantidad\"), render: (m) => m.qty },\n          { label: t(\"Saldo\"), render: (m) => m.balanceAfter },\n          { label: t(\"Motivo\"), render: (m) => m.reason },\n        ]}\n      />\n    </QueryState>\n  );\n}\n\n",
       "after": "function Kardex({ variantId, english = false }: { variantId: string; english?: boolean }) {\n  const t = (text: string) => inventoryText(text, english ? \"en\" : \"es\");\n  const query = useQuery({\n    queryKey: [\"movements\", variantId],\n    queryFn: () => api(\"/inventory/movements?variantId=\" + variantId),\n  });\n  return (\n    <QueryState query={query} english={english}>\n      <DataTable\n        english={english}\n        rows={query.data || []}\n        empty={english ? \"No stock movements\" : undefined}\n        emptyDescription={english ? \"Recorded movements will appear here.\" : undefined}\n        columns={[\n          { label: t(\"Fecha\"), render: (m) => dateLabel(m.createdAt, english ? \"en-US\" : \"es-DO\") },\n          { label: t(\"Tipo\"), render: (m) => <Badge>{m.type}</Badge> },\n          { label: t(\"Cantidad\"), render: (m) => m.qty },\n          { label: t(\"Saldo\"), render: (m) => m.balanceAfter },\n          { label: t(\"Motivo\"), render: (m) => m.reason },\n        ]}\n      />\n    </QueryState>\n  );\n}\n\n"
+    },
+    {
+      "before": "import { catalogText } from \"./catalogLanguage\";",
+      "after": "import { catalogText } from \"./catalogLanguage\";\nimport { handleCatalogImageError } from \"./catalogImage\";"
+    },
+    {
+      "before": "src={p.imageUrl || \"/products/accessories.svg\"}\n                      alt=\"\"",
+      "after": "key={p.imageUrl}\n                      src={p.imageUrl || \"/products/accessories.svg\"}\n                      onError={(event) => handleCatalogImageError(event.currentTarget)}\n                      alt=\"\""
+    },
+    {
+      "before": "dateLabel(lot.expiryDate) : translateInventory",
+      "after": "dateLabel(lot.expiryDate, inventoryLanguage === \"en\" ? \"en-US\" : \"es-DO\") : translateInventory"
+    },
+    {
+      "before": "render: (c) => dateLabel(c.createdAt) },",
+      "after": "render: (c) => dateLabel(c.createdAt, inventoryLanguage === \"en\" ? \"en-US\" : \"es-DO\") },"
+    },
+    {
+      "before": "<DataTable\n              rows={rows}\n              empty={translateInventory",
+      "after": "<DataTable\n              english={inventoryLanguage === \"en\"}\n              rows={rows}\n              empty={translateInventory"
+    },
+    {
+      "before": "<DataTable\n                rows={counts.data || []}",
+      "after": "<DataTable\n                english={inventoryLanguage === \"en\"}\n                rows={counts.data || []}"
     }
   ],
   "base_commit": "0ed250e501bb04c13156776973fb1c446906f9e7",

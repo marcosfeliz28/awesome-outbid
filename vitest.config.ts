@@ -133,6 +133,7 @@ export default defineConfig({
       "tests/caja-presentacion.test.ts",
       "tests/caja-turnos-presentacion.test.ts",
       "tests/productos-presentacion.test.ts",
+      "tests/catalog-image.test.ts",
       "tests/gv-unit.test.ts",
       "tests/gv-incentivos-unit.test.ts",
       "tests/gv-auditoria-migration-postgres.test.ts",
