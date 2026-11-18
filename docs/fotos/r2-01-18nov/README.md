@@ -7,3 +7,4 @@
 
 Detalle, URLs y sha256: `candidatas.csv`. Vista: `contacto.png`.
 | INV-1059 Bronson K2+D3 120 tab (extra) | discrepancia | bronsonvitamins.com: frasco blanco con etiqueta oscura; no existe frasco oscuro |
+| INV-1175 Vegan Protein Alpha Vanilla Milkshake (extra) | discrepancia | alphaprimesupps.com: producto/sabor coinciden; marca Alpha Prime inferida, confirmar |
