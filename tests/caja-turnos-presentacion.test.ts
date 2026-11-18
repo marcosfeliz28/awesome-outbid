@@ -65,3 +65,12 @@ it("importe principal se adapta a su tarjeta, no al viewport", () => {
   expect(css).toContain("font-size: clamp(18px, 9cqw, 40px)");
   expect(css).toContain("overflow-x: auto");
 });
+
+it("historial mantiene importes atómicos y cabeceras legibles", () => {
+  const css = readFileSync("apps/web/src/fusion-caja-turnos.css", "utf8");
+  expect(css).toContain("table-layout: auto; min-width: 100%");
+  expect(css).toContain('[data-label="Efectivo esperado"]');
+  expect(css).toContain('[data-label="Contado"]');
+  expect(css).toContain("white-space: nowrap; overflow-wrap: normal; word-break: normal");
+  expect(css).toContain("font-size: 12px");
+});
