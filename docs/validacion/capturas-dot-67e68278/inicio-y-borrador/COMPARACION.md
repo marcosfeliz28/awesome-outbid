@@ -13,7 +13,6 @@ Validé `67e682788ecb046f355a943b61eca8bbe391352b` de `dot/pwa-draft-flush-18nov
 | --- | --- |
 | Carrito activo con la corrección cargada | [Aviso](actualizacion/actualizacion-en-inicio.png) · [Artículo conservado mientras la otra pestaña cambia](actualizacion/carrito-conservado-version-anterior.png) · [Carrito vacío tras quitar el artículo y recargar](actualizacion/pos-tras-quitar-ultimo-articulo.png) · [Mediciones](actualizacion/comprobacion-integrada.json) |
 | Primera actualización con el carrito vacío | [Aviso antes del cambio](primera-actualizacion/antes-de-actualizar.png) · [Punto de venta en la versión nueva](primera-actualizacion/punto-de-venta-en-version-nueva.png) · [Artículo agregado después del cambio](primera-actualizacion/carrito-de-prueba-en-version-nueva.png) · [Mediciones](primera-actualizacion/comprobacion-integrada.json) |
-
 | Primera actualización con la pestaña antigua ocupada | [Aviso](pestana-antigua/actualizacion-en-inicio.png) · [Carrito conservado](pestana-antigua/carrito-conservado-version-anterior.png) · [Artículo restaurado tras quitarlo](pestana-antigua/pos-tras-quitar-ultimo-articulo.png) · [Mediciones](pestana-antigua/comprobacion-integrada.json) |
 
 ## Inicio y fotos
