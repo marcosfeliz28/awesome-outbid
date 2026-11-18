@@ -190,6 +190,26 @@ test("pantallas de gestión, tema oscuro y versión móvil", async ({ page }) =>
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     ),
   ).toBe(true);
+  const actions = page.locator(".cart-bottom-actions");
+  for (const label of ["En espera", "Cotizar", "Limpiar"]) {
+    const button = actions.getByRole("button", { name: label, exact: true });
+    await expect(button).toBeVisible();
+    const geometry = await button.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const parent = element.parentElement!.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const text = range.getBoundingClientRect();
+      return { left: box.left, right: box.right, height: box.height,
+        parentLeft: parent.left, parentRight: parent.right,
+        textLeft: text.left, textRight: text.right, width: window.innerWidth };
+    });
+    expect(geometry.height).toBeGreaterThanOrEqual(44);
+    expect(geometry.left).toBeGreaterThanOrEqual(geometry.parentLeft - 1);
+    expect(geometry.right).toBeLessThanOrEqual(Math.min(geometry.parentRight, geometry.width) + 1);
+    expect(geometry.textLeft).toBeGreaterThanOrEqual(geometry.left - 1);
+    expect(geometry.textRight).toBeLessThanOrEqual(geometry.right + 1);
+  }
   await page.screenshot({
     path: screenshotPath("docs/pos-mobile.png"),
     fullPage: true,

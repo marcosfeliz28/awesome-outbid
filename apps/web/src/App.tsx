@@ -679,6 +679,9 @@ function Shell() {
     [ownPassword, setOwnPassword] = useState(false);
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
+  const menuWasOpen = useRef(false);
+  const accountButton = useRef<HTMLButtonElement>(null);
+  const accountPanel = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null),
     sidebar = useRef<HTMLElement>(null),
     stayActive = useRef(() => {});
@@ -701,10 +704,45 @@ function Shell() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+  useEffect(() => {
+    if (!account) return;
+    accountPanel.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    const closeAccount = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || document.querySelector('[role="dialog"][data-state="open"]')) return;
+      setAccount(false);
+      accountButton.current?.focus();
+    };
+    window.addEventListener("keydown", closeAccount);
+    return () => window.removeEventListener("keydown", closeAccount);
+  }, [account]);
+  useEffect(() => {
+    if (!mobile || !menu) return;
+    const containTab = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || document.querySelector('[role="dialog"][data-state="open"]')) return;
+      const controls = Array.from(sidebar.current?.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex="0"]',
+      ) ?? []).filter((element) => element.getClientRects().length > 0);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && (document.activeElement === first || !sidebar.current?.contains(document.activeElement))) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !sidebar.current?.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    window.addEventListener("keydown", containTab);
+    return () => window.removeEventListener("keydown", containTab);
+  }, [mobile, menu]);
   // G12: al abrir el menú en celular, el foco entra en él.
   useEffect(() => {
-    if (mobile && menu)
+    if (mobile && menu) {
+      menuWasOpen.current = true;
       sidebar.current?.querySelector<HTMLElement>(".nav-item")?.focus();
+    } else if (menuWasOpen.current) {
+      menuWasOpen.current = false;
+      // Restore after React removes inert from the main shell.
+      menuButton.current?.focus();
+    }
   }, [mobile, menu]);
   useEffect(() => {
     (async () => {
@@ -842,7 +880,7 @@ function Shell() {
         e.preventDefault();
         setCommands(true);
       }
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !document.querySelector('[role="dialog"][data-state="open"]')) {
         setCommands(false);
         setMenu(false);
         // El foco vuelve al botón que abrió el menú (G12).
@@ -1009,7 +1047,7 @@ function Shell() {
         user.role !== "seller" &&
         page !== "merchandise" &&
         page !== "pos" && (
-          <nav className="goods-mobile-bar">
+          <nav className="goods-mobile-bar" inert={mobile && menu}>
             <Button onClick={() => go("merchandise")}>
               <Truck size={24} /> {t("Mercancía")}
             </Button>
@@ -1020,6 +1058,7 @@ function Shell() {
       <aside
         lang={language}
         ref={sidebar}
+        id="main-navigation"
         className={`sidebar ${menu ? "open" : ""}`}
         inert={mobile && !menu}
         aria-hidden={mobile && !menu ? true : undefined}
@@ -1094,7 +1133,7 @@ function Shell() {
           )}
         </div>
       </aside>
-      <div className="main-shell">
+      <div className="main-shell" inert={mobile && menu}>
         {page === "dashboard" && <div className="fusion-preferences" lang={language}>
           <label>{language === "en" ? "Language" : "Idioma"} <select aria-label={language === "en" ? "Interface language" : "Idioma de la interfaz"} value={language} onChange={(e) => setLanguage(e.target.value === "en" ? "en" : "es")}><option value="es">Español</option><option value="en">English</option></select></label>
           {page === "dashboard" && <AppearanceControls language={language} />}
@@ -1106,6 +1145,7 @@ function Shell() {
               ref={menuButton}
               className="icon-button mobile-menu"
               aria-expanded={mobile ? menu : undefined}
+              aria-controls="main-navigation"
               onClick={() => setMenu(true)}
               aria-label={t("Abrir menú")}
             >
@@ -1117,7 +1157,9 @@ function Shell() {
               </span>
               <strong>
                 {(current?.label ? t(current.label) : "") ||
-                  (page === "styles"
+                  (page.split("?")[0] === "month-report"
+                    ? (language === "en" ? "Monthly report" : "Informe mensual")
+                    : page === "styles"
                     ? t("Guía de estilos")
                     : page === "demo"
                       ? t("Demostración")
@@ -1181,7 +1223,7 @@ function Shell() {
               </button>
             )}
             <div className="topbar-separator" />
-            <button className="account" onClick={() => setAccount(!account)}>
+            <button ref={accountButton} className="account" aria-expanded={account} aria-controls="account-actions" onClick={() => setAccount(!account)}>
               <span className="avatar">{initials}</span>
               <div>
                 <strong>{user.name}</strong>
@@ -1197,7 +1239,7 @@ function Shell() {
               <ChevronDown size={15} />
             </button>
             {account && (
-              <div className="account-menu">
+              <div ref={accountPanel} id="account-actions" className="account-menu">
                 {can(user.permissions, "sale:write") && (
                   <button
                     onClick={async () => {

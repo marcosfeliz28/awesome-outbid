@@ -1115,7 +1115,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                   : t("Caja abierta")}
             </span>
           </div>
-          <Badge tone="violet">{units} artículos</Badge>
+          <Badge tone="violet">{units} {language === "en" ? (units === 1 ? "item" : "items") : (units === 1 ? "artículo" : "artículos")}</Badge>
         </div>
         <button
           className="customer-selector"
@@ -1354,7 +1354,7 @@ export function POS({ go }: { go: (page: string) => void }) {
           type="button"
           className="pos-mobile-cart"
           onClick={showCart}
-          aria-label={`Ver carrito (${units} artículos)`}
+          aria-label={`${language === "en" ? "View cart" : "Ver carrito"} (${units} ${language === "en" ? (units === 1 ? "item" : "items") : (units === 1 ? "artículo" : "artículos")})`}
         >
           <ShoppingCart size={20} aria-hidden="true" />
           <span>{units}</span>

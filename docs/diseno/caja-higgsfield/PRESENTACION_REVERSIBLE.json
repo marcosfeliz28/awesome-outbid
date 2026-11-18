@@ -116,6 +116,14 @@
     {
       "before": "<span>Carrito vacío · Busca un artículo</span>",
       "after": "<span>{t(\"Carrito vacío · Busca un artículo\")}</span>"
+    },
+    {
+      "before": "<Badge tone=\"violet\">{units} artículos</Badge>",
+      "after": "<Badge tone=\"violet\">{units} {language === \"en\" ? (units === 1 ? \"item\" : \"items\") : (units === 1 ? \"artículo\" : \"artículos\")}</Badge>"
+    },
+    {
+      "before": "aria-label={`Ver carrito (${units} artículos)`}",
+      "after": "aria-label={`${language === \"en\" ? \"View cart\" : \"Ver carrito\"} (${units} ${language === \"en\" ? (units === 1 ? \"item\" : \"items\") : (units === 1 ? \"artículo\" : \"artículos\")})`}"
     }
   ]
 }

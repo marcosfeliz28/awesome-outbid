@@ -1,3 +1,8 @@
+import { usePremiumWorkspace } from "./PremiumWorkspace";
+import { useLanguage } from "./inicioLanguage";
+import { operationalAuxText } from "./operationalAuxLanguage";
+import { ArrowRightLeft } from "lucide-react";
+import "./operationalAux.css";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@fitstore/ui";
@@ -18,14 +23,17 @@ import {
 } from "./transfer-reconciliation-utils";
 import "./transferReconciliation.css";
 
-const dateTime = (value: string) =>
-  new Date(value).toLocaleString("es-DO", {
+const dateTime = (value: string, english = false) =>
+  new Date(value).toLocaleString(english ? "en-US" : "es-DO", {
     timeZone: "America/Santo_Domingo",
     dateStyle: "short",
     timeStyle: "short",
   });
 
 export function TransferReconciliation() {
+  usePremiumWorkspace();
+  const english = useLanguage() === "en";
+  const t = (text: string) => operationalAuxText(english, text);
   const user = useStore((state) => state.user)!;
   const admin = can(user.permissions, "*");
   const client = useQueryClient();
@@ -51,7 +59,9 @@ export function TransferReconciliation() {
   });
 
   if (!admin)
-    return <p role="alert">Esta pantalla es solo para administración.</p>;
+    return (
+      <p role="alert">{t("Esta pantalla es solo para administración.")}</p>
+    );
 
   const rows = query.data ?? [];
   const toggle = (id: string) =>
@@ -176,20 +186,24 @@ export function TransferReconciliation() {
   };
 
   return (
-    <section className="transfer-reconciliation">
+    <section className="transfer-reconciliation operational-aux operational-aux-transfer norexos-premium-workspace">
       <div className="page-heading">
+        <span className="operational-aux-emblem" aria-hidden="true">
+          <ArrowRightLeft size={34} strokeWidth={1.6} />
+        </span>
         <div>
-          <div className="eyebrow">ADMINISTRACIÓN</div>
-          <h1>Conciliar transferencias</h1>
+          <div className="eyebrow">{t("ADMINISTRACIÓN")}</div>
+          <h1>{t("Conciliar transferencias")}</h1>
           <p>
-            Compara cada factura con el banco antes de verificarla. El total
-            ayuda a revisar; no verifica pagos por sí solo.
+            {t(
+              "Compara cada factura con el banco antes de verificarla. El total ayuda a revisar; no verifica pagos por sí solo.",
+            )}
           </p>
         </div>
       </div>
       <div className="panel reconciliation-toolbar">
         <label className="field">
-          <span>Fecha del pago (opcional)</span>
+          <span>{t("Fecha del pago (opcional)")}</span>
           <input
             type="date"
             value={date}
@@ -210,15 +224,15 @@ export function TransferReconciliation() {
             setResults([]);
           }}
         >
-          Todas las fechas
+          {t("Todas las fechas")}
         </Button>
         <Button variant="secondary" onClick={exportCsv} disabled={!rows.length}>
-          Exportar lista a CSV
+          {t("Exportar lista a CSV")}
         </Button>
       </div>
       {results.length > 0 && (
         <div className="panel" role="status" aria-live="polite">
-          <h2>Resultado de cada transferencia</h2>
+          <h2>{t("Resultado de cada transferencia")}</h2>
           <ul>
             {results.map((result) => (
               <li
@@ -233,10 +247,10 @@ export function TransferReconciliation() {
           </ul>
         </div>
       )}
-      <QueryState query={query}>
+      <QueryState english={english} query={query}>
         {rows.length === 0 ? (
           <div className="panel">
-            No hay transferencias pendientes para esta fecha.
+            {t("No hay transferencias pendientes para esta fecha.")}
           </div>
         ) : (
           BANK_GROUPS.map((group) => {
@@ -259,10 +273,13 @@ export function TransferReconciliation() {
               <section
                 className="panel reconciliation-bank"
                 key={group}
-                aria-label={`Banco ${group}`}
+                aria-label={`${t("Banco ")}${group}`}
               >
                 <h2>
-                  {group} <small>({groupRows.length} pendientes)</small>
+                  {group}{" "}
+                  <small>
+                    ({groupRows.length} {t("pendientes)")}
+                  </small>
                 </h2>
                 <div className="reconciliation-list">
                   {groupRows.map((row) => (
@@ -275,28 +292,39 @@ export function TransferReconciliation() {
                           onChange={() => toggle(row.id)}
                         />
                         <span className="sr-only">
-                          Seleccionar factura {row.invoice}
+                          {t("Seleccionar factura")} {row.invoice}
                         </span>
                       </label>
                       <div className="reconciliation-details">
                         <strong>
-                          {row.invoice} · {formatMoney(Number(row.amount))}
+                          {row.invoice} ·{" "}
+                          <span className="operational-aux-money">
+                            {formatMoney(Number(row.amount))}
+                          </span>
                         </strong>
                         <span>
-                          Envío: {formatMoney(Number(row.courierFee))} ·
-                          Esperado: {formatMoney(Number(row.expected))}
+                          {t("Envío:")}{" "}
+                          <span className="operational-aux-money">
+                            {formatMoney(Number(row.courierFee))}
+                          </span>{" "}
+                          {t("· Esperado:")}{" "}
+                          <span className="operational-aux-money">
+                            {formatMoney(Number(row.expected))}
+                          </span>
                         </span>
                         <span>
-                          {dateTime(row.date)} · {row.customer || "Sin cliente"}
+                          {dateTime(row.date, english)} ·{" "}
+                          {row.customer || t("Sin cliente")}
                         </span>
                         <span>
-                          Banco: {row.bank || "Sin banco"} · Referencia:{" "}
-                          {row.reference || "Sin referencia"}
+                          {t("Banco:")} {row.bank || t("Sin banco")}{" "}
+                          {t("· Referencia:")}{" "}
+                          {row.reference || t("Sin referencia")}
                         </span>
                         <span>
-                          Factura hecha por:{" "}
+                          {t("Factura hecha por:")}{" "}
                           <b>
-                            {row.seller || row.cashier || "Sin identificar"}
+                            {row.seller || row.cashier || t("Sin identificar")}
                           </b>
                           {row.cashier && row.cashier !== row.seller
                             ? " · cobro: " + row.cashier
@@ -318,12 +346,12 @@ export function TransferReconciliation() {
                                 disabled={busy}
                                 onClick={() => void useFee(row, suggestion)}
                               >
-                                Usar RD$ {suggestion} como envío
+                                {t("Usar RD$")} {suggestion} {t("como envío")}
                               </Button>
                             ) : null;
                           })()}
                         <details>
-                          <summary>Editar envío</summary>
+                          <summary>{t("Editar envío")}</summary>
                           <CourierFeeEditor
                             key={`${row.saleId}:${row.courierFee}`}
                             saleId={row.saleId}
@@ -340,7 +368,7 @@ export function TransferReconciliation() {
                             }}
                           >
                             <label className="field">
-                              <span>Motivo del rechazo</span>
+                              <span>{t("Motivo del rechazo")}</span>
                               <input
                                 autoFocus
                                 required
@@ -356,7 +384,7 @@ export function TransferReconciliation() {
                               type="submit"
                               disabled={busy || rejectReason.trim().length < 3}
                             >
-                              Confirmar rechazo
+                              {t("Confirmar rechazo")}
                             </Button>
                             <Button
                               type="button"
@@ -366,7 +394,7 @@ export function TransferReconciliation() {
                                 setRejectReason("");
                               }}
                             >
-                              Cancelar
+                              {t("Cancelar")}
                             </Button>
                           </form>
                         )}
@@ -380,7 +408,7 @@ export function TransferReconciliation() {
                             setRejectReason("");
                           }}
                         >
-                          Rechazar
+                          {t("Rechazar")}
                         </Button>
                       )}
                     </article>
@@ -388,12 +416,14 @@ export function TransferReconciliation() {
                 </div>
                 <div className="reconciliation-totals">
                   <p>
-                    <strong>Seleccionadas:</strong> {selectedCount} ·{" "}
-                    <strong>Total esperado seleccionado:</strong>{" "}
-                    {formatMoney(total / 100)}
+                    <strong>{t("Seleccionadas:")}</strong> {selectedCount} ·{" "}
+                    <strong>{t("Total esperado seleccionado:")}</strong>{" "}
+                    <span className="operational-aux-money">
+                      {formatMoney(total / 100)}
+                    </span>
                   </p>
                   <label className="field">
-                    <span>Total del banco (RD$)</span>
+                    <span>{t("Total del banco (RD$)")}</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -410,20 +440,28 @@ export function TransferReconciliation() {
                     />
                   </label>
                   <p role="status">
-                    <strong>Diferencia:</strong>{" "}
-                    {difference === null
-                      ? rawBankTotal
-                        ? "Usa números y punto decimal, sin separador de miles."
-                        : "Escribe el total del banco"
-                      : difference === 0
-                        ? "Cuadrado · RD$ 0.00"
-                        : formatMoney(difference / 100)}
+                    <strong>{t("Diferencia:")}</strong>{" "}
+                    {difference === null ? (
+                      rawBankTotal ? (
+                        t(
+                          "Usa números y punto decimal, sin separador de miles.",
+                        )
+                      ) : (
+                        t("Escribe el total del banco")
+                      )
+                    ) : difference === 0 ? (
+                      t("Cuadrado · RD$ 0.00")
+                    ) : (
+                      <span className="operational-aux-money">
+                        {formatMoney(difference / 100)}
+                      </span>
+                    )}
                   </p>
                   <Button
                     disabled={!selectedCount || busy}
                     onClick={() => void verifyGroup(groupRows)}
                   >
-                    {busy ? "Procesando…" : "Verificar seleccionadas"}
+                    {busy ? t("Procesando…") : t("Verificar seleccionadas")}
                   </Button>
                 </div>
               </section>

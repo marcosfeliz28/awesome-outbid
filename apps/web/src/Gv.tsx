@@ -1,3 +1,7 @@
+import { useOperationsText } from "./operationsLanguage";
+import { useLanguage } from "./inicioLanguage";
+import { PremiumWorkspace } from "./PremiumWorkspace";
+import "./premiumOperations.css";
 // GV Makeup Studio: cursos, inscripciones y cobros (docs/coordinacion/MODULO-GV.md).
 // Registro de seguimiento: no es la caja ni factura.
 import { useState } from "react";
@@ -131,6 +135,8 @@ function Options({ map }: { map: Record<string, string> }) {
 }
 
 export function Gv() {
+  const ot = useOperationsText();
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const [tab, setTab] = useState<
     | "courses"
@@ -143,15 +149,14 @@ export function Gv() {
   >("courses");
   const [courseId, setCourseId] = useState<string | null>(null);
   return (
+    <PremiumWorkspace area="gv">
     <section className="gv-page">
       <div className="page-heading">
         <div>
           <div className="eyebrow">GV MAKEUP STUDIO</div>
-          <h1>Cursos y cobros</h1>
+          <h1>{ot("Cursos y cobros")}</h1>
           <p>
-            Inscripciones y pagos de GV. No es la caja: los productos se venden
-            en el punto de venta.
-          </p>
+            {ot("Inscripciones y pagos de GV. No es la caja: los productos se venden en el punto de venta.")}</p>
         </div>
       </div>
       <div className="tabs" role="tablist">
@@ -164,48 +169,42 @@ export function Gv() {
             setCourseId(null);
           }}
         >
-          Cursos
-        </button>
+          {ot("Cursos")}</button>
         <button
           role="tab"
           aria-selected={tab === "appointments"}
           className={tab === "appointments" ? "active" : ""}
           onClick={() => setTab("appointments")}
         >
-          Citas
-        </button>
+          {ot("Citas")}</button>
         <button
           role="tab"
           aria-selected={tab === "leads"}
           className={tab === "leads" ? "active" : ""}
           onClick={() => setTab("leads")}
         >
-          Interesadas
-        </button>
+          {ot("Interesadas")}</button>
         <button
           role="tab"
           aria-selected={tab === "transfers"}
           className={tab === "transfers" ? "active" : ""}
           onClick={() => setTab("transfers")}
         >
-          Por verificar
-        </button>
+          {ot("Por verificar")}</button>
         <button
           role="tab"
           aria-selected={tab === "cash"}
           className={tab === "cash" ? "active" : ""}
           onClick={() => setTab("cash")}
         >
-          Caja GV
-        </button>
+          {ot("Caja GV")}</button>
         <button
           role="tab"
           aria-selected={tab === "incentive"}
           className={tab === "incentive" ? "active" : ""}
           onClick={() => setTab("incentive")}
         >
-          Mi incentivo
-        </button>
+          {ot("Mi incentivo")}</button>
         {can(user.permissions, "gv:reports") && (
           <button
             role="tab"
@@ -213,16 +212,18 @@ export function Gv() {
             className={tab === "reports" ? "active" : ""}
             onClick={() => setTab("reports")}
           >
-            Reportes
-          </button>
+            {ot("Reportes")}</button>
         )}
       </div>
-      {tab === "courses" &&
-        (courseId ? (
-          <CourseDetail id={courseId} back={() => setCourseId(null)} />
-        ) : (
-          <Courses open={setCourseId} />
-        ))}
+      {tab === "courses" && (
+        <div className="gv-workspace-layout">
+          <div className="gv-course-list"><Courses open={setCourseId} /></div>
+          <div className="gv-course-detail">
+            {courseId ? <CourseDetail key={courseId} id={courseId} back={() => setCourseId(null)} /> :
+              <div className="panel"><h2>{en ? "Course details" : "Detalle del curso"}</h2><p>{en ? "Select a course to view its actual enrollments and payments." : "Selecciona un curso para consultar sus inscripciones y cobros reales."}</p></div>}
+          </div>
+        </div>
+      )}
       {tab === "appointments" && <GvAppointments />}
       {tab === "leads" && <GvLeads />}
       {tab === "transfers" && <Transfers />}
@@ -230,6 +231,7 @@ export function Gv() {
       {tab === "incentive" && <MyIncentive />}
       {tab === "reports" && <Reports />}
     </section>
+    </PremiumWorkspace>
   );
 }
 
@@ -307,6 +309,7 @@ function MyIncentive() {
 }
 
 function Courses({ open }: { open: (id: string) => void }) {
+  const en = useLanguage() === "en";
   const courses = useQuery<Course[]>({
     queryKey: ["gv-courses"],
     queryFn: () => api("/gv/courses"),
@@ -315,9 +318,9 @@ function Courses({ open }: { open: (id: string) => void }) {
   return (
     <>
       <div className="gv-toolbar">
-        <Button onClick={() => setCreating(true)}>Nuevo curso</Button>
+        <Button onClick={() => setCreating(true)}>{en ? "New course" : "Nuevo curso"}</Button>
       </div>
-      <QueryState query={courses}>
+      <QueryState english={en} query={courses}>
         <div className="gv-cards">
           {courses.data?.map((c) => (
             <button
@@ -327,18 +330,18 @@ function Courses({ open }: { open: (id: string) => void }) {
             >
               <strong>{c.name}</strong>
               <span>
-                {TYPES[c.type]} · {dateText(c.date)}
-                {!c.active && " · inactivo"}
+                {en ? ({ automaquillaje: "Self makeup", brazilian: "Brazilian", personalizado: "Personalized", otro: "Other" }[c.type] ?? c.type) : TYPES[c.type]} · {dateText(c.date)}
+                {!c.active && (en ? " · inactive" : " · inactivo")}
               </span>
               <span>
-                {c.enrolled} / {c.capacity} inscritas · {money(c.price)}
+                {c.enrolled} / {c.capacity} {en ? "enrolled" : "inscritas"} · {money(c.price)}
               </span>
               <span>
-                Pagado {money(c.paid)} · Pendiente {money(c.pending)}
+                {en ? "Paid" : "Pagado"} {money(c.paid)} · {en ? "Pending" : "Pendiente"} {money(c.pending)}
               </span>
             </button>
           ))}
-          {!courses.data?.length && <p>Todavía no hay cursos.</p>}
+          {!courses.data?.length && <p>{en ? "No courses yet." : "Todavía no hay cursos."}</p>}
         </div>
       </QueryState>
       {creating && <CourseForm onClose={() => setCreating(false)} />}

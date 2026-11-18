@@ -1,3 +1,10 @@
+import { ReportEmblem } from "./ReportVisuals";
+import { reportLabel } from "./reportPresentationCopy";
+import { PremiumWorkspace } from "./PremiumWorkspace";
+import { operacionesText, customerAnonymizationText } from "./operacionesLanguage";
+import { OperationsPresentation } from "./OperationsPresentation";
+import { useOperationsText } from "./operationsLanguage";
+import "./premiumOperations.css";
 import { catalogText } from "./catalogLanguage";
 import { handleCatalogImageError } from "./catalogImage";
 import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
@@ -1235,6 +1242,8 @@ export function Inventory() {
 }
 
 export function Purchases() {
+  const en = useLanguage() === "en";
+  const ot = (text: string) => operacionesText(en, text);
   // La API no envía el total de la orden a quien no ve costos (F2).
   const seesCost = can(useStore((s) => s.user)!.permissions, "profit:read");
   const orders = useQuery({
@@ -1256,18 +1265,19 @@ export function Purchases() {
     [receive, setReceive] = useState<any>(null),
     [paySupplier, setPaySupplier] = useState<any>(null);
   return (
-    <>
+    <OperationsPresentation area="purchases">
       <Heading
-        title="Compras que impulsan tu tienda"
-        caption="Del proveedor al estante, con costos y lotes claros."
+        eyebrow={ot("TU NEGOCIO, CON CLARIDAD")}
+        title={ot("Compras")}
+        caption={ot("Gestión de órdenes de compra, recepciones y proveedores.")}
       >
         <Button variant="secondary" onClick={() => setNewSupplier(true)}>
           <Plus size={16} />
-          Proveedor
+          {ot("Proveedor")}
         </Button>
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
-          Orden de compra
+          {ot("Orden de compra")}
         </Button>
       </Heading>
       <div className="panel">
@@ -1277,69 +1287,70 @@ export function Purchases() {
               className={tab === "orders" ? "active" : ""}
               onClick={() => setTab("orders")}
             >
-              Órdenes
+              {ot("Órdenes")}
             </button>
             <button
               className={tab === "suppliers" ? "active" : ""}
               onClick={() => setTab("suppliers")}
             >
-              Proveedores
+              {ot("Proveedores")}
             </button>
             <button
               className={tab === "receipts" ? "active" : ""}
               onClick={() => setTab("receipts")}
             >
-              Recepciones
+              {ot("Recepciones")}
             </button>
           </div>
         </div>
         {tab === "receipts" ? (
           <ReceiptHistory />
         ) : tab === "orders" ? (
-          <QueryState query={orders}>
-            <DataTable
+          <QueryState english={en} query={orders}>
+            <DataTable english={en}
               rows={orders.data || []}
-              empty="Todavía no hay órdenes de compra"
-              emptyDescription="Crea una Orden de compra para registrar tu próxima compra."
+              empty={ot("Todavía no hay órdenes de compra")}
+              emptyDescription={ot("Crea una Orden de compra para registrar tu próxima compra.")}
               columns={[
-                { label: "Orden", render: (o) => <strong>{o.number}</strong> },
+                { label: ot("Orden"), render: (o) => <strong>{o.number}</strong> },
                 {
-                  label: "Proveedor",
+                  label: ot("Proveedor"),
                   render: (o) =>
                     suppliers.data?.find((s: any) => s.id === o.supplierId)
-                      ?.name || "Proveedor",
+                      ?.name || ot("Proveedor"),
                 },
-                { label: "Fecha", render: (o) => dateLabel(o.createdAt) },
-                { label: "Artículos", render: (o) => o.items.length },
+                { label: ot("Fecha"), render: (o) => dateLabel(o.createdAt, en ? "en-US" : "es-DO") },
+                { label: ot("Artículos"), render: (o) => o.items.length },
                 ...(seesCost
                   ? [
                       {
-                        label: "Total",
+                        label: ot("Total"),
+                        className: "operations-money",
                         render: (o: any) => formatMoney(o.total),
                       },
                     ]
                   : []),
                 {
-                  label: "Estado",
+                  label: ot("Estado"),
                   render: (o) => (
                     <Badge
                       tone={o.status === "received" ? "success" : "warning"}
                     >
                       {{
-                        ordered: "Por recibir",
-                        partial: "Parcial",
-                        received: "Recibida",
+                        ordered: ot("Por recibir"),
+                        partial: ot("Parcial"),
+                        received: ot("Recibida"),
                       }[o.status as string] || o.status}
                     </Badge>
                   ),
                 },
                 {
-                  label: "Acción",
+                  label: ot("Acción"),
                   render: (o) =>
                     o.status !== "received" && (
                       <Button variant="secondary" onClick={() => setReceive(o)}>
                         <ArrowDownToLine size={16} />
-                        Recibir
+                        {ot("Recibir")}
                       </Button>
                     ),
                 },
@@ -1347,19 +1358,19 @@ export function Purchases() {
             />
           </QueryState>
         ) : (
-          <QueryState query={suppliers}>
-            <DataTable
+          <QueryState english={en} query={suppliers}>
+            <DataTable english={en}
               rows={suppliers.data || []}
-              empty="Todavía no hay proveedores"
-              emptyDescription="Pulsa Proveedor para registrar quién te vende la mercancía."
+              empty={ot("Todavía no hay proveedores")}
+              emptyDescription={ot("Pulsa Proveedor para registrar quién te vende la mercancía.")}
               columns={[
                 {
-                  label: "Proveedor",
+                  label: ot("Proveedor"),
                   render: (s) => <strong>{s.name}</strong>,
                 },
                 { label: "RNC", render: (s) => s.legalId || "—" },
                 {
-                  label: "Contacto",
+                  label: ot("Contacto"),
                   render: (s) => (
                     <span>
                       {s.phone}
@@ -1368,12 +1379,12 @@ export function Purchases() {
                   ),
                 },
                 {
-                  label: "Plazo de pago",
-                  render: (s) => s.paymentTermsDays + " días",
+                  label: ot("Plazo de pago"),
+                  render: (s) => s.paymentTermsDays + ot(" días"),
                 },
-                { label: "Entrega", render: (s) => s.leadTimeDays + " días" },
+                { label: ot("Entrega"), render: (s) => s.leadTimeDays + ot(" días") },
                 {
-                  label: "Acción",
+                  label: ot("Acción"),
                   render: (s) => (
                     <Button
                       variant="secondary"
@@ -1386,7 +1397,7 @@ export function Purchases() {
                         })
                       }
                     >
-                      Registrar pago
+                      {ot("Registrar pago")}
                     </Button>
                   ),
                 },
@@ -1396,15 +1407,15 @@ export function Purchases() {
         )}
       </div>
       {newSupplier && (
-        <FormModal
-          title="Nuevo proveedor"
+        <FormModal english={en}
+          title={ot("Nuevo proveedor")}
           fields={[
-            { key: "name", label: "Nombre", required: true },
-            { key: "legalId", label: "RNC / identificación" },
-            { key: "phone", label: "Teléfono" },
-            { key: "email", label: "Correo", type: "email" },
-            requiredNumber("paymentTermsDays", "Plazo de pago (días)", 30),
-            requiredNumber("leadTimeDays", "Tiempo de entrega (días)", 7),
+            { key: "name", label: ot("Nombre"), required: true },
+            { key: "legalId", label: ot("RNC / identificación") },
+            { key: "phone", label: ot("Teléfono") },
+            { key: "email", label: ot("Correo"), type: "email" },
+            requiredNumber("paymentTermsDays", ot("Plazo de pago (días)"), 30),
+            requiredNumber("leadTimeDays", ot("Tiempo de entrega (días)"), 7),
           ]}
           onClose={() => setNewSupplier(false)}
           onSubmit={(data) => post("/suppliers", data)}
@@ -1425,19 +1436,19 @@ export function Purchases() {
         />
       )}
       {paySupplier && (
-        <FormModal
-          title={"Pago · " + paySupplier.name}
+        <FormModal english={en}
+          title={ot("Pago · ") + paySupplier.name}
           fields={[
-            { ...requiredNumber("amount", "Monto del pago"), min: 0.01 },
+            { ...requiredNumber("amount", ot("Monto del pago")), min: 0.01 },
             {
               key: "method",
-              label: "Método",
+              label: ot("Método"),
               type: "select",
               required: true,
               initial: "transfer",
-              options: paymentOptions,
+              options: paymentOptions.map((option) => ({ ...option, label: ot(option.label) })),
             },
-            { key: "reference", label: "Referencia" },
+            { key: "reference", label: ot("Referencia") },
           ]}
           onClose={() => setPaySupplier(null)}
           onSubmit={(data) =>
@@ -1449,10 +1460,12 @@ export function Purchases() {
           }
         />
       )}
-    </>
+    </OperationsPresentation>
   );
 }
 export function Expenses() {
+  const en = useLanguage() === "en";
+  const ot = (text: string) => operacionesText(en, text);
   const query = useQuery({
     queryKey: ["expenses"],
     queryFn: () => api("/expenses"),
@@ -1469,14 +1482,15 @@ export function Expenses() {
   const month = today().slice(0, 7);
   const rows = query.data || [];
   return (
-    <>
+    <OperationsPresentation area="expenses">
       <Heading
-        title="Tus gastos, sin sorpresas"
-        caption="Controla lo que sale para cuidar lo que ganas."
+        eyebrow={ot("TU NEGOCIO, CON CLARIDAD")}
+        title={ot("Gastos")}
+        caption={ot("Control y presupuesto de gastos operativos.")}
       >
         <Button onClick={() => setCreate(crypto.randomUUID())}>
           <Plus size={17} />
-          Registrar gasto
+          {ot("Registrar gasto")}
         </Button>
       </Heading>
       <div className="budget-grid">
@@ -1495,14 +1509,14 @@ export function Expenses() {
                 <strong>{c.name}</strong>
                 <button
                   className="icon-button"
-                  aria-label={"Editar presupuesto de " + c.name}
+                  aria-label={ot("Editar presupuesto de ") + c.name}
                   onClick={() => setBudget(c)}
                 >
                   <Pencil size={16} />
                 </button>
               </div>
               <h2>{formatMoney(used)}</h2>
-              <small>de {formatMoney(c.monthlyBudget)} este mes</small>
+              <small>{ot("de")} {formatMoney(c.monthlyBudget)} {ot("este mes")}</small>
               <div className="progress-track">
                 <div
                   style={{
@@ -1517,45 +1531,47 @@ export function Expenses() {
                 />
               </div>
               <Badge tone={percent >= 80 ? "warning" : "violet"}>
-                {percent.toFixed(0)}% del presupuesto
+                {percent.toFixed(0)}% {ot("del presupuesto")}
               </Badge>
             </div>
           );
         })}
       </div>
       <div className="panel">
-        <QueryState query={query}>
-          <DataTable
+        <QueryState english={en} query={query}>
+          <DataTable english={en}
+            empty={ot("Todavía no hay registros")}
+            emptyDescription={ot("Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.")}
             rows={rows}
             columns={[
-              { label: "Fecha", render: (e) => dateLabel(e.date) },
+              { label: ot("Fecha"), render: (e) => dateLabel(e.date, en ? "en-US" : "es-DO") },
               {
-                label: "Descripción",
+                label: ot("Descripción"),
                 render: (e) => (
                   <span>
                     <strong>{e.description}</strong>
-                    {e.recurring && <small>Marcado recurrente</small>}
+                    {e.recurring && <small>{ot("Marcado recurrente")}</small>}
                   </span>
                 ),
               },
               {
-                label: "Categoría",
+                label: ot("Categoría"),
                 render: (e) => <Badge>{e.category.name}</Badge>,
               },
               {
-                label: "Método",
+                label: ot("Método"),
                 render: (e) =>
-                  paymentOptions.find((p) => p.value === e.method)?.label,
+                  paymentOptions.find((p) => p.value === e.method)?.label && ot(paymentOptions.find((p) => p.value === e.method)!.label),
               },
-              { label: "Monto", render: (e) => formatMoney(e.amount) },
+              { label: ot("Monto"), className: "operations-money", render: (e) => formatMoney(e.amount) },
               {
-                label: "Acción",
+                label: ot("Acción"),
                 render: (e) => (
                   <button
                     className="text-link danger-text"
                     onClick={() => setVoiding(e)}
                   >
-                    Anular
+                    {ot("Anular")}
                   </button>
                 ),
               },
@@ -1564,13 +1580,13 @@ export function Expenses() {
         </QueryState>
       </div>
       {create && (
-        <FormModal
-          title="Registrar un gasto"
+        <FormModal english={en}
+          title={ot("Registrar un gasto")}
           fields={[
-            { key: "description", label: "Descripción", required: true },
+            { key: "description", label: ot("Descripción"), required: true },
             {
               key: "categoryId",
-              label: "Categoría",
+              label: ot("Categoría"),
               type: "select",
               required: true,
               options: cats.data?.map((c: any) => ({
@@ -1578,26 +1594,26 @@ export function Expenses() {
                 value: c.id,
               })),
             },
-            { ...requiredNumber("amount", "Monto"), min: 0.01 },
+            { ...requiredNumber("amount", ot("Monto")), min: 0.01 },
             {
               key: "date",
-              label: "Fecha",
+              label: ot("Fecha"),
               type: "date",
               initial: today(),
               required: true,
             },
             {
               key: "method",
-              label: "Método",
+              label: ot("Método"),
               type: "select",
               initial: "transfer",
-              options: paymentOptions,
+              options: paymentOptions.map((option) => ({ ...option, label: ot(option.label) })),
               required: true,
             },
-            { key: "receiptUrl", label: "URL del comprobante" },
+            { key: "receiptUrl", label: ot("URL del comprobante") },
             {
               key: "recurring",
-              label: "Marcar como recurrente mensual",
+              label: ot("Marcar como recurrente mensual"),
               type: "checkbox",
             },
           ]}
@@ -1612,12 +1628,12 @@ export function Expenses() {
         />
       )}
       {budget && (
-        <FormModal
-          title={"Presupuesto · " + budget.name}
+        <FormModal english={en}
+          title={ot("Presupuesto · ") + budget.name}
           fields={[
             requiredNumber(
               "monthlyBudget",
-              "Presupuesto mensual",
+              ot("Presupuesto mensual"),
               Number(budget.monthlyBudget),
             ),
           ]}
@@ -1628,9 +1644,10 @@ export function Expenses() {
         />
       )}
       {voiding && (
-        <ConfirmModal
-          title="Anular gasto"
-          description="El gasto queda conservado en la bitácora y sale de los totales."
+        <ConfirmModal english={en}
+          title={ot("Anular gasto")}
+          description={ot("El gasto queda conservado en la bitácora y sale de los totales.")}
+          confirmLabel={ot("Confirmar")}
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
             await post("/expenses/" + voiding.id + "/void", { reason });
@@ -1639,7 +1656,7 @@ export function Expenses() {
           }}
         />
       )}
-    </>
+    </OperationsPresentation>
   );
 }
 
@@ -2354,6 +2371,8 @@ function DiscardOfflineSale({
 }
 
 export function Customers() {
+  const en = useLanguage() === "en";
+  const ot = (text: string) => operacionesText(en, text);
   const user = useStore((state) => state.user)!;
   const client = useQueryClient();
   const query = useQuery({
@@ -2369,28 +2388,29 @@ export function Customers() {
   // no es un correo válido para el navegador; la API lo valida al guardar.
   const fullCustomer = seesCustomerPii(user.permissions);
   const fields: Field[] = [
-    { key: "name", label: "Nombre", required: true },
-    { key: "phone", label: "Teléfono" },
+    { key: "name", label: ot("Nombre"), required: true },
+    { key: "phone", label: ot("Teléfono") },
     {
       key: "email",
-      label: "Correo",
+      label: ot("Correo"),
       ...(fullCustomer ? { type: "email" } : {}),
     },
-    { key: "legalId", label: "Cédula / RNC" },
+    { key: "legalId", label: ot("Cédula / RNC") },
     ...(can(useStore.getState().user!.permissions, "sale:manage")
-      ? [requiredNumber("creditLimit", "Límite de crédito (RD$)", 0)]
+      ? [requiredNumber("creditLimit", ot("Límite de crédito (RD$)"), 0)]
       : []),
-    { key: "notes", label: "Notas", type: "textarea" },
+    { key: "notes", label: ot("Notas"), type: "textarea" },
   ];
   return (
-    <>
+    <OperationsPresentation area="customers">
       <Heading
-        title="Personas que vuelven a elegirte"
-        caption="Conoce a tus clientes y construye relaciones que duran."
+        eyebrow={ot("TU NEGOCIO, CON CLARIDAD")}
+        title={ot("Clientes")}
+        caption={ot("Gestión de clientes, historial y privacidad.")}
       >
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
-          Nuevo cliente
+          {ot("Nuevo cliente")}
         </Button>
       </Heading>
       <div className="panel">
@@ -2398,11 +2418,11 @@ export function Customers() {
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar nombre o teléfono"
+            placeholder={ot("Buscar nombre o teléfono")}
           />
         </div>
-        <QueryState query={query}>
-          <DataTable
+        <QueryState english={en} query={query}>
+          <DataTable english={en}
             rows={(query.data || []).filter((c: any) =>
               // P5: sin acceso completo la búsqueda no usa el teléfono, para
               // no servir de oráculo de los dígitos ocultos.
@@ -2410,12 +2430,12 @@ export function Customers() {
                 .toLowerCase()
                 .includes(search.toLowerCase()),
             )}
-            empty="No encontramos clientes"
-            emptyDescription="Revisa la búsqueda o registra una persona con Nuevo cliente."
+            empty={ot("No encontramos clientes")}
+            emptyDescription={ot("Revisa la búsqueda o registra una persona con Nuevo cliente.")}
             columns={[
-              { label: "Cliente", render: (c) => <strong>{c.name}</strong> },
+              { label: ot("Cliente"), render: (c) => <strong>{c.name}</strong> },
               {
-                label: "Contacto",
+                label: ot("Contacto"),
                 render: (c) => (
                   <span>
                     {customerPrivateDisplay(c.phone, fullCustomer)}
@@ -2424,7 +2444,7 @@ export function Customers() {
                 ),
               },
               {
-                label: "Cédula / RNC",
+                label: ot("Cédula / RNC"),
                 // P5 + SEC-05: la API ya envía el dato enmascarado a la caja;
                 // la vista lo acorta igual («•••123») con el mismo criterio
                 // de acceso que la API (fullCustomer).
@@ -2432,33 +2452,34 @@ export function Customers() {
               },
               ...(fullCustomer
                 ? [
-                    { label: "Compras", render: (c: any) => c.purchases },
+                    { label: ot("Compras"), render: (c: any) => c.purchases },
                     {
-                      label: "Total gastado",
+                      label: ot("Total gastado"),
+                      className: "operations-money",
                       render: (c: any) => formatMoney(c.totalSpent),
                     },
                     {
-                      label: "Última compra",
+                      label: ot("Última compra"),
                       render: (c: any) =>
                         c.lastPurchase
-                          ? dateLabel(c.lastPurchase)
-                          : "Aún sin compras",
+                          ? dateLabel(c.lastPurchase, en ? "en-US" : "es-DO")
+                          : ot("Aún sin compras"),
                     },
                   ]
                 : []),
               {
-                label: "Acción",
+                label: ot("Acción"),
                 render: (c) => (
                   <div className="table-actions">
                     <button className="text-link" onClick={() => setEditing(c)}>
-                      Editar
+                      {ot("Editar")}
                     </button>
                     {can(user.permissions, "customers:erase") && (
                       <button
                         className="text-link danger-text"
                         onClick={() => setAnonymizing(c)}
                       >
-                        Anonimizar
+                        {ot("Anonimizar")}
                       </button>
                     )}
                   </div>
@@ -2469,8 +2490,8 @@ export function Customers() {
         </QueryState>
       </div>
       {create && (
-        <FormModal
-          title="Nuevo cliente"
+        <FormModal english={en}
+          title={ot("Nuevo cliente")}
           fields={fields}
           notice={<CustomerPrivacyNotice />}
           onClose={() => setCreate(false)}
@@ -2478,8 +2499,8 @@ export function Customers() {
         />
       )}
       {editing && (
-        <FormModal
-          title="Editar cliente"
+        <FormModal english={en}
+          title={ot("Editar cliente")}
           fields={fields}
           notice={<CustomerPrivacyNotice />}
           // P5: «Editar» tampoco muestra teléfono ni cédula/RNC completos.
@@ -2493,10 +2514,10 @@ export function Customers() {
         />
       )}
       {anonymizing && (
-        <ConfirmModal
-          title="Anonimizar cliente"
-          description={`Se eliminarán los datos personales de ${anonymizing.name}: nombre, teléfono, correo, cédula/RNC, notas, fotos de comprobantes y su nombre en motivos, referencias, bitácora y avisos pendientes. Las ventas y sus montos se conservarán. Los avisos que ya llegaron a Telegram y las copias de seguridad se eliminan al vencer su plazo. Esta acción no se puede deshacer.`}
-          confirmLabel="Anonimizar"
+        <ConfirmModal english={en}
+          title={ot("Anonimizar cliente")}
+          description={customerAnonymizationText(en, anonymizing.name)}
+          confirmLabel={ot("Anonimizar")}
           onClose={() => setAnonymizing(null)}
           onConfirm={async (reason) => {
             await post(`/customers/${anonymizing.id}/anonymize`, {
@@ -2508,11 +2529,13 @@ export function Customers() {
           }}
         />
       )}
-    </>
+    </OperationsPresentation>
   );
 }
 
 export function Promotions() {
+  const ot = useOperationsText();
+  const en = useLanguage() === "en";
   const query = useQuery({
     queryKey: ["clearance"],
     queryFn: () => api("/promotions/clearance-candidates"),
@@ -2530,50 +2553,46 @@ export function Promotions() {
     [offer, setOffer] = useState<any>(null),
     [create, setCreate] = useState(false);
   return (
-    <>
+    <PremiumWorkspace area="promotions">
       <Heading
-        title="Dale una nueva oportunidad"
-        caption="Libera espacio, recupera capital y sorprende a tus clientes."
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={ot("Dale una nueva oportunidad")}
+        caption={ot("Libera espacio, recupera capital y sorprende a tus clientes.")}
       >
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
-          Nueva promoción
-        </Button>
+          {ot("Nueva promoción")}</Button>
       </Heading>
       <div className="clearance-intro">
         <div className="clearance-symbol">
           <Sparkles size={27} />
         </div>
         <div>
-          <h2>El momento perfecto para una oferta</h2>
+          <h2>{ot("El momento perfecto para una oferta")}</h2>
           <p>
-            Prioriza productos sin rotación o próximos a vencer. El descuento
-            sugerido protege tu costo.
-          </p>
+            {ot("Prioriza productos sin rotación o próximos a vencer. El descuento sugerido protege tu costo.")}</p>
         </div>
-        <Badge tone="pink">{query.data?.length || 0} oportunidades</Badge>
+        <Badge tone="pink">{query.data?.length || 0} {ot("oportunidades")}</Badge>
       </div>
       <div className="tabs outside">
         <button
           className={tab === "clearance" ? "active" : ""}
           onClick={() => setTab("clearance")}
         >
-          Candidatos a liquidación
-        </button>
+          {ot("Candidatos a liquidación")}</button>
         <button
           className={tab === "promos" ? "active" : ""}
           onClick={() => setTab("promos")}
         >
-          Mis promociones
-        </button>
+          {ot("Mis promociones")}</button>
       </div>
       {tab === "clearance" ? (
-        <QueryState query={query}>
+        <QueryState english={en} query={query}>
           <div className="clearance-grid">
             {query.data?.map((c: any) => (
               <article className="panel clearance-card" key={c.variantId}>
                 <div className="clearance-top">
-                  <img src={c.imageUrl} alt={c.name} />
+                  <img src={c.imageUrl || "/products/accessories.svg"} alt={c.name} onError={(event) => handleCatalogImageError(event.currentTarget)} />
                   <div>
                     <Badge
                       tone={
@@ -2583,8 +2602,8 @@ export function Promotions() {
                       }
                     >
                       {c.daysToExpiry !== null
-                        ? `${c.daysToExpiry} días para vencer`
-                        : `${c.daysIdle} días sin venta`}
+                        ? (en ? `${c.daysToExpiry} days to expiry` : `${c.daysToExpiry} días para vencer`)
+                        : (en ? `${c.daysIdle} days without sales` : `${c.daysIdle} días sin venta`)}
                     </Badge>
                     <h3>{c.name}</h3>
                     <small>
@@ -2595,18 +2614,18 @@ export function Promotions() {
                 <div className="clearance-metrics">
                   <div>
                     <span>Stock</span>
-                    <strong>{c.stock} unidades</strong>
+                    <strong>{c.stock} {ot("unidades")}</strong>
                   </div>
                   <div>
-                    <span>Capital inmovilizado</span>
+                    <span>{ot("Capital inmovilizado")}</span>
                     <strong>{formatMoney(c.capital)}</strong>
                   </div>
                   <div>
-                    <span>Margen actual</span>
+                    <span>{ot("Margen actual")}</span>
                     <strong>{c.margin}%</strong>
                   </div>
                   <div>
-                    <span>Descuento sugerido</span>
+                    <span>{ot("Descuento sugerido")}</span>
                     <strong className="violet-text">
                       {c.suggestedDiscount}%
                     </strong>
@@ -2618,40 +2637,40 @@ export function Promotions() {
                   onClick={() => setOffer(c)}
                 >
                   <Sparkles size={16} />
-                  Crear oferta <ArrowRight size={16} />
+                  {ot("Crear oferta")}<ArrowRight size={16} />
                 </Button>
               </article>
             ))}
           </div>
           {!query.data?.length && (
             <Empty
-              title="Tu inventario está en movimiento"
-              description="No hay candidatos según tus umbrales actuales."
+              title={ot("Tu inventario está en movimiento")}
+              description={ot("No hay candidatos según tus umbrales actuales.")}
             />
           )}
         </QueryState>
       ) : (
         <div className="panel">
-          <QueryState query={promos}>
-            <DataTable
+          <QueryState english={en} query={promos}>
+            <DataTable english={en}
               rows={promos.data || []}
               columns={[
                 {
-                  label: "Promoción",
+                  label: ot("Promoción"),
                   render: (p) => <strong>{p.name}</strong>,
                 },
-                { label: "Tipo", render: (p) => p.type },
+                { label: ot("Tipo"), render: (p) => p.type },
                 {
-                  label: "Valor",
+                  label: ot("Valor"),
                   render: (p) => p.value + (p.type === "percent" ? "%" : ""),
                 },
                 {
-                  label: "Vigencia",
+                  label: ot("Vigencia"),
                   render: (p) =>
-                    dateLabel(p.startsAt) + " – " + dateLabel(p.endsAt),
+                    dateLabel(p.startsAt, en ? "en-US" : "es-DO") + " – " + dateLabel(p.endsAt, en ? "en-US" : "es-DO"),
                 },
                 {
-                  label: "Estado",
+                  label: ot("Estado"),
                   render: (p) => (
                     <Badge tone={p.active ? "success" : "neutral"}>
                       {p.active ? "Activa" : "Inactiva"}
@@ -2659,7 +2678,7 @@ export function Promotions() {
                   ),
                 },
                 {
-                  label: "Acción",
+                  label: ot("Acción"),
                   render: (p) => (
                     <button
                       className="text-link"
@@ -2676,7 +2695,7 @@ export function Promotions() {
                         }
                       }}
                     >
-                      {p.active ? "Desactivar" : "Activar"}
+                      {p.active ? ot("Desactivar") : ot("Activar")}
                     </button>
                   ),
                 },
@@ -2686,12 +2705,12 @@ export function Promotions() {
         </div>
       )}
       {offer && (
-        <FormModal
+        <FormModal english={en}
           title={"Crear oferta · " + offer.name}
           fields={[
             {
               key: "name",
-              label: "Nombre de la oferta",
+              label: ot("Nombre de la oferta"),
               initial: "Oferta · " + offer.name,
               required: true,
             },
@@ -2706,7 +2725,7 @@ export function Promotions() {
             },
             {
               key: "endsAt",
-              label: "Fecha de finalización",
+              label: ot("Fecha de finalización"),
               type: "date",
               initial: new Date(Date.now() + 14 * 86400000)
                 .toISOString()
@@ -2728,28 +2747,28 @@ export function Promotions() {
         />
       )}
       {create && (
-        <FormModal
-          title="Nueva promoción"
+        <FormModal english={en}
+          title={ot("Nueva promoción")}
           fields={[
-            { key: "name", label: "Nombre", required: true },
+            { key: "name", label: ot("Nombre"), required: true },
             {
               key: "type",
-              label: "Tipo",
+              label: ot("Tipo"),
               type: "select",
               initial: "percent",
               required: true,
               options: [
-                { label: "Descuento porcentual", value: "percent" },
-                { label: "Descuento fijo por unidad", value: "amount" },
-                { label: "Precio especial", value: "special_price" },
+                { label: ot("Descuento porcentual"), value: "percent" },
+                { label: ot("Descuento fijo por unidad"), value: "amount" },
+                { label: ot("Precio especial"), value: "special_price" },
                 { label: "2 × 1", value: "nxm" },
-                { label: "Segundo a mitad de precio", value: "second_half" },
+                { label: ot("Segundo a mitad de precio"), value: "second_half" },
               ],
             },
             requiredNumber("value", "Porcentaje, descuento o precio", 15),
             {
               key: "categoryId",
-              label: "Categoría",
+              label: ot("Categoría"),
               type: "select",
               required: true,
               options: cats.data?.map((c: any) => ({
@@ -2759,12 +2778,12 @@ export function Promotions() {
             },
             {
               key: "startsAt",
-              label: "Inicio",
+              label: ot("Inicio"),
               type: "date",
               initial: today(),
               required: true,
             },
-            { key: "endsAt", label: "Fin", type: "date", required: true },
+            { key: "endsAt", label: ot("Fin"), type: "date", required: true },
           ]}
           onClose={() => setCreate(false)}
           onSubmit={(data) => {
@@ -2783,7 +2802,7 @@ export function Promotions() {
           }}
         />
       )}
-    </>
+    </PremiumWorkspace>
   );
 }
 
@@ -2899,6 +2918,7 @@ export function groupReports(
   return [...out].filter(([, list]) => list.length);
 }
 function ReportGuide({ name }: { name: string }) {
+  const en = useLanguage() === "en";
   const [open, setOpen] = useState(false);
   const guide = useQuery({
     queryKey: ["reporte-guia", name],
@@ -2910,10 +2930,11 @@ function ReportGuide({ name }: { name: string }) {
   });
   return (
     <details onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary>¿Qué es y cómo se lee?</summary>
-      {guide.isError && <p>No pudimos cargar la explicación.</p>}
+      <summary>{en ? "About this report and how to read it" : "¿Qué es y cómo se lee?"}</summary>
+      {guide.isError && <p>{en ? "Unable to load the explanation." : "No pudimos cargar la explicación."}</p>}
       {guide.data && (
         <>
+          {en && <p className="muted">This explanation is provided by the server in Spanish.</p>}
           <p>{guide.data.queEs}</p>
           <p>{guide.data.paraQueSirve}</p>
           <p>{guide.data.comoSeLee}</p>
@@ -2923,6 +2944,7 @@ function ReportGuide({ name }: { name: string }) {
   );
 }
 export function Reports() {
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user);
   // Los 40 reportes de la dueña (orden 18-oct) vienen del servidor, ya
   // filtrados por permiso (los de margen solo con profit:read).
@@ -2960,20 +2982,24 @@ export function Reports() {
   const columns = Object.keys(rows[0] || {})
     .filter((k) => k !== "class")
     .map((key) => ({
-      label: key.replace(/_/g, " "),
+      label: reportLabel(key.replace(/_/g, " "), en),
       render: (row: any) =>
         typeof row[key] === "number"
-          ? row[key].toLocaleString("es-DO", { maximumFractionDigits: 2 })
+          ? row[key].toLocaleString(en ? "en-US" : "es-DO", { maximumFractionDigits: 2 })
           : String(row[key] ?? "—"),
     }));
   return (
-    <>
+    <PremiumWorkspace area="reports">
+      <div className="report-premium-heading">
+      <ReportEmblem />
       <Heading
-        title="Los números cuentan tu historia"
-        caption="Transforma tus datos en decisiones para el próximo paso."
+        title={en ? "Reports" : "Reportes"}
+        caption={en ? "Explore your store records and make informed decisions." : "Transforma tus datos en decisiones para el pr\u00f3ximo paso."}
       />
+      </div>
       <div className="reports-layout">
         <aside className="panel report-menu">
+          <h2 className="report-explorer-title">{en ? "Report explorer" : "Explorador de reportes"}</h2>
           {groupReports(
             allReports
               .filter(
@@ -2993,7 +3019,7 @@ export function Reports() {
                   aria-expanded={open}
                   onClick={() => setOpenGroup(open ? null : group)}
                 >
-                  {group}
+                  {reportLabel(group, en)}
                   <span className="report-group-count">{list.length}</span>
                   <ChevronRight
                     size={14}
@@ -3014,7 +3040,7 @@ export function Reports() {
                       className={report === id ? "active" : ""}
                     >
                       <FileText size={17} />
-                      {name}
+                      {reportLabel(name, en)}
                       <ChevronRight size={14} />
                     </button>
                   ))}
@@ -3030,8 +3056,8 @@ export function Reports() {
           <section className="panel">
             <div className="panel-heading">
               <div>
-                <h2>{allReports.find((r) => r[0] === report)?.[1]}</h2>
-                <p>Información registrada en tu tienda.</p>
+                <h2>{reportLabel(allReports.find((r) => r[0] === report)?.[1] ?? "", en)}</h2>
+                <p>{en ? "Records from your store." : "Informaci\u00f3n registrada en tu tienda."}</p>
               </div>
               <div className="table-actions">
                 {can(user?.permissions ?? [], "reports:read") &&
@@ -3059,7 +3085,7 @@ export function Reports() {
                           toast(
                             error.message !== DOWNLOAD_FAILED
                               ? error.message
-                              : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
+                              : (en ? "Unable to download the report. Check your dates and connection, then try again." : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo."),
                             true,
                           );
                         } finally {
@@ -3069,10 +3095,10 @@ export function Reports() {
                     >
                       <Download size={16} />
                       {busy === format
-                        ? "Preparando…"
+                        ? (en ? "Preparing\u2026" : "Preparando\u2026")
                         : format === "xlsx"
-                          ? "Descargar Excel"
-                          : "Descargar PDF"}
+                          ? (en ? "Download Excel" : "Descargar Excel")
+                          : (en ? "Download PDF" : "Descargar PDF")}
                     </Button>
                   ))}
               </div>
@@ -3082,7 +3108,7 @@ export function Reports() {
             )}
             <div className="date-filters">
               <label className="field">
-                <span>Desde</span>
+                <span>{en ? "From" : "Desde"}</span>
                 <input
                   type="date"
                   value={from}
@@ -3094,7 +3120,7 @@ export function Reports() {
                 />
               </label>
               <label className="field">
-                <span>Hasta</span>
+                <span>{en ? "To" : "Hasta"}</span>
                 <input
                   type="date"
                   value={to}
@@ -3105,54 +3131,55 @@ export function Reports() {
                   required
                 />
               </label>
-              <Badge tone="violet">{total} registros</Badge>
+              <Badge tone="violet">{total} {en ? "records" : "registros"}</Badge>
             </div>
             {report.startsWith("ventas-mes-") && (
               <p className="muted">
-                Compara el mes de la fecha «Hasta»; la fecha «Desde» no cambia
-                el resultado.
+                {en ? "Compares the month of the To date; the From date does not change the result." : "Compara el mes de la fecha «Hasta»; la fecha «Desde» no cambia el resultado."}
               </p>
             )}
             {pages > 1 && (
               <div className="pagination">
                 <span>
-                  Mostrando {(page - 1) * limit + 1}–
-                  {(page - 1) * limit + rows.length} de {total}. Excel (hasta
-                  50,000 filas) y PDF (hasta 10,000) incluyen todo el período.
+                  {en ? "Showing" : "Mostrando"} {(page - 1) * limit + 1}–
+                  {(page - 1) * limit + rows.length} {en ? "of" : "de"} {total}. {en ? "Exports include the whole period, subject to the report’s row limit." : "Las exportaciones incluyen todo el período, sujeto al límite de filas del reporte."}
                 </span>
                 <Button
                   variant="ghost"
                   disabled={page === 1 || query.isFetching}
                   onClick={() => setPage(page - 1)}
                 >
-                  Anteriores
+                  {en ? "Previous" : "Anteriores"}
                 </Button>
                 <Button
                   variant="ghost"
                   disabled={page >= pages || query.isFetching}
                   onClick={() => setPage(page + 1)}
                 >
-                  Siguientes
+                  {en ? "Next" : "Siguientes"}
                 </Button>
               </div>
             )}
-            <QueryState query={query}>
+            <QueryState query={query} english={en}>
               <DataTable
+                english={en}
                 rows={rows}
                 columns={columns}
-                empty="No hay datos para este período"
-                emptyDescription="Prueba otras fechas o registra una venta para consultar este reporte."
+                empty={en ? "No data for this period" : "No hay datos para este per\u00edodo"}
+                emptyDescription={en ? "Try different dates or record a sale to view this report." : "Prueba otras fechas o registra una venta para consultar este reporte."}
               />
             </QueryState>
           </section>
         )}
       </div>
-    </>
+    </PremiumWorkspace>
   );
 }
 
 export function Alerts({ go }: { go?: (page: string) => void }) {
+  const en = useLanguage() === "en";
   const [status, setStatus] = useState("new");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const query = useQuery({
     queryKey: ["alerts", status],
     queryFn: () => api("/alerts?status=" + status),
@@ -3161,25 +3188,27 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
   const rows = (query.data || []).filter(
     (a: any) => status === "all" || a.status === status,
   );
+  const selected = rows.find((a: any) => a.id === selectedId);
   return (
-    <>
+    <PremiumWorkspace area="alerts">
       <Heading
-        title="Lo importante, a tiempo"
-        caption="Un centro de atención para mantener tu tienda un paso adelante."
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={en ? "What matters, on time" : "Lo importante, a tiempo"}
+        caption={en ? "An attention center to keep your store one step ahead." : "Un centro de atención para mantener tu tienda un paso adelante."}
       >
         <Button variant="secondary" onClick={() => query.refetch()}>
           <RefreshCw size={17} />
-          Actualizar
+          {en ? "Refresh" : "Actualizar"}
         </Button>
       </Heading>
       <div className="panel">
         <div className="table-toolbar">
           <div className="tabs">
             {[
-              ["new", "Nuevas"],
-              ["seen", "Vistas"],
-              ["resolved", "Resueltas"],
-              ["all", "Todas"],
+              ["new", en ? "New" : "Nuevas"],
+              ["seen", en ? "Seen" : "Vistas"],
+              ["resolved", en ? "Resolved" : "Resueltas"],
+              ["all", en ? "All" : "Todas"],
             ].map(([id, label]) => (
               <button
                 className={status === id ? "active" : ""}
@@ -3190,9 +3219,10 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
               </button>
             ))}
           </div>
-          <Badge tone="warning">{rows.length} alertas</Badge>
+          <Badge tone="warning">{rows.length} {en ? (rows.length === 1 ? "alert" : "alerts") : (rows.length === 1 ? "alerta" : "alertas")}</Badge>
         </div>
-        <QueryState query={query}>
+        <QueryState english={en} query={query}>
+          <div className="alerts-workspace-layout">
           <div className="alerts-list">
             {rows.map((a: any) => (
               <div className="alert-row" key={a.id}>
@@ -3202,13 +3232,13 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                   <AlertTriangle size={22} />
                 </div>
                 <div>
-                  <strong>{a.message}</strong>
+                  <button className="alert-detail-trigger" aria-expanded={selectedId === a.id} onClick={() => setSelectedId(selectedId === a.id ? null : a.id)}><strong>{a.message}</strong></button>
                   <p>
-                    {dateLabel(a.createdAt)} · {alertTypeLabel(a.type)}
+                    {dateLabel(a.createdAt, en ? "en-US" : "es-DO")} · {alertTypeLabel(a.type)}
                   </p>
                 </div>
                 <Badge tone={a.severity === "high" ? "danger" : "warning"}>
-                  {a.severity === "high" ? "Prioritaria" : "Atención"}
+                  {a.severity === "high" ? (en ? "High" : "Prioritaria") : (en ? "Attention" : "Atención")}
                 </Badge>
                 <div className="table-actions">
                   {a.type === "sale_void_request" && go && (
@@ -3216,7 +3246,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                       className="text-link"
                       onClick={() => go("void-requests")}
                     >
-                      Revisar solicitud
+                      {en ? "Review request" : "Revisar solicitud"}
                     </button>
                   )}
                   {a.type !== "sale_void_request" &&
@@ -3233,7 +3263,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                           await client.invalidateQueries();
                         }}
                       >
-                        Marcar vista
+                        {en ? "Mark as seen" : "Marcar vista"}
                       </button>
                     )}
                   {a.type !== "sale_void_request" &&
@@ -3249,7 +3279,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                           await client.invalidateQueries();
                         }}
                       >
-                        Resolver
+                        {en ? "Resolve" : "Resolver"}
                       </button>
                     )}
                 </div>
@@ -3257,14 +3287,24 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
             ))}
             {!rows.length && (
               <Empty
-                title="Todo en orden por aquí"
-                description="Las alertas aparecerán cuando tu tienda necesite atención."
+                title={en ? "Everything is in order" : "Todo en orden por aquí"}
+                description={en ? "Alerts will appear when your store needs attention." : "Las alertas aparecerán cuando tu tienda necesite atención."}
               />
             )}
           </div>
+          <aside className="alert-detail panel" aria-live="polite">
+            {selected ? <>
+              <h2>{selected.message}</h2>
+              <dl><dt>{en ? "Date" : "Fecha"}</dt><dd>{dateLabel(selected.createdAt, en ? "en-US" : "es-DO")}</dd>
+              <dt>{en ? "Category" : "Categoría"}</dt><dd>{alertTypeLabel(selected.type)}</dd>
+              <dt>{en ? "Priority" : "Prioridad"}</dt><dd>{selected.severity === "high" ? (en ? "High" : "Prioritaria") : (en ? "Attention" : "Atención")}</dd></dl>
+              <Button variant="secondary" onClick={() => setSelectedId(null)}>{en ? "Close details" : "Cerrar detalle"}</Button>
+            </> : <><h2>{en ? "Alert details" : "Detalle de alerta"}</h2><p>{en ? "Select an alert to review its information. Actions remain next to each record." : "Selecciona una alerta para revisar su información. Las acciones permanecen junto a cada registro."}</p></>}
+          </aside>
+          </div>
         </QueryState>
       </div>
-    </>
+    </PremiumWorkspace>
   );
 }
 
@@ -4525,6 +4565,8 @@ function VisualModeSwitch() {
   );
 }
 export function Configuration() {
+  const ot = useOperationsText();
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const query = useQuery({
     queryKey: ["settings", user.branchId],
@@ -4557,62 +4599,62 @@ export function Configuration() {
       <Equipment />
     ) : (
       <Empty
-        title="Configuración del administrador"
-        description="Pide al administrador que realice estos cambios."
+        title={ot("Configuración del administrador")}
+        description={ot("Pide al administrador que realice estos cambios.")}
       />
     );
   const fields: Field[] = [
-    { key: "name", label: "Nombre del negocio", required: true },
+    { key: "name", label: ot("Nombre del negocio"), required: true },
     { key: "legalId", label: "RNC" },
-    { key: "address", label: "Dirección" },
-    { key: "phone", label: "Teléfono" },
+    { key: "address", label: ot("Dirección") },
+    { key: "phone", label: ot("Teléfono") },
     // Encabezado de lo impreso (tienda).
-    { key: "branchName", label: "Sucursal" },
-    { key: "phone2", label: "Teléfono 2 / WhatsApp" },
+    { key: "branchName", label: ot("Sucursal") },
+    { key: "phone2", label: ot("Teléfono 2 / WhatsApp") },
     {
       key: "autoPrintReceipt",
-      label: "Imprimir el recibo automáticamente al cobrar",
+      label: ot("Imprimir el recibo automáticamente al cobrar"),
       type: "checkbox",
     },
     {
       key: "usdRate",
-      label: "Tasa del dólar (RD$ por US$)",
-      help: "Vacío: no se cuentan dólares.",
+      label: ot("Tasa del dólar (RD$ por US$)"),
+      help: ot("Vacío: no se cuentan dólares."),
     },
     {
       key: "eurRate",
-      label: "Tasa del euro (RD$ por €)",
-      help: "Vacío: el cuadre no muestra euros.",
+      label: ot("Tasa del euro (RD$ por €)"),
+      help: ot("Vacío: el cuadre no muestra euros."),
     },
     {
       key: "transferAccounts",
-      label: "Cuentas de banco para transferencias (una por línea)",
+      label: ot("Cuentas de banco para transferencias (una por línea)"),
       type: "textarea",
       help: "Ej.: Popular MacGen ···3620. La caja elige de esta lista.",
     },
     {
       key: "cardTerminals",
-      label: "Terminales de tarjeta (uno por línea)",
+      label: ot("Terminales de tarjeta (uno por línea)"),
       type: "textarea",
       help: "Ej.: Verifone G-Pro MacGen. Vacío: la caja no pregunta.",
     },
-    requiredNumber("sellerDiscountLimit", "Descuento máximo del vendedor (%)"),
-    requiredNumber("cardFeePercent", "Comisión bancaria (%)"),
-    requiredNumber("returnDays", "Plazo de devolución (días)"),
-    requiredNumber("idleDays", "Días sin rotación"),
-    requiredNumber("expiryDays", "Alerta de vencimiento (días)"),
-    requiredNumber("lowMargin", "Margen bajo (%)"),
-    requiredNumber("cashDifferenceLimit", "Alerta de diferencia en caja"),
+    requiredNumber("sellerDiscountLimit", ot("Descuento máximo del vendedor (%)")),
+    requiredNumber("cardFeePercent", ot("Comisión bancaria (%)")),
+    requiredNumber("returnDays", ot("Plazo de devolución (días)")),
+    requiredNumber("idleDays", ot("Días sin rotación")),
+    requiredNumber("expiryDays", ot("Alerta de vencimiento (días)")),
+    requiredNumber("lowMargin", ot("Margen bajo (%)")),
+    requiredNumber("cashDifferenceLimit", ot("Alerta de diferencia en caja")),
     {
       key: "receiptWidth",
-      label: "Ancho de ticket",
+      label: ot("Ancho de ticket"),
       type: "select",
       options: [
         { label: "80 mm", value: "80" },
         { label: "58 mm", value: "58" },
       ],
     },
-    requiredNumber("sessionTimeoutMinutes", "Inactividad (minutos)"),
+    requiredNumber("sessionTimeoutMinutes", ot("Inactividad (minutos)")),
     {
       ...requiredNumber(
         "creditApprovalThreshold",
@@ -4640,18 +4682,18 @@ export function Configuration() {
     {
       key: "allowNegativeStock",
       label:
-        "Permitir stock negativo en productos sin lote obligatorio (con advertencia)",
+        ot("Permitir stock negativo en productos sin lote obligatorio (con advertencia)"),
       type: "checkbox",
     },
     {
       key: "allowOfflineSales",
-      label: "Permitir ventas sin conexión (riesgo entre varias cajas)",
+      label: ot("Permitir ventas sin conexión (riesgo entre varias cajas)"),
       help: "Desactivado evita vender la misma última unidad desde dos equipos sin conexión: dos laptops offline no pueden reservarla entre sí. Actívalo sólo si aceptas revisar conflictos al reconectar.",
       type: "checkbox",
     },
     {
       key: "blockZeroCostSales",
-      label: "No vender productos sin costo",
+      label: ot("No vender productos sin costo"),
       help: "Activado, la caja rechaza un producto con costo 0 hasta que administración lo complete (los servicios sí se venden). Revisa antes Inventario › Productos sin costo.",
       type: "checkbox",
     },
@@ -4672,32 +4714,34 @@ export function Configuration() {
     ),
     {
       key: "allowCreditSales",
-      label: "Habilitar ventas a crédito con cliente y vencimiento",
+      label: ot("Habilitar ventas a crédito con cliente y vencimiento"),
       type: "checkbox",
       help: "Con esto apagado, todo crédito de un cajero pide PIN, sin importar el monto.",
     },
     {
       key: "ncfMode",
-      label: "Preparación de NCF",
+      label: ot("Preparación de NCF"),
       type: "select",
       initial: "disabled",
       options: [
-        { label: "Desactivada", value: "disabled" },
-        { label: "Preparar solicitud (sin emisión fiscal)", value: "prepared" },
+        { label: ot("Desactivada"), value: "disabled" },
+        { label: ot("Preparar solicitud (sin emisión fiscal)"), value: "prepared" },
       ],
     },
     {
       key: "taxIncluded",
-      label: "Precios con ITBIS incluido",
+      label: ot("Precios con ITBIS incluido"),
       type: "checkbox",
     },
   ];
   return (
-    <>
+    <PremiumWorkspace area="configuration">
       <Heading
-        title="A la medida de tu negocio"
-        caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={ot("A la medida de tu negocio")}
+        caption={ot("Define cómo trabaja tu tienda, desde los impuestos hasta los permisos.")}
       />
+      <div className="settings-workspace-layout">
       <div className="tabs outside">
         {[
           ["business", "Negocio y reglas"],
@@ -4711,7 +4755,7 @@ export function Configuration() {
             onClick={() => setTab(id)}
             key={id}
           >
-            {label}
+            {ot(label)}
           </button>
         ))}
       </div>
@@ -4721,35 +4765,32 @@ export function Configuration() {
         ) : tab === "appearance" ? (
           <VisualModeSwitch />
         ) : tab === "business" ? (
-          <QueryState query={query}>
+          <QueryState english={en} query={query}>
             <div className="settings-summary">
               <div>
-                <Badge tone="violet">República Dominicana · RD$</Badge>
+                <Badge tone="violet">{ot("República Dominicana · RD$")}</Badge>
                 <h2>{query.data?.name}</h2>
                 <p>
-                  {query.data?.address || "Configura la dirección de tu tienda"}
+                  {query.data?.address || ot("Configura la dirección de tu tienda")}
                 </p>
                 <p>
                   ITBIS 18% {query.data?.taxIncluded ? "incluido" : "adicional"}{" "}
                   · Ticket {query.data?.receiptWidth} mm
                 </p>
                 <p>
-                  NCF/e-CF reservado para integración futura. Los recibos son
-                  internos.
-                </p>
+                  {ot("NCF/e-CF reservado para integración futura. Los recibos son internos.")}</p>
               </div>
               <Button onClick={() => setEditing(true)}>
                 <Pencil size={16} />
-                Editar configuración
-              </Button>
+                {ot("Editar configuración")}</Button>
             </div>
             <div className="settings-rules">
               {[
-                ["Descuento vendedor", query.data?.sellerDiscountLimit + "%"],
-                ["Sin rotación", query.data?.idleDays + " días"],
-                ["Por vencer", query.data?.expiryDays + " días"],
-                ["Margen bajo", query.data?.lowMargin + "%"],
-                ["Devolución", query.data?.returnDays + " días"],
+                [ot("Descuento vendedor"), query.data?.sellerDiscountLimit + "%"],
+                [ot("Sin rotación"), query.data?.idleDays + " días"],
+                [ot("Por vencer"), query.data?.expiryDays + " días"],
+                [ot("Margen bajo"), query.data?.lowMargin + "%"],
+                [ot("Devolución"), query.data?.returnDays + " días"],
               ].map(([label, value]) => (
                 <div key={label}>
                   <span>{label}</span>
@@ -4760,16 +4801,11 @@ export function Configuration() {
             {(Number(query.data?.creditApprovalThreshold) === 0 ||
               Number(query.data?.receivableShiftLimit) === 0) && (
               <p className="cod-hint" role="note">
-                Algún tope de crédito está en 0: esto significa pedir siempre el
-                PIN de gerente para ese control. Si no buscas ese resultado,
-                escribe un monto alto, por ejemplo RD$ 1,000,000.
-              </p>
+                {ot("Algún tope de crédito está en 0: esto significa pedir siempre el PIN de gerente para ese control. Si no buscas ese resultado, escribe un monto alto, por ejemplo RD$ 1,000,000.")}</p>
             )}
             {query.data?.allowCreditSales !== true && (
               <p className="cod-hint" role="note">
-                Las ventas a crédito están deshabilitadas: todo crédito de un
-                cajero pide PIN de gerente.
-              </p>
+                {ot("Las ventas a crédito están deshabilitadas: todo crédito de un cajero pide PIN de gerente.")}</p>
             )}
             <StoreSettings />
             <TelegramNotices />
@@ -4781,46 +4817,43 @@ export function Configuration() {
         ) : tab === "users" ? (
           <>
             <div className="panel-heading">
-              <h2>Equipo de tu tienda</h2>
+              <h2>{ot("Equipo de tu tienda")}</h2>
               <Button onClick={() => setNewUser(true)}>
                 <Plus size={17} />
-                Crear usuario
-              </Button>
+                {ot("Crear usuario")}</Button>
             </div>
-            <QueryState query={users}>
-              <DataTable
+            <QueryState english={en} query={users}>
+              <DataTable english={en}
                 rows={users.data || []}
                 columns={[
-                  { label: "Nombre", render: (u) => <strong>{u.name}</strong> },
+                  { label: ot("Nombre"), render: (u) => <strong>{u.name}</strong> },
                   {
-                    label: "Usuario",
+                    label: ot("Usuario"),
                     render: (u) => u.username || "Pendiente",
                   },
                   {
-                    label: "Rol",
+                    label: ot("Rol"),
                     render: (u) => <Badge tone="violet">{u.role.name}</Badge>,
                   },
                   {
-                    label: "Estado",
-                    render: (u) => (u.active ? "Activo" : "Inactivo"),
+                    label: ot("Estado"),
+                    render: (u) => (u.active ? ot("Activo") : ot("Inactivo")),
                   },
                   {
-                    label: "Acción",
+                    label: ot("Acción"),
                     render: (u) => (
                       <div className="inline-actions">
                         <button
                           className="text-link"
                           onClick={() => setUserEdit(u)}
                         >
-                          Editar
-                        </button>
+                          {ot("Editar")}</button>
                         {u.id !== user.id && (
                           <button
                             className="text-link"
                             onClick={() => setPasswordReset(u)}
                           >
-                            Restablecer contraseña
-                          </button>
+                            {ot("Restablecer contraseña")}</button>
                         )}
                         {u.id !== user.id && (
                           <button
@@ -4838,7 +4871,7 @@ export function Configuration() {
                               }
                             }}
                           >
-                            {u.active ? "Desactivar" : "Activar"}
+                            {u.active ? ot("Desactivar") : ot("Activar")}
                           </button>
                         )}
                       </div>
@@ -4848,7 +4881,7 @@ export function Configuration() {
               />
             </QueryState>
             <div className="panel-heading">
-              <h2>Permisos por rol</h2>
+              <h2>{ot("Permisos por rol")}</h2>
             </div>
             <div className="roles-list">
               {roles.data?.map((r: any) => (
@@ -4861,27 +4894,27 @@ export function Configuration() {
             </div>
           </>
         ) : (
-          <QueryState query={logs}>
-            <DataTable
+          <QueryState english={en} query={logs}>
+            <DataTable english={en}
               rows={logs.data || []}
               columns={[
                 {
-                  label: "Fecha",
+                  label: ot("Fecha"),
                   render: (l) =>
                     new Date(l.createdAt).toLocaleString("es-DO", {
                       timeZone: "America/Santo_Domingo",
                     }),
                 },
                 {
-                  label: "Usuario",
+                  label: ot("Usuario"),
                   render: (l) =>
                     users.data?.find((u: any) => u.id === l.userId)?.name ||
                     l.userId,
                 },
-                { label: "Acción", render: (l) => <Badge>{l.action}</Badge> },
-                { label: "Entidad", render: (l) => l.entity },
+                { label: ot("Acción"), render: (l) => <Badge>{l.action}</Badge> },
+                { label: ot("Entidad"), render: (l) => l.entity },
                 {
-                  label: "Referencia",
+                  label: ot("Referencia"),
                   render: (l) => <small>{l.entityId}</small>,
                 },
               ]}
@@ -4889,9 +4922,10 @@ export function Configuration() {
           </QueryState>
         )}
       </div>
+      </div>
       {editing && (
-        <FormModal
-          title="Configuración del negocio"
+        <FormModal english={en}
+          title={ot("Configuración del negocio")}
           fields={fields}
           initial={{
             ...query.data,
@@ -4932,8 +4966,8 @@ export function Configuration() {
         />
       )}
       {newUser && (
-        <FormModal
-          title="Crear usuario"
+        <FormModal english={en}
+          title={ot("Crear usuario")}
           fields={(values) => {
             const cashier =
               roles.data?.find((role: any) => role.id === values.roleId)
@@ -4941,7 +4975,7 @@ export function Configuration() {
             return [
               {
                 key: "roleId",
-                label: "Rol",
+                label: ot("Rol"),
                 type: "select",
                 required: true,
                 resetFieldsOnChange: ["password"],
@@ -4950,10 +4984,10 @@ export function Configuration() {
                   value: r.id,
                 })),
               },
-              { key: "name", label: "Nombre", required: true },
+              { key: "name", label: ot("Nombre"), required: true },
               {
                 key: "username",
-                label: "Usuario para entrar",
+                label: ot("Usuario para entrar"),
                 required: true,
               },
               {
@@ -4974,7 +5008,7 @@ export function Configuration() {
               },
               {
                 key: "pin",
-                label: "PIN de 6 dígitos",
+                label: ot("PIN de 6 dígitos"),
                 type: "password",
                 required: true,
               },
@@ -4985,18 +5019,18 @@ export function Configuration() {
         />
       )}
       {userEdit && (
-        <FormModal
+        <FormModal english={en}
           title={"Editar usuario · " + userEdit.name}
           fields={[
-            { key: "name", label: "Nombre", required: true },
+            { key: "name", label: ot("Nombre"), required: true },
             {
               key: "username",
-              label: "Usuario para entrar",
+              label: ot("Usuario para entrar"),
               required: true,
             },
             {
               key: "pin",
-              label: "PIN nuevo de 6 dígitos (opcional)",
+              label: ot("PIN nuevo de 6 dígitos (opcional)"),
               type: "password",
               help: "Déjalo vacío para conservar el PIN actual. Los PIN antiguos de 4 o 5 dígitos siguen sirviendo, pero conviene cambiarlos.",
             },
@@ -5019,12 +5053,12 @@ export function Configuration() {
         />
       )}
       {roleEdit && (
-        <FormModal
+        <FormModal english={en}
           title={"Permisos · " + roleEdit.name}
           fields={[
             {
               key: "permissions",
-              label: "Permisos separados por coma",
+              label: ot("Permisos separados por coma"),
               type: "textarea",
               initial: roleEdit.permissions.join(", "),
               required: true,
@@ -5046,7 +5080,7 @@ export function Configuration() {
           }
         />
       )}
-    </>
+    </PremiumWorkspace>
   );
 }
 

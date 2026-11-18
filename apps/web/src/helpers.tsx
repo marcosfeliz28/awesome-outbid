@@ -236,18 +236,7 @@ export type Field = {
 };
 // 03-A1: aviso corto al pedir los datos de un cliente. El texto jurídico
 // completo lo redacta la tienda con su abogado; /privacidad.html es el resumen.
-export function CustomerPrivacyNotice() {
-  return (
-    <p className="privacy-notice full">
-      Usamos estos datos sólo para registrar las ventas, garantías y créditos
-      del cliente. Teléfono, correo y cédula/RNC son opcionales. El cliente
-      puede pedir verlos, corregirlos o borrarlos.{" "}
-      <a href="/privacidad.html" target="_blank" rel="noopener">
-        Privacidad
-      </a>
-    </p>
-  );
-}
+export { CustomerPrivacyNotice } from "./CustomerPrivacyNotice";
 export function FormModal({
   title,
   english = false,

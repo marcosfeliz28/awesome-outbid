@@ -400,6 +400,19 @@ test("G12: en celular el menú cerrado no recibe foco y al abrirlo el foco entra
   await opener.click();
   await expect(aside).not.toHaveAttribute("inert", "");
   await expect(aside.locator(".nav-item").first()).toBeFocused();
+  await expect(page.locator(".main-shell")).toHaveAttribute("inert", "");
+  await page.keyboard.press("Control+k");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(aside).not.toHaveAttribute("inert", "");
+  await expect(page.locator(".main-shell")).toHaveAttribute("inert", "");
+  for (const key of ["Tab", "Shift+Tab"]) {
+    for (let i = 0; i < 30; i++) {
+      await page.keyboard.press(key);
+      expect(await page.evaluate(() => !!document.activeElement?.closest("aside.sidebar"))).toBe(true);
+    }
+  }
   await page.keyboard.press("Escape");
   await expect(aside).toHaveAttribute("inert", "");
   await expect(opener).toBeFocused();
@@ -461,4 +474,23 @@ test("G12: aviso 60 s antes del cierre por inactividad con «Seguir conectado»"
     page.getByRole("button", { name: "Entrar a mi tienda" }),
   ).toBeVisible();
   await expect(page.getByText("Sesión cerrada por inactividad.")).toBeVisible();
+});
+
+test("account disclosure exposes state and closes with Escape returning focus", async ({ page }) => {
+  await login(page);
+  const button = page.locator("button.account");
+  await expect(button).toHaveAttribute("aria-expanded", "false");
+  await expect(button).toHaveAttribute("aria-controls", "account-actions");
+  await button.click();
+  await expect(button).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator("#account-actions button").first()).toBeFocused();
+  await page.keyboard.press("Control+k");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(button).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Escape");
+  await expect(button).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#account-actions")).toHaveCount(0);
+  await expect(button).toBeFocused();
 });
