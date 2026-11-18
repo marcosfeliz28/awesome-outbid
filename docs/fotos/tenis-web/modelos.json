@@ -1,0 +1,476 @@
+[
+ {
+  "modelo": "Nike P6000 Blanco Negro y Azul",
+  "slug": "nike-p6000-azul",
+  "pares": 6.0,
+  "foto_referencia": "docs/fotos/tenis/nike-p6000-azul.webp",
+  "skus": [
+   "1696",
+   "1778",
+   "1932"
+  ]
+ },
+ {
+  "modelo": "Ocloud Negro y Blanco",
+  "slug": "ocloud-negro-blanco",
+  "pares": 6.0,
+  "foto_referencia": "docs/fotos/tenis/ocloud-negro-blanco.webp",
+  "skus": [
+   "1699",
+   "1700",
+   "1701",
+   "1794"
+  ]
+ },
+ {
+  "modelo": "New Balance 530 Blanco y Negro",
+  "slug": "new-balance-530-blanco-y-negro",
+  "pares": 2.0,
+  "foto_referencia": "",
+  "skus": [
+   "1705"
+  ]
+ },
+ {
+  "modelo": "New Balance 530 Blanco y Azul",
+  "slug": "nb-530-blanco-azul",
+  "pares": 3.0,
+  "foto_referencia": "docs/fotos/tenis/nb-530-blanco-azul.webp",
+  "skus": [
+   "1708"
+  ]
+ },
+ {
+  "modelo": "New Balance 740 Blanco con Plateado",
+  "slug": "new-balance-740-blanco-con-plateado",
+  "pares": 1.0,
+  "foto_referencia": "",
+  "skus": [
+   "1711"
+  ]
+ },
+ {
+  "modelo": "Asics Ak Crema",
+  "slug": "asics-ak-crema",
+  "pares": 7.0,
+  "foto_referencia": "docs/fotos/tenis/asics-ak-crema.webp",
+  "skus": [
+   "1713",
+   "1714",
+   "1715",
+   "1792"
+  ]
+ },
+ {
+  "modelo": "New Balance 530 Crema y Rosado",
+  "slug": "nb-530-crema-rosado",
+  "pares": 8.0,
+  "foto_referencia": "docs/fotos/tenis/nb-530-crema-rosado.webp",
+  "skus": [
+   "1717",
+   "1718",
+   "1719",
+   "1721"
+  ]
+ },
+ {
+  "modelo": "New Balance 740 Blancos con Plateado",
+  "slug": "new-balance-740-blancos-con-plateado",
+  "pares": 5.0,
+  "foto_referencia": "",
+  "skus": [
+   "1724",
+   "1725",
+   "1726"
+  ]
+ },
+ {
+  "modelo": "Adidas Campus Rosados",
+  "slug": "adidas-campus-rosados",
+  "pares": 8.0,
+  "foto_referencia": "",
+  "skus": [
+   "1727",
+   "1728",
+   "1777",
+   "1789"
+  ]
+ },
+ {
+  "modelo": "Nike Free Negro",
+  "slug": "nike-free-negro",
+  "pares": 18.0,
+  "foto_referencia": "docs/fotos/tenis/nike-free-negro.webp",
+  "skus": [
+   "1729",
+   "1738",
+   "1739",
+   "1740",
+   "1741"
+  ]
+ },
+ {
+  "modelo": "Nike Free Negro y Blanco",
+  "slug": "nike-free-negro-blanco",
+  "pares": 6.0,
+  "foto_referencia": "docs/fotos/tenis/nike-free-negro-blanco.webp",
+  "skus": [
+   "1732",
+   "1734",
+   "1735"
+  ]
+ },
+ {
+  "modelo": "Nike Free Crema y Morado",
+  "slug": "nike-free-crema-morado",
+  "pares": 6.0,
+  "foto_referencia": "docs/fotos/tenis/nike-free-crema-morado.webp",
+  "skus": [
+   "1742",
+   "1743",
+   "1746"
+  ]
+ },
+ {
+  "modelo": "Nike Free Crema",
+  "slug": "nike-free-crema",
+  "pares": 10.0,
+  "foto_referencia": "docs/fotos/tenis/nike-free-crema.webp",
+  "skus": [
+   "1747",
+   "1749",
+   "1750",
+   "1751"
+  ]
+ },
+ {
+  "modelo": "New Balance 1906R Negro",
+  "slug": "nb-1906r-negro",
+  "pares": 9.0,
+  "foto_referencia": "docs/fotos/tenis/nb-1906r-negro.webp",
+  "skus": [
+   "1757",
+   "1759",
+   "1761",
+   "1762",
+   "1763",
+   "1764"
+  ]
+ },
+ {
+  "modelo": "New Balance 1906R Gris y Azul",
+  "slug": "nb-1906r-gris-azul",
+  "pares": 4.0,
+  "foto_referencia": "docs/fotos/tenis/nb-1906r-gris-azul.webp",
+  "skus": [
+   "1767",
+   "1768",
+   "1769",
+   "1805"
+  ]
+ },
+ {
+  "modelo": "New Balance 740 Negros",
+  "slug": "nb-740-negros",
+  "pares": 7.0,
+  "foto_referencia": "docs/fotos/tenis/nb-740-negros.webp",
+  "skus": [
+   "1770",
+   "1771",
+   "1772",
+   "1788",
+   "1930"
+  ]
+ },
+ {
+  "modelo": "Nike P6000 Gris Plateado",
+  "slug": "nike-p6000-gris-plateado",
+  "pares": 7.0,
+  "foto_referencia": "",
+  "skus": [
+   "1773",
+   "1774",
+   "1775"
+  ]
+ },
+ {
+  "modelo": "Nike P6000 Blanco y Negro",
+  "slug": "nike-p6000-blanco-negro",
+  "pares": 6.0,
+  "foto_referencia": "docs/fotos/tenis/nike-p6000-blanco-negro.webp",
+  "skus": [
+   "1779",
+   "1780"
+  ]
+ },
+ {
+  "modelo": "Nike P6000 Blanco y Negro y Azul",
+  "slug": "nike-p6000-blanco-y-negro-y-azul",
+  "pares": 1.0,
+  "foto_referencia": "",
+  "skus": [
+   "1781"
+  ]
+ },
+ {
+  "modelo": "Nike P6000 Blanco y Negro Azul",
+  "slug": "nike-p6000-blanco-y-negro-azul",
+  "pares": 2.0,
+  "foto_referencia": "",
+  "skus": [
+   "1782"
+  ]
+ },
+ {
+  "modelo": "Nike P6000 Negros",
+  "slug": "nike-p6000-negros",
+  "pares": 5.0,
+  "foto_referencia": "",
+  "skus": [
+   "1795",
+   "1797",
+   "1913"
+  ]
+ },
+ {
+  "modelo": "New Balance 740 Gris",
+  "slug": "nb-740-gris",
+  "pares": 2.0,
+  "foto_referencia": "docs/fotos/tenis/nb-740-gris.webp",
+  "skus": [
+   "1799"
+  ]
+ },
+ {
+  "modelo": "Nike P6000 Gris y Crema",
+  "slug": "nike-p6000-gris-y-crema",
+  "pares": 10.0,
+  "foto_referencia": "",
+  "skus": [
+   "1801",
+   "1802",
+   "1803",
+   "1804"
+  ]
+ },
+ {
+  "modelo": "New Balance 1906R Blanco Negro y Amarillo",
+  "slug": "nb-1906r-blanco-negro-amarillo",
+  "pares": 7.0,
+  "foto_referencia": "docs/fotos/tenis/nb-1906r-blanco-negro-amarillo.webp",
+  "skus": [
+   "1807",
+   "1808",
+   "1809"
+  ]
+ },
+ {
+  "modelo": "New Balance 1906R Blanco y Crema",
+  "slug": "new-balance-1906r-blanco-y-crema",
+  "pares": 2.0,
+  "foto_referencia": "",
+  "skus": [
+   "1818",
+   "1819"
+  ]
+ },
+ {
+  "modelo": "New Balance 1906R Gris y Rosado",
+  "slug": "nb-1906r-gris-rosado",
+  "pares": 4.0,
+  "foto_referencia": "docs/fotos/tenis/nb-1906r-gris-rosado.webp",
+  "skus": [
+   "1825",
+   "1826",
+   "1827"
+  ]
+ },
+ {
+  "modelo": "New Balance 9060 Negros y Blanco",
+  "slug": "nb-9060-negro-blanco",
+  "pares": 3.0,
+  "foto_referencia": "docs/fotos/tenis/nb-9060-negro-blanco.webp",
+  "skus": [
+   "1829",
+   "1830",
+   "1831"
+  ]
+ },
+ {
+  "modelo": "New Balance 9060 Negros",
+  "slug": "nb-9060-negros",
+  "pares": 2.0,
+  "foto_referencia": "docs/fotos/tenis/nb-9060-negros.webp",
+  "skus": [
+   "1840",
+   "1841"
+  ]
+ },
+ {
+  "modelo": "New Balance 9060 Verdes",
+  "slug": "new-balance-9060-verdes",
+  "pares": 2.0,
+  "foto_referencia": "",
+  "skus": [
+   "1847"
+  ]
+ },
+ {
+  "modelo": "Adidas Samba Blancos",
+  "slug": "adidas-samba-blancos",
+  "pares": 5.0,
+  "foto_referencia": "docs/fotos/tenis/adidas-samba-blancos.webp",
+  "skus": [
+   "1853",
+   "1854",
+   "1855"
+  ]
+ },
+ {
+  "modelo": "Adidas Samba Negros",
+  "slug": "adidas-samba-negros",
+  "pares": 9.0,
+  "foto_referencia": "docs/fotos/tenis/adidas-samba-negros.webp",
+  "skus": [
+   "1857",
+   "1858",
+   "1859",
+   "1860"
+  ]
+ },
+ {
+  "modelo": "Asics Crema y Azul",
+  "slug": "asics-crema-y-azul",
+  "pares": 8.0,
+  "foto_referencia": "",
+  "skus": [
+   "1861",
+   "1862",
+   "1863",
+   "1864",
+   "1865"
+  ]
+ },
+ {
+  "modelo": "Asics Blanco Negro y Plateado",
+  "slug": "asics-blanco-negro-plateado",
+  "pares": 5.0,
+  "foto_referencia": "docs/fotos/tenis/asics-blanco-negro-plateado.webp",
+  "skus": [
+   "1867",
+   "1868",
+   "1869",
+   "1870"
+  ]
+ },
+ {
+  "modelo": "Asics Gris Plateado",
+  "slug": "asics-gris-plateado",
+  "pares": 5.0,
+  "foto_referencia": "docs/fotos/tenis/asics-gris-plateado.webp",
+  "skus": [
+   "1871",
+   "1872",
+   "1873",
+   "1874",
+   "1875"
+  ]
+ },
+ {
+  "modelo": "Asics Gris y Verde",
+  "slug": "asics-gris-verde",
+  "pares": 7.0,
+  "foto_referencia": "docs/fotos/tenis/asics-gris-verde.webp",
+  "skus": [
+   "1876",
+   "1877",
+   "1879",
+   "1880"
+  ]
+ },
+ {
+  "modelo": "Asics Gris con Verde",
+  "slug": "asics-gris-verde",
+  "pares": 1.0,
+  "foto_referencia": "docs/fotos/tenis/asics-gris-verde.webp",
+  "skus": [
+   "1878"
+  ]
+ },
+ {
+  "modelo": "Asics Crema y Marron",
+  "slug": "asics-crema-y-marron",
+  "pares": 2.0,
+  "foto_referencia": "",
+  "skus": [
+   "1881",
+   "1883"
+  ]
+ },
+ {
+  "modelo": "Adidas Campus Gris",
+  "slug": "adidas-campus-gris",
+  "pares": 9.0,
+  "foto_referencia": "docs/fotos/tenis/adidas-campus-gris.webp",
+  "skus": [
+   "1905",
+   "1906",
+   "1907",
+   "1908"
+  ]
+ },
+ {
+  "modelo": "Adidas Campus Negro y Cris",
+  "slug": "adidas-campus-negro-crema",
+  "pares": 8.0,
+  "foto_referencia": "docs/fotos/tenis/adidas-campus-negro-crema.webp",
+  "skus": [
+   "1909",
+   "1910",
+   "1911"
+  ]
+ },
+ {
+  "modelo": "New Balance 740 Blanco con Azul",
+  "slug": "nb-740-blanco-azul",
+  "pares": 2.0,
+  "foto_referencia": "docs/fotos/tenis/nb-740-blanco-azul.webp",
+  "skus": [
+   "1915"
+  ]
+ },
+ {
+  "modelo": "Asics Ak Negros",
+  "slug": "asics-ak-negros",
+  "pares": 10.0,
+  "foto_referencia": "docs/fotos/tenis/asics-ak-negros.webp",
+  "skus": [
+   "1916",
+   "1917",
+   "1918",
+   "1919"
+  ]
+ },
+ {
+  "modelo": "Asics Ak Negro y Gris",
+  "slug": "asics-ak-negro-gris",
+  "pares": 5.0,
+  "foto_referencia": "docs/fotos/tenis/asics-ak-negro-gris.webp",
+  "skus": [
+   "1921",
+   "1922",
+   "1923",
+   "1924"
+  ]
+ },
+ {
+  "modelo": "New Balance 740 Blanco y Azul",
+  "slug": "nb-740-blanco-azul",
+  "pares": 3.0,
+  "foto_referencia": "docs/fotos/tenis/nb-740-blanco-azul.webp",
+  "skus": [
+   "1927",
+   "1928"
+  ]
+ }
+]
