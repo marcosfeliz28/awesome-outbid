@@ -25,3 +25,5 @@
 | 16-nov | FS-680 genesis 5,220 (BHD, «Genesis Rojas Cruz») | Verificada con extracto BHD. |
 | 16-nov | FS-690 Anyelin Alvarez 7,000 (+450 envío) | Cayó en el banco personal de la dueña. Verificada por indicación suya. Pendiente de pasar a MacGen (dueña). |
 | 16-nov | FS-685 Wilmer 3,700 y FS-686 Mavel Rivera 6,250 (contra entregas de Jade) | Se cobran el 17-nov (dueña). No volver a mencionarlas hasta que llegue el cobro o pasen más de 3 días. |
+| 17-nov | Transferencias FS-691 (1,850), FS-700 (5,950), FS-702 (5,800), FS-704 (3,950) | Verificadas con extracto Popular (FS-704 anotada en Génesis ···9797, cayó en este Popular). |
+| 17-nov | Cardnet lote 167 (14,800) | Depósito 14,230.20 en Banreservas = 14,800 − 3.85 %. |
