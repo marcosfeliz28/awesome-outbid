@@ -600,14 +600,29 @@
       "busqueda": "pasa",
       "categoria": "pasa",
       "paginacion": "pasa",
-      "ficha": "pasa"
+      "ficha": "pasa",
+      "mobileHit": {
+        "top": 602,
+        "bottom": 647,
+        "viewport": 844,
+        "receivesPointer": true
+      },
+      "acceso_ultimo_control": "pasa",
+      "scroll_acciones": "pasa"
     },
     "1440": {
       "pageErrors": [],
       "busqueda": "pasa",
       "categoria": "pasa",
       "paginacion": "pasa",
-      "ficha": "pasa"
+      "ficha": "pasa",
+      "acceso_ultimo_control": "pasa",
+      "scroll": {
+        "before": 22,
+        "after": 118,
+        "max": 118
+      },
+      "scroll_acciones": "pasa"
     }
   },
   "stages": [
@@ -624,5 +639,5 @@
     "api": 14292,
     "web": 14392
   },
-  "completedAt": "2026-11-18T02:27:03.388Z"
+  "completedAt": "2026-11-18T02:30:26.836Z"
 }

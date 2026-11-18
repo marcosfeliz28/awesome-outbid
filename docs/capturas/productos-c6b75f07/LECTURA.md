@@ -7,3 +7,10 @@
 - El documento no presenta desbordamiento horizontal global en las cuatro vistas. En escritorio la tabla tiene desplazamiento interno y las acciones aparecen parcialmente fuera de la zona visible inicial; revisar su descubribilidad. En móvil el botón fijo de Mercancía cubre parte del contenido en la posición de la captura; no se comprobó que impida llegar al contenido desplazándose.
 - La ficha muestra valores de demostración. No se verificaron importación, edición, creación, lector de pantalla, contraste cuantitativo, otras resoluciones ni todos los controles. No se encontró la lámina aprobada original, por lo que la fidelidad visual frente a ella no está evaluada.
 - Procesos propios de navegador, web, API y base finalizados al concluir. `comprobacion-integrada.json` conserva el detalle de la ejecución sin credenciales.
+
+## Comprobación adicional
+
+- A 390 px se desplazó hasta el botón final «Ver ficha»: ocupó las posiciones verticales 602–647 de un viewport de 844 px, recibió el puntero y abrió la ficha, que se cerró con Escape. En esta prueba la barra fija no impidió su uso; no se han probado todos los controles ni posiciones intermedias.
+- A 1440 px se desplazó horizontalmente la tabla desde 22 hasta su máximo de 118 px y se abrió «Variantes de Bandas Resistance»; el diálogo se cerró con Escape sin guardar. El acceso funciona, aunque sigue pendiente evaluar si la barra de desplazamiento resulta suficientemente visible.
+- La segunda ejecución repitió búsqueda, categoría, paginación y ficha en ambos tamaños y terminó los procesos de prueba. El JSON marca también como «pasa» las dos comprobaciones que no corresponden al otro tamaño: las mediciones válidas son `mobileHit` en 390 y `scroll` en 1440.
+- CI del SHA examinado: no se pudo confirmar. `gh` indica que no tiene sesión; el conector devolvió cero estados combinados y cero ejecuciones de PR (esa consulta filtra ejecuciones de PR). Ninguno de esos datos demuestra que CI esté verde.
