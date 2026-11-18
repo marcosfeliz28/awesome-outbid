@@ -43,6 +43,10 @@ La rama de Dot avanzó a `94f11b31ca4f6c659c6fc3a6399de850744ecf8f`. Incorpora `
 
 El candidato `94f11b31` y la base `0fc775a6` pasaron los tres controles. Sus `verify` terminaron a las 19:47:02 y 19:32:26 UTC, respectivamente. Los pendientes de foco, idioma y contraste siguen abiertos en ese código. [CI de Dot](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44378441807) · [CI de la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44377260775)
 
+## Estado de la rama base a las 20:18 UTC
+
+`origin/nexora-cloud` avanzó por una actualización externa a `94f11b31ca4f6c659c6fc3a6399de850744ecf8f`, el mismo SHA de Dot. Su nuevo control de push es `44385086652`. Pasaron las imágenes y el instalador. `verify` seguía en curso al consultar. La ejecución anterior de la rama Dot sobre ese SHA ya aprobó los tres controles. Los hallazgos visuales y de teclado de este informe siguen abiertos. El estado del sitio servido queda pendiente de comprobación. [CI del push a la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44385086652)
+
 ## Siguiente entrega de Dot
 
 Corregir el contraste y la partición de etiquetas de Incentivos, completar los textos de interfaz en inglés y el retorno de foco. Conservar las 319 fotos de la integración, entregar el resumen por pantalla del ensayo general y adjuntar rama, SHA, tres controles y demostración privada.
