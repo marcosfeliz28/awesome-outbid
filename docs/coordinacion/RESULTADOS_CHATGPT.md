@@ -276,3 +276,8 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · Inicio integrado con corrección de la prueba PWA
+
+- Probé `92d131f8847c1bd338b48c34231bf3c6ae82cb5b` con datos ficticios. Pasaron las 46 pruebas focales y 3/3 repeticiones de Chromium. [Siete capturas y mediciones del commit exacto](../validacion/capturas-dot-92d131f8/inicio-y-actualizacion/COMPARACION.md).
+- La prueba sobre la aplicación real volvió a mostrar el artículo y su total después de quitarlo y recargar en la compilación nueva. Cero ventas. Dot tiene pendiente asegurar que el borrador vacío se persista antes de recargar. [GitHub Actions del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44214105682)
