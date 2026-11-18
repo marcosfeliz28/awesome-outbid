@@ -29,7 +29,7 @@ async function setup(
     openedAt: "2026-11-17T12:00:00Z",
     closedAt: closed ? "2026-11-17T20:00:00Z" : null,
     openingAmount: "1500",
-    countedCash: closed ? (hostile ? "500" : "78432.17") : null,
+    countedCash: closed ? (hostile ? "500" : "98765432.17") : null,
     // Deliberately over-disclosing response: UI must still honor cashier permissions.
     ...(hostile
       ? {
@@ -48,12 +48,12 @@ async function setup(
     ...(role === "manager"
       ? {
           expected: {
-            cash: 78432.17,
+            cash: 98765432.17,
             card: 10000,
             transfer: 2000,
             movements: [],
           },
-          expectedCash: closed ? "78432.17" : null,
+          expectedCash: closed ? "98765432.17" : null,
         }
       : {}),
   };
@@ -139,12 +139,12 @@ for (const width of [1440, 390])
         );
         if (state === "manager")
           await expect(page.locator(".cash-main strong")).toContainText(
-            "78,432.17",
+            "98,765,432.17",
           );
         if (state === "cashier") {
           await expect(page.locator(".cash-overview")).toHaveCount(0);
           await expect(page.locator(".fusion-cash-turnos")).not.toContainText(
-            "78,432.17",
+            "98,765,432.17",
           );
         }
         if (state === "closed")
@@ -156,6 +156,24 @@ for (const width of [1440, 390])
           content: document.documentElement.scrollWidth,
         }));
         expect(size.content).toBeLessThanOrEqual(size.viewport + 1);
+        // Regression: overflowWidth alone misses wrapped cents in table cells.
+        const amountLines = await page.locator(".fusion-cash-turnos").evaluate((root) => {
+          const result: number[] = [];
+          const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+          let node: Node | null;
+          const amount = "98,765,432.17";
+          while ((node = walker.nextNode())) {
+            const text = node.textContent || "", start = text.indexOf(amount);
+            if (start < 0) continue;
+            const range = document.createRange();
+            range.setStart(node, start);
+            range.setEnd(node, start + amount.length);
+            result.push(new Set(Array.from(range.getClientRects()).map((rect) => Math.round(rect.top))).size);
+          }
+          return result;
+        });
+        if (state === "manager") expect(amountLines.length).toBeGreaterThan(0);
+        for (const count of amountLines) expect(count).toBe(1);
         const actions = page.locator('td[data-label="Acciones"]');
         for (const cell of await actions.all()) {
           const buttons = await cell.getByRole("button").all();
