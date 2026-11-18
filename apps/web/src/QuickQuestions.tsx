@@ -1,3 +1,5 @@
+import { useLanguage } from "./inicioLanguage";
+import { configRatesSurveyText, type ConfigRatesSurveyKey } from "./configRatesSurveyLanguage";
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, MessageCircleQuestion } from "lucide-react";
@@ -719,6 +721,8 @@ export function QuickQuestions({
 
 /** Resumen de la encuesta para la administración (Configuración). */
 export function CashierSurveySummary() {
+  const english = useLanguage() === "en";
+  const t = (key: ConfigRatesSurveyKey) => configRatesSurveyText(english, key);
   const query = useQuery({
     queryKey: ["survey-summary"],
     queryFn: () =>
@@ -735,20 +739,20 @@ export function CashierSurveySummary() {
         }[];
       }>("/survey/summary"),
   });
-  const label = (k: string) => (k === "true" ? "Sí" : k === "false" ? "No" : k);
+  const label = (k: string) => (k === "true" ? t("Sí") : k === "false" ? t("No") : k);
   return (
     <section aria-labelledby="survey-summary-title">
       <div className="panel-heading">
-        <h3 id="survey-summary-title">Encuesta de la caja</h3>
+        <h3 id="survey-summary-title">{t("Encuesta de la caja")}</h3>
       </div>
-      <QueryState query={query}>
-        <p>{query.data?.responses ?? 0} personas respondieron.</p>
+      <QueryState english={english} query={query}>
+        <p>{query.data?.responses ?? 0} {t("personas respondieron.")}</p>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>PREGUNTA</th>
-                <th>RESPUESTAS</th>
+                <th>{t("PREGUNTA")}</th>
+                <th>{t("RESPUESTAS")}</th>
               </tr>
             </thead>
             <tbody>
@@ -762,7 +766,7 @@ export function CashierSurveySummary() {
                             {t.name}: {t.text}
                           </div>
                         ))
-                      : (q.average !== null ? `Promedio ${q.average} · ` : "") +
+                      : (q.average !== null ? `${t("Promedio ")}${q.average} · ` : "") +
                         Object.entries(q.counts)
                           .map(([k, n]) => `${label(k)}: ${n}`)
                           .join(" · ")}

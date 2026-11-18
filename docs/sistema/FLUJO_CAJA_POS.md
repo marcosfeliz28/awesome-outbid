@@ -114,11 +114,11 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 ## 6. Recibo, comprobante e impresión
 
 - **El recibo se genera solo** al finalizar y se muestra la ventana **«¡Una venta más, una meta más cerca!»** con el total, el número FS-xxxxxxx, el badge «Venta registrada» y el «Cambio» (`POS.tsx:2432-2475`). Si hubo crédito: «CRÉDITO · PENDIENTE DE PAGO» y el monto pendiente (`:2363-2375`).
-- **¿Se imprime solo?** Depende de Configuración › «Imprimir el recibo automáticamente al cobrar» (`apps/web/src/Management.tsx:4441-4442`; por defecto apagado, `apps/api/src/admin.ts:125`). Si está activo: `printSoon()` (`POS.tsx:2363-2364`). Si no, se pulsa **«Imprimir recibo»** (`:2381-2384`, llama `window.print()`).
+- **¿Se imprime solo?** Depende de Configuración › «Imprimir el recibo automáticamente al cobrar» (`apps/web/src/Management.tsx:4440-4441`; por defecto apagado, `apps/api/src/admin.ts:125`). Si está activo: `printSoon()` (`POS.tsx:2363-2364`). Si no, se pulsa **«Imprimir recibo»** (`:2381-2384`, llama `window.print()`).
 - Otros botones: **«Recibo PDF»** (`:2385-2398`; API `apps/api/src/sales.ts:4801`), **«WhatsApp»** y **«Correo»** con el texto del recibo (`:2399-2426`), **«Nueva venta»** (`:2428-2430`).
 - Ancho del ticket 80 mm o 58 mm según Configuración (`POS.tsx:2527`; `admin.ts:91`).
 - El recibo es **«DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL»**; el NCF solo se imprime si la venta ya trae uno y el modo es electrónico (`apps/web/src/Prints.tsx:509-510`, `:546-553`). Con solicitud B01/B02 imprime «Solicitud NCF … · pendiente de emisión fiscal» (`:625-626`). No hay NCF real emitido por este sistema.
-- Reimpresión: pantalla **Ventas** › icono de descarga (PDF) en la fila (`Management.tsx:3397-3407`).
+- Reimpresión: pantalla **Ventas** › icono de descarga (PDF) en la fila (`Management.tsx:3398-3408`).
 - Sin internet: solo si Configuración lo permite («Permitir ventas sin conexión»), la venta queda «Guardada en este dispositivo · Pendiente de sincronizar» con número LOCAL-xxxxxxxx; crédito, contraentrega, nota de crédito y descuentos con PIN requieren conexión (`POS.tsx:2242-2303`; `apps/api/src/admin.ts:96`). Por defecto está apagado.
 
 ## 7. Devolución y nota de crédito (NC)
@@ -127,14 +127,14 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 2. Ventana **«Devolución · FS-…»** (`:3640`): «Artículo a devolver», «Cantidad», «Motivo», **«Método de reembolso»** (Efectivo, Tarjeta, Transferencia o **Nota de crédito**), casillas «Reingresar al stock vendible», «Producto abierto», «Producto dañado» (`:3643-3690`). API `POST /returns` (`apps/api/src/sales.ts:3574`).
 3. Se crea la devolución con número **NC-000000** (`sales.ts:3701`). Si el reembolso es en efectivo desde la caja de **otra persona**, hace falta el PIN de su dueña o de otro gerente (`sales.ts:3208-3222`); si no hay efectivo suficiente: «No hay suficiente efectivo en caja para este reembolso. Reembolsa por el medio del pago original o como nota de crédito.» (`sales.ts:3687-3690`).
 4. Con método «Nota de crédito» se crea la nota con un **código de canje** de 32 caracteres hex y saldo (`apps/api/prisma/schema.prisma` modelo `CreditNote`).
-5. **¿Se imprime la nota?** No sale sola al devolver. Se imprime a mano: en **Ventas** › abrir la venta (ojo) › botón **«Imprimir nota NC-000000»** (solo `sale:manage`) (`Management.tsx:3630-3644`). Descarga un **PDF A4** «Nota de crédito · NC-… / Nota interna de crédito · no fiscal», con importe, saldo, motivo y el «Código para presentar en caja» (`apps/api/src/sales.ts:3820-3873`, ruta `GET /returns/:id/credit-note.pdf`). No se imprime en el ticket térmico.
+5. **¿Se imprime la nota?** No sale sola al devolver. Se imprime a mano: en **Ventas** › abrir la venta (ojo) › botón **«Imprimir nota NC-000000»** (solo `sale:manage`) (`Management.tsx:3631-3645`). Descarga un **PDF A4** «Nota de crédito · NC-… / Nota interna de crédito · no fiscal», con importe, saldo, motivo y el «Código para presentar en caja» (`apps/api/src/sales.ts:3820-3873`, ruta `GET /returns/:id/credit-note.pdf`). No se imprime en el ticket térmico.
 6. Usarla: en el cobro, método **Nota de crédito**, escribir el código y elegir la nota (sección 5.1). Una nota con cliente solo la usa ese cliente (`sales.ts:1110`).
 
 ## 8. Anulación
 
-- **Cajera:** en **Ventas**, solo sobre una venta suya completada y sin solicitud pendiente: **«Solicitar anulación»** → «Tipo de motivo» (Solicitud del cliente, Venta duplicada, Error de pago, Error de artículo, Otro) + «Explica el motivo» (`Management.tsx:3544-3568`, `:3847-3894`; API `apps/api/src/sales.ts:1915`).
-- **Administración (`*`):** en **Ventas** › **«Anular»** (si no tiene devoluciones ni abonos válidos) con motivo → «Sí, anular venta» (`Management.tsx:3398-3412`, `:3540-3554`; API `POST /sales/:id/void`, `apps/api/src/sales.ts:2381-2389`). O en **Solicitudes de anulación** › **«Aprobar y anular»** (`apps/web/src/VoidRequests.tsx:155-161`). Nadie aprueba su propia solicitud (`sales.ts:2081`, `:2404`).
-- Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:3886`; `sales.ts:2780-2792`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2773-2778`).
+- **Cajera:** en **Ventas**, solo sobre una venta suya completada y sin solicitud pendiente: **«Solicitar anulación»** → «Tipo de motivo» (Solicitud del cliente, Venta duplicada, Error de pago, Error de artículo, Otro) + «Explica el motivo» (`Management.tsx:3545-3569`, `:3847-3894`; API `apps/api/src/sales.ts:1915`).
+- **Administración (`*`):** en **Ventas** › **«Anular»** (si no tiene devoluciones ni abonos válidos) con motivo → «Sí, anular venta» (`Management.tsx:3399-3413`, `:3540-3554`; API `POST /sales/:id/void`, `apps/api/src/sales.ts:2381-2389`). O en **Solicitudes de anulación** › **«Aprobar y anular»** (`apps/web/src/VoidRequests.tsx:155-161`). Nadie aprueba su propia solicitud (`sales.ts:2081`, `:2404`).
+- Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:3887`; `sales.ts:2780-2792`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2773-2778`).
 
 ## 9. Movimientos de efectivo durante el día
 
@@ -143,10 +143,10 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 
 ## 10. Cierre ciego y cuadre
 
-1. Antes: **cerrar el lote del verifón** (datáfono). La ventana lo recuerda: «Antes de cerrar: cierra el lote del verifón (datáfono) para que los cobros con tarjeta caigan el próximo día.» (`apps/web/src/Tienda.tsx:338-341`).
-2. Caja › **«Cerrar y arquear»** (`Management.tsx:1792`) → ventana **«Cuadre y cierre de caja»** (`Tienda.tsx:318`).
+1. Antes: **cerrar el lote del verifón** (datáfono). La ventana lo recuerda: «Antes de cerrar: cierra el lote del verifón (datáfono) para que los cobros con tarjeta caigan el próximo día.» (`apps/web/src/Tienda.tsx:340-343`).
+2. Caja › **«Cerrar y arquear»** (`Management.tsx:1792`) → ventana **«Cuadre y cierre de caja»** (`Tienda.tsx:320`).
 3. Texto: «Conteo ciego: declara lo que realmente tienes. La comparación con lo esperado aparece después de cerrar.» (`apps/web/src/managementMessages.ts:37-40`).
-4. Se llena (`Tienda.tsx:343-462`):
+4. Se llena (`Tienda.tsx:345-464`):
    - **«Detalles de monedas»**: cantidad de cada denominación (1, 5, 10, 20, 25, 50, 100, 200, 500, 1,000, 2,000) → «Efectivo contado (Sub-total)» (`packages/shared/src/index.ts:650`).
    - **«Vale de caja»** (solo si ve esperados): exige nota y PIN de **otro** gerente; genera alerta alta (`apps/api/src/cash.ts:1139-1165`, `:1366-1385`).
    - **«Dólares US$»** / **«Euros €»** si hay tasa en Configuración.
@@ -154,15 +154,15 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
    - **«Número de lote del verifón»**: obligatorio si hubo cobros con tarjeta (`cash.ts:1196-1210`).
    - **«Entregado»** (efectivo que se le entrega a la dueña) y **«Dejado en caja»** (calculado; será el fondo sugerido de la próxima apertura) (`packages/shared/src/index.ts:688-701`).
    - **«Notas del cierre»**, y la casilla obligatoria «Confirmo que conté efectivo y tarjeta. Las transferencias las suma el sistema.»
-5. Botón **«Cerrar caja e imprimir cuadre»** (`Tienda.tsx:473-476`). `POST /cash-sessions/:id/close` (`cash.ts:1112`).
+5. Botón **«Cerrar caja e imprimir cuadre»** (`Tienda.tsx:475-478`). `POST /cash-sessions/:id/close` (`cash.ts:1112`).
 6. Reglas del cierre en el servidor:
    - Las **transferencias las suma el sistema**, no la cajera (`cash.ts:1213`).
    - Si tarjeta, efectivo o dólares **no cuadran** y quien cierra es cajera (o gerente cerrando SU caja, salvo `*`): no cierra sin el **PIN de otra persona con permiso** y una **justificación del descuadre** (mín. 10 letras). El mensaje no dice cuánto falta ni sobra (`cash.ts:1248-1300`). Mensajes: «El total de tarjeta no coincide con el sistema…», «La caja no cuadra con el sistema. Vuelve a contar…» (`:1268-1274`).
    - Desde el **2.º intento** que no cuadra, todo cierre pide justificación y PIN: «Ya hubo 2 intentos de cierre que no cuadraron…» (`cash.ts:46-48`, `:1254-1268`).
    - Diferencia mayor a «cashDifferenceLimit» (RD$ 100 por defecto) → exige nota y crea alerta «cash_difference» (`cash.ts:203-226`, `:1390-1410`).
-   - Un gerente/administración puede cerrar la caja de otra persona («cierre de emergencia»; el cuadre muestra a ambos) (`Tienda.tsx:330-337`; `cash.ts:1335-1350`).
-   - No se cierra si hay ventas sin sincronizar en el equipo (`Tienda.tsx:248-257`).
-7. Después de cerrar se imprime solo el **Cuadre** (`Management.tsx:2203-2213`, `apps/web/src/Tienda.tsx:77-82`), y se pregunta «¿También deseas imprimir los productos vendidos de esta caja?» con **«Sí, imprimir productos»** / **«No»** (`Tienda.tsx:96-115`). Otros impresos: «Productos vendidos de esta caja», «Facturas por forma de pago» (`Tienda.tsx:116-142`). Desde el historial: botones «Cuadre», «Venta diaria», «Por forma de pago» (`Tienda.tsx:484-514`).
+   - Un gerente/administración puede cerrar la caja de otra persona («cierre de emergencia»; el cuadre muestra a ambos) (`Tienda.tsx:332-339`; `cash.ts:1335-1350`).
+   - No se cierra si hay ventas sin sincronizar en el equipo (`Tienda.tsx:250-259`).
+7. Después de cerrar se imprime solo el **Cuadre** (`Management.tsx:2203-2213`, `apps/web/src/Tienda.tsx:79-84`), y se pregunta «¿También deseas imprimir los productos vendidos de esta caja?» con **«Sí, imprimir productos»** / **«No»** (`Tienda.tsx:98-117`). Otros impresos: «Productos vendidos de esta caja», «Facturas por forma de pago» (`Tienda.tsx:118-144`). Desde el historial: botones «Cuadre», «Venta diaria», «Por forma de pago» (`Tienda.tsx:486-516`).
 8. Cómo se calcula lo esperado en efectivo: apertura + pagos en efectivo − cambio + entradas − salidas − reembolsos en efectivo; tarjeta y transferencia aparte; transferencias rechazadas no cuentan; los abonos solo cuentan una vez aplicados (`apps/api/src/cash.ts:55-113`).
 9. Después del cierre, si una transferencia se verifica o se sincroniza una venta, el cuadre se recalcula y queda en la bitácora (`apps/api/src/sales.ts:3136-3151`).
 

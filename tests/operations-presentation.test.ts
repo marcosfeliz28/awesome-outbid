@@ -57,3 +57,16 @@ it("styles the mobile merchandise shell shortcut only while premium is active wi
   expect(rules.some(rule=>rule[1].includes('data-accent="blue"'))).toBe(true);
   expect(rules.some(rule=>rule[1].includes('data-overview-surface="black"'))).toBe(true);
 });
+
+it("localizes Telegram config without changing test-message authorization, values or effect", () => {
+ const source=read("apps/web/src/Management.tsx").split("function TelegramNotices()")[1].split("function ResetPassword")[0];
+ expect(source).toContain('const en = useLanguage() === "en"');
+ expect(source).toContain('"Send test message"');
+ expect(source).toContain('"Invoice notices via Telegram"');
+ expect(source).toContain('enabled: admin');
+ expect(source).toContain('toast(r.message, !r.queued)');
+ expect(source).toContain('post("/notifications/telegram/test", {})');
+ expect(source).toContain('TELEGRAM_BOT_TOKEN');
+ expect(source).toContain('TELEGRAM_CHAT_ID');
+ expect(source).toContain('data.lastError.message');
+});

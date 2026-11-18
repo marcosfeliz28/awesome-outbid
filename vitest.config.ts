@@ -149,6 +149,9 @@ export default defineConfig({
       "tests/avisos-propios.test.ts",
       "tests/intentos-borrados.test.ts",
       "tests/assistant-unit.test.ts",
+      "tests/config-ai-drive-language.test.ts",
+      "tests/store-settings-language.test.ts",
+      "tests/config-rates-survey-language.test.ts",
     ],
   },
 });

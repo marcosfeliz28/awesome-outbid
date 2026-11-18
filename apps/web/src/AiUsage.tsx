@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { can } from "@fitstore/shared";
 import { api, useStore } from "./api";
 import "./aiUsage.css";
+import { useLanguage } from "./inicioLanguage";
 
 type Line = {
   key: string;
@@ -21,10 +22,11 @@ type Usage = {
   byDay: Line[];
 };
 
-export const usd = (n: number | null) =>
-  n == null ? "sin precio" : "US$" + n.toFixed(4);
+export const usd = (n: number | null, en = false) =>
+  n == null ? (en ? "unpriced" : "sin precio") : "US$" + n.toFixed(4);
 
 function Rows({ title, lines }: { title: string; lines: Line[] }) {
+  const en = useLanguage() === "en";
   return (
     <>
       <h4>{title}</h4>
@@ -41,8 +43,8 @@ function Rows({ title, lines }: { title: string; lines: Line[] }) {
           >
             <strong>{l.key}</strong>
             <span>
-              {l.calls} llamadas · {l.inputTokens + l.outputTokens} tokens ·{" "}
-              {usd(l.costUsd)}
+              {l.calls} {en ? "calls" : "llamadas"} · {l.inputTokens + l.outputTokens} tokens ·{" "}
+              {usd(l.costUsd, en)}
             </span>
           </li>
         ))}
@@ -57,6 +59,7 @@ export function AiUsageCard() {
 }
 
 function AiUsagePanel() {
+  const en = useLanguage() === "en";
   const q = useQuery({
     queryKey: ["ai-usage"],
     queryFn: () => api<Usage>("/ai/usage"),
@@ -64,21 +67,21 @@ function AiUsagePanel() {
   const d = q.data;
   return (
     <section className="ai-usage-card">
-      <h3>Uso y costo de IA</h3>
-      {q.isLoading && <p>Cargando…</p>}
-      {q.isError && <p className="ai-error">No se pudo cargar el uso de IA.</p>}
+      <h3>{en ? "AI usage and cost" : "Uso y costo de IA"}</h3>
+      {q.isLoading && <p>{en ? "Loading…" : "Cargando…"}</p>}
+      {q.isError && <p className="ai-error">{en ? "AI usage could not be loaded." : "No se pudo cargar el uso de IA."}</p>}
       {d && (
         <>
           <p>
-            Del {d.from} al {d.to}:{" "}
+            {en ? "From" : "Del"} {d.from} {en ? "to" : "al"} {d.to}:{" "}
             {d.total
-              ? `${d.total.calls} llamadas, ${usd(d.total.costUsd)}`
-              : "sin uso"}
-            . «sin precio» = falta cargar el precio del modelo.
+              ? `${d.total.calls} ${en ? "calls" : "llamadas"}, ${usd(d.total.costUsd, en)}`
+              : en ? "no usage" : "sin uso"}
+            {en ? ". “unpriced” = the model price has not been entered." : ". «sin precio» = falta cargar el precio del modelo."}
           </p>
-          <Rows title="Por función" lines={d.byFeature} />
-          <Rows title="Por usuario" lines={d.byUser} />
-          <Rows title="Por día" lines={d.byDay} />
+          <Rows title={en ? "By feature" : "Por función"} lines={d.byFeature} />
+          <Rows title={en ? "By user" : "Por usuario"} lines={d.byUser} />
+          <Rows title={en ? "By day" : "Por día"} lines={d.byDay} />
         </>
       )}
     </section>

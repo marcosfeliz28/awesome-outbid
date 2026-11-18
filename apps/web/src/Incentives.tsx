@@ -1,3 +1,4 @@
+import { configRatesSurveyText, type ConfigRatesSurveyKey } from "./configRatesSurveyLanguage";
 import { useLanguage } from "./inicioLanguage";
 import { useOperationsText } from "./operationsLanguage";
 import { PremiumWorkspace } from "./PremiumWorkspace";
@@ -189,6 +190,8 @@ export function MyIncentives() {
 // Tarifas por categoría (Configuración, administración)
 
 export function IncentiveRates() {
+  const english = useLanguage() === "en";
+  const t = (key: ConfigRatesSurveyKey) => configRatesSurveyText(english, key);
   const client = useQueryClient();
   const query = useQuery({
     queryKey: ["incentive-rates"],
@@ -211,7 +214,7 @@ export function IncentiveRates() {
       amount: Number(draft[r.categoryId] ?? r.amount),
     }));
     if (rates.some((r) => !Number.isFinite(r.amount) || r.amount < 0)) {
-      toast("Cada tarifa debe ser un monto de 0 o más.", true);
+      toast(t("Cada tarifa debe ser un monto de 0 o más."), true);
       return;
     }
     setBusy(true);
@@ -221,7 +224,7 @@ export function IncentiveRates() {
         body: JSON.stringify({ rates }),
       });
       await client.invalidateQueries({ queryKey: ["incentive-rates"] });
-      toast("Tarifas de incentivos guardadas.");
+      toast(t("Tarifas de incentivos guardadas."));
     } catch (error: any) {
       toast(error.message, true);
     } finally {
@@ -234,21 +237,19 @@ export function IncentiveRates() {
       aria-labelledby="incentive-rates-title"
     >
       <div className="panel-heading">
-        <h3 id="incentive-rates-title">Incentivos por categoría</h3>
+        <h3 id="incentive-rates-title">{t("Incentivos por categoría")}</h3>
       </div>
       <p>
-        Lo que gana la cajera por cada unidad vendida. «Venta al por mayor» paga
-        la mitad. Cambiar una tarifa no altera lo ya ganado: cada venta guarda
-        la tarifa vigente al cobrar.
+        {t("Lo que gana la cajera por cada unidad vendida. «Venta al por mayor» paga la mitad. Cambiar una tarifa no altera lo ya ganado: cada venta guarda la tarifa vigente al cobrar.")}
       </p>
-      <QueryState query={query}>
+      <QueryState english={english} query={query}>
         <form onSubmit={save}>
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>CATEGORÍA</th>
-                  <th>RD$ POR UNIDAD</th>
+                  <th>{t("CATEGORÍA")}</th>
+                  <th>{t("RD$ POR UNIDAD")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -256,7 +257,7 @@ export function IncentiveRates() {
                   <tr key={r.categoryId}>
                     <td>
                       {r.name}{" "}
-                      {r.isDefault && <Badge tone="neutral">Por defecto</Badge>}
+                      {r.isDefault && <Badge tone="neutral">{t("Por defecto")}</Badge>}
                     </td>
                     <td>
                       <input
@@ -264,7 +265,7 @@ export function IncentiveRates() {
                         min="0"
                         step="0.01"
                         inputMode="decimal"
-                        aria-label={"Incentivo por unidad de " + r.name}
+                        aria-label={t("Incentivo por unidad de ") + r.name}
                         value={draft[r.categoryId] ?? ""}
                         onChange={(e) =>
                           setDraft({ ...draft, [r.categoryId]: e.target.value })
@@ -277,7 +278,7 @@ export function IncentiveRates() {
             </table>
           </div>
           <Button disabled={busy}>
-            {busy ? "Guardando…" : "Guardar tarifas"}
+            {busy ? t("Guardando…") : t("Guardar tarifas")}
           </Button>
         </form>
       </QueryState>
@@ -502,7 +503,7 @@ export function IncentivesPage() {
             {(rates.data ?? [])
               .filter((r) => r.amount > 0)
               .map((r) => `${r.name} ${formatMoney(r.amount)}`)
-              .join(" · ") || "sin tarifas"}
+              .join(" · ") || ot("sin tarifas")}
             {ot(". Las tarifas se cambian en Configuración y no alteran lo ya ganado.")}</li>
           <li>
             {ot("«Venta al por mayor» (un clic en el punto de venta) paga la mitad del incentivo de esa venta; no cambia precios ni totales. La columna «Al por mayor» ayuda a revisar su uso.")}</li>

@@ -88,3 +88,14 @@ test('alert and configuration headings follow language and dates retain existing
  assert.match(management,/dateLabel\(a.createdAt, en \? "en-US" : "es-DO"\)/);
  assert.match(management,/dateLabel\(selected.createdAt, en \? "en-US" : "es-DO"\)/);
 });
+
+
+test('incentive empty rates are localized without changing rate selection or amounts', () => {
+ const source = read('Incentives.tsx');
+ assert.ok(source.includes('.join(" · ") || ot("sin tarifas")'));
+ assert.ok(source.includes('.filter((r) => r.amount > 0)'));
+ assert.ok(source.includes('.map((r) => `${r.name} ${formatMoney(r.amount)}`)'));
+ const dictionary = read('operationsLanguage.ts');
+ assert.ok(dictionary.includes('"sin tarifas": "no rates configured"'));
+ assert.ok(dictionary.includes('return (text: string) => en ? (EN[text] ?? text) : text;'));
+});

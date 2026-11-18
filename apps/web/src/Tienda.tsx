@@ -1,3 +1,5 @@
+import { useLanguage } from "./inicioLanguage";
+import { storeSettingsText } from "./storeSettingsLanguage";
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
 import { filterCredits } from "./codPendingSearch";
@@ -1271,6 +1273,8 @@ function CodCollect({
 
 /** Ajustes de la tienda: logo, número/nombre de cada caja y de cada cajero. */
 export function StoreSettings() {
+  const english = useLanguage() === "en";
+  const st = (text: string) => storeSettingsText(english, text);
   const client = useQueryClient();
   const terminals = useQuery({
     queryKey: ["terminals"],
@@ -1289,7 +1293,7 @@ export function StoreSettings() {
   const upload = async (file: File | undefined) => {
     if (!file) return;
     if (file.size > 200 * 1024) {
-      toast("El logo debe pesar como máximo 200 KB.", true);
+      toast(st("El logo debe pesar como máximo 200 KB."), true);
       return;
     }
     const body = new FormData();
@@ -1297,7 +1301,7 @@ export function StoreSettings() {
     try {
       await api("/settings/logo", { method: "POST", body });
       await client.invalidateQueries({ queryKey: ["settings"] });
-      toast("Logo guardado.");
+      toast(st("Logo guardado."));
     } catch (e: any) {
       toast(e.message, true);
     }
@@ -1308,13 +1312,13 @@ export function StoreSettings() {
     <div className="store-settings">
       <div className="store-logo">
         {config.data?.logo ? (
-          <img src={config.data.logo} alt="Logo del negocio" />
+          <img src={config.data.logo} alt={st("Logo del negocio")} />
         ) : (
-          <span>Sin logo</span>
+          <span>{st("Sin logo")}</span>
         )}
         <label className="button secondary">
           <Upload size={16} />
-          Subir logo (hasta 200 KB)
+          {st("Subir logo (hasta 200 KB)")}
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1323,7 +1327,7 @@ export function StoreSettings() {
           />
         </label>
       </div>
-      <h3>Cajas (número y nombre en el cuadre)</h3>
+      <h3>{st("Cajas (número y nombre en el cuadre)")}</h3>
       <div className="store-list">
         {(terminals.data ?? [])
           .filter((t) => !t.revokedAt)
@@ -1334,15 +1338,15 @@ export function StoreSettings() {
                   {t.registerNumber ? t.registerNumber + " · " : ""}
                   {t.registerName || t.name}
                 </strong>
-                <small>Equipo: {t.name}</small>
+                <small>{st("Equipo: ")}{t.name}</small>
               </span>
               <Button variant="secondary" onClick={() => setRegister(t)}>
-                Editar caja
+                {st("Editar caja")}
               </Button>
             </div>
           ))}
       </div>
-      <h3>Cajeros (número en el cuadre y los reportes)</h3>
+      <h3>{st("Cajeros (número en el cuadre y los reportes)")}</h3>
       <div className="store-list">
         {(users.data ?? []).map((u) => (
           <div key={u.id}>
@@ -1354,17 +1358,18 @@ export function StoreSettings() {
               <small>{u.email}</small>
             </span>
             <Button variant="secondary" onClick={() => setCashier(u)}>
-              No. de cajero
+              {st("No. de cajero")}
             </Button>
           </div>
         ))}
       </div>
       {register && (
         <FormModal
-          title={"Caja · " + register.name}
+          english={english}
+          title={st("Caja · ") + register.name}
           fields={[
-            { key: "registerNumber", label: "Número de caja (ej. 4012)" },
-            { key: "registerName", label: "Nombre de caja" },
+            { key: "registerNumber", label: st("Número de caja (ej. 4012)") },
+            { key: "registerName", label: st("Nombre de caja") },
           ]}
           initial={{
             registerNumber: register.registerNumber ?? "",
@@ -1385,9 +1390,10 @@ export function StoreSettings() {
       )}
       {cashier && (
         <FormModal
-          title={"Cajero · " + cashier.name}
+          english={english}
+          title={st("Cajero · ") + cashier.name}
           fields={[
-            { key: "cashierNumber", label: "Número de cajero (ej. 1031)" },
+            { key: "cashierNumber", label: st("Número de cajero (ej. 1031)") },
           ]}
           initial={{ cashierNumber: cashier.cashierNumber ?? "" }}
           onClose={() => setCashier(null)}

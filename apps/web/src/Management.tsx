@@ -4310,6 +4310,7 @@ export function SalesHistory() {
 // Avisos de facturas por Telegram: estado de la cola y prueba de conexión.
 // El token y el chat sólo viven en las variables del servidor.
 function TelegramNotices() {
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const admin = can(user.permissions, "*");
   const client = useQueryClient();
@@ -4344,43 +4345,40 @@ function TelegramNotices() {
   return (
     <section className="telegram-card" aria-labelledby="telegram-title">
       <div className="panel-heading">
-        <h3 id="telegram-title">Avisos de facturas por Telegram</h3>
+        <h3 id="telegram-title">{en ? "Invoice notices via Telegram" : "Avisos de facturas por Telegram"}</h3>
         {data && (
           <Badge tone={data.enabled ? "success" : "neutral"}>
-            {data.enabled ? "Activados" : "Desactivados"}
+            {data.enabled ? (en ? "Enabled" : "Activados") : (en ? "Disabled" : "Desactivados")}
           </Badge>
         )}
       </div>
       <p>
-        Cada factura, anulación, devolución, cobro y cierre de caja llega al
-        grupo de Telegram de la administración. Sin cédula, teléfono, correo ni
-        dirección del cliente.
+        {en ? "Every invoice, void, return, collection and register closing is sent to the management Telegram group. No customer ID, phone, email or address is included." : "Cada factura, anulación, devolución, cobro y cierre de caja llega al grupo de Telegram de la administración. Sin cédula, teléfono, correo ni dirección del cliente."}
       </p>
       {data?.enabled ? (
         <p>
-          Enviados: <strong>{data.sent}</strong> · Pendientes:{" "}
-          <strong>{data.pending}</strong> · Fallidos:{" "}
+          {en ? "Sent:" : "Enviados:"} <strong>{data.sent}</strong> · {en ? "Pending:" : "Pendientes:"}{" "}
+          <strong>{data.pending}</strong> · {en ? "Failed:" : "Fallidos:"}{" "}
           <strong>{data.failed}</strong>
           {data.lastError && (
             <>
               <br />
-              <small>Último error: {data.lastError.message}</small>
+              <small>{en ? "Last error:" : "Último error:"} {data.lastError.message}</small>
             </>
           )}
         </p>
       ) : (
         <ol>
-          <li>En Telegram, crea el bot con @BotFather (/newbot).</li>
-          <li>Agrega el bot al grupo privado de la administración.</li>
+          <li>{en ? "In Telegram, create the bot with @BotFather (/newbot)." : "En Telegram, crea el bot con @BotFather (/newbot)."}</li>
+          <li>{en ? "Add the bot to the private management group." : "Agrega el bot al grupo privado de la administración."}</li>
           <li>
-            En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve
-            a desplegar.
+            {en ? "In Render (API), set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID, then redeploy." : "En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve a desplegar."}
           </li>
         </ol>
       )}
       {admin && (
         <Button variant="secondary" onClick={test} disabled={sending}>
-          {sending ? "Enviando…" : "Enviar mensaje de prueba"}
+          {sending ? (en ? "Sending…" : "Enviando…") : (en ? "Send test message" : "Enviar mensaje de prueba")}
         </Button>
       )}
     </section>

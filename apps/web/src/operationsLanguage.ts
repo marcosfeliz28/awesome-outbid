@@ -1,5 +1,6 @@
 import { useLanguage } from "./inicioLanguage";
 const EN: Record<string, string> = {
+"sin tarifas": "no rates configured",
 "Prioriza productos sin rotación o próximos a vencer. El descuento sugerido protege tu costo.": "Prioritize slow-moving or expiring products. The suggested discount protects your cost.",
 "oportunidades": "opportunities",
 "unidades": "units",
