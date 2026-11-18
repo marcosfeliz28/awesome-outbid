@@ -45,7 +45,7 @@ El candidato `94f11b31` y la base `0fc775a6` pasaron los tres controles. Sus `ve
 
 ## Estado de la rama base a las 20:18 UTC
 
-`origin/nexora-cloud` avanzó por una actualización externa a `94f11b31ca4f6c659c6fc3a6399de850744ecf8f`, el mismo SHA de Dot. Su nuevo control de push es `44385086652`. Pasaron las imágenes y el instalador. `verify` seguía en curso al consultar. La ejecución anterior de la rama Dot sobre ese SHA ya aprobó los tres controles. Los hallazgos visuales y de teclado de este informe siguen abiertos. El estado del sitio servido queda pendiente de comprobación. [CI del push a la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44385086652)
+`origin/nexora-cloud` avanzó por una actualización externa a `94f11b31ca4f6c659c6fc3a6399de850744ecf8f`, el mismo SHA de Dot. Su nuevo control de push es `44385086652`. Su ejecución terminó con los tres controles aprobados. `verify` cerró a las 20:26:29 UTC. La ejecución anterior de la rama Dot sobre ese SHA ya aprobó los tres controles. Los hallazgos visuales y de teclado de este informe siguen abiertos. El estado del sitio servido queda pendiente de comprobación. [CI del push a la base](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44385086652)
 
 ## Siguiente entrega de Dot
 
