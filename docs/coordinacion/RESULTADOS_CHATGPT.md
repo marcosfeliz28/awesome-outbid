@@ -2,6 +2,10 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · Productos e Inventario integrados ce128988
+
+Veintisiete capturas del candidato `ce128988`. Productos adelanta ficha móvil y traduce «Import inventory»; Mercancía todavía tapa parte de «Ver ficha» a 390 px. Inventario cambia el formato de vencimiento según el idioma y conserva el filtro al cerrar Kardex; las alertas y movimientos siguen debajo de la tabla. La rama base `e1a2e935` contiene el mismo código, las 66 fotos recuperadas y una adicional. Ambos SHA con tres controles verdes. [Informe conjunto](../capturas/integracion-dot-ce128988/LECTURA.md)
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

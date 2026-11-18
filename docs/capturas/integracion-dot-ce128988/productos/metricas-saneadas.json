@@ -1,0 +1,123 @@
+{
+  "candidateSha": "ce128988eb7ad6ab83ad12ce0674c796a95fac7b",
+  "baselineSha": "a27a42632eafa8679e165ff5fd811d2b451e7cfb",
+  "network": {
+    "web": "127.0.0.1:14294",
+    "api": "simulated in browser",
+    "externalHosts": "blocked",
+    "serviceWorkers": "blocked"
+  },
+  "syntheticData": {
+    "products": 25,
+    "categories": 3,
+    "businessWrites": 0
+  },
+  "scenarios": [
+    {
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "layout": {
+        "scrollOverflow": 0,
+        "previewTop": 106,
+        "previewBottom": 952,
+        "panelTop": 435,
+        "goodsBarHeight": 0,
+        "goodsBarOverlaps": []
+      },
+      "selection": {
+        "before": 0,
+        "after": 0,
+        "previewTop": 106
+      },
+      "realPhotoLoaded": true,
+      "fallbackShown": true,
+      "importNotice": false,
+      "businessWrites": 0,
+      "offlineLabel": "Sin conexión"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "layout": {
+        "scrollOverflow": 0,
+        "previewTop": 106,
+        "previewBottom": 918,
+        "panelTop": 384,
+        "goodsBarHeight": 0,
+        "goodsBarOverlaps": []
+      },
+      "selection": {
+        "before": 0,
+        "after": 0,
+        "previewTop": 106
+      },
+      "realPhotoLoaded": true,
+      "fallbackShown": true,
+      "importNotice": true,
+      "businessWrites": 0,
+      "offlineLabel": "Offline"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "layout": {
+        "scrollOverflow": 0,
+        "previewTop": 546,
+        "previewBottom": 992,
+        "panelTop": 1012,
+        "goodsBarHeight": 68,
+        "goodsBarOverlaps": [
+          {
+            "label": "Ver ficha",
+            "overlap": 43
+          }
+        ]
+      },
+      "selection": {
+        "before": 0,
+        "after": 0,
+        "previewTop": 546
+      },
+      "realPhotoLoaded": true,
+      "fallbackShown": true,
+      "importNotice": false,
+      "businessWrites": 0,
+      "offlineLabel": "Sin conexión"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "layout": {
+        "scrollOverflow": 0,
+        "previewTop": 507,
+        "previewBottom": 953,
+        "panelTop": 973,
+        "goodsBarHeight": 68,
+        "goodsBarOverlaps": [
+          {
+            "label": "Search name, SKU or brand",
+            "overlap": 7
+          },
+          {
+            "label": "View details",
+            "overlap": 4
+          }
+        ]
+      },
+      "selection": {
+        "before": 0,
+        "after": 0,
+        "previewTop": 507
+      },
+      "realPhotoLoaded": true,
+      "fallbackShown": true,
+      "importNotice": true,
+      "businessWrites": 0,
+      "offlineLabel": "Offline"
+    }
+  ]
+}
