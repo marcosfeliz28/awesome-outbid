@@ -190,10 +190,12 @@ function DataTable({
   );
 }
 function Heading({
+  eyebrow = "TU NEGOCIO, CON CLARIDAD",
   title,
   caption,
   children,
 }: {
+  eyebrow?: string;
   title: string;
   caption: string;
   children?: ReactNode;
@@ -201,7 +203,7 @@ function Heading({
   return (
     <div className="page-heading">
       <div>
-        <span className="eyebrow">TU NEGOCIO, CON CLARIDAD</span>
+        <span className="eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
         <p>{caption}</p>
       </div>
@@ -3260,6 +3262,9 @@ export function SalesHistory() {
   return (
     <section className="sales-fusion">
       <Heading
+        eyebrow={
+          en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"
+        }
         title={
           en ? "Every sale tells a story" : "Cada venta tiene una historia"
         }
@@ -3315,7 +3320,16 @@ export function SalesHistory() {
                 },
                 {
                   label: en ? "Date" : "Fecha",
-                  render: (s) => dateLabel(s.createdAt),
+                  render: (s) =>
+                    new Date(s.createdAt).toLocaleDateString(
+                      en ? "en-US" : "es-DO",
+                      {
+                        timeZone: "America/Santo_Domingo",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      },
+                    ),
                 },
                 {
                   label: en ? "Status" : "Estado",
@@ -3324,19 +3338,25 @@ export function SalesHistory() {
                       <Badge
                         tone={s.status === "voided" ? "danger" : "success"}
                       >
-                        {s.status === "voided" ? "Anulada" : "Completada"}
+                        {s.status === "voided"
+                          ? en
+                            ? "Voided"
+                            : "Anulada"
+                          : en
+                            ? "Completed"
+                            : "Completada"}
                       </Badge>
                       {s.voidRequest && (
                         <small>
                           {" "}
-                          · Solicitud{" "}
+                          · {en ? "Request" : "Solicitud"}{" "}
                           {
                             (
                               {
-                                pending: "pendiente",
-                                approved: "aprobada",
-                                rejected: "rechazada",
-                                cancelled: "cancelada",
+                                pending: en ? "pending" : "pendiente",
+                                approved: en ? "approved" : "aprobada",
+                                rejected: en ? "rejected" : "rechazada",
+                                cancelled: en ? "cancelled" : "cancelada",
                               } as Record<string, string>
                             )[s.voidRequest.status]
                           }
@@ -3354,12 +3374,21 @@ export function SalesHistory() {
                   label: en ? "Payments" : "Pagos",
                   render: (s) =>
                     s.hiddenUntilClose
-                      ? "Se ve al cerrar tu caja"
+                      ? en
+                        ? "Visible after closing your register"
+                        : "Se ve al cerrar tu caja"
                       : s.payments
-                          .map(
-                            (p: any) =>
-                              paymentOptions.find((o) => o.value === p.method)
-                                ?.label,
+                          .map((p: any) =>
+                            en
+                              ? ((
+                                  {
+                                    cash: "Cash",
+                                    card: "Card",
+                                    transfer: "Transfer",
+                                  } as Record<string, string>
+                                )[p.method] ?? p.method)
+                              : paymentOptions.find((o) => o.value === p.method)
+                                  ?.label,
                           )
                           .join(" + "),
                 },
@@ -3369,7 +3398,7 @@ export function SalesHistory() {
                     <div className="table-actions">
                       <button
                         onClick={() => setSelected(s)}
-                        aria-label={"Ver " + s.number}
+                        aria-label={(en ? "View " : "Ver ") + s.number}
                       >
                         <Eye size={18} />
                       </button>
@@ -3380,7 +3409,7 @@ export function SalesHistory() {
                             s.number + ".pdf",
                           ).catch((e) => toast(e.message, true))
                         }
-                        aria-label={"PDF de " + s.number}
+                        aria-label={(en ? "PDF for " : "PDF de ") + s.number}
                       >
                         <Download size={18} />
                       </button>
@@ -3390,8 +3419,10 @@ export function SalesHistory() {
                             (e) => toast(e.message, true),
                           )
                         }
-                        aria-label={"Reimprimir " + s.number}
-                        title="Reimprimir"
+                        aria-label={
+                          (en ? "Reprint " : "Reimprimir ") + s.number
+                        }
+                        title={en ? "Reprint" : "Reimprimir"}
                       >
                         <Printer size={18} />
                       </button>
@@ -3414,7 +3445,7 @@ export function SalesHistory() {
                               });
                             }}
                           >
-                            Registrar abono
+                            {en ? "Record payment" : "Registrar abono"}
                           </button>
                         )}
                       {!can(user.permissions, "*") &&
@@ -3430,7 +3461,7 @@ export function SalesHistory() {
                               })
                             }
                           >
-                            Solicitar anulación
+                            {en ? "Request void" : "Solicitar anulación"}
                           </button>
                         )}
                       {can(user.permissions, "sale:manage") &&
@@ -3454,7 +3485,7 @@ export function SalesHistory() {
                               });
                             }}
                           >
-                            Devolver
+                            {en ? "Return" : "Devolver"}
                           </button>
                         )}
                       {can(user.permissions, "*") &&
@@ -3469,7 +3500,7 @@ export function SalesHistory() {
                             className="text-link danger-text"
                             onClick={() => setVoiding(s)}
                           >
-                            Anular
+                            {en ? "Void" : "Anular"}
                           </button>
                         )}
                     </div>

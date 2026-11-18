@@ -7,7 +7,11 @@ const view = source.slice(
   source.indexOf("function TelegramNotices()"),
 );
 assert.match(view, /className="sales-fusion"/);
-assert.match(view, /Cada venta tiene una historia/, "preserves E2E navigation heading");
+assert.match(
+  view,
+  /Cada venta tiene una historia/,
+  "preserves E2E navigation heading",
+);
 assert.match(view, /Every sale tells a story/, "English heading is translated");
 assert.match(
   view,
@@ -32,6 +36,10 @@ assert.match(css, /--primary: var\(--sv-accent\)/);
 assert.match(summary, /\{number\s*\? en/);
 assert.match(summary, /Venta seleccionada/);
 assert.match(summary, /Selected sale/);
+assert.match(view, /YOUR BUSINESS, WITH CLARITY/);
+assert.match(view, /en-US/);
+assert.match(view, /View /);
+assert.match(view, /Cash/);
 log(
-  "PASS: 20 presentation, permissions, blind cash and accessibility contracts",
+  "PASS: 24 presentation, permissions, blind cash and accessibility contracts",
 );
