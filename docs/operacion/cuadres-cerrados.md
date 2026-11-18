@@ -28,3 +28,8 @@
 | 17-nov | Transferencias FS-691 (1,850), FS-700 (5,950), FS-702 (5,800), FS-704 (3,950) | Verificadas con extracto Popular (FS-704 anotada en Génesis ···9797, cayó en este Popular). |
 | 17-nov | Cardnet lote 167 (14,800) | Depósito 14,230.20 en Banreservas = 14,800 − 3.85 %. |
 | 17-nov | Cierres de caja Jade, Wendy y Lizbeth + vouchers GPRO lote 168 (3,500) y GV lote 018 (5,000) | Cuadran con la dueña (fotos). Efectivo Jade +50 aprobado. Lizbeth escribió lote «118» (es 018); no editable. Cobros COD de Jade 16,650 en efectivo = FS-694 3,900 + FS-695 9,050 + FS-685 3,700. |
+| 18-nov | FS-693 (3,300, «Castillo») y FS-696 (4,250, «Pena Frias Jaimy Josefi») | Verificadas por la dueña («sí»). |
+| 18-nov | FS-686 y FS-662 (solicitudes de anulación) | La dueña las aprueba ella misma en el sistema. No mencionarlas más. |
+| 18-nov | Banreservas +950 Ana Daysi Díaz, +3,950 sin nombre, −1,700 Javier Mordan | Pueden ser de otros días; los −1,700 son del mensajero nuevo. Cerrado. |
+| 18-nov | BHD −3,050 «Devolución» (16-nov) | Cerrado: ese pedido ya se anuló. |
+| 18-nov | Kenia, cobro doble de 800 (16-nov, GV) | Se deja así, la clienta no se quejó. |
