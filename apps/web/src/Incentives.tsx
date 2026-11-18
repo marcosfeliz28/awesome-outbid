@@ -1,3 +1,7 @@
+import { useLanguage } from "./inicioLanguage";
+import { useOperationsText } from "./operationsLanguage";
+import { PremiumWorkspace } from "./PremiumWorkspace";
+import "./premiumOperations.css";
 // Incentivos por cajera (docs/INCENTIVOS.md): interruptor «Venta al por
 // mayor» del punto de venta, cuadro «Mis incentivos» de la cajera (sólo lo
 // suyo), tarifas por categoría en Configuración y la pantalla «Incentivos»
@@ -285,6 +289,8 @@ export function IncentiveRates() {
 // Pantalla «Incentivos» (gerencia y administración)
 
 export function IncentivesPage() {
+  const ot = useOperationsText();
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const admin = can(user.permissions, "*");
   const client = useQueryClient();
@@ -318,19 +324,18 @@ export function IncentivesPage() {
     }
   };
   return (
+    <PremiumWorkspace area="incentives">
     <div className="incentives-page">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">CUADRE MENSUAL</span>
-          <h1>Incentivos</h1>
+          <span className="eyebrow">{ot("CUADRE MENSUAL")}</span>
+          <h1>{ot("Incentivos")}</h1>
           <p>
-            Lo que gana cada cajera por unidad vendida, con su nombre. Se cuadra
-            y se cierra a fin de mes.
-          </p>
+            {ot("Lo que gana cada cajera por unidad vendida, con su nombre. Se cuadra y se cierra a fin de mes.")}</p>
         </div>
         <div className="heading-actions">
           <label className="field incentive-month">
-            <span>Mes</span>
+            <span>{ot("Mes")}</span>
             <input
               type="month"
               value={month}
@@ -348,25 +353,23 @@ export function IncentivesPage() {
             }
           >
             <Download size={16} />
-            Exportar Excel
-          </Button>
+            {ot("Exportar Excel")}</Button>
           {/* B-3: sólo un mes terminado se cierra (la API lo exige). */}
           {admin && report && !report.closed && month < currentMonth() && (
             <Button onClick={() => setClosing(true)}>
               <Lock size={16} />
-              Cerrar mes
-            </Button>
+              {ot("Cerrar mes")}</Button>
           )}
         </div>
       </div>
-      <QueryState query={query}>
+      <QueryState english={en} query={query}>
         {report && (
           <div className="panel">
             <div className="panel-heading incentive-status">
               <h2>{report.label}</h2>
               {report.closed ? (
                 <Badge tone="success">
-                  Mes cerrado ·{" "}
+                  {ot("Mes cerrado ·")}{" "}
                   {new Date(report.closed.closedAt).toLocaleString("es-DO", {
                     timeZone: "America/Santo_Domingo",
                     dateStyle: "short",
@@ -375,19 +378,16 @@ export function IncentivesPage() {
                   · {report.closed.closedByName}
                 </Badge>
               ) : (
-                <Badge tone="warning">Mes abierto · cifras preliminares</Badge>
+                <Badge tone="warning">{ot("Mes abierto · cifras preliminares")}</Badge>
               )}
             </div>
             {admin && !report.closed && month === currentMonth() && (
               <p className="incentive-hint">
-                El mes en curso se cierra cuando termine, a partir del día 1 del
-                mes siguiente.
-              </p>
+                {ot("El mes en curso se cierra cuando termine, a partir del día 1 del mes siguiente.")}</p>
             )}
             {report.openPeriod && report.openPeriod !== currentMonth() && (
               <p className="incentive-hint">
-                Este mes ya se cerró: las ventas y devoluciones nuevas cuentan
-                en {report.openPeriod}.
+                {ot("Este mes ya se cerró: las ventas y devoluciones nuevas cuentan en")}{report.openPeriod}.
               </p>
             )}
             {rows.length ? (
@@ -395,14 +395,14 @@ export function IncentivesPage() {
                 <table className="incentive-table">
                   <thead>
                     <tr>
-                      <th>CAJERA</th>
-                      <th>VENTAS</th>
-                      <th>UNIDADES POR CATEGORÍA</th>
-                      <th>BRUTO</th>
-                      <th>DEVOLUCIONES Y ANULACIONES</th>
-                      <th>AL POR MAYOR</th>
-                      <th>NETO</th>
-                      <th>POR COBRAR</th>
+                      <th>{ot("CAJERA")}</th>
+                      <th>{ot("VENTAS")}</th>
+                      <th>{ot("UNIDADES POR CATEGORÍA")}</th>
+                      <th>{ot("BRUTO")}</th>
+                      <th>{ot("DEVOLUCIONES Y ANULACIONES")}</th>
+                      <th>{ot("AL POR MAYOR")}</th>
+                      <th>{ot("NETO")}</th>
+                      <th>{ot("POR COBRAR")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -422,12 +422,10 @@ export function IncentivesPage() {
                             }
                           >
                             <FileText size={14} aria-hidden="true" />
-                            Recibo PDF
-                          </button>
+                            {ot("Recibo PDF")}</button>
                           {r.lateEntries > 0 && (
                             <small>
-                              {r.lateEntries} movimiento(s) de un mes ya cerrado
-                            </small>
+                              {r.lateEntries} {ot("movimiento(s) de un mes ya cerrado")}</small>
                           )}
                         </td>
                         <td>{r.salesCount}</td>
@@ -437,16 +435,14 @@ export function IncentivesPage() {
                           {formatMoney(r.deductions)}
                           {r.priorDeductions !== 0 && (
                             <small>
-                              {formatMoney(r.priorDeductions)} de ventas de
-                              meses anteriores
-                            </small>
+                              {formatMoney(r.priorDeductions)} {ot("de ventas de meses anteriores")}</small>
                           )}
                         </td>
                         <td>
                           {r.wholesaleSales}{" "}
                           {r.salesCount > 0 &&
                             r.wholesaleSales / r.salesCount >= 0.5 && (
-                              <Badge tone="warning">Revisar</Badge>
+                              <Badge tone="warning">{ot("Revisar")}</Badge>
                             )}
                         </td>
                         <td>
@@ -454,8 +450,7 @@ export function IncentivesPage() {
                           {r.negative && (
                             <small className="incentive-negative">
                               <AlertTriangle size={13} aria-hidden="true" />
-                              Saldo negativo por devoluciones
-                            </small>
+                              {ot("Saldo negativo por devoluciones")}</small>
                           )}
                         </td>
                         <td>
@@ -468,7 +463,7 @@ export function IncentivesPage() {
                           )}
                           {r.pendingEstimate ? (
                             <small>
-                              Por cobrar (estimado):{" "}
+                              {ot("Por cobrar (estimado):")}{" "}
                               {formatMoney(r.pendingEstimate)}
                             </small>
                           ) : null}
@@ -494,62 +489,48 @@ export function IncentivesPage() {
               </div>
             ) : (
               <p className="incentive-hint">
-                Todavía no hay ventas con incentivo en este mes.
-              </p>
+                {ot("Todavía no hay ventas con incentivo en este mes.")}</p>
             )}
           </div>
         )}
       </QueryState>
       <div className="panel incentive-rules">
-        <h2>Cómo se calcula</h2>
+        <h2>{ot("Cómo se calcula")}</h2>
         <ul>
           <li>
-            Cada unidad vendida paga la tarifa de su categoría a la cajera que
-            registra la venta:{" "}
+            {ot("Cada unidad vendida paga la tarifa de su categoría a la cajera que registra la venta:")}{" "}
             {(rates.data ?? [])
               .filter((r) => r.amount > 0)
               .map((r) => `${r.name} ${formatMoney(r.amount)}`)
               .join(" · ") || "sin tarifas"}
-            . Las tarifas se cambian en Configuración y no alteran lo ya ganado.
-          </li>
+            {ot(". Las tarifas se cambian en Configuración y no alteran lo ya ganado.")}</li>
           <li>
-            «Venta al por mayor» (un clic en el punto de venta) paga la mitad
-            del incentivo de esa venta; no cambia precios ni totales. La columna
-            «Al por mayor» ayuda a revisar su uso.
-          </li>
+            {ot("«Venta al por mayor» (un clic en el punto de venta) paga la mitad del incentivo de esa venta; no cambia precios ni totales. La columna «Al por mayor» ayuda a revisar su uso.")}</li>
           <li>
-            Devoluciones y anulaciones descuentan en el mes en que ocurren, por
-            unidades devueltas, aunque la venta sea de un mes anterior.
-          </li>
+            {ot("Devoluciones y anulaciones descuentan en el mes en que ocurren, por unidades devueltas, aunque la venta sea de un mes anterior.")}</li>
           <li>
-            «Por cobrar»: incentivo de ventas a crédito o contraentrega aún sin
-            cobrar. Está incluido en el neto; la dueña decide si lo retiene.
-          </li>
+            {ot("«Por cobrar»: incentivo de ventas a crédito o contraentrega aún sin cobrar. Está incluido en el neto; la dueña decide si lo retiene.")}</li>
           <li>
-            «Cerrar mes» guarda el cuadre y ya no cambia. Una venta tardía o una
-            devolución de ese mes cuenta en el siguiente mes abierto, con nota.
-          </li>
+            {ot("«Cerrar mes» guarda el cuadre y ya no cambia. Una venta tardía o una devolución de ese mes cuenta en el siguiente mes abierto, con nota.")}</li>
         </ul>
       </div>
-      <Modal
+      <Modal closeLabel={en ? "Close" : "Cerrar"}
         open={closing}
         onClose={() => setClosing(false)}
         title={"Cerrar " + (report?.label ?? month)}
       >
         <p>
-          Se guardará el cuadre de cada cajera tal como está ahora (neto{" "}
-          {formatMoney(sum("net"))}). Después no se recalcula: las ventas
-          tardías y devoluciones de este mes contarán en el mes siguiente.
-        </p>
+          {ot("Se guardará el cuadre de cada cajera tal como está ahora (neto")}{" "}
+          {formatMoney(sum("net"))}{ot("). Después no se recalcula: las ventas tardías y devoluciones de este mes contarán en el mes siguiente.")}</p>
         <div className="modal-footer">
           <Button variant="secondary" onClick={() => setClosing(false)}>
-            Cancelar
-          </Button>
+            {ot("Cancelar")}</Button>
           <Button onClick={close} disabled={busy}>
             {busy ? "Cerrando…" : "Cerrar el mes"}
           </Button>
         </div>
       </Modal>
     </div>
+    </PremiumWorkspace>
   );
 }

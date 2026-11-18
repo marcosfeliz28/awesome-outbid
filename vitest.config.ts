@@ -8,6 +8,11 @@ export default defineConfig({
     // dejar una prueba esperando hasta su timeout aunque aislada tarde segundos.
     maxWorkers: 4,
     include: [
+      "apps/web/src/premiumWorkspace.test.ts",
+      "tests/operaciones-language.test.ts",
+      "tests/operations-presentation.test.ts",
+      "tests/operational-aux.test.ts",
+      "tests/merchandise-premium.test.ts",
       "tests/inventario-presentacion.test.ts",
       "tests/inventory-language.test.ts",
       "tests/inventory-appearance.test.ts",

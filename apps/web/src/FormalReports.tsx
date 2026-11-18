@@ -1,3 +1,5 @@
+import { useLanguage } from "./inicioLanguage";
+import { reportSecondaryLabel } from "./reportSecondaryCopy";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@fitstore/ui";
@@ -6,6 +8,8 @@ import { api, download } from "./api";
 import { QueryState, toast, today } from "./helpers";
 
 export function FormalReports() {
+  const en = useLanguage() === "en";
+  const text = (value: string) => reportSecondaryLabel(value, en);
   const [period, setPeriod] = useState<"day" | "month">("day");
   const [date, setDate] = useState(today());
   const params = new URLSearchParams({ period, date });
@@ -30,19 +34,18 @@ export function FormalReports() {
     <section className="panel formal-report">
       <div className="panel-heading">
         <div>
-          <h2>Informe formal diario o mensual</h2>
+          <h2>{text("Informe formal diario o mensual")}</h2>
           <p>
-            Ventas, cobros, bancos, cajas, créditos y auditoría en un PDF para
-            compartir.
+            {en ? "Sales, collections, banks, registers, credit and audit in a shareable PDF." : "Ventas, cobros, bancos, cajas, créditos y auditoría en un PDF para compartir."}
           </p>
         </div>
         <Button onClick={pdf} disabled={!date || query.isLoading}>
-          Descargar PDF
+          {text("Descargar PDF")}
         </Button>
       </div>
       <div className="date-filters">
         <label className="field">
-          <span>Período</span>
+          <span>{text("Per\u00edodo")}</span>
           <select
             value={period}
             onChange={(e) => {
@@ -51,12 +54,12 @@ export function FormalReports() {
               setDate(next === "month" ? today().slice(0, 7) : today());
             }}
           >
-            <option value="day">Día</option>
-            <option value="month">Mes</option>
+            <option value="day">{text("D\u00eda")}</option>
+            <option value="month">{text("Mes")}</option>
           </select>
         </label>
         <label className="field">
-          <span>{period === "day" ? "Fecha" : "Mes"}</span>
+          <span>{text(period === "day" ? "Fecha" : "Mes") }</span>
           <input
             type={period === "day" ? "date" : "month"}
             value={date}
@@ -64,69 +67,68 @@ export function FormalReports() {
           />
         </label>
       </div>
-      <QueryState query={query}>
+      <QueryState query={query} english={en}>
         {report && (
           <div>
             <p>
               <strong>{report.business.name}</strong> · {report.title} ·{" "}
-              {report.from} a {report.to}
+              {report.from} {en ? "to" : "a"} {report.to}
             </p>
             <div className="settings-rules">
               <div>
-                <span>Vendido neto</span>
+                <span>{text("Vendido neto")}</span>
                 <strong>{formatMoney(report.totals.sold)}</strong>
               </div>
               <div>
-                <span>Ingresó</span>
+                <span>{text("Ingres\u00f3")}</span>
                 <strong>{formatMoney(report.totals.moneyIn)}</strong>
               </div>
               <div>
-                <span>Banco (tarjeta + transferencia)</span>
+                <span>{text("Banco (tarjeta + transferencia)")}</span>
                 <strong>{formatMoney(report.totals.bankIn)}</strong>
               </div>
               <div>
-                <span>Efectivo ingresado</span>
+                <span>{text("Efectivo ingresado")}</span>
                 <strong>{formatMoney(report.totals.cashIn)}</strong>
               </div>
               <div>
-                <span>Crédito generado</span>
+                <span>{text("Cr\u00e9dito generado")}</span>
                 <strong>{formatMoney(report.totals.creditGenerated)}</strong>
               </div>
               <div>
-                <span>Margen sobre precio</span>
+                <span>{text("Margen sobre precio")}</span>
                 <strong>{report.totals.margin} %</strong>
               </div>
             </div>
             <p>
-              ITBIS informativo: {formatMoney(report.totals.tax)} · Descuentos:{" "}
-              {formatMoney(report.totals.discounts)} · Devoluciones:{" "}
+              {en ? "Informational ITBIS:" : "ITBIS informativo:"} {formatMoney(report.totals.tax)} · {en ? "Discounts:" : "Descuentos:"}{" "}
+              {formatMoney(report.totals.discounts)} · {en ? "Returns:" : "Devoluciones:"}{" "}
               {report.totals.returns}
             </p>
-            <h3>Cajas y diferencias</h3>
+            <h3>{text("Cajas y diferencias")}</h3>
             <p role="status">
-              Ingresó {formatMoney(report.cashReconciliation.moneyIn)} · Según
-              cajas {formatMoney(report.cashReconciliation.sessionMoney)} ·
-              Diferencia {formatMoney(report.cashReconciliation.difference)}
+              {en ? "Received" : "Ingresó"} {formatMoney(report.cashReconciliation.moneyIn)} · {en ? "Per register" : "Según cajas"} {formatMoney(report.cashReconciliation.sessionMoney)} ·
+              {en ? "Difference" : "Diferencia"} {formatMoney(report.cashReconciliation.difference)}
               {!report.cashReconciliation.comparable
-                ? " · Comparación parcial"
+                ? (en ? " · Partial comparison" : " · Comparación parcial")
                 : ""}
             </p>
             <div
               className="table-wrap"
               role="region"
-              aria-label="Cajas y arqueo"
+              aria-label={text("Cajas y arqueo")}
               tabIndex={0}
             >
               <table>
                 <thead>
                   <tr>
-                    <th>Caja</th>
-                    <th>Usuario</th>
-                    <th>Efectivo esperado</th>
-                    <th>Efectivo contado</th>
-                    <th>Diferencia</th>
-                    <th>Tarjeta diferencia</th>
-                    <th>Transferencia diferencia</th>
+                    <th>{text("Caja")}</th>
+                    <th>{text("Usuario")}</th>
+                    <th>{text("Efectivo esperado")}</th>
+                    <th>{text("Efectivo contado")}</th>
+                    <th>{text("Diferencia")}</th>
+                    <th>{text("Tarjeta diferencia")}</th>
+                    <th>{text("Transferencia diferencia")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -137,7 +139,7 @@ export function FormalReports() {
                       <td>{formatMoney(c.expectedCash)}</td>
                       <td>
                         {c.countedCash === null
-                          ? "Abierta"
+                          ? (en ? "Open" : "Abierta")
                           : formatMoney(c.countedCash)}
                       </td>
                       <td>
@@ -160,37 +162,37 @@ export function FormalReports() {
                 </tbody>
               </table>
             </div>
-            <h3>Por usuario</h3>
+            <h3>{text("Por usuario")}</h3>
             <ul>
               {report.users.map((u: any) => (
                 <li key={u.name}>
-                  {u.name}: {u.sales} ventas · {formatMoney(u.sold)}
+                  {u.name}: {u.sales} {en ? "sales" : "ventas"} · {formatMoney(u.sold)}
                 </li>
               ))}
             </ul>
-            <h3>Por categoría</h3>
+            <h3>{text("Por categor\u00eda")}</h3>
             <ul>
               {report.categories.map((c: any) => (
                 <li key={c.name}>
-                  {c.name}: {c.soldProducts} productos vendidos,{" "}
-                  {c.notSoldProducts} sin vender · {formatMoney(c.sold)}
+                  {c.name}: {c.soldProducts} {en ? "products sold," : "productos vendidos,"}{" "}
+                  {c.notSoldProducts} {en ? "unsold" : "sin vender"} · {formatMoney(c.sold)}
                 </li>
               ))}
             </ul>
-            <h3>Créditos</h3>
+            <h3>{text("Cr\u00e9ditos")}</h3>
             <p>
-              Abiertos: {report.credits.openCount} · Saldo:{" "}
-              {formatMoney(report.credits.openTotal)} · Cerrados en el período:{" "}
+              {en ? "Open:" : "Abiertos:"} {report.credits.openCount} · {en ? "Balance:" : "Saldo:"}{" "}
+              {formatMoney(report.credits.openTotal)} · {en ? "Closed in period:" : "Cerrados en el período:"}{" "}
               {report.credits.closedCount}
             </p>
             <p>
-              Anuladas: {report.voids.length} · Ventas con descuento:{" "}
-              {report.discounts.length} · Cambios de costo:{" "}
+              {en ? "Voided:" : "Anuladas:"} {report.voids.length} · {en ? "Discounted sales:" : "Ventas con descuento:"}{" "}
+              {report.discounts.length} · {en ? "Cost changes:" : "Cambios de costo:"}{" "}
               {report.costChanges.length}
             </p>
             {report.findings.length > 0 && (
               <>
-                <h3>Señales para revisar</h3>
+                <h3>{text("Se\u00f1ales para revisar")}</h3>
                 <ul>
                   {report.findings.map((item: string) => (
                     <li key={item}>{item}</li>
@@ -201,8 +203,7 @@ export function FormalReports() {
             <small>{report.note}</small>
             {Object.values(report.truncated).some(Boolean) && (
               <p role="status">
-                Alguna sección supera 500 filas. Consulta el sistema para ver el
-                historial completo.
+                {en ? "A section exceeds 500 rows. Open the full history in the system." : "Alguna sección supera 500 filas. Consulta el sistema para ver el historial completo."}
               </p>
             )}
           </div>
