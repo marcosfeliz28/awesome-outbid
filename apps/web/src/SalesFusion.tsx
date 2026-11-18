@@ -64,9 +64,13 @@ export function SalesFusionPreview({
     >
       <h2>{en ? "Sale details" : "Detalle de venta"}</h2>
       <p>
-        {en
-          ? "Choose a sale number to preview it."
-          : "Elige un número de venta para ver su resumen."}
+        {number
+          ? en
+            ? "Selected sale. Open the full details to review its items and payments."
+            : "Venta seleccionada. Abre el detalle completo para revisar sus artículos y pagos."
+          : en
+            ? "Choose a sale number to preview it."
+            : "Elige un número de venta para ver su resumen."}
       </p>
       <div className="sales-fusion-receipt">
         <FileText size={68} aria-hidden="true" />

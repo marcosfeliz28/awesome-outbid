@@ -29,6 +29,9 @@ assert.doesNotMatch(summary, /24000|DEMO-001/);
 assert.match(css, /max-width: 1600px/);
 assert.match(css, /position: sticky/);
 assert.match(css, /--primary: var\(--sv-accent\)/);
+assert.match(summary, /\{number\s*\? en/);
+assert.match(summary, /Venta seleccionada/);
+assert.match(summary, /Selected sale/);
 log(
-  "PASS: 17 presentation, permissions, blind cash and accessibility contracts",
+  "PASS: 20 presentation, permissions, blind cash and accessibility contracts",
 );
