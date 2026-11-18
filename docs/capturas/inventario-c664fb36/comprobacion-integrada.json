@@ -1,0 +1,176 @@
+{
+  "commit": "c664fb36a8159e978824f33717e6bb976315150e",
+  "screenshots": [
+    {
+      "file": "inventario-1440-claro-es.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "lang": "es",
+      "overflow": 0,
+      "heading": "Cada unidad, bajo control",
+      "body": "TU NEGOCIO, CON CLARIDAD\nCada unidad, bajo control\n\nEl inventario correcto hace espacio para mejores decisiones.\n\nAlmacén\nTodos\nTienda\nCasa\nStock actual\nConteos físicos\nPRODUCTO / VARIANTE\tPRECIO\tCOSTO\tEN TIENDA\tTOTAL\tLOTE EN TIENDA\tVENCIMIENTO\tACCIONES\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t13\t13\tLT-1-A\t11 feb de 2027\t\nAjustar\nContar\n\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t14\t14\tLT-1-A\t11 feb de 2027\t\nAjustar\nContar\n\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t14\t14\tLT-2-A\t23 mar de 2027\t\nAjustar\nContar\n\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t15\t15\tLT-2-A\t23 mar de 2027\t\nAjustar\nContar\n\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\n\tRD$ 1,800.00\tRD$ 1,000.00\t15\t15\tLT-3-A\t02 may de 2027\t\nAjustar\nContar\n\nPre-entreno Energy\nFIT-0003-2 · Vaini"
+    },
+    {
+      "file": "inventario-1440-oscuro-es.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark",
+      "lang": "es",
+      "overflow": 0,
+      "heading": "Cada unidad, bajo control",
+      "body": "TU NEGOCIO, CON CLARIDAD\nCada unidad, bajo control\n\nEl inventario correcto hace espacio para mejores decisiones.\n\nAlmacén\nTodos\nTienda\nCasa\nStock actual\nConteos físicos\nPRODUCTO / VARIANTE\tPRECIO\tCOSTO\tEN TIENDA\tTOTAL\tLOTE EN TIENDA\tVENCIMIENTO\tACCIONES\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t13\t13\tLT-1-A\t11 feb de 2027\t\nAjustar\nContar\n\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t14\t14\tLT-1-A\t11 feb de 2027\t\nAjustar\nContar\n\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t14\t14\tLT-2-A\t23 mar de 2027\t\nAjustar\nContar\n\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t15\t15\tLT-2-A\t23 mar de 2027\t\nAjustar\nContar\n\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\n\tRD$ 1,800.00\tRD$ 1,000.00\t15\t15\tLT-3-A\t02 may de 2027\t\nAjustar\nContar\n\nPre-entreno Energy\nFIT-0003-2 · Vaini"
+    },
+    {
+      "file": "inventario-1440-claro-en.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "overflow": 0,
+      "heading": "Every unit, under control",
+      "body": "YOUR BUSINESS, WITH CLARITY\nEvery unit, under control\n\nAccurate inventory makes room for better decisions.\n\nWarehouse\nAll\nTienda\nCasa\nCurrent stock\nPhysical counts\nPRODUCT / VARIANT\tPRICE\tCOST\tIN STORE\tTOTAL\tIN-STORE BATCH\tEXPIRY\tACTIONS\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t13\t13\tLT-1-A\t11 feb de 2027\t\nAdjust\nCount\n\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t14\t14\tLT-1-A\t11 feb de 2027\t\nAdjust\nCount\n\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t14\t14\tLT-2-A\t23 mar de 2027\t\nAdjust\nCount\n\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t15\t15\tLT-2-A\t23 mar de 2027\t\nAdjust\nCount\n\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\n\tRD$ 1,800.00\tRD$ 1,000.00\t15\t15\tLT-3-A\t02 may de 2027\t\nAdjust\nCount\n\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\n\tRD$ 1,800.00\tR"
+    },
+    {
+      "file": "inventario-1440-oscuro-en.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "overflow": 0,
+      "heading": "Every unit, under control",
+      "body": "YOUR BUSINESS, WITH CLARITY\nEvery unit, under control\n\nAccurate inventory makes room for better decisions.\n\nWarehouse\nAll\nTienda\nCasa\nCurrent stock\nPhysical counts\nPRODUCT / VARIANT\tPRICE\tCOST\tIN STORE\tTOTAL\tIN-STORE BATCH\tEXPIRY\tACTIONS\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t13\t13\tLT-1-A\t11 feb de 2027\t\nAdjust\nCount\n\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t14\t14\tLT-1-A\t11 feb de 2027\t\nAdjust\nCount\n\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t14\t14\tLT-2-A\t23 mar de 2027\t\nAdjust\nCount\n\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t15\t15\tLT-2-A\t23 mar de 2027\t\nAdjust\nCount\n\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\n\tRD$ 1,800.00\tRD$ 1,000.00\t15\t15\tLT-3-A\t02 may de 2027\t\nAdjust\nCount\n\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\n\tRD$ 1,800.00\tR"
+    },
+    {
+      "file": "inventario-390-claro-es.png",
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "es",
+      "overflow": 0,
+      "heading": "Cada unidad, bajo control",
+      "body": "TU NEGOCIO, CON CLARIDAD\nCada unidad, bajo control\n\nEl inventario correcto hace espacio para mejores decisiones.\n\nAlmacén\nTodos\nTienda\nCasa\nStock actual\nConteos físicos\nPRODUCTO / VARIANTE\tPRECIO\tCOSTO\tEN TIENDA\tTOTAL\tLOTE EN TIENDA\tVENCIMIENTO\tACCIONES\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n13\n13\nLT-1-A\n11 feb de 2027\nAjustar\nContar\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n14\n14\nLT-1-A\n11 feb de 2027\nAjustar\nContar\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n14\n14\nLT-2-A\n23 mar de 2027\nAjustar\nContar\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n15\n15\nLT-2-A\n23 mar de 2027\nAjustar\nContar\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n15\n15\nLT-3-A\n02 may de 2027\nAjustar\nContar\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\nRD$ "
+    },
+    {
+      "file": "inventario-390-oscuro-es.png",
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "es",
+      "overflow": 0,
+      "heading": "Cada unidad, bajo control",
+      "body": "TU NEGOCIO, CON CLARIDAD\nCada unidad, bajo control\n\nEl inventario correcto hace espacio para mejores decisiones.\n\nAlmacén\nTodos\nTienda\nCasa\nStock actual\nConteos físicos\nPRODUCTO / VARIANTE\tPRECIO\tCOSTO\tEN TIENDA\tTOTAL\tLOTE EN TIENDA\tVENCIMIENTO\tACCIONES\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n13\n13\nLT-1-A\n11 feb de 2027\nAjustar\nContar\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n14\n14\nLT-1-A\n11 feb de 2027\nAjustar\nContar\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n14\n14\nLT-2-A\n23 mar de 2027\nAjustar\nContar\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n15\n15\nLT-2-A\n23 mar de 2027\nAjustar\nContar\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n15\n15\nLT-3-A\n02 may de 2027\nAjustar\nContar\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\nRD$ "
+    },
+    {
+      "file": "inventario-390-claro-en.png",
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "en",
+      "overflow": 0,
+      "heading": "Every unit, under control",
+      "body": "YOUR BUSINESS, WITH CLARITY\nEvery unit, under control\n\nAccurate inventory makes room for better decisions.\n\nWarehouse\nAll\nTienda\nCasa\nCurrent stock\nPhysical counts\nPRODUCT / VARIANT\tPRICE\tCOST\tIN STORE\tTOTAL\tIN-STORE BATCH\tEXPIRY\tACTIONS\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n13\n13\nLT-1-A\n11 feb de 2027\nAdjust\nCount\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n14\n14\nLT-1-A\n11 feb de 2027\nAdjust\nCount\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n14\n14\nLT-2-A\n23 mar de 2027\nAdjust\nCount\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n15\n15\nLT-2-A\n23 mar de 2027\nAdjust\nCount\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n15\n15\nLT-3-A\n02 may de 2027\nAdjust\nCount\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n16\n1"
+    },
+    {
+      "file": "inventario-390-oscuro-en.png",
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "en",
+      "overflow": 0,
+      "heading": "Every unit, under control",
+      "body": "YOUR BUSINESS, WITH CLARITY\nEvery unit, under control\n\nAccurate inventory makes room for better decisions.\n\nWarehouse\nAll\nTienda\nCasa\nCurrent stock\nPhysical counts\nPRODUCT / VARIANT\tPRICE\tCOST\tIN STORE\tTOTAL\tIN-STORE BATCH\tEXPIRY\tACTIONS\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n13\n13\nLT-1-A\n11 feb de 2027\nAdjust\nCount\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n14\n14\nLT-1-A\n11 feb de 2027\nAdjust\nCount\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n14\n14\nLT-2-A\n23 mar de 2027\nAdjust\nCount\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n15\n15\nLT-2-A\n23 mar de 2027\nAdjust\nCount\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n15\n15\nLT-3-A\n02 may de 2027\nAdjust\nCount\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n16\n1"
+    }
+  ],
+  "checks": {
+    "390": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "themes": {
+        "es-light": {
+          "overflow": 0,
+          "heading": "Cada unidad, bajo control",
+          "body": "TU NEGOCIO, CON CLARIDAD\nCada unidad, bajo control\n\nEl inventario correcto hace espacio para mejores decisiones.\n\nAlmacén\nTodos\nTienda\nCasa\nStock actual\nConteos físicos\nPRODUCTO / VARIANTE\tPRECIO\tCOSTO\tEN TIENDA\tTOTAL\tLOTE EN TIENDA\tVENCIMIENTO\tACCIONES\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n13\n13\nLT-1-A\n11 feb de 2027\nAjustar\nContar\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n14\n14\nLT-1-A\n11 feb de 2027\nAjustar\nContar\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n14\n14\nLT-2-A\n23 mar de 2027\nAjustar\nContar\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n15\n15\nLT-2-A\n23 mar de 2027\nAjustar\nContar\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n15\n15\nLT-3-A\n02 may de 2027\nAjustar\nContar\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\nRD$ "
+        },
+        "es-dark": {
+          "overflow": 0,
+          "heading": "Cada unidad, bajo control",
+          "body": "TU NEGOCIO, CON CLARIDAD\nCada unidad, bajo control\n\nEl inventario correcto hace espacio para mejores decisiones.\n\nAlmacén\nTodos\nTienda\nCasa\nStock actual\nConteos físicos\nPRODUCTO / VARIANTE\tPRECIO\tCOSTO\tEN TIENDA\tTOTAL\tLOTE EN TIENDA\tVENCIMIENTO\tACCIONES\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n13\n13\nLT-1-A\n11 feb de 2027\nAjustar\nContar\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n14\n14\nLT-1-A\n11 feb de 2027\nAjustar\nContar\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n14\n14\nLT-2-A\n23 mar de 2027\nAjustar\nContar\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n15\n15\nLT-2-A\n23 mar de 2027\nAjustar\nContar\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n15\n15\nLT-3-A\n02 may de 2027\nAjustar\nContar\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\nRD$ "
+        },
+        "en-light": {
+          "overflow": 0,
+          "heading": "Every unit, under control",
+          "body": "YOUR BUSINESS, WITH CLARITY\nEvery unit, under control\n\nAccurate inventory makes room for better decisions.\n\nWarehouse\nAll\nTienda\nCasa\nCurrent stock\nPhysical counts\nPRODUCT / VARIANT\tPRICE\tCOST\tIN STORE\tTOTAL\tIN-STORE BATCH\tEXPIRY\tACTIONS\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n13\n13\nLT-1-A\n11 feb de 2027\nAdjust\nCount\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n14\n14\nLT-1-A\n11 feb de 2027\nAdjust\nCount\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n14\n14\nLT-2-A\n23 mar de 2027\nAdjust\nCount\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n15\n15\nLT-2-A\n23 mar de 2027\nAdjust\nCount\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n15\n15\nLT-3-A\n02 may de 2027\nAdjust\nCount\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n16\n1"
+        },
+        "en-dark": {
+          "overflow": 0,
+          "heading": "Every unit, under control",
+          "body": "YOUR BUSINESS, WITH CLARITY\nEvery unit, under control\n\nAccurate inventory makes room for better decisions.\n\nWarehouse\nAll\nTienda\nCasa\nCurrent stock\nPhysical counts\nPRODUCT / VARIANT\tPRICE\tCOST\tIN STORE\tTOTAL\tIN-STORE BATCH\tEXPIRY\tACTIONS\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n13\n13\nLT-1-A\n11 feb de 2027\nAdjust\nCount\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\nRD$ 1,600.00\nRD$ 900.00\n14\n14\nLT-1-A\n11 feb de 2027\nAdjust\nCount\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n14\n14\nLT-2-A\n23 mar de 2027\nAdjust\nCount\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\nRD$ 1,700.00\nRD$ 950.00\n15\n15\nLT-2-A\n23 mar de 2027\nAdjust\nCount\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n15\n15\nLT-3-A\n02 may de 2027\nAdjust\nCount\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\nRD$ 1,800.00\nRD$ 1,000.00\n16\n1"
+        }
+      },
+      "dialog-es": {
+        "text": "Ajustar · Proteína Whey Isolate\nAlmacén *\nSeleccionar…\nTienda\nCasa\nCantidad (+ entrada / − salida) *\nTipo\nSeleccionar…\nAjuste\nMerma\nDevolución a proveedor\nProveedor (solo en devolución a proveedor)\nSeleccionar…\nBloom Cosmetics RD\nMotion Active Wholesale\nNutriLab Distribuciones\nReferencia de la devolución (documento o nota de crédito)\nLote de salida\nSeleccionar…\nLT-1-A · 7 unidades\nLT-1-B · 6 unidades\nLote de entrada\nVencimiento de entrada\nMotivo *\nCancelar\nGuardar",
+        "fields": 9
+      },
+      "reopen-es": "Cada unidad, bajo control",
+      "dialog-en": {
+        "text": "Adjust · Proteína Whey Isolate\nWarehouse *\nSelect…\nTienda\nCasa\nQuantity (+ incoming / − outgoing) *\nType\nSelect…\nAdjustment\nWaste\nSupplier return\nSupplier (supplier returns only)\nSelect…\nBloom Cosmetics RD\nMotion Active Wholesale\nNutriLab Distribuciones\nReturn reference (document or credit note)\nOutgoing batch\nSelect…\nLT-1-A · 7 units\nLT-1-B · 6 units\nIncoming batch\nIncoming expiry date\nReason *\nCancel\nSave",
+        "fields": 9
+      },
+      "reopen-en": "Every unit, under control",
+      "directAppearance": "blue/black preserved on direct navigation and reload"
+    },
+    "1440": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "themes": {
+        "es-light": {
+          "overflow": 0,
+          "heading": "Cada unidad, bajo control",
+          "body": "TU NEGOCIO, CON CLARIDAD\nCada unidad, bajo control\n\nEl inventario correcto hace espacio para mejores decisiones.\n\nAlmacén\nTodos\nTienda\nCasa\nStock actual\nConteos físicos\nPRODUCTO / VARIANTE\tPRECIO\tCOSTO\tEN TIENDA\tTOTAL\tLOTE EN TIENDA\tVENCIMIENTO\tACCIONES\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t13\t13\tLT-1-A\t11 feb de 2027\t\nAjustar\nContar\n\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t14\t14\tLT-1-A\t11 feb de 2027\t\nAjustar\nContar\n\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t14\t14\tLT-2-A\t23 mar de 2027\t\nAjustar\nContar\n\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t15\t15\tLT-2-A\t23 mar de 2027\t\nAjustar\nContar\n\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\n\tRD$ 1,800.00\tRD$ 1,000.00\t15\t15\tLT-3-A\t02 may de 2027\t\nAjustar\nContar\n\nPre-entreno Energy\nFIT-0003-2 · Vaini"
+        },
+        "es-dark": {
+          "overflow": 0,
+          "heading": "Cada unidad, bajo control",
+          "body": "TU NEGOCIO, CON CLARIDAD\nCada unidad, bajo control\n\nEl inventario correcto hace espacio para mejores decisiones.\n\nAlmacén\nTodos\nTienda\nCasa\nStock actual\nConteos físicos\nPRODUCTO / VARIANTE\tPRECIO\tCOSTO\tEN TIENDA\tTOTAL\tLOTE EN TIENDA\tVENCIMIENTO\tACCIONES\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t13\t13\tLT-1-A\t11 feb de 2027\t\nAjustar\nContar\n\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t14\t14\tLT-1-A\t11 feb de 2027\t\nAjustar\nContar\n\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t14\t14\tLT-2-A\t23 mar de 2027\t\nAjustar\nContar\n\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t15\t15\tLT-2-A\t23 mar de 2027\t\nAjustar\nContar\n\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\n\tRD$ 1,800.00\tRD$ 1,000.00\t15\t15\tLT-3-A\t02 may de 2027\t\nAjustar\nContar\n\nPre-entreno Energy\nFIT-0003-2 · Vaini"
+        },
+        "en-light": {
+          "overflow": 0,
+          "heading": "Every unit, under control",
+          "body": "YOUR BUSINESS, WITH CLARITY\nEvery unit, under control\n\nAccurate inventory makes room for better decisions.\n\nWarehouse\nAll\nTienda\nCasa\nCurrent stock\nPhysical counts\nPRODUCT / VARIANT\tPRICE\tCOST\tIN STORE\tTOTAL\tIN-STORE BATCH\tEXPIRY\tACTIONS\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t13\t13\tLT-1-A\t11 feb de 2027\t\nAdjust\nCount\n\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t14\t14\tLT-1-A\t11 feb de 2027\t\nAdjust\nCount\n\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t14\t14\tLT-2-A\t23 mar de 2027\t\nAdjust\nCount\n\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t15\t15\tLT-2-A\t23 mar de 2027\t\nAdjust\nCount\n\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\n\tRD$ 1,800.00\tRD$ 1,000.00\t15\t15\tLT-3-A\t02 may de 2027\t\nAdjust\nCount\n\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\n\tRD$ 1,800.00\tR"
+        },
+        "en-dark": {
+          "overflow": 0,
+          "heading": "Every unit, under control",
+          "body": "YOUR BUSINESS, WITH CLARITY\nEvery unit, under control\n\nAccurate inventory makes room for better decisions.\n\nWarehouse\nAll\nTienda\nCasa\nCurrent stock\nPhysical counts\nPRODUCT / VARIANT\tPRICE\tCOST\tIN STORE\tTOTAL\tIN-STORE BATCH\tEXPIRY\tACTIONS\nProteína Whey Isolate\nFIT-0001-1 · Chocolate · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t13\t13\tLT-1-A\t11 feb de 2027\t\nAdjust\nCount\n\nProteína Whey Isolate\nFIT-0001-2 · Vainilla · 2 lb\n\tRD$ 1,600.00\tRD$ 900.00\t14\t14\tLT-1-A\t11 feb de 2027\t\nAdjust\nCount\n\nCreatina Monohidratada\nFIT-0002-1 · Chocolate · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t14\t14\tLT-2-A\t23 mar de 2027\t\nAdjust\nCount\n\nCreatina Monohidratada\nFIT-0002-2 · Vainilla · 2 lb\n\tRD$ 1,700.00\tRD$ 950.00\t15\t15\tLT-2-A\t23 mar de 2027\t\nAdjust\nCount\n\nPre-entreno Energy\nFIT-0003-1 · Chocolate · 2 lb\n\tRD$ 1,800.00\tRD$ 1,000.00\t15\t15\tLT-3-A\t02 may de 2027\t\nAdjust\nCount\n\nPre-entreno Energy\nFIT-0003-2 · Vainilla · 2 lb\n\tRD$ 1,800.00\tR"
+        }
+      },
+      "dialog-es": {
+        "text": "Ajustar · Proteína Whey Isolate\nAlmacén *\nSeleccionar…\nTienda\nCasa\nCantidad (+ entrada / − salida) *\nTipo\nSeleccionar…\nAjuste\nMerma\nDevolución a proveedor\nProveedor (solo en devolución a proveedor)\nSeleccionar…\nBloom Cosmetics RD\nMotion Active Wholesale\nNutriLab Distribuciones\nReferencia de la devolución (documento o nota de crédito)\nLote de salida\nSeleccionar…\nLT-1-A · 7 unidades\nLT-1-B · 6 unidades\nLote de entrada\nVencimiento de entrada\nMotivo *\nCancelar\nGuardar",
+        "fields": 9
+      },
+      "reopen-es": "Cada unidad, bajo control",
+      "dialog-en": {
+        "text": "Adjust · Proteína Whey Isolate\nWarehouse *\nSelect…\nTienda\nCasa\nQuantity (+ incoming / − outgoing) *\nType\nSelect…\nAdjustment\nWaste\nSupplier return\nSupplier (supplier returns only)\nSelect…\nBloom Cosmetics RD\nMotion Active Wholesale\nNutriLab Distribuciones\nReturn reference (document or credit note)\nOutgoing batch\nSelect…\nLT-1-A · 7 units\nLT-1-B · 6 units\nIncoming batch\nIncoming expiry date\nReason *\nCancel\nSave",
+        "fields": 9
+      },
+      "reopen-en": "Every unit, under control",
+      "directAppearance": "blue/black preserved on direct navigation and reload"
+    }
+  },
+  "stages": [
+    "PostgreSQL temporal en loopback",
+    "Migraciones de la base de demostración",
+    "Generación de registros ficticios",
+    "API local real",
+    "Aplicación web del SHA publicado"
+  ],
+  "servicesStopped": true,
+  "browser": "157.0.4341.60",
+  "ports": {
+    "postgres": 15492,
+    "api": 14292,
+    "web": 14392
+  },
+  "completedAt": "2026-11-18T04:27:08.017Z"
+}
