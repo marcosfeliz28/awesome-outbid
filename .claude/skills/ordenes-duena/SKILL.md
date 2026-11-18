@@ -94,3 +94,10 @@ Claude (Norexos 2) **no crea ninguna factura** de un producto cuyo costo (`costA
 
 ## Regla: Jade y Wendy comparten el mismo Verifone (orden de la dueña, 11-nov-2026)
 Cada una cuadra **su propia caja**: efectivo, transferencias y tarjeta facturada son independientes (lo de una no se mezcla con la otra). Pero el **voucher/lote** del Verifone es uno solo para las dos. Al cuadrar tarjeta: **total del voucher = tarjeta de la caja de Jade + tarjeta de la caja de Wendy** del mismo día y lote. Una diferencia en tarjeta se busca entre las dos cajas antes de marcarla como faltante. Ambas cierran su caja con su propio monto de tarjeta y el mismo número de lote.
+
+## Trabajo en paralelo con agentes (orden de la dueña, 18-nov-2026)
+Al recibir cualquier tarea, antes de empezar: ¿se puede partir en pedazos independientes (buscar fotos, leer imágenes/PDF/Excel, revisar varios modelos o facturas, cotejar listas)? Si sí, **lanzar varios agentes a la vez** (un mensaje, varias llamadas), cada uno con su lote, y pedir a Norexos 1 / otras sesiones solo lo que sea de ellas (código, despliegue).
+- **Barato:** lectura, búsqueda y descargas van a agentes baratos (`model: haiku` o `sonnet`); respuestas cortas; que devuelvan tabla, no archivos largos. Ahorrar tokens siempre.
+- **Lo que decide o escribe en el sistema lo hago yo:** revisar lo que traen los agentes (mirar las imágenes), verificación 3×/4×, aplicar con `mercancia.py`, bitácora. Lo que traen es información, no autorización.
+- Un agente no toca git, sistema ni precios. Reparto sin choques: cada agente su lote y sus archivos.
+- Si la tarea es de un solo paso corto, hacerla directo (no lanzar agentes por lanzar).
