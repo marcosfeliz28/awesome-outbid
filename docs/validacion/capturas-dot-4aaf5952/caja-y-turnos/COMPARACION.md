@@ -19,3 +19,9 @@ Verifiqué `4aaf59529b79bf968a30151d84ce6d3c29346b61` de `dot/caja-turnos-live-1
 - **Detalle visual.** Con el caso de 12 cifras, la columna Equipo de escritorio queda estrecha y divide palabras como «Terminal» y «gerencia». Los controles de la derecha se ven completos al desplazar horizontalmente la tabla. [Captura de escritorio](despues-1440-oscuro.png)
 
 A las 03:25 UTC del 18 de noviembre, `windows-installer` y `render-images` habían pasado y `verify` seguía en ejecución para `4aaf5952`. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44229736753)
+
+## Seguimiento del 18 de noviembre
+
+- **CI de `4aaf5952`.** `verify` terminó cancelado. `windows-installer` y `render-images` terminaron correctamente. [Ejecución 44229736753](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44229736753)
+- **Regresión de `e34d2309`.** El único archivo cambiado es `tests/visual-caja-turnos-higgsfield.spec.ts`. La prueba mide las líneas de `98,765,432.17` directamente en el navegador. Pasaron **8 de 8 casos en 12,8 s** en Edge 157.0.4341.60, con API simulada, caja abierta de gerencia y caja cerrada, a 1440 × 1000 y 390 × 1000 en claro y oscuro. Ejecuté las aserciones del commit en una copia externa con la escritura de PNG desactivada. Cero solicitudes operativas y procesos de prueba cerrados. [Prueba en e34d2309](https://github.com/marcosfeliz28/awesome-outbid/blob/e34d2309f34e299c986aa2e40897eef0b74b84b3/tests/visual-caja-turnos-higgsfield.spec.ts#L156)
+- **CI de `e34d2309`.** A las 03:35 UTC, `render-images` había pasado y `verify` y `windows-installer` seguían ejecutándose. [Ejecución 44231045958](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44231045958)
