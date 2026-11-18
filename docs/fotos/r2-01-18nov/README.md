@@ -6,3 +6,4 @@
 | INV-1001 D3 K2 Walnut Oil Lecrano 60 ml | no_encontrada | ver nota en `candidatas.csv` (posible marca "LEGRANO", Amazon con captcha) |
 
 Detalle, URLs y sha256: `candidatas.csv`. Vista: `contacto.png`.
+| INV-1059 Bronson K2+D3 120 tab (extra) | discrepancia | bronsonvitamins.com: frasco blanco con etiqueta oscura; no existe frasco oscuro |
