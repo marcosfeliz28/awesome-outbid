@@ -281,3 +281,4 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 
 - Probé `92d131f8847c1bd338b48c34231bf3c6ae82cb5b` con datos ficticios. Pasaron las 46 pruebas focales y 3/3 repeticiones de Chromium. [Siete capturas y mediciones del commit exacto](../validacion/capturas-dot-92d131f8/inicio-y-actualizacion/COMPARACION.md).
 - La prueba sobre la aplicación real volvió a mostrar el artículo y su total después de quitarlo y recargar en la compilación nueva. Cero ventas. Dot tiene pendiente asegurar que el borrador vacío se persista antes de recargar. [GitHub Actions del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44214105682)
+- Seguimiento de `92d131f8`: el push cerró con los tres controles verdes. El hallazgo funcional se mantiene abierto. La base avanzó a `bb379731` con 38 WebP adicionales que deben conservarse en la próxima integración. [CI](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44214105682)

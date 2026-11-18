@@ -25,6 +25,8 @@ El acabado mantiene los medallones dorados, los bordes finos y el relieve de la 
 
 ## Controles de GitHub
 
-El instalador y las imágenes ya aprobaron. `verify` seguía en curso al cerrar la comprobación. [Ejecución del commit integrado](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44214105682)
+En el evento push de `92d131f8` terminaron en verde `verify`, `windows-installer` y `render-images`. En la prueba de la aplicación completa permanece el bloqueo de restauración del carrito. [Ejecución del commit integrado](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44214105682)
+
+El commit de diseño se preparó antes de `bb379731`. La comparación de archivos muestra 38 WebP más en `origin/nexora-cloud` que en `92d131f8`. La siguiente integración debe conservar esas 38 fotos. [Fotos incorporadas a la base](https://github.com/marcosfeliz28/awesome-outbid/commit/bb379731)
 
 Quedan pendientes corregir la restauración indebida, comprobar la identidad persistente del turno y el reintento de cobro sin conexión. Cerré los navegadores y servicios de prueba.
