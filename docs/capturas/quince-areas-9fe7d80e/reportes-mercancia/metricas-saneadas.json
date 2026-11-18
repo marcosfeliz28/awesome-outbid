@@ -1,0 +1,766 @@
+{
+  "sha": "9fe7d80ee3eb8aeef4264059d98809e80943e741",
+  "base": "e1a2e935",
+  "api": "simulada",
+  "data": "ficticia",
+  "records": [
+    {
+      "screen": "reports",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "QA-0001",
+      "sampleContrast": 15.18,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(247, 251, 248)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "formal",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "CAJA FICTICIA CON NOMBRE EXTENSO",
+      "sampleContrast": 15.18,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(247, 251, 248)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "income-day",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "RD$ 98,765,432.17",
+      "sampleContrast": 15.18,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1424,
+          "right": 1516.8
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1629.4,
+          "right": 1722.1
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1822.9,
+          "right": 1915.7
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2066.6,
+          "right": 2159.4
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2245,
+          "right": 2337.8
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2423.3,
+          "right": 2516.1
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1426.7,
+          "right": 1530.4
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1632.1,
+          "right": 1735.7
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1825.7,
+          "right": 1929.3
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2069.3,
+          "right": 2173
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2247.7,
+          "right": 2351.3
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2426,
+          "right": 2529.7
+        }
+      ],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(247, 251, 248)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "month-report",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "RD$ 98,765,432.17",
+      "sampleContrast": 12.25,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(247, 251, 248)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "mobile-merchandise-shortcut",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "QA-0001",
+      "sampleContrast": 15.18,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(247, 251, 248)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "merchandise",
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "Mercancía",
+      "sampleContrast": 12.25,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": null,
+      "writes": []
+    },
+    {
+      "screen": "reports",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "QA-0001",
+      "sampleContrast": 15.53,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(8, 41, 31)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "formal",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "CAJA FICTICIA CON NOMBRE EXTENSO",
+      "sampleContrast": 15.53,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(8, 41, 31)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "income-day",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "RD$ 98,765,432.17",
+      "sampleContrast": 15.53,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1424,
+          "right": 1516.8
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1638.9,
+          "right": 1731.7
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1856,
+          "right": 1948.8
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2098.9,
+          "right": 2191.7
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2277.3,
+          "right": 2370.1
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2455.6,
+          "right": 2548.4
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1426.7,
+          "right": 1530.4
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1641.6,
+          "right": 1745.3
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1858.7,
+          "right": 1962.4
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2101.6,
+          "right": 2205.3
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2280,
+          "right": 2383.7
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 2458.4,
+          "right": 2562
+        }
+      ],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(8, 41, 31)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "month-report",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "RD$ 98,765,432.17",
+      "sampleContrast": 17.68,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(8, 41, 31)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "mobile-merchandise-shortcut",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "QA-0001",
+      "sampleContrast": 15.53,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "none",
+        "background": "rgb(8, 41, 31)",
+        "top": 0,
+        "height": 0,
+        "buttonHeight": 0,
+        "overlapsMain": false
+      },
+      "writes": []
+    },
+    {
+      "screen": "merchandise",
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "viewportWidth": 1440,
+      "sampleText": "Merchandise",
+      "sampleContrast": 17.68,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [
+        "Buscar producto",
+        "Sin productos",
+        "Confirmar entrada",
+        "Todavía no hay recepciones."
+      ],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": null,
+      "writes": []
+    },
+    {
+      "screen": "reports",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "QA-0001",
+      "sampleContrast": 15.99,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(247, 251, 248)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "formal",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "CAJA FICTICIA CON NOMBRE EXTENSO",
+      "sampleContrast": 15.99,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(247, 251, 248)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "income-day",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "RD$ 98,765,432.17",
+      "sampleContrast": 15.99,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 297.7,
+          "right": 401.3
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 464,
+          "right": 567.7
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 630.4,
+          "right": 734
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 796.8,
+          "right": 900.4
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 963.1,
+          "right": 1066.8
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1129.5,
+          "right": 1233.1
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1295.8,
+          "right": 1399.5
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1462.2,
+          "right": 1565.8
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1628.5,
+          "right": 1732.2
+        }
+      ],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(247, 251, 248)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "month-report",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "RD$ 98,765,432.17",
+      "sampleContrast": 12.25,
+      "clippedTableCells": [
+        {
+          "text": "PRODUCTO FICTICIO DE NOMBRE MUY EXTENSO",
+          "cellClient": 354,
+          "cellScroll": 485,
+          "overflow": "visible",
+          "wrapperClient": 356,
+          "wrapperScroll": 356
+        },
+        {
+          "text": "PRODUCTO FICTICIO DE NOMBRE MUY EXTENSO",
+          "cellClient": 354,
+          "cellScroll": 485,
+          "overflow": "visible",
+          "wrapperClient": 356,
+          "wrapperScroll": 356
+        }
+      ],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(247, 251, 248)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "mobile-merchandise-shortcut",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "QA-0001",
+      "sampleContrast": 15.99,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(247, 251, 248)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "merchandise",
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "Mercancía",
+      "sampleContrast": 12.25,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": null,
+      "writes": []
+    },
+    {
+      "screen": "reports",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "QA-0001",
+      "sampleContrast": 13.92,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(8, 41, 31)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "formal",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "CAJA FICTICIA CON NOMBRE EXTENSO",
+      "sampleContrast": 13.92,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(8, 41, 31)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "income-day",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "RD$ 98,765,432.17",
+      "sampleContrast": 13.92,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 297.7,
+          "right": 401.3
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 464,
+          "right": 567.7
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 630.4,
+          "right": 734
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 796.8,
+          "right": 900.4
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 963.1,
+          "right": 1066.8
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1129.5,
+          "right": 1233.1
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1295.8,
+          "right": 1399.5
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1462.2,
+          "right": 1565.8
+        },
+        {
+          "text": "RD$ 98,765,432.17",
+          "left": 1628.5,
+          "right": 1732.2
+        }
+      ],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(8, 41, 31)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "month-report",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "RD$ 98,765,432.17",
+      "sampleContrast": 17.68,
+      "clippedTableCells": [
+        {
+          "text": "PRODUCTO FICTICIO DE NOMBRE MUY EXTENSO",
+          "cellClient": 354,
+          "cellScroll": 485,
+          "overflow": "visible",
+          "wrapperClient": 356,
+          "wrapperScroll": 356
+        },
+        {
+          "text": "PRODUCTO FICTICIO DE NOMBRE MUY EXTENSO",
+          "cellClient": 354,
+          "cellScroll": 485,
+          "overflow": "visible",
+          "wrapperClient": 356,
+          "wrapperScroll": 356
+        }
+      ],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(8, 41, 31)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "mobile-merchandise-shortcut",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "QA-0001",
+      "sampleContrast": 13.92,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": {
+        "display": "flex",
+        "background": "rgb(8, 41, 31)",
+        "top": 931,
+        "height": 69,
+        "buttonHeight": 52,
+        "overlapsMain": true
+      },
+      "writes": []
+    },
+    {
+      "screen": "merchandise",
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "viewportWidth": 390,
+      "sampleText": "Merchandise",
+      "sampleContrast": 17.68,
+      "clippedTableCells": [],
+      "spanishFragmentsInEnglish": [
+        "Buscar producto",
+        "Sin productos",
+        "Confirmar entrada",
+        "Todavía no hay recepciones."
+      ],
+      "longMoneyOutsideViewport": [],
+      "mobileBar": null,
+      "writes": []
+    }
+  ]
+}

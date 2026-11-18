@@ -1,0 +1,367 @@
+{
+  "commit": "9fe7d80ee3eb8aeef4264059d98809e80943e741",
+  "branch": "dot/15areas-integracion-18nov",
+  "capturedAt": "2026-11-18T12:23:04.733Z",
+  "browser": {
+    "name": "Edge",
+    "version": "157.0.4341.60"
+  },
+  "data": "API local y PostgreSQL descartable con datos ficticios",
+  "measurements": {
+    "1440": {
+      "window": [
+        1440,
+        900
+      ],
+      "pageErrors": 0,
+      "operationalWrites": 0,
+      "views": {
+        "light": {
+          "inicio": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "rootWidth": 1152.796875,
+            "documentOverflowPx": 0,
+            "scrollY": 0,
+            "shortcutAccessibleName": "Ir a Punto de venta",
+            "shortcutOpenedPos": true,
+            "returnedFromPos": true
+          },
+          "puntoDeVenta": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "rootWidth": 1193.765625,
+            "documentOverflowPx": 0,
+            "scrollY": 0,
+            "checkoutOpenedAndClosed": true,
+            "cartRows": 3,
+            "cartKeptDuringLanguageChange": true,
+            "labels": {
+              "lang": "en",
+              "visibleCharge": "Charge",
+              "accessibleChargePrefix": "Cobrar",
+              "accessibleCartPanel": "Carrito y cobro",
+              "accessibleCartRegion": "Artículos del carrito",
+              "accessibleAddInSpanish": 3,
+              "accessibleRemoveInSpanish": 3,
+              "mobileCart": null
+            },
+            "cartKeptAfterSales": true
+          },
+          "ventas": {
+            "before": {
+              "pageScrollY": 0,
+              "x": 255.19,
+              "y": 2531.83,
+              "visibleHeight": 0,
+              "documentY": 2531.83,
+              "distanceBelowViewportPx": 1631.83,
+              "belowTable": true,
+              "previewRightOfList": false,
+              "pageOverflowPx": 0,
+              "tableOverflowPx": 62,
+              "rowsOnPage": 20
+            },
+            "after": {
+              "pageScrollY": 0,
+              "x": 255.19,
+              "y": 2531.83,
+              "visibleHeight": 0,
+              "documentY": 2531.83,
+              "distanceBelowViewportPx": 1631.83,
+              "belowTable": true,
+              "previewRightOfList": false,
+              "pageOverflowPx": 0,
+              "tableOverflowPx": 62,
+              "rowsOnPage": 20
+            },
+            "selected": true,
+            "scrollDeltaPx": 0,
+            "previewAccessibleName": "Sale preview",
+            "fullDetailOpenedAndClosed": true
+          }
+        },
+        "dark": {
+          "inicio": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "rootWidth": 1152.796875,
+            "documentOverflowPx": 0,
+            "scrollY": 0,
+            "shortcutAccessibleName": "Ir a Punto de venta",
+            "shortcutOpenedPos": true,
+            "returnedFromPos": true
+          },
+          "puntoDeVenta": {
+            "viewport": [
+              1440,
+              900
+            ],
+            "rootWidth": 1193.765625,
+            "documentOverflowPx": 0,
+            "scrollY": 0,
+            "checkoutOpenedAndClosed": true,
+            "cartRows": 3,
+            "cartKeptDuringLanguageChange": true,
+            "labels": {
+              "lang": "en",
+              "visibleCharge": "Charge",
+              "accessibleChargePrefix": "Cobrar",
+              "accessibleCartPanel": "Carrito y cobro",
+              "accessibleCartRegion": "Artículos del carrito",
+              "accessibleAddInSpanish": 3,
+              "accessibleRemoveInSpanish": 3,
+              "mobileCart": null
+            },
+            "cartKeptAfterSales": true
+          },
+          "ventas": {
+            "before": {
+              "pageScrollY": 0,
+              "x": 255.19,
+              "y": 2531.83,
+              "visibleHeight": 0,
+              "documentY": 2531.83,
+              "distanceBelowViewportPx": 1631.83,
+              "belowTable": true,
+              "previewRightOfList": false,
+              "pageOverflowPx": 0,
+              "tableOverflowPx": 62,
+              "rowsOnPage": 20
+            },
+            "after": {
+              "pageScrollY": 0,
+              "x": 255.19,
+              "y": 2531.83,
+              "visibleHeight": 0,
+              "documentY": 2531.83,
+              "distanceBelowViewportPx": 1631.83,
+              "belowTable": true,
+              "previewRightOfList": false,
+              "pageOverflowPx": 0,
+              "tableOverflowPx": 62,
+              "rowsOnPage": 20
+            },
+            "selected": true,
+            "scrollDeltaPx": 0,
+            "previewAccessibleName": "Sale preview",
+            "fullDetailOpenedAndClosed": true
+          }
+        }
+      }
+    },
+    "390": {
+      "window": [
+        390,
+        844
+      ],
+      "pageErrors": 0,
+      "operationalWrites": 0,
+      "views": {
+        "light": {
+          "inicio": {
+            "viewport": [
+              390,
+              844
+            ],
+            "rootWidth": 358,
+            "documentOverflowPx": 0,
+            "scrollY": 0,
+            "shortcutAccessibleName": "Ir a Punto de venta",
+            "shortcutOpenedPos": true,
+            "returnedFromPos": true
+          },
+          "puntoDeVenta": {
+            "viewport": [
+              390,
+              844
+            ],
+            "rootWidth": 362,
+            "documentOverflowPx": 0,
+            "scrollY": 82,
+            "checkoutOpenedAndClosed": true,
+            "cartRows": 3,
+            "cartKeptDuringLanguageChange": true,
+            "labels": {
+              "lang": "en",
+              "visibleCharge": "Charge",
+              "accessibleChargePrefix": "Cobrar",
+              "accessibleCartPanel": "Carrito y cobro",
+              "accessibleCartRegion": "Artículos del carrito",
+              "accessibleAddInSpanish": 3,
+              "accessibleRemoveInSpanish": 3,
+              "mobileCart": "Ver carrito (3 artículos)"
+            },
+            "cartKeptAfterSales": true
+          },
+          "ventas": {
+            "before": {
+              "pageScrollY": 0,
+              "x": 16,
+              "y": 10133.44,
+              "visibleHeight": 0,
+              "documentY": 10133.44,
+              "distanceBelowViewportPx": 9289.44,
+              "belowTable": true,
+              "previewRightOfList": false,
+              "pageOverflowPx": 0,
+              "tableOverflowPx": 0,
+              "rowsOnPage": 20
+            },
+            "after": {
+              "pageScrollY": 0,
+              "x": 16,
+              "y": 10133.44,
+              "visibleHeight": 0,
+              "documentY": 10133.44,
+              "distanceBelowViewportPx": 9289.44,
+              "belowTable": true,
+              "previewRightOfList": false,
+              "pageOverflowPx": 0,
+              "tableOverflowPx": 0,
+              "rowsOnPage": 20
+            },
+            "selected": true,
+            "scrollDeltaPx": 0,
+            "previewAccessibleName": "Sale preview",
+            "fullDetailOpenedAndClosed": true
+          }
+        },
+        "dark": {
+          "inicio": {
+            "viewport": [
+              390,
+              844
+            ],
+            "rootWidth": 358,
+            "documentOverflowPx": 0,
+            "scrollY": 0,
+            "shortcutAccessibleName": "Ir a Punto de venta",
+            "shortcutOpenedPos": true,
+            "returnedFromPos": true
+          },
+          "puntoDeVenta": {
+            "viewport": [
+              390,
+              844
+            ],
+            "rootWidth": 362,
+            "documentOverflowPx": 0,
+            "scrollY": 82,
+            "checkoutOpenedAndClosed": true,
+            "cartRows": 3,
+            "cartKeptDuringLanguageChange": true,
+            "labels": {
+              "lang": "en",
+              "visibleCharge": "Charge",
+              "accessibleChargePrefix": "Cobrar",
+              "accessibleCartPanel": "Carrito y cobro",
+              "accessibleCartRegion": "Artículos del carrito",
+              "accessibleAddInSpanish": 3,
+              "accessibleRemoveInSpanish": 3,
+              "mobileCart": "Ver carrito (3 artículos)"
+            },
+            "cartKeptAfterSales": true
+          },
+          "ventas": {
+            "before": {
+              "pageScrollY": 0,
+              "x": 16,
+              "y": 10133.44,
+              "visibleHeight": 0,
+              "documentY": 10133.44,
+              "distanceBelowViewportPx": 9289.44,
+              "belowTable": true,
+              "previewRightOfList": false,
+              "pageOverflowPx": 0,
+              "tableOverflowPx": 0,
+              "rowsOnPage": 20
+            },
+            "after": {
+              "pageScrollY": 0,
+              "x": 16,
+              "y": 10133.44,
+              "visibleHeight": 0,
+              "documentY": 10133.44,
+              "distanceBelowViewportPx": 9289.44,
+              "belowTable": true,
+              "previewRightOfList": false,
+              "pageOverflowPx": 0,
+              "tableOverflowPx": 0,
+              "rowsOnPage": 20
+            },
+            "selected": true,
+            "scrollDeltaPx": 0,
+            "previewAccessibleName": "Sale preview",
+            "fullDetailOpenedAndClosed": true
+          }
+        }
+      }
+    }
+  },
+  "screenshots": {
+    "inicio-1440-claro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "theme": "claro",
+      "scenario": "inicio",
+      "sha256": "2f1d49d20607abcd50ac709e406611315ac5233e44d03273fc847207a31ea0d8"
+    },
+    "ventas-1440-claro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "theme": "claro",
+      "scenario": "folio-seleccionado",
+      "sha256": "958c660cb041968632d2cc2945df447691bf5c3f56cfc5c74e4117d9086519eb"
+    },
+    "punto-de-venta-1440-oscuro.png": {
+      "dimensions": [
+        1440,
+        900
+      ],
+      "theme": "oscuro",
+      "scenario": "pos-en",
+      "sha256": "9031aee1fe87746881dc5b3a2b39fc1fe3dd0a229e505bee754b4d3fac71d2c1"
+    },
+    "punto-de-venta-390-claro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "claro",
+      "scenario": "pos-en",
+      "sha256": "067416b1c55f537a346a6e8f73b370beb78ade97edeb4d24a7c1bf2fdd0b3767"
+    },
+    "inicio-390-oscuro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "oscuro",
+      "scenario": "inicio",
+      "sha256": "e5a68863dde66343c13a364adbbe25bbd42b3673f252a85610bb5f7ebc1f82bc"
+    },
+    "ventas-390-oscuro.png": {
+      "dimensions": [
+        390,
+        844
+      ],
+      "theme": "oscuro",
+      "scenario": "folio-seleccionado",
+      "sha256": "777996c64fff14ff184e9172b63e36c820c4c082f9d929853af91c6463c6578a"
+    }
+  },
+  "servicesStopped": true,
+  "ownProcessesRemaining": 0,
+  "listenersRemaining": 0
+}

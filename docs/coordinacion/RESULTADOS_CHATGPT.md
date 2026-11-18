@@ -2,6 +2,10 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · candidato de 15 áreas 9fe7d80e
+
+Cuarenta capturas de recorridos en Inicio, Punto de venta, Ventas, Promociones, Alertas, Reportes y Mercancía, con datos ficticios. En móvil quedan pendientes la vista previa de Ventas, el detalle de Alertas y los nombres largos de Top 10. Queda texto español en el carrito y en Mercancía al elegir inglés. El candidato conserva 275 fotos. Instalador e imágenes pasaron y verify falló en cuatro comprobaciones. Dot avanzó a `2e9299d9`, con un CI separado. [Informes y evidencia](../capturas/quince-areas-9fe7d80e/LECTURA.md)
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

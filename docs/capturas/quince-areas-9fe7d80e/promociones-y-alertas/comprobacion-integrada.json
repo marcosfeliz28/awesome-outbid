@@ -1,0 +1,203 @@
+{
+  "commit": "9fe7d80ee3eb8aeef4264059d98809e80943e741",
+  "screenshots": [
+    {
+      "file": "promotions-1440-claro.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "light"
+    },
+    {
+      "file": "promotions-1440-oscuro.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark"
+    },
+    {
+      "file": "alerts-1440-claro.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "light"
+    },
+    {
+      "file": "alerts-1440-oscuro.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark"
+    },
+    {
+      "file": "alerts-detail-1440.png",
+      "width": 1440,
+      "height": 900,
+      "theme": "dark"
+    },
+    {
+      "file": "promotions-390-claro.png",
+      "width": 390,
+      "height": 844,
+      "theme": "light"
+    },
+    {
+      "file": "promotions-390-oscuro.png",
+      "width": 390,
+      "height": 844,
+      "theme": "dark"
+    },
+    {
+      "file": "alerts-390-claro.png",
+      "width": 390,
+      "height": 844,
+      "theme": "light"
+    },
+    {
+      "file": "alerts-390-oscuro.png",
+      "width": 390,
+      "height": 844,
+      "theme": "dark"
+    },
+    {
+      "file": "alerts-detail-390.png",
+      "width": 390,
+      "height": 844,
+      "theme": "dark"
+    }
+  ],
+  "checks": {
+    "390": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "promotions": {
+        "apiCount": 86,
+        "claro": {
+          "overflow": 0,
+          "badge": null
+        },
+        "oscuro": {
+          "overflow": 0,
+          "badge": null
+        },
+        "cards": 86,
+        "fallback": {
+          "original": "/products/supplements.svg",
+          "replacement": "/products/accessories.svg",
+          "loaded": true
+        },
+        "tabs": true
+      },
+      "alerts": {
+        "apiCount": 128,
+        "claro": {
+          "overflow": 0,
+          "badge": {
+            "color": "rgb(146, 64, 14)",
+            "background": "rgb(255, 245, 230)"
+          }
+        },
+        "oscuro": {
+          "overflow": 0,
+          "badge": {
+            "color": "rgb(251, 191, 36)",
+            "background": "rgb(64, 43, 23)"
+          }
+        },
+        "rows": 128,
+        "detail": true,
+        "detailPosition": {
+          "top": 33691,
+          "distanceBelowFold": 32847,
+          "scrollY": 0
+        },
+        "tabs": true,
+        "contrastSample": {
+          "color": "rgb(242, 247, 244)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      },
+      "inventoryPositions": {
+        ".inventory-alerts": {
+          "top": 11128,
+          "distanceBelowFold": 10284
+        },
+        ".inventory-movements": {
+          "top": 12145,
+          "distanceBelowFold": 11301
+        }
+      }
+    },
+    "1440": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "promotions": {
+        "apiCount": 86,
+        "claro": {
+          "overflow": 0,
+          "badge": null
+        },
+        "oscuro": {
+          "overflow": 0,
+          "badge": null
+        },
+        "cards": 86,
+        "fallback": {
+          "original": "/products/supplements.svg",
+          "replacement": "/products/accessories.svg",
+          "loaded": true
+        },
+        "tabs": true
+      },
+      "alerts": {
+        "apiCount": 128,
+        "claro": {
+          "overflow": 0,
+          "badge": {
+            "color": "rgb(146, 64, 14)",
+            "background": "rgb(255, 245, 230)"
+          }
+        },
+        "oscuro": {
+          "overflow": 0,
+          "badge": {
+            "color": "rgb(251, 191, 36)",
+            "background": "rgb(64, 43, 23)"
+          }
+        },
+        "rows": 128,
+        "detail": true,
+        "detailPosition": {
+          "top": 368,
+          "distanceBelowFold": 0,
+          "scrollY": 0
+        },
+        "tabs": true,
+        "contrastSample": {
+          "color": "rgb(242, 247, 244)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      },
+      "inventoryPositions": {
+        ".inventory-alerts": {
+          "top": 3217,
+          "distanceBelowFold": 2317
+        },
+        ".inventory-movements": {
+          "top": 3217,
+          "distanceBelowFold": 2317
+        }
+      }
+    }
+  },
+  "stages": [
+    "PostgreSQL temporal en loopback",
+    "Migraciones de la base de demostración",
+    "Generación de registros ficticios",
+    "API local real",
+    "Aplicación web del SHA publicado"
+  ],
+  "servicesStopped": true,
+  "ports": {
+    "postgres": 15492,
+    "api": 14292,
+    "web": 14392
+  },
+  "completedAt": "2026-11-18T12:22:49.918Z"
+}
