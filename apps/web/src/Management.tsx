@@ -84,6 +84,7 @@ import {
 } from "./managementMessages";
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
+import "./fusion-caja-turnos.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
@@ -1694,7 +1695,7 @@ export function Cash() {
     );
   };
   return (
-    <div className="cash-page">
+    <div className="cash-page fusion-cash-turnos">
       <Heading
         title="Una caja que siempre cuadra"
         caption="Abre el día con claridad. Ciérralo con tranquilidad."
@@ -1982,6 +1983,7 @@ export function Cash() {
               {
                 label: "Efectivo esperado",
                 render: (s) => {
+                  if (!canSeeExpected) return "—";
                   const expected = s.expectedCash ?? s.expected?.cash;
                   return expected == null ? "—" : formatMoney(expected);
                 },
@@ -1994,6 +1996,7 @@ export function Cash() {
               {
                 label: "Diferencias por método",
                 render: (s) =>
+                  canSeeExpected &&
                   s.closedAt &&
                   [
                     s.differenceCash,
