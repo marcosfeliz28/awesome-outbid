@@ -1,0 +1,367 @@
+{
+  "sha": "adb789cb43f950398d3ab6ecf4de0f29979eb3f1",
+  "api": "simulada",
+  "offline": "evento window ficticio; red del sistema intacta",
+  "records": [
+    {
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "queue": {
+        "visible": true,
+        "heading": "Pendientes de este equipo",
+        "rows": [
+          "Pendiente · Entrada",
+          "Requiere revisión · Salida"
+        ],
+        "details": [
+          "18-nov, 11:54 a. m.",
+          "MENSAJE FICTICIO DE CONFLICTO"
+        ],
+        "buttons": [
+          {
+            "text": "Reintentar",
+            "disabled": true,
+            "height": 45
+          },
+          {
+            "text": "Revisar",
+            "disabled": false,
+            "height": 45
+          }
+        ]
+      },
+      "exitReasons": [],
+      "purchaseCloseLabel": null,
+      "writes": []
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "queue": {
+        "visible": true,
+        "heading": "Pendientes de este equipo",
+        "rows": [
+          "Pendiente · Entrada",
+          "Requiere revisión · Salida"
+        ],
+        "details": [
+          "18-nov, 11:54 a. m.",
+          "MENSAJE FICTICIO DE CONFLICTO"
+        ],
+        "buttons": [
+          {
+            "text": "Reintentar",
+            "disabled": true,
+            "height": 45
+          },
+          {
+            "text": "Revisar",
+            "disabled": false,
+            "height": 45
+          }
+        ]
+      },
+      "exitReasons": [
+        "Merma",
+        "Dañado",
+        "Vencido",
+        "Muestra o probador",
+        "Uso interno",
+        "Devolución a proveedor"
+      ],
+      "purchaseCloseLabel": null,
+      "writes": [],
+      "check": "previous-merchandise-reasons"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 1440,
+      "queue": {
+        "visible": false,
+        "rows": [],
+        "details": [],
+        "buttons": []
+      },
+      "exitReasons": [],
+      "purchaseCloseLabel": "Cerrar",
+      "writes": [],
+      "check": "previous-findings"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "queue": {
+        "visible": true,
+        "heading": "Pending on this device",
+        "rows": [
+          "Pending · Receipt",
+          "Needs review · Removal"
+        ],
+        "details": [
+          "18-nov, 11:54 a. m.",
+          "MENSAJE FICTICIO DE CONFLICTO"
+        ],
+        "buttons": [
+          {
+            "text": "Retry",
+            "disabled": true,
+            "height": 45
+          },
+          {
+            "text": "Review",
+            "disabled": false,
+            "height": 45
+          }
+        ]
+      },
+      "exitReasons": [],
+      "purchaseCloseLabel": null,
+      "writes": []
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "queue": {
+        "visible": true,
+        "heading": "Pending on this device",
+        "rows": [
+          "Pending · Receipt",
+          "Needs review · Removal"
+        ],
+        "details": [
+          "18-nov, 11:54 a. m.",
+          "MENSAJE FICTICIO DE CONFLICTO"
+        ],
+        "buttons": [
+          {
+            "text": "Retry",
+            "disabled": true,
+            "height": 45
+          },
+          {
+            "text": "Review",
+            "disabled": false,
+            "height": 45
+          }
+        ]
+      },
+      "exitReasons": [
+        "Merma",
+        "Dañado",
+        "Vencido",
+        "Muestra o probador",
+        "Uso interno",
+        "Devolución a proveedor"
+      ],
+      "purchaseCloseLabel": null,
+      "writes": [],
+      "check": "previous-merchandise-reasons"
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 1440,
+      "queue": {
+        "visible": false,
+        "rows": [],
+        "details": [],
+        "buttons": []
+      },
+      "exitReasons": [],
+      "purchaseCloseLabel": "Cerrar",
+      "writes": [],
+      "check": "previous-findings"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "queue": {
+        "visible": true,
+        "heading": "Pendientes de este equipo",
+        "rows": [
+          "Pendiente · Entrada",
+          "Requiere revisión · Salida"
+        ],
+        "details": [
+          "18-nov, 11:54 a. m.",
+          "MENSAJE FICTICIO DE CONFLICTO"
+        ],
+        "buttons": [
+          {
+            "text": "Reintentar",
+            "disabled": true,
+            "height": 45
+          },
+          {
+            "text": "Revisar",
+            "disabled": false,
+            "height": 45
+          }
+        ]
+      },
+      "exitReasons": [],
+      "purchaseCloseLabel": null,
+      "writes": []
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "queue": {
+        "visible": true,
+        "heading": "Pendientes de este equipo",
+        "rows": [
+          "Pendiente · Entrada",
+          "Requiere revisión · Salida"
+        ],
+        "details": [
+          "18-nov, 11:54 a. m.",
+          "MENSAJE FICTICIO DE CONFLICTO"
+        ],
+        "buttons": [
+          {
+            "text": "Reintentar",
+            "disabled": true,
+            "height": 45
+          },
+          {
+            "text": "Revisar",
+            "disabled": false,
+            "height": 45
+          }
+        ]
+      },
+      "exitReasons": [
+        "Merma",
+        "Dañado",
+        "Vencido",
+        "Muestra o probador",
+        "Uso interno",
+        "Devolución a proveedor"
+      ],
+      "purchaseCloseLabel": null,
+      "writes": [],
+      "check": "previous-merchandise-reasons"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "language": "es",
+      "documentWidth": 390,
+      "queue": {
+        "visible": false,
+        "rows": [],
+        "details": [],
+        "buttons": []
+      },
+      "exitReasons": [],
+      "purchaseCloseLabel": "Cerrar",
+      "writes": [],
+      "check": "previous-findings"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "queue": {
+        "visible": true,
+        "heading": "Pending on this device",
+        "rows": [
+          "Pending · Receipt",
+          "Needs review · Removal"
+        ],
+        "details": [
+          "18-nov, 11:54 a. m.",
+          "MENSAJE FICTICIO DE CONFLICTO"
+        ],
+        "buttons": [
+          {
+            "text": "Retry",
+            "disabled": true,
+            "height": 45
+          },
+          {
+            "text": "Review",
+            "disabled": false,
+            "height": 45
+          }
+        ]
+      },
+      "exitReasons": [],
+      "purchaseCloseLabel": null,
+      "writes": []
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "queue": {
+        "visible": true,
+        "heading": "Pending on this device",
+        "rows": [
+          "Pending · Receipt",
+          "Needs review · Removal"
+        ],
+        "details": [
+          "18-nov, 11:54 a. m.",
+          "MENSAJE FICTICIO DE CONFLICTO"
+        ],
+        "buttons": [
+          {
+            "text": "Retry",
+            "disabled": true,
+            "height": 45
+          },
+          {
+            "text": "Review",
+            "disabled": false,
+            "height": 45
+          }
+        ]
+      },
+      "exitReasons": [
+        "Merma",
+        "Dañado",
+        "Vencido",
+        "Muestra o probador",
+        "Uso interno",
+        "Devolución a proveedor"
+      ],
+      "purchaseCloseLabel": null,
+      "writes": [],
+      "check": "previous-merchandise-reasons"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "language": "en",
+      "documentWidth": 390,
+      "queue": {
+        "visible": false,
+        "rows": [],
+        "details": [],
+        "buttons": []
+      },
+      "exitReasons": [],
+      "purchaseCloseLabel": "Cerrar",
+      "writes": [],
+      "check": "previous-findings"
+    }
+  ]
+}

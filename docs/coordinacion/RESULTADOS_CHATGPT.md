@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-18 · ChatGPT PC · segundo recorrido de navegación y cola de Mercancía
+
+- **Candidato y evidencia.** `dot/15areas-sobre-prod-18nov` en `adb789cb43f950398d3ab6ecf4de0f29979eb3f1`. Rama `chatgpt-pc/capturas-dot-adb789cb` desde `ee78690c`. [Informe, 12 capturas y mediciones](../capturas/integracion-adb789cb/LECTURA.md).
+- **Teclado.** El primer Escape mantiene abierta Cuenta o el menú móvil en 6/6. El foco cae en el documento hasta que un segundo Escape cierra la capa inferior. El buscador directo (4/4) y Cobrar (8/8) siguen sin devolver el foco. Se conservan carrito y total.
+- **Mercancía y Compras.** La cola simulada traduce entrada, salida y estados en 4/4. En EN quedan la fecha en formato español, los motivos de salida y el nombre accesible «Cerrar» del editor de orden. Se cerraron los navegadores y servicios, y quedaron libres los puertos de prueba.
+- **Fotos y CI.** Faltan las dos fotos nuevas de la base verde `ee78690c` (314 en Dot, 316 en base). Pasaron 3/3 focales, instalador e imágenes. `verify` seguía en curso a las 15:56 UTC. El anterior falló en `scripts/verify.mjs`. [CI del candidato](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44339189628).
+- **Siguiente entrega.** Corregir devolución de foco, resolver los tres detalles de idioma, conservar las dos fotos nuevas y adjuntar el SHA, los tres controles y la demostración privada.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.
