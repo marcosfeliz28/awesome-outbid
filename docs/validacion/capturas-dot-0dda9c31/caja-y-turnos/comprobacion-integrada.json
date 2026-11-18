@@ -1,0 +1,817 @@
+{
+  "sourceBranch": "dot/caja-turnos-integrado-18nov",
+  "sourceCommit": "0dda9c31c64036a0676f0347973f2554def2c8b7",
+  "observedAt": "2026-11-18T02:33:13.240Z",
+  "browser": {
+    "name": "Microsoft Edge",
+    "version": "157.0.4341.60"
+  },
+  "data": "API local y PostgreSQL descartable con datos sintéticos",
+  "screenshots": {
+    "gerencia-abierta-1440-claro.png": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "scenario": "gerencia-abierta",
+      "format": "PNG",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "7b55feac93331a4f42795a2e5f9521aceef0f940a3d7bea301d2e1614ff5aef0"
+    },
+    "gerencia-abierta-1440-oscuro.png": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "scenario": "gerencia-abierta",
+      "format": "PNG",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "b9fe189d8232b3f2e1b0f1f45309e0ca714c068993ab64b07dddfe467d5fd733"
+    },
+    "cajera-abierta-1440-claro.png": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "scenario": "cajera-abierta",
+      "format": "PNG",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "a3451dbe4fd7c80a865506ab30e451844c356f9874ec4354b941ce8199b5c357"
+    },
+    "cajera-abierta-1440-oscuro.png": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "scenario": "cajera-abierta",
+      "format": "PNG",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "ce25ce53a26fcf23c65e147f153527da3ad8a1594091ea5e87c15743de761703"
+    },
+    "administracion-cerrada-1440-claro.png": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "light",
+      "scenario": "administracion-cerrada",
+      "format": "PNG",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "bd5074c8145ea39fcf024f3ff2d1a8180c314713c0a365b6be7af5a1b5a83eae"
+    },
+    "administracion-cerrada-1440-oscuro.png": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "theme": "dark",
+      "scenario": "administracion-cerrada",
+      "format": "PNG",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "sha256": "29881ceec9c1c16763a070cc38e1e045d19a7811a45781635da46ae32a3ed3a8"
+    },
+    "gerencia-abierta-390-claro.png": {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "scenario": "gerencia-abierta",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "337592aec93aa8513a07238187cea443e5e4aee63b478fac9792d3af2859d9c1"
+    },
+    "historial-caja-390-claro.png": {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "scenario": "acciones-historial",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "3f1f55a18b01a7ba357fd762907fe8cb4a7cce996d03aadf5bb9484f166331c5"
+    },
+    "gerencia-abierta-390-oscuro.png": {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "scenario": "gerencia-abierta",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "337fb52d8163b0fad053d63e527e4da97be7d84b5d815afded39e7a6f3f44373"
+    },
+    "historial-caja-390-oscuro.png": {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "scenario": "acciones-historial",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "2088cd5041c88617eba11a351d90b98dcbb9fc1c1e2886d5bb73dee365bb24e2"
+    },
+    "cajera-abierta-390-claro.png": {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "scenario": "cajera-abierta",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "d4e9173baa5ca8e7c26746d4a2ef00d44f47f55512e382dbcf19559a24b56c43"
+    },
+    "cajera-abierta-390-oscuro.png": {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "scenario": "cajera-abierta",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "e15005dcee8d3076f56cd4e80f39ae9b62b70dd6bcdf71ddf0127ca5d68270ff"
+    },
+    "administracion-cerrada-390-claro.png": {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "light",
+      "scenario": "administracion-cerrada",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "411a7b37bdfde1c1f93a2bf635af2bd8a9cd598bb2c4ecdc9fe0d0b77569f3dc"
+    },
+    "administracion-cerrada-390-oscuro.png": {
+      "viewport": [
+        390,
+        844
+      ],
+      "theme": "dark",
+      "scenario": "administracion-cerrada",
+      "format": "PNG",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "8162069d23f2105489e74da705be979fec95c2472812cbd3c1f116bc0ba43950"
+    }
+  },
+  "cases": {
+    "1440-gerencia-abierta": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "historyStatus": "abierta y cerrada",
+      "historyShowsDashes": null,
+      "interactions": {
+        "movementDialog": true,
+        "cashCloseDialog": true,
+        "historyReadOnlyPreview": true
+      },
+      "apiResponses": {
+        "/api/terminals/register": 201,
+        "/api/cash-sessions": 200,
+        "/api/cash-sessions/:id/cuadre": 200
+      },
+      "pageErrorCount": 0,
+      "operationalWriteCount": 0,
+      "themes": {
+        "light": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            280.19,
+            155,
+            836.39,
+            213.8
+          ],
+          "panel": [
+            280.19,
+            286.8,
+            1382.98,
+            597.48
+          ],
+          "history": [
+            303.19,
+            1489.69,
+            1359.98,
+            2460.69
+          ],
+          "indicatorCount": 4,
+          "expectedFont": "Inter, system-ui, sans-serif",
+          "expectedFontPx": 37.44,
+          "motionReduced": true,
+          "historyRowCount": 5,
+          "actions": {
+            "cells": 5,
+            "buttonCount": 15,
+            "minWidth": 145.23,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        },
+        "dark": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            280.19,
+            155,
+            836.39,
+            213.8
+          ],
+          "panel": [
+            280.19,
+            286.8,
+            1382.98,
+            597.48
+          ],
+          "history": [
+            303.19,
+            1489.69,
+            1359.98,
+            2460.69
+          ],
+          "indicatorCount": 4,
+          "expectedFont": "Inter, system-ui, sans-serif",
+          "expectedFontPx": 37.44,
+          "motionReduced": true,
+          "historyRowCount": 5,
+          "actions": {
+            "cells": 5,
+            "buttonCount": 15,
+            "minWidth": 145.23,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        }
+      }
+    },
+    "1440-cajera-abierta": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "historyStatus": "abierta y cerrada",
+      "historyShowsDashes": true,
+      "interactions": {
+        "movementDialog": true,
+        "cashCloseDialog": true,
+        "historyReadOnlyPreview": true
+      },
+      "apiResponses": {
+        "/api/terminals/register": 201,
+        "/api/cash-sessions": 200,
+        "/api/cash-sessions/:id/cuadre": 200
+      },
+      "pageErrorCount": 0,
+      "operationalWriteCount": 0,
+      "themes": {
+        "light": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            280.19,
+            155,
+            836.39,
+            213.8
+          ],
+          "panel": null,
+          "history": [
+            303.19,
+            1253.47,
+            1359.98,
+            1633.47
+          ],
+          "indicatorCount": 0,
+          "expectedFont": null,
+          "expectedFontPx": null,
+          "motionReduced": true,
+          "historyRowCount": 2,
+          "actions": {
+            "cells": 2,
+            "buttonCount": 5,
+            "minWidth": 204.48,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        },
+        "dark": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            280.19,
+            155,
+            836.39,
+            213.8
+          ],
+          "panel": null,
+          "history": [
+            303.19,
+            1253.47,
+            1359.98,
+            1633.47
+          ],
+          "indicatorCount": 0,
+          "expectedFont": null,
+          "expectedFontPx": null,
+          "motionReduced": true,
+          "historyRowCount": 2,
+          "actions": {
+            "cells": 2,
+            "buttonCount": 5,
+            "minWidth": 204.48,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        }
+      }
+    },
+    "1440-administracion-cerrada": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "historyStatus": "abierta y cerrada",
+      "historyShowsDashes": null,
+      "interactions": {
+        "openingDialog": true,
+        "historyReadOnlyPreview": true
+      },
+      "apiResponses": {
+        "/api/terminals/register": 201,
+        "/api/cash-sessions": 200,
+        "/api/cash-sessions/opening-suggestion": 200,
+        "/api/cash-sessions/:id/cuadre": 200
+      },
+      "pageErrorCount": 0,
+      "operationalWriteCount": 0,
+      "themes": {
+        "light": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            280.19,
+            155,
+            836.39,
+            213.8
+          ],
+          "panel": null,
+          "history": [
+            303.19,
+            1599.53,
+            1359.98,
+            2570.53
+          ],
+          "indicatorCount": 0,
+          "expectedFont": null,
+          "expectedFontPx": null,
+          "motionReduced": true,
+          "historyRowCount": 5,
+          "actions": {
+            "cells": 5,
+            "buttonCount": 15,
+            "minWidth": 145.23,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        },
+        "dark": {
+          "viewport": [
+            1440,
+            900
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            280.19,
+            155,
+            836.39,
+            213.8
+          ],
+          "panel": null,
+          "history": [
+            303.19,
+            1599.53,
+            1359.98,
+            2570.53
+          ],
+          "indicatorCount": 0,
+          "expectedFont": null,
+          "expectedFontPx": null,
+          "motionReduced": true,
+          "historyRowCount": 5,
+          "actions": {
+            "cells": 5,
+            "buttonCount": 15,
+            "minWidth": 145.23,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        }
+      }
+    },
+    "390-gerencia-abierta": {
+      "viewport": [
+        390,
+        844
+      ],
+      "historyStatus": "abierta y cerrada",
+      "historyShowsDashes": null,
+      "interactions": {
+        "movementDialog": true,
+        "cashCloseDialog": true,
+        "historyReadOnlyPreview": true
+      },
+      "apiResponses": {
+        "/api/terminals/register": 201,
+        "/api/cash-sessions": 200,
+        "/api/cash-sessions/:id/cuadre": 200
+      },
+      "pageErrorCount": 0,
+      "operationalWriteCount": 0,
+      "themes": {
+        "light": {
+          "viewport": [
+            390,
+            844
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            31,
+            129,
+            359,
+            207.38
+          ],
+          "panel": [
+            31,
+            354.38,
+            359,
+            1129.58
+          ],
+          "history": [
+            48,
+            2296.81,
+            342,
+            5764.78
+          ],
+          "indicatorCount": 4,
+          "expectedFont": "Inter, system-ui, sans-serif",
+          "expectedFontPx": 25,
+          "motionReduced": true,
+          "historyRowCount": 5,
+          "actions": {
+            "cells": 5,
+            "buttonCount": 15,
+            "minWidth": 264,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        },
+        "dark": {
+          "viewport": [
+            390,
+            844
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            31,
+            129,
+            359,
+            207.38
+          ],
+          "panel": [
+            31,
+            354.38,
+            359,
+            1129.58
+          ],
+          "history": [
+            48,
+            2296.81,
+            342,
+            5764.78
+          ],
+          "indicatorCount": 4,
+          "expectedFont": "Inter, system-ui, sans-serif",
+          "expectedFontPx": 25,
+          "motionReduced": true,
+          "historyRowCount": 5,
+          "actions": {
+            "cells": 5,
+            "buttonCount": 15,
+            "minWidth": 264,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        }
+      }
+    },
+    "390-cajera-abierta": {
+      "viewport": [
+        390,
+        844
+      ],
+      "historyStatus": "abierta y cerrada",
+      "historyShowsDashes": true,
+      "interactions": {
+        "movementDialog": true,
+        "cashCloseDialog": true,
+        "historyReadOnlyPreview": true
+      },
+      "apiResponses": {
+        "/api/terminals/register": 201,
+        "/api/cash-sessions": 200,
+        "/api/cash-sessions/:id/cuadre": 200
+      },
+      "pageErrorCount": 0,
+      "operationalWriteCount": 0,
+      "themes": {
+        "light": {
+          "viewport": [
+            390,
+            844
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            31,
+            129,
+            359,
+            207.38
+          ],
+          "panel": null,
+          "history": [
+            48,
+            1586.08,
+            342,
+            2728.27
+          ],
+          "indicatorCount": 0,
+          "expectedFont": null,
+          "expectedFontPx": null,
+          "motionReduced": true,
+          "historyRowCount": 2,
+          "actions": {
+            "cells": 2,
+            "buttonCount": 5,
+            "minWidth": 264,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        },
+        "dark": {
+          "viewport": [
+            390,
+            844
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            31,
+            129,
+            359,
+            207.38
+          ],
+          "panel": null,
+          "history": [
+            48,
+            1586.08,
+            342,
+            2728.27
+          ],
+          "indicatorCount": 0,
+          "expectedFont": null,
+          "expectedFontPx": null,
+          "motionReduced": true,
+          "historyRowCount": 2,
+          "actions": {
+            "cells": 2,
+            "buttonCount": 5,
+            "minWidth": 264,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        }
+      }
+    },
+    "390-administracion-cerrada": {
+      "viewport": [
+        390,
+        844
+      ],
+      "historyStatus": "abierta y cerrada",
+      "historyShowsDashes": null,
+      "interactions": {
+        "openingDialog": true,
+        "historyReadOnlyPreview": true
+      },
+      "apiResponses": {
+        "/api/terminals/register": 201,
+        "/api/cash-sessions": 200,
+        "/api/cash-sessions/opening-suggestion": 200,
+        "/api/cash-sessions/:id/cuadre": 200
+      },
+      "pageErrorCount": 0,
+      "operationalWriteCount": 0,
+      "themes": {
+        "light": {
+          "viewport": [
+            390,
+            844
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            31,
+            129,
+            359,
+            207.38
+          ],
+          "panel": null,
+          "history": [
+            48,
+            2050.67,
+            342,
+            5518.64
+          ],
+          "indicatorCount": 0,
+          "expectedFont": null,
+          "expectedFontPx": null,
+          "motionReduced": true,
+          "historyRowCount": 5,
+          "actions": {
+            "cells": 5,
+            "buttonCount": 15,
+            "minWidth": 264,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        },
+        "dark": {
+          "viewport": [
+            390,
+            844
+          ],
+          "documentOverflowPx": 0,
+          "mainOverflowPx": 0,
+          "title": [
+            31,
+            129,
+            359,
+            207.38
+          ],
+          "panel": null,
+          "history": [
+            48,
+            2050.67,
+            342,
+            5518.64
+          ],
+          "indicatorCount": 0,
+          "expectedFont": null,
+          "expectedFontPx": null,
+          "motionReduced": true,
+          "historyRowCount": 5,
+          "actions": {
+            "cells": 5,
+            "buttonCount": 15,
+            "minWidth": 264,
+            "minHeight": 45,
+            "allContained": true,
+            "allStacked": true,
+            "allHit": true
+          }
+        }
+      }
+    }
+  },
+  "summary": {
+    "viewportThemeRoleCases": 12,
+    "historyButtonsMeasured": 140,
+    "totalPageErrors": 0,
+    "operationalWrites": 0,
+    "windowsProcessesRemaining": 0,
+    "localListenersRemaining": 0
+  },
+  "githubActionsAtPublication": {
+    "head": "0dda9c31c64036a0676f0347973f2554def2c8b7",
+    "url": "https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44221344146",
+    "status": "in_progress",
+    "conclusion": null,
+    "observedAt": "2026-11-18T02:34:15.2106910Z",
+    "jobs": [
+      {
+        "id": 134523714522,
+        "name": "render-images",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 134523714883,
+        "name": "windows-installer",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 134523714929,
+        "name": "verify",
+        "status": "in_progress",
+        "conclusion": null
+      }
+    ]
+  }
+}
