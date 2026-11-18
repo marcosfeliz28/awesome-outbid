@@ -4,7 +4,7 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 
 ## 2026-11-18 · ChatGPT PC · recibo y Mercancía 6e8eb624
 
-Catorce capturas, con dos muestras del estilo del recibo rotuladas. Cobrar abre y cierra conservando el carrito de prueba. Las confirmaciones y la ayuda de Mercancía se tradujeron. Quedan campos y avisos en español al elegir inglés. Cero operaciones. Pasaron 11 pruebas focales. El candidato debe conservar las 39 WebP de tenis de `2d87290b`. [Informes y capturas](../capturas/recibo-mercancia-6e8eb624/LECTURA.md)
+Catorce capturas, con dos muestras del estilo del recibo rotuladas. Cobrar abre y cierra conservando el carrito de prueba. Las confirmaciones y la ayuda de Mercancía se tradujeron. Quedan campos y avisos en español al elegir inglés. Cero operaciones. Pasaron 11 pruebas focales y los tres controles de GitHub. La rama posterior `e9a738bb` ya incluye las 39 WebP de tenis de `2d87290b`. [Informes y capturas](../capturas/recibo-mercancia-6e8eb624/LECTURA.md)
 
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
