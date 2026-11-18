@@ -13,7 +13,7 @@ import {
   denied,
 } from "./common";
 import { cashExpectedMany } from "./cash";
-import { gvTotals, saleNotGvSql, saleNotGvWhere } from "./gv-scope";
+import { gvTotals, saleNotGvSql } from "./gv-scope";
 import { incomeOptions, incomeSummary } from "./income-report";
 import { formalPeriod, reportMargin, isTestRegister } from "./formal-period";
 
@@ -26,13 +26,12 @@ const testSessionWhere: Prisma.CashSessionWhereInput = {
     registerId: { startsWith: prefix, mode: "insensitive" },
   })),
 };
-// Sin cajas de prueba y sin GV (otra empresa, va aparte en `gv`).
+// Sin cajas de prueba. Créditos, anulaciones y descuentos incluyen GV.
 const realSaleWhere: Prisma.SaleWhereInput = {
   OR: [
     { cashSessionId: null },
     { cashSession: { is: { NOT: testSessionWhere } } },
   ],
-  ...saleNotGvWhere,
 };
 const utc = (date: Date) =>
   Prisma.sql`(${date}::timestamptz AT TIME ZONE 'UTC')`;
@@ -125,10 +124,10 @@ export class FormalReportController {
       >(Prisma.sql`
         SELECT c.id::text AS "categoryId",c.name,COUNT(p.id)::bigint products
         FROM "Category" c LEFT JOIN "Product" p ON p."categoryId"=c.id AND p.active=true AND p."branchId"=${actor.branchId}
-        WHERE c."branchId"=${actor.branchId} AND c.name NOT LIKE 'GV %' GROUP BY c.id,c.name ORDER BY c.name`),
+        WHERE c."branchId"=${actor.branchId} AND c.name NOT ILIKE 'GV %' GROUP BY c.id,c.name ORDER BY c.name`),
       // El arqueo de las cajas vio también lo cobrado de GV.
       incomeSummary(this.db, actor, { ...opt, gv: "include" }),
-      gvTotals(this.db, actor, range),
+      gvTotals(this.db, actor, range, realSaleWhere),
     ]);
     const sales = salesAmounts[0],
       returned = returnsAmounts[0];
@@ -603,7 +602,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
   }
   section("Cajas y arqueo");
   line(
-    `Ingresó ${fmt(report.cashReconciliation.moneyIn)} · Según cajas ${fmt(report.cashReconciliation.sessionMoney)} · Diferencia ${fmt(report.cashReconciliation.difference)}`,
+    `Ingresó (incluye GV) ${fmt(report.cashReconciliation.moneyIn)} · Según cajas ${fmt(report.cashReconciliation.sessionMoney)} · Diferencia ${fmt(report.cashReconciliation.difference)}`,
     true,
   );
   if (!report.cashReconciliation.comparable)

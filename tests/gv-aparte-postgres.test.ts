@@ -121,7 +121,12 @@ beforeAll(async () => {
   const macgen = await variantIn("Suplementos", "QA-MAC");
   const gv = await variantIn("GV Servicios", "QA-GV");
   let n = 0;
-  const sale = (variantId: string, total: number) =>
+  const sale = (
+    variantId: string,
+    total: number,
+    at = "2026-11-10T15:00:00Z",
+    method = "cash",
+  ) =>
     db.sale.create({
       data: {
         number: "QA-" + ++n,
@@ -132,7 +137,8 @@ beforeAll(async () => {
         taxTotal: 0,
         total,
         costTotal: total / 2,
-        createdAt: new Date("2026-11-10T15:00:00Z"),
+        createdAt: new Date(at),
+        creditBalance: method === "credit" ? total : 0,
         items: {
           create: [
             {
@@ -147,12 +153,32 @@ beforeAll(async () => {
           ],
         },
         payments: {
-          create: [{ method: "cash", amount: total, tendered: total }],
+          create: [{ method, amount: total, tendered: total }],
         },
       },
     });
   await sale(macgen, 100);
   await sale(gv, 300);
+  // 12-nov: venta GV de 300 con devolución de 50; Macgen 100 sin tocar.
+  await sale(macgen, 100, "2026-11-12T15:00:00Z");
+  const gvBack = await sale(gv, 300, "2026-11-12T16:00:00Z");
+  await db.saleReturn.create({
+    data: {
+      saleId: gvBack.id,
+      number: "DEV-GV",
+      reason: "Prueba",
+      total: 50,
+      taxTotal: 0,
+      costTotal: 25,
+      refundAmount: 50,
+      refundMethod: "cash",
+      userId: u.id,
+      items: [],
+      createdAt: new Date("2026-11-12T17:00:00Z"),
+    },
+  });
+  // 13-nov: venta GV a crédito; sigue en los créditos del reporte formal.
+  await sale(gv, 200, "2026-11-13T15:00:00Z", "credit");
 }, 240_000);
 afterAll(async () => {
   await db?.$disconnect();
@@ -227,5 +253,32 @@ describe("GV aparte de Grupo Macgen", () => {
     expect(report.categories.map((c: any) => c.name)).toEqual(["Suplementos"]);
     expect(report.gv).toEqual({ total: 300, count: 1 });
     expect(report.cashReconciliation.moneyIn).toBe(400);
+  });
+
+  it("devolución GV: baja el total GV y no toca Macgen", async () => {
+    const d12 = { from: "2026-11-12", to: "2026-11-12" };
+    const s: any = await reports().dashboard(d12, admin);
+    expect(s.revenue).toBe(100);
+    expect(s.gv).toEqual({ total: 250, count: 1 });
+    const b: any = await reports().dashboardBreakdown(d12, admin);
+    expect(b.revenue).toBe(100);
+    expect(b.gv).toEqual({ total: 250, count: 1 });
+  });
+
+  it("crédito GV: fuera de las ventas Macgen pero sigue en créditos del formal", async () => {
+    let report: any;
+    const res: any = {
+      setHeader: () => undefined,
+      json: (body: unknown) => (report = body),
+    };
+    await new FormalReportController(db as any).get(
+      admin,
+      { period: "day", date: "2026-11-13" },
+      res,
+    );
+    expect(report.totals.sold).toBe(0);
+    expect(report.gv).toEqual({ total: 200, count: 1 });
+    expect(report.credits.open.map((c: any) => c.balance)).toEqual([200]);
+    expect(report.credits.openTotal).toBe(200);
   });
 });

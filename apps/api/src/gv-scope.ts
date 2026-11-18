@@ -10,7 +10,7 @@ import type { Actor, Database } from "./common";
 export const GV_CATEGORY_PREFIX = "GV ";
 
 // Sobre la venta con alias «s», como el resto de los reportes.
-const gvItemExists = Prisma.sql`EXISTS (SELECT 1 FROM "SaleItem" gi JOIN "Variant" gvv ON gvv.id = gi."variantId" JOIN "Product" gp ON gp.id = gvv."productId" JOIN "Category" gc ON gc.id = gp."categoryId" WHERE gi."saleId" = s.id AND gc.name LIKE 'GV %')`;
+const gvItemExists = Prisma.sql`EXISTS (SELECT 1 FROM "SaleItem" gi JOIN "Variant" gvv ON gvv.id = gi."variantId" JOIN "Product" gp ON gp.id = gvv."productId" JOIN "Category" gc ON gc.id = gp."categoryId" WHERE gi."saleId" = s.id AND gc.name ILIKE 'GV %')`;
 
 /** SQL: la venta «s» ES de GV. */
 export const saleIsGvSql = () => gvItemExists;
@@ -21,7 +21,11 @@ const gvItems = {
   items: {
     some: {
       variant: {
-        product: { category: { name: { startsWith: GV_CATEGORY_PREFIX } } },
+        product: {
+          category: {
+            name: { startsWith: GV_CATEGORY_PREFIX, mode: "insensitive" },
+          },
+        },
       },
     },
   },
@@ -38,8 +42,15 @@ export async function gvTotals(
   db: Database,
   actor: Actor,
   range: { gte: Date; lte: Date },
+  // Filtro extra de la venta (p. ej. sin cajas de prueba en el reporte formal).
+  extra: Prisma.SaleWhereInput = {},
 ) {
-  const sale = { branchId: actor.branchId, createdAt: range, ...saleIsGvWhere };
+  const sale = {
+    ...extra,
+    branchId: actor.branchId,
+    createdAt: range,
+    ...saleIsGvWhere,
+  };
   const [sold, back] = await Promise.all([
     db.sale.aggregate({
       where: { ...sale, status: "completed" },
