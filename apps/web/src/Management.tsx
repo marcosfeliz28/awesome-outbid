@@ -1,3 +1,5 @@
+import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
+import { useLanguage } from "./inicioLanguage";
 import {
   CashElsewhere,
   Equipment,
@@ -3219,6 +3221,8 @@ const saleMoney = (s: any, value: unknown) =>
   s.hiddenUntilClose ? HIDDEN_AMOUNT : formatMoney(value as any);
 
 export function SalesHistory() {
+  const en = useLanguage() === "en";
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const user = useStore((s) => s.user)!;
   const [selected, setSelected] = useState<any>(null),
     [voiding, setVoiding] = useState<any>(null),
@@ -3252,198 +3256,236 @@ export function SalesHistory() {
   const session = sessions.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
   );
+  const preview = query.data?.find((sale: any) => sale.id === previewId);
   return (
-    <>
+    <section className="sales-fusion">
       <Heading
-        title="Cada venta tiene una historia"
-        caption="Consulta recibos, pagos y movimientos sin perder el detalle."
+        title={
+          en ? "Every sale tells a story" : "Cada venta tiene una historia"
+        }
+        caption={
+          en
+            ? "Search, filter and review every sale in detail."
+            : "Consulta, filtra y revisa el detalle de tus ventas."
+        }
       />
-      <div className="panel">
-        <div className="table-toolbar">
-          <Filter
-            value={search}
-            onChange={setSearch}
-            placeholder="Buscar número de venta"
-          />
-          <label className="table-search">
-            <span>Fecha</span>
-            <input
-              type="date"
-              value={saleDate}
-              onChange={(event) => setSaleDate(event.target.value)}
-              aria-label="Buscar ventas de una fecha"
+      {!query.isPending && !query.isError && (
+        <SalesFusionStats rows={query.data || []} />
+      )}
+      <div className="sales-fusion-layout">
+        <div className="panel sales-fusion-list">
+          <div className="table-toolbar">
+            <Filter
+              value={search}
+              onChange={setSearch}
+              placeholder={en ? "Search sale number" : "Buscar número de venta"}
             />
-          </label>
-        </div>
-        <QueryState query={query}>
-          <DataTable
-            rows={query.data || []}
-            columns={[
-              {
-                label: "Venta n.º",
-                render: (s) => <strong>{s.number}</strong>,
-              },
-              { label: "Cliente", render: (s) => s.customerName ?? "—" },
-              { label: "Fecha", render: (s) => dateLabel(s.createdAt) },
-              {
-                label: "Estado",
-                render: (s) => (
-                  <>
-                    <Badge tone={s.status === "voided" ? "danger" : "success"}>
-                      {s.status === "voided" ? "Anulada" : "Completada"}
-                    </Badge>
-                    {s.voidRequest && (
-                      <small>
-                        {" "}
-                        · Solicitud{" "}
-                        {
-                          (
-                            {
-                              pending: "pendiente",
-                              approved: "aprobada",
-                              rejected: "rechazada",
-                              cancelled: "cancelada",
-                            } as Record<string, string>
-                          )[s.voidRequest.status]
-                        }
-                      </small>
-                    )}
-                  </>
-                ),
-              },
-              { label: "Total", render: (s) => saleMoney(s, s.total) },
-              {
-                label: "Saldo pendiente",
-                render: (s) => saleMoney(s, s.creditBalance ?? 0),
-              },
-              {
-                label: "Pagos",
-                render: (s) =>
-                  s.hiddenUntilClose
-                    ? "Se ve al cerrar tu caja"
-                    : s.payments
-                        .map(
-                          (p: any) =>
-                            paymentOptions.find((o) => o.value === p.method)
-                              ?.label,
-                        )
-                        .join(" + "),
-              },
-              {
-                label: "Acciones",
-                render: (s) => (
-                  <div className="table-actions">
+            <label className="table-search">
+              <span>{en ? "Date" : "Fecha"}</span>
+              <input
+                type="date"
+                value={saleDate}
+                onChange={(event) => setSaleDate(event.target.value)}
+                aria-label={
+                  en ? "Search sales by date" : "Buscar ventas de una fecha"
+                }
+              />
+            </label>
+          </div>
+          <QueryState query={query}>
+            <DataTable
+              rows={query.data || []}
+              columns={[
+                {
+                  label: en ? "Sale no." : "Venta n.º",
+                  render: (s) => (
                     <button
-                      onClick={() => setSelected(s)}
-                      aria-label={"Ver " + s.number}
+                      type="button"
+                      className="sales-fusion-number"
+                      aria-pressed={previewId === s.id}
+                      onClick={() => setPreviewId(s.id)}
                     >
-                      <Eye size={18} />
+                      {s.number}
                     </button>
-                    <button
-                      onClick={() =>
-                        download(
-                          "/sales/" + s.id + "/receipt.pdf",
-                          s.number + ".pdf",
-                        ).catch((e) => toast(e.message, true))
-                      }
-                      aria-label={"PDF de " + s.number}
-                    >
-                      <Download size={18} />
-                    </button>
-                    <button
-                      onClick={() =>
-                        printPdf("/sales/" + s.id + "/receipt.pdf").catch((e) =>
-                          toast(e.message, true),
-                        )
-                      }
-                      aria-label={"Reimprimir " + s.number}
-                      title="Reimprimir"
-                    >
-                      <Printer size={18} />
-                    </button>
-                    {can(user.permissions, "*") &&
-                      s.status === "completed" &&
-                      Number(s.creditBalance) > 0 && (
-                        <button
-                          className="text-link"
-                          onClick={() => {
-                            if (!session) {
-                              toast(
-                                "Abre tu caja para registrar abonos.",
-                                true,
-                              );
-                              return;
-                            }
-                            setInstallment({
-                              ...s,
-                              offlineUuid: crypto.randomUUID(),
-                            });
-                          }}
-                        >
-                          Registrar abono
-                        </button>
-                      )}
-                    {!can(user.permissions, "*") &&
-                      s.sellerId === user.id &&
-                      s.status === "completed" &&
-                      s.voidRequest?.status !== "pending" && (
-                        <button
-                          className="text-link"
-                          onClick={() =>
-                            setRequestingVoid({
-                              ...s,
-                              operationId: crypto.randomUUID(),
-                            })
+                  ),
+                },
+                {
+                  label: en ? "Customer" : "Cliente",
+                  render: (s) => s.customerName ?? "—",
+                },
+                {
+                  label: en ? "Date" : "Fecha",
+                  render: (s) => dateLabel(s.createdAt),
+                },
+                {
+                  label: en ? "Status" : "Estado",
+                  render: (s) => (
+                    <>
+                      <Badge
+                        tone={s.status === "voided" ? "danger" : "success"}
+                      >
+                        {s.status === "voided" ? "Anulada" : "Completada"}
+                      </Badge>
+                      {s.voidRequest && (
+                        <small>
+                          {" "}
+                          · Solicitud{" "}
+                          {
+                            (
+                              {
+                                pending: "pendiente",
+                                approved: "aprobada",
+                                rejected: "rechazada",
+                                cancelled: "cancelada",
+                              } as Record<string, string>
+                            )[s.voidRequest.status]
                           }
-                        >
-                          Solicitar anulación
-                        </button>
+                        </small>
                       )}
-                    {can(user.permissions, "sale:manage") &&
-                      s.status === "completed" && (
-                        <button
-                          className="text-link"
-                          onClick={() => {
-                            if (!session) {
-                              toast(
-                                "Abre tu caja para procesar devoluciones.",
-                                true,
-                              );
-                              return;
+                    </>
+                  ),
+                },
+                { label: "Total", render: (s) => saleMoney(s, s.total) },
+                {
+                  label: en ? "Outstanding balance" : "Saldo pendiente",
+                  render: (s) => saleMoney(s, s.creditBalance ?? 0),
+                },
+                {
+                  label: en ? "Payments" : "Pagos",
+                  render: (s) =>
+                    s.hiddenUntilClose
+                      ? "Se ve al cerrar tu caja"
+                      : s.payments
+                          .map(
+                            (p: any) =>
+                              paymentOptions.find((o) => o.value === p.method)
+                                ?.label,
+                          )
+                          .join(" + "),
+                },
+                {
+                  label: en ? "Actions" : "Acciones",
+                  render: (s) => (
+                    <div className="table-actions">
+                      <button
+                        onClick={() => setSelected(s)}
+                        aria-label={"Ver " + s.number}
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          download(
+                            "/sales/" + s.id + "/receipt.pdf",
+                            s.number + ".pdf",
+                          ).catch((e) => toast(e.message, true))
+                        }
+                        aria-label={"PDF de " + s.number}
+                      >
+                        <Download size={18} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          printPdf("/sales/" + s.id + "/receipt.pdf").catch(
+                            (e) => toast(e.message, true),
+                          )
+                        }
+                        aria-label={"Reimprimir " + s.number}
+                        title="Reimprimir"
+                      >
+                        <Printer size={18} />
+                      </button>
+                      {can(user.permissions, "*") &&
+                        s.status === "completed" &&
+                        Number(s.creditBalance) > 0 && (
+                          <button
+                            className="text-link"
+                            onClick={() => {
+                              if (!session) {
+                                toast(
+                                  "Abre tu caja para registrar abonos.",
+                                  true,
+                                );
+                                return;
+                              }
+                              setInstallment({
+                                ...s,
+                                offlineUuid: crypto.randomUUID(),
+                              });
+                            }}
+                          >
+                            Registrar abono
+                          </button>
+                        )}
+                      {!can(user.permissions, "*") &&
+                        s.sellerId === user.id &&
+                        s.status === "completed" &&
+                        s.voidRequest?.status !== "pending" && (
+                          <button
+                            className="text-link"
+                            onClick={() =>
+                              setRequestingVoid({
+                                ...s,
+                                operationId: crypto.randomUUID(),
+                              })
                             }
-                            // Un UUID por formulario: si la respuesta se pierde y
-                            // se vuelve a guardar, la API devuelve la misma
-                            // devolución en vez de repetirla (R9-A01).
-                            setReturning({
-                              ...s,
-                              operationId: crypto.randomUUID(),
-                            });
-                          }}
-                        >
-                          Devolver
-                        </button>
-                      )}
-                    {can(user.permissions, "*") &&
-                      s.status === "completed" &&
-                      !s.returns?.length &&
-                      !s.payments?.some(
-                        (p: any) =>
-                          p.entryType === "installment" &&
-                          p.status !== "rejected",
-                      ) && (
-                        <button
-                          className="text-link danger-text"
-                          onClick={() => setVoiding(s)}
-                        >
-                          Anular
-                        </button>
-                      )}
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </QueryState>
+                          >
+                            Solicitar anulación
+                          </button>
+                        )}
+                      {can(user.permissions, "sale:manage") &&
+                        s.status === "completed" && (
+                          <button
+                            className="text-link"
+                            onClick={() => {
+                              if (!session) {
+                                toast(
+                                  "Abre tu caja para procesar devoluciones.",
+                                  true,
+                                );
+                                return;
+                              }
+                              // Un UUID por formulario: si la respuesta se pierde y
+                              // se vuelve a guardar, la API devuelve la misma
+                              // devolución en vez de repetirla (R9-A01).
+                              setReturning({
+                                ...s,
+                                operationId: crypto.randomUUID(),
+                              });
+                            }}
+                          >
+                            Devolver
+                          </button>
+                        )}
+                      {can(user.permissions, "*") &&
+                        s.status === "completed" &&
+                        !s.returns?.length &&
+                        !s.payments?.some(
+                          (p: any) =>
+                            p.entryType === "installment" &&
+                            p.status !== "rejected",
+                        ) && (
+                          <button
+                            className="text-link danger-text"
+                            onClick={() => setVoiding(s)}
+                          >
+                            Anular
+                          </button>
+                        )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </QueryState>
+        </div>
+        <SalesFusionPreview
+          number={preview?.number}
+          total={preview ? saleMoney(preview, preview.total) : undefined}
+          status={preview?.status}
+          customer={preview?.customerName}
+          onOpen={() => preview && setSelected(preview)}
+        />
       </div>
       <Modal
         open={!!selected}
@@ -3950,7 +3992,7 @@ export function SalesHistory() {
           }
         />
       )}
-    </>
+    </section>
   );
 }
 
