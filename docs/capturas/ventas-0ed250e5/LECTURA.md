@@ -14,4 +14,6 @@ La lámina original `norexos-ventas-higgsfield-01.png` muestra el comprobante ju
 
 No se verificaron el aviso de caja ni el formulario de anulación: hacerlo requería llevar la sesión a estados que no se ejercitaron. No se verificaron contraste cuantitativo ni lector de pantalla.
 
-La coordinación informó por separado que la regresión A12 pasó en este SHA y que la ejecución de CI es `44230587628`; no se verificó aquí su resultado final. Véase `comprobacion-integrada.json` para medidas y estado de cierre.
+La regresión A12 pasó localmente para este SHA. También aprobaron los tres controles del push, `verify`, `windows-installer` y `render-images`. [Ejecución 44230587628](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44230587628)
+
+Siguiente ajuste para Dot. Mantener la vista previa visible al seleccionar un folio a 1440 y 390 px. Comprobar con 20 filas que ambas vistas permiten llegar a la ficha al seleccionar y que el escritorio conserva la disposición lateral de la lámina.
