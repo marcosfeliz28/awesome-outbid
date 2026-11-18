@@ -20,10 +20,10 @@ El candidato y su merge anterior `7b9348dc` conservan las 316 fotos WebP de `ee7
 
 Los tres controles de GitHub de `2832ad4e` pasaron. `verify` cerró a las 17:11:51 UTC. El resultado del recorrido de foco de Punto de venta sigue abierto. En local pasaron 4/4 pruebas focales de presentación. El merge `7b9348dc` y el candidato anterior `adb789cb` terminaron 3/3. [CI actual](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44350425176) · [CI del merge](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44345889385)
 
-La rama de ensayos `dot/qa-visual-pilot-2832-18nov` se creó en `93fff762`. Los árboles de aplicación y de componentes de interfaz coinciden con `2832ad4e`. El ensayo usa datos simulados y un control de capturas propio. El CI de referencia de la aplicación sigue siendo la ejecución de `2832ad4e`.
+La rama de ensayos `dot/qa-visual-pilot-2832-18nov` se creó en `93fff762`. Los árboles de aplicación y de componentes de interfaz coinciden con `2832ad4e`. El ensayo usa datos simulados y un control de capturas propio. Su paso de capturas terminó con código 1 tras 241 segundos y subió un artefacto. La duración coincide con el límite global configurado de 240 segundos. Las anotaciones públicas no identifican casos fallidos ni confirmaron la causa. El artefacto requiere acceso autenticado y sus capturas quedan sin revisar. El CI de referencia de la aplicación sigue siendo la ejecución de `2832ad4e`. [Ensayo visual](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44356931943)
 
 ## Siguiente entrega de Dot
 
-Conservar las 316 fotos y el acabado comprobado. Completar el retorno del foco y los detalles de idioma de Mercancía y Compras registrados en la entrega anterior. Adjuntar rama, SHA, los tres controles y demostración privada. [Informe del candidato anterior](https://github.com/marcosfeliz28/awesome-outbid/blob/608b3fb2f47fb4ef5f8644daee880af566c666d6/docs/capturas/integracion-adb789cb/LECTURA.md)
+Conservar las 316 fotos y el acabado comprobado. Completar el retorno del foco y los detalles de idioma de Mercancía y Compras registrados en la entrega anterior. Adjuntar rama, SHA, los tres controles y demostración privada. Del ensayo visual, enviar el resumen por pantalla y el primer error concreto para verificar qué quedó sin capturar. [Informe del candidato anterior](https://github.com/marcosfeliz28/awesome-outbid/blob/608b3fb2f47fb4ef5f8644daee880af566c666d6/docs/capturas/integracion-adb789cb/LECTURA.md)
 
 Se cerraron los navegadores y procesos iniciados para la prueba.
