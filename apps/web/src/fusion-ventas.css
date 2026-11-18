@@ -1,5 +1,5 @@
 /* Ventas: relieve ligero, sin imágenes ni lógica de cobro. */
-.sales-fusion {
+.app-shell:has(.sales-fusion) {
   --sv-surface: #f6faf7;
   --sv-deep: #e2eee7;
   --sv-ink: #173a2b;
@@ -10,7 +10,7 @@
   color: var(--sv-ink);
   min-width: 0;
 }
-:root[data-theme="dark"] .sales-fusion {
+:root[data-theme="dark"] .app-shell:has(.sales-fusion) {
   --sv-surface: #10291e;
   --sv-deep: #04130c;
   --sv-ink: #f2f5ea;
@@ -19,7 +19,7 @@
   --sv-accent: #67ecaa;
   --sv-glow: #19df8540;
 }
-:root[data-accent="blue"] .sales-fusion {
+:root[data-accent="blue"] .app-shell:has(.sales-fusion) {
   --sv-surface: #edf5ff;
   --sv-deep: #dbe9f7;
   --sv-ink: #19354c;
@@ -27,7 +27,7 @@
   --sv-accent: #1765a9;
   --sv-glow: #458eff30;
 }
-:root[data-theme="dark"][data-accent="blue"] .sales-fusion {
+:root[data-theme="dark"][data-accent="blue"] .app-shell:has(.sales-fusion) {
   --sv-surface: #112b42;
   --sv-deep: #05111f;
   --sv-ink: #eff6ff;
@@ -35,7 +35,7 @@
   --sv-accent: #8dcaff;
   --sv-glow: #458eff40;
 }
-:root[data-theme="dark"][data-overview-surface="black"] .sales-fusion {
+:root[data-theme="dark"][data-overview-surface="black"] .app-shell:has(.sales-fusion) {
   --sv-surface: #131916;
   --sv-deep: #020403;
 }
@@ -224,7 +224,7 @@
   transform: translateY(1px);
   box-shadow: inset 0 3px 6px #0004;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1600px) {
   .sales-fusion-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -262,4 +262,44 @@
     animation: none !important;
     transform: none !important;
   }
+}
+
+/* Keep the same accent on shell and operational links, without changing actions. */
+.app-shell:has(.sales-fusion) {
+  --primary: var(--sv-accent);
+  --primary-soft: var(--sv-glow);
+}
+.app-shell:has(.sales-fusion) :is(.sidebar, .main-shell, .topbar) {
+  color: var(--sv-ink);
+  background: linear-gradient(145deg, var(--sv-surface), var(--sv-deep));
+}
+.app-shell:has(.sales-fusion) .brand-icon,
+.app-shell:has(.sales-fusion) .goods-mobile-bar .button,
+.sales-fusion .button.primary {
+  color: var(--sv-ink);
+  border: 1px solid var(--sv-gold);
+  background: linear-gradient(145deg, var(--sv-glow), var(--sv-deep));
+  box-shadow: inset 0 1px 2px #fff4, 0 4px 10px #0002;
+}
+.app-shell:has(.sales-fusion) .brand-icon,
+.app-shell:has(.sales-fusion) .brand-icon span {
+  color: var(--sv-gold);
+}
+.sales-fusion .table-actions button:not(.button) {
+  color: var(--sv-accent);
+  min-height: 44px;
+  min-width: 44px;
+}
+/* Actions stay in view even when unusually long data require horizontal scroll.
+   Natural column sizing preserves monetary digits rather than shrinking them. */
+@media (min-width: 769px) {
+  .sales-fusion .table-wrap { position: relative; }
+  .sales-fusion :is(th, td):last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: var(--sv-surface);
+    box-shadow: -4px 0 8px #0002;
+  }
+  .sales-fusion th:last-child { z-index: 2; }
 }

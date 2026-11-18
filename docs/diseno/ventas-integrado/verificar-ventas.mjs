@@ -26,6 +26,9 @@ assert.match(css, /max-width: 540px/);
 const summary = readFileSync("apps/web/src/SalesFusion.tsx", "utf8");
 assert.match(summary, /Results loaded/);
 assert.doesNotMatch(summary, /24000|DEMO-001/);
+assert.match(css, /max-width: 1600px/);
+assert.match(css, /position: sticky/);
+assert.match(css, /--primary: var\(--sv-accent\)/);
 log(
-  "PASS: 14 presentation, permissions, blind cash and accessibility contracts",
+  "PASS: 17 presentation, permissions, blind cash and accessibility contracts",
 );
