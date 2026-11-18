@@ -6,7 +6,7 @@ Código revisado: `origin/dot/productos-sobre-inventario-18nov` → `a27a42632ea
 
 Rama de evidencia: `chatgpt-pc/capturas-dot-a27a4263`, fundada en `origin/nexora-cloud` `a85627a6f0737bd6c72d1019ac44aadaa19c7ea7`
 
-## Alcance y aislamiento
+## Alcance del primer recorrido
 
 - Revisión en checkout separado de `a27a4263`; no se mezclaron ramas ni se modificó el código del producto.
 - Vite escuchó solo en `127.0.0.1:14294`. Los puertos reservados `127.0.0.1:15494` y `127.0.0.1:14394` no se abrieron porque esta prueba usó respuestas simuladas y no inició API, PostgreSQL ni tiempo real.
@@ -86,9 +86,18 @@ Directorio: `docs/validacion/capturas-productos-a27a4263/`
 - `390-dark-en.png`
 - las mismas cuatro combinaciones con `-variants`, mostrando el formulario sin guardar.
 
-## Límites
+## Límites del primer recorrido
 
 - No se probó API real, PostgreSQL, SSE/WebSocket ni sincronización real; los puertos de API/tiempo real permanecieron cerrados.
 - El estado offline se limitó a la red del navegador. Se comprobó que, sin ventas sintéticas pendientes, no aparece un contador positivo; no se insertó una venta offline.
 - No se comparó con una imagen supuesta de Higgsfield.
 - No se usaron datos reales, producción, Render, credenciales, PIN, impresora ni ventas.
+
+## Confirmación con API local y PostgreSQL de demostración
+
+La repetición usó el código exacto, en tema claro y español. El catálogo respondió HTTP 200 en ambos tamaños. La búsqueda «Bandas Resistance» dejó una fila y la ficha mostró ese producto. Se registraron cero operaciones y cero errores de página. Los servicios locales quedaron cerrados.
+
+- **1440 × 900.** La ficha queda a 106 px del borde superior, visible con la lista completa y con una coincidencia. [Captura](capturas-productos-a27a4263/productos-api-1440.png)
+- **390 × 844.** La ficha comienza 7.088 px por debajo de la primera pantalla con todos los resultados. Con un solo producto todavía queda 214 px por debajo. El contador escribe «1 productos». [Captura](capturas-productos-a27a4263/productos-api-390.png)
+
+El siguiente candidato debe conservar las 66 fotos de la base vigente y hacer visible la ficha móvil al seleccionar un producto con 20 filas, manteniendo la búsqueda. Quedan pendientes la traducción de «Importar inventario» y el solape temporal de la barra Mercancía. [Mediciones](capturas-productos-a27a4263/mediciones-api-local.json)

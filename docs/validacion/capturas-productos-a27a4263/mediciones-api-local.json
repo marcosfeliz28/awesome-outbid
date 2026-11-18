@@ -1,0 +1,63 @@
+{
+  "commit": "a27a42632eafa8679e165ff5fd811d2b451e7cfb",
+  "screenshots": [
+    {
+      "file": "productos-api-1440.png",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "productos-api-390.png",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "checks": {
+    "390": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "catalogStatus": 200,
+      "initial": {
+        "top": 7932,
+        "distanceBelowFold": 7088,
+        "overflow": 0
+      },
+      "filteredCount": 1,
+      "filtered": {
+        "top": 1058,
+        "distanceBelowFold": 214,
+        "overflow": 0
+      }
+    },
+    "1440": {
+      "operationalWrites": [],
+      "pageErrors": [],
+      "catalogStatus": 200,
+      "initial": {
+        "top": 106,
+        "distanceBelowFold": 0,
+        "overflow": 0
+      },
+      "filteredCount": 1,
+      "filtered": {
+        "top": 106,
+        "distanceBelowFold": 0,
+        "overflow": 0
+      }
+    }
+  },
+  "stages": [
+    "PostgreSQL temporal en loopback",
+    "Migraciones de la base de demostración",
+    "Generación de registros ficticios",
+    "API local real",
+    "Aplicación web del SHA publicado"
+  ],
+  "servicesStopped": true,
+  "ports": {
+    "postgres": 15492,
+    "api": 14292,
+    "web": 14392
+  },
+  "completedAt": "2026-11-18T08:13:42.580Z"
+}
