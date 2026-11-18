@@ -14,6 +14,8 @@ Marcadas discrepancia/genérica (aprobadas por Marcos, revisar al asignar): 1059
 | 1047 1049 1048 | Baja resolución (~500 px) |
 | 1639 | Hay 9 sabores; Marcos/dueña elige (están en rama r2-09) |
 | 1148 | Ya está en lote 19 (1.87 lb); la de 3.97 lb queda en r2-07 |
-| 1100 1114 | BCAA 6000 aprobada por Marcos; falta localizar el archivo |
 ## Sin foto
 1001 1030 1138 1638 1944 1081 1054 1113 1101 1102 1692 1154 1206 1207
+
+## Añadidas después
+INV-1100 (Fruit Punch) e INV-1114 (Watermelon): Nutrex BCAA 6000 Recovery, oficial nutrex.com, 3000 px; etiqueta 6000 vs catálogo 5000, aprobada por Marcos. Origen: rama `claude/fotos-lote-dot-17nov`.
