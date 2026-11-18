@@ -276,3 +276,8 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **BLOQUEADA C14:** no hay webcam física operativa; solo dispositivo virtual Camera AI Effect Opt-in con estado Error. No se concedieron permisos ni se cambiaron protecciones. Falta webcam y tres códigos físicos para probar continuidad/sonido.
 - **Pendientes condicionados:** recorrido DESPUÉS cuando se anuncie una fase desplegada; instalador de esa fase en Windows limpio/VM. El navegador de esta PC no certifica una instalación limpia ni firma. D12 se entrega por otra pieza, sin duplicarlo aquí.
 - **Limpieza y límites:** pestañas propias cerradas, viewport restablecido, API/Vite/PostgreSQL propios detenidos y puertos de prueba sin listeners. Solo documentos/capturas; ningún cambio en `apps/**`, `tests/e2e/**`, producción, Render, secretos, permisos o reglas de dinero. Sin despliegue ni gastos.
+
+## 2026-11-17 · ChatGPT PC · Primera actualización entre compilaciones
+
+- Probé dos compilaciones completas y distintas, de `7bf3ef77` a `5cadaa81`, con ambas pestañas y el carrito libres. Confirmé la recarga, el nuevo archivo principal en las dos pestañas, la indicación de caja abierta y que el carrito podía recibir un artículo ficticio después. Cero ventas y errores. [Tres capturas y mediciones](../validacion/capturas-dot-5cadaa81/actualizacion-entre-versiones/COMPARACION.md).
+- En `5cadaa81` el instalador y las imágenes pasaron. `verify` terminó en rojo después de `pnpm check`. La prueba local de Chromium falló 3/3 mientras se recargaba la pestaña libre. Falta el detalle de la ejecución remota para cotejar ambos fallos. [GitHub Actions](https://github.com/marcosfeliz28/awesome-outbid/actions/runs/44203635956)

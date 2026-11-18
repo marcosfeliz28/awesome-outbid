@@ -1,0 +1,54 @@
+{
+  "commit": "5cadaa81d9f440e8dadf31adc70f20df5e1c626c",
+  "completedAt": "2026-11-18T00:23:53.962Z",
+  "browser": "157.0.4341.60",
+  "screenshots": [
+    {
+      "file": "antes-de-actualizar.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "981ccfe6946a6fd9ad5cbfe06ccb1d8428172cefdbf2381932ecf21f4c12f457"
+    },
+    {
+      "file": "punto-de-venta-en-version-nueva.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "ab5e67b02db6f4605d8ad661c08601d749f5a2862bba785494969286355c11c5"
+    },
+    {
+      "file": "carrito-de-prueba-en-version-nueva.png",
+      "viewport": [
+        1440,
+        900
+      ],
+      "sha256": "7624ad39dd937cb666772d8cac9f8453ee536afb1b11da22678948a144cfdbb8"
+    }
+  ],
+  "checks": {
+    "builds": [
+      {
+        "commit": "7bf3ef770f1ce474633e00421bfaefd19ad2345f",
+        "serviceWorkerSha256": "88445343f1e5051be967c92a81d84455e1bf30dfa93bd4d6977e04e92bfed93e",
+        "appModule": "/assets/index-B-rvJKkC.js"
+      },
+      {
+        "commit": "5cadaa81d9f440e8dadf31adc70f20df5e1c626c",
+        "serviceWorkerSha256": "b9fb5a15b064ca36b205cbe48da4eff2753d013c842dd09d45011012dc425639",
+        "appModule": "/assets/index-Dx-dpXmk.js"
+      }
+    ],
+    "bothTabsReloadedFromEarlierBuild": true,
+    "bothTabsLoadedNewAppModule": true,
+    "cashStillShownOpen": true,
+    "cartWasEmptyBeforeAndAfter": true,
+    "canAddSampleItemAfterUpdate": true,
+    "saleRequests": 0
+  },
+  "servicesStopped": true,
+  "salePosts": 0,
+  "pageErrorCount": 0
+}
