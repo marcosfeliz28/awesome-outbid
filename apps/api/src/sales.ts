@@ -1,4 +1,5 @@
 import { currentTenantId, defaultCourier, ownerWord, productMode, tenantUnique } from "./tenant-context";
+import { branchDocumentNumber } from "./branches";
 import {
   Body,
   Controller,
@@ -1223,7 +1224,7 @@ export class SalesController {
         const ncf = sequences ? await takeNcf(tx, ncfType!) : null;
         const sale = await tx.sale.create({
           data: {
-            number: "FS-" + String(counter.value).padStart(7, "0"),
+            number: branchDocumentNumber("FS", actor.branchId, counter.value, 7),
             ...(ncf ? { ncf, fiscalStatus: "issued" } : {}),
             offlineUuid: input.offlineUuid,
             requestHash,
@@ -4076,7 +4077,7 @@ export class SalesController {
       const row = await tx.saleReturn.create({
         data: {
           saleId: sale.id,
-          number: "NC-" + String(counter.value).padStart(6, "0"),
+          number: branchDocumentNumber("NC", actor.branchId, counter.value, 6),
           reason: data.reason,
           total: money(total),
           taxTotal: money(tax),

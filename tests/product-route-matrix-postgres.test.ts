@@ -94,7 +94,7 @@ const AUTHENTICATED_RESOURCE_ROUTES = new Set<string>();
 // return a successful response under tenant B, never a validation error.
 const READ_LIST_CASES = [
   "/api/alert-rules", "/api/alerts", "/api/assistant/usage", "/api/audit-log", "/api/auth/me",
-  "/api/brands", "/api/billing/plans", "/api/billing/providers", "/api/billing/requests", "/api/cash-sessions", "/api/cash-sessions/opening-suggestion",
+  "/api/branches", "/api/brands", "/api/billing/plans", "/api/billing/providers", "/api/billing/requests", "/api/cash-sessions", "/api/cash-sessions/opening-suggestion",
   "/api/categories", "/api/cod/pending", "/api/courier/payouts",
   "/api/courier/pending", "/api/credit-accounts", "/api/credit-notes",
   "/api/customers", "/api/dashboard/breakdown", "/api/dashboard/summary",
@@ -117,8 +117,8 @@ const READ_LIST_CASES = [
 // valid-body PostgreSQL request in product-route-{matrix,export,admin,
 // admin-extra,auth-void,money,money-extra,money-final,money-last,
 // inventory,inventory-extra,inventory-final,misc,registration,platform-billing,
-// platform-ai-packs,support-platform,platform-panel,cuentas}-postgres.test.ts
-// y mis-ventas-preguntas-postgres.test.ts.
+// platform-ai-packs,support-platform,platform-panel,cuentas}-postgres.test.ts,
+// mis-ventas-preguntas-postgres.test.ts y product-branches-postgres.test.ts.
 // Adding a Nest route without a concrete case fails this gate; do not generate
 // this set from productRoutes() at runtime, which would hide missing coverage.
 const TESTED_PRODUCT_ROUTES = new Set(`
@@ -131,6 +131,7 @@ GET /api/billing/plans
 GET /api/billing/providers
 GET /api/billing/requests
 GET /api/billing/requests/:id/proof
+GET /api/branches
 GET /api/brands
 GET /api/cash-sessions
 GET /api/cash-sessions/:id/cuadre
@@ -215,6 +216,7 @@ GET /api/users
 GET /api/void-requests
 DELETE /api/kits/:productId
 PATCH /api/alerts/:id
+PATCH /api/branches/:id
 PATCH /api/customers/:id
 PATCH /api/expense-categories/:id
 PATCH /api/goods-receipts/:id/document
@@ -243,6 +245,8 @@ POST /api/auth/refresh
 POST /api/auth/register
 POST /api/auth/resend-verification
 POST /api/auth/verify-email
+POST /api/branches
+POST /api/branches/:id/users
 POST /api/brands
 POST /api/billing/requests
 POST /api/billing/requests/:id/proof
@@ -362,8 +366,9 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
   // 210 del producto + 8 del lote 19-nov (casos en product-route-lote19-postgres)
-  // + 1 de cuentas (POST /api/platform/tenants/:slug/plan, product-cuentas-postgres).
-  expect(required).toHaveLength(219);
+  // + 1 de cuentas (POST /api/platform/tenants/:slug/plan, product-cuentas-postgres)
+  // + 4 de sucursales (/api/branches, product-branches-postgres).
+  expect(required).toHaveLength(223);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

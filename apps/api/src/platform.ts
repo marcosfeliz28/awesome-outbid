@@ -243,12 +243,14 @@ export class PlatformController {
         const limits = BILLING_PLANS[input.plan];
         // Mismo candado que enforcePlanQuota: no se cuela un alta mientras se baja el plan.
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`plan:${tenant.id}`}))::text`;
-        const [users, boxes] = await Promise.all([
+        const [users, boxes, branches] = await Promise.all([
           tx.user.count({ where: { tenantId: tenant.id, active: true, role: { name: { not: "support" } } } }),
           tx.terminal.count({ where: { tenantId: tenant.id, approvedAt: { not: null }, revokedAt: null } }),
+          tx.branch.count({ where: { tenantId: tenant.id, active: true } }),
         ]);
         if (users > limits.users) throw new HttpException(`La empresa tiene ${users} usuarios activos; el plan ${limits.label} permite ${limits.users}.`, 409);
         if (boxes > limits.boxes) throw new HttpException(`La empresa tiene ${boxes} equipos aprobados; el plan ${limits.label} permite ${limits.boxes}.`, 409);
+        if (branches > limits.branches) throw new HttpException(`La empresa tiene ${branches} sucursales activas; el plan ${limits.label} permite ${limits.branches}. Desactiva las que sobran antes de bajar el plan.`, 409);
         data.plan = input.plan;
       }
       if (input.prorrogarDias !== undefined) {

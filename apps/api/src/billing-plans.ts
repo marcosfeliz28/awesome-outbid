@@ -20,6 +20,7 @@ type QuotaDb = {
   user: { count(args: unknown): Promise<number>; findMany(args: unknown): Promise<{ branchId: string }[]> };
   terminal: { count(args: unknown): Promise<number>; findMany(args: unknown): Promise<{ branchId: string }[]> };
   cashSession: { count(args: unknown): Promise<number> };
+  branch: { findMany(args: unknown): Promise<{ id: string }[]> };
   $queryRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
 };
 
@@ -53,11 +54,9 @@ export async function enforcePlanQuota(
       `El plan ${plan.label} permite ${plan.boxes} ${plan.boxes === 1 ? "caja abierta" : "cajas abiertas"} simultáneamente.`, 409,
     );
   } else {
-    const [users, terminals] = await Promise.all([
-      tx.user.findMany({ where: { tenantId, active: true, role: { name: { not: "support" } } }, select: { branchId: true } }),
-      tx.terminal.findMany({ where: { tenantId, revokedAt: null }, select: { branchId: true } }),
-    ]);
-    const branches = new Set([...users, ...terminals].map(row => row.branchId));
+    // Sucursales activas registradas en "Branch" (la principal siempre cuenta).
+    const rows = await tx.branch.findMany({ where: { tenantId, active: true }, select: { id: true } });
+    const branches = new Set(["main", ...rows.map(row => row.id)]);
     if (newBranch && !branches.has(newBranch) && branches.size >= plan.branches)
       throw new HttpException(`El plan ${plan.label} permite ${plan.branches} sucursales.`, 409);
   }

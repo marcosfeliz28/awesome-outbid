@@ -462,6 +462,20 @@ it("avisos 2 días antes/después, pago estando suspendido, prueba de 7 días, p
     });
     expect(downgrade.status).toBe(409);
     expect((await tenantRow(A.id)).plan).toBe("pro");
+    // Sucursales: Pro permite 2 y Básico 1; con 2 activas no baja (los 3 usuarios sí caben).
+    await q(
+      `INSERT INTO "Branch" ("tenantId", id, name) VALUES ($1::uuid, 'main', 'Principal'), ($1::uuid, 's2', 'Segunda') ON CONFLICT DO NOTHING`,
+      A.id,
+    );
+    const branchDowngrade = await planRoute("cuenta-a", {
+      operadora: "Ana",
+      motivo: "Baja",
+      plan: "basico",
+    });
+    expect(branchDowngrade.status).toBe(409);
+    expect(branchDowngrade.body.message).toContain("2 sucursales activas");
+    expect((await tenantRow(A.id)).plan).toBe("pro");
+    await q(`DELETE FROM "Branch" WHERE "tenantId"=$1::uuid AND id='s2'`, A.id);
 
     // H1: empresa autoregistrada en «trial» (sin precio): sin plan, 409; con plan, cobra y lo fija.
     await q(`UPDATE "Tenant" SET plan='trial' WHERE id=$1::uuid`, A.id);

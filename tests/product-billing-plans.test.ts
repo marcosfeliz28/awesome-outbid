@@ -24,6 +24,7 @@ it("impide aprobar más equipos y crear más usuarios que el plan, pero no bloqu
     $queryRaw: async (strings: TemplateStringsArray) => strings[0].startsWith("SELECT plan") ? [{ plan: "autoservicio" }] : [],
     user: { count: async () => 2, findMany: async () => [{ branchId: "main" }] },
     terminal: { count: async () => 1, findMany: async () => [{ branchId: "main" }] },
+    branch: { findMany: async () => [{ id: "main" }] },
   };
   process.env.PRODUCT_TENANCY = "required";
   await tenantScope.run({ tenantId: "00000000-0000-0000-0000-000000000002" }, async () => {
