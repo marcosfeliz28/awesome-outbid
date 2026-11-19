@@ -361,13 +361,17 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para cuadrar el dinero que llegó al banco o a la terminal con lo que la tienda registró.",
     comoSeLee:
-      "Cuenta solo los cobros de ventas y los abonos que sí llegaron, por fecha del cobro. No incluye los pagos rechazados ni las devoluciones: los reembolsos se ven en el informe de ingresos por día.",
+      "Cuenta solo los cobros de ventas y los abonos que sí llegaron, por fecha del cobro. Las transferencias que todavía no se verificaron salen en su propia fila con Estado «Por verificar»: no se sabe aún si llegaron. No incluye los pagos rechazados ni las devoluciones: los reembolsos se ven en el informe de ingresos por día.",
     columnas: {
       Día: c("Día", "El día en que entró el dinero."),
       Forma: c("Forma de pago", "Efectivo, tarjeta o transferencia."),
       "Cuenta / terminal": c(
         "Cuenta o terminal",
         "Caja para efectivo. Para tarjeta y transferencia, la cuenta o terminal que se indicó. Sin indicar si no se anotó.",
+      ),
+      Estado: c(
+        "Estado",
+        "«Llegó» si el dinero ya entró (efectivo, tarjeta o transferencia verificada). «Por verificar» si es una transferencia que todavía no se comprobó en el banco.",
       ),
       Cobros: c(
         "Cobros",

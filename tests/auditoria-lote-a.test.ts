@@ -331,3 +331,57 @@ describe("A5 · mensajes de validación legibles", () => {
     ).toBe("Revisa los campos: línea debe tener al menos 1 elemento.");
   });
 });
+
+// A6: «Entradas por cuenta» separa las transferencias sin verificar.
+describe("A6 · entradas por cuenta: transferencias por verificar aparte", () => {
+  it("la consulta separa por estado y la fila dice «Por verificar»", async () => {
+    const { dinero } = await import("../apps/api/src/reportes/dinero");
+    let sql = "";
+    const db: any = {
+      $queryRaw: async (strings: TemplateStringsArray) => {
+        sql = strings.join("?");
+        return [
+          {
+            dia: "2026-11-19",
+            method: "transfer",
+            cuenta: "BHD",
+            unverified: false,
+            amount: 500,
+            n: 1,
+          },
+          {
+            dia: "2026-11-19",
+            method: "transfer",
+            cuenta: "BHD",
+            unverified: true,
+            amount: 300,
+            n: 2,
+          },
+          {
+            dia: "2026-11-19",
+            method: "cash",
+            cuenta: "Sin indicar",
+            unverified: false,
+            amount: 100,
+            n: 1,
+          },
+        ];
+      },
+      cashSession: { findFirst: async () => null },
+    };
+    const actor: any = { id: "u1", branchId: "main", permissions: ["*"] };
+    const rows: any[] = await dinero["entradas-cuenta"].run(
+      db,
+      actor,
+      dateRange({ from: "2026-11-19", to: "2026-11-19" }),
+      {},
+    );
+    expect(sql).toMatch(/p\.status <> 'ok'/);
+    const bhd = rows.filter((r) => r["Cuenta / terminal"] === "BHD");
+    expect(bhd.map((r) => [r.Estado, r.Monto])).toEqual([
+      ["Llegó", 500],
+      ["Por verificar", 300],
+    ]);
+    expect(rows.find((r) => r.Forma === "Efectivo").Estado).toBe("Llegó");
+  });
+});
