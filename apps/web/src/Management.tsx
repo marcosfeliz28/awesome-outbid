@@ -655,10 +655,14 @@ export function Catalog() {
         {detail &&
           (tab === "General" ? (
             <div className="product-detail">
-              <img src={detail.imageUrl} alt={detail.name} />
+              <img
+                key={detail.id + ":" + detail.imageUrl}
+                src={detail.imageUrl || "/products/accessories.svg"}
+                onError={(event) => handleCatalogImageError(event.currentTarget)}
+                alt={detail.name}
+              />
               <div>
                 <Badge tone="violet">{detail.category.name}</Badge>
-                <h2>{detail.name}</h2>
                 <p>
                   {detail.brand} · {detail.sku}
                 </p>
