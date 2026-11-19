@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · P2 · últimos siete días reales
+
+- **Base y duplicación:** se incorporó `origin/nexora-cloud` `ac7ee042c6c66909eeee06259c9a59ae46415e49` mediante merge limpio. P2 seguía pendiente y no estaba en el historial de la rama.
+- **Problema y cambio:** la opción decía `Últimos 7 días`, pero usaba `weekStart()` y un lunes consultaba un solo día. `dashboardSevenDayStart(to)` resta seis fechas civiles al día final, de modo que consulta y exportación comparten un intervalo inclusivo de siete días. `weekStart()` conserva su significado y sus pruebas.
+- **Regresión rojo→verde:** `tests/dashboard-period.test.ts` falló primero porque el helper no existía. Después pasó con jueves, lunes y cruces de mes/año; el foco conjunto aprobó **3 archivos / 60 pruebas**, incluida la preservación byte a byte del Dashboard.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **168 archivos / 1,347 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. Las 559 citas se conservaron sin mover ni perder; el foco documental y de P2 pasó 3 archivos/21 pruebas y `git diff --check` pasó.
+- **Autoauditoría:** no se cambian ventas, importes, API, zona horaria ni exportador. La fecha civil se valida y se calcula al mediodía UTC para evitar desplazamientos; una entrada inválida se conserva. `P2-DASHBOARD-PERIODO_REVERSIBLE.json` retira exactamente P2 antes de comprobar el hash histórico.
+- **Publicación/CI:** pendiente de la publicación permitida de la rama; aún no se declaran los tres CI del SHA final.
+
 ## 2026-11-19 · P11 · total visible de créditos pendientes
 
 - **Base y duplicación:** sobre `origin/nexora-cloud` `e0baf4d896fa1b230c2bdefd64b1167e8d4f8a21`, P11 seguía pendiente en la orden nocturna y no estaba resuelto en `HEAD`. La API ya marca los importes ocultos de caja abierta con `hiddenUntilClose`; no se modificó ese contrato.

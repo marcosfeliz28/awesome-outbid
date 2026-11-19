@@ -2,6 +2,13 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · P2 en Resumen
+
+- `Últimos 7 días` ahora usa el día final y las seis fechas civiles anteriores; antes usaba el lunes de la semana y podía consultar solo 1–6 días. El mismo rango alimenta Resumen y la exportación.
+- Regresión roja por helper ausente y verde después. El foco aprobó 3 archivos/60 pruebas, incluida la guarda reversible del Dashboard.
+- `pnpm check` pasó con 168 archivos/1,347 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API. Las 559 citas quedaron sin mover ni perder; el foco documental/P2 pasó 3 archivos/21 pruebas y `git diff --check` pasó.
+- Solo presentación del rango: sin cambios de ventas, importes, API, Render, producción, base o credenciales. La publicación y los tres CI quedan pendientes del SHA remoto.
+
 ## 2026-11-19 · ChatGPT NUBE · P11 en créditos pendientes
 
 - Si la caja abierta oculta uno o más importes, el encabezado ahora dice `Por cobrar visible` y aclara que el subtotal no incluye esas ventas. Sin importes ocultos mantiene `Por cobrar`; las filas protegidas siguen mostrando `—`.

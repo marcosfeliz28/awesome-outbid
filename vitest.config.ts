@@ -23,6 +23,7 @@ export default defineConfig({
       "tests/login-legible.test.ts",
       "tests/login-animacion.test.ts",
       "tests/tablero-animacion.test.ts",
+      "tests/dashboard-period.test.ts",
       "tests/impacto.test.ts",
       "tests/ai-daily-limit.test.ts",
       "tests/ai-usage.test.ts",

@@ -1,0 +1,14 @@
+[
+  {
+    "before": "import { can, weekStart } from \"@fitstore/shared\";\n",
+    "after": "import { can } from \"@fitstore/shared\";\n"
+  },
+  {
+    "before": "import { dashboardCategoryColor } from \"./dashboardCategoryColor\";\n",
+    "after": "import { dashboardCategoryColor } from \"./dashboardCategoryColor\";\nimport { dashboardSevenDayStart } from \"./dashboardPeriod\";\n"
+  },
+  {
+    "before": "          : period === \"week\"\n            ? weekStart()\n            : to.slice(0, 8) + \"01\";\n",
+    "after": "          : period === \"week\"\n            ? dashboardSevenDayStart(to)\n            : to.slice(0, 8) + \"01\";\n"
+  }
+]

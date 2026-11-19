@@ -31,7 +31,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button, Badge, Modal } from "@fitstore/ui";
-import { can, weekStart } from "@fitstore/shared";
+import { can } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
@@ -39,6 +39,7 @@ import { KpiStrip } from "./KpiStrip";
 import { CountUp } from "./impacto";
 import { kpiStripVisible } from "./kpiStripModel";
 import { dashboardCategoryColor } from "./dashboardCategoryColor";
+import { dashboardSevenDayStart } from "./dashboardPeriod";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -149,7 +150,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         : period === "day"
           ? day
           : period === "week"
-            ? weekStart()
+            ? dashboardSevenDayStart(to)
             : to.slice(0, 8) + "01";
   const query = useQuery({
     queryKey: ["dashboard", from, to],
