@@ -3799,9 +3799,7 @@ export function SalesHistory() {
                           : "Des-verificar transferencia"}
                       </button>
                     )}
-                  {(p.cashSessionId ||
-                    (p.method === "cash" &&
-                      p.reference?.startsWith("Recibido por la dueña"))) &&
+                  {p.cashSessionId &&
                     p.status !== "rejected" &&
                     can(user.permissions, "*") && (
                       <button
