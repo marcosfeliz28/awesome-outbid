@@ -26,6 +26,7 @@ const db: any = {
   cashSession: { findFirst: async () => null },
   user: { findMany: async () => [] },
   terminal: { findMany: async () => [] },
+  warehouse: { findMany: async () => [{ kind: "store", name: "Tienda" }, { kind: "home", name: "Casa" }] },
 };
 const actor: any = {
   id: "u1",

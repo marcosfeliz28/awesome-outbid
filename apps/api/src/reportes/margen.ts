@@ -53,16 +53,13 @@ export const margen: Record<string, ReportDef> = {
     margin: true,
     // Producto: el nombre de la empresa y sin GV (negocio interno de la tienda).
     run: (db, actor, range, query) =>
-      process.env.PRODUCT_TENANCY === "required"
-        ? by(
-            "Empresa",
-            Prisma.sql`COALESCE(NULLIF((SELECT st.data->>'name' FROM "Settings" st WHERE st."tenantId"=s."tenantId" AND st.id=s."branchId" LIMIT 1), ''), 'Empresa')`,
-          )(db, actor, range, query)
-        : by(
-            "Empresa",
-            Prisma.sql`CASE WHEN c.name ILIKE 'GV %' THEN 'GV Makeup Studio' ELSE 'MacGen' END`,
-            true,
-          )(db, actor, range, query),
+      by(
+        "Empresa",
+        process.env.PRODUCT_TENANCY === "required"
+          ? Prisma.sql`COALESCE(NULLIF((SELECT st.data->>'name' FROM "Settings" st WHERE st."tenantId"=s."tenantId" AND st.id=s."branchId" LIMIT 1), ''), 'Empresa')`
+          : Prisma.sql`CASE WHEN c.name ILIKE 'GV %' THEN 'GV Makeup Studio' ELSE 'MacGen' END`,
+        process.env.PRODUCT_TENANCY !== "required",
+      )(db, actor, range, query),
   },
   "margen-por-marca": {
     title: "Margen por marca",

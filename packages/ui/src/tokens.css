@@ -34,7 +34,7 @@
   --nx-dur-fast: 120ms;
   --nx-dur-base: 180ms;
   --nx-dur-slow: 240ms;
-  --nx-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --nx-ease-out: cubic-bezier(.2,.8,.2,1);
 }
 
 /* capa 3b: componente de los primitivos Nx* (pares texto/fondo ≥ 4,5:1) */

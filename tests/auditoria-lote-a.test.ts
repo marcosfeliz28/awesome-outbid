@@ -199,7 +199,7 @@ function fakeInventoryDb(previous: any) {
       }),
       update: async () => calls.push("variant.update"),
     },
-    settings: { findUnique: async () => null },
+    settings: { findUnique: async () => null, findFirst: async () => null },
     variantStock: { findMany: async () => [] },
     warehouse: {
       findFirst: async () => {

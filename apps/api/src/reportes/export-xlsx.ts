@@ -23,7 +23,7 @@ const nombreHoja = (s: string) => s.replace(/[\\/?*[\]:]/g, " ").slice(0, 31);
 
 export async function renderXlsx(m: Modelo): Promise<Buffer> {
   const libro = new ExcelJS.Workbook();
-  libro.creator = "Nexora POS";
+  libro.creator = "Norexos";
   libro.created = new Date();
   libro.title = m.titulo;
 

@@ -154,7 +154,8 @@ describe("Factura proveedor · Claude simulado (sin llamadas reales)", () => {
           { role: "admin", branchId: "main", id: "test-user" } as any,
         ),
       ).rejects.toThrow("El RNC leído no coincide");
-      expect(db.$transaction).not.toHaveBeenCalled();
+      // Solo la reserva del cupo diario de IA (ai-daily-limit); ningún borrador.
+      expect(db.$transaction).toHaveBeenCalledTimes(1);
     } finally {
       globalThis.fetch = originalFetch;
       if (before === undefined) delete process.env.ANTHROPIC_API_KEY;

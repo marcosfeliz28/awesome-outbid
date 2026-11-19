@@ -66,6 +66,12 @@ const STORE_ONLY: { file: string; line: string; guard: RegExp; scope?: "file"; r
     reason: "credenciales de demostración, ocultas con !PRODUCT_TENANCY_REQUIRED",
   },
   {
+    file: "apps/web/src/App.tsx",
+    line: ': [{ id: "gv", label: "GV Makeup Studio", icon: Brush, permission: "gv:read" }]),',
+    guard: /import\.meta\.env\.VITE_PRODUCT_TENANCY === "required"/,
+    reason: "menú GV solo en la tienda; el build del producto lo elimina (constante de Vite)",
+  },
+  {
     file: "apps/api/src/reportes/margen.ts",
     line: ": Prisma.sql`CASE WHEN c.name ILIKE 'GV %' THEN 'GV Makeup Studio' ELSE 'MacGen' END`,",
     guard: /process\.env\.PRODUCT_TENANCY === "required"/,
@@ -134,6 +140,8 @@ function walk(dir: string, accept: (f: string) => boolean): string[] {
   });
 }
 
+const GV_STORE_MODULE = /^apps\/(?:web\/src\/Gv\.tsx|api\/src\/gv[-.][\w-]*\.ts)$/;
+
 function scanProductBranding(): string[] {
   const leaks: string[] = [];
   const code = (f: string) => /\.tsx?$/.test(f) && !f.endsWith(".d.ts");
@@ -145,6 +153,9 @@ function scanProductBranding(): string[] {
     "README.md",
   ];
   for (const file of files) {
+    // Módulo GV (negocio interno de la tienda): rutas apagadas en producto
+    // (app.ts) y Gv.tsx fuera del build del producto. Ver la prueba de abajo.
+    if (GV_STORE_MODULE.test(file)) continue;
     const whole = stripComments(readFileSync(file, "utf8"), file.endsWith(".html"));
     const lines = whole.split("\n");
     for (const hit of scanFile(file)) {
@@ -176,6 +187,15 @@ describe("PC-10 marca y almacenes por empresa", () => {
   it("ninguna pantalla, ticket, PDF, reporte, manifiesto ni README del producto muestra la marca de la tienda", () => {
     const leaks = scanProductBranding();
     expect(leaks, leaks.join("\n")).toEqual([]);
+  });
+
+  it("el módulo GV de la tienda queda apagado en el producto", () => {
+    const app = readFileSync("apps/api/src/app.ts", "utf8");
+    expect(app).toContain("...(!product ? [GvController, GvCitasController, GvCajaController] : [])");
+    expect(app).toContain("...(!product ? [GvCajaVigilante] : [])");
+    const web = readFileSync("apps/web/src/App.tsx", "utf8");
+    expect(web).toMatch(/import\.meta\.env\.VITE_PRODUCT_TENANCY === "required"\s*\?\s*\(\) => null\s*:\s*lazy\(\(\) => import\("\.\/Gv"\)/);
+    expect(web).not.toMatch(/^import \{ Gv \}/m);
   });
 
   it("cada excepción de la lista de permitidos sigue existiendo (no se acumulan obsoletas)", () => {

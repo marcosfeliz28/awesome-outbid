@@ -575,12 +575,12 @@ export const GUIA_REPORTES: Record<string, Guia> = {
   },
   "margen-por-empresa": {
     queEs:
-      "Cuánto vendió y ganó cada empresa del grupo: GV Makeup Studio y MacGen.",
+      "Cuánto vendió y ganó cada empresa del grupo.",
     paraQueSirve:
       "Para ver cuánto aporta cada empresa a la ganancia del grupo.",
-    comoSeLee: `La empresa se toma de la categoría: las categorías que empiezan por GV son GV Makeup Studio; las demás son MacGen. ${NETO_POR_VENTA} Margen % no resta el ITBIS.`,
+    comoSeLee: `Una fila por empresa con su venta, costo y ganancia. ${NETO_POR_VENTA} Margen % no resta el ITBIS.`,
     columnas: {
-      Empresa: c("Empresa", "GV Makeup Studio o MacGen."),
+      Empresa: c("Empresa", "El nombre de la empresa."),
       ...MARGEN_COLUMNAS,
     },
   },
@@ -747,7 +747,11 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Producto: c("Producto", "Nombre del producto."),
       Categoría: c("Categoría", "La categoría del producto."),
       Tienda: c("Tienda", "Piezas en la tienda."),
+      "Existencia en Tienda": c("Tienda", "Piezas en la tienda."),
+      "Existencia en Almacén principal": c("Tienda", "Piezas en la tienda."),
       Casa: c("Casa", "Piezas en la casa (bodega)."),
+      "Existencia en Casa": c("Casa", "Piezas en la casa (bodega)."),
+      "Existencia en Otros almacenes": c("Casa", "Piezas en la casa (bodega)."),
       "Stock total": c("Existencia total", "Tienda más Casa."),
       "Vendidas en el período": c(
         "Piezas vendidas",
@@ -775,7 +779,11 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Producto: c("Producto", "Nombre del producto."),
       Categoría: c("Categoría", "La categoría del producto."),
       Tienda: c("Tienda", "Piezas en la tienda."),
+      "Existencia en Tienda": c("Tienda", "Piezas en la tienda."),
+      "Existencia en Almacén principal": c("Tienda", "Piezas en la tienda."),
       Casa: c("Casa", "Piezas en la casa (bodega)."),
+      "Existencia en Casa": c("Casa", "Piezas en la casa (bodega)."),
+      "Existencia en Otros almacenes": c("Casa", "Piezas en la casa (bodega)."),
       "Última venta": c(
         "Última venta",
         "Fecha de la última venta. Nunca si no tiene ventas.",
@@ -798,7 +806,11 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Producto: c("Producto", "Nombre del producto."),
       Categoría: c("Categoría", "La categoría del producto."),
       Tienda: c("Tienda", "Piezas en la tienda hoy."),
+      "Existencia en Tienda": c("Tienda", "Piezas en la tienda hoy."),
+      "Existencia en Almacén principal": c("Tienda", "Piezas en la tienda hoy."),
       Casa: c("Casa", "Piezas en la casa (bodega) hoy."),
+      "Existencia en Casa": c("Casa", "Piezas en la casa (bodega) hoy."),
+      "Existencia en Otros almacenes": c("Casa", "Piezas en la casa (bodega) hoy."),
       Mínimo: c("Mínimo", "La cantidad mínima que debe haber en la tienda."),
       Faltan: c("Faltan", "Cuántas piezas faltan para llegar al mínimo."),
     },
@@ -868,7 +880,11 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       Producto: c("Producto", "Nombre del producto."),
       Categoría: c("Categoría", "La categoría del producto."),
       Tienda: c("Tienda", "Piezas en la tienda hoy."),
+      "Existencia en Tienda": c("Tienda", "Piezas en la tienda hoy."),
+      "Existencia en Almacén principal": c("Tienda", "Piezas en la tienda hoy."),
       Casa: c("Casa", "Piezas en la casa (bodega) hoy."),
+      "Existencia en Casa": c("Casa", "Piezas en la casa (bodega) hoy."),
+      "Existencia en Otros almacenes": c("Casa", "Piezas en la casa (bodega) hoy."),
       "Vendidas en el período": c(
         "Piezas vendidas",
         "Piezas vendidas en el período, menos devueltas.",
@@ -1100,7 +1116,7 @@ const DINERO_INGRESO_COLUMNAS: Record<string, Explicacion> = {
 const FORMAL_TODOS_NOTA =
   " Las cajas de prueba (QA-, TEST-, PRUEBA-) no cuentan.";
 
-const INFORMES_MACGEN: Record<string, Guia> = {
+const INFORMES_TIENDA: Record<string, Guia> = {
   "ingresos-por-dia": {
     queEs:
       "El informe de ingresos día por día: cuánto se vendió, por qué forma de pago entró el dinero y cuánto se devolvió.",
@@ -1453,6 +1469,6 @@ const INFORMES_VERSIONES: Record<string, Guia> = {
 };
 
 export const GUIA_INFORMES: Record<string, Guia> = {
-  ...INFORMES_MACGEN,
+  ...INFORMES_TIENDA,
   ...INFORMES_VERSIONES,
 };

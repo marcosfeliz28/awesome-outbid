@@ -272,7 +272,9 @@ describe("Render · conexión de PostgreSQL", () => {
     const repeated = [
       ...new Set(prefixes.filter((p, i) => prefixes.indexOf(p) !== i)),
     ];
-    expect(repeated).toEqual(["202610170001", "202610190001"]);
+    // Igualar producto (19-nov): tres pares más, ya aplicados cada uno en su base
+    // (GV en la tienda, el otro en el producto) y sobre tablas independientes.
+    expect(repeated).toEqual(["202610170001", "202610190001", "202611010001", "202611040001", "202611050001"]);
   });
 
   it("respeta DATABASE_URL local cuando no está dentro de Render", () => {

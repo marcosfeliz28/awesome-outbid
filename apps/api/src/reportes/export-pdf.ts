@@ -35,7 +35,7 @@ export function renderPdf(
       margin: ML,
       bufferPages: true,
       compress: opciones.comprimir ?? true,
-      info: { Title: m.titulo, Author: "Nexora POS", Creator: "Nexora POS" },
+      info: { Title: m.titulo, Author: "Norexos", Creator: "Norexos" },
     });
     const trozos: Buffer[] = [];
     doc.on("data", (t: Buffer) => trozos.push(t));
@@ -113,7 +113,7 @@ function dibujar(doc: PDFKit.PDFDocument, m: Modelo) {
     .fillColor("#FFFFFF")
     .font("Helvetica")
     .fontSize(14)
-    .text(m.negocio || "Nexora POS", ML, 90, { width: CW });
+    .text(m.negocio || "Norexos", ML, 90, { width: CW });
   doc
     .font("Helvetica-Bold")
     .fontSize(28)

@@ -1310,7 +1310,7 @@ Nodes (5): _atomic_write_json(), _converted_palace(), _default_comp_entry(), Enc
 
 ### Community 176 - "Community 176"
 Cohesion: 0.20
-Nodes (16): PERMISOS.md (inventario de @Permit, incompleto), Permiso customers:erase (1 uso, admin.ts:354), Advertencia: lista de permisos de inventario no completa, Permiso reports:read (9 usos), Permiso * (40 usos, administracion), ROLES.md (roles y permisos del producto), Rol admin (permiso *), Rol manager (15 permisos, incluye profit:read y customers:erase) (+8 more)
+Nodes (16): PERMISOS.md (inventario de @Permit, incompleto), Permiso customers:erase (1 uso, admin.ts:379), Advertencia: lista de permisos de inventario no completa, Permiso reports:read (9 usos), Permiso * (40 usos, administracion), ROLES.md (roles y permisos del producto), Rol admin (permiso *), Rol manager (15 permisos, incluye profit:read y customers:erase) (+8 more)
 
 ### Community 177 - "Community 177"
 Cohesion: 0.13
@@ -2058,7 +2058,7 @@ Nodes (3): Inventario real: 616 productos y 3158 unidades, Decision 34: importar
 
 ### Community 373 - "Community 373"
 Cohesion: 0.40
-Nodes (6): Calidad de pruebas y de codigo (3e5521c), Bus factor: sistema operado por asistentes de IA, CI en rojo en 9 de 12 corridas, close_difference se audita en todos los cierres (cash.ts:1408), Prueba D-05 no hermetica y no determinista, Pruebas que leen codigo fuente como texto
+Nodes (6): Calidad de pruebas y de codigo (3e5521c), Bus factor: sistema operado por asistentes de IA, CI en rojo en 9 de 12 corridas, close_difference se audita en todos los cierres (cash.ts:1558), Prueba D-05 no hermetica y no determinista, Pruebas que leen codigo fuente como texto
 
 ### Community 374 - "Community 374"
 Cohesion: 0.33

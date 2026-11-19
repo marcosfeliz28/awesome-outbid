@@ -80,7 +80,9 @@ it("migra datos existentes y aísla lectura, escritura y cambio de tenant con RL
     )).rejects.toMatchObject({ code: "23505", constraint: "one_open_cash_per_user" });
     await client.query(`INSERT INTO "Tenant" (id, slug, name, "updatedAt") VALUES ($1, 'otro-negocio', 'Otro negocio', now())`, [other]);
     const tables = (await client.query(`SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations' AND tablename <> 'Tenant'`)).rows.map((r: any) => r.tablename);
-    expect(tables).toHaveLength(68);
+    // 68 del producto + 9 de nexora-cloud (GV, AiUsage, BranchTermination) con RLS (202611200001).
+    expect(tables).toHaveLength(77);
+    for (const t of ["GvCourse", "GvEnrollment", "GvPayment", "GvCashSession", "GvProof", "GvAppointment", "GvLead", "AiUsage", "BranchTermination"]) expect(tables).toContain(t);
     expect(tables).toContain("PlatformPayment");
     expect(tables).toContain("AiPackCredit");
     expect(tables).toContain("McpAuthorizationCode");

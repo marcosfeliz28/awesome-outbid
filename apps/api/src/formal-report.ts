@@ -38,7 +38,7 @@ const realSaleWhere: Prisma.SaleWhereInput = {
 const utc = (date: Date) =>
   Prisma.sql`(${date}::timestamptz AT TIME ZONE 'UTC')`;
 const real = Prisma.sql`COALESCE(cs."registerId",'') !~* '^(qa|test|prueba)[-_]'`;
-const realMacgen = () => Prisma.sql`${real} AND ${saleNotGvSql()}`;
+const realSinGv = () => Prisma.sql`${real} AND ${saleNotGvSql()}`;
 const num = (v: unknown) => Number(v ?? 0);
 const capped = 500;
 const money2 = (value: unknown) => formatMoney(num(value));
@@ -90,7 +90,7 @@ export class FormalReportController {
         SELECT COALESCE(SUM(s.total),0) sold,COALESCE(SUM(s."costTotal"),0) cost,
           COALESCE(SUM(s."taxTotal"),0) tax,COALESCE(SUM(s."discountTotal"),0) discount,COUNT(*)::bigint count
         FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
+        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realSinGv()}
           AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}`),
       this.db.$queryRaw<
         { total: unknown; cost: unknown; tax: unknown; count: bigint }[]
@@ -99,7 +99,7 @@ export class FormalReportController {
           COALESCE(SUM(r."taxTotal"),0) tax,COUNT(*)::bigint count
         FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
           LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
-        WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
+        WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${realSinGv()}
           AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}`),
       this.db.$queryRaw<
         { userId: string; sold: unknown; returned: unknown; count: bigint }[]
@@ -107,14 +107,14 @@ export class FormalReportController {
         SELECT "userId",SUM(sold) sold,SUM(returned) returned,SUM(n)::bigint count FROM (
           SELECT s."sellerId"::text AS "userId",s.total sold,0 returned,1 n
           FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-          WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
+          WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realSinGv()}
             AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
           UNION ALL
           -- Neto de devoluciones (D-05): lo devuelto en el período, a quien vendió.
           SELECT s."sellerId"::text,0,r.total,0
           FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
             LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
-          WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
+          WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${realSinGv()}
             AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)}
         ) x GROUP BY "userId" ORDER BY SUM(sold)-SUM(returned) DESC LIMIT 500`),
       this.db.$queryRaw<
@@ -126,7 +126,7 @@ export class FormalReportController {
           JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId"
           JOIN "Category" c ON c.id=p."categoryId"
           LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
+        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realSinGv()}
           AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
         GROUP BY c.id ORDER BY sold DESC`),
       this.db.$queryRaw<

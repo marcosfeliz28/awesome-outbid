@@ -1016,8 +1016,8 @@ export function Inventory() {
         <QueryState query={query} english={inventoryLanguage === "en"}>
           {mode === "stock" ? (
             <DataTable
-              cards
               english={inventoryLanguage === "en"}
+              cards
               rows={rows}
               empty="No encontramos artículos en el inventario"
               emptyIllustration="inventario"
@@ -3265,8 +3265,9 @@ export function Reports() {
                     <Button
                       variant="secondary"
                       key={format}
-                      disabled={inverted || busy !== null}
+                      disabled={busy !== null}
                       onClick={async () => {
+                        if (inverted) return toast(en ? "Fix the dates first." : "Corrige las fechas primero.", true);
                         const nuevo = extra.data?.find(
                           (r) => r.name === report,
                         )?.exportable;

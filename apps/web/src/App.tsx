@@ -13,7 +13,6 @@ import type { AssistantRequest } from "./dashboardQuestions";
 import { supportBannerText, supportExpiresAt } from "./supportSession";
 import { applyTheme } from "./theme";
 import { PageErrorBoundary } from "./PageErrorBoundary";
-import { Gv } from "./Gv";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import {
   isCashierPasswordRole,
@@ -106,6 +105,11 @@ const Assistant = lazy(() =>
   import("./Assistant").then(({ Assistant }) => ({ default: Assistant })),
 );
 const POS = lazy(() => import("./POS").then(({ POS }) => ({ default: POS })));
+// El build del producto (VITE_PRODUCT_TENANCY=required) no incluye GV.
+const Gv =
+  import.meta.env.VITE_PRODUCT_TENANCY === "required"
+    ? () => null
+    : lazy(() => import("./Gv").then(({ Gv }) => ({ default: Gv })));
 const Merchandise = lazy(() =>
   import("./Merchandise").then(({ Merchandise }) => ({ default: Merchandise })),
 );
@@ -344,7 +348,10 @@ const navigation = [
     icon: IncentivesIcon,
     permission: "sale:manage",
   },
-  { id: "gv", label: "GV Makeup Studio", icon: Brush, permission: "gv:read" },
+  // GV es un negocio interno de la tienda: fuera del menú y del build del producto.
+  ...(import.meta.env.VITE_PRODUCT_TENANCY === "required"
+    ? []
+    : [{ id: "gv", label: "GV Makeup Studio", icon: Brush, permission: "gv:read" }]),
 ];
 const PRODUCT_TENANCY_REQUIRED = productTenancyRequired(
   import.meta.env.VITE_PRODUCT_TENANCY,
@@ -1224,7 +1231,20 @@ function Shell() {
     return () => clearInterval(timer);
   }, [online, setOnline]);
   useEffect(() => {
-    if (user && !routeAllowed) go(safePage);
+    // El hash puede traer parámetros (month-report?from=…&to=…): se compara solo la pantalla.
+    const pantalla = page.split("?")[0];
+    if (
+      user &&
+      !allowed.some((n) => n.id === pantalla) &&
+      // GV-02: Configuración sólo para quien la ve en el menú.
+      !(pantalla === "settings" && can(user.permissions, "sale:manage")) &&
+      // El desglose del mes se abre desde el panel anual; lo ve quien tiene reportes.
+      !(pantalla === "month-report" && can(user.permissions, "reports:read")) &&
+      !(page === "styles" && SHOW_STYLE_GUIDE) &&
+      // Demostración (datos de ejemplo) solo para el administrador.
+      !(page === "demo" && can(user.permissions, "*"))
+    )
+      go(safePage);
   }, [user, page, routeAllowed, safePage]);
   useEffect(() => {
     if (!user) return;
@@ -1596,13 +1616,11 @@ function Shell() {
               </span>
               <strong>
                 {(current?.label ? t(current.label) : "") ||
-                  (safePage === "month-report"
+                  (page.split("?")[0] === "month-report"
                     ? (language === "en" ? "Monthly report" : "Informe mensual")
-                    : safePage === "styles"
-                    ? t("Guía de estilos")
                     : safePage === "demo"
                       ? t("Demostración")
-                      : t("Configuración"))}
+                      : t(safePage === "styles" ? "Guía de estilos" : "Configuración"))}
               </strong>
             </span>
           </div>
@@ -1782,7 +1800,7 @@ function Shell() {
             }}
           />
           <PageErrorBoundary
-            key={safePage}
+            key={page.split("?")[0]}
             page={page}
             onRetry={() => void client.resetQueries()}
           >

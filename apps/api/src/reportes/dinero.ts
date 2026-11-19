@@ -146,7 +146,7 @@ export const dinero: Record<string, ReportDef> = {
           WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()}
             AND p."createdAt" >= ${utc(range.gte)} AND p."createdAt" <= ${utc(range.lte)}
             AND p.method IN ('cash', 'card', 'transfer') AND p.status <> 'rejected'
-          GROUP BY 1, 2, 3, 4`;
+          GROUP BY 1, 2, 3, 4, 5`;
       const label: Record<string, string> = {
         cash: "Efectivo",
         card: "Tarjeta",

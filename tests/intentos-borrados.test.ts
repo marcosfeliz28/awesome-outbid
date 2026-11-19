@@ -21,7 +21,7 @@ function fakeDb(keys: string[]) {
   const missing = () => Object.assign(new Error("P2025"), { code: "P2025" });
   const authAttempt = {
     upsert: async ({ where, create, update }: any) => {
-      const row = rows.get(where.key);
+      const row = rows.get(where.key ?? where.tenantId_key?.key);
       const next = row
         ? { ...row, ...update }
         : {
@@ -30,17 +30,17 @@ function fakeDb(keys: string[]) {
             windowStartedAt: null,
             ...create,
           };
-      rows.set(where.key, next);
+      rows.set(where.key ?? where.tenantId_key?.key, next);
       return next;
     },
     update: async ({ where, data }: any) => {
-      const row = rows.get(where.key);
+      const row = rows.get(where.key ?? where.tenantId_key?.key);
       if (!row) throw missing();
-      rows.set(where.key, { ...row, ...data });
+      rows.set(where.key ?? where.tenantId_key?.key, { ...row, ...data });
     },
     updateMany: async ({ where, data }: any) => {
-      const row = rows.get(where.key);
-      if (row) rows.set(where.key, { ...row, ...data });
+      const row = rows.get(where.key ?? where.tenantId_key?.key);
+      if (row) rows.set(where.key ?? where.tenantId_key?.key, { ...row, ...data });
       return { count: row ? 1 : 0 };
     },
   };
@@ -136,7 +136,7 @@ describe("verifyAttempt con las filas borradas por un cambio de contraseña", ()
     );
     await expect(thirtyFirst).rejects.toMatchObject({
       status: 400,
-      message: "Cuenta bloqueada.",
+      message: expect.stringMatching(/^Cuenta bloqueada\./),
     });
     expect(checks).toBe(1);
   });

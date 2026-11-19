@@ -12,11 +12,23 @@ function archivos(dir: string): string[] {
   });
 }
 
+// Producto multiempresa (19-nov): infraestructura de tenant que necesita SQL
+// dinámico. Identificadores citados desde el catálogo y valores como $1; cada
+// archivo tiene su prueba PostgreSQL (aislamiento, exportación y respaldo).
+const PERMITIDOS = [
+  "api/src/common.ts",
+  "api/src/tenant-database.ts",
+  "api/src/registration.ts",
+  "api/src/tenant-export.ts",
+  "api/src/tenant-backup.ts",
+];
+
 describe("seguridad 16 · SQL crudo en la API", () => {
   it("ningún archivo de apps/api/src usa $queryRawUnsafe", () => {
     const hallazgos = archivos(join(process.cwd(), "apps", "api", "src"))
       .filter((f) => readFileSync(f, "utf8").includes("$queryRawUnsafe"))
-      .map((f) => f.split(/[\\/]apps[\\/]/)[1]);
+      .map((f) => f.split(/[\\/]apps[\\/]/)[1].replace(/\\/g, "/"))
+      .filter((f) => !PERMITIDOS.includes(f));
     expect(hallazgos).toEqual([]);
   });
 });

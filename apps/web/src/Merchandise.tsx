@@ -675,7 +675,7 @@ export function Merchandise({
         </div>
         <div
           className="goods-mode"
-          role="tablist"
+          role="group"
           aria-label={t("movementType")}
         >
           <button
