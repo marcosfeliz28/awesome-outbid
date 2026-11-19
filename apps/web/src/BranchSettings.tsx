@@ -95,6 +95,16 @@ export function BranchSettings() {
           No se pudieron cargar las sucursales.
         </p>
       )}
+      {branches.isLoading && (
+        <p className="branch-settings__state" role="status">
+          Cargando sucursales…
+        </p>
+      )}
+      {!branches.isLoading && !branches.isError && rows.length === 0 && (
+        <p className="branch-settings__state" role="status">
+          Todavía no hay sucursales para mostrar.
+        </p>
+      )}
       <ul className="branch-grid" aria-label="Sucursales registradas">
         {rows.map((branch) => (
           <li

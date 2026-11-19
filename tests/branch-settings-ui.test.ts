@@ -94,5 +94,15 @@ describe("BranchSettings · tarjetas y acciones", () => {
     expect(css).toContain(
       "grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))",
     );
+    expect(css).toMatch(
+      /\.branch-card__actions \.button\s*\{[\s\S]*min-height:\s*44px/,
+    );
+  });
+
+  it("explica los estados de carga y vacío sin ocultar errores", () => {
+    const source = readFileSync("apps/web/src/BranchSettings.tsx", "utf8");
+    expect(source).toContain("Cargando sucursales…");
+    expect(source).toContain("Todavía no hay sucursales para mostrar.");
+    expect(source).toContain("No se pudieron cargar las sucursales.");
   });
 });

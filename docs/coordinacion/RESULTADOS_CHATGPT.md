@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
+## 2026-11-19 · ChatGPT NUBE · pantallas de producto y planes
+
+- **Rama/base:** `chatgpt-nube/producto-pantallas-19nov`, creada desde `origin/claude/producto-venta-19nov` `8ef351e6e178922e85f7e73a40713a4e60224618`. El SHA final es el commit que contiene esta sección; no se mezcló en `nexora-cloud`.
+- **Interfaz:** `TenantStatusBanner` distingue aviso completo para administración y una línea discreta para caja; `BranchSettings` presenta sucursales, personas, acciones, límite del plan y estados de carga/error/vacío; el panel de plataforma separa plan actual, fin de prueba, cambio, prórroga, responsable y motivo; el primer cobro pide el plan que se pagará. Registro e invitación dicen explícitamente “7 días”.
+- **Regresión roja → verde:** las pruebas nuevas fallaron antes (8 fallos en total en las dos tandas de implementación) y pasan después: 12/12. Durante la autoauditoría se detectó que no estaban enumeradas en `vitest.config.ts`; se corrigió para que formen parte de `pnpm test` y CI. Con contratos previos, pasan 21/21 pruebas focales.
+- **Evidencia visual:** capturas reales de la compilación, con API simulada y datos ficticios, en `docs/capturas/producto-pantallas-19nov/`: 390 px claro y 1366 px oscuro. No hay desborde horizontal. SHA-256: `1ae7133c34e03d6ff091c295f2e129e5745c37a3072ba6139c7606a3ed3fd239` (390) y `03cf6e75e8e5de396cc3bb62ca0d90729b7136ec28c9338b698e979d682324ea` (1366).
+- **Autoauditoría:** se conservaron rutas y payloads de pago, cambio de plan y asignación de sucursal. No se modificaron API, base, permisos, reglas de dinero ni `tests/e2e/**`. Se corrigieron modo oscuro, una superficie blanca fijada en línea y estados de carga/vacío encontrados durante la revisión.
+- **Control:** pruebas focales, typecheck, ESLint y build web verdes. `pnpm check` llegó a 1,737 pruebas aprobadas y 10 omitidas, pero terminó con 38 fallos en 19 archivos de guardias visuales desancladas; la misma orden asigna su reanclaje a ChatGPT PC. Esta rama no las cambia ni debilita. Los tres trabajos de CI se registran tras el único push del SHA final.
+- **Límites:** sin despliegue, PR ni mezcla; no se tocó Render, producción, la base de la tienda ni credenciales.
+
 ## 2026-10-24 · ChatGPT PC · corrección CPC-8 de PC-18
 
 - El perfil del instalador local inyecta un guard al inicio de NSIS: `$INSTDIR` debe ser exactamente `C:\Program Files\Nexora POS Local`. Cualquier `/D=` hacia la carpeta de la tienda u otra ruta termina con código 4 antes de copiar archivos o tocar servicios.

@@ -9246,7 +9246,7 @@ td strong {
 }
 .branch-card__actions .button {
   flex: 1 1 auto;
-  min-height: 42px;
+  min-height: 44px;
   padding-inline: 12px;
   font-size: max(var(--fs-min), 14px);
 }
@@ -9303,6 +9303,38 @@ td strong {
 :root[data-theme="dark"] .branch-card,
 :root[data-theme="dark"] .branch-tool-card {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+}
+
+/* Panel del operador: mantiene la jerarquía nueva legible con el tema oscuro
+   global, sin cambiar los formularios ni sus contratos. */
+:root[data-theme="dark"] .platform-panel {
+  background: var(--bg);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .platform-panel__surface,
+:root[data-theme="dark"] .platform-panel .bg-white,
+:root[data-theme="dark"] .platform-panel .bg-slate-50 {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .platform-panel .bg-sky-50 {
+  background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+}
+
+:root[data-theme="dark"]
+  .platform-panel
+  :is(.text-slate-950, .text-slate-900, .text-slate-800) {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .platform-panel :is(.text-slate-700, .text-slate-600) {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .platform-panel .text-sky-950 {
+  color: var(--text);
 }
 
 @media (max-width: 560px) {

@@ -45,4 +45,14 @@ describe("presentación de plan, prueba e invitación", () => {
     );
     expect(platform).toContain("Enlace de invitación (vence en 7 días).");
   });
+
+  it("ofrece una superficie legible también en modo oscuro", () => {
+    const styles = readFileSync("apps/web/src/styles.css", "utf8");
+    expect(platform).toContain('className="platform-panel min-h-screen');
+    expect(styles).toContain(':root[data-theme="dark"] .platform-panel');
+    expect(styles).toContain(
+      ':root[data-theme="dark"] .platform-panel__surface',
+    );
+    expect(platform).not.toContain('style={{ background: "#fff"');
+  });
 });

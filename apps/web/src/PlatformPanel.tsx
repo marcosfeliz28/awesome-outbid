@@ -211,7 +211,7 @@ function StatusBadge({ tenant }: { tenant: Tenant }) {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
+    <section className="platform-panel__surface rounded-xl border border-slate-200 bg-white p-4">
       <h2 className="mb-3 text-lg text-slate-900">{title}</h2>
       {children}
     </section>
@@ -519,10 +519,12 @@ function PlanForm({
     event.preventDefault();
     setError("");
     setDone("");
-    if (!changePlan && !extend) return setError("Elige otro plan o escribe los días de prórroga.");
+    if (!changePlan && !extend)
+      return setError("Elige otro plan o escribe los días de prórroga.");
     if (extend && !(Number.isInteger(extend) && extend >= 1 && extend <= 365))
       return setError("La prórroga va de 1 a 365 días.");
-    if (operadora.trim().length < 2) return setError("Escribe quién hace el cambio.");
+    if (operadora.trim().length < 2)
+      return setError("Escribe quién hace el cambio.");
     if (motivo.trim().length < 3) return setError("Escribe el motivo.");
     setReview(true);
   };
@@ -530,16 +532,15 @@ function PlanForm({
     setBusy(true);
     setError("");
     try {
-      const result = await platformFetch<{ plan: string; trialEndsAt: string | null }>(
-        token,
-        `/tenants/${tenant.slug}/plan`,
-        {
-          operadora: operadora.trim(),
-          motivo: motivo.trim(),
-          ...(changePlan ? { plan } : {}),
-          ...(extend ? { prorrogarDias: extend } : {}),
-        },
-      );
+      const result = await platformFetch<{
+        plan: string;
+        trialEndsAt: string | null;
+      }>(token, `/tenants/${tenant.slug}/plan`, {
+        operadora: operadora.trim(),
+        motivo: motivo.trim(),
+        ...(changePlan ? { plan } : {}),
+        ...(extend ? { prorrogarDias: extend } : {}),
+      });
       setDone(
         `Listo. Plan ${PLANS[result.plan as keyof typeof PLANS] ?? result.plan}` +
           (extend ? `; prueba hasta ${date(result.trialEndsAt)}.` : "."),
@@ -562,13 +563,17 @@ function PlanForm({
         className="grid grid-cols-1 gap-2 sm:grid-cols-2"
       >
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div className="text-sm font-semibold text-slate-600">Plan actual</div>
+          <div className="text-sm font-semibold text-slate-600">
+            Plan actual
+          </div>
           <div className="mt-1 text-base font-bold text-slate-950">
             {PLANS[tenant.plan as keyof typeof PLANS] ?? "Sin plan de pago"}
           </div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <div className="text-sm font-semibold text-slate-600">Fin de la prueba</div>
+          <div className="text-sm font-semibold text-slate-600">
+            Fin de la prueba
+          </div>
           <div className="mt-1 text-base font-bold text-slate-950">
             {date(tenant.trialEndsAt)}
           </div>
@@ -584,7 +589,11 @@ function PlanForm({
             </p>
           </div>
           <Field label="Nuevo plan (opcional)">
-            <select value={plan} onChange={(e) => setPlan(e.target.value)} disabled={review}>
+            <select
+              value={plan}
+              onChange={(e) => setPlan(e.target.value)}
+              disabled={review}
+            >
               <option value="">Sin cambio</option>
               {Object.entries(PLANS).map(([key, label]) => (
                 <option key={key} value={key}>
@@ -597,7 +606,9 @@ function PlanForm({
 
         <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
           <div>
-            <h3 className="text-base font-bold text-slate-950">Prorrogar prueba</h3>
+            <h3 className="text-base font-bold text-slate-950">
+              Prorrogar prueba
+            </h3>
             <p className="text-sm text-slate-700">
               Añade entre 1 y 365 días a la fecha vigente.
             </p>
@@ -615,9 +626,12 @@ function PlanForm({
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <h3 className="text-base font-bold text-slate-950">Registro del cambio</h3>
+        <h3 className="text-base font-bold text-slate-950">
+          Registro del cambio
+        </h3>
         <p className="mb-3 text-sm text-slate-700">
-          Estos datos quedan en la bitácora para explicar quién hizo el cambio y por qué.
+          Estos datos quedan en la bitácora para explicar quién hizo el cambio y
+          por qué.
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Responsable del cambio">
@@ -823,7 +837,9 @@ function SupportSection({
           </Field>
           <div>
             <Button
-              disabled={busy || operadora.trim().length < 2 || motivo.trim().length < 8}
+              disabled={
+                busy || operadora.trim().length < 2 || motivo.trim().length < 8
+              }
               onClick={() => void open()}
             >
               Abrir sesión de solo lectura
@@ -977,7 +993,8 @@ function ClientDetail({
                 <div className="text-slate-700">
                   {!tenant.admin.invitationPending
                     ? "Invitación aceptada: entra con su propia clave."
-                    : new Date(tenant.admin.invitationExpiresAt ?? 0) <= new Date()
+                    : new Date(tenant.admin.invitationExpiresAt ?? 0) <=
+                        new Date()
                       ? "Invitación vencida o cancelada."
                       : `Invitación pendiente (vence ${date(tenant.admin.invitationExpiresAt)}).`}
                 </div>
@@ -1000,7 +1017,10 @@ function ClientDetail({
                       text="El enlace dejará de servir. ¿Cancelar la invitación?"
                     />
                   ) : (
-                    <Button variant="secondary" onClick={() => setConfirmRevoke(true)}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setConfirmRevoke(true)}
+                    >
                       Cancelar invitación
                     </Button>
                   ))}
@@ -1060,7 +1080,12 @@ function ClientDetail({
             <PaymentForm token={token} tenant={tenant} onDone={refresh} />
           </Section>
           <Section title="Plan y prueba">
-            <PlanForm key={`${tenant.plan}:${tenant.trialEndsAt}`} token={token} tenant={tenant} onDone={refresh} />
+            <PlanForm
+              key={`${tenant.plan}:${tenant.trialEndsAt}`}
+              token={token}
+              tenant={tenant}
+              onDone={refresh}
+            />
           </Section>
           <Section title="Asistente IA este mes">
             {usage.data ? (
@@ -1548,8 +1573,7 @@ function ClientList({
                 type="button"
                 onClick={() => onOpen(t.slug)}
                 // Estilo en línea: la regla global button:not(.button) quita fondo y borde.
-                className="flex w-full min-w-0 flex-col items-start gap-1 rounded-xl p-3 text-left"
-                style={{ background: "#fff", border: "1px solid #94a3b8" }}
+                className="flex w-full min-w-0 flex-col items-start gap-1 rounded-xl border border-slate-400 bg-white p-3 text-left"
               >
                 <span className="w-full break-words text-base font-bold text-slate-900">
                   {t.name}
@@ -1645,12 +1669,10 @@ export function PlatformPanel() {
     throw error;
   };
   return (
-    <div className="min-h-screen bg-slate-100 text-base text-slate-900">
-      <header className="flex items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-3">
+    <div className="platform-panel min-h-screen bg-slate-100 text-base text-slate-900">
+      <header className="platform-panel__surface flex items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-3">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-violet-800">
-            Norexos
-          </div>
+          <div className="text-sm font-semibold text-violet-800">Norexos</div>
           <h1 className="text-xl leading-tight">Panel de plataforma</h1>
         </div>
         {token && (
