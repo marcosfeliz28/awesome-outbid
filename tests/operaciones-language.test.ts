@@ -3,12 +3,13 @@ import { createHash } from "node:crypto";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { OPERACIONES_EN, operacionesText, customerAnonymizationText } from "../apps/web/src/operacionesLanguage";
+import { reverseIt003 } from "./it003-preservation";
 
 const source = readFileSync("apps/web/src/Management.tsx", "utf8");
 const ledger = JSON.parse(readFileSync("docs/diseno/operaciones-4k/PRESERVACION.json", "utf8"));
 // Recover the complete verified baseline, then select named declarations, never
 // ledger positions: composing unrelated views can append arbitrary edit groups.
-let baseline = source;
+let baseline = reverseIt003(source, "Management");
 for (const edit of [...ledger.changes].reverse()) {
   if (baseline.split(edit.after).length !== 2) throw new Error("Non-unique preservation edit");
   baseline = baseline.replace(edit.after, edit.before);
@@ -83,7 +84,7 @@ describe("Operaciones ES/EN: presentación, sin cambiar negocio", () => {
   it("cada registro conserva su hash base y revierte todos los cambios exactamente", () => {
     for (const path of ["docs/diseno/operaciones-4k/PRESERVACION.json", "docs/diseno/productos-higgsfield/PRESENTACION_REVERSIBLE.json", "docs/diseno/caja-turnos/PRESENTACION_REVERSIBLE.json"]) {
       const record = JSON.parse(readFileSync(path, "utf8"));
-      let restored = source;
+      let restored = reverseIt003(source, "Management");
       for (const edit of [...record.changes].reverse()) {
         expect(restored).toContain(edit.after);
         restored = restored.replace(edit.after, edit.before);

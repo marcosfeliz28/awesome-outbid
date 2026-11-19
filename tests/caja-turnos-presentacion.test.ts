@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, it, expect } from "vitest";
+import { reverseIt003 } from "./it003-preservation";
 describe("Caja y turnos: presentación aislada", () => {
   it("conserva Management completo byte por byte al revertir import y clase", () => {
     const record = JSON.parse(
@@ -9,7 +10,10 @@ describe("Caja y turnos: presentación aislada", () => {
         "utf8",
       ),
     );
-    let source = readFileSync("apps/web/src/Management.tsx", "utf8");
+    let source = reverseIt003(
+      readFileSync("apps/web/src/Management.tsx", "utf8"),
+      "Management",
+    );
     for (const edit of [...record.changes].reverse()) {
       expect(source).toContain(edit.after);
       source = source.replace(edit.after, edit.before);
@@ -38,7 +42,7 @@ it("historial no expone importes esperados ni diferencias sin permiso", () => {
   const source = readFileSync("apps/web/src/Management.tsx", "utf8");
   expect(source).toContain('if (!canSeeExpected) return "—";');
   expect(source).toMatch(
-    /label: "Diferencias por método",\s*render: \(s\) =>\s*canSeeExpected &&/,
+    /label: ct\("Diferencias por método"\),\s*render: \(s\) =>\s*canSeeExpected &&/,
   );
 });
 

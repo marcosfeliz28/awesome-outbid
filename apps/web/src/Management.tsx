@@ -9,6 +9,7 @@ import { catalogText } from "./catalogLanguage";
 import { handleCatalogImageError } from "./catalogImage";
 import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
+import { cashText } from "./cashLanguage";
 import { inventoryText } from "./inventoryLanguage";
 import { useInventoryAppearance } from "./inventoryAppearance";
 import { InventoryProduct } from "./InventoryProduct";
@@ -1689,6 +1690,8 @@ const alertTypeLabel = (type: string) =>
 
 export function Cash() {
   const user = useStore((s) => s.user)!;
+  const cashLanguage = useLanguage();
+  const ct = (text: string) => cashText(text, cashLanguage);
   const client = useQueryClient();
   const query = useQuery({
     queryKey: ["cash-sessions"],
@@ -1766,13 +1769,13 @@ export function Cash() {
   return (
     <div className="cash-page fusion-cash-turnos">
       <Heading
-        title="Una caja que siempre cuadra"
-        caption="Abre el día con claridad. Ciérralo con tranquilidad."
+        title={ct("Una caja que siempre cuadra")}
+        caption={ct("Abre el día con claridad. Ciérralo con tranquilidad.")}
       >
         {!active ? (
           <Button onClick={() => setOpen(true)}>
             <Wallet size={17} />
-            Abrir caja
+            {ct("Abrir caja")}
           </Button>
         ) : (
           <>
@@ -1787,9 +1790,11 @@ export function Cash() {
               onClick={() => setMovement(crypto.randomUUID())}
             >
               <Plus size={17} />
-              Movimiento
+              {ct("Movimiento")}
             </Button>
-            <Button onClick={() => setClosing(active)}>Cerrar y arquear</Button>
+            <Button onClick={() => setClosing(active)}>
+              {ct("Cerrar y arquear")}
+            </Button>
           </>
         )}
       </Heading>
@@ -1797,49 +1802,51 @@ export function Cash() {
       {active && canSeeExpected ? (
         <div className="cash-overview">
           <div className="cash-main">
-            <Badge tone="success">Caja abierta</Badge>
+            <Badge tone="success">{ct("Caja abierta")}</Badge>
             <h2>{active.registerName ?? active.registerId}</h2>
             <p>
-              Desde{" "}
+              {ct("Desde")}{" "}
               {new Date(active.openedAt).toLocaleString("es-DO", {
                 timeZone: "America/Santo_Domingo",
               })}
             </p>
             <strong>{formatMoney(active.expected.cash)}</strong>
-            <span>Efectivo esperado</span>
+            <span>{ct("Efectivo esperado")}</span>
           </div>
           <div className="panel cash-methods">
             <div>
-              <span>Apertura</span>
+              <span>{ct("Apertura")}</span>
               <strong>{formatMoney(active.openingAmount)}</strong>
             </div>
             <div>
-              <span>Tarjeta esperada</span>
+              <span>{ct("Tarjeta esperada")}</span>
               <strong>{formatMoney(active.expected.card)}</strong>
             </div>
             <div>
-              <span>Transferencia esperada</span>
+              <span>{ct("Transferencia esperada")}</span>
               <strong>{formatMoney(active.expected.transfer)}</strong>
             </div>
             <div>
-              <span>Movimientos de efectivo</span>
+              <span>{ct("Movimientos de efectivo")}</span>
               <strong>{active.expected.movements.length}</strong>
             </div>
           </div>
         </div>
       ) : active ? (
         <div className="panel">
-          <Badge tone="success">Caja abierta</Badge>
+          <Badge tone="success">{ct("Caja abierta")}</Badge>
           <h2>{active.registerName ?? active.registerId}</h2>
           <p>{openCashBlindNote(false)}</p>
         </div>
       ) : (
         <div className="panel">
           <Empty
-            title="Tu día empieza con una caja abierta"
-            description="Registra el fondo inicial para comenzar a vender."
+            title={ct("Tu día empieza con una caja abierta")}
+            description={ct("Registra el fondo inicial para comenzar a vender.")}
             action={
-              <Button onClick={() => setOpen(true)}>Abrir mi caja</Button>
+              <Button onClick={() => setOpen(true)}>
+                {ct("Abrir mi caja")}
+              </Button>
             }
           />
         </div>
@@ -2017,8 +2024,8 @@ export function Cash() {
       <section className="panel">
         <div className="panel-heading">
           <div>
-            <h2>Historial de cajas</h2>
-            <p>Un registro claro de cada jornada.</p>
+            <h2>{ct("Historial de cajas")}</h2>
+            <p>{ct("Un registro claro de cada jornada.")}</p>
           </div>
         </div>
         <DayReports onPrint={setPrinting} />
@@ -2029,28 +2036,35 @@ export function Cash() {
               ...(can(user.permissions, "sale:manage")
                 ? [
                     {
-                      label: "Cajero",
+                      label: ct("Cajero"),
                       render: (s: any) => <strong>{s.userName ?? "—"}</strong>,
                     },
                   ]
                 : []),
               {
-                label: "Equipo",
+                label: ct("Equipo"),
                 render: (s) => (
                   <strong>{s.registerName ?? s.registerId}</strong>
                 ),
               },
-              { label: "Apertura", render: (s) => dateLabel(s.openedAt) },
               {
-                label: "Estado",
+                label: ct("Apertura"),
+                render: (s) =>
+                  dateLabel(
+                    s.openedAt,
+                    cashLanguage === "en" ? "en-US" : "es-DO",
+                  ),
+              },
+              {
+                label: ct("Estado"),
                 render: (s) => (
                   <Badge tone={s.closedAt ? "neutral" : "success"}>
-                    {s.closedAt ? "Cerrada" : "Abierta"}
+                    {s.closedAt ? ct("Cerrada") : ct("Abierta")}
                   </Badge>
                 ),
               },
               {
-                label: "Efectivo esperado",
+                label: ct("Efectivo esperado"),
                 render: (s) => {
                   if (!canSeeExpected) return "—";
                   const expected = s.expectedCash ?? s.expected?.cash;
@@ -2058,12 +2072,12 @@ export function Cash() {
                 },
               },
               {
-                label: "Contado",
+                label: ct("Contado"),
                 render: (s) =>
                   s.countedCash === null ? "—" : formatMoney(s.countedCash),
               },
               {
-                label: "Diferencias por método",
+                label: ct("Diferencias por método"),
                 render: (s) =>
                   canSeeExpected &&
                   s.closedAt &&
@@ -2074,19 +2088,19 @@ export function Cash() {
                   ].some((value) => value != null) ? (
                     <div>
                       <div>
-                        Efectivo:{" "}
+                        {ct("Efectivo")}:{" "}
                         {s.differenceCash == null
                           ? "—"
                           : formatMoney(s.differenceCash)}
                       </div>
                       <div>
-                        Tarjeta:{" "}
+                        {ct("Tarjeta")}:{" "}
                         {s.differenceCard == null
                           ? "—"
                           : formatMoney(s.differenceCard)}
                       </div>
                       <div>
-                        Transferencia:{" "}
+                        {ct("Transferencia")}:{" "}
                         {s.differenceTransfer == null
                           ? "—"
                           : formatMoney(s.differenceTransfer)}
@@ -2097,12 +2111,12 @@ export function Cash() {
                   ),
               },
               {
-                label: "Acciones",
+                label: ct("Acciones"),
                 render: (s) => (
                   <>
                     {!s.closedAt && can(user.permissions, "sale:manage") && (
                       <Button variant="secondary" onClick={() => setClosing(s)}>
-                        Cerrar y arquear
+                        {ct("Cerrar y arquear")}
                       </Button>
                     )}
                     <SessionPrintButtons session={s} onPrint={setPrinting} />
@@ -2115,16 +2129,16 @@ export function Cash() {
       </section>
       {open && !suggestion.isLoading && (
         <FormModal
-          title="Abrir mi caja"
+          title={ct("Abrir mi caja")}
           fields={[
             {
               ...requiredNumber(
                 "openingAmount",
-                "Efectivo inicial",
+                ct("Efectivo inicial"),
                 suggestion.data?.amount ?? undefined,
               ),
               ...(suggestion.data?.fromSessionId
-                ? { help: "Sugerido: lo que dejaste en tu último cierre." }
+                ? { help: ct("Sugerido: lo que dejaste en tu último cierre.") }
                 : {}),
             },
             // Un fondo menor que lo dejado en el último cierre se explica con
@@ -2133,7 +2147,7 @@ export function Cash() {
               ? [
                   {
                     key: "openingNote",
-                    label: "Nota si el fondo es menor que el sugerido",
+                    label: ct("Nota si el fondo es menor que el sugerido"),
                     type: "textarea" as const,
                   },
                 ]
