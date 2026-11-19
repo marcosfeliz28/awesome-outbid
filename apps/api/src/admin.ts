@@ -18,6 +18,7 @@ import {
   CurrentUser,
   Database,
   Permit,
+  RequireTerminal,
   parse,
   uuid,
   amount,
@@ -588,6 +589,9 @@ export class AdminController {
   }
   @Post("supplier-payments")
   @Permit("purchase:write")
+  // B3 (auditoría 19-nov): rebaja la cuenta por pagar; como el resto del
+  // dinero, sólo desde un equipo aprobado (también el rol almacén).
+  @RequireTerminal()
   async supplierPayment(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const { operationId, ...data } = parse(
       z.object({

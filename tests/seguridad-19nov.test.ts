@@ -1,5 +1,10 @@
 // Arreglos de la auditoría de seguridad del 19-nov-2026 (M3, M4, B1-B8).
+import { createRequire } from "node:module";
 import { describe, expect, it, vi } from "vitest";
+
+createRequire(new URL("../apps/api/package.json", import.meta.url))(
+  "reflect-metadata",
+);
 
 vi.mock("../apps/api/src/security", async (original) => ({
   ...(await original<typeof import("../apps/api/src/security")>()),
@@ -101,5 +106,17 @@ describe("B1 · el CSV de ingresos neutraliza fórmulas en celdas de texto", () 
     expect(csvCell("-125.50")).toBe("-125.50");
     expect(csvCell("Banco Popular")).toBe("Banco Popular");
     expect(csvCell(null)).toBe("");
+  });
+});
+
+describe("B3 · el pago a proveedor exige equipo aprobado", () => {
+  it("POST /supplier-payments lleva @RequireTerminal", async () => {
+    const { AdminController } = await import("../apps/api/src/admin");
+    expect(
+      Reflect.getMetadata(
+        "terminal",
+        AdminController.prototype.supplierPayment,
+      ),
+    ).toBe(true);
   });
 });
