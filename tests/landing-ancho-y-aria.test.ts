@@ -11,14 +11,32 @@ it("la portada conserva el gutter y el ancho mínimo para 375 px", () => {
   expect(html).toMatch(/<meta name="viewport" content="width=device-width/);
 });
 
-it("las etiquetas aria de los botones de plan tienen su versión en inglés", () => {
-  const planes = html.match(/aria-label="Probar gratis el plan [^"]+"/g) ?? [];
-  expect(planes).toHaveLength(4);
+it("las etiquetas aria de las invitaciones tienen su versión en inglés", () => {
+  const planes =
+    html.match(/aria-label="Solicitar invitación de 7 días para [^"]+"/g) ?? [];
+  expect(planes).toHaveLength(3);
   for (const plan of planes) {
-    const nombre = plan.match(/plan ([^"]+)"/)?.[1];
-    expect(html).toContain(`data-aria-es="Probar gratis el plan ${nombre}"`);
+    const nombre = plan.match(/para ([^"]+)"/)?.[1];
+    expect(html).toContain(
+      `data-aria-es="Solicitar invitación de 7 días para ${nombre}"`,
+    );
     expect(html).toMatch(
-      new RegExp(`data-aria-en="Try the ${nombre} plan for free"`),
+      new RegExp(`data-aria-en="Request a 7-day invitation for ${nombre}"`),
     );
   }
+});
+
+it("publica sólo las condiciones comerciales confirmadas", () => {
+  for (const text of [
+    "7 días gratis por invitación",
+    "Renovación anual: US$39",
+    "Medio · 1 sucursal · hasta 5 cajas",
+    "Completo · hasta 3 sucursales · hasta 10 cajas",
+    "recibo no fiscal",
+  ])
+    expect(html).toContain(text);
+  expect(html).toMatch(/US\$149[\s\S]{0,100}pago único/);
+  expect(html).not.toMatch(
+    /Autoservicio|Básico|Premium|preguntas de IA|paquetes extra de IA/,
+  );
 });
