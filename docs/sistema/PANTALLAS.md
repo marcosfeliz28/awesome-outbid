@@ -1,6 +1,6 @@
 # Pantallas del menú
 
-Rama `cola-n26` (= `nexora-cloud`). El menú lateral sale de la lista `navigation` en `apps/web/src/App.tsx:252-341`; cada persona solo ve las pantallas cuyo permiso tiene (`apps/web/src/App.tsx:1071-1073`, `:1000-1011`). Si entra a una que no le toca, el sistema lo manda a la primera que sí puede ver (`apps/web/src/App.tsx:819-826`). El componente de cada pantalla se asigna en `apps/web/src/App.tsx:1413-1436`.
+Rama `cola-n26` (= `nexora-cloud`). El menú lateral sale de la lista `navigation` en `apps/web/src/App.tsx:256-345`; cada persona solo ve las pantallas cuyo permiso tiene (`apps/web/src/App.tsx:1078-1080`, `:1000-1011`). Si entra a una que no le toca, el sistema lo manda a la primera que sí puede ver (`apps/web/src/App.tsx:1235-1242`). El componente de cada pantalla se asigna en `apps/web/src/App.tsx:1433-1456`.
 
 Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES_Y_PERMISOS.md`.
 
@@ -11,7 +11,7 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 1   | **Mercancía**                | `inventory:write`                                       | `Merchandise` (`apps/web/src/Merchandise.tsx:286`)                       | 197                |
 | 2   | **Resumen**                  | `reports:read`                                          | `Dashboard` (`apps/web/src/Dashboard.tsx:134`)                           | 203                |
 | 3   | **Punto de venta**           | `sale:write`                                            | `POS` (`apps/web/src/POS.tsx:210`)                                       | 209                |
-| 4   | **Ventas**                   | `sale:write`                                            | `SalesHistory` (`apps/web/src/Management.tsx:3526`)                      | 213                |
+| 4   | **Ventas**                   | `sale:write`                                            | `SalesHistory` (`apps/web/src/Management.tsx:3527`)                      | 213                |
 | 5   | **Solicitudes de anulación** | `sale:write`                                            | `VoidRequests` (`apps/web/src/VoidRequests.tsx:21`)                      | 216                |
 | 6   | **Conciliar transferencias** | `*`                                                     | `TransferReconciliation` (`apps/web/src/TransferReconciliation.tsx:40`)  | 222                |
 | 7   | **Envíos del mensajero**     | `*`                                                     | `CourierPayouts` (`apps/web/src/CourierPayouts.tsx:31`)                  | 228                |
@@ -23,21 +23,21 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 13  | **Clientes**                 | `customers:write`                                       | `Customers` (`apps/web/src/Management.tsx:2528`)                         | 259                |
 | 14  | **Promociones**              | `promotions:write`                                      | `Promotions` (`apps/web/src/Management.tsx:2708`)                        | 265                |
 | 15  | **Reportes**                 | `reports:read`                                          | `Reports` (`apps/web/src/Management.tsx:3136`)                           | 271                |
-| 16  | **Alertas**                  | `alerts:write`                                          | `Alerts` (`apps/web/src/Management.tsx:3389`)                            | 275                |
+| 16  | **Alertas**                  | `alerts:write`                                          | `Alerts` (`apps/web/src/Management.tsx:3390`)                            | 275                |
 | 17  | **Incentivos**               | `sale:manage`                                           | `IncentivesPage` (`apps/web/src/Incentives.tsx:293`)                     | 278                |
 | 18  | **GV Makeup Studio**         | `gv:read`                                               | `Gv` (`apps/web/src/Gv.tsx:137`)                                         | 282                |
 | 19  | **Preguntar a Norexos**      | `reports:read` o cajera, con `ANTHROPIC_API_KEY` y plan | `AssistantPage` (`apps/web/src/AssistantPanel.tsx`) — ver `IA_VENTAS.md` | —                  |
 
-Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1538-1568`):
+Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1558-1588`):
 
-- **Ver ayuda** (tarjeta «Ayuda para trabajar»): abre «Tu tienda, en movimiento» con los atajos (`apps/web/src/App.tsx:1538-1540`, `:1230-1262`).
-- **Configuración**: solo si tiene `sale:manage` (`apps/web/src/App.tsx:1543-1550`). Componente `Configuration` (`apps/web/src/Management.tsx:4634`). Aquí viven «Usuarios y permisos», «Bitácora» y «Equipos».
-- **Acerca de** (`apps/web/src/App.tsx:1553-1561`): versión, aviso de privacidad, licencias.
-- **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1567-1572`); no es de uso diario.
-- Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1800-1826`, atajo `:797`).
-- F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:1296`).
+- **Ver ayuda** (tarjeta «Ayuda para trabajar»): abre «Tu tienda, en movimiento» con los atajos (`apps/web/src/App.tsx:1558-1560`, `:1230-1262`).
+- **Configuración**: solo si tiene `sale:manage` (`apps/web/src/App.tsx:1563-1570`). Componente `Configuration` (`apps/web/src/Management.tsx:4635`). Aquí viven «Usuarios y permisos», «Bitácora» y «Equipos».
+- **Acerca de** (`apps/web/src/App.tsx:1573-1581`): versión, aviso de privacidad, licencias.
+- **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1587-1592`); no es de uso diario.
+- Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1818-1844`, atajo `:797`).
+- F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:1316`).
 
-**No existe** en este menú: «Primeros pasos» ni «Plan y facturación» (solo en `producto-nexora`, ver `RESPUESTAS_A_TALLER.md` pregunta 9). Tampoco existe un ítem llamado «Gestión» ni uno llamado «Usuarios»: la gestión de usuarios es la pestaña «Usuarios y permisos» dentro de Configuración (`apps/web/src/Management.tsx:5020`). NO ENCONTRADO como etiqueta de menú.
+**No existe** en este menú: «Primeros pasos» ni «Plan y facturación» (solo en `producto-nexora`, ver `RESPUESTAS_A_TALLER.md` pregunta 9). Tampoco existe un ítem llamado «Gestión» ni uno llamado «Usuarios»: la gestión de usuarios es la pestaña «Usuarios y permisos» dentro de Configuración (`apps/web/src/Management.tsx:5021`). NO ENCONTRADO como etiqueta de menú.
 
 ---
 
@@ -57,7 +57,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1538-1568`):
 
 ## Ventas (historial)
 
-- **Etiqueta:** «Ventas». **Permiso:** `sale:write`. **Componente:** `SalesHistory`, `apps/web/src/Management.tsx:3526`. Título: «Cada venta tiene una historia» (`:3164`).
+- **Etiqueta:** «Ventas». **Permiso:** `sale:write`. **Componente:** `SalesHistory`, `apps/web/src/Management.tsx:3527`. Título: «Cada venta tiene una historia» (`:3164`).
 - **Columnas:** Venta n.º, Cliente, Fecha, Estado (Completada/Anulada), Total, Saldo pendiente, Pagos, Acciones (`:3188-3237`). Busca por número o por fecha (`:3169-3182`).
 - **Acciones por fila:** ver (ojo), PDF del recibo (`:3247-3257`), «Registrar abono» (solo `*`, `:3277`), «Solicitar anulación» (la vendedora que hizo la venta, no `*`, `:3293`), «Devolver» (`sale:manage`, `:3317`), «Anular» (solo `*`, `:3332`).
 - Dentro del detalle: «Verificar», «Rechazar», «Corregir banco y referencia» de transferencias (solo `*`), y en cada cobro: «Des-verificar transferencia» (solo `*`, transferencia de venta ya verificada; `POST payments/:id/unverify`, pide motivo) y «Mover cobro a otra caja» (solo `*`, con el motivo y la caja destino; `POST payments/:id/move-cash-session`) y «Imprimir nota NC-xxxxxx» (`:3402`). Panel «Corregir factura» (vendedora, al por mayor, método de pago; solo `*`, hasta 7 días) en `apps/web/src/SaleEditPanel.tsx:80-190`. Panel «Costo pendiente» (solo `*`, líneas vendidas con costo 0; costo, motivo y PIN de gerencia; aún no desplegado, ver `VENTA_SIN_COSTO.md`).
@@ -126,7 +126,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1538-1568`):
 
 ## Alertas
 
-- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3389`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1517-1537`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:552`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:964-967`).
+- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3390`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1517-1537`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:552`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:964-967`).
 
 ## Incentivos
 
@@ -140,7 +140,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1538-1568`):
 
 ## Configuración (lo que el equipo llama «gestión»)
 
-- **Etiqueta:** «Configuración» (botón al fondo del menú, `sale:manage`). **Componente:** `apps/web/src/Management.tsx:4634`. Título «A la medida de tu negocio» (`:4150`).
+- **Etiqueta:** «Configuración» (botón al fondo del menú, `sale:manage`). **Componente:** `apps/web/src/Management.tsx:4635`. Título «A la medida de tu negocio» (`:4150`).
 - **Pestañas** (`:4155-4158`):
   - **Negocio y reglas:** datos del negocio, «Editar configuración» (descuento vendedor 10 %, margen bajo 15 %, devolución, tasa del dólar, cuentas de banco para transferencias, terminales de tarjeta, imprimir el recibo automáticamente, ventas sin conexión, «No vender productos sin costo» (apagado por defecto; aún no desplegado, ver `VENTA_SIN_COSTO.md`), ventas a crédito, preparación de NCF, ITBIS incluido: `:4026-4141`), cajas y cajeros (`apps/web/src/Tienda.tsx:1275-1407`), avisos por Telegram, respaldo a Drive, tasas de incentivos y encuesta de caja (`:4223-4227`).
   - **Usuarios y permisos:** «Crear usuario», Editar, «Restablecer contraseña», Activar/Desactivar y «Permisos por rol» (`:4230-4310`).
@@ -151,7 +151,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1538-1568`):
 
 ## Usuarios
 
-No es un ítem de menú. Se administra en Configuración › «Usuarios y permisos» (ver arriba y `ROLES_Y_PERMISOS.md`). Cada persona puede además «Cambiar mi contraseña» y «Cerrar sesión» desde su cuenta, y cambiar de usuario con PIN (`apps/web/src/App.tsx:1131`, `:1171`, `:1184`).
+No es un ítem de menú. Se administra en Configuración › «Usuarios y permisos» (ver arriba y `ROLES_Y_PERMISOS.md`). Cada persona puede además «Cambiar mi contraseña» y «Cerrar sesión» desde su cuenta, y cambiar de usuario con PIN (`apps/web/src/App.tsx:1138`, `:1171`, `:1184`).
 
 ## Desglose del mes («Ver detalle del mes», `#month-report?from=&to=`)
 

@@ -22,7 +22,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Origen y decisiones 
 | **Por verificar**         | Transferencias de GV pendientes de verificar.                                                                                                                           | `gv:read` (verificar: `gv:verify`) |
 | **Reportes**              | Ingresos y pendientes.                                                                                                                                                  | `gv:reports`                       |
 
-- Una persona cuyo único permiso es de GV (`gvOnly`, todos los permisos empiezan con `gv:`) no carga el catálogo ni registra terminal (`apps/web/src/realtime.tsx:187-193`, `apps/web/src/App.tsx:1260`).
+- Una persona cuyo único permiso es de GV (`gvOnly`, todos los permisos empiezan con `gv:`) no carga el catálogo ni registra terminal (`apps/web/src/realtime.tsx:187-193`, `apps/web/src/App.tsx:1280`).
 
 ## 3. Cursos
 

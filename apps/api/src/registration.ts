@@ -102,7 +102,8 @@ export async function createTenantWithOwner(
   await tx.$queryRawUnsafe("SELECT set_config('app.tenant_id', $1, true)", tenant.id);
   const role = await tx.role.create({ data: { tenantId: tenant.id, name: "admin", permissions: ["*"] } });
   // Los mismos roles base de la tienda (seed.ts): cajera, gerente y almacén.
-  await tx.role.createMany({ data: BASE_ROLES.map(name => ({ tenantId: tenant.id, name, permissions: permissions[name] })) });
+  // Sin gv:* (GV es un negocio interno de la tienda, apagado en el producto).
+  await tx.role.createMany({ data: BASE_ROLES.map(name => ({ tenantId: tenant.id, name, permissions: permissions[name].filter((p) => !p.startsWith("gv:")) })) });
   await tx.user.create({ data: {
     tenantId: tenant.id, name: owner.name, username: owner.email,
     usernameKey: normalizeUsername(owner.email), email: owner.email,

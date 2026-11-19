@@ -479,7 +479,7 @@ describe("baja de cliente", () => {
       // Acta sin datos personales, guardada con su huella.
       expect(r.actaTexto).not.toMatch(/cajera|Cliente cliente-a|@/i);
       const est = await prisma.branchTermination.findUnique({
-        where: { branchId: "cliente-a" },
+        where: { tenantId_branchId: { tenantId: "00000000-0000-0000-0000-000000000001", branchId: "cliente-a" } },
       });
       expect(est.actaTexto).toBe(r.actaTexto);
       expect(est.actaSha256).toBe(

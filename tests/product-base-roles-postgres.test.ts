@@ -101,7 +101,7 @@ it("roles base por empresa, backfill idempotente y la cajera con sus reglas", as
     const oldRoles = await roleRows(old);
     expect(Object.keys(oldRoles)).toEqual(["admin", "manager", "seller", "warehouse"]);
     expect(oldRoles.seller).toEqual(["catalog:read"]); // no se pisa
-    expect(oldRoles.manager).toEqual(permissions.manager);
+    expect(oldRoles.manager).toEqual(permissions.manager.filter((p: string) => !p.startsWith("gv:")));
     expect(oldRoles.warehouse).toEqual(permissions.warehouse);
     expect((await sql.query(`SELECT count(*)::int AS n FROM "Customer" WHERE "tenantId"=$1`, [old])).rows[0].n).toBe(1);
 
@@ -120,7 +120,7 @@ it("roles base por empresa, backfill idempotente y la cajera con sus reglas", as
       verificationHash: "x", verificationExpiresAt: new Date(Date.now() + 86400000),
     }));
     const roles = await roleRows(tenant.id);
-    expect(roles).toEqual({ admin: ["*"], manager: permissions.manager, seller: permissions.seller, warehouse: permissions.warehouse });
+    expect(roles).toEqual({ admin: ["*"], manager: permissions.manager.filter((p: string) => !p.startsWith("gv:")), seller: permissions.seller, warehouse: permissions.warehouse });
     await sql.query(`UPDATE "User" SET "pinHash"=$1, "emailVerifiedAt"=now() WHERE "tenantId"=$2`, [await hash(ownerPin, 4), tenant.id]);
     const roleId = async (name: string) =>
       (await sql.query(`SELECT id FROM "Role" WHERE "tenantId"=$1 AND name=$2`, [tenant.id, name])).rows[0].id;

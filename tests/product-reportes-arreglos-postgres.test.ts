@@ -297,7 +297,7 @@ describe("Reportes · arreglos de la auditoría en vivo (25-oct)", () => {
     // Los dos desgloses «forma de pago por categoría» la cuentan como crédito.
     const breakdown = await get("/dashboard/breakdown" + range);
     expect(breakdown.payments).toEqual([
-      { category: "Suplementos", method: "credit", amount: 100 },
+      { category: "Suplementos", method: "credit", bank: null, amount: 100 },
     ]);
     const byCategory = (
       await get("/reports/ventas-categoria-forma-pago" + range)

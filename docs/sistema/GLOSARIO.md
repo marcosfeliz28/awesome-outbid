@@ -2,7 +2,7 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su cita; los que son jerga de la dueña sin cita en el código se marcan «uso interno».
 
-**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:4259`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3743`).
+**Abono** — Pago posterior a una venta que quedó con saldo (crédito/contraentrega). Se guarda como `Payment` con `entryType = "installment"` (`apps/api/src/sales.ts:4259`). Pantalla: Ventas › «Registrar abono» (`apps/web/src/Management.tsx:3744`).
 
 **Aprobar con PIN / PIN de gerente** — Código de 6 dígitos de un usuario con `sale:manage` que autoriza una operación de riesgo (descuento grande, crédito grande, descuadre, vale…). No puede ser el de quien pide, salvo la dueña (`apps/api/src/security.ts:82-137`). Ver `ROLES_Y_PERMISOS.md` §5.
 
@@ -10,7 +10,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **B01 / B02** — Tipos de comprobante fiscal que se pueden _solicitar_ si la «Preparación de NCF» está activa: B01 «Crédito fiscal» (pide RNC o cédula) y B02 «Consumidor final». El sistema solo prepara la solicitud; no emite el comprobante (`apps/web/src/POS.tsx:2696-2724`).
 
-**Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:315`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
+**Caja** — Dos significados: (1) la **pantalla** «Caja» para abrir/cerrar el turno (`App.tsx:319`); (2) la **sesión de caja** (`CashSession`) de una persona, de apertura a cierre (`apps/api/prisma/schema.prisma:673`). Una persona solo puede tener una abierta.
 
 **Caja ciega / arqueo ciego / conteo ciego** — Mientras la caja está abierta, y al cerrar, la cajera **no ve** cuánto se espera que tenga; declara lo que contó y el sistema compara después. «Arqueo ciego activo: mientras la caja está abierta no ves los montos esperados» (`apps/web/src/managementMessages.ts:37-44`). Solo ven los esperados `profit:read` o `sale:manage` (`apps/api/src/common.ts:115-117`). Además existe una bandera para ocultar importes de las ventas a quien no ve esperados, **apagada por defecto**: `NEXORA_VENTAS_CAJA_CIEGA` (`apps/api/src/sales.ts:149-162`).
 
@@ -68,11 +68,11 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Merma** — Pérdida de mercancía (dañada, vencida, muestra…). Motivo de salida en «Mercancía» (`apps/web/src/Merchandise.tsx:77-84`) y tipo de ajuste en Inventario (`Management.tsx:1198`). No confundir con corrección de conteo: las mermas restan a costo en el Resumen, los conteos no (`apps/web/src/Dashboard.tsx:727-734`).
 
-**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3853`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3511`).
+**NC-000000 / Nota de crédito** — Dos usos: el **número de la devolución** (`NC-` + 6 dígitos, `apps/api/src/sales.ts:3853`) y la **nota de crédito** = saldo a favor del cliente con un código de 32 caracteres para canjear en caja (`apps/api/prisma/schema.prisma:542`). Se imprime a mano en PDF desde Ventas (`apps/web/src/Management.tsx:3512`).
 
-**NCF / e-CF** — Número de comprobante fiscal (DGII, República Dominicana). **Este sistema no lo emite**: los recibos son internos y solo se puede preparar la solicitud (`apps/web/src/Prints.tsx:508`; `apps/web/src/Management.tsx:4941-4949`). El «NCF del proveedor» sí se guarda en las compras (`apps/web/src/Purchases.tsx:64-74`).
+**NCF / e-CF** — Número de comprobante fiscal (DGII, República Dominicana). **Este sistema no lo emite**: los recibos son internos y solo se puede preparar la solicitud (`apps/web/src/Prints.tsx:508`; `apps/web/src/Management.tsx:4942-4950`). El «NCF del proveedor» sí se guarda en las compras (`apps/web/src/Purchases.tsx:64-74`).
 
-**Norexos / Nexora POS** — Norexos es el nombre nuevo del producto (plan maestro); el código aún muestra «Nexora POS» hasta que se haga el cambio de marca (etapa E1) (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:1`, `:11`; `apps/web/src/App.tsx:1773`).
+**Norexos / Nexora POS** — Norexos es el nombre nuevo del producto (plan maestro); el código aún muestra «Nexora POS» hasta que se haga el cambio de marca (etapa E1) (`docs/proyecto/PLAN_MAESTRO_NOREXOS.md:1`, `:11`; `apps/web/src/App.tsx:1791`).
 
 **Nexora-cloud / producto-nexora** — Ramas: la primera es la tienda en vivo; la segunda el producto multiempresa. Ver `README.md` §5.
 
@@ -94,7 +94,7 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **SKU / código de barras** — Códigos únicos de cada variante; la caja busca por ambos sin distinguir mayúsculas (`apps/web/src/POS.tsx:739-756`; `apps/api/prisma/schema.prisma:120-130`).
 
-**Solicitud de anulación** — Pedido de una cajera para anular su venta; la aprueba la administración (`apps/web/src/Management.tsx:3482`, `apps/web/src/VoidRequests.tsx:21`).
+**Solicitud de anulación** — Pedido de una cajera para anular su venta; la aprueba la administración (`apps/web/src/Management.tsx:3483`, `apps/web/src/VoidRequests.tsx:21`).
 
 **Traspaso** — Mover mercancía entre Casa y Tienda en una sola operación (resta del origen, suma al destino) (`apps/web/src/WarehousesPanel.tsx:138-230`; `apps/api/src/warehouses.ts:157-405`).
 
@@ -104,4 +104,4 @@ Rama `cola-n26` (= `nexora-cloud`). Orden alfabético. Cada término lleva su ci
 
 **Variante** — Combinación concreta de un producto (talla, color, sabor) con su propio código, precio y existencia (`apps/api/prisma/schema.prisma:120`).
 
-**Venta (estado `voided`)** — Anulada: se conserva con motivo y usuario, se revierte inventario y deja de contar (`apps/web/src/Management.tsx:4074`). «Cerrar» una cuenta por cobrar = ya se cobró; una factura de prueba se **anula** (`.claude/skills/comunicacion/SKILL.md` lista de órdenes del 29-oct).
+**Venta (estado `voided`)** — Anulada: se conserva con motivo y usuario, se revierte inventario y deja de contar (`apps/web/src/Management.tsx:4075`). «Cerrar» una cuenta por cobrar = ya se cobró; una factura de prueba se **anula** (`.claude/skills/comunicacion/SKILL.md` lista de órdenes del 29-oct).

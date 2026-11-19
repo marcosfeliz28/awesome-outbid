@@ -127,10 +127,9 @@ it("aplica la migración de la auditoría GV sobre datos de la versión anterior
         `SELECT name, permissions FROM "Role" WHERE name IN ('gv','manager') ORDER BY name`,
       )
     ).rows;
-    expect(roles).toEqual([
-      { name: "gv", permissions: ["gv:read", "gv:write", "gv:reports"] },
-      { name: "manager", permissions: ["catalog:read", "gv:verify"] },
-    ]);
+    // Producto (19-nov): las migraciones GV no tocan "Role" (afectaría a todas
+    // las empresas); el rol gv no se crea y manager queda como estaba.
+    expect(roles).toEqual([{ name: "manager", permissions: ["catalog:read"] }]);
     // Volver a aplicar no hace nada.
     await migrate(join(prismaDir, "schema.prisma"));
   } finally {

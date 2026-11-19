@@ -2,19 +2,19 @@
 
 Rama `cola-n26` (= `nexora-cloud`). Etiquetas copiadas del código tal cual. Cada paso lleva `archivo:línea`.
 
-Resumen de pantallas que usa el cajero: **Caja** (abrir y cerrar) y **Punto de venta** (vender). Las dos están en el menú lateral (`apps/web/src/App.tsx:274`, `:250`).
+Resumen de pantallas que usa el cajero: **Caja** (abrir y cerrar) y **Punto de venta** (vender). Las dos están en el menú lateral (`apps/web/src/App.tsx:278`, `:250`).
 
 ---
 
 ## 0. Antes de empezar
 
-- Entrar: pantalla de acceso con campo «Tu usuario o correo» y «Tu contraseña», botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:725`, `:512`). La contraseña temporal se cambia al entrar (`apps/web/src/App.tsx:922`).
+- Entrar: pantalla de acceso con campo «Tu usuario o correo» y «Tu contraseña», botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:732`, `:512`). La contraseña temporal se cambia al entrar (`apps/web/src/App.tsx:929`).
 - El equipo (computadora) debe estar **aprobado**. Si no, sale «Este equipo necesita aprobación … un gerente debe aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos» (`apps/web/src/realtime.tsx:563-566`). Sin equipo aprobado no se puede vender ni mover mercancía (`apps/api/src/common.ts` decorador `RequireTerminal`, usado en `apps/api/src/sales.ts:1614` y `apps/api/src/cash.ts:1033`).
-- Cambiar de cajera sin salir: menú de la cuenta › **«Cambiar de usuario con PIN»** (`apps/web/src/App.tsx:1131`). No se puede cambiar con PIN a alguien con más permisos (`apps/api/src/auth.ts:869-883`).
+- Cambiar de cajera sin salir: menú de la cuenta › **«Cambiar de usuario con PIN»** (`apps/web/src/App.tsx:1138`). No se puede cambiar con PIN a alguien con más permisos (`apps/api/src/auth.ts:869-883`).
 
 ## 1. Abrir la caja
 
-1. Menú lateral › **Caja** (`apps/web/src/App.tsx:315`).
+1. Menú lateral › **Caja** (`apps/web/src/App.tsx:319`).
 2. Si no hay caja abierta se ve el título «Una caja que siempre cuadra» y el botón **«Abrir caja»** (`apps/web/src/Management.tsx:1919-1926`), o en el centro **«Abrir mi caja»** con el texto «Tu día empieza con una caja abierta» (`:1740-1744`).
 3. Se abre la ventana **«Abrir mi caja»** (`:2017`). Campo **«Efectivo inicial»** (`:2022`). El sistema sugiere lo que la misma persona dejó en su último cierre: «Sugerido: lo que dejaste en tu último cierre.» (`:2025-2028`, API `apps/api/src/cash.ts:1635-1670`).
 4. Si el fondo es **menor** que lo sugerido aparece **«Nota si el fondo es menor que el sugerido»** y es obligatoria; no pide PIN (`apps/web/src/Management.tsx:2285-2295`; `apps/api/src/cash.ts:1054-1082`). La caja abre igual, pero queda una alerta alta **«Fondo de apertura menor»** (`opening_shortfall`) con el faltante, quién abrió y la nota, que gerencia ve en Avisos hasta resolverla (`apps/api/src/cash.ts:283-309`).
@@ -26,7 +26,7 @@ Caja ciega: mientras está abierta, quien no tiene `profit:read` ni `sale:manage
 
 ## 2. Abrir el Punto de venta y elegir cliente
 
-1. Menú › **Punto de venta** (`apps/web/src/App.tsx:274`). Título «Punto de venta» (`apps/web/src/POS.tsx:984`).
+1. Menú › **Punto de venta** (`apps/web/src/App.tsx:278`). Título «Punto de venta» (`apps/web/src/POS.tsx:984`).
 2. El cliente es **obligatorio**. Botón **«Selecciona el cliente»** con la leyenda «Elegir cliente · F4» (`:1033-1051`; atajo F4 `:567-571`). Si se pulsa «Cobrar» sin cliente se abre la ventana con el aviso «Selecciona o crea el cliente antes de cobrar.» (`:517-521`). Al elegir o crear el cliente desde ese aviso, la ventana de cobro se abre sola, sin pulsar «Cobrar» otra vez; si el selector se cierra sin elegir, no pasa nada (mejora C1, 13-nov).
 3. Ventana **«¿Para quién es esta venta?»** (`:1318`): buscar por «Nombre, teléfono o cédula» (`:1420`); Enter elige el primero si es único (`:1426-1441`). «Consumidor final» sale primero si existe (`:360-377`). Si no está: **«Nuevo cliente aquí mismo»** (`:1474-1477`) → formulario «Nombre del cliente *», «Teléfono», «RNC o cédula», «Correo electrónico» → **«Guardar y usar cliente»** (`:1354-1409`).
 4. Interruptor «al por mayor» (`WholesaleToggle`, `apps/web/src/POS.tsx:1148`; solo cambia el incentivo de la cajera a la mitad, no los precios: `apps/api/prisma/schema.prisma` campo `wholesale` de `Sale`).
@@ -114,11 +114,11 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 ## 6. Recibo, comprobante e impresión
 
 - **El recibo se genera solo** al finalizar y se muestra la ventana **«¡Una venta más, una meta más cerca!»** con el total, el número FS-xxxxxxx, el badge «Venta registrada» y el «Cambio» (`POS.tsx:2477-2520`). Si hubo crédito: «CRÉDITO · PENDIENTE DE PAGO» y el monto pendiente (`:2363-2375`).
-- **¿Se imprime solo?** Depende de Configuración › «Imprimir el recibo automáticamente al cobrar» (`apps/web/src/Management.tsx:4629-4630`; por defecto apagado, `apps/api/src/admin.ts:139`). Si está activo: `printSoon()` (`POS.tsx:2379-2380`). Si no, se pulsa **«Imprimir recibo»** (`:2381-2384`, llama `window.print()`).
+- **¿Se imprime solo?** Depende de Configuración › «Imprimir el recibo automáticamente al cobrar» (`apps/web/src/Management.tsx:4630-4631`; por defecto apagado, `apps/api/src/admin.ts:139`). Si está activo: `printSoon()` (`POS.tsx:2379-2380`). Si no, se pulsa **«Imprimir recibo»** (`:2381-2384`, llama `window.print()`).
 - Otros botones: **«Recibo PDF»** (`:2385-2398`; API `apps/api/src/sales.ts:4979`), **«WhatsApp»** y **«Correo»** con el texto del recibo (`:2399-2426`), **«Nueva venta»** (`:2428-2430`).
 - Ancho del ticket 80 mm o 58 mm según Configuración (`POS.tsx:2589`; `admin.ts:99`).
 - El recibo es **«DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL»**; el NCF solo se imprime si la venta ya trae uno y el modo es electrónico (`apps/web/src/Prints.tsx:516-517`, `:546-553`). Con solicitud B01/B02 imprime «Solicitud NCF … · pendiente de emisión fiscal» (`:625-626`). No hay NCF real emitido por este sistema.
-- Reimpresión: pantalla **Ventas** › icono de descarga (PDF) en la fila (`Management.tsx:3607-3617`).
+- Reimpresión: pantalla **Ventas** › icono de descarga (PDF) en la fila (`Management.tsx:3608-3618`).
 - Sin internet: solo si Configuración lo permite («Permitir ventas sin conexión»), la venta queda «Guardada en este dispositivo · Pendiente de sincronizar» con número LOCAL-xxxxxxxx; crédito, contraentrega, nota de crédito y descuentos con PIN requieren conexión (`POS.tsx:2271-2332`; `apps/api/src/admin.ts:104`). Por defecto está apagado.
 
 ## 7. Devolución y nota de crédito (NC)
@@ -127,14 +127,14 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 2. Ventana **«Devolución · FS-…»** (`:3640`): «Artículo a devolver», «Cantidad», «Motivo», **«Método de reembolso»** (Efectivo, Tarjeta, Transferencia o **Nota de crédito**), casillas «Reingresar al stock vendible», «Producto abierto», «Producto dañado» (`:3643-3690`). API `POST /returns` (`apps/api/src/sales.ts:3722`).
 3. Se crea la devolución con número **NC-000000** (`sales.ts:3853`). Si el reembolso es en efectivo desde la caja de **otra persona**, hace falta el PIN de su dueña o de otro gerente (`sales.ts:3306-3320`); si no hay efectivo suficiente: «No hay suficiente efectivo en caja para este reembolso. Reembolsa por el medio del pago original o como nota de crédito.» (`sales.ts:3835-3838`).
 4. Con método «Nota de crédito» se crea la nota con un **código de canje** de 32 caracteres hex y saldo (`apps/api/prisma/schema.prisma` modelo `CreditNote`).
-5. **¿Se imprime la nota?** No sale sola al devolver. Se imprime a mano: en **Ventas** › abrir la venta (ojo) › botón **«Imprimir nota NC-000000»** (solo `sale:manage`) (`Management.tsx:3840-3854`). Descarga un **PDF A4** «Nota de crédito · NC-… / Nota interna de crédito · no fiscal», con importe, saldo, motivo y el «Código para presentar en caja» (`apps/api/src/sales.ts:3972-4025`, ruta `GET /returns/:id/credit-note.pdf`). No se imprime en el ticket térmico.
+5. **¿Se imprime la nota?** No sale sola al devolver. Se imprime a mano: en **Ventas** › abrir la venta (ojo) › botón **«Imprimir nota NC-000000»** (solo `sale:manage`) (`Management.tsx:3841-3855`). Descarga un **PDF A4** «Nota de crédito · NC-… / Nota interna de crédito · no fiscal», con importe, saldo, motivo y el «Código para presentar en caja» (`apps/api/src/sales.ts:3972-4025`, ruta `GET /returns/:id/credit-note.pdf`). No se imprime en el ticket térmico.
 6. Usarla: en el cobro, método **Nota de crédito**, escribir el código y elegir la nota (sección 5.1). Una nota con cliente solo la usa ese cliente (`sales.ts:1184`).
 
 ## 8. Anulación
 
-- **Cajera:** en **Ventas**, solo sobre una venta suya completada y sin solicitud pendiente: **«Solicitar anulación»** → «Tipo de motivo» (Solicitud del cliente, Venta duplicada, Error de pago, Error de artículo, Otro) + «Explica el motivo» (`Management.tsx:3754-3778`, `:3847-3894`; API `apps/api/src/sales.ts:1861`).
-- **Administración (`*`):** en **Ventas** › **«Anular»** (si no tiene devoluciones ni abonos válidos) con motivo → «Sí, anular venta» (`Management.tsx:3423-3437`, `:3540-3554`; API `POST /sales/:id/void`, `apps/api/src/sales.ts:2341-2349`). O en **Solicitudes de anulación** › **«Aprobar y anular»** (`apps/web/src/VoidRequests.tsx:155-161`). Nadie aprueba su propia solicitud (`sales.ts:2113`, `:2404`).
-- Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:4074`; `sales.ts:2866-2878`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2859-2864`).
+- **Cajera:** en **Ventas**, solo sobre una venta suya completada y sin solicitud pendiente: **«Solicitar anulación»** → «Tipo de motivo» (Solicitud del cliente, Venta duplicada, Error de pago, Error de artículo, Otro) + «Explica el motivo» (`Management.tsx:3755-3779`, `:3847-3894`; API `apps/api/src/sales.ts:1861`).
+- **Administración (`*`):** en **Ventas** › **«Anular»** (si no tiene devoluciones ni abonos válidos) con motivo → «Sí, anular venta» (`Management.tsx:3424-3438`, `:3540-3554`; API `POST /sales/:id/void`, `apps/api/src/sales.ts:2341-2349`). O en **Solicitudes de anulación** › **«Aprobar y anular»** (`apps/web/src/VoidRequests.tsx:155-161`). Nadie aprueba su propia solicitud (`sales.ts:2113`, `:2404`).
+- Efecto: se conserva la venta con motivo y usuario, se revierte el inventario y deja de contar en ventas. Si la caja original ya cerró y hubo efectivo, el reembolso sale de la caja **abierta** de quien anula (`Management.tsx:4075`; `sales.ts:2866-2878`). Una venta cobrada en dólares con caja cerrada no se anula: se hace devolución (`sales.ts:2859-2864`).
 
 ## 9. Movimientos de efectivo durante el día
 

@@ -305,7 +305,6 @@ export default defineConfig({
       "tests/gv-unit.test.ts",
       "tests/gv-incentivos-unit.test.ts",
       "tests/gv-auditoria-migration-postgres.test.ts",
-      "tests/gv-gerente-rol-migration-postgres.test.ts",
       "tests/dominio-redireccion.test.ts",
       "tests/dinero-1nov.test.ts",
       "tests/avisos-propios.test.ts",

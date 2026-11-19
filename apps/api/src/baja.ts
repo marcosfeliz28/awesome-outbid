@@ -34,6 +34,17 @@ export const GLOBALES = [
   "AlertRule",
   // Claves «login:<correo>»: la purga de retention.ts las borra a los 2/30 días.
   "AuthAttempt",
+  // Producto multiempresa: datos de la empresa y de la plataforma, no de una
+  // sucursal. La baja de una empresa entera es la exportación/respaldo por
+  // tenant (tenant-export.ts / tenant-backup.ts), no este comando.
+  "Tenant",
+  "PlatformPayment",
+  "BillingRequest",
+  "BillingDecision",
+  "AiPackCredit",
+  "TenantLifecycleNotice",
+  "TenantObjectDeletion",
+  "NcfSequence",
 ] as const;
 
 const enSucursal = (tabla: string, b: string, col = "id") =>
@@ -43,6 +54,7 @@ const enSucursal = (tabla: string, b: string, col = "id") =>
 export const HIJAS: Record<string, (b: string) => Sql> = {
   RefreshToken: (b) => Prisma.sql`"userId" IN ${enSucursal("User", b)}`,
   AuthSession: (b) => Prisma.sql`"userId" IN ${enSucursal("User", b)}`,
+  ChangeRequest: (b) => Prisma.sql`"userId" IN ${enSucursal("User", b)}`,
   KitComponent: (b) =>
     Prisma.sql`"kitVariantId" IN ${enSucursal("Variant", b)}`,
   LotIdentityConflict: (b) =>
@@ -163,16 +175,19 @@ export async function alcance(db: any, branchId: string): Promise<Alcance> {
 
 type Llave = { hija: string; col: string; padre: string; pcol: string };
 async function llaves(db: any): Promise<Llave[]> {
-  const rows: (Llave & { n: number })[] = await db.$queryRaw`
+  // Producto: una FK compuesta ("tenantId", col) se trata como la de col
+  // (la empresa es la misma por RLS y por la guardia de FK entre empresas).
+  const rows: (Llave & { n: number; first: string })[] = await db.$queryRaw`
     SELECT ch.relname AS hija, a.attname AS col, pa.relname AS padre,
-           af.attname AS pcol, array_length(c.conkey, 1) AS n
+           af.attname AS pcol, array_length(c.conkey, 1) AS n, a1.attname AS first
       FROM pg_constraint c
       JOIN pg_class ch ON ch.oid = c.conrelid
       JOIN pg_class pa ON pa.oid = c.confrelid
-      JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
-      JOIN pg_attribute af ON af.attrelid = c.confrelid AND af.attnum = c.confkey[1]
+      JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[array_length(c.conkey, 1)]
+      JOIN pg_attribute af ON af.attrelid = c.confrelid AND af.attnum = c.confkey[array_length(c.confkey, 1)]
+      JOIN pg_attribute a1 ON a1.attrelid = c.conrelid AND a1.attnum = c.conkey[1]
      WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace`;
-  if (rows.some((r) => Number(r.n) !== 1))
+  if (rows.some((r) => Number(r.n) !== 1 && !(Number(r.n) === 2 && r.first === "tenantId")))
     throw new Error("Hay llaves foráneas compuestas: revisar baja.ts.");
   return rows;
 }
