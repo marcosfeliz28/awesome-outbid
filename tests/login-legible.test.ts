@@ -30,3 +30,11 @@ describe("Entrada (login) · letra y foco", () => {
     );
   });
 });
+
+describe("Usuarios y permisos · acciones en móvil", () => {
+  it("permite que las acciones largas se distribuyan en varias líneas", () => {
+    expect(css).toMatch(
+      /@media \(max-width: 768px\) \{[\s\S]*?\.inline-actions \{[\s\S]*?flex-wrap:\s*wrap;[\s\S]*?white-space:\s*normal;/,
+    );
+  });
+});

@@ -6744,6 +6744,13 @@ td strong {
   .table-actions {
     flex-wrap: wrap;
   }
+  /* H310: los enlaces de una persona deben poder saltar de línea en la
+     tarjeta móvil. Evita que «Restablecer contraseña» y «Desactivar» queden
+     cortados o fuera de su contenedor. */
+  .inline-actions {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
   .main-content button,
   .main-content .button,
   .main-content select,
