@@ -1669,6 +1669,7 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   credit_reminder: "Créditos por cobrar",
   gv_cash_open_night: "Caja GV abierta de noche",
   gv_day_no_close: "Día de GV sin cierre",
+  opening_shortfall: "Fondo de apertura menor",
   cash_difference: "Diferencia de caja",
   return_waste: "Merma por devolución",
   expense_budget: "Presupuesto de gastos",
@@ -1685,8 +1686,10 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   sale_void_request: "Solicitud de anulación",
   zero_cost_sale: "Venta sin costo",
 };
-const alertTypeLabel = (type: string) =>
-  ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " ");
+const alertTypeLabel = (type: string, english = false) =>
+  type === "opening_shortfall" && english
+    ? "Opening fund shortfall"
+    : (ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " "));
 
 export function Cash() {
   const user = useStore((s) => s.user)!;
@@ -3249,7 +3252,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                 <div>
                   <button className="alert-detail-trigger" aria-expanded={selectedId === a.id} onClick={() => setSelectedId(selectedId === a.id ? null : a.id)}><strong>{a.message}</strong></button>
                   <p>
-                    {dateLabel(a.createdAt, en ? "en-US" : "es-DO")} · {alertTypeLabel(a.type)}
+                    {dateLabel(a.createdAt, en ? "en-US" : "es-DO")} · {alertTypeLabel(a.type, en)}
                   </p>
                 </div>
                 <Badge tone={a.severity === "high" ? "danger" : "warning"}>
@@ -3311,7 +3314,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
             {selected ? <>
               <h2>{selected.message}</h2>
               <dl><dt>{en ? "Date" : "Fecha"}</dt><dd>{dateLabel(selected.createdAt, en ? "en-US" : "es-DO")}</dd>
-              <dt>{en ? "Category" : "Categoría"}</dt><dd>{alertTypeLabel(selected.type)}</dd>
+              <dt>{en ? "Category" : "Categoría"}</dt><dd>{alertTypeLabel(selected.type, en)}</dd>
               <dt>{en ? "Priority" : "Prioridad"}</dt><dd>{selected.severity === "high" ? (en ? "High" : "Prioritaria") : (en ? "Attention" : "Atención")}</dd></dl>
               <Button variant="secondary" onClick={() => setSelectedId(null)}>{en ? "Close details" : "Cerrar detalle"}</Button>
             </> : <><h2>{en ? "Alert details" : "Detalle de alerta"}</h2><p>{en ? "Select an alert to review its information. Actions remain next to each record." : "Selecciona una alerta para revisar su información. Las acciones permanecen junto a cada registro."}</p></>}

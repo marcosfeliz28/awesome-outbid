@@ -266,7 +266,7 @@ describe("05-B2, B11 y B13 · textos y avisos baratos", () => {
     const management = readFileSync("apps/web/src/Management.tsx", "utf8");
     expect(management).toContain('offline_conflict: "Venta sin conexión"');
     expect(management).toContain('low_stock: "Stock bajo"');
-    expect(management).toContain("{alertTypeLabel(a.type)}");
+    expect(management).toContain("{alertTypeLabel(a.type, en)}");
     expect(management).not.toContain('{a.type.replaceAll("_", " ")}');
   });
   it("B11: el ejemplo del usuario no parece una cuenta real; B13: sin conexión se avisa", () => {
