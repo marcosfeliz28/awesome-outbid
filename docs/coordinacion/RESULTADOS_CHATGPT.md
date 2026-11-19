@@ -2,6 +2,13 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · P8 en cierre de caja
+
+- La pantalla distingue un cierre realmente rechazado de un cierre confirmado cuyo cuadre no pudo cargarse. En el segundo caso cierra el formulario, informa dónde reabrir el impreso y nunca repite el POST.
+- Regresión roja primero y verde después; el foco pasó 4 archivos/19 pruebas, con tres caminos del flujo y preservación byte a byte de `Tienda.tsx`.
+- `pnpm check` pasó sobre la base actualizada con 166 archivos/1,338 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API.
+- Sin cambios de payload, importes, conteos, PIN, permisos, API, base, Render, producción o credenciales. La rama sigue sin publicar hasta el SHA final único.
+
 ## 2026-11-19 · ChatGPT NUBE · P3/P12 en recibo de Caja
 
 - El enlace de WhatsApp agrega `1` únicamente a teléfonos locales dominicanos de diez dígitos y conserva números que ya tienen código internacional. El texto `un se cobra` quedó como `se cobra`.

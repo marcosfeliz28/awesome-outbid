@@ -4,11 +4,11 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 
 ## 1. Cómo funciona
 
-- Cada usuario tiene **un rol** y el rol tiene una **lista de permisos** (`apps/api/prisma/schema.prisma`, modelos `Role` y `User`). El permiso `*` da acceso a todo. La regla: `can(grants, p)` = tiene `*` o tiene `p` (`packages/shared/src/index.ts:791-792`).
+- Cada usuario tiene **un rol** y el rol tiene una **lista de permisos** (`apps/api/prisma/schema.prisma`, modelos `Role` y `User`). El permiso `*` da acceso a todo. La regla: `can(grants, p)` = tiene `*` o tiene `p` (`packages/shared/src/index.ts:795-796`).
 - La web esconde las pantallas sin permiso y la API revisa el permiso en cada ruta con `@Permit("…")` (`apps/api/src/common.ts:80-81`). Varias reglas de dinero se revisan en el servidor aunque la web las oculte.
-- Los roles que trae el sistema (valores de fábrica, `packages/shared/src/index.ts:760-787`; se crean al sembrar `apps/api/prisma/seed.ts:431-435`; el rol `gv` lo crea la migración `202610260901_gv`, ver `docs/coordinacion/MODULO-GV.md:72`):
-- Cada usuario tiene **un rol** y el rol tiene una **lista de permisos** (`apps/api/prisma/schema.prisma`, modelos `Role` y `User`). El permiso `*` da acceso a todo. La regla: `can(grants, p)` = tiene `*` o tiene `p` (`packages/shared/src/index.ts:791-792`).
-- Los roles que trae el sistema (valores de fábrica, `packages/shared/src/index.ts:760-787`; se crean al sembrar `apps/api/prisma/seed.ts:431-435`; el rol `gv` lo crea la migración `202610260901_gv`, ver `docs/coordinacion/MODULO-GV.md:72`; el rol `gerente_gv` lo crea la migración `202611060001_gv_gerente_rol`):
+- Los roles que trae el sistema (valores de fábrica, `packages/shared/src/index.ts:764-791`; se crean al sembrar `apps/api/prisma/seed.ts:431-435`; el rol `gv` lo crea la migración `202610260901_gv`, ver `docs/coordinacion/MODULO-GV.md:72`):
+- Cada usuario tiene **un rol** y el rol tiene una **lista de permisos** (`apps/api/prisma/schema.prisma`, modelos `Role` y `User`). El permiso `*` da acceso a todo. La regla: `can(grants, p)` = tiene `*` o tiene `p` (`packages/shared/src/index.ts:795-796`).
+- Los roles que trae el sistema (valores de fábrica, `packages/shared/src/index.ts:764-791`; se crean al sembrar `apps/api/prisma/seed.ts:431-435`; el rol `gv` lo crea la migración `202610260901_gv`, ver `docs/coordinacion/MODULO-GV.md:72`; el rol `gerente_gv` lo crea la migración `202611060001_gv_gerente_rol`):
 
 | Rol (nombre en la base) | Quién es                      | Permisos de fábrica                                                                                                                                                                                                                                                                            |
 | ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -58,7 +58,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 
 - Ve: Mercancía, Resumen, Punto de venta, Ventas, Solicitudes de anulación, Productos, Inventario, Compras, Caja, Gastos, Clientes, Promociones, Reportes, Alertas, Incentivos, GV; y el botón «Configuración».
 - Ve costos y utilidades (`profit:read`) y los esperados de caja.
-- Hace: devoluciones, aprobar conteos, cobrar créditos con tarjeta/transferencia, cierres de emergencia de la caja de otra persona (`apps/web/src/Tienda.tsx:333-340`), verificar/rechazar transferencias **de GV** (`gv:verify`), aprobar equipos nuevos (`apps/api/src/realtime.ts:276-277`, `:415`).
+- Hace: devoluciones, aprobar conteos, cobrar créditos con tarjeta/transferencia, cierres de emergencia de la caja de otra persona (`apps/web/src/Tienda.tsx:344-351`), verificar/rechazar transferencias **de GV** (`gv:verify`), aprobar equipos nuevos (`apps/api/src/realtime.ts:276-277`, `:415`).
 - **Su PIN es el «PIN de gerente»** que pide la caja: cualquier usuario activo con `sale:manage` puede aprobar (`apps/api/src/security.ts:124-168`).
 - No puede (solo `*`): anular una venta, verificar transferencias de ventas, abonos, traspasos, guardar la configuración, crear usuarios (ver §4).
 
@@ -115,7 +115,7 @@ Nota (pendiente de comprobar en vivo): el botón «Configuración» lo ve un ger
 | Situación                                                                                                                              | Cita                                                                    |
 | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Descuento mayor al «Descuento máximo del vendedor (%)» (10 % de fábrica)                                                               | `POS.tsx:1963-1968`; `sales.ts:632-716`                                 |
-| Crédito/contraentrega sobre el umbral (RD$ 1,000), deuda del cliente, tope del turno (RD$ 3,000) o ventas a crédito deshabilitadas     | `packages/shared/src/index.ts:404-445`                                  |
+| Crédito/contraentrega sobre el umbral (RD$ 1,000), deuda del cliente, tope del turno (RD$ 3,000) o ventas a crédito deshabilitadas     | `packages/shared/src/index.ts:408-449`                                  |
 | Pagar con nota de crédito sin escribir su código impreso                                                                               | `POS.tsx:1969-1981`; `sales.ts:703-705`                                 |
 | Salida de efectivo del turno sobre el límite (RD$ 1,000 de fábrica)                                                                    | `apps/api/src/cash.ts:1024-1062`, `:1060`                                |
 | Cerrar la caja con descuadre de tarjeta, efectivo o dólares (cajera, o gerente cerrando SU caja); desde el 2.º intento fallido siempre | `cash.ts:1299-1351`                                                     |
@@ -131,7 +131,7 @@ Nota (pendiente de comprobar en vivo): el botón «Configuración» lo ve un ger
 
 - Un equipo nuevo de vendedor/almacén **espera aprobación** de un gerente: «Este equipo necesita aprobación. Puedes consultar, pero para vender o mover mercancía un gerente debe aprobarlo» (`apps/web/src/realtime.tsx:517-520`). Se aprueba con PIN en el mismo equipo o desde Configuración › **Equipos** (`apps/api/src/realtime.ts:276-283`; modelo `Terminal`, campo `approvedAt`).
 - Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1532`, `cash.ts:884`).
-- La caja se asigna al equipo con nombre y número visibles en el cuadre (ej. «4012 · GPRO STORE RD») y cada cajero tiene un «No. de cajero» (ej. 1031) (`apps/web/src/Tienda.tsx:1354-1421`; `schema.prisma` `Terminal.registerNumber`, `User.cashierNumber`).
+- La caja se asigna al equipo con nombre y número visibles en el cuadre (ej. «4012 · GPRO STORE RD») y cada cajero tiene un «No. de cajero» (ej. 1031) (`apps/web/src/Tienda.tsx:1365-1432`; `schema.prisma` `Terminal.registerNumber`, `User.cashierNumber`).
 - Una sesión se cierra por inactividad según «sessionTimeoutMinutes» (30 min por defecto) (`apps/api/src/auth.ts:358-360`; `apps/api/src/admin.ts:97`).
 
 ## 7. Seguridad (auditoría del 19-nov-2026)

@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · P8 · cierre confirmado sin cuadre
+
+- **Base y duplicación:** se incorporó `origin/nexora-cloud` `e0baf4d896fa1b230c2bdefd64b1167e8d4f8a21` mediante merge limpio en la rama propia. P8 había sido intentado y revertido antes por la guarda de `Tienda.tsx`; no estaba resuelto en `HEAD` ni en el lote 6.
+- **Problema y cambio:** el POST de cierre y el GET posterior del cuadre compartían un `catch`; si el cierre quedaba guardado y fallaba el impreso, la pantalla parecía permitir cerrarlo otra vez. `completeCashClose` propaga un fallo real del cierre, pero devuelve `closed_without_cuadre` cuando solo falla el impreso. La pantalla confirma `Caja cerrada correctamente`, indica reabrirlo desde Historial, cierra el formulario e invalida las consultas.
+- **Regresión rojo→verde:** `tests/tienda-close-success.test.ts` falló primero porque no existía la confirmación. Después pasó con casos de cierre+cuadre, cierre rechazado y cierre confirmado/cuadre fallido; el foco completo pasó **4 archivos / 19 pruebas**, incluida la reversión byte a byte de `Tienda.tsx`.
+- **Control local final:** `pnpm check` terminó con código 0 sobre la base actualizada: typecheck y ESLint pasaron; **166 archivos / 1,338 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron.
+- **Autoauditoría:** no cambian endpoint, payload, importes, conteos, PIN, permisos ni reglas de cierre. La función garantiza que el cierre se invoca una sola vez; si este falla no solicita el cuadre. `PRODUCTO-TIENDA-CIERRE_REVERSIBLE.json` retira exactamente la importación y el bloque P8 antes de comprobar el hash histórico.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
 ## 2026-11-19 · P3/P12 · recibo de Caja
 
 - **Orden y duplicación:** `origin/nexora-cloud` continúa en `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`; la orden nocturna mantiene P3 y P12 pendientes en `POS.tsx`. El historial de la rama no contenía estos arreglos.

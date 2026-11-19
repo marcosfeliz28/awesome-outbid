@@ -12,6 +12,7 @@ import { CASH_DENOMINATIONS, can, formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post, localDB, useStore } from "./api";
 import { FormModal, QueryState, toast, mutate, today } from "./helpers";
 import { closeCashIntro } from "./managementMessages";
+import { completeCashClose } from "./cashCloseFlow";
 import { CreditAccounts } from "./CreditAccounts";
 import { pendingCloseMessage } from "./pendingSales";
 import {
@@ -263,25 +264,35 @@ export function CloseCashModal({
           .map(([k, v]) => [k, Math.floor(parse(v))] as const)
           .filter(([, v]) => v > 0),
       );
-      await post("/cash-sessions/" + session.id + "/close", {
-        denominations,
-        countedCash: subtotal,
-        vouchers: parse(form.vouchers),
-        countedUsd: parse(form.countedUsd),
-        countedEur: parse(form.countedEur),
-        countedCard: parse(form.countedCard),
-        countedTransfer: parse(form.countedTransfer),
-        ...(delivered === null ? {} : { delivered }),
-        notes: form.notes,
-        differenceReason: form.differenceReason,
-        batchNumber: form.batchNumber.trim(),
-        ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
-          ? { managerPin: form.managerPin }
-          : {}),
-      });
-      const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
-      await client.invalidateQueries();
-      onClosed(cuadre);
+      const result = await completeCashClose(
+        () =>
+          post("/cash-sessions/" + session.id + "/close", {
+            denominations,
+            countedCash: subtotal,
+            vouchers: parse(form.vouchers),
+            countedUsd: parse(form.countedUsd),
+            countedEur: parse(form.countedEur),
+            countedCard: parse(form.countedCard),
+            countedTransfer: parse(form.countedTransfer),
+            ...(delivered === null ? {} : { delivered }),
+            notes: form.notes,
+            differenceReason: form.differenceReason,
+            batchNumber: form.batchNumber.trim(),
+            ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
+              ? { managerPin: form.managerPin }
+              : {}),
+          }),
+        () => api("/cash-sessions/" + session.id + "/cuadre"),
+      );
+      if (result.status === "ready") onClosed(result.cuadre);
+      else {
+        toast(
+          "Caja cerrada correctamente, pero no se pudo cargar el cuadre. Vuelve a abrirlo desde Historial de cajas.",
+          true,
+        );
+        onClose();
+      }
+      await client.invalidateQueries().catch(() => {});
     } catch (e: any) {
       setError(e.message);
       if (/total de tarjeta no coincide/i.test(e.message))

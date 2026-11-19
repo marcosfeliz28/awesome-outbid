@@ -24,6 +24,12 @@ const warehouseFilterLedger = JSON.parse(
     "utf8",
   ),
 ) as Edit[];
+const storeCloseLedger = JSON.parse(
+  readFileSync(
+    "docs/auditoria-ui/PRODUCTO-TIENDA-CIERRE_REVERSIBLE.json",
+    "utf8",
+  ),
+) as Edit[];
 
 function reverseEdits(source: string, edits: Edit[], label: string) {
   for (const edit of [...edits].reverse()) {
@@ -57,5 +63,7 @@ export function reverseIt003(source: string, file: It003File) {
     );
     source = reverseEdits(source, reportsLedger, "PRODUCTO-REPORTES");
   }
+  if (file === "Tienda")
+    source = reverseEdits(source, storeCloseLedger, "PRODUCTO-TIENDA-CIERRE");
   return reverseEdits(source, ledger[file], `IT-003 ${file}`);
 }
