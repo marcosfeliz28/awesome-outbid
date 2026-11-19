@@ -154,6 +154,7 @@ export default defineConfig({
       "tests/store-settings-language.test.ts",
       "tests/config-rates-survey-language.test.ts",
       "tests/auditoria-lote-a.test.ts",
+      "tests/caja-cobros-19nov.test.ts",
     ],
   },
 });
