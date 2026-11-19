@@ -539,6 +539,13 @@ describe("G10 · contrato de contraste WCAG AA", () => {
   });
 });
 
+describe("Resumen · tarjetas de ventas por día", () => {
+  it("DD-09: mantiene el importe y título de Hoy legibles en claro", () => {
+    const today = variables(".day-today");
+    meets("Hoy en claro", today["--day-accent"], today["--day-bg"], 4.5);
+  });
+});
+
 describe("G11 · listener de teclado con modal", () => {
   it.each(["F4", "F8", "F12"])(
     "%s se consume y no ejecuta la acción detrás del diálogo",
