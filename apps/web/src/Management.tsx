@@ -125,7 +125,7 @@ import {
   isPendingPriceConflict,
   retryMessage,
 } from "./pendingSales";
-
+import { warehouseIncludesVariant } from "./warehouseInventory";
 type Column = {
   label: string;
   render: (row: any) => ReactNode;
@@ -914,7 +914,7 @@ export function Inventory() {
     )
     .filter(
       (v: any) =>
-        warehouseView === "all" || Number(visibleStock(v)) > 0,
+        warehouseIncludesVariant(v, selectedWarehouse),
     );
   return (
     <section className="fusion-inventory" aria-label={translateInventory("Inventario")}>
