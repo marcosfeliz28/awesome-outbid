@@ -12,6 +12,11 @@ describe("IT-003 · Caja en español e inglés", () => {
     ["Ya pagaron", "Paid"],
     ["Mayor deuda", "Highest balance"],
     ["Más antiguo", "Oldest"],
+    ["Por cobrar visible:", "Visible outstanding:"],
+    [
+      "Hay importes ocultos hasta cerrar la caja; este total no incluye esas ventas.",
+      "Some amounts stay hidden until the register closes; this total does not include those sales.",
+    ],
     [
       "Solo tú ves este cuadro. Se cuadra a fin de mes con la administración.",
       "Only you can see this panel. It is reconciled with management at month end.",

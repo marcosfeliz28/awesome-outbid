@@ -38,6 +38,10 @@ const EN: Record<string, string> = {
   "Mayor deuda": "Highest balance",
   "Más antiguo": "Oldest",
   "Total general por cobrar:": "Total outstanding:",
+  "Por cobrar:": "Outstanding:",
+  "Por cobrar visible:": "Visible outstanding:",
+  "Hay importes ocultos hasta cerrar la caja; este total no incluye esas ventas.":
+    "Some amounts stay hidden until the register closes; this total does not include those sales.",
   "Ver estado de cuenta": "View statement",
   Anterior: "Previous",
   Siguiente: "Next",

@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · P11 · total visible de créditos pendientes
+
+- **Base y duplicación:** sobre `origin/nexora-cloud` `e0baf4d896fa1b230c2bdefd64b1167e8d4f8a21`, P11 seguía pendiente en la orden nocturna y no estaba resuelto en `HEAD`. La API ya marca los importes ocultos de caja abierta con `hiddenUntilClose`; no se modificó ese contrato.
+- **Problema y cambio:** el encabezado sumaba únicamente importes visibles pero decía `Por cobrar`, por lo que un subtotal podía parecer el total. Cuando existe al menos una fila oculta ahora dice `Por cobrar visible` y avisa que el total no incluye esas ventas; sin filas ocultas conserva `Por cobrar`. Las filas ocultas continúan mostrando `—`.
+- **Regresión rojo→verde:** `tests/tienda-pending-total.test.ts` falló primero porque no existía la nueva etiqueta. Después pasó con casos mixto, totalmente visible y totalmente oculto. El foco conjunto aprobó **4 archivos / 33 pruebas**, incluidas traducciones, caja ciega y la guarda de presentación.
+- **Control local final:** la primera corrida completa encontró únicamente que el ledger no reproducía el formato exacto de `Tienda.tsx`; se corrigió la evidencia reversible y su foco pasó 2 archivos/7 pruebas. La repetición de `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **167 archivos / 1,344 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `pnpm docs:citas` conservó las 559 citas sin mover ni perder ninguna; la prueba documental pasó 4/4 y `git diff --check` pasó.
+- **Autoauditoría:** `creditPendingSummary` conserva exactamente la suma anterior (`Number(pending) || 0`) y solo cuenta banderas `hiddenUntilClose`; no infiere deuda, no revela importes ni cambia dinero, API, permisos o base. `PRODUCTO-TIENDA-POR-COBRAR_REVERSIBLE.json` retira exactamente P11 antes de comprobar el hash histórico de `Tienda.tsx`.
+- **Publicación/CI:** pendiente del único push final de la rama; todavía no se declara `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
 ## 2026-11-19 · P8 · cierre confirmado sin cuadre
 
 - **Base y duplicación:** se incorporó `origin/nexora-cloud` `e0baf4d896fa1b230c2bdefd64b1167e8d4f8a21` mediante merge limpio en la rama propia. P8 había sido intentado y revertido antes por la guarda de `Tienda.tsx`; no estaba resuelto en `HEAD` ni en el lote 6.

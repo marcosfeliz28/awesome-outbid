@@ -1,0 +1,14 @@
+[
+  {
+    "before": "import { filterCredits } from \"./codPendingSearch\";\n",
+    "after": "import { filterCredits } from \"./codPendingSearch\";\nimport { creditPendingSummary } from \"./codPendingSummary\";\n"
+  },
+  {
+    "before": "  const totalPending = rows.reduce((a, r) => a + (Number(r.pending) || 0), 0);\n",
+    "after": "  const { visibleTotal: totalPending, hiddenCount } =\n    creditPendingSummary(rows);\n"
+  },
+  {
+    "before": "          {state === \"pending\" && rows.length > 0 && (\n            <p className=\"cod-hint\">\n              {rows.length} {rows.length === 1 ? \"crédito\" : \"créditos\"} · Por\n              cobrar: <strong>{formatMoney(totalPending)}</strong>\n            </p>\n          )}\n",
+    "after": "          {state === \"pending\" && rows.length > 0 && (\n            <>\n              <p className=\"cod-hint\">\n                {rows.length} {rows.length === 1 ? \"crédito\" : \"créditos\"} ·{\" \"}\n                {hiddenCount ? ct(\"Por cobrar visible:\") : ct(\"Por cobrar:\")}{\" \"}\n                <strong>{formatMoney(totalPending)}</strong>\n              </p>\n              {hiddenCount > 0 && (\n                <p className=\"cod-hint\" role=\"status\">\n                  {ct(\n                    \"Hay importes ocultos hasta cerrar la caja; este total no incluye esas ventas.\",\n                  )}\n                </p>\n              )}\n            </>\n          )}\n"
+  }
+]

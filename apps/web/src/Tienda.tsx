@@ -4,6 +4,7 @@ import { storeSettingsText } from "./storeSettingsLanguage";
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
 import { filterCredits } from "./codPendingSearch";
+import { creditPendingSummary } from "./codPendingSummary";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Printer, Truck, Upload } from "lucide-react";
@@ -640,7 +641,8 @@ export function CodPending({ session }: { session: any }) {
   const rows = query.data ?? [];
   const shown = filterCredits(rows, search);
   // B-01: la API manda null en los importes de la caja abierta (hiddenUntilClose).
-  const totalPending = rows.reduce((a, r) => a + (Number(r.pending) || 0), 0);
+  const { visibleTotal: totalPending, hiddenCount } =
+    creditPendingSummary(rows);
   const money = (r: any, v: unknown) =>
     r.hiddenUntilClose ? "—" : formatMoney(v as any);
   return (
@@ -704,10 +706,20 @@ export function CodPending({ session }: { session: any }) {
       ) : (
         <>
           {state === "pending" && rows.length > 0 && (
-            <p className="cod-hint">
-              {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
-              cobrar: <strong>{formatMoney(totalPending)}</strong>
-            </p>
+            <>
+              <p className="cod-hint">
+                {rows.length} {rows.length === 1 ? "crédito" : "créditos"} ·{" "}
+                {hiddenCount ? ct("Por cobrar visible:") : ct("Por cobrar:")}{" "}
+                <strong>{formatMoney(totalPending)}</strong>
+              </p>
+              {hiddenCount > 0 && (
+                <p className="cod-hint" role="status">
+                  {ct(
+                    "Hay importes ocultos hasta cerrar la caja; este total no incluye esas ventas.",
+                  )}
+                </p>
+              )}
+            </>
           )}
           {rows.length > 0 && (
             <label className="field">

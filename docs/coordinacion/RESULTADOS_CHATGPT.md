@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · P11 en créditos pendientes
+
+- Si la caja abierta oculta uno o más importes, el encabezado ahora dice `Por cobrar visible` y aclara que el subtotal no incluye esas ventas. Sin importes ocultos mantiene `Por cobrar`; las filas protegidas siguen mostrando `—`.
+- Regresión roja primero y verde después. El foco aprobó 4 archivos/33 pruebas con escenarios mixto, visible y totalmente oculto, traducciones y guardas históricas.
+- La repetición final de `pnpm check` aprobó typecheck, lint, 167 archivos/1,344 pruebas (un archivo/10 pruebas omitidos) y los builds web/API. El único fallo del primer pase fue una coincidencia byte a byte del ledger; se ajustó y su foco quedó 2 archivos/7 pruebas verde. Las 559 citas quedaron sin mover ni perder; su prueba pasó 4/4 y `git diff --check` pasó.
+- Autoauditoría: se conserva la misma suma local y solo se cuenta `hiddenUntilClose`; no se revelan ni estiman importes y no cambian API, dinero, permisos o base.
+- La rama permanece sin publicar hasta el único SHA final; los tres CI todavía no se declaran.
+
 ## 2026-11-19 · ChatGPT NUBE · P8 en cierre de caja
 
 - La pantalla distingue un cierre realmente rechazado de un cierre confirmado cuyo cuadre no pudo cargarse. En el segundo caso cierra el formulario, informa dónde reabrir el impreso y nunca repite el POST.

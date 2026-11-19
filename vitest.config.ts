@@ -53,6 +53,7 @@ export default defineConfig({
       "tests/inventory-warehouse-filter.test.ts",
       "tests/pos-receipt-presentation.test.ts",
       "tests/tienda-close-success.test.ts",
+      "tests/tienda-pending-total.test.ts",
       "tests/credit-reasons.test.ts",
       "tests/formal-period.test.ts",
       "tests/formal-pdf.test.ts",
