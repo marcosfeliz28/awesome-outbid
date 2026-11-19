@@ -1,23 +1,49 @@
 import { catalogText } from "../apps/web/src/catalogLanguage";
 import { describe, it, expect } from "vitest";
-import { createHash } from "node:crypto";
+import { managementDigest, managementProductLedger, reverseManagement } from "./management-presentation-ledgers";
 import { readFileSync } from "node:fs";
+import ts from "typescript";
 const view = readFileSync("apps/web/src/CatalogPresentation.tsx", "utf8");
 const css = readFileSync("apps/web/src/catalogPresentation.css", "utf8");
 const management = readFileSync("apps/web/src/Management.tsx", "utf8");
 describe("Productos: presentación sin mutaciones", () => {
   it("wrapper reversible: conserva código de negocio byte por byte", () => {
-    const record = JSON.parse(readFileSync("docs/diseno/productos-higgsfield/PRESENTACION_REVERSIBLE.json", "utf8"));
-    let restored = management;
-    for (const edit of [...record.changes].reverse()) {
-      expect(restored.split(edit.after).length).toBe(2);
-      restored = restored.replace(edit.after, edit.before);
-    }
-    expect(createHash("sha256").update(restored).digest("hex")).toBe(record.base_sha256);
+    const { catalog, operations } = managementProductLedger;
+    const baseline = reverseManagement(reverseManagement(management, operations), catalog);
+    expect(managementDigest(baseline)).toBe(catalog.base_sha256);
   });
 
   it("usa filas filtradas y errores, sin datos de demostración", () => {
-    expect(management).toContain("products={rows} loading={query.isPending} failed={query.isError}");
+    const file = ts.createSourceFile(
+      "Management.tsx", management, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX,
+    );
+    const catalog = file.statements.find(
+      (statement): statement is ts.FunctionDeclaration =>
+        ts.isFunctionDeclaration(statement) && statement.name?.text === "Catalog",
+    );
+    expect(catalog).toBeDefined();
+    const wrappers: ts.JsxElement[] = [];
+    const visit = (node: ts.Node) => {
+      if (ts.isJsxElement(node) && node.openingElement.tagName.getText(file) === "CatalogPresentation")
+        wrappers.push(node);
+      ts.forEachChild(node, visit);
+    };
+    visit(catalog!);
+    expect(wrappers).toHaveLength(1);
+    const wrapper = wrappers[0];
+    const props = Object.fromEntries(
+      wrapper.openingElement.attributes.properties
+        .filter(ts.isJsxAttribute)
+        .map((prop) => [prop.name.getText(file), prop.initializer?.getText(file)]),
+    );
+    expect(props.products).toBe("{rows}");
+    expect(props.loading).toBe("{query.isPending}");
+    expect(props.failed).toBe("{query.isError}");
+    expect(props.onDetail).toMatch(/^\{\(p\) => \{\s*setDetail\(p\);\s*setTab\("General"\);\s*\}\}$/);
+    const content = wrapper.children.filter(ts.isJsxElement);
+    expect(content.map((node) => node.openingElement.tagName.getText(file))).toEqual(["Heading", "section"]);
+    expect(content[1].openingElement.getText(file)).toContain('aria-labelledby="catalog-list-title"');
+    expect(content[1].getText(file)).toContain("<QueryState query={query} english={en}>");
     expect(view).toContain('available ? value : "—"');
     expect(view).not.toMatch(/DEMO|128|\bfetch\(|\bpost\(|\bapi\(/);
   });

@@ -1,20 +1,16 @@
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { managementDigest, managementProductLedger, reverseManagement } from "./management-presentation-ledgers";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { OPERACIONES_EN, operacionesText, customerAnonymizationText } from "../apps/web/src/operacionesLanguage";
 
 const source = readFileSync("apps/web/src/Management.tsx", "utf8");
-const ledger = JSON.parse(readFileSync("docs/diseno/operaciones-4k/PRESERVACION.json", "utf8"));
-// Recover the complete verified baseline, then select named declarations, never
-// ledger positions: composing unrelated views can append arbitrary edit groups.
-let baseline = source;
-for (const edit of [...ledger.changes].reverse()) {
-  if (baseline.split(edit.after).length !== 2) throw new Error("Non-unique preservation edit");
-  baseline = baseline.replace(edit.after, edit.before);
-}
-if (createHash("sha256").update(baseline).digest("hex") !== ledger.base_sha256)
-  throw new Error("Preservation baseline mismatch");
+const { operations, catalog, caja } = managementProductLedger;
+// Recupera primero la base exacta del producto, preservando la composición de
+// capas. Las bases de tienda permanecen en sus registros originales.
+const baseline = reverseManagement(reverseManagement(source, catalog), operations);
+if (managementDigest(baseline) !== operations.base_sha256)
+  throw new Error("Product preservation baseline mismatch");
 function declaration(text: string, name: string) {
   const file = ts.createSourceFile("Management.tsx", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const node = file.statements.find((item) => ts.isFunctionDeclaration(item) && item.name?.text === name);
@@ -22,7 +18,7 @@ function declaration(text: string, name: string) {
   return node.getText(file);
 }
 const updates = ["Purchases", "Expenses", "Customers"].map((name) => ({
- before: declaration(baseline, name), after: declaration(source, name),
+ name, before: declaration(baseline, name), after: declaration(source, name),
 }));
 const compact = (value: string) => value.replace(/\s+/g, " ").trim();
 function calls(value: string, names: string[]) {
@@ -53,18 +49,32 @@ describe("Operaciones ES/EN: presentación, sin cambiar negocio", () => {
         expect(edit.after).toContain(`<${tag} english={en}`);
         expect(edit.after).not.toMatch(new RegExp(`<${tag}(?! english=)`));
       }
-      expect(edit.after).toContain('eyebrow={ot("TU NEGOCIO, CON CLARIDAD")}');
+      if (edit.name === "Customers") {
+        expect(edit.after).toContain('className="catalog-screen"');
+        expect(edit.after).toContain('title={ot("Clientes")}');
+        expect(edit.after).toContain('aria-labelledby="customers-list-title"');
+        expect(edit.after).toContain('id="customers-list-title">{ot("Directorio de clientes")}');
+        expect(edit.after).toContain('<ConfirmModal english={en}');
+        expect(edit.after).toContain('customerAnonymizationText(en, anonymizing.name)');
+        expect(edit.after).toContain('anonymizing.debt > 0');
+      } else {
+        expect(edit.after).toContain('eyebrow={ot("TU NEGOCIO, CON CLARIDAD")}');
+      }
       expect(edit.after.match(/className: "operations-money"/g)?.length).toBe(1);
     }
   });
   it("preserva llamadas API, payloads, query keys y guards de permisos", () => {
     for (const edit of updates) {
-      expect(calls(edit.after, ["api", "post", "mutate", "can", "seesCustomerPii", "customerPrivateDisplay", "customerEditValue", "useQuery", "formatMoney", "crypto.randomUUID"])).toEqual(calls(edit.before, ["api", "post", "mutate", "can", "seesCustomerPii", "customerPrivateDisplay", "customerEditValue", "useQuery", "formatMoney", "crypto.randomUUID"]));
+      expect(calls(edit.after, ["api", "post", "mutate", "can", "seesCustomerPii", "customerPrivateDisplay", "customerEditValue", "useQuery", "useEffect", "client.invalidateQueries", "formatMoney", "crypto.randomUUID"])).toEqual(calls(edit.before, ["api", "post", "mutate", "can", "seesCustomerPii", "customerPrivateDisplay", "customerEditValue", "useQuery", "useEffect", "client.invalidateQueries", "formatMoney", "crypto.randomUUID"]));
     }
   });
   it("mantiene los valores monetarios y la fecha local; sólo cambia locale de presentación", () => {
     for (const edit of updates) {
-      expect(calls(edit.after, ["dateLabel"]).map((call) => call.replace(', en ? "en-US" : "es-DO"', ""))).toEqual(calls(edit.before, ["dateLabel"]));
+      // El producto ya localiza estas fechas. No se cambia ni el valor ni el locale.
+      const dates = calls(edit.after, ["dateLabel"]);
+      expect(dates).toEqual(calls(edit.before, ["dateLabel"]));
+      expect(dates.length).toBeGreaterThan(0);
+      expect(dates.every((call) => call.endsWith(', en ? "en-US" : "es-DO")'))).toBe(true);
     }
     expect(updates[1].after).toContain('date: new Date(data.date + "T12:00:00-04:00").toISOString()');
     expect(updates[1].after).toContain('operationId: create');
@@ -80,15 +90,11 @@ describe("Operaciones ES/EN: presentación, sin cambiar negocio", () => {
     expect(en).toContain("This action cannot be undone.");
     expect(en).toContain(name);
   });
-  it("cada registro conserva su hash base y revierte todos los cambios exactamente", () => {
-    for (const path of ["docs/diseno/operaciones-4k/PRESERVACION.json", "docs/diseno/productos-higgsfield/PRESENTACION_REVERSIBLE.json", "docs/diseno/caja-turnos/PRESENTACION_REVERSIBLE.json"]) {
-      const record = JSON.parse(readFileSync(path, "utf8"));
-      let restored = source;
-      for (const edit of [...record.changes].reverse()) {
-        expect(restored).toContain(edit.after);
-        restored = restored.replace(edit.after, edit.before);
-      }
-      expect(createHash("sha256").update(restored).digest("hex")).toBe(record.base_sha256);
-    }
+  it("conserva los hashes independientes y la composición exacta de las tres capas", () => {
+    expect(operations.source_commit).toBe(catalog.source_commit);
+    expect(operations.source_commit).toBe(caja.source_commit);
+    expect(managementDigest(baseline)).toBe(operations.base_sha256);
+    expect(managementDigest(reverseManagement(reverseManagement(source, operations), catalog))).toBe(catalog.base_sha256);
+    expect(managementDigest(reverseManagement(baseline, caja))).toBe(caja.base_sha256);
   });
 });

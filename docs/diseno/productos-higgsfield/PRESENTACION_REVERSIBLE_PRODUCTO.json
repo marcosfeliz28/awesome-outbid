@@ -1,0 +1,18 @@
+{
+  "source_commit": "8ef351e6e178922e85f7e73a40713a4e60224618",
+  "base_sha256": "7b5b49096301b70f5fecb60ee2744fdf74ee7dfa67b179e980f7bc397d7ee899",
+  "changes": [
+    {
+      "before": "",
+      "after": "import { CatalogPresentation } from \"./CatalogPresentation\";\n"
+    },
+    {
+      "before": "    <div className=\"catalog-screen\">\n      <Heading\n        title=\"Catálogo de productos\"",
+      "after": "    <div className=\"catalog-screen\">\n      <CatalogPresentation\n        products={rows}\n        loading={query.isPending}\n        failed={query.isError}\n        onDetail={(p) => {\n          setDetail(p);\n          setTab(\"General\");\n        }}\n      >\n      <Heading\n        title=\"Catálogo de productos\""
+    },
+    {
+      "before": "        </QueryState>\n      </section>\n      {create && (\n        <FormModal\n          english={en}\n          title={ct(\"Un nuevo producto para tu tienda\")}",
+      "after": "        </QueryState>\n      </section>\n      </CatalogPresentation>\n      {create && (\n        <FormModal\n          english={en}\n          title={ct(\"Un nuevo producto para tu tienda\")}"
+    }
+  ]
+}

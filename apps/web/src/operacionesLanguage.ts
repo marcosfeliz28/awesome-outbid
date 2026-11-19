@@ -79,7 +79,23 @@ export const OPERACIONES_EN: Readonly<Record<string, string>> = {
   "Confirmar": "Confirm",
   "de": "of",
   "este mes": "this month",
-  "del presupuesto": "of budget"
+  "del presupuesto": "of budget",
+  "Comprobante": "Receipt",
+  "Comprobante anterior sin datos fiscales": "Previous receipt without tax details",
+  "Sin comprobante": "No receipt",
+  "URL del comprobante (opcional)": "Receipt URL (optional)",
+  "NCF del comprobante": "Receipt tax number (NCF)",
+  "Si registras un comprobante, indica también el ITBIS facturado.": "If you record a receipt, also enter the ITBIS charged.",
+  "ITBIS del comprobante": "ITBIS on the receipt",
+  "Escribe 0 cuando el comprobante no facture ITBIS.": "Enter 0 if the receipt does not charge ITBIS.",
+  "Gasto anulado.": "Expense voided.",
+  "Consulta contactos, compras y datos de crédito desde un solo directorio.": "View contacts, purchases and credit information in one directory.",
+  "Directorio de clientes": "Customer directory",
+  "Busca por nombre o teléfono y revisa su historial comercial.": "Search by name or phone and review customer history.",
+  "clientes": "customers",
+  " todavía debe ": " still owes ",
+  " (crédito o contraentrega): no se puede anonimizar hasta que salde la deuda. ": " (credit or cash on delivery): this customer cannot be anonymized until the balance is paid. ",
+  "Cliente anonimizado.": "Customer anonymized."
 };
 export const operacionesText = (english: boolean, text: string): string => english ? (OPERACIONES_EN[text] ?? text) : text;
 

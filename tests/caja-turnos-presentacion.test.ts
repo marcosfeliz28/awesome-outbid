@@ -1,22 +1,16 @@
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
+import { managementDigest, managementProductLedger, reverseManagement } from "./management-presentation-ledgers";
 import { describe, it, expect } from "vitest";
 describe("Caja y turnos: presentación aislada", () => {
   it("conserva Management del producto byte por byte al revertir import y clase", () => {
-    const record = JSON.parse(
-      readFileSync(
-        "docs/diseno/caja-turnos/PRESENTACION_REVERSIBLE_PRODUCTO.json",
-        "utf8",
-      ),
+    const { caja, catalog, operations } = managementProductLedger;
+    const source = readFileSync("apps/web/src/Management.tsx", "utf8");
+    // Deshacer las capas de catálogo y operaciones antes de la de Caja.
+    const baseline = reverseManagement(
+      reverseManagement(reverseManagement(source, operations), catalog),
+      caja,
     );
-    let source = readFileSync("apps/web/src/Management.tsx", "utf8");
-    for (const edit of [...record.changes].reverse()) {
-      expect(source.split(edit.after)).toHaveLength(2);
-      source = source.replace(edit.after, edit.before);
-    }
-    expect(createHash("sha256").update(source).digest("hex")).toBe(
-      record.base_sha256,
-    );
+    expect(managementDigest(baseline)).toBe(caja.base_sha256);
   });
   it("ofrece temas y accesibilidad sin cifras ni fondos rasterizados inventados", () => {
     const css = readFileSync("apps/web/src/fusion-caja-turnos.css", "utf8");

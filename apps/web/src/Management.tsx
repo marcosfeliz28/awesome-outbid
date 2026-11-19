@@ -1,7 +1,8 @@
+import { CatalogPresentation } from "./CatalogPresentation";
 import { ReportEmblem } from "./ReportVisuals";
 import { reportLabel } from "./reportPresentationCopy";
 import { PremiumWorkspace } from "./PremiumWorkspace";
-import { operacionesText } from "./operacionesLanguage";
+import { customerAnonymizationText, operacionesText } from "./operacionesLanguage";
 import { OperationsPresentation } from "./OperationsPresentation";
 import { useOperationsText } from "./operationsLanguage";
 import "./premiumOperations.css";
@@ -363,6 +364,15 @@ export function Catalog() {
   ];
   return (
     <div className="catalog-screen">
+      <CatalogPresentation
+        products={rows}
+        loading={query.isPending}
+        failed={query.isError}
+        onDetail={(p) => {
+          setDetail(p);
+          setTab("General");
+        }}
+      >
       <Heading
         title="Catálogo de productos"
         caption="Consulta productos, variantes, precios y existencias desde una sola vista."
@@ -548,6 +558,7 @@ export function Catalog() {
           />
         </QueryState>
       </section>
+      </CatalogPresentation>
       {create && (
         <FormModal
           english={en}
@@ -1679,7 +1690,7 @@ export function Expenses() {
               },
               { label: ot("Monto"), className: "operations-money", render: (e) => formatMoney(e.amount) },
               {
-                label: "Comprobante",
+                label: ot("Comprobante"),
                 render: (e) =>
                   e.ncf ? (
                     <span>
@@ -1687,13 +1698,13 @@ export function Expenses() {
                       <small>ITBIS: {formatMoney(e.itbis ?? 0)}</small>
                     </span>
                   ) : e.receiptUrl ? (
-                    "Comprobante anterior sin datos fiscales"
+                    ot("Comprobante anterior sin datos fiscales")
                   ) : (
-                    "Sin comprobante"
+                    ot("Sin comprobante")
                   ),
               },
               {
-                label: "Acción",
+                label: ot("Acción"),
                 render: (e) => (
                   <button
                     className="text-link danger-text"
@@ -1708,8 +1719,8 @@ export function Expenses() {
         </QueryState>
       </div>
       {create && (
-        <FormModal
-          title="Registrar un gasto"
+        <FormModal english={en}
+          title={ot("Registrar un gasto")}
           fields={(values) => {
             const withDocument = Boolean(
               values.receiptUrl?.trim() ||
@@ -1717,10 +1728,10 @@ export function Expenses() {
               (values.itbis ?? "") !== "",
             );
             return [
-              { key: "description", label: "Descripción", required: true },
+              { key: "description", label: ot("Descripción"), required: true },
               {
                 key: "categoryId",
-                label: "Categoría",
+                label: ot("Categoría"),
                 type: "select",
                 required: true,
                 options: cats.data?.map((c: any) => ({
@@ -1728,40 +1739,43 @@ export function Expenses() {
                   value: c.id,
                 })),
               },
-              { ...requiredNumber("amount", "Monto"), min: 0.01 },
+              { ...requiredNumber("amount", ot("Monto")), min: 0.01 },
               {
                 key: "date",
-                label: "Fecha",
+                label: ot("Fecha"),
                 type: "date",
                 initial: today(),
                 required: true,
               },
               {
                 key: "method",
-                label: "Método",
+                label: ot("Método"),
                 type: "select",
                 initial: "transfer",
-                options: paymentOptions,
+                options: paymentOptions.map((option) => ({
+                  ...option,
+                  label: ot(option.label),
+                })),
                 required: true,
               },
-              { key: "receiptUrl", label: "URL del comprobante (opcional)" },
+              { key: "receiptUrl", label: ot("URL del comprobante (opcional)") },
               {
                 key: "ncf",
-                label: "NCF del comprobante",
+                label: ot("NCF del comprobante"),
                 required: withDocument,
-                help: "Si registras un comprobante, indica también el ITBIS facturado.",
+                help: ot("Si registras un comprobante, indica también el ITBIS facturado."),
               },
               {
                 key: "itbis",
-                label: "ITBIS del comprobante",
+                label: ot("ITBIS del comprobante"),
                 inputMode: "decimal",
                 pattern: "[0-9]+([.][0-9]{1,2})?",
                 required: withDocument,
-                help: "Escribe 0 cuando el comprobante no facture ITBIS.",
+                help: ot("Escribe 0 cuando el comprobante no facture ITBIS."),
               },
               {
                 key: "recurring",
-                label: "Marcar como recurrente mensual",
+                label: ot("Marcar como recurrente mensual"),
                 type: "checkbox",
               },
             ];
@@ -1803,7 +1817,7 @@ export function Expenses() {
           onConfirm={async (reason) => {
             await post("/expenses/" + voiding.id + "/void", { reason });
             await client.invalidateQueries();
-            toast("Gasto anulado.");
+            toast(ot("Gasto anulado."));
           }}
         />
       )}
@@ -2567,8 +2581,8 @@ export function Customers() {
   return (
     <div className="catalog-screen">
       <Heading
-        title="Clientes"
-        caption="Consulta contactos, compras y datos de crédito desde un solo directorio."
+        title={ot("Clientes")}
+        caption={ot("Consulta contactos, compras y datos de crédito desde un solo directorio.")}
       >
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
@@ -2581,10 +2595,10 @@ export function Customers() {
       >
         <div className="panel-heading catalog-panel-heading">
           <div>
-            <h2 id="customers-list-title">Directorio de clientes</h2>
-            <p>Busca por nombre o teléfono y revisa su historial comercial.</p>
+            <h2 id="customers-list-title">{ot("Directorio de clientes")}</h2>
+            <p>{ot("Busca por nombre o teléfono y revisa su historial comercial.")}</p>
           </div>
-          <Badge tone="violet">{rows.length} clientes</Badge>
+          <Badge tone="violet">{rows.length} {ot("clientes")}</Badge>
         </div>
         <div className="table-toolbar catalog-toolbar">
           <Filter
@@ -2687,10 +2701,14 @@ export function Customers() {
         />
       )}
       {anonymizing && (
-        <ConfirmModal
-          title="Anonimizar cliente"
-          description={`${anonymizing.debt > 0 ? `${anonymizing.name} todavía debe ${formatMoney(anonymizing.debt)} (crédito o contraentrega): no se puede anonimizar hasta que salde la deuda. ` : ""}Se eliminarán los datos personales de ${anonymizing.name}: nombre, teléfono, correo, cédula/RNC, notas, fotos de comprobantes y su nombre en motivos, referencias, bitácora y avisos pendientes. Las ventas y sus montos se conservarán. Los avisos que ya llegaron a Telegram y las copias de seguridad se eliminan al vencer su plazo. Esta acción no se puede deshacer.`}
-          confirmLabel="Anonimizar"
+        <ConfirmModal english={en}
+          title={ot("Anonimizar cliente")}
+          description={
+            (anonymizing.debt > 0
+              ? `${anonymizing.name}${ot(" todavía debe ")}${formatMoney(anonymizing.debt)}${ot(" (crédito o contraentrega): no se puede anonimizar hasta que salde la deuda. ")}`
+              : "") + customerAnonymizationText(en, anonymizing.name)
+          }
+          confirmLabel={ot("Anonimizar")}
           onClose={() => setAnonymizing(null)}
           onConfirm={async (reason) => {
             await post(`/customers/${anonymizing.id}/anonymize`, {
@@ -2698,7 +2716,7 @@ export function Customers() {
               requestRef: `APP-${new Date().toISOString()}`,
             });
             await client.invalidateQueries({ queryKey: ["customers"] });
-            toast("Cliente anonimizado.");
+            toast(ot("Cliente anonimizado."));
           }}
         />
       )}
