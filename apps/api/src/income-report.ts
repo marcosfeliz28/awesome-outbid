@@ -180,8 +180,12 @@ const labels = [
   "Vendido neto",
 ];
 const amount = (value: unknown) => Number(value ?? 0).toFixed(2);
-function csvCell(value: unknown) {
-  const s = String(value ?? "");
+export function csvCell(value: unknown) {
+  let s = String(value ?? "");
+  // B1 (auditoría 19-nov): Excel ejecuta como fórmula el texto que empieza con
+  // = + - @ tab o retorno (referencia o banco escritos en caja); los importes
+  // negativos quedan como número.
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s;
   return /[",\r\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 function csvLine(values: unknown[]) {
