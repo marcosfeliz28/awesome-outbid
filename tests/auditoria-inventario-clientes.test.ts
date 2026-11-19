@@ -176,6 +176,17 @@ describe("INV-010 · la lista de stock no incluye servicios", () => {
   });
 });
 
+// INV-009: «por revisar» dice cuántas son sin existencias y cuántas con stock
+// bajo, para que cuadre con las tarjetas del resumen en cualquier almacén.
+describe("INV-009 · alertas de stock explican la suma", () => {
+  it("separa sin existencias y stock bajo", async () => {
+    const { readFileSync } = await import("node:fs");
+    const s = readFileSync("apps/web/src/InventoryAlerts.tsx", "utf8");
+    expect(s).toContain('"sin existencias"');
+    expect(s).toContain('"con stock bajo"');
+  });
+});
+
 // UC-24: el buscador de clientes ignora acentos y mayúsculas.
 describe("UC-24 · búsqueda sin acentos ni mayúsculas", () => {
   it("«ramirez» encuentra «Ramírez» y «josé» encuentra «Jose»", async () => {
