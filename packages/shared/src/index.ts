@@ -1,5 +1,9 @@
 import Decimal from "decimal.js";
 import { z } from "zod";
+// zod 4 prueba `new Function` (JIT) al validar; el contenedor de escritorio y la
+// web con política CSP sin `unsafe-eval` lo registran como bloqueo. En el
+// navegador se valida sin JIT (más lento solo en esquemas enormes).
+if (typeof window !== "undefined") z.config({ jitless: true });
 // La API usa esta misma instancia de zod. Con la API compilada (CommonJS) un
 // import directo de "zod" cargaría otra copia y sus errores no se reconocerían
 // (R4-08).
