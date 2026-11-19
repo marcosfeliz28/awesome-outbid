@@ -37,9 +37,8 @@ describe("M3 · el cambio de usuario con PIN exitoso queda en la bitácora", () 
     role: { name: "seller", permissions: ["sale:write"] },
   };
   const setup = async () => {
-    const { AuthController, passwordHash } = await import(
-      "../apps/api/src/auth"
-    );
+    const { AuthController, passwordHash } =
+      await import("../apps/api/src/auth");
     target.pinHash ||= await passwordHash("482913");
     const logs: any[] = [];
     const db: any = {
@@ -118,5 +117,75 @@ describe("B3 · el pago a proveedor exige equipo aprobado", () => {
         AdminController.prototype.supplierPayment,
       ),
     ).toBe(true);
+  });
+});
+
+describe("B8 · escrituras de configuración dejan rastro en la bitácora", () => {
+  const ID = "33333333-3333-4333-8333-333333333333";
+  const manager = { ...actor, role: "manager", permissions: ["*"] };
+  const fakeDb = (extra: Record<string, any> = {}) => {
+    const logs: any[] = [];
+    const row = (args: any) => ({ id: ID, ...(args.data ?? {}) });
+    const db: any = {
+      logs,
+      auditLog: { create: async (args: any) => logs.push(args.data) },
+      supplier: { create: async (a: any) => row(a) },
+      expenseCategory: {
+        create: async (a: any) => row(a),
+        findUniqueOrThrow: async () => ({ id: ID, monthlyBudget: 100 }),
+        update: async (a: any) => row(a),
+      },
+      brand: { create: async (a: any) => row(a) },
+      ...extra,
+    };
+    return db;
+  };
+  it("POST /suppliers", async () => {
+    const { AdminController } = await import("../apps/api/src/admin");
+    const db = fakeDb();
+    await new AdminController(db).supplier({ name: "Proveedor X" }, manager);
+    expect(db.logs).toContainEqual(
+      expect.objectContaining({ action: "create", entity: "supplier" }),
+    );
+  });
+  it("POST y PATCH /expense-categories", async () => {
+    const { AdminController } = await import("../apps/api/src/admin");
+    const db = fakeDb();
+    const c = new AdminController(db) as any;
+    await c.expenseCategory({ name: "Luz", monthlyBudget: 500 }, manager);
+    await c.budget(ID, { monthlyBudget: 900 }, manager);
+    expect(db.logs.map((l: any) => [l.action, l.entity])).toEqual([
+      ["create", "expense_category"],
+      ["update", "expense_category"],
+    ]);
+    expect(db.logs[1]).toMatchObject({
+      before: { monthlyBudget: 100 },
+      after: { monthlyBudget: 900 },
+    });
+  });
+  it("POST /brands", async () => {
+    const { CatalogController } = await import("../apps/api/src/catalog");
+    const db = fakeDb();
+    await (new CatalogController(db) as any).brand({ name: "Marca" }, manager);
+    expect(db.logs).toContainEqual(
+      expect.objectContaining({ action: "create", entity: "brand" }),
+    );
+  });
+  it("POST /inventory/counts", async () => {
+    const { InventoryController } = await import("../apps/api/src/inventory");
+    const db = fakeDb({
+      warehouse: {
+        findUnique: async () => ({ id: "w1", sellable: true }),
+      },
+      variant: { findFirstOrThrow: async () => ({ id: ID, stock: 4 }) },
+      inventoryCount: { create: async (a: any) => ({ id: ID, ...a.data }) },
+    });
+    await new InventoryController(db).count(
+      { items: [{ variantId: ID, counted: 3 }] },
+      manager,
+    );
+    expect(db.logs).toContainEqual(
+      expect.objectContaining({ action: "create", entity: "count" }),
+    );
   });
 });

@@ -578,14 +578,17 @@ export class AdminController {
   }
   @Post("suppliers")
   @Permit("purchase:write")
-  supplier(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    return this.db.supplier.create({
+  async supplier(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    const row = await this.db.supplier.create({
       data: {
         ...parse(supplierSchema, body),
         createdBy: actor.id,
         branchId: actor.branchId,
       },
     });
+    // B8 (auditoría 19-nov): altas y cambios de configuración en la bitácora.
+    await audit(this.db, actor, "create", "supplier", row.id, undefined, row);
+    return row;
   }
   @Post("supplier-payments")
   @Permit("purchase:write")
@@ -649,24 +652,46 @@ export class AdminController {
   @Get("expense-categories") @Permit("expense:write") expenseCategories() {
     return this.db.expenseCategory.findMany({ orderBy: { name: "asc" } });
   }
-  @Post("expense-categories") @Permit("expense:write") expenseCategory(
+  @Post("expense-categories") @Permit("expense:write") async expenseCategory(
     @Body() body: unknown,
+    @CurrentUser() actor: Actor,
   ) {
-    return this.db.expenseCategory.create({
+    const row = await this.db.expenseCategory.create({
       data: parse(
         z.object({ name: z.string().min(2), monthlyBudget: amount }),
         body,
       ),
     });
+    await audit(
+      this.db,
+      actor,
+      "create",
+      "expense_category",
+      row.id,
+      undefined,
+      row,
+    );
+    return row;
   }
-  @Patch("expense-categories/:id") @Permit("expense:write") budget(
+  @Patch("expense-categories/:id") @Permit("expense:write") async budget(
     @Param("id") id: string,
     @Body() body: unknown,
+    @CurrentUser() actor: Actor,
   ) {
-    return this.db.expenseCategory.update({
-      where: { id: parse(uuid, id) },
-      data: parse(z.object({ monthlyBudget: amount }), body),
-    });
+    const where = { id: parse(uuid, id) };
+    const data = parse(z.object({ monthlyBudget: amount }), body);
+    const before = await this.db.expenseCategory.findUniqueOrThrow({ where });
+    const row = await this.db.expenseCategory.update({ where, data });
+    await audit(
+      this.db,
+      actor,
+      "update",
+      "expense_category",
+      row.id,
+      { monthlyBudget: before.monthlyBudget },
+      data,
+    );
+    return row;
   }
   @Get("expenses") @Permit("expense:write") expenses(
     @CurrentUser() actor: Actor,

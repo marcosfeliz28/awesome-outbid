@@ -265,10 +265,13 @@ export class CatalogController {
   }
   @Post("brands")
   @Permit("catalog:write")
-  brand(@Body() body: unknown) {
-    return this.db.brand.create({
+  async brand(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    const row = await this.db.brand.create({
       data: parse(z.object({ name: z.string().min(2).max(80) }), body),
     });
+    // B8 (auditoría 19-nov).
+    await audit(this.db, actor, "create", "brand", row.id, undefined, row);
+    return row;
   }
   @Get("products")
   @Permit("catalog:read")
