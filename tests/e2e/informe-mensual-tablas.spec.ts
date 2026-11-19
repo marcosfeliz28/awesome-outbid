@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./apoyo";
 const line = {
   name: "Proteína aislada de suero premium — sabor chocolate oscuro de edición limitada",
   sku: "DEMO-01",
