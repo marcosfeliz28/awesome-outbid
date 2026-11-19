@@ -78,3 +78,42 @@ describe("Hallazgo 4 · cuadre tras mover un cobro de caja", () => {
     expect(report.cashSalesDetail.total).toBe(2000);
   });
 });
+
+// Hallazgo 17: verificar, des-verificar, corregir y rechazar transferencias
+// usan el plazo largo de las operaciones de dinero (no los 5 s por defecto).
+describe("Hallazgo 17 · transferencias con plazo de dinero", () => {
+  it("las cuatro operaciones pasan MONEY_TRANSACTION", async () => {
+    const { SalesController, MONEY_TRANSACTION } =
+      await import("../apps/api/src/sales");
+    const seen: unknown[] = [];
+    const db: any = {
+      $transaction: async (_fn: unknown, options: unknown) => {
+        seen.push(options);
+        return { ok: true };
+      },
+    };
+    const sales = new SalesController(db);
+    const id = "8f6c1a2e-1b2c-4d3e-8f4a-5b6c7d8e9f00";
+    const reason = { reason: "Prueba de plazo" };
+    await sales.verify(id, actor);
+    await sales.unverify(id, reason, actor);
+    await sales.correctTransfer(
+      id,
+      {
+        ...reason,
+        bank: "Popular",
+        reference: "123",
+        expectedBank: null,
+        expectedReference: null,
+      },
+      actor,
+    );
+    await sales.reject(id, reason, actor);
+    expect(seen).toEqual([
+      MONEY_TRANSACTION,
+      MONEY_TRANSACTION,
+      MONEY_TRANSACTION,
+      MONEY_TRANSACTION,
+    ]);
+  });
+});

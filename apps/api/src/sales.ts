@@ -3182,7 +3182,7 @@ export class SalesController {
   @RequireTerminal()
   @Permit("*")
   async verify(@Param("id") id: string, @CurrentUser() actor: Actor) {
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: parse(uuid, id),
@@ -3236,7 +3236,7 @@ export class SalesController {
         status: "ok",
       });
       return { ok: true };
-    });
+    }, MONEY_TRANSACTION);
   }
   // 29-oct (caso FS-288): una transferencia de VENTA que se verificó contra el
   // depósito equivocado vuelve a «por verificar». Solo administración, con
@@ -3252,7 +3252,7 @@ export class SalesController {
   ) {
     const data = parse(z.object({ reason }), body);
     const paymentId = parse(uuid, id);
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: paymentId,
@@ -3494,7 +3494,7 @@ export class SalesController {
       body,
     );
     const paymentId = parse(uuid, id);
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: paymentId,
@@ -3539,7 +3539,7 @@ export class SalesController {
         },
       );
       return paymentSummary(updated);
-    });
+    }, MONEY_TRANSACTION);
   }
   // Un abono por transferencia que nunca llegó se rechaza: no descuenta la
   // deuda ni entra a la caja, y deja de bloquear devoluciones y abonos de la
@@ -3557,7 +3557,7 @@ export class SalesController {
     @CurrentUser() actor: Actor,
   ) {
     const data = parse(z.object({ reason }), body);
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: parse(uuid, id),
@@ -3658,7 +3658,7 @@ export class SalesController {
         ...(saleDebt === undefined ? {} : { saleCreditBalance: saleDebt }),
       });
       return { ok: true };
-    });
+    }, MONEY_TRANSACTION);
   }
   @Post("returns")
   @RequireTerminal()
