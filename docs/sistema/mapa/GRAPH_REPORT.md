@@ -2058,7 +2058,7 @@ Nodes (3): Inventario real: 616 productos y 3158 unidades, Decision 34: importar
 
 ### Community 373 - "Community 373"
 Cohesion: 0.40
-Nodes (6): Calidad de pruebas y de codigo (3e5521c), Bus factor: sistema operado por asistentes de IA, CI en rojo en 9 de 12 corridas, close_difference se audita en todos los cierres (cash.ts:878), Prueba D-05 no hermetica y no determinista, Pruebas que leen codigo fuente como texto
+Nodes (6): Calidad de pruebas y de codigo (3e5521c), Bus factor: sistema operado por asistentes de IA, CI en rojo en 9 de 12 corridas, close_difference se audita en todos los cierres (cash.ts:1408), Prueba D-05 no hermetica y no determinista, Pruebas que leen codigo fuente como texto
 
 ### Community 374 - "Community 374"
 Cohesion: 0.33

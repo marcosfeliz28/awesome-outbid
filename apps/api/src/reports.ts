@@ -110,11 +110,16 @@ export function pdfLines(rows: Record<string, unknown>[], withTotal: boolean) {
   return lines;
 }
 
+// Acepta fecha sola («2026-11-19», se completa con el día entero en UTC-4) o
+// fecha con hora («2026-11-19T00:00:00-04:00», se usa tal cual): Caja manda la
+// segunda forma y pegarle otra hora la volvía inválida (auditoría A1).
+const withTime = (value: string, time: string) =>
+  new Date(value.includes("T") ? value : value + time);
 export function dateRange(query: Record<string, string>) {
   const from = query.from
-    ? new Date(query.from + "T00:00:00-04:00")
+    ? withTime(query.from, "T00:00:00-04:00")
     : new Date(Date.now() - 30 * 86400000);
-  const to = query.to ? new Date(query.to + "T23:59:59.999-04:00") : new Date();
+  const to = query.to ? withTime(query.to, "T23:59:59.999-04:00") : new Date();
   if (!Number.isFinite(+from) || !Number.isFinite(+to) || from > to)
     bad("Rango de fechas inválido.");
   return { gte: from, lte: to };

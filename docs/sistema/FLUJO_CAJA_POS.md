@@ -9,18 +9,18 @@ Resumen de pantallas que usa el cajero: **Caja** (abrir y cerrar) y **Punto de v
 ## 0. Antes de empezar
 
 - Entrar: pantalla de acceso con campo «Tu usuario o correo» y «Tu contraseña», botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:485`, `:512`). La contraseña temporal se cambia al entrar (`apps/web/src/App.tsx:568`).
-- El equipo (computadora) debe estar **aprobado**. Si no, sale «Este equipo necesita aprobación … un gerente debe aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos» (`apps/web/src/realtime.tsx:515-518`). Sin equipo aprobado no se puede vender ni mover mercancía (`apps/api/src/common.ts` decorador `RequireTerminal`, usado en `apps/api/src/sales.ts:1528` y `apps/api/src/cash.ts:838`).
+- El equipo (computadora) debe estar **aprobado**. Si no, sale «Este equipo necesita aprobación … un gerente debe aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos» (`apps/web/src/realtime.tsx:515-518`). Sin equipo aprobado no se puede vender ni mover mercancía (`apps/api/src/common.ts` decorador `RequireTerminal`, usado en `apps/api/src/sales.ts:1528` y `apps/api/src/cash.ts:885`).
 - Cambiar de cajera sin salir: menú de la cuenta › **«Cambiar de usuario con PIN»** (`apps/web/src/App.tsx:1269`). No se puede cambiar con PIN a alguien con más permisos (`apps/api/src/auth.ts:845-859`).
 
 ## 1. Abrir la caja
 
 1. Menú lateral › **Caja** (`apps/web/src/App.tsx:262`).
 2. Si no hay caja abierta se ve el título «Una caja que siempre cuadra» y el botón **«Abrir caja»** (`apps/web/src/Management.tsx:1769-1776`), o en el centro **«Abrir mi caja»** con el texto «Tu día empieza con una caja abierta» (`:1740-1744`).
-3. Se abre la ventana **«Abrir mi caja»** (`:2017`). Campo **«Efectivo inicial»** (`:2022`). El sistema sugiere lo que la misma persona dejó en su último cierre: «Sugerido: lo que dejaste en tu último cierre.» (`:2025-2028`, API `apps/api/src/cash.ts:1433-1468`).
-4. Si el fondo es **menor** que lo sugerido aparece **«Nota si el fondo es menor que el sugerido»** y es obligatoria; no pide PIN (`apps/web/src/Management.tsx:2130-2140`; `apps/api/src/cash.ts:868-885`).
-5. Se guarda con `POST /cash-sessions/open` (`apps/api/src/cash.ts:837-947`). Requiere permiso `cash:write`. Una persona solo puede tener **una caja abierta**; si pulsa «Abrir» otra vez devuelve la misma (`apps/api/src/cash.ts:893-908`). La caja es de quien la abre, no del equipo.
+3. Se abre la ventana **«Abrir mi caja»** (`:2017`). Campo **«Efectivo inicial»** (`:2022`). El sistema sugiere lo que la misma persona dejó en su último cierre: «Sugerido: lo que dejaste en tu último cierre.» (`:2025-2028`, API `apps/api/src/cash.ts:1485-1520`).
+4. Si el fondo es **menor** que lo sugerido aparece **«Nota si el fondo es menor que el sugerido»** y es obligatoria; no pide PIN (`apps/web/src/Management.tsx:2130-2140`; `apps/api/src/cash.ts:906-934`). La caja abre igual, pero queda una alerta alta **«Fondo de apertura menor»** (`opening_shortfall`) con el faltante, quién abrió y la nota, que gerencia ve en Avisos hasta resolverla (`apps/api/src/cash.ts:280-306`).
+5. Se guarda con `POST /cash-sessions/open` (`apps/api/src/cash.ts:884-994`). Requiere permiso `cash:write`. Una persona solo puede tener **una caja abierta**; si pulsa «Abrir» otra vez devuelve la misma (`apps/api/src/cash.ts:941-956`). La caja es de quien la abre, no del equipo.
 6. En el Punto de venta el estado pasa de «Caja sin abrir» a **«Caja abierta»** (`apps/web/src/POS.tsx:1111-1115`). Si se intenta cobrar sin caja: «Abre tu caja antes de cobrar.» (`:523`); además aparece el enlace **«Abre tu caja para comenzar»** que lleva a Caja (`:1218-1221`).
-7. Si la caja quedó abierta en **otro equipo**: «Tu caja está abierta en «…». Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.» con el botón **«Trasladar caja aquí»** y la ventana «Trasladar caja a este equipo» (botón **«Trasladar caja»**; pide PIN de gerente según el caso) (`apps/web/src/realtime.tsx:631-670`; API `apps/api/src/cash.ts:1061-1111`).
+7. Si la caja quedó abierta en **otro equipo**: «Tu caja está abierta en «…». Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.» con el botón **«Trasladar caja aquí»** y la ventana «Trasladar caja a este equipo» (botón **«Trasladar caja»**; pide PIN de gerente según el caso) (`apps/web/src/realtime.tsx:631-670`; API `apps/api/src/cash.ts:1111-1161`).
 
 Caja ciega: mientras está abierta, quien no tiene `profit:read` ni `sale:manage` no ve los montos esperados. El texto: «Arqueo ciego activo…» (`apps/web/src/managementMessages.ts:41-44`, `apps/web/src/Management.tsx:1830-1835`; regla `apps/api/src/common.ts:70-72`).
 
@@ -138,8 +138,8 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 
 ## 9. Movimientos de efectivo durante el día
 
-- Caja › **«Movimiento»** (`Management.tsx:1787-1791`). Ventana «Movimiento de efectivo»: Tipo («Entrada de efectivo» / «Salida de efectivo»), Monto, Motivo, y «PIN del gerente» (solo para salidas que superen el límite del turno; RD$ 1,000 por defecto: `apps/api/src/cash.ts:1010`, `apps/api/src/admin.ts:147-150`) (`Management.tsx:2158-2202`).
-- Una salida nunca deja el efectivo por debajo de cero: «No hay suficiente efectivo en caja.» (`cash.ts:1036-1041`).
+- Caja › **«Movimiento»** (`Management.tsx:1787-1791`). Ventana «Movimiento de efectivo»: Tipo («Entrada de efectivo» / «Salida de efectivo»), Monto, Motivo, y «PIN del gerente» (solo para salidas que superen el límite del turno; RD$ 1,000 por defecto: `apps/api/src/cash.ts:1060`, `apps/api/src/admin.ts:147-150`) (`Management.tsx:2158-2202`).
+- Una salida nunca deja el efectivo por debajo de cero: «No hay suficiente efectivo en caja.» (`cash.ts:1086-1091`).
 
 ## 10. Cierre ciego y cuadre
 
@@ -148,19 +148,19 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
 3. Texto: «Conteo ciego: declara lo que realmente tienes. La comparación con lo esperado aparece después de cerrar.» (`apps/web/src/managementMessages.ts:37-40`).
 4. Se llena (`Tienda.tsx:345-464`):
    - **«Detalles de monedas»**: cantidad de cada denominación (1, 5, 10, 20, 25, 50, 100, 200, 500, 1,000, 2,000) → «Efectivo contado (Sub-total)» (`packages/shared/src/index.ts:650`).
-   - **«Vale de caja»** (solo si ve esperados): exige nota y PIN de **otro** gerente; genera alerta alta (`apps/api/src/cash.ts:1139-1165`, `:1366-1385`).
+   - **«Vale de caja»** (solo si ve esperados): exige nota y PIN de **otro** gerente; genera alerta alta (`apps/api/src/cash.ts:1189-1215`, `:1418-1437`).
    - **«Dólares US$»** / **«Euros €»** si hay tasa en Configuración.
    - **«Tarjeta declarada»** (obligatorio): el total que imprimió el verifón al cerrar el lote.
-   - **«Número de lote del verifón»**: obligatorio si hubo cobros con tarjeta (`cash.ts:1196-1210`).
+   - **«Número de lote del verifón»**: obligatorio si hubo cobros con tarjeta (`cash.ts:1246-1260`).
    - **«Entregado»** (efectivo que se le entrega a la dueña) y **«Dejado en caja»** (calculado; será el fondo sugerido de la próxima apertura) (`packages/shared/src/index.ts:688-701`).
    - **«Notas del cierre»**, y la casilla obligatoria «Confirmo que conté efectivo y tarjeta. Las transferencias las suma el sistema.»
-5. Botón **«Cerrar caja e imprimir cuadre»** (`Tienda.tsx:475-478`). `POST /cash-sessions/:id/close` (`cash.ts:1112`).
+5. Botón **«Cerrar caja e imprimir cuadre»** (`Tienda.tsx:475-478`). `POST /cash-sessions/:id/close` (`cash.ts:1162`).
 6. Reglas del cierre en el servidor:
-   - Las **transferencias las suma el sistema**, no la cajera (`cash.ts:1213`).
-   - Si tarjeta, efectivo o dólares **no cuadran** y quien cierra es cajera (o gerente cerrando SU caja, salvo `*`): no cierra sin el **PIN de otra persona con permiso** y una **justificación del descuadre** (mín. 10 letras). El mensaje no dice cuánto falta ni sobra (`cash.ts:1248-1300`). Mensajes: «El total de tarjeta no coincide con el sistema…», «La caja no cuadra con el sistema. Vuelve a contar…» (`:1268-1274`).
-   - Desde el **2.º intento** que no cuadra, todo cierre pide justificación y PIN: «Ya hubo 2 intentos de cierre que no cuadraron…» (`cash.ts:46-48`, `:1254-1268`).
-   - Diferencia mayor a «cashDifferenceLimit» (RD$ 100 por defecto) → exige nota y crea alerta «cash_difference» (`cash.ts:203-226`, `:1390-1410`).
-   - Un gerente/administración puede cerrar la caja de otra persona («cierre de emergencia»; el cuadre muestra a ambos) (`Tienda.tsx:332-339`; `cash.ts:1335-1350`).
+   - Las **transferencias las suma el sistema**, no la cajera (`cash.ts:1233`). Si después del cierre se verifica un abono por transferencia o se rechaza una transferencia, la transferencia contada sigue a la esperada y su diferencia queda en 0; efectivo y tarjeta no se tocan. Los cierres anteriores al 16-oct (cuando la cajera aún escribía la transferencia) no se pisan (`cash.ts:227-236`).
+   - Si tarjeta, efectivo o dólares **no cuadran** y quien cierra es cajera (o gerente cerrando SU caja, salvo `*`): no cierra sin el **PIN de otra persona con permiso** y una **justificación del descuadre** (mín. 10 letras). El mensaje no dice cuánto falta ni sobra (`cash.ts:1300-1352`). Mensajes: «El total de tarjeta no coincide con el sistema…», «La caja no cuadra con el sistema. Vuelve a contar…» (`:1320-1326`).
+   - Desde el **2.º intento** que no cuadra, todo cierre pide justificación y PIN: «Ya hubo 2 intentos de cierre que no cuadraron…» (`cash.ts:46-48`, `:1306-1320`).
+   - Diferencia mayor a «cashDifferenceLimit» (RD$ 100 por defecto) → exige nota y crea alerta «cash_difference» (`cash.ts:203-226`, `:1442-1462`).
+   - Un gerente/administración puede cerrar la caja de otra persona («cierre de emergencia»; el cuadre muestra a ambos) (`Tienda.tsx:332-339`; `cash.ts:1387-1402`).
    - No se cierra si hay ventas sin sincronizar en el equipo (`Tienda.tsx:250-259`).
 7. Después de cerrar se imprime solo el **Cuadre** (`Management.tsx:2203-2213`, `apps/web/src/Tienda.tsx:79-84`), y se pregunta «¿También deseas imprimir los productos vendidos de esta caja?» con **«Sí, imprimir productos»** / **«No»** (`Tienda.tsx:98-117`). Otros impresos: «Productos vendidos de esta caja», «Facturas por forma de pago» (`Tienda.tsx:118-144`). Desde el historial: botones «Cuadre», «Venta diaria», «Por forma de pago» (`Tienda.tsx:486-516`).
 8. Cómo se calcula lo esperado en efectivo: apertura + pagos en efectivo − cambio + entradas − salidas − reembolsos en efectivo; tarjeta y transferencia aparte; transferencias rechazadas no cuentan; los abonos solo cuentan una vez aplicados (`apps/api/src/cash.ts:55-113`).

@@ -153,6 +153,7 @@ export default defineConfig({
       "tests/config-ai-drive-language.test.ts",
       "tests/store-settings-language.test.ts",
       "tests/config-rates-survey-language.test.ts",
+      "tests/auditoria-lote-a.test.ts",
     ],
   },
 });
