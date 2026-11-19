@@ -6516,6 +6516,7 @@ td strong {
   --day-bg: #052e22;
 }
 [data-theme="dark"] .day-other {
+  --day-accent: #fbbf24;
   --day-bg: #3a2a07;
 }
 

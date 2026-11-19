@@ -544,6 +544,14 @@ describe("Resumen · tarjetas de ventas por día", () => {
     const today = variables(".day-today");
     meets("Hoy en claro", today["--day-accent"], today["--day-bg"], 4.5);
   });
+
+  it("DD-10: mantiene la fecha y ganancia del día elegido legibles en oscuro", () => {
+    const other = {
+      ...variables(".day-other"),
+      ...variables('[data-theme="dark"] .day-other'),
+    };
+    meets("Otro día en oscuro", other["--day-accent"], other["--day-bg"], 4.5);
+  });
 });
 
 describe("G11 · listener de teclado con modal", () => {
