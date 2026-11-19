@@ -1232,7 +1232,7 @@ function GroupTable({ title, rows }: { title: string; rows: Group[] }) {
   return (
     <div className="panel">
       <h2>{title}</h2>
-      <div className="table-wrap" tabIndex={0}>
+      <div className="table-wrap gv-table-wrap" tabIndex={0}>
         <table className="gv-table">
           <tbody>
             {rows.map((r) => (
@@ -1297,7 +1297,7 @@ function Reports() {
             <GroupTable title="Por empleada" rows={r.income.byEmployee} />
             <div className="panel">
               <h2>Ocupación y pendientes por curso</h2>
-              <div className="table-wrap" tabIndex={0}>
+              <div className="table-wrap gv-table-wrap" tabIndex={0}>
                 <table className="gv-table">
                   <thead>
                     <tr>
@@ -1330,7 +1330,7 @@ function Reports() {
             </div>
             <div className="panel">
               <h2>Pendientes por clienta</h2>
-              <div className="table-wrap" tabIndex={0}>
+              <div className="table-wrap gv-table-wrap" tabIndex={0}>
                 <table className="gv-table">
                   <tbody>
                     {r.pendingByClient.map((e: any) => (

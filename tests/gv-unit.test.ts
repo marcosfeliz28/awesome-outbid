@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   assertGvBank,
@@ -75,4 +76,12 @@ describe("GV · banco de la lista", () => {
       assertGvBank({ genesis: [], macgen: [] }, "Libre"),
     ).not.toThrow();
   });
+});
+
+it("GV-17: reportes móviles indican que las tablas se pueden desplazar", () => {
+  const view = readFileSync("apps/web/src/Gv.tsx", "utf8");
+  const css = readFileSync("apps/web/src/gv.css", "utf8");
+  expect(view.match(/table-wrap gv-table-wrap/g)?.length).toBeGreaterThanOrEqual(3);
+  expect(css).toMatch(/\.gv-reports \.gv-table-wrap::after\s*\{[\s\S]*?content:\s*"↔"/);
+  expect(css).toMatch(/\.gv-reports \.gv-table-wrap\s*\{[\s\S]*?scrollbar-width:\s*thin/);
 });

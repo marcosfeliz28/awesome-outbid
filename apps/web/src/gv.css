@@ -56,6 +56,30 @@
   gap: 12px;
 }
 @media (max-width: 640px) {
+  /* GV-17: las tablas conservan el desplazamiento horizontal, pero ahora
+     muestran un indicador visual en el borde para que no parezcan recortadas. */
+  .gv-reports .gv-table-wrap {
+    position: relative;
+    padding-bottom: 18px;
+    scrollbar-color: var(--primary) var(--surface);
+    scrollbar-width: thin;
+  }
+  .gv-reports .gv-table-wrap::after {
+    content: "↔";
+    position: absolute;
+    right: 8px;
+    bottom: 1px;
+    min-width: 28px;
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--primary);
+    background: var(--surface);
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    pointer-events: none;
+  }
   .gv-form.form-grid {
     grid-template-columns: 1fr;
   }
