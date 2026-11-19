@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · PRODUCTO-REPORTES · tabla legible
+
+- **Orden y base:** leí la nueva orden de `origin/nexora-cloud` `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`. Como los helpers y la API indicados todavía no estaban en esa rama, rebasé la rama propia sobre el lote publicado `origin/claude/publicar-lote5-19nov` `02cb36b738ffe3415889e3618e2a3e0df95297c8`; no mezclé nada en `nexora-cloud`.
+- **Cambio de pantalla:** `Management.tsx` usa `reportDisplayRows`, `reportColumnVisible` y `reportCellText`. La tabla traduce los códigos visibles, oculta `Referencia` en `returns-discounts` y conserva la nueva columna `Factura`. No modifica JSON, exportaciones, API, base, permisos ni cifras.
+- **Regresión rojo→verde:** `tests/reports-screen-presentation.test.ts` falló primero porque `Management.tsx` no contenía `reportCellText`; después pasó. Junto con `tests/reportes-textos.test.ts`: **2 archivos, 9 pruebas verdes**. La primera corrida conjunta detectó dependencias locales antiguas (`TypeError: z.guid is not a function`); `pnpm install --frozen-lockfile` sincronizó exactamente el lockfile y la repetición quedó verde.
+- **Evidencia visual:** 16 capturas antes/después en `docs/auditoria-ui/capturas/PRODUCTO-REPORTES/`: 1440×900 y 390×844, claro/oscuro, ES/EN. En el antes se ven `return`, `discount_approved` y `Referencia`; en el después se ven `Devolución`, `Descuento aprobado`, `Factura` y no `Referencia`.
+- **Autoauditoría:** inspeccioné escritorio claro y móvil oscuro completos; `Factura` es legible y las tarjetas móviles no exponen el identificador interno. El diff funcional se limita a la presentación de Reportes y su prueba. La preservación reversible de `Management.tsx`, las citas documentales y las demás presentaciones protegidas quedaron verdes. No tocó dinero, precios, cálculos, API, base, Render, producción ni credenciales.
+- **Control local final:** el foco pasó **7 archivos / 45 pruebas**. `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **159 archivos / 1,327 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `pnpm docs:citas` revisó 559 citas con cero movidas y cero perdidas; `git diff --check` pasó.
+- **Publicación/CI:** pendiente junto con el resto de la rama, porque la orden exige un solo push final. No se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
 ## 2026-11-19 · auditoría UI · continuación de pantallas protegidas
 
 - **Referencia actualizada:** `origin/nexora-cloud` quedó en `b9589bbb1dc4b3d426ce393445acb7c508eedca4`. La orden vigente sigue siendo `docs/coordinacion/reparto-auditoria-19nov/ORDEN_CHATGPT_PRODUCTO_19NOV.md` en `origin/claude/reparto-auditoria-19nov`; asigna a esta rama los 231 hallazgos de presentación y cuatro puntos protegidos. La rama local es `chatgpt-nube/auditoria-ui-19nov`; no se mezcló ni publicó.

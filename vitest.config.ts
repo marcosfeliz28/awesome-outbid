@@ -45,6 +45,7 @@ export default defineConfig({
       "tests/credit-allocation.test.ts",
       "tests/income-day.test.ts",
       "tests/reportes-textos.test.ts",
+      "tests/reports-screen-presentation.test.ts",
       "tests/credit-reasons.test.ts",
       "tests/formal-period.test.ts",
       "tests/formal-pdf.test.ts",

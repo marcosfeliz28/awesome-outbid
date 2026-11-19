@@ -46,7 +46,13 @@ import {
   ArrowDownToLine,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
-import { formatMoney, can } from "@fitstore/shared";
+import {
+  formatMoney,
+  can,
+  reportCellText,
+  reportColumnVisible,
+  reportDisplayRows,
+} from "@fitstore/shared";
 import { marginHint } from "./productMargin";
 import {
   api,
@@ -2996,17 +3002,22 @@ export function Reports() {
     enabled: report !== "income-by-day" && report !== "formal",
   });
   const rows = query.data?.rows || [];
+  const displayRows = reportDisplayRows(report, rows);
   const total: number = query.data?.total ?? rows.length;
   const limit: number = query.data?.limit ?? (rows.length || 1);
   const pages = Math.max(1, Math.ceil(total / limit));
   const columns = Object.keys(rows[0] || {})
-    .filter((k) => k !== "class")
+    .filter((k) => k !== "class" && reportColumnVisible(report, k))
     .map((key) => ({
       label: reportLabel(key.replace(/_/g, " "), en),
-      render: (row: any) =>
-        typeof row[key] === "number"
-          ? row[key].toLocaleString(en ? "en-US" : "es-DO", { maximumFractionDigits: 2 })
-          : String(row[key] ?? "—"),
+      render: (row: any) => {
+        const value = reportCellText(report, key, row[key]);
+        return typeof value === "number"
+          ? value.toLocaleString(en ? "en-US" : "es-DO", {
+              maximumFractionDigits: 2,
+            })
+          : String(value ?? "—");
+      },
     }));
   return (
     <PremiumWorkspace area="reports">
@@ -3184,7 +3195,7 @@ export function Reports() {
             <QueryState query={query} english={en}>
               <DataTable
                 english={en}
-                rows={rows}
+                rows={displayRows}
                 columns={columns}
                 empty={en ? "No data for this period" : "No hay datos para este per\u00edodo"}
                 emptyDescription={en ? "Try different dates or record a sale to view this report." : "Prueba otras fechas o registra una venta para consultar este reporte."}

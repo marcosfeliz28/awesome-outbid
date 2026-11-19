@@ -6,6 +6,25 @@ type Edit = { before: string; after: string };
 const ledger = JSON.parse(
   readFileSync("docs/auditoria-ui/IT-003_REVERSIBLE.json", "utf8"),
 ) as Record<It003File, Edit[]>;
+const reportsLedger = JSON.parse(
+  readFileSync(
+    "docs/auditoria-ui/PRODUCTO-REPORTES_REVERSIBLE.json",
+    "utf8",
+  ),
+) as Edit[];
+
+function reverseEdits(source: string, edits: Edit[], label: string) {
+  for (const edit of [...edits].reverse()) {
+    const occurrences = source.split(edit.after).length - 1;
+    if (occurrences !== 1) {
+      throw new Error(
+        `${label}: se esperaba una coincidencia reversible y hubo ${occurrences}`,
+      );
+    }
+    source = source.replace(edit.after, edit.before);
+  }
+  return source;
+}
 
 /**
  * Retira solamente la presentación ES/EN añadida por IT-003. Las pruebas de
@@ -13,14 +32,7 @@ const ledger = JSON.parse(
  * byte por byte, incluso cuando varias capas visuales conviven en el archivo.
  */
 export function reverseIt003(source: string, file: It003File) {
-  for (const edit of [...ledger[file]].reverse()) {
-    const occurrences = source.split(edit.after).length - 1;
-    if (occurrences !== 1) {
-      throw new Error(
-        `IT-003 ${file}: se esperaba una coincidencia reversible y hubo ${occurrences}`,
-      );
-    }
-    source = source.replace(edit.after, edit.before);
-  }
-  return source;
+  if (file === "Management")
+    source = reverseEdits(source, reportsLedger, "PRODUCTO-REPORTES");
+  return reverseEdits(source, ledger[file], `IT-003 ${file}`);
 }

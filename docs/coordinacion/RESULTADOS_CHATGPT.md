@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · PRODUCTO-REPORTES
+
+- Base de dependencia: `origin/claude/publicar-lote5-19nov` `02cb36b7`; rama propia `chatgpt-nube/auditoria-ui-19nov`, sin publicar todavía.
+- La tabla de Reportes ahora aplica los helpers compartidos: traduce códigos, oculta `Referencia` y conserva `Factura`. No cambia API, JSON, exportaciones ni cifras.
+- Regresión roja antes y verde después; control focal inicial: 2 archivos y 9 pruebas verdes. Evidencia: 16 PNG, 1440/390, claro/oscuro y ES/EN, en `docs/auditoria-ui/capturas/PRODUCTO-REPORTES/`.
+- El foco completo pasó 7 archivos/45 pruebas; `pnpm check` aprobó typecheck, lint, 159 archivos/1,327 pruebas (un archivo/10 pruebas omitidos) y builds web/API. Las 559 citas documentales quedaron sin pérdidas y `git diff --check` pasó.
+- Sin mezcla, push, despliegue ni acceso a Render, producción, base de tienda o credenciales. Los tres CI quedan para el único SHA final de la rama.
+
 ## 2026-11-19 · ChatGPT NUBE · auditoría UI de producto (avance)
 
 - Rama local sin publicar: `chatgpt-nube/auditoria-ui-19nov`; referencia remota leída: `origin/nexora-cloud` `b9589bbb1dc4b3d426ce393445acb7c508eedca4`.
