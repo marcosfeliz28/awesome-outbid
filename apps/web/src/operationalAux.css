@@ -325,3 +325,17 @@
   font-variant-numeric: tabular-nums;
   vertical-align: bottom;
 }
+
+/* On a narrow courier card, let the amount move below the invoice/date
+   before competing for the same line; the amount itself stays together. */
+@media (max-width: 480px) {
+  .operational-aux-courier
+    .reconciliation-row
+    .reconciliation-details
+    > strong {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+  }
+}

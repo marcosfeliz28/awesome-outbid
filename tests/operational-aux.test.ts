@@ -141,3 +141,13 @@ it("solo importes tienen nowrap; cifras excepcionales permiten desplazamiento", 
       'className="operational-aux-money"',
     );
 });
+
+it("Mensajeros permite bajar el importe completo a la línea siguiente en móvil", () => {
+  const css = source("operationalAux.css");
+  const block = css.match(
+    /@media \(max-width: 480px\) \{\s*\.operational-aux-courier\s+\.reconciliation-row\s*\.reconciliation-details\s*> strong\s*\{([^}]+)\}/,
+  )?.[1];
+  expect(block).toContain("display: flex");
+  expect(block).toContain("flex-wrap: wrap");
+  expect(block).not.toContain("white-space");
+});
