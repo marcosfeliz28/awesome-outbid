@@ -1,5 +1,7 @@
 // Reparar caja y cobros (19-nov-2026): pruebas de los hallazgos de la
 // auditoría de dinero y pantallas en caja, cobros y créditos.
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 // Hallazgo 4: el cuadre cuenta los cobros de venta por la caja del pago.
@@ -205,5 +207,24 @@ describe("Hallazgo 16 · caja de GV", () => {
       expectedCash: "0.00",
       difference: "500.00",
     });
+  });
+});
+
+// Pantallas (auditoría de pantallas 19-nov), comprobadas en el código fuente.
+const source = (file: string) =>
+  readFileSync(resolve("apps/web/src", file), "utf8");
+
+describe("P8 · cierre de caja: el cuadre que no carga no parece un cierre fallido", () => {
+  it("separa el cierre de la carga del cuadre y no deja cerrar dos veces", () => {
+    const tienda = source("Tienda.tsx");
+    const close = tienda.indexOf('"/close"');
+    const closedFlag = tienda.indexOf("closed = true;", close);
+    const cuadre = tienda.indexOf('"/cuadre"', close);
+    expect(closedFlag).toBeGreaterThan(close);
+    expect(closedFlag).toBeLessThan(cuadre);
+    expect(tienda).toContain(
+      "La caja quedó cerrada, pero no se pudo cargar el cuadre. Imprímelo desde Historial de cajas.",
+    );
+    expect(tienda).toContain("disabled={busy || closedWithoutCuadre}");
   });
 });
