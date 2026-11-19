@@ -238,3 +238,14 @@ describe("P11 · Créditos pendientes: el total avisa los montos ocultos", () =>
     expect(tienda).toContain("(sin contar ${hiddenCount} de cajas abiertas)");
   });
 });
+
+describe("P4 · Créditos por persona: el banco sale de la lista de Configuración", () => {
+  it("usa settings.transferAccounts en un select", () => {
+    const credit = source("CreditAccounts.tsx");
+    expect(credit).toContain("settings.data?.transferAccounts");
+    const bank = credit.indexOf("Banco donde cayó");
+    expect(credit.indexOf("<select", bank)).toBeLessThan(
+      credit.indexOf("<input", bank),
+    );
+  });
+});
