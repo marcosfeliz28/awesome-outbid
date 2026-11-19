@@ -92,6 +92,10 @@ export const OWNER_ONLY_ALERT_TYPES = [
   "gv_cash_open_night",
   "gv_day_no_close",
   "zero_cost_sale",
+  // B2 (auditoría 19-nov): traen la IP y avisan de un posible robo de cuenta;
+  // la gerencia no debe poder marcarlas como resueltas antes que la dueña.
+  "login_unapproved_device",
+  "account_locked",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,

@@ -75,3 +75,12 @@ describe("M3 · el cambio de usuario con PIN exitoso queda en la bitácora", () 
     expect(SECURITY_AUDIT_ACTIONS).toContain("pin_switch");
   });
 });
+
+describe("B2 · las alertas de seguridad de cuentas solo las ve la dueña", () => {
+  it("login_unapproved_device y account_locked son solo de la dueña", async () => {
+    const { OWNER_ONLY_ALERT_TYPES } = await import("../apps/api/src/alerts");
+    expect(OWNER_ONLY_ALERT_TYPES).toEqual(
+      expect.arrayContaining(["login_unapproved_device", "account_locked"]),
+    );
+  });
+});
