@@ -3,10 +3,11 @@
 ## 2026-11-19 · Pantallas de producto y planes
 
 - **Rama/base:** `chatgpt-nube/producto-pantallas-19nov`, desde `origin/claude/producto-venta-19nov` `8ef351e6e178922e85f7e73a40713a4e60224618`.
-- Se diseñaron los avisos de estado por rol, la administración de sucursales, “Plan y prueba” y el selector “Plan que paga”. Se explicitó la prueba de 7 días en el párrafo de registro; los textos de invitación ya indicaban 7 días en la base y no cambiaron. Se conservaron las llamadas y payloads existentes.
+- Se diseñaron los avisos de estado por rol, la administración de sucursales, “Plan y prueba” y el selector “Plan que paga”. Se verificó que registro e invitación ya decían 7 días en la base; no se atribuye ese texto como cambio de esta rama. Se conservaron las llamadas y payloads existentes.
+- **Corrección tras revisión de Norexos 1:** las tarjetas de “Mis clientes” ahora usan `.platform-client-card`, con fondo y borde propios que prevalecen sobre `button:not(.button)` en claro y oscuro. Regresión textual: 1 fallo antes y 6/6 después; E2E de plataforma: 5/5, incluidos estilos calculados y 390 px en ambos temas. Capturas: `plataforma-clientes-390-light.png` (`9311ac5c…`) y `plataforma-clientes-390-dark.png` (`bdb42d7e…`).
 - Regresión roja → verde: 12/12 pruebas nuevas; 21/21 con contratos relacionados. La autoauditoría añadió las nuevas pruebas a `vitest.config.ts`, modo oscuro real y estados explícitos de carga/error/vacío.
 - Capturas reales: `docs/capturas/producto-pantallas-19nov/plataforma-390-light.png` y `plataforma-1366-dark.png`, sin desborde horizontal. Hashes: `1ae7133c34e03d6ff091c295f2e129e5745c37a3072ba6139c7606a3ed3fd239` y `03cf6e75e8e5de396cc3bb62ca0d90729b7136ec28c9338b698e979d682324ea`.
-- Typecheck, ESLint y build web pasan. `pnpm check` aprobó 1,737 pruebas y omitió 10, pero terminó con 38 fallos en 19 archivos de guardias visuales desancladas que la orden asigna a ChatGPT PC; esta rama no las modifica ni las debilita. CI se anotará al comprobar el SHA final después del único push.
+- Typecheck, ESLint y build web pasan. `pnpm check` aprobó 1,738 pruebas y omitió 10, pero terminó con 38 pruebas fallidas y una suite que no llegó a coleccionar, repartidas en 19 archivos de guardias visuales desancladas que la orden asigna a ChatGPT PC; esta rama no las modifica ni las debilita. La regresión nueva `product-platform-presentation.test.ts` pasó 6/6 dentro de esa misma ejecución. CI se anotará al comprobar el SHA final después del único push.
 - Sin despliegue, mezcla, Render, producción, base de la tienda ni credenciales.
 
 ## 2026-11-13 · especificaciones de construcción de la primera tanda

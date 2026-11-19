@@ -9308,13 +9308,32 @@ td strong {
 /* Panel del operador: mantiene la jerarquía nueva legible con el tema oscuro
    global, sin cambiar los formularios ni sus contratos. */
 .platform-panel .platform-client-card {
-  background: var(--surface);
   border: 1px solid var(--input-border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 :root[data-theme="dark"] .platform-panel {
   background: var(--bg);
   color: var(--text);
+}
+
+.platform-panel .platform-client-card:hover {
+  border-color: var(--primary);
+  background: var(--surface-soft);
+}
+
+:root[data-theme="dark"] .platform-client-card {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme="dark"] .platform-client-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
 }
 
 :root[data-theme="dark"] .platform-panel__surface,

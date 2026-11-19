@@ -1,7 +1,7 @@
 // Panel de la operadora (/plataforma): el token vive solo en sessionStorage y
 // la lista de clientes cabe en un celular. La API se simula en el navegador.
 import type { Page } from "@playwright/test";
-import { test, expect } from "./apoyo";
+import { test, expect, screenshotPath } from "./apoyo";
 
 const TOKEN = "token-de-plataforma-solo-prueba-".padEnd(80, "0123456789abcdef");
 const day = (n: number) => new Date(Date.now() + n * 86400000).toISOString();
@@ -166,5 +166,46 @@ for (const width of [390, 320]) {
     await page.getByLabel("Estado").selectOption("all");
     await page.getByLabel("Buscar").fill("salón");
     await expect(list.getByRole("listitem")).toHaveCount(1);
+  });
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(`Mis clientes conserva fondo y borde a 390 px en modo ${theme}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockApi(page);
+    await page.addInitScript(
+      ({ token, theme }) => {
+        sessionStorage.setItem("nexora-plataforma-token", token);
+        localStorage.setItem("fitstore-theme", theme);
+      },
+      { token: TOKEN, theme },
+    );
+    await page.goto("/plataforma");
+
+    const card = page
+      .getByRole("list", { name: "Mis clientes" })
+      .getByRole("button")
+      .first();
+    await expect(card).toBeVisible();
+    const appearance = await card.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        background: style.backgroundColor,
+        borderStyle: style.borderStyle,
+        borderWidth: style.borderWidth,
+      };
+    });
+    expect(appearance.background).not.toBe("rgba(0, 0, 0, 0)");
+    expect(appearance.borderStyle).toBe("solid");
+    expect(parseFloat(appearance.borderWidth)).toBeGreaterThanOrEqual(1);
+    await fitsPhone(page);
+    await page.screenshot({
+      path: screenshotPath(
+        `docs/capturas/producto-pantallas-19nov/plataforma-clientes-390-${theme}.png`,
+      ),
+      fullPage: true,
+    });
   });
 }
