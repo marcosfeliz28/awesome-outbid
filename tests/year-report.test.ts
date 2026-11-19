@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   monthNames,
   monthRange,
@@ -30,5 +31,10 @@ describe("círculo de ventas del año", () => {
     ]);
     expect(csv).toContain(`"'=HYPERLINK(1)"`);
     expect(csv.startsWith("﻿")).toBe(true);
+  });
+  it("DD-08: distingue el resultado antes de gastos de la ganancia neta", () => {
+    const source = readFileSync("apps/web/src/YearPie.tsx", "utf8");
+    expect(source).toContain('t("Bruta − costo")');
+    expect(source).not.toContain('t("Neta")');
   });
 });
