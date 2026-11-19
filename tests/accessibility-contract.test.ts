@@ -400,6 +400,12 @@ function meets(
 }
 
 describe("P6 · controles accesibles de venta y caja", () => {
+  it("H131: GV usa una señal de categoría distinta a Fajas en el Resumen", () => {
+    const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+    expect(dashboard).toContain('name.startsWith("GV ") ? "#7c3aed"');
+    expect(dashboard).toMatch(/background: color/);
+  });
+
   it("los campos tienen foco visible real y las acciones pequeñas área táctil", () => {
     expect(css).toContain(
       "/* P6: foco y objetivos táctiles de venta y caja. */",

@@ -44,6 +44,12 @@ const dayBefore = (date: string) =>
     .toISOString()
     .slice(0, 10);
 
+// Las categorías de GV comparten catálogo con la tienda, pero en el Resumen
+// necesitan una señal visual propia para que no se confundan con Fajas.
+function dashboardCategoryColor(name: string, fallback: string) {
+  return name.startsWith("GV ") ? "#7c3aed" : fallback;
+}
+
 function DayFigures({
   date,
   title,
@@ -577,19 +583,20 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   (a: number, i: any) => a + i.total,
                   0,
                 ),
-                percent = total ? (c.total / total) * 100 : 0;
+                percent = total ? (c.total / total) * 100 : 0,
+                color = dashboardCategoryColor(c.name, c.color);
               return (
                 <div className="category-row" key={c.name}>
                   <div>
                     <span>
-                      <i style={{ background: c.color }} />
+                      <i style={{ background: color }} />
                       {c.name}
                     </span>
                     <strong>{percent.toFixed(0)}%</strong>
                   </div>
                   <div className="progress-track">
                     <div
-                      style={{ width: `${percent}%`, background: c.color }}
+                      style={{ width: `${percent}%`, background: color }}
                     />
                   </div>
                 </div>
