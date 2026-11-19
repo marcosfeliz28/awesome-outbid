@@ -30,3 +30,10 @@ it("CP-13: el buscador usa una ayuda breve que cabe en 390 px", () => {
   const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
   expect(pos).toContain('placeholder={t("Buscar producto o código")}');
 });
+
+it("CP-14: las cuatro acciones superiores del POS permanecen en una fila móvil", () => {
+  const fusion = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
+  expect(fusion).toMatch(
+    /@media \(max-width: 600px\) \{[\s\S]*?\.heading-actions \{[\s\S]*?grid-template-columns:\s*minmax\(0, 1\.2fr\) minmax\(0, 1\.2fr\) repeat\(2, 44px\)/,
+  );
+});
