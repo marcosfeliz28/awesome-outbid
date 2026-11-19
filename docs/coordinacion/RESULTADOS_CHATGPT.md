@@ -290,3 +290,9 @@ Baja `nexora-cloud` y corre con PostgreSQL: `tests/credito-api.test.ts`, `tests/
 - **También requiere Nube/API:** INV-018 no se renombró artificialmente: Mercancía reutiliza `ReceiptHistory` y consulta solo `/goods-receipts` (`apps/web/src/Purchases.tsx:466-481`), por lo que en SALIDA no hay historial de salidas real que mostrar. Requiere una fuente de datos de salidas antes de cambiar el título.
 - **Ya resuelto en la base, sin duplicar:** UC-05 (contraste de usuarios oscuro), UC-25 (acción destructiva de anonimizar), CP-16 (nombre de producto de dos líneas), DD-11 y el modo claro de DD-10.
 - **Pendiente:** continuar las restantes filas exclusivamente UI de `CHATGPT.csv`; antes de cualquier publicación, ejecutar la comprobación completa y confirmar los tres CI. Esta rama no tiene push ni PR.
+
+### Actualización local · 2026-11-18
+
+- **Solo PC/UI integrado:** CC-20 (etiqueta Fecha a 390 px), CC-21 (tarjetas de transferencias móviles), GV-17 (pista y dirección de desplazamiento de tablas GV), GV-18 (espacio para Caja GV junto a la barra de Mercancía), INV-011 (acciones de inventario fijadas en escritorio), CC-27 (selector de idioma en acceso y sesión) e IT-008 (estados y aviso visibles de Caja en inglés).
+- **Verificación local de este lote:** `tests/caja-presentacion.test.ts`, `tests/operational-aux.test.ts`, `tests/gv-unit.test.ts` y `tests/inventario-presentacion.test.ts`: **31/31**. Typecheck del cliente web correcto. No se inició ningún navegador, servicio, despliegue ni acceso a datos para esta actualización.
+- **Estado:** rama local `chatgpt-pc/auditoria-ui-19nov`, último commit `412d4dfd`; no hay push, PR ni CI remoto todavía. Permanecen pendientes las demás filas UI y sus capturas de comprobación correspondientes.
