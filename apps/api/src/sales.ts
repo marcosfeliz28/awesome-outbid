@@ -15,7 +15,11 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Prisma } from "@prisma/client";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { allocateCredit } from "./credit-allocation";
+import {
+  allocateCredit,
+  isReceivableSalePayment,
+  RECEIVABLE_SALE_PAYMENT,
+} from "./credit-allocation";
 import {
   expired,
   BUSINESS_TIME_ZONE,
@@ -4277,7 +4281,7 @@ export class SalesController {
         ? { creditBalance: { equals: 0 }, creditClosedAt: { not: null } }
         : { creditBalance: { gt: 0 } }),
       payments: {
-        some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+        some: RECEIVABLE_SALE_PAYMENT,
       },
       ...(text
         ? { customer: { name: { contains: text, mode: "insensitive" } } }
@@ -4343,7 +4347,7 @@ export class SalesController {
         branchId: actor.branchId,
         status: "completed",
         payments: {
-          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+          some: RECEIVABLE_SALE_PAYMENT,
         },
       },
       include: { payments: { orderBy: { createdAt: "asc" } } },
@@ -4357,7 +4361,7 @@ export class SalesController {
         branchId: actor.branchId,
         status: "completed",
         payments: {
-          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+          some: RECEIVABLE_SALE_PAYMENT,
         },
       },
       _sum: { creditBalance: true },
@@ -4528,7 +4532,7 @@ export class SalesController {
           status: "completed",
           creditBalance: { gt: 0 },
           payments: {
-            some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+            some: RECEIVABLE_SALE_PAYMENT,
           },
         },
         select: { id: true, createdAt: true, creditBalance: true },
@@ -4639,9 +4643,7 @@ export class SalesController {
     const state = ["pending", "closed", "all"].includes(stateParam ?? "")
       ? (stateParam as "pending" | "closed" | "all")
       : "pending";
-    const receivablePayment = {
-      some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
-    };
+    const receivablePayment = { some: RECEIVABLE_SALE_PAYMENT };
     const sales = await this.db.sale.findMany({
       where: {
         branchId: actor.branchId,
@@ -4702,11 +4704,7 @@ export class SalesController {
       const collections = s.payments.filter(
         (p) => p.entryType === "installment",
       );
-      const receivableAmount = sum(
-        s.payments.filter(
-          (p) => ["credit", "cod"].includes(p.method) && p.entryType === "sale",
-        ),
-      );
+      const receivableAmount = sum(s.payments.filter(isReceivableSalePayment));
       const pending = Number(s.creditBalance);
       // Pagado = lo que ya descontó la deuda (cobros verificados). Lo que
       // se pagó al vender (efectivo del cobro parcial) no es parte del crédito.
@@ -4960,11 +4958,7 @@ export class SalesController {
       where: { id, branchId: actor.branchId, status: "completed" },
     });
     const receivable = !!(await tx.payment.count({
-      where: {
-        saleId: id,
-        method: { in: ["credit", "cod"] },
-        entryType: "sale",
-      },
+      where: { saleId: id, ...RECEIVABLE_SALE_PAYMENT },
     }));
     if (codOnly && !receivable)
       bad("Esta venta no tiene crédito / contraentrega pendiente.");

@@ -28,3 +28,27 @@ export function allocateCredit(
   }
   return allocations;
 }
+
+// D5 (auditoría 19-nov): es cuenta por cobrar la venta a crédito o
+// contraentrega y también la pagada con una transferencia que se rechazó
+// (M-3: ese monto pasa a deuda del cliente). Filtro de Prisma para
+// `payments: { some: ... }` y su versión para filas ya leídas.
+export const RECEIVABLE_SALE_PAYMENT = {
+  entryType: "sale" as const,
+  OR: [
+    { method: { in: ["credit" as const, "cod" as const] } },
+    { method: "transfer" as const, status: "rejected" as const },
+  ],
+};
+export function isReceivableSalePayment(p: {
+  entryType: string;
+  method: string;
+  status?: string | null;
+}) {
+  return (
+    p.entryType === "sale" &&
+    (p.method === "credit" ||
+      p.method === "cod" ||
+      (p.method === "transfer" && p.status === "rejected"))
+  );
+}
