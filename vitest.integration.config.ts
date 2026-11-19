@@ -1,22 +1,30 @@
 import { defineConfig } from "vitest/config";
+
+// GV Makeup Studio es de la tienda: con la API en modo producto
+// (PRODUCT_TENANCY=required) sus rutas no existen y estas suites se omiten.
+// La ausencia en el producto la garantiza tests/product-gv-ausente-postgres.test.ts.
+const gvTienda = [
+  "tests/gv-servicios-api.test.ts",
+  "tests/gv-pago-usd-heredado-api.test.ts",
+  "tests/gv-modulo-api.test.ts",
+  "tests/gv-caja-api.test.ts",
+  "tests/gv-mi-incentivo-api.test.ts",
+  "tests/gv-vigilante-api.test.ts",
+  "tests/gv-adversarial-t5-postgres.test.ts",
+  "tests/gv-adversarial-independiente.test.ts",
+  "tests/gv-citas-api.test.ts",
+];
+const product = process.env.PRODUCT_TENANCY === "required";
 export default defineConfig({
   test: {
     // Falla de inmediato si la API de :3001 (u otra) no es la de este repositorio.
     globalSetup: ["tests/setup/integration-api.ts"],
     include: [
-      "tests/gv-servicios-api.test.ts",
+      ...(product ? [] : gvTienda),
       "tests/change-requests-postgres.test.ts",
       "tests/desglose-suma-api.test.ts",
       "tests/devoluciones-heredadas-api.test.ts",
-      "tests/gv-pago-usd-heredado-api.test.ts",
       "tests/pagos-ajustes-api.test.ts",
-      "tests/gv-modulo-api.test.ts",
-      "tests/gv-caja-api.test.ts",
-      "tests/gv-mi-incentivo-api.test.ts",
-      "tests/gv-vigilante-api.test.ts",
-      "tests/gv-adversarial-t5-postgres.test.ts",
-      "tests/gv-adversarial-independiente.test.ts",
-      "tests/gv-citas-api.test.ts",
       "tests/api.test.ts",
       "tests/caja-por-usuario.test.ts",
       "tests/caja-lote-verifon.test.ts",

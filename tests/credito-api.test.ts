@@ -819,10 +819,10 @@ describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día
     // pasa de los 30 días del plazo normal de devolución (el 14-nov-2026 a las
     // 16:00 UTC empezó a fallar). Se amplía el plazo solo durante esta devolución.
     const storedSettings = await db.settings.findUniqueOrThrow({
-      where: { id: "main" },
+      where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
     });
     await db.settings.update({
-      where: { id: "main" },
+      where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
       data: {
         data: { ...(storedSettings.data as any), returnDays: 365 },
       },
@@ -839,7 +839,7 @@ describe("W7 · reportes: la venta cuenta el día de la venta, el dinero el día
       });
     } finally {
       await db.settings.update({
-        where: { id: "main" },
+        where: { tenantId_id: { tenantId: DEMO_TENANT_ID, id: "main" } },
         data: { data: storedSettings.data as any },
       });
     }

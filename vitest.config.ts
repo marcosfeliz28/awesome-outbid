@@ -58,6 +58,7 @@ export default defineConfig({
       "tests/product-route-admin-extra-postgres.test.ts",
       "tests/product-route-auth-void-postgres.test.ts",
       "tests/product-route-misc-postgres.test.ts",
+      "tests/product-gv-ausente-postgres.test.ts",
       "tests/product-branches-postgres.test.ts",
       "tests/branches-unit.test.ts",
       "tests/branch-settings-web.test.ts",

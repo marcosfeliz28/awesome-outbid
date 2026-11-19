@@ -3,6 +3,7 @@
 // costo en la factura con PIN, motivo y bitácora. API y PostgreSQL reales.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
@@ -270,12 +271,22 @@ describe("venta sin costo", () => {
     const sync = await ok("/sales/sync", { sales: [offline] }, cashier.token);
     expect(sync.results[0].status).toBe("synced");
     const saved = await db.sale.findUniqueOrThrow({
-      where: { offlineUuid: offline.offlineUuid },
+      where: {
+        tenantId_offlineUuid: {
+          tenantId: DEMO_TENANT_ID,
+          offlineUuid: offline.offlineUuid,
+        },
+      },
       include: { items: true, payments: true },
     });
     expect(Number(saved.costTotal)).toBe(0);
     const alert = await db.alert.findUnique({
-      where: { key: "zero-cost-sale:" + saved.id },
+      where: {
+        tenantId_key: {
+          tenantId: DEMO_TENANT_ID,
+          key: "zero-cost-sale:" + saved.id,
+        },
+      },
     });
     expect(alert).toMatchObject({ type: "zero_cost_sale", status: "new" });
     expect(
@@ -410,7 +421,12 @@ describe("venta sin costo", () => {
     expect(
       (
         await db.alert.findUnique({
-          where: { key: "zero-cost-sale:" + saved.id },
+          where: {
+            tenantId_key: {
+              tenantId: DEMO_TENANT_ID,
+              key: "zero-cost-sale:" + saved.id,
+            },
+          },
         })
       )?.status,
     ).toBe("resolved");

@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import EmbeddedPostgres from "embedded-postgres";
 import { withGvProof } from "./helpers-gv-proof";
+import { DEMO_TENANT_ID } from "../apps/api/src/tenant-context";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const apiDir = join(root, "apps/api");
@@ -166,7 +167,9 @@ beforeAll(async () => {
   // Comprobar que la sesión de la API pertenece exactamente a nuestra base.
   expect(await db.authSession.count()).toBeGreaterThan(0);
   const { hash } = requireApi("bcryptjs");
-  const role = await db.role.findUniqueOrThrow({ where: { name: "gv" } });
+  const role = await db.role.findUniqueOrThrow({
+    where: { tenantId_name: { tenantId: DEMO_TENANT_ID, name: "gv" } },
+  });
   expect([...role.permissions].sort()).toEqual([
     "gv:read",
     "gv:reports",

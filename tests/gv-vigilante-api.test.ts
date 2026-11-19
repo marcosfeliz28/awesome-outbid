@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { GvCajaVigilante } from "../apps/api/src/gv-vigilante";
 import { resolveGvCashAlerts } from "../apps/api/src/gv-caja";
+import { tenantDatabaseProxy } from "../apps/api/src/tenant-database";
 
 const requireApi = createRequire(
   new URL("../apps/api/package.json", import.meta.url),
@@ -13,7 +14,8 @@ requireApi("dotenv").config({
   quiet: true,
 });
 const { PrismaClient } = requireApi("@prisma/client");
-const db = new PrismaClient();
+// Igual que la API (Database): claves únicas por empresa y RLS de la Demo.
+const db = tenantDatabaseProxy(new PrismaClient());
 const branchId = "qa-vig-" + Date.now().toString(36);
 
 const day = (offset: number) =>
