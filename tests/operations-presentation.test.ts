@@ -66,8 +66,9 @@ it("localizes Telegram config without changing test-message authorization, value
  expect(source).toContain('enabled: admin');
  expect(source).toContain('toast(r.message, !r.queued)');
  expect(source).toContain('post("/notifications/telegram/test", {})');
- expect(source).toContain('TELEGRAM_BOT_TOKEN');
- expect(source).toContain('TELEGRAM_CHAT_ID');
+ expect(source).toContain('"Ask support to activate invoice notifications."');
+ expect(source).not.toContain('TELEGRAM_BOT_TOKEN');
+ expect(source).not.toContain('TELEGRAM_CHAT_ID');
  expect(source).toContain('data.lastError.message');
 });
 
