@@ -80,6 +80,8 @@ export const MANUAL_ALERT_TYPES = [
   "gv_day_no_close",
   // Venta sin conexión que entró con productos sin costo (sales.ts, 8-nov).
   "zero_cost_sale",
+  // Caja abierta con menos fondo que el último cierre (cash.ts, A3 19-nov).
+  "opening_shortfall",
 ];
 // Avisos que sólo ve la dueña («*»).
 export const OWNER_ONLY_ALERT_TYPES = [

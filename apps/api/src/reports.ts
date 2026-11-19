@@ -3,6 +3,7 @@ import type { Response } from "express";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { Prisma } from "@prisma/client";
+import { gvTotals, saleNotGvSql, saleNotGvWhere } from "./gv-scope";
 import {
   COUNT_CORRECTION_SQL,
   INVENTORY_LOSS_SQL,
@@ -109,11 +110,16 @@ export function pdfLines(rows: Record<string, unknown>[], withTotal: boolean) {
   return lines;
 }
 
+// Acepta fecha sola («2026-11-19», se completa con el día entero en UTC-4) o
+// fecha con hora («2026-11-19T00:00:00-04:00», se usa tal cual): Caja manda la
+// segunda forma y pegarle otra hora la volvía inválida (auditoría A1).
+const withTime = (value: string, time: string) =>
+  new Date(value.includes("T") ? value : value + time);
 export function dateRange(query: Record<string, string>) {
   const from = query.from
-    ? new Date(query.from + "T00:00:00-04:00")
+    ? withTime(query.from, "T00:00:00-04:00")
     : new Date(Date.now() - 30 * 86400000);
-  const to = query.to ? new Date(query.to + "T23:59:59.999-04:00") : new Date();
+  const to = query.to ? withTime(query.to, "T23:59:59.999-04:00") : new Date();
   if (!Number.isFinite(+from) || !Number.isFinite(+to) || from > to)
     bad("Rango de fechas inválido.");
   return { gte: from, lte: to };
@@ -161,7 +167,7 @@ function saleSql(
   sellerId?: string,
   method?: string,
 ) {
-  return Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}${sellerId ? Prisma.sql` AND s."sellerId" = ${sellerId}::uuid` : Prisma.empty}${method ? Prisma.sql` AND EXISTS (SELECT 1 FROM "Payment" pm WHERE pm."saleId" = s.id AND pm.method = ${method})` : Prisma.empty}`;
+  return Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()} AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}${sellerId ? Prisma.sql` AND s."sellerId" = ${sellerId}::uuid` : Prisma.empty}${method ? Prisma.sql` AND EXISTS (SELECT 1 FROM "Payment" pm WHERE pm."saleId" = s.id AND pm.method = ${method})` : Prisma.empty}`;
 }
 const addTo = (map: Map<string, any>, key: string, amount: unknown) =>
   map.set(key, (map.get(key) ?? d(0)).plus(amount as any));
@@ -275,7 +281,7 @@ async function returnedBreakdown(
     colors = new Map<string, string>(),
     methods = new Map<string, any>(),
     sellers = new Map<string, any>();
-  await forEachPeriodReturn(db, actor, range, undefined, (r) => {
+  await forEachPeriodReturn(db, actor, range, saleNotGvWhere, (r) => {
     addTo(days, businessDate(r.sale.createdAt), r.total);
     for (const { category, amount } of returnedByCategory(r)) {
       addTo(categories, category.name, amount);
@@ -308,10 +314,12 @@ export class ReportsController {
     @CurrentUser() actor: Actor,
   ) {
     const range = dateRange(query);
+    // GV es otra empresa: fuera de las cifras de Macgen, aparte en `gv`.
     const where = {
       branchId: actor.branchId,
       status: "completed",
       createdAt: range,
+      ...saleNotGvWhere,
     };
     // Los mismos límites para los paneles en SQL crudo.
     const since = utc(range.gte),
@@ -355,6 +363,7 @@ export class ReportsController {
       collected,
       returned,
       inventoryLossRows,
+      gv,
     ] = await Promise.all([
       this.db.sale.aggregate({
         where,
@@ -362,7 +371,10 @@ export class ReportsController {
         _count: true,
       }),
       this.db.saleReturn.aggregate({
-        where: { branchId: actor.branchId, sale: { createdAt: range } },
+        where: {
+          branchId: actor.branchId,
+          sale: { createdAt: range, ...saleNotGvWhere },
+        },
         _sum: { total: true, taxTotal: true, costTotal: true },
       }),
       this.db.expense.aggregate({
@@ -374,6 +386,7 @@ export class ReportsController {
           branchId: actor.branchId,
           status: "completed",
           createdAt: previousRange,
+          ...saleNotGvWhere,
         },
         _sum: { total: true },
       }),
@@ -393,10 +406,10 @@ export class ReportsController {
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo','YYYY-MM-DD') AS day, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day ORDER BY day`,
+      >`SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo','YYYY-MM-DD') AS day, SUM(total) AS total FROM "Sale" s WHERE "branchId"=${actor.branchId} AND status='completed' AND ${saleNotGvSql()} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day ORDER BY day`,
       this.db.$queryRaw<
         any[]
-      >`SELECT c.name,c.color,SUM(i."lineTotal") AS total FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY total DESC`,
+      >`SELECT c.name,c.color,SUM(i."lineTotal") AS total FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY total DESC`,
       // Cómo se cobraron las ventas del período: el crédito es su propio
       // método y sus abonos no se suman otra vez (R9-dinero-9).
       this.db.payment.groupBy({
@@ -417,31 +430,38 @@ export class ReportsController {
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT p.name,c.name AS category, SUM(i.qty-i."returnedQty") AS units,SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS revenue FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.id,p.name,c.name ORDER BY revenue DESC LIMIT 10`,
+      >`SELECT p.name,c.name AS category, SUM(i.qty-i."returnedQty") AS units,SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS revenue FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.id,p.name,c.name ORDER BY revenue DESC LIMIT 10`,
       this.db.$queryRaw<
         any[]
-      >`SELECT u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.name ORDER BY total DESC`,
+      >`SELECT u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.name ORDER BY total DESC`,
       this.db.sale.aggregate({
         where: {
           branchId: actor.branchId,
           status: "completed",
           createdAt: { gte: priorYearStart, lte: priorYearEnd },
+          ...saleNotGvWhere,
         },
         _sum: { total: true },
       }),
       this.db.saleReturn.aggregate({
         where: {
           branchId: actor.branchId,
-          sale: { createdAt: { gte: priorYearStart, lte: priorYearEnd } },
+          sale: {
+            createdAt: { gte: priorYearStart, lte: priorYearEnd },
+            ...saleNotGvWhere,
+          },
         },
         _sum: { total: true },
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day,hour ORDER BY day,hour`,
+      >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" s WHERE "branchId"=${actor.branchId} AND status='completed' AND ${saleNotGvSql()} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day,hour ORDER BY day,hour`,
       // La tendencia compara ingresos netos de devoluciones (R9-dinero-10).
       this.db.saleReturn.aggregate({
-        where: { branchId: actor.branchId, sale: { createdAt: previousRange } },
+        where: {
+          branchId: actor.branchId,
+          sale: { createdAt: previousRange, ...saleNotGvWhere },
+        },
         _sum: { total: true },
       }),
       // Abonos cobrados en el período (fecha del abono, no de la venta): su
@@ -451,7 +471,11 @@ export class ReportsController {
           entryType: "installment",
           status: "ok",
           createdAt: range,
-          sale: { branchId: actor.branchId, status: "completed" },
+          sale: {
+            branchId: actor.branchId,
+            status: "completed",
+            ...saleNotGvWhere,
+          },
         },
         _sum: { feeAmount: true },
       }),
@@ -460,6 +484,7 @@ export class ReportsController {
       this.db.$queryRaw<
         any[]
       >`SELECT COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE NOT (${Prisma.raw(COUNT_CORRECTION_SQL)})), 0) AS loss, COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(COUNT_CORRECTION_SQL)}), 0) AS "countCorrections", COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(SUPPLIER_RETURN_SQL)}), 0) AS "supplierReturns" FROM "InventoryMovement" m WHERE m."branchId"=${actor.branchId} AND m."createdAt">=${since} AND m."createdAt"<=${until} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
+      gvTotals(this.db, actor, range),
     ]);
     // D-05: los desgloses descuentan las mismas devoluciones que «revenue».
     const netOf = <T>(
@@ -613,6 +638,7 @@ export class ReportsController {
           .map(([name, total]) => ({ name, total: money(total) }))
           .sort(byAmount),
         alerts: alerts.map((alert) => alertForActor(alert, actor)),
+        gv,
         from: range.gte,
         to: range.lte,
       },
@@ -637,9 +663,9 @@ export class ReportsController {
     const month = Prisma.sql`EXTRACT(MONTH FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int`;
     const [sales, returns] = (await Promise.all([
       this.db
-        .$queryRaw`SELECT ${month} AS m, COUNT(*)::int AS invoices, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
+        .$queryRaw`SELECT ${month} AS m, COUNT(*)::int AS invoices, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "Sale" s WHERE "branchId"=${actor.branchId} AND status='completed' AND ${saleNotGvSql()} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
       this.db
-        .$queryRaw`SELECT EXTRACT(MONTH FROM ((s."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS m, SUM(r.total) AS revenue, SUM(r."costTotal") AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY m`,
+        .$queryRaw`SELECT EXTRACT(MONTH FROM ((s."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS m, SUM(r.total) AS revenue, SUM(r."costTotal") AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY m`,
     ])) as any[][];
     const months = Array.from({ length: 12 }, (_, i) => {
       const sold = sales.find((r) => r.m === i + 1);
@@ -686,29 +712,37 @@ export class ReportsController {
     // Costo de lo vendido menos lo devuelto que reingresó: la merma de la devolución
     // (wasteCost de cada parte) sigue siendo costo, igual que en el año y el resumen.
     const cost = Prisma.sql`${units}*i."unitCost"+COALESCE((SELECT SUM((e->>'wasteCost')::numeric) FROM "SaleReturn" rr CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(rr.items::jsonb)='array' THEN rr.items::jsonb ELSE '[]'::jsonb END) e WHERE rr."saleId"=i."saleId" AND e->>'saleItemId'=i.id::text),0)`;
-    const [categories, top, count, mix, ranked] = (await Promise.all([
+    const [categories, top, count, mix, ranked, gv] = (await Promise.all([
       this.db
-        .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
+        .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
       this.db
-        .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
+        .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT 10`,
       this.db
-        .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
+        .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
       // Orden 18-oct: cómo se pagó cada categoría. Lo vendido de la categoría
       // en cada factura se reparte según la mezcla de pagos de esa factura.
       canViewCashExpected(actor)
         ? this.db
-            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), pk AS (SELECT p."saleId", CASE WHEN p.method='transfer' AND p.status='pending_verification' THEN 'transfer_pending' ELSE p.method END AS method, CASE WHEN p.method='transfer' THEN COALESCE(NULLIF(BTRIM(p.bank),''),'Sin banco') WHEN p.method='card' THEN NULLIF(BTRIM(p.bank),'') END AS bank, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method NOT IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2, 3), cr AS (SELECT p."saleId", SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1), sp AS (SELECT "saleId", method, bank, amt FROM pk UNION ALL SELECT cr."saleId", 'credit', NULL::text, LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT cr."saleId", 'credit_paid', NULL::text, cr.amt-LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT s.id, 'unrecorded', NULL::text, GREATEST(s.total-COALESCE((SELECT SUM(amt) FROM pk WHERE pk."saleId"=s.id),0)-COALESCE((SELECT amt FROM cr WHERE cr."saleId"=s.id),0), 0) FROM "Sale" s WHERE s.id IN (SELECT "saleId" FROM cl)), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, sp.bank, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" WHERE sp.amt>0 GROUP BY cl.name, sp.method, sp.bank`
+            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), pk AS (SELECT p."saleId", CASE WHEN p.method='transfer' AND p.status='pending_verification' THEN 'transfer_pending' ELSE p.method END AS method, CASE WHEN p.method='transfer' THEN COALESCE(NULLIF(BTRIM(p.bank),''),'Sin banco') WHEN p.method='card' THEN NULLIF(BTRIM(p.bank),'') END AS bank, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method NOT IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2, 3), cr AS (SELECT p."saleId", SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1), sp AS (SELECT "saleId", method, bank, amt FROM pk UNION ALL SELECT cr."saleId", 'credit', NULL::text, LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT cr."saleId", 'credit_paid', NULL::text, cr.amt-LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT s.id, 'unrecorded', NULL::text, GREATEST(s.total-COALESCE((SELECT SUM(amt) FROM pk WHERE pk."saleId"=s.id),0)-COALESCE((SELECT amt FROM cr WHERE cr."saleId"=s.id),0), 0) FROM "Sale" s WHERE s.id IN (SELECT "saleId" FROM cl)), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, sp.bank, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" WHERE sp.amt>0 GROUP BY cl.name, sp.method, sp.bank`
         : Promise.resolve(null),
       // Top 10 de cada categoría (la lista de categorías sale de los datos), por unidades y por monto.
       this.db
-        .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
-    ])) as any[][];
+        .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
+      gvTotals(this.db, actor, range),
+    ])) as [
+      any[],
+      any[],
+      any[],
+      any[],
+      any[],
+      { total: number; count: number },
+    ];
     // Devoluciones sin líneas (SaleReturn heredado, items vacíos) de ventas del período:
     // el desglose no las ve por línea, así que van en una fila propia. Criterio único con el
     // año: cada devolución se atribuye al período de la VENTA original (orden 1-nov).
     // También bajan los cobros por forma de reembolso.
     const legacyRows = (await this.db
-      .$queryRaw`SELECT r."refundMethod" AS method, COALESCE(SUM(r.total),0) AS revenue, COALESCE(SUM(r."costTotal"),0) AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND s."createdAt">=${since} AND s."createdAt"<=${until} AND jsonb_typeof(r.items::jsonb)='array' AND jsonb_array_length(r.items::jsonb)=0 GROUP BY 1`) as any[];
+      .$queryRaw`SELECT r."refundMethod" AS method, COALESCE(SUM(r.total),0) AS revenue, COALESCE(SUM(r."costTotal"),0) AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} AND jsonb_typeof(r.items::jsonb)='array' AND jsonb_array_length(r.items::jsonb)=0 GROUP BY 1`) as any[];
     const legacyRevenue = legacyRows.reduce((a, r) => a.plus(r.revenue), d(0));
     const legacyCost = legacyRows.reduce((a, r) => a.plus(r.cost), d(0));
     const lines = [
@@ -762,6 +796,8 @@ export class ReportsController {
         ...total,
         averagePerDay: money(total.revenue / days),
         averageTicket: invoices ? money(total.revenue / invoices) : 0,
+        // GV aparte: no entra en los totales de arriba.
+        gv,
         categories: lines.map((r) => ({
           name: r.name,
           color: r.color,
@@ -952,6 +988,8 @@ export class ReportsController {
       createdAt: range,
       ...(query.sellerId ? { sellerId: parse(uuid, query.sellerId) } : {}),
       ...(query.method ? { payments: { some: { method: query.method } } } : {}),
+      // GV es otra empresa: sus ventas no entran en estos informes de Macgen.
+      ...saleNotGvWhere,
     };
     // Las devoluciones del período de esas mismas ventas (de cualquier fecha).
     const { createdAt: _saleDate, ...returnSaleWhere } = saleWhere;

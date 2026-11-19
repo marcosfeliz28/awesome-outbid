@@ -71,6 +71,7 @@ export default defineConfig({
       "tests/warehouses-postgres.test.ts",
       "tests/anular-caja-abierta-postgres.test.ts",
       "tests/mis-ventas-preguntas-postgres.test.ts",
+      "tests/gv-aparte-postgres.test.ts",
       "tests/portabilidad.test.ts",
       "tests/e2e-higiene.test.ts",
       "tests/offline-policy.test.ts",
@@ -152,6 +153,7 @@ export default defineConfig({
       "tests/config-ai-drive-language.test.ts",
       "tests/store-settings-language.test.ts",
       "tests/config-rates-survey-language.test.ts",
+      "tests/auditoria-lote-a.test.ts",
     ],
   },
 });

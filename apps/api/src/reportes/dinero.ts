@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { canViewCashExpected, denied, type Actor } from "../common";
+import { saleNotGvSql } from "../gv-scope";
 import {
   local,
   num,
@@ -11,8 +12,9 @@ import {
 } from "./base";
 
 // Grupo «Dinero» de los 40 reportes (orden 18-oct). Sin costo ni margen.
+// GV es otra empresa: sus ventas no se suman con Macgen (dueña, 18-nov).
 const sold = (actor: Actor, range: Range) =>
-  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
+  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()} AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
 const returned = (actor: Actor, range: Range) =>
   Prisma.sql`r."branchId" = ${actor.branchId} AND r."createdAt" >= ${utc(range.gte)} AND r."createdAt" <= ${utc(range.lte)}`;
 const month = (column: Prisma.Sql) =>
@@ -130,17 +132,20 @@ export const dinero: Record<string, ReportDef> = {
     group: "Dinero",
     // Orden de la dueña (20-oct): por dónde entró el dinero cada día. Cuenta
     // cobros de venta y abonos (lo que de verdad llegó), no lo pendiente.
+    // A6 (auditoría 19-nov): una transferencia aún sin verificar no se sabe si
+    // llegó: va en su propia fila con Estado «Por verificar».
     async run(db, actor, range) {
       await openCashGuard(db, actor);
       const rows: any[] = await db.$queryRaw`
         SELECT to_char(${local(Prisma.sql`p."createdAt"`)}, 'YYYY-MM-DD') AS dia, p.method,
                COALESCE(NULLIF(TRIM(p.bank), ''), 'Sin indicar') AS cuenta,
+               (p.method = 'transfer' AND p.status <> 'ok') AS unverified,
                SUM(p.amount) AS amount, COUNT(*) AS n
           FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId"
-          WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed'
+          WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()}
             AND p."createdAt" >= ${utc(range.gte)} AND p."createdAt" <= ${utc(range.lte)}
             AND p.method IN ('cash', 'card', 'transfer') AND p.status <> 'rejected'
-          GROUP BY 1, 2, 3`;
+          GROUP BY 1, 2, 3, 4`;
       const label: Record<string, string> = {
         cash: "Efectivo",
         card: "Tarjeta",
@@ -151,6 +156,7 @@ export const dinero: Record<string, ReportDef> = {
           Día: r.dia,
           Forma: label[r.method] ?? r.method,
           "Cuenta / terminal": r.method === "cash" ? "Caja" : r.cuenta,
+          Estado: r.unverified ? "Por verificar" : "Llegó",
           Cobros: Number(r.n),
           Monto: num(r.amount),
         }))
@@ -160,7 +166,8 @@ export const dinero: Record<string, ReportDef> = {
             a.Forma.localeCompare(b.Forma) ||
             String(a["Cuenta / terminal"]).localeCompare(
               String(b["Cuenta / terminal"]),
-            ),
+            ) ||
+            a.Estado.localeCompare(b.Estado),
         );
     },
   },

@@ -159,6 +159,7 @@ export const english: Record<string, string> = {
   UNIDADES: "UNITS",
   VENTAS: "SALES",
   "Cada categoría cuenta": "Every category counts",
+  "GV (aparte, no suma)": "GV (separate, not added)",
   "La mezcla que mueve tu tienda.": "The mix that drives your store.",
   "Conoce tu mezcla de ventas y dale espacio a lo que funciona.":
     "Know your sales mix and make room for what works.",

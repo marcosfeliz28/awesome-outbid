@@ -1,12 +1,14 @@
 import { Prisma } from "@prisma/client";
 import type { Actor } from "../common";
+import { saleNotGvSql } from "../gv-scope";
 import { local, num, pct, utc, type Range, type ReportDef } from "./base";
 
 // Venta neta (D-05, como dashboard/breakdown): cada línea vendida en el
 // período menos la parte devuelta de esa línea. Así todos los reportes del
 // grupo cuadran entre sí (la suma por hora = por cajera = por categoría).
+// GV es otra empresa: sus ventas no se suman con Macgen (dueña, 18-nov).
 const where = (actor: Actor, range: Range) =>
-  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
+  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()} AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
 const NET = Prisma.sql`i."lineTotal" * (1 - i."returnedQty" / i.qty)`;
 const UNITS = Prisma.sql`(i.qty - i."returnedQty")`;
 // Una fila por factura: hora, cajera, cliente, unidades y venta neta.

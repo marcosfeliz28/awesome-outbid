@@ -105,9 +105,16 @@ export function FormalReports() {
               {formatMoney(report.totals.discounts)} · {en ? "Returns:" : "Devoluciones:"}{" "}
               {report.totals.returns}
             </p>
+            {report.gv?.count > 0 && (
+              <p role="status">
+                <strong>{en ? "GV (separate, not added)" : "GV (aparte, no suma)"}</strong>{" "}
+                · {en ? "Net sold" : "Vendido neto"} {formatMoney(report.gv.total)} · {report.gv.count}{" "}
+                {en ? "sales" : "ventas"}
+              </p>
+            )}
             <h3>{text("Cajas y diferencias")}</h3>
             <p role="status">
-              {en ? "Received" : "Ingresó"} {formatMoney(report.cashReconciliation.moneyIn)} · {en ? "Per register" : "Según cajas"} {formatMoney(report.cashReconciliation.sessionMoney)} ·
+              {en ? "Received (includes GV)" : "Ingresó (incluye GV)"} {formatMoney(report.cashReconciliation.moneyIn)} · {en ? "Per register" : "Según cajas"} {formatMoney(report.cashReconciliation.sessionMoney)} ·
               {en ? "Difference" : "Diferencia"} {formatMoney(report.cashReconciliation.difference)}
               {!report.cashReconciliation.comparable
                 ? (en ? " · Partial comparison" : " · Comparación parcial")

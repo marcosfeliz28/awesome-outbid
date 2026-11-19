@@ -575,6 +575,34 @@ export async function takeStock(
   return pieces;
 }
 
+// A4: la clave queda en la bitácora del ajuste (after.operationId). Con el
+// candado por clave, un reenvío espera al primero; si éste ya se guardó, se
+// devuelve la variante sin duplicar. La misma clave con otros datos es error.
+async function repeatedAdjustment(
+  tx: any,
+  actor: Actor,
+  data: { operationId?: string; variantId: string; type: string; qty: number },
+) {
+  if (!data.operationId) return null;
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"inventory-op:" + data.operationId}))::text AS locked`;
+  const previous = await tx.auditLog.findFirst({
+    where: {
+      entity: "variant",
+      entityId: data.variantId,
+      branchId: actor.branchId,
+      after: { path: ["operationId"], equals: data.operationId },
+    },
+    select: { action: true, after: true },
+  });
+  if (!previous) return null;
+  if (
+    previous.action !== data.type ||
+    Number((previous.after as any)?.qty) !== Number(data.qty)
+  )
+    bad("La clave de la operación ya corresponde a otro ajuste.");
+  return safe(await lockVariant(tx, data.variantId, actor), actor);
+}
+
 @Controller()
 export class InventoryController {
   constructor(@Inject(Database) private db: Database) {}
@@ -688,6 +716,10 @@ export class InventoryController {
         // N-1: la devolución a proveedor necesita proveedor y referencia.
         supplierId: uuid.optional(),
         reference: z.string().trim().min(1).max(60).optional(),
+        // A4 (auditoría 19-nov): clave opcional del formulario. Si llega
+        // repetida (reenvío, doble clic) se devuelve la variante sin volver a
+        // mover existencias. Sin clave se comporta como siempre.
+        operationId: uuid.optional(),
       }),
       body,
     );
@@ -712,6 +744,8 @@ export class InventoryController {
     return retrySerializable(() =>
       this.db.$transaction(
         async (tx) => {
+          const repeated = await repeatedAdjustment(tx, actor, data);
+          if (repeated) return repeated;
           const warehouse = data.warehouseId
             ? await tx.warehouse.findFirst({
                 where: {
