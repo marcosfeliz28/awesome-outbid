@@ -16,7 +16,7 @@ import {
   canViewCashExpected,
   denied,
 } from "./common";
-import { groupIncomeDays } from "./income-day";
+import { cashReconciliation, groupIncomeDays } from "./income-day";
 import { saleIsGvSql, saleNotGvSql } from "./gv-scope";
 import { incomeKindName, methodName } from "./reportes/textos";
 
@@ -286,23 +286,24 @@ export class IncomeReportController {
       card: Number(session.expectedCard ?? 0),
       transfer: Number(session.expectedTransfer ?? 0),
     };
-    const report = {
-      cash: row.cash + row.collectionCash,
-      card: row.card + row.collectionCard,
-      transfer: row.transfer + row.collectionTransfer,
-    };
-    const difference = {
-      cash: Number((report.cash - expected.cash).toFixed(2)),
-      card: Number((report.card - expected.card).toFixed(2)),
-      transfer: Number((report.transfer - expected.transfer).toFixed(2)),
-    };
+    // D15: los pagos en dólares de esta caja (la caja los cuenta aparte).
+    const usdPayments = await this.db.payment.aggregate({
+      where: {
+        cashSessionId: session.id,
+        currency: "USD",
+        sale: { status: "completed" },
+        status: { not: "rejected" },
+        OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
+      },
+      _sum: { amount: true, change: true },
+    });
     return {
       comparable: true,
       day: row.day,
-      report,
-      expected,
-      difference,
-      matches: Object.values(difference).every((value) => value === 0),
+      ...cashReconciliation(row, expected, {
+        amount: Number(usdPayments._sum.amount ?? 0),
+        change: Number(usdPayments._sum.change ?? 0),
+      }),
     };
   }
   @Get("reports/income-by-day")

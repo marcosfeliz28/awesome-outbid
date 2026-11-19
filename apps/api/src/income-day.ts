@@ -72,3 +72,35 @@ export function groupIncomeDays(events: IncomeEvent[]): IncomeDay[] {
       return row;
     });
 }
+
+// D15: la caja cuenta los dólares en su propia gaveta y de los pesos solo
+// resta el vuelto (cashExpected); el reporte los suma como su equivalente en
+// pesos. Para comparar con el cierre se quita ese equivalente y se resta el
+// vuelto, igual que hace la caja.
+export function cashReconciliation(
+  row: IncomeDay,
+  expected: { cash: number; card: number; transfer: number },
+  usd: { amount: number; change: number } = { amount: 0, change: 0 },
+) {
+  const cents = (value: number) => Math.round(value * 100);
+  const report = {
+    cash:
+      (cents(row.cash + row.collectionCash) -
+        cents(usd.amount) -
+        cents(usd.change)) /
+      100,
+    card: cents(row.card + row.collectionCard) / 100,
+    transfer: cents(row.transfer + row.collectionTransfer) / 100,
+  };
+  const difference = {
+    cash: (cents(report.cash) - cents(expected.cash)) / 100,
+    card: (cents(report.card) - cents(expected.card)) / 100,
+    transfer: (cents(report.transfer) - cents(expected.transfer)) / 100,
+  };
+  return {
+    report,
+    expected,
+    difference,
+    matches: Object.values(difference).every((value) => value === 0),
+  };
+}
