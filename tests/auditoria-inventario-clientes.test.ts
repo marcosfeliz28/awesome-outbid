@@ -116,6 +116,7 @@ function fakeCountDb() {
         { id: "c1", items: [{ variantId: VARIANT, counted: 5, expected: 7 }] },
       ],
     },
+    auditLog: { create: async () => ({}) },
   };
   return { db, created };
 }
@@ -224,7 +225,7 @@ describe("VE · entradas de proveedores, clientes y categorías", () => {
     const { AdminController } = await import("../apps/api/src/admin");
     const { db, created } = fakeAdminDb();
     const admin = new AdminController(db);
-    expect(() => admin.supplier({ name: "     " }, manager)).toThrow();
+    await expect(admin.supplier({ name: "     " }, manager)).rejects.toThrow();
     expect(created).toHaveLength(0);
     await admin.supplier(
       {
