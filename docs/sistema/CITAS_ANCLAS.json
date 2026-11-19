@@ -381,6 +381,7 @@
   "apps/web/src/WarehousesPanel.tsx:82": "return (",
   "apps/web/src/ZeroCost.tsx:20": "export function WithoutCostCard() {",
   "cash.ts:1085": "// el mensaje deliberadamente no expone el saldo ni el monto esperado",
+  "cash.ts:1110": "@Post(\":id/transfer\")",
   "cash.ts:1161": "@Post(\":id/close\")",
   "cash.ts:1189": "// en 0. Todo vale exige una nota; el de quien no gestiona ventas, además,",
   "cash.ts:1232": "{ closing: true },",
