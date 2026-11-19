@@ -566,7 +566,7 @@ describe("Primeros pasos · INI-06 a INI-08", () => {
   const onboarding = readFileSync("apps/web/src/Onboarding.tsx", "utf8");
   it("Básico/Avanzado activo se lee en tema oscuro (≥ 4.5:1)", () => {
     const dark = { ...variables(":root"), ...variables(':root[data-theme="dark"]') };
-    const rule = css.match(/:root\[data-theme="dark"\] \.config-mode \.active \{ color: (#[0-9a-f]{6}); \}/i);
+    const rule = css.match(/:root\[data-theme="dark"\] \.config-mode \.active \{\s*color:\s*(#[0-9a-f]{6});\s*\}/i);
     expect(rule, "regla de color del modo activo en tema oscuro").toBeTruthy();
     meets("config-mode activo oscuro", rule![1], dark["--primary"], 4.5);
   });

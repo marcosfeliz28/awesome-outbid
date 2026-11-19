@@ -8,7 +8,11 @@ const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
 // Solo CSS: transform y opacity, tokens --nx-dur-*, hover de 2 px y
 // prefers-reduced-motion que apaga todo. Bloque propio al final de styles.css.
 const start = css.indexOf("/* Orden 98 · pieza 2");
-const bloque = start > -1 ? css.slice(start) : "";
+// El bloque termina en el siguiente comentario de primer nivel: lo que venga
+// después (p. ej. --positive-text de otras pantallas) no es del tablero.
+const resto = start > -1 ? css.slice(start) : "";
+const fin = resto.indexOf("\n/* ", 1);
+const bloque = fin > -1 ? resto.slice(0, fin) : resto;
 
 describe("Tablero · animación y pistas", () => {
   it("el bloque de animación del tablero existe al final de styles.css", () => {
