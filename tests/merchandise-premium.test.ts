@@ -24,6 +24,15 @@ describe("Mercancía high4K: presentation-only contract", () => {
     expect(css).toContain('data-accent="blue"');
     expect(css).toContain('data-theme="dark"');
   });
+  it("uses the High 4K reception header finish only in dark green", () => {
+    const selector =
+      ':root[data-theme="dark"]:not([data-accent="blue"]):not([data-overview-surface="black"]) .merchandise.goods-premium .goods-header';
+    const finish = css.split(selector + " {")[1]?.split("}")[0] ?? "";
+    expect(finish).toContain("radial-gradient");
+    expect(finish).toContain("linear-gradient");
+    expect(finish).toContain("border-color: var(--goods-gold)");
+    expect(finish).not.toMatch(/(?:display|position|padding|margin|width|height)\s*:/);
+  });
   it("does not create a new save/sync state or replace the original fixed mobile confirmation", () => {
     expect(source).not.toContain("Borrador guardado");
     expect(source).not.toContain("En cola sin conexión");
