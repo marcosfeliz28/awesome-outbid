@@ -114,6 +114,15 @@
 .operations-premium td.operations-money {white-space:nowrap;overflow-wrap:normal;font-variant-numeric:tabular-nums}
 @media(max-width:600px){.operations-premium td.operations-money {width:auto}}
 
+/* PNG05: the desktop purchase tables have a continuous, inset emerald header rail. */
+@media (min-width: 601px) and (forced-colors: none) {
+  :root[data-theme="dark"]:not([data-accent="blue"]):not([data-overview-surface="black"])
+    .operations-purchases .table-wrap thead th {
+    background: linear-gradient(180deg, #134a33, #0b2c20);
+    box-shadow: inset 0 1px 0 #6cc89955, inset 0 -1px 0 #876f3c;
+  }
+}
+
 /* The mobile shortcut is a shell sibling, so use the existing premium lifecycle flag.
    Keep its fixed position, safe-area padding and visibility rules unchanged. */
 :root[data-premium-workspace="true"] .goods-mobile-bar {

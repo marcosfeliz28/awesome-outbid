@@ -79,3 +79,11 @@ it("localizes settings tax and period suffixes without changing values", () => {
  }
  expect(source).toContain('{en ? "Receipt" : "Ticket"} {query.data?.receiptWidth} mm');
 });
+
+it("limits the PNG05 emerald header rail to desktop purchase tables in the dark-green theme", () => {
+  const css = read("apps/web/src/operationsPresentation.css");
+  const rail = css.match(/@media \(min-width: 601px\) and \(forced-colors: none\) \{\s*:root\[data-theme="dark"\]:not\(\[data-accent="blue"\]\):not\(\[data-overview-surface="black"\]\)\s+\.operations-purchases \.table-wrap thead th \{([^}]+)\}/);
+  expect(rail?.[1]).toMatch(/background: linear-gradient/);
+  expect(rail?.[1]).toMatch(/box-shadow: inset/);
+  expect(rail?.[1]).not.toMatch(/color:|width:|height:|display:|padding:|animation:|content:/);
+});
