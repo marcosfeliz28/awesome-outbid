@@ -32,6 +32,9 @@ const kindName: Record<string, string> = {
   return_card: "Devolución a tarjeta",
   return_transfer: "Devolución por transferencia",
 };
+// P7: la devolución se resta el día en que se hizo (no en el de la venta).
+const INCOME_NET_NOTE =
+  "«Vendido neto» resta cada devolución el día en que se hizo. El Resumen, el Informe mensual y el total del Informe formal la restan en el período de la venta original, por eso las cifras pueden no coincidir.";
 // P6: el método llega como código (cash, card…); se muestra en español.
 const methodName: Record<string, string> = {
   cash: "Efectivo",
@@ -263,6 +266,10 @@ export function IncomeByDay() {
                   </tbody>
                 </table>
               </div>
+              {/* P7: por qué «Vendido neto» no cuadra con el Resumen. */}
+              <p role="note">
+                {text(INCOME_NET_NOTE)}
+              </p>
               {query.data.gv && (query.data.gv.total || query.data.gv.moneyIn) ? (
                 <div className="cod-hint" role="status">
                   <strong>{en ? "GV (separate, not added)" : "GV (aparte, no suma)"}</strong>{" "}
