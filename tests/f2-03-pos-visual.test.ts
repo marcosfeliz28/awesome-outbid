@@ -18,3 +18,10 @@ it("F2-03: no cambia las etiquetas de cobro que buscan las pruebas e2e", () => {
   expect(pos).toContain("aria-label={`Cobrar ${formatMoney(total)}`}");
   expect(pos).toContain("<kbd>F12</kbd>");
 });
+
+it("CP-12: las tres acciones inferiores del carrito caben con el mismo ancho en escritorio", () => {
+  const fusion = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
+  expect(fusion).toMatch(
+    /@media \(min-width: 601px\) \{[\s\S]*?\.cart-bottom-actions \{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/,
+  );
+});

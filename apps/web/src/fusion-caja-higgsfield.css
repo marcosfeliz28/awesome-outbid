@@ -916,6 +916,20 @@
  color: var(--fc-ink); background: var(--fc-deep); border: 1px solid var(--fc-edge);
 }
 .pos-layout.fusion-caja-integrada .customer-avatar { background: var(--fc-deep); }
+
+/* CP-12: acciones de cierre parejas y sin recortes en el carrito de escritorio. */
+@media (min-width: 601px) {
+  .pos-layout.fusion-caja-integrada .cart-bottom-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .pos-layout.fusion-caja-integrada .cart-bottom-actions button {
+    min-width: 0;
+    justify-content: center;
+  }
+}
+
 /* Scoped checkout shell and receipt portal: beat legacy violet without changing actions. */
 .app-shell:has(.pos-layout.fusion-caja-integrada) {
  --primary: var(--fc-accent); --primary-soft: var(--fc-pressed);
