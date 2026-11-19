@@ -756,6 +756,12 @@ export class InventoryController {
               })
             : null;
           if (data.warehouseId && !warehouse) bad("Almacén inválido.");
+          // Dinero-11: el proveedor se valida antes de elegir almacén; desde
+          // Casa también (antes solo se comprobaba en la Tienda).
+          if (data.type === "supplier_return")
+            await tx.supplier.findFirstOrThrow({
+              where: { id: data.supplierId, branchId: actor.branchId },
+            });
           if (warehouse && !warehouse.sellable) {
             const variant = await lockVariant(tx, data.variantId, actor);
             const before = Number(
@@ -900,13 +906,16 @@ export class InventoryController {
               undefined,
               data,
             );
+            if (data.type === "supplier_return")
+              await supplierReturnAlert(tx, actor, {
+                key: "supplier-return:" + randomUUID(),
+                supplierId: data.supplierId!,
+                reference: data.reference!,
+                cost: -data.qty * Number(variant.costAvg),
+              });
             if (data.qty < 0) await inventoryLossAlert(tx, actor);
             return safe({ ...variant, homeStock: after }, actor);
           }
-          if (data.type === "supplier_return")
-            await tx.supplier.findFirstOrThrow({
-              where: { id: data.supplierId, branchId: actor.branchId },
-            });
           const variant = await lockVariant(tx, data.variantId, actor);
           let lotId = data.lotId;
           if (
