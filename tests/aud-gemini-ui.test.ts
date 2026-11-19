@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { lockedMessage } from "../apps/api/src/security";
 import { nextFieldOnEnter } from "../apps/web/src/posKeyboard";
+import { operacionesText } from "../apps/web/src/operacionesLanguage";
 
 const read = (file: string) => readFileSync(file, "utf8");
 
@@ -74,11 +75,37 @@ describe("textos de la auditoría", () => {
     expect(app).toContain("¿Olvidaste tu contraseña?");
     expect(app).toContain("(no es tu PIN de caja)");
   });
-  it("Productos vacío invita a crear o importar, la caja explica la diferencia y Anonimizar dice la deuda", () => {
+  it("Productos vacío invita a crear o importar y la caja explica la diferencia", () => {
     expect(management).toContain("Aún no tienes productos");
     expect(management).toContain("«Recibido por la dueña» salen en Reportes");
-    expect(management).toContain(
-      "todavía debe ${formatMoney(anonymizing.debt)}",
+  });
+  it("Anonimizar muestra el importe solo con deuda y avisa en ES y EN", () => {
+    const customers = management.slice(
+      management.indexOf("export function Customers()"),
+      management.indexOf("export function Promotions()"),
     );
+    expect(customers).toContain('const en = useLanguage() === "en"');
+    expect(customers).toContain(
+      "const ot = (text: string) => operacionesText(en, text)",
+    );
+    const debtWarning = customers.match(
+      /\(anonymizing\.debt > 0\s*\?\s*`\$\{anonymizing\.name\}\$\{ot\("([^"]+)"\)\}\$\{formatMoney\(anonymizing\.debt\)\}\$\{ot\("([^"]+)"\)\}`\s*:\s*""\)\s*\+\s*customerAnonymizationText\(en, anonymizing\.name\)/,
+    );
+    expect(debtWarning).not.toBeNull();
+    const [, prefix, suffix] = debtWarning!;
+    expect([
+      operacionesText(false, prefix),
+      operacionesText(false, suffix),
+    ]).toEqual([
+      " todavía debe ",
+      " (crédito o contraentrega): no se puede anonimizar hasta que salde la deuda. ",
+    ]);
+    expect([
+      operacionesText(true, prefix),
+      operacionesText(true, suffix),
+    ]).toEqual([
+      " still owes ",
+      " (credit or cash on delivery): this customer cannot be anonymized until the balance is paid. ",
+    ]);
   });
 });
