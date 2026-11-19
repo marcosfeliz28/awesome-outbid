@@ -55,10 +55,13 @@ export function useLanguage() {
 }
 /** Only UI copy is translated. Product names and server messages remain verbatim. */
 export const english: Record<string, string> = {
+  "1 producto encontrado": "1 product found",
+  "productos para descubrir": "products to discover",
+  "Abre tu caja para comenzar": "Open your register to begin",
   "Ir al carrito y cobrar": "Go to cart and checkout",
   "Código o nombre del producto": "Product code or name",
   "Buscar productos": "Search products",
-  "Preguntas": "Questions",
+  Preguntas: "Questions",
   "En espera": "On hold",
   "Todos los productos": "All products",
   "Venta actual": "Current sale",
@@ -69,14 +72,15 @@ export const english: Record<string, string> = {
   "Elegir cliente": "Choose customer",
   "Carrito vacío": "Empty cart",
   "Escanea o busca un artículo": "Scan or search for an item",
-  "Subtotal": "Subtotal",
+  Subtotal: "Subtotal",
   "Descuento global": "Global discount",
-  "incluido": "included",
+  incluido: "included",
   "Total a cobrar": "Total due",
-  "Cobrar": "Charge",
-  "Cotizar": "Quote",
-  "Limpiar": "Clear",
-  "Cada venta se registra con tu usuario.": "Each sale is recorded under your account.",
+  Cobrar: "Charge",
+  Cotizar: "Quote",
+  Limpiar: "Clear",
+  "Cada venta se registra con tu usuario.":
+    "Each sale is recorded under your account.",
   "Carrito vacío · Busca un artículo": "Empty cart \u00b7 Search for an item",
 
   Abrir: "Open",

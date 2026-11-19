@@ -797,6 +797,17 @@ kbd {
   min-width: 220px;
   border-radius: 12px;
 }
+.account-menu .session-language {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+}
+.account-menu .session-language select {
+  min-height: 44px;
+  max-width: 100%;
+}
 .account-menu button {
   display: flex;
   align-items: center;
@@ -3127,6 +3138,17 @@ td strong {
 .login-form-panel .field input:focus-visible {
   outline: 3px solid var(--login-cyan);
   outline-offset: 2px;
+}
+.login-language {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.login-language select {
+  min-height: 36px;
 }
 .login-form-panel .button:focus-visible,
 .login-form-panel .show-password:focus-visible {

@@ -120,10 +120,14 @@
 }
 @media (max-width: 600px) {
   .reconciliation-row {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
   }
   .reconciliation-row > button {
-    margin-left: 56px;
+    grid-column: 2;
+    margin-left: 0;
+    justify-self: start;
   }
   .reconciliation-totals {
     display: grid;

@@ -1074,8 +1074,8 @@ export function POS({ go }: { go: (page: string) => void }) {
               : filtered.length > MAX_CARDS
                 ? `Mostrando ${MAX_CARDS} de ${filtered.length} · escribe para encontrar el resto`
                 : filtered.length === 1
-                  ? "1 producto encontrado"
-                  : `${filtered.length} productos para descubrir`}
+                  ? t("1 producto encontrado")
+                  : `${filtered.length} ${t("productos para descubrir")}`}
           </span>
           <span>
             <span className="live-dot" />
@@ -1313,7 +1313,7 @@ export function POS({ go }: { go: (page: string) => void }) {
           </div>
           {!session && (
             <button className="open-cash-link" onClick={() => go("cash")}>
-              Abre tu caja para comenzar <ArrowLeft size={14} />
+              {t("Abre tu caja para comenzar")} <ArrowLeft size={14} />
             </button>
           )}
           {elsewhere && <CashElsewhere session={session} compact />}

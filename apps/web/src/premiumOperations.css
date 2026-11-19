@@ -293,6 +293,14 @@
     flex-wrap: wrap;
   }
 }
+/* GV-18: si la barra global de Mercancía está presente en celular, el final
+   de Caja GV mantiene una reserva propia y no queda cubierto al hacer scroll. */
+@media (max-width: 768px) {
+  .app-shell:has(.goods-mobile-bar)
+    .norexos-premium-workspace[data-premium-area="gv"] {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .norexos-premium-workspace[data-premium-area="gv"] .gv-card {
     transition: none;

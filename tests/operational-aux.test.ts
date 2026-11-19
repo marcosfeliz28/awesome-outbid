@@ -141,3 +141,23 @@ it("solo importes tienen nowrap; cifras excepcionales permiten desplazamiento", 
       'className="operational-aux-money"',
     );
 });
+
+it("CC-21: la acción móvil queda debajo de los datos de transferencia", () => {
+  const css = source("transferReconciliation.css");
+  expect(css).toMatch(
+    /@media \(max-width: 600px\)[\s\S]*?\.reconciliation-row\s*\{[\s\S]*?grid-template-columns:\s*44px minmax\(0, 1fr\)/,
+  );
+  expect(css).toMatch(
+    /\.reconciliation-row > button\s*\{[\s\S]*?grid-column:\s*2/,
+  );
+});
+
+it("CC-20: el filtro Fecha conserva su etiqueta a 390 px", () => {
+  const css = source("fusion-ventas.css");
+  expect(css).toMatch(
+    /@media \(max-width: 540px\)[\s\S]*?\.sales-fusion \.table-toolbar \.table-search\s*\{[\s\S]*?grid-template-columns:\s*max-content minmax\(0, 1fr\)/,
+  );
+  expect(css).toMatch(
+    /\.sales-fusion \.table-toolbar \.table-search > span\s*\{[\s\S]*?white-space:\s*nowrap/,
+  );
+});

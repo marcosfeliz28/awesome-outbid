@@ -189,6 +189,29 @@
   max-width: 100%;
   border-radius: 14px;
 }
+/* INV-011: en escritorio la última columna acompaña el borde visible de la
+   tabla, así los tres controles no quedan cortados detrás del desplazamiento. */
+@media (min-width: 769px) {
+  .fusion-inventory .table-wrap {
+    position: relative;
+  }
+  .fusion-inventory :is(th, td):last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: var(--iv-surface);
+    box-shadow: -4px 0 8px var(--iv-shadow);
+  }
+  .fusion-inventory th:last-child {
+    z-index: 2;
+    background: var(--iv-deep);
+  }
+  .fusion-inventory .table-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    min-width: 160px;
+  }
+}
 .fusion-inventory .pagination {
   flex-wrap: wrap;
 }

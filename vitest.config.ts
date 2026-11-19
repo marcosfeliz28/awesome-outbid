@@ -144,6 +144,7 @@ export default defineConfig({
       "tests/productos-presentacion.test.ts",
       "tests/catalog-image.test.ts",
       "tests/gv-unit.test.ts",
+      "tests/gv-ui-auditoria.test.ts",
       "tests/gv-incentivos-unit.test.ts",
       "tests/gv-auditoria-migration-postgres.test.ts",
       "tests/gv-gerente-rol-migration-postgres.test.ts",

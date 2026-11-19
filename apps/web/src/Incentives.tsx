@@ -95,16 +95,21 @@ export const wholesaleField = () =>
 
 export function WholesaleToggle() {
   const { on, set } = useWholesale();
+  const en = useLanguage() === "en";
   return (
     <div className={`wholesale-toggle${on ? " active" : ""}`}>
       <button
         type="button"
         aria-pressed={on}
         onClick={() => set(!on)}
-        title="Sólo cambia tu incentivo: precios y total quedan igual"
+        title={
+          en
+            ? "Only your incentive changes; prices and total stay the same"
+            : "Sólo cambia tu incentivo: precios y total quedan igual"
+        }
       >
         <Tags size={16} aria-hidden="true" />
-        <span>Venta al por mayor</span>
+        <span>{en ? "Wholesale sale" : "Venta al por mayor"}</span>
         <span className="wholesale-switch" aria-hidden="true" />
       </button>
       {on && (
@@ -120,11 +125,14 @@ export function WholesaleToggle() {
 /** Aviso en el cobro y en la venta registrada. */
 export function WholesaleNotice({ on }: { on?: boolean }) {
   const active = useWholesale((s) => s.on);
+  const en = useLanguage() === "en";
   if (!(on ?? active)) return null;
   return (
     <p className="wholesale-notice">
       <Tags size={15} aria-hidden="true" />
-      Venta al por mayor · incentivo a la mitad
+      {en
+        ? "Wholesale sale · half incentive"
+        : "Venta al por mayor · incentivo a la mitad"}
     </p>
   );
 }

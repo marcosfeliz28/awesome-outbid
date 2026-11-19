@@ -124,6 +124,18 @@
     {
       "before": "aria-label={`Ver carrito (${units} artículos)`}",
       "after": "aria-label={`${language === \"en\" ? \"View cart\" : \"Ver carrito\"} (${units} ${language === \"en\" ? (units === 1 ? \"item\" : \"items\") : (units === 1 ? \"artículo\" : \"artículos\")})`}"
+    },
+    {
+      "before": "                  ? \"1 producto encontrado\"",
+      "after": "                  ? t(\"1 producto encontrado\")"
+    },
+    {
+      "before": "                  : `${filtered.length} productos para descubrir`}",
+      "after": "                  : `${filtered.length} ${t(\"productos para descubrir\")}`}"
+    },
+    {
+      "before": "              Abre tu caja para comenzar <ArrowLeft size={14} />",
+      "after": "              {t(\"Abre tu caja para comenzar\")} <ArrowLeft size={14} />"
     }
   ]
 }
