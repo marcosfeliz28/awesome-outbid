@@ -141,3 +141,13 @@ it("solo importes tienen nowrap; cifras excepcionales permiten desplazamiento", 
       'className="operational-aux-money"',
     );
 });
+
+it("CC-21: la acción móvil queda debajo de los datos de transferencia", () => {
+  const css = source("transferReconciliation.css");
+  expect(css).toMatch(
+    /@media \(max-width: 600px\)[\s\S]*?\.reconciliation-row\s*\{[\s\S]*?grid-template-columns:\s*44px minmax\(0, 1fr\)/,
+  );
+  expect(css).toMatch(
+    /\.reconciliation-row > button\s*\{[\s\S]*?grid-column:\s*2/,
+  );
+});
