@@ -961,7 +961,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver qué clientes compran seguido y cuáles compran pocas veces.",
     comoSeLee:
-      "Cuenta las compras del período. Las devoluciones de cada venta se restan siempre, sin importar cuándo se devolvieron. Promedio de días entre compras es cuántos días pasan en promedio entre una compra y la siguiente. El teléfono aparece parcial si no tienes permiso para verlo completo.",
+      "Cuenta las compras del período. Las devoluciones de cada venta se restan siempre, sin importar cuándo se devolvieron. Promedio de días entre compras es cuántos días pasan en promedio entre un día de compra y el siguiente; varias compras el mismo día cuentan como un solo día. El teléfono aparece parcial si no tienes permiso para verlo completo.",
     columnas: {
       Cliente: c("Cliente", "Nombre del cliente."),
       Teléfono: c("Teléfono", "Teléfono del cliente."),
@@ -972,7 +972,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       ),
       "Promedio de días entre compras": c(
         "Días entre compras",
-        "Cuántos días pasan en promedio entre una compra y la siguiente. Vacío si compró una sola vez.",
+        "Cuántos días pasan en promedio entre un día de compra y el siguiente. Vacío si compró un solo día.",
       ),
       "Última compra": c(
         "Última compra",
