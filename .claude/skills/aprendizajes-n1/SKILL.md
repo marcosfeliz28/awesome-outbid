@@ -72,3 +72,12 @@ description: Lecciones operativas de Norexos 1 (cómo hacer las cosas rápido y 
 - El digest que da la API es del ZIP del artefacto, no del `.exe`; los artefactos caducan a los 7 días.
 - `actions_list` usa `perPage`, no `per_page`; sin el nombre correcto devuelve 30 corridas.
 
+
+## 19-nov
+- Correr `tests/docs-sistema-citas.test.ts` reescribe `docs/sistema/*` en el árbol: tras correrlo en una rama de mezcla, `git checkout -- docs/sistema` antes de cambiar de rama (si no, el checkout aborta).
+- Mover efectivo «Recibido por la dueña» a una caja: `POST /payments/:id/move-cash-session {cashSessionId, reason}`; el listado de cajas es `GET /cash-sessions` (no `/cash/sessions`) y el cuadre `GET /cash-sessions/:id/cuadre` (cashCheck). Verificar antes/después por los 3 caminos: lista, cuadre y respuesta del POST.
+- Run CI de claude/publicar-lote2-19nov 979eb9a4 → 44463120659.
+- 19-nov: zod 4 prueba `new Function` (JIT) al construir esquemas; con CSP sin unsafe-eval (contenedor de escritorio) el e2e `fuentes.spec` lo ve como bloqueo. `packages/shared` hace `z.config({jitless:true})` en el navegador (`typeof window`). Un revisor dijo «la web no usa zod»: falso, shared lo importa; verificar con grep antes de creerlo.
+- 19-nov: tras actualizar dependencias en una rama, `CI=true pnpm install --frozen-lockfile` + `pnpm db:generate` antes de correr pruebas locales (si no, tipos viejos dan decenas de fallas falsas).
+- 19-nov: los revisores personalizados (money-guard/security-reviewer) los bloquea el hook de Review Council si el checkout difiere de origin/main; se usan agentes generales (opus) con el mismo brief, solo lectura, y se dice al dueño.
+- 19-nov: un JSON de API no se traduce: las pruebas de dinero leen códigos (cash, return). El español va solo en etiquetas de pantalla/Excel/PDF.
