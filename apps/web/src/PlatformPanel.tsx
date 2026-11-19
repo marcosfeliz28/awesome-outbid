@@ -450,21 +450,29 @@ function PaymentForm({
           </select>
         </Field>
         {needsPlan && (
-          <Field label="Plan que paga">
-            <select
-              value={plan}
-              onChange={(e) => setPlan(e.target.value)}
-              required
-              disabled={review}
-            >
-              <option value="">Elige…</option>
-              {Object.entries(PLANS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <div className="flex flex-col gap-2 rounded-lg border border-sky-300 bg-sky-50 p-3 sm:col-span-2">
+            <div>
+              <div className="font-semibold text-sky-950">Primer cobro</div>
+              <div className="text-sm font-normal text-slate-700">
+                La empresa sigue en prueba. Elige el plan que empezará a pagar.
+              </div>
+            </div>
+            <Field label="Plan que paga">
+              <select
+                value={plan}
+                onChange={(e) => setPlan(e.target.value)}
+                required
+                disabled={review}
+              >
+                <option value="">Elige un plan…</option>
+                {Object.entries(PLANS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
         )}
       </div>
       <ErrorText text={error} />
@@ -548,27 +556,90 @@ function PlanForm({
     }
   };
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3">
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <div
+        aria-label="Resumen del plan y la prueba"
+        className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+      >
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="text-sm font-semibold text-slate-600">Plan actual</div>
+          <div className="mt-1 text-base font-bold text-slate-950">
+            {PLANS[tenant.plan as keyof typeof PLANS] ?? "Sin plan de pago"}
+          </div>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="text-sm font-semibold text-slate-600">Fin de la prueba</div>
+          <div className="mt-1 text-base font-bold text-slate-950">
+            {date(tenant.trialEndsAt)}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Plan">
-          <select value={plan} onChange={(e) => setPlan(e.target.value)} disabled={review}>
-            <option value="">Sin cambio</option>
-            {Object.entries(PLANS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Prorrogar prueba (días)">
-          <input inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value.replace(/\D/g, ""))} disabled={review} />
-        </Field>
-        <Field label="Quién lo hace">
-          <input value={operadora} maxLength={80} onChange={(e) => setOperadora(e.target.value)} disabled={review} />
-        </Field>
-        <Field label="Motivo">
-          <input value={motivo} maxLength={300} onChange={(e) => setMotivo(e.target.value)} disabled={review} />
-        </Field>
+        <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
+          <div>
+            <h3 className="text-base font-bold text-slate-950">Cambiar plan</h3>
+            <p className="text-sm text-slate-700">
+              Déjalo sin cambio si solo vas a ampliar la prueba.
+            </p>
+          </div>
+          <Field label="Nuevo plan (opcional)">
+            <select value={plan} onChange={(e) => setPlan(e.target.value)} disabled={review}>
+              <option value="">Sin cambio</option>
+              {Object.entries(PLANS).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
+          <div>
+            <h3 className="text-base font-bold text-slate-950">Prorrogar prueba</h3>
+            <p className="text-sm text-slate-700">
+              Añade entre 1 y 365 días a la fecha vigente.
+            </p>
+          </div>
+          <Field label="Prórroga (días)">
+            <input
+              inputMode="numeric"
+              placeholder="Ej.: 7"
+              value={days}
+              onChange={(e) => setDays(e.target.value.replace(/\D/g, ""))}
+              disabled={review}
+            />
+          </Field>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <h3 className="text-base font-bold text-slate-950">Registro del cambio</h3>
+        <p className="mb-3 text-sm text-slate-700">
+          Estos datos quedan en la bitácora para explicar quién hizo el cambio y por qué.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Responsable del cambio">
+            <input
+              value={operadora}
+              maxLength={80}
+              placeholder="Nombre de la operadora"
+              onChange={(e) => setOperadora(e.target.value)}
+              disabled={review}
+            />
+          </Field>
+          <Field label="Motivo del cambio">
+            <textarea
+              value={motivo}
+              maxLength={300}
+              rows={3}
+              placeholder="Explica brevemente la razón"
+              onChange={(e) => setMotivo(e.target.value)}
+              disabled={review}
+            />
+          </Field>
+        </div>
       </div>
       <ErrorText text={error} />
       {done && (
@@ -584,7 +655,7 @@ function PlanForm({
           text={`¿Aplicar a ${tenant.name}${changePlan ? ` el plan ${PLANS[plan as keyof typeof PLANS]}` : ""}${changePlan && extend ? " y" : ""}${extend ? ` ${extend} días más de prueba` : ""}?`}
         />
       ) : (
-        <Button>Revisar cambio</Button>
+        <Button>Revisar cambio de plan o prueba</Button>
       )}
     </form>
   );
