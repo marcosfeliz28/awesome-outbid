@@ -297,6 +297,10 @@
     {
       "before": "query.data?.returnDays + \" días\"",
       "after": "query.data?.returnDays + (en ? \" days\" : \" días\")"
+    },
+    {
+      "before": "          <li>\n            {en ? \"In Render (API), set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID, then redeploy.\" : \"En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve a desplegar.\"}\n          </li>",
+      "after": "          <li>{en ? \"Ask support to activate invoice notifications.\" : \"Pide a soporte activar los avisos de facturas.\"}</li>"
     }
   ]
 }
