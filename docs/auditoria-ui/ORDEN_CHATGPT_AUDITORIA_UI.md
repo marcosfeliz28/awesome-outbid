@@ -1,5 +1,8 @@
 # ORDEN PARA CHATGPT (PC y NUBE): corregir los hallazgos de la auditoría del software (19-nov-2026)
 
+> **ACTUALIZACIÓN 19-nov (reparto de Claude, commit 488a9c63, rama `claude/reparto-auditoria-19nov`):** la auditoría se divide así: **Claude se queda con los hallazgos de datos, función y entrada** (115 filas, 47 altas: dinero, descuento global, ganancia, terminales, etc.) y **ChatGPT toma los de texto, ortografía, traducción, formato, diseño y contraste** (231 filas, 10 altas). Tu lista de trabajo es `docs/coordinacion/reparto-auditoria-19nov/CHATGPT.csv` (y el `LEEME.md` de esa carpeta). Cuando este documento mencione un punto de dinero, cifras, API, terminales, inventario o clientes (secciones «ChatGPT NUBE» puntos 1–2, 4, 6–8 y 10), **es de Claude: no lo toques**. ChatGPT NUBE y ChatGPT PC reparten entre ellos solo las 231 filas de `CHATGPT.csv` (NUBE: textos y formatos que salen de la API y de los reportes; PC: pantallas, idioma, contraste, móvil, formularios).
+
+
 Origen: 11 agentes revisaron el sistema en producción (solo lectura). Lista completa y ordenada por gravedad: `docs/auditoria-ui/TODOS_LOS_HALLAZGOS.csv` (346 filas: 57 altas, 137 medias, 128 bajas, 24 mínimas; columnas `id_global, area, pantalla, idioma, viewport, severidad, tipo, que_paso, como_repetir, esperado`). Un CSV por área en la misma carpeta. Rama con todo: `claude/bitacora-n2`.
 La dueña pidió corregir **todo, hasta lo mínimo** (letra, acento, color, tamaño, diseño, entradas, reportes, uniformidad, español e inglés).
 
