@@ -184,7 +184,7 @@ function DriveBackupPanel() {
       {data && !data.configured && (
         <>
           <p>
-            {en ? "Server setup is required. Ask the Norexos installer to follow the daily Google Drive backup guide (docs/RESPALDO_DRIVE.md)." : "Falta configurarlo en el servidor. Pide a quien instaló Norexos que\n            siga la guía «Respaldo diario a Google Drive»\n            (docs/RESPALDO_DRIVE.md)."}
+            {en ? "Backup is not configured. Ask support to activate it." : "Respaldo no configurado. Pide a soporte activarlo."}
           </p>
           {/* 05-N10: los nombres de variables y la dirección de regreso son
               para el técnico; plegados, no ocupan la pantalla de la dueña. */}

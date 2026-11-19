@@ -210,6 +210,10 @@
       {
         "before": "\n              Cancelar\n",
         "after": "\n              {en ? \"Cancel\" : \"Cancelar\"}\n"
+      },
+      {
+        "before": "{en ? \"Server setup is required. Ask the Norexos installer to follow the daily Google Drive backup guide (docs/RESPALDO_DRIVE.md).\" : \"Falta configurarlo en el servidor. Pide a quien instaló Norexos que\\n            siga la guía «Respaldo diario a Google Drive»\\n            (docs/RESPALDO_DRIVE.md).\"}",
+        "after": "{en ? \"Backup is not configured. Ask support to activate it.\" : \"Respaldo no configurado. Pide a soporte activarlo.\"}"
       }
     ]
   }

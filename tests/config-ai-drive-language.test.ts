@@ -32,4 +32,13 @@ describe("Configuration AI/Drive UI language, no connection side effects", () =>
     expect(read("DriveBackup.tsx")).toContain('closeLabel={en ? "Close" : "Cerrar"}');
     expect(read("DriveBackup.tsx")).toContain('en ? "en-US" : "es-DO"');
   });
+  it("does not expose a repository path when backup setup is pending", () => {
+    const source = read("DriveBackup.tsx");
+    expect(source).toContain(
+      'en ? "Backup is not configured. Ask support to activate it." : "Respaldo no configurado. Pide a soporte activarlo."',
+    );
+    expect(source).not.toContain(
+      "follow the daily Google Drive backup guide (docs/RESPALDO_DRIVE.md)",
+    );
+  });
 });
