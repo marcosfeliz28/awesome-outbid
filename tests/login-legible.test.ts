@@ -38,3 +38,13 @@ describe("Usuarios y permisos · acciones en móvil", () => {
     );
   });
 });
+
+describe("CC-27 · idioma siempre disponible", () => {
+  it("ofrece selector en la entrada y fuera del resumen", () => {
+    const app = readFileSync("apps/web/src/App.tsx", "utf8");
+    expect(app).toContain('className="login-language"');
+    expect(app).toContain('aria-label={\n              language === "en" ? "Interface language" : "Idioma de la interfaz"');
+    expect(app).toContain('<div className="fusion-preferences" lang={language}>');
+    expect(app).not.toContain('{page === "dashboard" && <div className="fusion-preferences"');
+  });
+});

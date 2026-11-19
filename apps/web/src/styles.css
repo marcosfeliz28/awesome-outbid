@@ -3137,6 +3137,17 @@ td strong {
   outline: 3px solid var(--login-cyan);
   outline-offset: 2px;
 }
+.login-language {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.login-language select {
+  min-height: 36px;
+}
 .login-form-panel .button:focus-visible,
 .login-form-panel .show-password:focus-visible {
   outline: 3px solid var(--login-cyan);
