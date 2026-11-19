@@ -34,3 +34,5 @@
 | 18-nov | BHD −3,050 «Devolución» (16-nov) | Cerrado: ese pedido ya se anuló. |
 | 18-nov | Kenia, cobro doble de 800 (16-nov, GV) | Se deja así, la clienta no se quejó. |
 | 18-nov | Lista «Ventas suplementos» 31-oct a 17-nov: Isopure vainilla 3 lb del 12-nov no se saca (estaba en casa de la dueña); Isoflex 2 lb del martes 17 no se saca (hay que devolverla); Gold Standard Casein e Isopure 3 lb vainilla del martes 17 sacadas | Cerrado. 3 Isopure vainilla 3 lb del 10-nov sin respuesta de la dueña (se asumen cubiertas por la venta FS-539). |
+| 19-nov | Cierres 18-nov: Lizbeth (dif 0, lote GV 019 = 12,850 cuadra con voucher), Wendy (−1 autorizado, lote GPRO 169 = 3,100 cuadra), Jade (+250 autorizado) | Cerrados por la dueña (fotos). Cardnet 168 depositó 3,365.25 el 18-nov y lote 169 2,980.65 el 19-nov en Banreservas. |
+| 19-nov | FS-713 delia 3,600 (Banreservas), FS-715 Cesar Galea 8,050 (BHD), FS-712 (Banreservas 7,500, Darivel Delcarmen) | Verificadas con extracto. FS-706 Rafael Vasquez: 3,300 cayó en BHD (3,000 + 300 mensajero). FS-717 (RD$1, oferta) autorizada por Marcos Félix: cerrada. |
