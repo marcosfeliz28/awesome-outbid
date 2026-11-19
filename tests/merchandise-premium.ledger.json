@@ -1,5 +1,5 @@
 {
-  "sha256": "c7be782166d418bdf286f5d9310fa893137295d5156a7651692a07a235b1a9f9",
+  "sha256": "e7988f5a6c2e7a8ce6756c3e38fee8cb300d59defe7b6de1df7d883f00f99110",
   "edits": [
     {
       "before": "import { useEffect, useMemo, useRef, useState } from \"react\";",
@@ -14,16 +14,16 @@
       "after": "<header className=\"goods-header\">\n        <div className=\"goods-premium-heading\">\n          <span className=\"goods-premium-emblem\" aria-hidden=\"true\"><PackagePlus size={32} /></span>\n          <div>"
     },
     {
-      "before": "<p>Entradas y salidas con revisión antes de confirmar.</p>\n        </div>",
-      "after": "<p>Entradas y salidas con revisión antes de confirmar.</p>\n          </div>\n        </div>"
+      "before": "          )}\n        </div>\n        <div\n          className=\"goods-mode\"",
+      "after": "          )}\n          </div>\n        </div>\n        <div\n          className=\"goods-mode\""
     },
     {
       "before": "import \"./merchandisePremium.css\";",
       "after": "import \"./merchandisePremium.css\";\nimport { useLanguage } from \"./inicioLanguage\";\nimport { useInventoryAppearance } from \"./inventoryAppearance\";\nimport { merchandiseText } from \"./merchandiseLanguage\";"
     },
     {
-      "before": "export function Merchandise() {",
-      "after": "export function Merchandise() {\n  useInventoryAppearance();\n  const language = useLanguage();\n  const t = (key: keyof typeof merchandiseText) => merchandiseText[key][language];"
+      "before": "",
+      "after": "  useInventoryAppearance();\n  const language = useLanguage();\n  const t = (key: keyof typeof merchandiseText) => merchandiseText[key][language];\n"
     },
     {
       "before": ">Mercancía<",

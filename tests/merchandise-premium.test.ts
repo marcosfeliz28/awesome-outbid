@@ -8,6 +8,8 @@ const css = readFileSync("apps/web/src/merchandisePremium.css", "utf8");
 const ledger = JSON.parse(readFileSync("tests/merchandise-premium.ledger.json", "utf8"));
 describe("Mercancía high4K: presentation-only contract", () => {
   it("preserves the entire original workflow byte-for-byte after reversing decorative edits", () => {
+    // Base histórica de producto 8ef351e6: se conserva el selector
+    // accesible y toda la revisión fiscal, además del flujo anterior.
     let original = source;
     for (const edit of [...ledger.edits].reverse()) {
       expect(original.split(edit.after).length - 1).toBe(1);
@@ -80,6 +82,11 @@ it("reverses ReceiptHistory display-only edits exactly with permissions and quer
     original = original.replace(edit.after, edit.before);
   }
   expect(createHash("sha256").update(original).digest("hex")).toBe(ledger.sha256);
+  // En 8ef351e6 el cuerpo del documento pasó a un módulo propio y se añadió
+  // una propuesta de compra. Ambos módulos también quedan anclados.
+  for (const [path, hash] of Object.entries(ledger.protected_helpers)) {
+    expect(createHash("sha256").update(readFileSync(path)).digest("hex"), path).toBe(hash);
+  }
 });
 
 it("translates document labels without translating unknown identifiers or stored enums", () => {
