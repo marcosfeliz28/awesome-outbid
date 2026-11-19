@@ -754,7 +754,7 @@ kbd {
 .topbar-separator {
   height: 26px;
   width: 1px;
-  background: var(--border);
+  background: var(--input-border);
   margin: 0 2px;
 }
 .account {

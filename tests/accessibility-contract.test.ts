@@ -583,6 +583,20 @@ describe("Resumen · delimitación móvil", () => {
     );
   });
 
+  it("MTC-005: mantiene visible el separador de la barra superior en oscuro", () => {
+    const light = variables(":root");
+    const dark = { ...light, ...variables(':root[data-theme="dark"]') };
+    meets(
+      "separador superior oscuro",
+      dark["--input-border"],
+      dark["--surface"],
+      3,
+    );
+    expect(css).toMatch(
+      /\.topbar-separator\s*\{[^}]*background:\s*var\(--input-border\)/,
+    );
+  });
+
 });
 
 describe("G11 · listener de teclado con modal", () => {
