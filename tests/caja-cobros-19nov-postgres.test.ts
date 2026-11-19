@@ -296,3 +296,50 @@ describe("D9 · corregir un cobro sin caja a efectivo", () => {
     expect(p.receivedById).toBe(actor.id);
   });
 });
+
+describe("P9 · estado de cuenta con lo pagado al vender", () => {
+  it("una venta de 1,500 con 500 en caja muestra los 500", async () => {
+    const n = randomUUID();
+    const customer = await db.customer.create({
+      data: { name: "Clienta " + n.slice(0, 6) },
+    });
+    await db.sale.create({
+      data: {
+        number: "EC-" + n.slice(0, 8),
+        offlineUuid: n,
+        sellerId: actor.id,
+        customerId: customer.id,
+        cashSessionId: session,
+        subtotal: 1500,
+        discountTotal: 0,
+        taxTotal: 0,
+        total: 1500,
+        costTotal: 700,
+        creditBalance: 1000,
+        payments: {
+          create: [
+            {
+              cashSessionId: session,
+              method: "cash",
+              amount: 500,
+              tendered: 500,
+            },
+            {
+              cashSessionId: session,
+              method: "credit",
+              amount: 1000,
+              tendered: 1000,
+              status: "pending",
+            },
+          ],
+        },
+      },
+    });
+    const statement: any = await sales.creditStatement(actor, customer.id);
+    const [sale] = statement.sales;
+    expect(sale.balance).toBe(1000);
+    expect(sale.payments).toEqual([
+      expect.objectContaining({ method: "cash", amount: 500, atSale: true }),
+    ]);
+  });
+});

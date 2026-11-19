@@ -29,6 +29,7 @@ type Statement = {
       amount: number;
       status: string;
       receivedBy?: string;
+      atSale?: boolean;
     }[];
   }[];
 };
@@ -84,6 +85,7 @@ export function CreditAccounts({ session }: { session: any }) {
             · {methodName[p.method as Method] ?? p.method} ·{" "}
             {formatMoney(p.amount)} · {p.receivedBy ?? ""}
             {p.status === "pending_verification" ? " · Por verificar" : ""}
+            {p.atSale ? " · Pagado al vender" : ""}
           </small>
         ))}
       </div>

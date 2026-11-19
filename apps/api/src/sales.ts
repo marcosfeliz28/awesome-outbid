@@ -4433,8 +4433,16 @@ export class SalesController {
         total: Number(s.total),
         balance: Number(s.creditBalance),
         closedAt: s.creditClosedAt,
+        // P9 (auditoría 19-nov): también lo que se pagó al vender (no la
+        // parte a crédito), para que el saldo se explique solo.
         payments: s.payments
-          .filter((p) => p.entryType === "installment")
+          .filter(
+            (p) =>
+              p.entryType === "installment" ||
+              (p.entryType === "sale" &&
+                p.status !== "rejected" &&
+                !isReceivableSalePayment(p)),
+          )
           .map((p) => ({
             id: p.id,
             date: p.createdAt,
@@ -4443,6 +4451,7 @@ export class SalesController {
             status: p.status,
             receivedBy:
               users.find((u) => u.id === p.receivedById)?.name ?? null,
+            ...(p.entryType === "sale" ? { atSale: true } : {}),
           })),
       })),
     };
@@ -4508,7 +4517,7 @@ export class SalesController {
       for (const payment of sale.payments) {
         if (doc.y > 710) doc.addPage();
         doc.text(
-          `  ${new Date(payment.date).toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE })} · ${payment.method} · ${formatMoney(payment.amount)} · ${payment.receivedBy ?? ""}${payment.status === "pending_verification" ? " · Por verificar" : ""}`,
+          `  ${new Date(payment.date).toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE })} · ${payment.method} · ${formatMoney(payment.amount)} · ${payment.receivedBy ?? ""}${payment.status === "pending_verification" ? " · Por verificar" : ""}${"atSale" in payment ? " · Pagado al vender" : ""}`,
         );
       }
       doc.moveDown(0.4);
