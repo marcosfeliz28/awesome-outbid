@@ -181,6 +181,13 @@ const labels = [
   "Vendido neto",
 ];
 const amount = (value: unknown) => Number(value ?? 0).toFixed(2);
+// PDF: montos como en pantalla (RD$ 1,500.00); CSV y Excel quedan numéricos.
+const rd = (value: unknown) =>
+  "RD$ " +
+  Number(value ?? 0).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 function csvCell(value: unknown) {
   const s = String(value ?? "");
   return /[",\r\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
@@ -499,7 +506,7 @@ export class IncomeReportController {
     doc
       .fontSize(9)
       .text(
-        `${opt.from} a ${opt.to} · Fecha de emisión ${new Date().toLocaleDateString("es-DO")}`,
+        `${opt.from} a ${opt.to} · Fecha de emisión ${new Date().toLocaleDateString("es-DO", { timeZone: "America/Santo_Domingo" })}`,
       )
       .moveDown();
     for (const row of rows) {
@@ -507,16 +514,16 @@ export class IncomeReportController {
       doc
         .font("Helvetica-Bold")
         .text(
-          `${localDate(row.day)} · Vendido ${amount(row.sold)} · Ingresó ${amount(row.moneyIn)}`,
+          `${localDate(row.day)} · Vendido ${rd(row.sold)} · Ingresó ${rd(row.moneyIn)}`,
         );
       doc
         .font("Helvetica")
         .text(
-          `Venta: efectivo ${amount(row.cash)} · tarjeta ${amount(row.card)} · transferencia ${amount(row.transfer)} · crédito ${amount(row.creditGenerated)}`,
+          `Venta: efectivo ${rd(row.cash)} · tarjeta ${rd(row.card)} · transferencia ${rd(row.transfer)} · crédito ${rd(row.creditGenerated)}`,
         );
       doc
         .text(
-          `Cobros de crédito: efectivo ${amount(row.collectionCash)} · tarjeta ${amount(row.collectionCard)} · transferencia ${amount(row.collectionTransfer)} · devoluciones ${amount(row.returns)}`,
+          `Cobros de crédito: efectivo ${rd(row.collectionCash)} · tarjeta ${rd(row.collectionCard)} · transferencia ${rd(row.collectionTransfer)} · devoluciones ${rd(row.returns)}`,
         )
         .moveDown(0.5);
     }
@@ -525,7 +532,7 @@ export class IncomeReportController {
     for await (const event of this.exportDetail(actor, opt, total)) {
       if (doc.y > 520) doc.addPage();
       doc.text(
-        `${event.day} ${event.date.toLocaleTimeString("es-DO", { timeZone: "America/Santo_Domingo" })} · ${event.number ?? ""} · ${event.kind} · ${amount(event.amount)} · ${event.bank ?? ""} ${event.reference ?? ""}`,
+        `${event.day} ${event.date.toLocaleTimeString("es-DO", { timeZone: "America/Santo_Domingo" })} · ${event.number ?? ""} · ${incomeKindName(event.kind)} · ${rd(event.amount)} · ${event.bank ?? ""} ${event.reference ?? ""}`,
       );
     }
     doc.fontSize(8).text("Documento interno, sin valor fiscal");
