@@ -183,6 +183,17 @@ export class GvCajaController {
         transfer: d(data.countedTransfer).minus(e.transferencia),
       };
       const difference = diffs.cash.plus(diffs.card).plus(diffs.transfer);
+      // D16 (auditoría 19-nov): un cierre con diferencia lleva justificación,
+      // como en la caja de MacGen. Sin montos en el mensaje (arqueo ciego).
+      if (
+        (!diffs.cash.isZero() ||
+          !diffs.card.isZero() ||
+          !diffs.transfer.isZero()) &&
+        data.notes.length < 3
+      )
+        bad(
+          "El conteo no cuadra con lo registrado. Vuelve a contar o escribe la justificación en notas para cerrar.",
+        );
       const row = await tx.gvCashSession.update({
         where: { id: s.id },
         data: {

@@ -117,3 +117,66 @@ describe("Hallazgo 17 · transferencias con plazo de dinero", () => {
     ]);
   });
 });
+
+// Hallazgo 16: caja de GV. Base falsa con una caja y sus pagos.
+function gvDb(session: any, payments: any[]) {
+  const updates: any[] = [];
+  const audits: any[] = [];
+  const tx: any = {
+    $queryRaw: async () => [],
+    gvCashSession: {
+      findFirst: async () => (session.closedAt ? null : session),
+      findUnique: async () => session,
+      update: async (args: any) => {
+        updates.push(args.data);
+        return { ...session, ...args.data };
+      },
+    },
+    gvPayment: {
+      findMany: async () => payments.filter((p) => !p.rejectedAt),
+      findFirst: async ({ where }: any) =>
+        payments.find((p) => p.id === where.id) ?? null,
+      update: async ({ where, data }: any) => {
+        const p = payments.find((x) => x.id === where.id);
+        Object.assign(p, data);
+        return p;
+      },
+    },
+    gvEnrollment: { findUnique: async () => ({ status: "activa" }) },
+    alert: { updateMany: async () => ({ count: 0 }) },
+    auditLog: { create: async (args: any) => audits.push(args.data) },
+    gvProof: { create: async () => ({}) },
+  };
+  return {
+    updates,
+    audits,
+    db: { ...tx, $transaction: async (fn: any) => fn(tx) },
+  };
+}
+
+describe("Hallazgo 16 · caja de GV", () => {
+  const efectivo = (id: string, amount: number) => ({
+    id,
+    method: "efectivo",
+    amount,
+    amountDop: amount,
+    enrollmentId: "e1",
+    cashSessionId: "g1",
+    rejectedAt: null,
+  });
+  it("un cierre con diferencia pide justificación", async () => {
+    const { GvCajaController } = await import("../apps/api/src/gv-caja");
+    const session = { id: "g1", openingAmount: 0, closedAt: null };
+    const { db } = gvDb(session, [efectivo("p1", 500)]);
+    const caja = new GvCajaController(db);
+    const count = { countedCash: 400, countedCard: 0, countedTransfer: 0 };
+    const error: any = await caja.close(count, actor).catch((e) => e);
+    expect(error?.status).toBe(400);
+    expect(JSON.stringify(error.getResponse())).not.toMatch(/100|400|500/);
+    const done: any = await caja.close(
+      { ...count, notes: "Faltan 100, se pagó un taxi" },
+      actor,
+    );
+    expect(done.differences.total).toBe("-100.00");
+  });
+});
