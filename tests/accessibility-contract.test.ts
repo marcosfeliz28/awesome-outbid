@@ -576,6 +576,18 @@ describe("MTC-001 · contraste de las ventas diarias en tema oscuro", () => {
   });
 });
 
+describe("MTC-002 · contraste de la fecha comparada en tema claro", () => {
+  it("mantiene la fecha y su cifra por encima de 4.5:1", () => {
+    const palette = variables(".day-other");
+    meets(
+      "Fecha comparada en tema claro",
+      palette["--day-accent"],
+      palette["--day-bg"],
+      4.5,
+    );
+  });
+});
+
 describe("G11 · listener de teclado con modal", () => {
   it.each(["F4", "F8", "F12"])(
     "%s se consume y no ejecuta la acción detrás del diálogo",
