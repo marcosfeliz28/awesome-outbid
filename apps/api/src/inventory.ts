@@ -578,6 +578,16 @@ export async function takeStock(
 // A4: la clave queda en la bitácora del ajuste (after.operationId). Con el
 // candado por clave, un reenvío espera al primero; si éste ya se guardó, se
 // devuelve la variante sin duplicar. La misma clave con otros datos es error.
+// Dinero-12: conteo ciego. El «esperado» se guarda para aplicar, pero solo
+// lo ve quien aprueba el conteo (sale:manage), no quien cuenta.
+function blindCount<T extends { items: unknown }>(row: T, actor: Actor): T {
+  if (can(actor.permissions, "sale:manage") || !Array.isArray(row.items))
+    return row;
+  return {
+    ...row,
+    items: row.items.map(({ expected: _expected, ...item }: any) => item),
+  };
+}
 async function repeatedAdjustment(
   tx: any,
   actor: Actor,
@@ -1562,13 +1572,14 @@ export class InventoryController {
       return safe((await describeReceipts(tx, [row], actor))[0], actor);
     });
   }
-  @Get("inventory/counts") @Permit("inventory:write") counts(
+  @Get("inventory/counts") @Permit("inventory:write") async counts(
     @CurrentUser() actor: Actor,
   ) {
-    return this.db.inventoryCount.findMany({
+    const rows = await this.db.inventoryCount.findMany({
       where: { branchId: actor.branchId },
       orderBy: { createdAt: "desc" },
     });
+    return rows.map((row) => blindCount(row, actor));
   }
   @Post("inventory/counts")
   @Permit("inventory:write")
@@ -1583,6 +1594,10 @@ export class InventoryController {
       }),
       body,
     );
+    // Dinero-12: la misma variante dos veces nunca se podría aplicar (la
+    // segunda línea ve el stock ya cambiado).
+    if (new Set(data.items.map((i) => i.variantId)).size !== data.items.length)
+      bad("Hay productos repetidos en el conteo: cuenta cada uno una sola vez.");
     const warehouse = data.warehouseId
       ? await this.db.warehouse.findFirst({
           where: {
@@ -1616,7 +1631,7 @@ export class InventoryController {
           );
       items.push({ ...item, expected: held });
     }
-    return this.db.inventoryCount.create({
+    const row = await this.db.inventoryCount.create({
       data: {
         items,
         userId: actor.id,
@@ -1624,6 +1639,7 @@ export class InventoryController {
         warehouseId: warehouse.id,
       },
     });
+    return blindCount(row, actor);
   }
   @Post("inventory/counts/:id/apply")
   @RequireTerminal()

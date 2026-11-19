@@ -94,3 +94,65 @@ describe("dinero-11 · devolución a proveedor desde Casa", () => {
     expect(alerts).toHaveLength(0);
   });
 });
+
+// dinero-12: un conteo no admite la misma variante dos veces (nunca se podría
+// aplicar) y quien no gestiona no recibe el «esperado» (conteo ciego).
+function fakeCountDb() {
+  const created: any[] = [];
+  const db: any = {
+    warehouse: {
+      findUnique: async () => ({ id: "store", sellable: true }),
+    },
+    variant: {
+      findFirstOrThrow: async ({ where }: any) => ({ id: where.id, stock: 7 }),
+    },
+    inventoryCount: {
+      create: async ({ data }: any) => {
+        const row = { id: "c1", status: "pending", ...data };
+        created.push(row);
+        return row;
+      },
+      findMany: async () => [
+        { id: "c1", items: [{ variantId: VARIANT, counted: 5, expected: 7 }] },
+      ],
+    },
+  };
+  return { db, created };
+}
+
+describe("dinero-12 · conteo físico", () => {
+  it("rechaza la misma variante repetida", async () => {
+    const { InventoryController } = await import("../apps/api/src/inventory");
+    const { db, created } = fakeCountDb();
+    await expect(
+      new InventoryController(db).count(
+        {
+          items: [
+            { variantId: VARIANT, counted: 3 },
+            { variantId: VARIANT, counted: 4 },
+          ],
+        },
+        manager,
+      ),
+    ).rejects.toThrow(/repetid/);
+    expect(created).toHaveLength(0);
+  });
+  it("quien cuenta sin gestionar no recibe el esperado; se guarda igual", async () => {
+    const { InventoryController } = await import("../apps/api/src/inventory");
+    const { db, created } = fakeCountDb();
+    const controller = new InventoryController(db);
+    const body = {
+      items: [
+        { variantId: VARIANT, counted: 3 },
+        { variantId: VARIANT_B, counted: 4 },
+      ],
+    };
+    const row: any = await controller.count(body, warehouseUser);
+    expect(created[0].items[0].expected).toBe(7);
+    expect(row.items[0]).not.toHaveProperty("expected");
+    const list: any = await controller.counts(warehouseUser);
+    expect(list[0].items[0]).not.toHaveProperty("expected");
+    const forManager: any = await controller.count(body, manager);
+    expect(forManager.items[0].expected).toBe(7);
+  });
+});
