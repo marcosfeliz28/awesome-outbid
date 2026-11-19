@@ -862,7 +862,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver qué productos vendíamos y se acabaron, y reponerlos.",
     comoSeLee:
-      "Solo aparecen productos con existencia en cero o menos en la tienda, y con ventas en el período. Última venta es el día de la última venta dentro del período.",
+      "Solo aparecen productos con existencia en cero o menos en la tienda, y con ventas en el período. Casa puede tener piezas: agotado quiere decir agotado en Tienda. Última venta es el día de la última venta dentro del período.",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
