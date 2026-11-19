@@ -126,7 +126,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs:
       "Compara el mes que termina en la fecha final del reporte con el mes anterior.",
     paraQueSirve: "Para ver si este mes vende más o menos que el mes pasado.",
-    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas; ese mes sale marcado «sin ventas registradas». El mes que todavía no termina sale marcado «mes en curso, hasta hoy».`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -149,7 +149,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Compara el mes que termina en la fecha final del reporte con el mismo mes del año pasado.",
     paraQueSirve:
       "Para ver si el negocio crece frente al mismo mes del año anterior, sin que pesen las temporadas.",
-    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas; ese mes sale marcado «sin ventas registradas». El mes que todavía no termina sale marcado «mes en curso, hasta hoy».`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
