@@ -117,7 +117,7 @@ const READ_LIST_CASES = [
 // valid-body PostgreSQL request in product-route-{matrix,export,admin,
 // admin-extra,auth-void,money,money-extra,money-final,money-last,
 // inventory,inventory-extra,inventory-final,misc,registration,platform-billing,
-// platform-ai-packs,support-platform,platform-panel}-postgres.test.ts
+// platform-ai-packs,support-platform,platform-panel,cuentas}-postgres.test.ts
 // y mis-ventas-preguntas-postgres.test.ts.
 // Adding a Nest route without a concrete case fails this gate; do not generate
 // this set from productRoutes() at runtime, which would hide missing coverage.
@@ -292,6 +292,7 @@ POST /api/platform/tenants
 POST /api/platform/tenants/:slug/ai-packs
 POST /api/platform/tenants/:slug/payments
 POST /api/platform/tenants/:slug/payments/:id/void
+POST /api/platform/tenants/:slug/plan
 POST /api/platform/tenants/:slug/password-reset
 POST /api/platform/tenants/:slug/support-session
 POST /api/platform/tenants/:slug/reinvite
@@ -360,8 +361,9 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  // 210 del producto + 8 del lote 19-nov (casos en product-route-lote19-postgres).
-  expect(required).toHaveLength(218);
+  // 210 del producto + 8 del lote 19-nov (casos en product-route-lote19-postgres)
+  // + 1 de cuentas (POST /api/platform/tenants/:slug/plan, product-cuentas-postgres).
+  expect(required).toHaveLength(219);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

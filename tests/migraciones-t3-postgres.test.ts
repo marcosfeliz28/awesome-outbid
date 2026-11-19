@@ -245,6 +245,7 @@ describe("migraciones nuevas sobre datos hostiles", () => {
     expect(columns.map((c) => c.column_name)).toEqual([
       "prevPaidThroughAt",
       "prevPastDueAt",
+      "prevPlan",
       "prevStatus",
       "prevSuspendedAt",
     ]);

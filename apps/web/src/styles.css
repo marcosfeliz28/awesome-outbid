@@ -8963,3 +8963,10 @@ td strong {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* Aviso de pago discreto para la cajera (TenantStatusBanner). */
+.tenant-status-note {
+  margin: -4px 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted, #5b6470);
+}

@@ -6,7 +6,7 @@ import { z } from "@fitstore/shared";
 import { BILLING_PLANS } from "./billing-plans";
 import { Public, parse } from "./common";
 import { clientIp, RequestRateLimitService } from "./rate-limit";
-import { createTenantWithOwner, invitationDigest, RegistrationService } from "./registration";
+import { createTenantWithOwner, invitationDigest, RegistrationService, TRIAL_DAYS } from "./registration";
 import { effectiveTenantStatus, tenantDueAt } from "./tenant-lifecycle";
 
 const DAY = 86400000;
@@ -26,12 +26,20 @@ const invitedTenant = z.object({
   companyCode: z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
   businessType: z.enum(["general", "retail", "beauty", "fitness", "services"]),
   plan: z.enum(plans),
-  trialDays: z.number().int().min(1).max(365).default(30),
+  trialDays: z.number().int().min(1).max(365).default(TRIAL_DAYS),
   adminName: z.string().trim().min(2).max(120),
   adminEmail: z.string().trim().email().max(254),
   operadora,
   acuerdo: paperAgreement,
 }).strict();
+
+// H5: prorrogar la prueba o fijar el plan sin tocar la base, con bitácora.
+const planUpdate = z.object({
+  operadora,
+  motivo: z.string().trim().min(3).max(300),
+  plan: z.enum(plans).optional(),
+  prorrogarDias: z.number().int().min(1).max(365).optional(),
+}).strict().refine(v => v.plan !== undefined || v.prorrogarDias !== undefined, "Indica el plan o los días de prórroga.");
 
 /** Ciclo de vida durable de la invitación en la bitácora de la empresa (sin el token). */
 const invitationEvent = (db: any, tenantId: string, action: string, req: Request, after: object) =>
@@ -218,6 +226,53 @@ export class PlatformController {
     ]);
     console.log(`[plataforma] enlace para restablecer clave: ${code} por ${operator}`);
     return { slug: code, email: owner.email, invitationUrl: invitationLink(req, token), expiresAt };
+  }
+
+  /** H5: prorroga la prueba (solo si nunca pagó) y/o fija el plan, en una transacción y con bitácora. */
+  @Public() @Post("tenants/:slug/plan")
+  async updatePlan(@Param("slug") rawSlug: string, @Body() body: unknown, @Req() req: Request) {
+    this.authorize(req);
+    const code = parse(slugParam, rawSlug);
+    const input = parse(planUpdate, body);
+    const result = await this.registration.db.$transaction(async tx => {
+      const [tenant] = await tx.$queryRaw<{ id: string; plan: string; status: string; trialEndsAt: Date | null; paidThroughAt: Date | null; pastDueAt: Date | null; suspendedAt: Date | null }[]>`
+        SELECT id, plan, status, "trialEndsAt", "paidThroughAt", "pastDueAt", "suspendedAt" FROM "Tenant" WHERE slug=${code} FOR UPDATE`;
+      if (!tenant) throw new HttpException("Empresa no encontrada.", 404);
+      const data: { plan?: string; status?: string; trialEndsAt?: Date; pastDueAt?: null; suspendedAt?: null } = {};
+      if (input.plan !== undefined && input.plan !== tenant.plan) {
+        const limits = BILLING_PLANS[input.plan];
+        // Mismo candado que enforcePlanQuota: no se cuela un alta mientras se baja el plan.
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`plan:${tenant.id}`}))::text`;
+        const [users, boxes] = await Promise.all([
+          tx.user.count({ where: { tenantId: tenant.id, active: true, role: { name: { not: "support" } } } }),
+          tx.terminal.count({ where: { tenantId: tenant.id, approvedAt: { not: null }, revokedAt: null } }),
+        ]);
+        if (users > limits.users) throw new HttpException(`La empresa tiene ${users} usuarios activos; el plan ${limits.label} permite ${limits.users}.`, 409);
+        if (boxes > limits.boxes) throw new HttpException(`La empresa tiene ${boxes} equipos aprobados; el plan ${limits.label} permite ${limits.boxes}.`, 409);
+        data.plan = input.plan;
+      }
+      if (input.prorrogarDias !== undefined) {
+        // Una empresa que ya pagó no vuelve a prueba: se le registra un cobro.
+        if (tenant.paidThroughAt)
+          throw new HttpException("La empresa ya pagó un período: registra un cobro en vez de prorrogar la prueba.", 409);
+        const from = Math.max(Date.now(), tenant.trialEndsAt?.getTime() ?? 0);
+        Object.assign(data, { status: "trial", trialEndsAt: new Date(from + input.prorrogarDias * DAY), pastDueAt: null, suspendedAt: null });
+      }
+      const updated = await tx.tenant.update({
+        where: { id: tenant.id }, data,
+        select: { slug: true, plan: true, status: true, trialEndsAt: true, paidThroughAt: true, pastDueAt: true },
+      });
+      await tx.auditLog.create({ data: {
+        tenantId: tenant.id, userId: "plataforma", action: "platform_plan_update", entity: "tenant", entityId: tenant.id, ip: clientIp(req),
+        before: { plan: tenant.plan, status: tenant.status, trialEndsAt: tenant.trialEndsAt?.toISOString() ?? null },
+        after: { operadora: input.operadora, motivo: input.motivo, plan: updated.plan, status: updated.status,
+          trialEndsAt: updated.trialEndsAt?.toISOString() ?? null, prorrogarDias: input.prorrogarDias ?? null },
+      } });
+      return updated;
+    });
+    const { pastDueAt, paidThroughAt, ...row } = result;
+    console.log(`[plataforma] plan/prueba actualizado: ${code} por ${input.operadora}`);
+    return { ...row, paidUntil: paidThroughAt, status: effectiveTenantStatus({ ...row, paidThroughAt, pastDueAt }) };
   }
 
   /**

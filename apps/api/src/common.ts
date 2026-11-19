@@ -126,6 +126,9 @@ export const Permit = (permission: string) =>
 export const Public = () => SetMetadata("public", true);
 // Únicamente para exportaciones sin mutación, incluso cuando la empresa está suspendida.
 export const AllowSuspendedExport = () => SetMetadata("suspendedExport", true);
+// H4 (dueña, 19-nov): un negocio suspendido puede pedir el pago y subir el
+// comprobante. Solo en POST /billing/requests y su /proof: escriben BillingRequest.
+export const AllowSuspendedBilling = () => SetMetadata("suspendedBilling", true);
 // Rutas que mueven inventario o dinero: exigen un equipo registrado, aprobado
 // por un gerente y no revocado (Configuración › Equipos).
 export const RequireTerminal = () => SetMetadata("terminal", true);
@@ -883,10 +886,13 @@ export class AuthGuard implements CanActivate {
           context.getHandler(), context.getClass(),
         ]);
         const logout = req.method === "POST" && req.path === "/api/auth/logout";
-        if (!(["GET", "HEAD"].includes(req.method) || exportAllowed || logout))
-          throw new HttpException("Plan suspendido. Puedes consultar y exportar tus datos, pero no modificar ni vender.", 403);
-        // La revocación de sesión es la única escritura permitida por la API.
-        if (!logout) {
+        const billing = this.reflector.getAllAndOverride<boolean>("suspendedBilling", [
+          context.getHandler(), context.getClass(),
+        ]) === true;
+        if (!(["GET", "HEAD"].includes(req.method) || exportAllowed || logout || billing))
+          throw new HttpException("Plan suspendido. Puedes consultar y exportar tus datos, pero no modificar ni vender. Para seguir, paga en «Plan y facturación».", 403);
+        // Revocar la sesión y pedir el pago son las únicas escrituras permitidas por la API.
+        if (!logout && !billing) {
           const scope = tenantScope.getStore();
           if (scope) scope.readOnly = true;
         }

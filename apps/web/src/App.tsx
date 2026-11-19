@@ -69,6 +69,7 @@ import { Registration, ConfirmEmail, AcceptInvitation } from "./Registration";
 import { Onboarding, type OnboardingStatus } from "./Onboarding";
 import { DesktopPrinterControls } from "./DesktopPrinterControls";
 import { Billing } from "./Billing";
+import { TenantStatusBanner } from "./TenantStatusBanner";
 import { SupportHelp } from "./SupportHelp";
 import { Button, Badge, Modal, Loading } from "@fitstore/ui";
 import { can } from "@fitstore/shared";
@@ -887,7 +888,7 @@ function Login() {
             )}
             {PUBLIC_REGISTRATION_ENABLED && (
               <p>
-                <a href="/registro">Crear empresa · 14 días gratis</a>
+                <a href="/registro">Crear empresa · 7 días gratis</a>
               </p>
             )}
             {SHOW_DEMO_CREDENTIALS && !PRODUCT_TENANCY_REQUIRED && (
@@ -1787,6 +1788,12 @@ function Shell() {
           )}
           {PRODUCT_TENANCY_REQUIRED && can(user.permissions, "*") && (
             <SupportAccessBanner />
+          )}
+          {PRODUCT_TENANCY_REQUIRED && user.role !== "support" && (
+            <TenantStatusBanner
+              admin={can(user.permissions, "*")}
+              onPay={() => go("billing")}
+            />
           )}
           <DeviceGate />
           <PlanLimitNotice

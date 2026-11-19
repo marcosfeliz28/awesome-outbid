@@ -69,6 +69,10 @@ services:
         sync: false
       - key: SUPPORT_HOURS
         sync: false
+      # «Habla con nosotros» en el aviso de negocio suspendido (texto libre:
+      # teléfono, WhatsApp o correo). Sin valor, solo se ofrece pagar en la app.
+      - key: NEXORA_SUPPORT_CONTACT
+        sync: false
       # Avisos al operador (alta, vencimientos, límite de IA, pagos). Sin
       # valor, no se envían y nada falla. Correo vía Resend; Telegram con el
       # bot y el chat del operador. No poner TELEGRAM_CHAT_ID en el producto:

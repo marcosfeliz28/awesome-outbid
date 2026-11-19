@@ -82,6 +82,8 @@ export default defineConfig({
       "tests/product-platform-notify-postgres.test.ts",
       "tests/product-support-web.test.ts",
       "tests/product-lifecycle-postgres.test.ts",
+      "tests/product-cuentas-postgres.test.ts",
+      "tests/product-cuentas.test.ts",
       "tests/product-billing-postgres.test.ts",
       "tests/product-pilot-three-tenants-postgres.test.ts",
       "tests/product-usd-rate.test.ts",

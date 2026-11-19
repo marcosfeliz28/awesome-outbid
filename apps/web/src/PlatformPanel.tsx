@@ -346,6 +346,9 @@ function PaymentForm({
   const [method, setMethod] = useState<keyof typeof METHODS>("transfer");
   const [reference, setReference] = useState("");
   const [period, setPeriod] = useState("1");
+  // H1: una empresa autoregistrada está en «trial» (sin precio): se elige el plan que paga.
+  const needsPlan = !(tenant.plan in PLANS);
+  const [plan, setPlan] = useState("");
   // PLA-02: una clave por pago; un reintento tras un error reusa la misma.
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [review, setReview] = useState(false);
@@ -364,6 +367,7 @@ function PaymentForm({
     if (!(value > 0) || Math.round(value * 100) !== value * 100)
       return setError("Escribe un monto válido (máximo 2 decimales).");
     if (!reference.trim()) return setError("Escribe la referencia del pago.");
+    if (needsPlan && !plan) return setError("Elige el plan que paga.");
     setReview(true);
   };
   const confirm = async () => {
@@ -379,6 +383,7 @@ function PaymentForm({
           method,
           reference: reference.trim(),
           ...(period === "year" ? { year: true } : { months: Number(period) }),
+          ...(needsPlan ? { plan } : {}),
         },
       );
       setDone(
@@ -444,6 +449,23 @@ function PaymentForm({
             <option value="year">Un año</option>
           </select>
         </Field>
+        {needsPlan && (
+          <Field label="Plan que paga">
+            <select
+              value={plan}
+              onChange={(e) => setPlan(e.target.value)}
+              required
+              disabled={review}
+            >
+              <option value="">Elige…</option>
+              {Object.entries(PLANS).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
       </div>
       <ErrorText text={error} />
       {done && (
@@ -456,10 +478,113 @@ function PaymentForm({
           busy={busy}
           onBack={() => setReview(false)}
           onConfirm={confirm}
-          text={`¿Registrar ${money(value)} de ${tenant.name} por ${METHODS[method].toLowerCase()} (ref. ${reference.trim()}) por ${periodText}?`}
+          text={`¿Registrar ${money(value)} de ${tenant.name} por ${METHODS[method].toLowerCase()} (ref. ${reference.trim()}) por ${periodText}${needsPlan && plan ? `, plan ${PLANS[plan as keyof typeof PLANS]}` : ""}?`}
         />
       ) : (
         <Button>Revisar pago</Button>
+      )}
+    </form>
+  );
+}
+
+/** H5: prorrogar la prueba o fijar el plan; queda en la bitácora con operadora y motivo. */
+function PlanForm({
+  token,
+  tenant,
+  onDone,
+}: {
+  token: string;
+  tenant: Detail;
+  onDone: () => void;
+}) {
+  const [plan, setPlan] = useState(tenant.plan in PLANS ? tenant.plan : "");
+  const [days, setDays] = useState("");
+  const [operadora, setOperadora] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [review, setReview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState("");
+  const changePlan = !!plan && plan !== tenant.plan;
+  const extend = days.trim() ? Number(days) : 0;
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setDone("");
+    if (!changePlan && !extend) return setError("Elige otro plan o escribe los días de prórroga.");
+    if (extend && !(Number.isInteger(extend) && extend >= 1 && extend <= 365))
+      return setError("La prórroga va de 1 a 365 días.");
+    if (operadora.trim().length < 2) return setError("Escribe quién hace el cambio.");
+    if (motivo.trim().length < 3) return setError("Escribe el motivo.");
+    setReview(true);
+  };
+  const confirm = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await platformFetch<{ plan: string; trialEndsAt: string | null }>(
+        token,
+        `/tenants/${tenant.slug}/plan`,
+        {
+          operadora: operadora.trim(),
+          motivo: motivo.trim(),
+          ...(changePlan ? { plan } : {}),
+          ...(extend ? { prorrogarDias: extend } : {}),
+        },
+      );
+      setDone(
+        `Listo. Plan ${PLANS[result.plan as keyof typeof PLANS] ?? result.plan}` +
+          (extend ? `; prueba hasta ${date(result.trialEndsAt)}.` : "."),
+      );
+      setDays("");
+      setMotivo("");
+      setReview(false);
+      onDone();
+    } catch (cause) {
+      setError((cause as Error).message);
+      setReview(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Plan">
+          <select value={plan} onChange={(e) => setPlan(e.target.value)} disabled={review}>
+            <option value="">Sin cambio</option>
+            {Object.entries(PLANS).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Prorrogar prueba (días)">
+          <input inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value.replace(/\D/g, ""))} disabled={review} />
+        </Field>
+        <Field label="Quién lo hace">
+          <input value={operadora} maxLength={80} onChange={(e) => setOperadora(e.target.value)} disabled={review} />
+        </Field>
+        <Field label="Motivo">
+          <input value={motivo} maxLength={300} onChange={(e) => setMotivo(e.target.value)} disabled={review} />
+        </Field>
+      </div>
+      <ErrorText text={error} />
+      {done && (
+        <div role="status" className="text-sm font-semibold text-emerald-800">
+          {done}
+        </div>
+      )}
+      {review ? (
+        <ConfirmStep
+          busy={busy}
+          onBack={() => setReview(false)}
+          onConfirm={confirm}
+          text={`¿Aplicar a ${tenant.name}${changePlan ? ` el plan ${PLANS[plan as keyof typeof PLANS]}` : ""}${changePlan && extend ? " y" : ""}${extend ? ` ${extend} días más de prueba` : ""}?`}
+        />
+      ) : (
+        <Button>Revisar cambio</Button>
       )}
     </form>
   );
@@ -863,6 +988,9 @@ function ClientDetail({
           <Section title="Registrar pago">
             <PaymentForm token={token} tenant={tenant} onDone={refresh} />
           </Section>
+          <Section title="Plan y prueba">
+            <PlanForm key={`${tenant.plan}:${tenant.trialEndsAt}`} token={token} tenant={tenant} onDone={refresh} />
+          </Section>
           <Section title="Asistente IA este mes">
             {usage.data ? (
               <div className="mb-3 text-base">
@@ -1028,7 +1156,7 @@ function CreateClient({
     companyCode: "",
     businessType: "retail",
     plan: "basico",
-    trialDays: "30",
+    trialDays: "7",
     adminName: "",
     adminEmail: "",
     operadora: "",

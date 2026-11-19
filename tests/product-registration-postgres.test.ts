@@ -117,7 +117,9 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     const tenants = await client.query(`SELECT id, status, "trialEndsAt", "termsAcceptedAt", "termsVersion", "privacyAcceptedAt", "privacyVersion" FROM "Tenant" WHERE slug='tienda-de-prueba'`);
     expect(tenants.rows).toHaveLength(1);
     expect(tenants.rows[0].status).toBe("trial");
-    expect(new Date(tenants.rows[0].trialEndsAt).getTime()).toBeGreaterThan(Date.now() + 13 * 86400000);
+    // Prueba gratis: 7 días (dueña, 19-nov).
+    expect(new Date(tenants.rows[0].trialEndsAt).getTime()).toBeGreaterThan(Date.now() + 6.9 * 86400000);
+    expect(new Date(tenants.rows[0].trialEndsAt).getTime()).toBeLessThan(Date.now() + 7 * 86400000 + 60_000);
     expect(tenants.rows[0].termsVersion).toBe("terms-test-1");
     expect(tenants.rows[0].privacyVersion).toBe("privacy-test-1");
     expect(new Date(tenants.rows[0].termsAcceptedAt).getTime()).toBeGreaterThan(Date.now() - 60000);
