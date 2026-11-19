@@ -474,5 +474,13 @@
   {
     "before": "          <QuickAccessOverview permissions={user.permissions} go={go} />",
     "after": "          {!compactOverview && <QuickAccessOverview permissions={user.permissions} go={go} />}"
+  },
+  {
+    "before": "    .toISOString()\n    .slice(0, 10);\n\nfunction DayFigures({\n  date,\n  title,\n",
+    "after": "    .toISOString()\n    .slice(0, 10);\n\n// Las categorías de GV comparten catálogo con la tienda, pero en el Resumen\n// necesitan una señal visual propia para que no se confundan con Fajas.\nfunction dashboardCategoryColor(name: string, fallback: string) {\n  return name.startsWith(\"GV \") ? \"#7c3aed\" : fallback;\n}\n\nfunction DayFigures({\n  date,\n  title,\n"
+  },
+  {
+    "before": "                  (a: number, i: any) => a + i.total,\n                  0,\n                ),\n                percent = total ? (c.total / total) * 100 : 0;\n              return (\n                <div className=\"category-row\" key={c.name}>\n                  <div>\n                    <span>\n                      <i style={{ background: c.color }} />\n                      {c.name}\n                    </span>\n                    <strong>{percent.toFixed(0)}%</strong>\n                  </div>\n                  <div className=\"progress-track\">\n                    <div\n                      style={{ width: `${percent}%`, background: c.color }}\n                    />\n                  </div>\n                </div>\n",
+    "after": "                  (a: number, i: any) => a + i.total,\n                  0,\n                ),\n                percent = total ? (c.total / total) * 100 : 0,\n                color = dashboardCategoryColor(c.name, c.color);\n              return (\n                <div className=\"category-row\" key={c.name}>\n                  <div>\n                    <span>\n                      <i style={{ background: color }} />\n                      {c.name}\n                    </span>\n                    <strong>{percent.toFixed(0)}%</strong>\n                  </div>\n                  <div className=\"progress-track\">\n                    <div\n                      style={{ width: `${percent}%`, background: color }}\n                    />\n                  </div>\n                </div>\n"
   }
 ]

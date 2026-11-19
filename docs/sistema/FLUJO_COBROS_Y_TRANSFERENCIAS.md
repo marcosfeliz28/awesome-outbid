@@ -26,8 +26,8 @@ Pasos exactos en `FLUJO_CAJA_POS.md` §5.1. Resumen:
 ### 3.1 Pantalla «Caja» › panel «Créditos pendientes»
 
 - Panel con ícono de camión y texto: «Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración.» (`apps/web/src/Tienda.tsx:618-630`).
-- Pestañas **«Pendientes»** / **«Cerrados»** (`apps/web/src/Tienda.tsx:635-636`). La administración (`*`) además ve **«Por venta»** / **«Por persona»** (`:646`, `:654`); «Por persona» abre el estado de cuenta por cliente (`apps/web/src/CreditAccounts.tsx:37`; API `GET credit-accounts` en `apps/api/src/sales.ts:4210`, detalle `:4011`, PDF del estado de cuenta `:4018`).
-- Cada fila muestra número FS-xxxxxxx, estado (Abierto / Parcial / Cerrado), tipo (Crédito o Contraentrega), días sin cobrar («Lleva N días sin cobrar», «Se cobró el mismo día») (`apps/web/src/Tienda.tsx:591-595`), «Total / Cobrado / Pendiente», lo «por verificar», y el historial de cobros con foto.
+- Pestañas **«Pendientes»** / **«Cerrados»** (`apps/web/src/Tienda.tsx:638-639`). La administración (`*`) además ve **«Por venta»** / **«Por persona»** (`:646`, `:654`); «Por persona» abre el estado de cuenta por cliente (`apps/web/src/CreditAccounts.tsx:37`; API `GET credit-accounts` en `apps/api/src/sales.ts:4210`, detalle `:4011`, PDF del estado de cuenta `:4018`).
+- Cada fila muestra número FS-xxxxxxx, estado (Abierto / Parcial / Cerrado), tipo (Crédito o Contraentrega), días sin cobrar («Lleva N días sin cobrar», «Se cobró el mismo día») (`apps/web/src/Tienda.tsx:592-596`), «Total / Cobrado / Pendiente», lo «por verificar», y el historial de cobros con foto.
 - Botón **«Registrar cobro»** (`apps/web/src/Tienda.tsx:792`) abre **«Registrar cobro · FS-…»** (`:1052`).
 
 ### 3.2 La ventana «Registrar cobro»

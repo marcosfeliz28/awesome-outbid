@@ -14,10 +14,14 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 describe("Inicio integrado: preservación", () => {
-  it("limita preferencias a Inicio y conserva el diálogo legal existente", () => {
+  it("ofrece idioma en toda la sesión pero limita la apariencia a Inicio y conserva el diálogo legal", () => {
     const source = readFileSync("apps/web/src/App.tsx", "utf8");
+    expect(source).toMatch(
+      /<div className="main-shell"[^>]*>\s*<div className="fusion-preferences" lang=\{language\}>\s*<label>[^\n]*<select\b/,
+    );
+    expect(source.match(/<AppearanceControls\b/g)).toHaveLength(1);
     expect(source).toContain(
-      '{page === "dashboard" && <div className="fusion-preferences"',
+      '{page === "dashboard" && <AppearanceControls language={language} />}',
     );
     expect(source).toContain('title="Acerca de Norexos"');
     const css = readFileSync(
