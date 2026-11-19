@@ -1,4 +1,4 @@
-import { tenantUnique } from "./tenant-context";
+import { tenantLock, tenantUnique } from "./tenant-context";
 import {
   Body,
   Controller,
@@ -1037,7 +1037,7 @@ export class CashController {
         // Una apertura es poco frecuente. Serializar las aperturas de la sucursal
         // evita que el índice único parcial (una caja abierta por usuario)
         // termine mostrando un error Prisma al cajero en un doble clic.
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.branchId + ":cash-open"}))::text AS locked`;
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantLock(actor.branchId + ":cash-open")}))::text AS locked`;
         // Repetir "Abrir caja" (doble clic, respuesta perdida o una pantalla
         // desactualizada) no debe crear otra caja ni dejar al usuario bloqueado.
         // Si la persona ya tiene una abierta, devolvemos esa misma sesión; la

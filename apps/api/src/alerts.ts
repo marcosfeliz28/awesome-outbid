@@ -1,4 +1,4 @@
-import { tenantUnique } from "./tenant-context";
+import { tenantLock, tenantUnique } from "./tenant-context";
 import { randomUUID } from "node:crypto";
 import {
   Body,
@@ -789,7 +789,7 @@ export class AlertEngine {
     const updates = rows.filter((row) => !row.create);
     await this.db.$transaction(
       async (tx) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('fitstore:alert-engine'))`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantLock("fitstore:alert-engine")}))`;
         for (const chunk of chunks(creates)) {
           const { count } = await tx.alert.createMany({
             data: chunk.map(({ event, status, id, at }) => ({

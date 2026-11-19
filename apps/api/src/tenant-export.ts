@@ -16,6 +16,14 @@ import { tenantObjectStore } from "./tenant-object-store";
  * the encrypted disaster-recovery backup is a separate operation. */
 const SECRET_FIELD = /(?:password|pinHash|secret|token|verificationHash|api[_-]?key|private[_-]?key|credential|authorization|cookie)/i;
 const SECRET_EXACT = new Set(["hash", "codeHash", "challenge", "refreshTokenEnc", "secretHash", "emailVerificationHash"]);
+/** M7: datos del cliente que el patrón tapaba sin ser secretos (Modelo.campo). */
+const PORTABLE_COLUMNS = new Set([
+  "NcfSequence.authorizationReference",
+  "User.passwordExpiresAt",
+  "User.mustChangePassword",
+]);
+const isSecret = (name: string, model?: string) =>
+  !(model && PORTABLE_COLUMNS.has(`${model}.${name}`)) && (SECRET_EXACT.has(name) || SECRET_FIELD.test(name));
 /** Notas internas del operador de la plataforma: la empresa ve sus pagos, no por qué se anularon
  * ni el estado previo que la anulación usa para deshacerse. */
 const INTERNAL_COLUMNS = new Set([
@@ -50,8 +58,8 @@ export function exportModels(): ExportModel[] {
   });
 }
 
-function redact(value: unknown, name = ""): unknown {
-  if (SECRET_EXACT.has(name) || SECRET_FIELD.test(name)) return "[RESERVADO]";
+function redact(value: unknown, name = "", model?: string): unknown {
+  if (isSecret(name, model)) return "[RESERVADO]";
   if (value === null || value === undefined) return value;
   if (value instanceof Date) return value.toISOString();
   if (Buffer.isBuffer(value) || value instanceof Uint8Array)
@@ -70,6 +78,8 @@ export type TenantExport = {
   tables: Record<string, Record<string, unknown>[]>;
   /** Base64 data and digest make JSON a self-contained portable copy. */
   objects?: Record<string, Omit<PortableObject, "key">>;
+  /** Archivos referenciados que no se pudieron leer; la exportación sigue sin ellos. */
+  faltantes?: { key: string; motivo: string }[];
 };
 
 async function validateTables(tx: Prisma.TransactionClient, models: ExportModel[]) {
@@ -111,7 +121,7 @@ export async function exportExcel(snapshot: TenantExport): Promise<Buffer> {
   longValues.addRow(["Tabla", "Fila", "Campo", "Fragmento", "Valor"]);
   for (const model of exportModels()) {
     const sheet = workbook.addWorksheet(model.name);
-    const fields = model.columns.filter((name) => !SECRET_EXACT.has(name) && !SECRET_FIELD.test(name));
+    const fields = model.columns.filter((name) => !isSecret(name, model.name));
     sheet.addRow(fields);
     const rows = snapshot.tables[model.name] ?? [];
     for (const [index, row] of rows.entries()) {
@@ -162,6 +172,16 @@ export async function exportTenantToFile(
   let maxRowsBuffered = 0;
   let rows = 0;
   const objects = new Map<string, ObjectReference>();
+  const faltantes: { key: string; motivo: string }[] = [];
+  // A4: un archivo huérfano o borrado del almacén no bloquea toda la exportación.
+  const readObject = async (ref: ObjectReference, store: ReturnType<typeof tenantObjectStore>) => {
+    try {
+      return await readPortableObject(tenantId, ref, store);
+    } catch {
+      faltantes.push({ key: ref.key, motivo: "No se pudo leer el archivo en el almacén." });
+      return null;
+    }
+  };
   const generatedAt = new Date().toISOString();
   try {
     await (fileOps?.protectDirectory ?? chmod)(directory, 0o700);
@@ -184,7 +204,7 @@ export async function exportTenantToFile(
       let firstTable = true;
       for (const model of models) {
         if (signal?.aborted) throw new Error("Exportación cancelada.");
-        const fields = model.columns.filter((name) => !SECRET_EXACT.has(name) && !SECRET_FIELD.test(name));
+        const fields = model.columns.filter((name) => !isSecret(name, model.name));
         const sheet = workbook?.addWorksheet(model.name);
         sheet?.addRow(fields).commit();
         if (stream) {
@@ -211,7 +231,7 @@ export async function exportTenantToFile(
             for (const raw of batch) {
               if (signal?.aborted) throw new Error("Exportación cancelada.");
               recordObjectReference(objects, objectReferenceForRow(model.name, raw));
-              const row = redact(raw) as Record<string, unknown>;
+              const row = Object.fromEntries(Object.entries(raw).map(([key, item]) => [key, redact(item, key, model.name)]));
               if (stream) await write(stream, `${modelRows ? "," : ""}${JSON.stringify(row)}`);
               if (sheet) {
                 const excelRow = fields.map((field) => {
@@ -243,11 +263,13 @@ export async function exportTenantToFile(
       const objectStore = objects.size ? tenantObjectStore() : null;
       for (const ref of objects.values()) {
         if (signal?.aborted) throw new Error("Exportación cancelada.");
-        const { key, ...object } = await readPortableObject(tenantId, ref, objectStore!);
+        const portable = await readObject(ref, objectStore!);
+        if (!portable) continue;
+        const { key, ...object } = portable;
         await write(stream, `${first ? "" : ","}${JSON.stringify(key)}:${JSON.stringify(object)}`);
         first = false;
       }
-      await write(stream, "}}");
+      await write(stream, `},"faltantes":${JSON.stringify(faltantes)}}`);
       stream.end();
       await once(stream, "finish");
     } else {
@@ -257,10 +279,17 @@ export async function exportTenantToFile(
         sheet.addRow(["Clave", "MIME", "SHA-256", "Fragmento", "Base64"]).commit();
         for (const ref of objects.values()) {
           if (signal?.aborted) throw new Error("Exportación cancelada.");
-          const object = await readPortableObject(tenantId, ref, objectStore);
+          const object = await readObject(ref, objectStore);
+          if (!object) continue;
           for (let offset = 0; offset < object.base64.length; offset += 30000)
             sheet.addRow([object.key, object.mime, object.sha256, offset / 30000 + 1, object.base64.slice(offset, offset + 30000)]).commit();
         }
+        sheet.commit();
+      }
+      if (faltantes.length) {
+        const sheet = workbook!.addWorksheet("__faltantes");
+        sheet.addRow(["Clave", "Motivo"]).commit();
+        for (const missing of faltantes) sheet.addRow([missing.key, missing.motivo]).commit();
         sheet.commit();
       }
       longValues?.commit();
@@ -305,6 +334,19 @@ export async function sendTenantExportFile(
   }
 }
 
+// M2/A3: cada exportación sostiene una conexión del pool compartido. Una a la
+// vez por empresa y como mucho 2 en todo el servidor (en memoria, por proceso).
+const runningExports = new Set<string>();
+export const MAX_EXPORTS = 2;
+export function takeExportSlot(tenantId: string): () => void {
+  if (runningExports.has(tenantId))
+    throw new HttpException("Ya hay una exportación de tu empresa en curso. Espera a que termine la descarga.", 409);
+  if (runningExports.size >= MAX_EXPORTS)
+    throw new HttpException("El servidor está preparando otras exportaciones. Intenta de nuevo en unos minutos.", 409);
+  runningExports.add(tenantId);
+  return () => { runningExports.delete(tenantId); };
+}
+
 @Controller("tenant")
 export class TenantExportController {
   constructor(@Inject(Database) private readonly db: Database) {}
@@ -313,14 +355,19 @@ export class TenantExportController {
   async download(@CurrentUser() actor: Actor, @Query("format") format: string | undefined, @Req() req: Request, @Res() res: Response) {
     if (process.env.PRODUCT_TENANCY !== "required") throw new HttpException("Disponible en el producto Norexos.", 404);
     if (format !== "json" && format !== "xlsx") throw new HttpException("Elige JSON o Excel.", 400);
-    const abort = new AbortController();
-    req.once("aborted", () => abort.abort());
-    res.once("close", () => { if (!res.writableEnded) abort.abort(); });
-    const file = await exportTenantToFile(this.db, actor.tenantId, format, abort.signal);
-    if (abort.signal.aborted) {
-      await rm(file.directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-      return;
+    const release = takeExportSlot(actor.tenantId);
+    try {
+      const abort = new AbortController();
+      req.once("aborted", () => abort.abort());
+      res.once("close", () => { if (!res.writableEnded) abort.abort(); });
+      const file = await exportTenantToFile(this.db, actor.tenantId, format, abort.signal);
+      if (abort.signal.aborted) {
+        await rm(file.directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+        return;
+      }
+      await sendTenantExportFile(res, file, format, actor.tenantId);
+    } finally {
+      release();
     }
-    await sendTenantExportFile(res, file, format, actor.tenantId);
   }
 }

@@ -91,6 +91,8 @@ export default defineConfig({
       "tests/product-tenant-export-cleanup.test.ts",
       "tests/product-tenant-backup-postgres.test.ts",
       "tests/product-tenant-backup-file.test.ts",
+      "tests/product-tenant-purge-postgres.test.ts",
+      "tests/product-blindaje.test.ts",
       "tests/product-login-build.test.ts",
       "tests/product-branding.test.ts",
       "tests/product-app-module.test.ts",

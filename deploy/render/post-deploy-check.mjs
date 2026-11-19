@@ -46,10 +46,11 @@ export const EXPECTED_INDEXES = [
   "Variant_sku_ci_key",
   "Variant_barcode_ci_key",
   // 202610190001_incentives: únicos que sólo se crean si los datos lo permiten.
-  "IncentiveRate_branchId_categoryId_key",
+  // 202611190001_incentive_unique_tenant los reemplaza por únicos con tenantId.
+  "IncentiveRate_tenantId_branchId_categoryId_key",
   "IncentiveEntry_saleItemId_kind_refId_key",
-  "IncentivePeriodClose_branchId_period_key",
-  "IncentiveSettlement_branchId_period_userId_key",
+  "IncentivePeriodClose_tenantId_branchId_period_key",
+  "IncentiveSettlement_tenantId_branchId_period_userId_key",
   // 202610200001_perf_indexes_links
   "Payment_saleId_idx",
   "Payment_cashSessionId_idx",

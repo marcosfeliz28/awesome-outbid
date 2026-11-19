@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   backoffSeconds,
   cleanText,
+  emailSettings,
   escapeHtml,
   formatDate,
   MAX_ATTEMPTS,
@@ -312,6 +313,45 @@ describe("Telegram · configuración, errores y reintentos", () => {
         TELEGRAM_API_BASE: "http://127.0.0.1:9/",
       }).apiBase,
     ).toBe("http://127.0.0.1:9");
+  });
+
+  it("A2: en modo producto el chat y el correo globales del entorno no se usan", () => {
+    const names = [
+      "PRODUCT_TENANCY",
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_CHAT_ID",
+      "RESEND_API_KEY",
+      "NOTIFY_EMAIL_TO",
+    ];
+    const saved = Object.fromEntries(names.map((n) => [n, process.env[n]]));
+    try {
+      Object.assign(process.env, {
+        TELEGRAM_BOT_TOKEN: TOKEN,
+        TELEGRAM_CHAT_ID: "-100123",
+        RESEND_API_KEY: "re_x",
+        NOTIFY_EMAIL_TO: "duena@example.invalid",
+      });
+      delete process.env.PRODUCT_TENANCY;
+      expect(telegramSettings().enabled).toBe(true); // la tienda sigue igual
+      expect(emailSettings().enabled).toBe(true);
+      process.env.PRODUCT_TENANCY = "required";
+      expect(telegramSettings()).toMatchObject({ enabled: false, chatId: "" });
+      expect(emailSettings()).toMatchObject({ enabled: false, to: "" });
+      // Los avisos al operador (platform-notify) pasan su propio destino.
+      expect(
+        telegramSettings({ ...process.env, TELEGRAM_CHAT_ID: "-100999" })
+          .enabled,
+      ).toBe(true);
+      expect(
+        emailSettings({ ...process.env, NOTIFY_EMAIL_TO: "op@example.invalid" })
+          .enabled,
+      ).toBe(true);
+    } finally {
+      for (const [n, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[n];
+        else process.env[n] = v;
+      }
+    }
   });
 
   it("el error guardado nunca lleva el token ni la URL", () => {

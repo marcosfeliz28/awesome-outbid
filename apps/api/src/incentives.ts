@@ -1,4 +1,4 @@
-import { tenantUnique } from "./tenant-context";
+import { currentTenantId, productMode, tenantLock, tenantUnique } from "./tenant-context";
 // Incentivos por cajera (docs/INCENTIVOS.md).
 //
 // Cada cajera gana un monto por unidad vendida según la categoría del
@@ -79,9 +79,10 @@ export const normalizeCategoryName = (name: string) =>
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
+// M5: en modo producto no hay tarifas por nombre de categoría (son de la tienda).
 /** Tarifa por defecto de una categoría según su nombre (RD$ por unidad). */
 export const defaultIncentiveRate = (categoryName: string) =>
-  DEFAULT_RATES[normalizeCategoryName(categoryName)] ?? 0;
+  productMode() ? 0 : (DEFAULT_RATES[normalizeCategoryName(categoryName)] ?? 0);
 /** Tarifa vigente: la configurada para la categoría o la de su nombre. */
 export function rateFor(
   category: { id: string; name: string },
@@ -246,9 +247,9 @@ export function summarize(
 // que se está cerrando.
 async function closeLock(tx: any, branchId: string, exclusive: boolean) {
   if (exclusive)
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(7301, hashtext(${branchId}))::text AS locked`;
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(7301, hashtext(${tenantLock(branchId)}))::text AS locked`;
   else
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock_shared(7301, hashtext(${branchId}))::text AS locked`;
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock_shared(7301, hashtext(${tenantLock(branchId)}))::text AS locked`;
 }
 async function openPeriod(tx: any, branchId: string, month: string) {
   const closed = await tx.incentivePeriodClose.findMany({
@@ -660,7 +661,7 @@ export class IncentivesController {
   /** Cuadre de un mes: del cierre si está cerrado, de las entradas si no. */
   private async report(branchId: string, period: string, userId?: string) {
     const close = await this.db.incentivePeriodClose.findUnique({
-      where: { branchId_period: { branchId, period } },
+      where: { tenantId_branchId_period: { tenantId: currentTenantId(), branchId, period } },
     });
     if (close) {
       const rows = await this.db.incentiveSettlement.findMany({
@@ -817,7 +818,8 @@ export class IncentivesController {
       for (const rate of data.rates)
         await tx.incentiveRate.upsert({
           where: {
-            branchId_categoryId: {
+            tenantId_branchId_categoryId: {
+              tenantId: currentTenantId(),
               branchId: actor.branchId,
               categoryId: rate.categoryId,
             },
@@ -870,7 +872,7 @@ export class IncentivesController {
         await closeLock(tx, actor.branchId, true);
         const existing = await tx.incentivePeriodClose.findUnique({
           where: {
-            branchId_period: { branchId: actor.branchId, period },
+            tenantId_branchId_period: { tenantId: currentTenantId(), branchId: actor.branchId, period },
           },
         });
         if (existing) conflict("Ese mes ya está cerrado.");

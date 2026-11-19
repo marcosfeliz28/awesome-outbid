@@ -30,6 +30,15 @@ import { saleIncentive } from "./incentives";
 // ---------------------------------------------------------------------------
 // Configuración
 
+// A2/M4: en modo producto un chat o correo global del entorno recibiría los
+// avisos de TODAS las empresas. Se ignoran (enabled:false) salvo que quien
+// llama pase su propio env con el destino del operador (platform-notify.ts,
+// PLATFORM_TELEGRAM_CHAT_ID / PLATFORM_OWNER_EMAIL).
+function globalDestination(env: NodeJS.ProcessEnv, value: string | undefined) {
+  if (env === process.env && env.PRODUCT_TENANCY === "required") return "";
+  return value?.trim() ?? "";
+}
+
 export type TelegramSettings = {
   enabled: boolean;
   token: string;
@@ -41,7 +50,7 @@ export function telegramSettings(
   env: NodeJS.ProcessEnv = process.env,
 ): TelegramSettings {
   const token = env.TELEGRAM_BOT_TOKEN?.trim() ?? "";
-  const chatId = env.TELEGRAM_CHAT_ID?.trim() ?? "";
+  const chatId = globalDestination(env, env.TELEGRAM_CHAT_ID);
   // TELEGRAM_API_BASE existe sólo para las pruebas (servidor falso local).
   const apiBase = (
     env.TELEGRAM_API_BASE?.trim() || "https://api.telegram.org"
@@ -63,7 +72,7 @@ export function emailSettings(
   env: NodeJS.ProcessEnv = process.env,
 ): EmailSettings {
   const apiKey = env.RESEND_API_KEY?.trim() ?? "";
-  const to = env.NOTIFY_EMAIL_TO?.trim() ?? "";
+  const to = globalDestination(env, env.NOTIFY_EMAIL_TO);
   const from =
     env.NOTIFY_EMAIL_FROM?.trim() || "Norexos <onboarding@resend.dev>";
   const apiBase = (

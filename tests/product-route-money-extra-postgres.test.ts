@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
 import { createServer } from "node:net";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -176,6 +176,18 @@ it("devoluciones, transferencias, caja, sync e incentivos quedan dentro de su em
     const ownClose = await send(http.post("/api/incentives/close").send({ month: period }));
     expect(ownClose.status, JSON.stringify(ownClose.body)).toBe(201);
     expect((await sql.query(`SELECT "tenantId",period FROM "IncentivePeriodClose"`)).rows).toEqual([{ tenantId: b.tenantId, period }]);
+    // A1: la empresa A cierra el mismo mes y sucursal "main" que B (antes 409 por índice global).
+    const sameClose = await send(http.post("/api/incentives/close").send({ month: period }), a);
+    expect(sameClose.status, JSON.stringify(sameClose.body)).toBe(201);
+    expect((await sql.query(`SELECT "tenantId" FROM "IncentivePeriodClose" WHERE period=$1 ORDER BY "tenantId"`, [period])).rows.map((r: any) => r.tenantId)).toEqual([a.tenantId, b.tenantId]);
+    // La migración A1 es idempotente: repetirla no cambia nada.
+    await sql.query(await readFile(join(root, "apps/api/prisma/migrations/202611190001_incentive_unique_tenant/migration.sql"), "utf8"));
+    expect((await sql.query(`SELECT indexname FROM pg_indexes WHERE indexname LIKE 'Incentive%key' AND indexname NOT LIKE '%pkey' ORDER BY 1`)).rows.map((r: any) => r.indexname)).toEqual([
+      "IncentiveEntry_saleItemId_kind_refId_key",
+      "IncentivePeriodClose_tenantId_branchId_period_key",
+      "IncentiveRate_tenantId_branchId_categoryId_key",
+      "IncentiveSettlement_tenantId_branchId_period_userId_key",
+    ]);
   } finally {
     await app?.close().catch(() => undefined);
     await sql?.end().catch(() => undefined);

@@ -1,4 +1,4 @@
-import { tenantUnique } from "./tenant-context";
+import { tenantLock, tenantUnique } from "./tenant-context";
 // Carga inicial de inventario desde el Excel de la tienda (hoja con ID,
 // DESCRIPCION, REFERENCIA, SUB-GRUPO DE ARTICULO, EXISTENCIA, COSTO y PRECIO
 // DETALLE). Lógica compartida por el script de línea de comandos
@@ -844,7 +844,7 @@ export async function importInventory(
     async (tx) => {
       if (run.lock) {
         const [{ locked }] = await tx.$queryRaw<{ locked: boolean }[]>`
-          SELECT pg_try_advisory_xact_lock(hashtext('nexora-inventory-import')) AS locked`;
+          SELECT pg_try_advisory_xact_lock(hashtext(${tenantLock("nexora-inventory-import")})) AS locked`;
         if (!locked) throw new InventoryBusyError();
       }
       const prepared = await prepare(tx, rows, actor, run, false);
