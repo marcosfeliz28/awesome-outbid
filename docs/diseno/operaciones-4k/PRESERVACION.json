@@ -297,6 +297,26 @@
     {
       "before": "query.data?.returnDays + \" días\"",
       "after": "query.data?.returnDays + (en ? \" days\" : \" días\")"
+    },
+    {
+      "before": "import { formatMoney, can } from \"@fitstore/shared\";\n",
+      "after": "import {\n  formatMoney,\n  can,\n  reportCellText,\n  reportColumnVisible,\n  reportDisplayRows,\n} from \"@fitstore/shared\";\n"
+    },
+    {
+      "before": "  const rows = query.data?.rows || [];\n",
+      "after": "  const rows = query.data?.rows || [];\n  const displayRows = reportDisplayRows(report, rows);\n"
+    },
+    {
+      "before": "    .filter((k) => k !== \"class\")\n",
+      "after": "    .filter((k) => k !== \"class\" && reportColumnVisible(report, k))\n"
+    },
+    {
+      "before": "      render: (row: any) =>\n        typeof row[key] === \"number\"\n          ? row[key].toLocaleString(en ? \"en-US\" : \"es-DO\", { maximumFractionDigits: 2 })\n          : String(row[key] ?? \"—\"),\n",
+      "after": "      render: (row: any) => {\n        const value = reportCellText(report, key, row[key]);\n        return typeof value === \"number\"\n          ? value.toLocaleString(en ? \"en-US\" : \"es-DO\", {\n              maximumFractionDigits: 2,\n            })\n          : String(value ?? \"—\");\n      },\n"
+    },
+    {
+      "before": "                rows={rows}\n                columns={columns}\n",
+      "after": "                rows={displayRows}\n                columns={columns}\n"
     }
   ]
 }
