@@ -205,6 +205,18 @@ async function mockApp(context: BrowserContext, sessionUser = user) {
       });
     if (path === "/api/survey/summary")
       return route.fulfill({ json: { responses: 0, questions: [] } });
+    // Forma real de GET /ai/usage: un [] tumba la tarjeta de Configuración.
+    if (path === "/api/ai/usage")
+      return route.fulfill({
+        json: {
+          from: "2026-10-01",
+          to: "2026-10-27",
+          total: null,
+          byFeature: [],
+          byUser: [],
+          byDay: [],
+        },
+      });
     if (path === "/api/events") return route.fulfill({ status: 503, body: "" });
     if (request.method() === "GET") return route.fulfill({ json: [] });
     return route.fulfill({

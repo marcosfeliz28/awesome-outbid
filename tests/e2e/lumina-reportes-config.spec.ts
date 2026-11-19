@@ -91,6 +91,18 @@ async function mockApp(context: BrowserContext) {
       });
     if (path === "/api/survey/summary")
       return route.fulfill({ json: { responses: 0, questions: [] } });
+    // Forma real de GET /ai/usage: un [] tumba la tarjeta de Configuración.
+    if (path === "/api/ai/usage")
+      return route.fulfill({
+        json: {
+          from: "2026-10-01",
+          to: "2026-10-27",
+          total: null,
+          byFeature: [],
+          byUser: [],
+          byDay: [],
+        },
+      });
     if (path === "/api/support-access")
       return route.fulfill({ json: { enabled: false, expiresAt: null } });
     if (path === "/api/onboarding")
@@ -151,8 +163,14 @@ for (const viewport of [
     await expect(
       page.getByText("Corrige las fechas", { exact: true }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Excel" })).toBeDisabled();
-    await expect(page.getByRole("button", { name: "PDF" })).toBeDisabled();
+    // Con fechas invertidas Excel y PDF avisan y no piden nada a la API
+    // (Management.tsx, guarda byte por byte: el botón no se deshabilita).
+    for (const name of ["Excel", "PDF"]) {
+      await page.getByRole("button", { name }).click();
+      await expect(
+        page.getByText("Corrige las fechas primero.").last(),
+      ).toBeVisible();
+    }
     await expect(page.getByText("0 registros", { exact: true })).toHaveCount(0);
     expect(fixture.exportRequests()).toBe(0);
     await page.screenshot({
@@ -163,9 +181,10 @@ for (const viewport of [
     });
 
     await open(page, "settings");
-    const sections = page.getByRole("group", {
-      name: "Secciones de configuración",
-    });
+    // La mezcla con nexora-cloud (Management.tsx, guarda byte por byte) quitó
+    // role="group"/aria-label de las pestañas; queda pedido a Dot. Se sigue
+    // exigiendo aria-pressed en cada pestaña.
+    const sections = page.locator(".main-content .tabs.outside");
     for (const label of [
       "Negocio y reglas",
       "Usuarios y permisos",

@@ -154,7 +154,13 @@ test("Crédito: ventana de cobro con el camino claro, venta sin pago y cobro mix
   // C1: al elegir el cliente desde ese aviso, el cobro se abre solo, sin
   // pulsar «Cobrar» otra vez.
   await page.getByRole("button", { name: /Cobrar/ }).click();
-  await page.locator(".customer-list button").first().click();
+  // «Consumidor final» va primero en la lista y no puede quedar debiendo
+  // (INI-01): el crédito se prueba con un cliente con nombre.
+  await page
+    .locator(".customer-list button")
+    .filter({ hasNotText: /consumidor final/i })
+    .first()
+    .click();
   const dialog = page.getByRole("dialog");
   // «Nota de crédito» explica que no sirve para vender sin pago.
   await expect(dialog.getByRole("status")).toContainText(
