@@ -157,6 +157,7 @@ export default defineConfig({
       "tests/cash-language.test.ts",
       "tests/dashboard-category-color.test.ts",
       "tests/uc07-users-mobile.test.ts",
+      "tests/pos-service-stock-label.test.ts",
       "tests/config-rates-survey-language.test.ts",
       "tests/auditoria-lote-a.test.ts",
       "tests/auditoria-inventario-clientes.test.ts",
