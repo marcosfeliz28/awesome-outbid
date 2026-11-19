@@ -75,6 +75,8 @@ export const HIJAS: Record<string, (b: string) => Sql> = {
   GvProof: (b) =>
     Prisma.sql`("paymentId" IN ${enSucursal("GvPayment", b)} OR "cashSessionId" IN ${enSucursal("GvCashSession", b)})`,
   Settings: (b) => Prisma.sql`id = ${b}`,
+  // Registro de la sucursal (202611190001_branches): su id es el branchId.
+  Branch: (b) => Prisma.sql`id = ${b}`,
   // Contadores por sucursal (sales.ts, gv-money.ts); «purchase» es global.
   Counter: (b) =>
     Prisma.sql`key = ANY(${["sale:" + b, "return:" + b, "gvrecibo:" + b]}::text[])`,

@@ -71,7 +71,7 @@ Pantalla **Compras** (`purchase:write`), `apps/web/src/Management.tsx:1358`:
 - **Recepciones** (pestaña): historial con detalle y exportación (`Purchases.tsx:461-647`; API `GET /goods-receipts`, `inventory.ts:1454`, `:1441`; exportar `goods-receipts/export` requiere `reports:read`, `:1360`).
 - **Proveedores**: crear proveedor (nombre, RNC, teléfono, correo, plazo de pago, entrega) y **registrar un pago al proveedor** (monto, método, referencia) (`Management.tsx:1388`, `:1348-1370`; API `apps/api/src/admin.ts:608-640`). Las cuentas por pagar salen en el reporte «Compras y cuentas por pagar» (`Management.tsx:3022`).
 - La **factura del proveedor** (foto/PDF/Excel) que se sube en Mercancía queda adjunta a la recepción y no se puede borrar (`apps/api/prisma/schema.prisma` modelo `GoodsReceipt`, campo `attachmentId`; modelos `InvoiceDraft` e `InvoiceAttachment`). Hay un tope diario de facturas sin confirmar: «Tienes muchas facturas sin confirmar hoy. Confirma o espera.» (`merchandise.ts:247`).
-- No confundir: **«FS-0000123» es el número de una VENTA de la tienda** (factura al cliente), no una factura de proveedor (`apps/api/src/sales.ts:1226`). La factura del proveedor se identifica por su propio número (`supplierInvoice`) y NCF (`supplierNcf`).
+- No confundir: **«FS-0000123» es el número de una VENTA de la tienda** (factura al cliente), no una factura de proveedor (`apps/api/src/sales.ts:1227`). La factura del proveedor se identifica por su propio número (`supplierInvoice`) y NCF (`supplierNcf`).
 
 ## 6. Procedimiento fijo de la dueña (verificación triple)
 

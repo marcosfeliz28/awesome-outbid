@@ -139,7 +139,7 @@
   "apps/api/src/sales.ts:1104": "bad(\"La venta supera el límite de crédito del cliente.\");",
   "apps/api/src/sales.ts:1199": "bad(\"Saldo insuficiente en la nota de crédito.\");",
   "apps/api/src/sales.ts:1218": "? \"manager_pin\"",
-  "apps/api/src/sales.ts:1226": "number: \"FS-\" + String(counter.value).padStart(7, \"0\"),",
+  "apps/api/src/sales.ts:1227": "number: branchDocumentNumber(\"FS\", actor.branchId, counter.value, 7),",
   "apps/api/src/sales.ts:1267": "incentiveOnCollection: d(credit).plus(cod).gt(0),",
   "apps/api/src/sales.ts:1295": "promotionName,",
   "apps/api/src/sales.ts:1358": "? money(",

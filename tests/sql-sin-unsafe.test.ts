@@ -21,6 +21,8 @@ const PERMITIDOS = [
   "api/src/registration.ts",
   "api/src/tenant-export.ts",
   "api/src/tenant-backup.ts",
+  // tenant:purge (blindaje2): tablas del catálogo de Prisma citadas con q(), valores $1.
+  "api/src/tenant-purge.ts",
 ];
 
 describe("seguridad 16 · SQL crudo en la API", () => {
