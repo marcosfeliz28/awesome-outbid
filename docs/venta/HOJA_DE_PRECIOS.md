@@ -1,26 +1,28 @@
-# Hoja de precios de introducción
+# Nexora POS · precios públicos
 
-> **EN REVISIÓN (16-nov-2026).** La dueña ya dio dos cifras (Instalado US$200 y Online US$40 al mes) y faltan decisiones: ver `docs/venta/DECISIONES_PRECIOS_16NOV.md`. **No publicar esta hoja ni la landing hasta actualizarla.**
+Fuente comercial vigente para la portada pública. Actualizada el 19-nov-2026
+por orden de la dueña.
 
-Precios en US$, aprobados por la dueña (7-nov-2026) como **precios de introducción**. Referencia aproximada: ~RD$60 por US$ — **confirmar tasa** antes de dar un precio en pesos. La versión para imprimir es `hoja-de-precios.html`.
+| Plan | Precio público | Mensaje de venta |
+| --- | ---: | --- |
+| **Medio** | **US$69 al mes** | Una base clara para centralizar la operación diaria. |
+| **Completo** | **US$119 al mes** | Una experiencia más amplia para equipos que necesitan mayor visibilidad. |
+| **Piloto** | **60 días** | Se coordina por invitación con el equipo de Nexora POS. |
 
-| Opción                                               | Precio                                      | Qué incluye                                                                                          |
-| ---------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **Instalado** (1 sucursal, hasta 3 cajas, tu laptop) | **US$149 pago único** (~RD$9,000)           | Instalador, primer año de actualizaciones y soporte por WhatsApp/correo. Sin mensualidad.            |
-| Renovación (a partir del segundo año)                | US$39 al año                                | Actualizaciones y soporte. Opcional.                                                                 |
-| **IA de ventas** (opcional)                          | US$7 por usuario al mes                     | 10 preguntas al día por usuario. Solo lee datos. **Apagada hasta que la dueña ponga la clave.**      |
-| **Lectura de facturas con IA** (opcional, con la IA) | 20 facturas al mes incluidas; extra US$0.30 | Cada factura adicional cuesta US$0.30.                                                               |
-| **Nube Medio** (1 sucursal, 5 cajas)                 | US$69 al mes                                | Hosting dedicado.                                                                                    |
-| **Nube Completo** (3 sucursales, 10 cajas)           | US$119 al mes                               | Hosting dedicado.                                                                                    |
-| Instalación y carga de inventario (opcional)         | US$75                                       | Una laptop. Una persona, medio día.                                                                  |
-| **Piloto**                                           | 60 días sin costo                           | Para los primeros clientes, a cambio de comentarios y permiso para citarlos. Después, estos precios. |
+## Límites de esta página
 
-## Aclaraciones
+- La portada no abre registro público ni procesa cobros.
+- No publicar equivalencias en pesos, impuestos, formas de pago, descuentos ni
+  condiciones de renovación hasta que la dueña los apruebe por escrito.
+- No prometer funcionalidades o límites no aprobados para cada plan.
+- Las condiciones comerciales y legales se confirman directamente antes de la
+  activación.
+- La marca pública es **Nexora POS**. No usar «Grupo Macgen», datos del negocio
+  de la tienda ni fotografías de la tienda en materiales del producto.
 
-- Norexos **no emite NCF ni e-CF**. Los recibos son documento no fiscal.
-- La IA de ventas está apagada hasta que la dueña ponga la clave del proveedor; el precio aplica cuando se active.
-- Instalado: el respaldo en la misma laptop no te protege si se daña o se pierde; la copia en USB es responsabilidad del cliente.
-- No hay plan de nube más barato que Medio por ahora.
-- Son precios de introducción: pueden cambiar para clientes nuevos.
-- Soporte solo en español. WhatsApp: [COMPLETAR]. Correo: [COMPLETAR].
-- Precios del costo de la IA y de las facturas son estimados; se revisan con el uso real medido.
+## Pendiente de decisión de la dueña
+
+1. Dominio y correo/canal de ventas definitivo.
+2. Términos, impuestos y forma de cobro.
+3. Qué capacidades concretas se anuncian en Medio y Completo.
+4. Condiciones exactas del piloto después de los 60 días.
