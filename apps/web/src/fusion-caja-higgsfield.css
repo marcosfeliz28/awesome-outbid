@@ -954,6 +954,12 @@
   }
 }
 
+/* CP-18: una sola voz tipográfica para el flujo de venta. */
+.pos-layout.fusion-caja-integrada .pos-topbar h1,
+.pos-layout.fusion-caja-integrada .product-info h3 {
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+}
+
 /* Scoped checkout shell and receipt portal: beat legacy violet without changing actions. */
 .app-shell:has(.pos-layout.fusion-caja-integrada) {
  --primary: var(--fc-accent); --primary-soft: var(--fc-pressed);

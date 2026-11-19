@@ -51,3 +51,10 @@ it("CP-17: las fotos con fondo blanco se integran al tema oscuro del POS", () =>
     /:root\[data-theme="dark"\][\s\S]*?\.product-image img \{[\s\S]*?mix-blend-mode:\s*multiply/,
   );
 });
+
+it("CP-18: el título y los nombres de producto del POS usan la fuente sans de la aplicación", () => {
+  const fusion = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
+  expect(fusion).toMatch(
+    /\.pos-topbar h1,\s*\.pos-layout\.fusion-caja-integrada \.product-info h3 \{[\s\S]*?font-family:\s*"Plus Jakarta Sans", "Inter", sans-serif/,
+  );
+});
