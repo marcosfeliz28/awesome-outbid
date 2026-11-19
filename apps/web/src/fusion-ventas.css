@@ -234,6 +234,18 @@
   }
 }
 @media (max-width: 540px) {
+  /* CC-20: el rótulo Fecha conserva su propia columna junto al calendario,
+     aun cuando la barra de filtros se reduzca a 390 px. */
+  .sales-fusion .table-toolbar .table-search {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .sales-fusion .table-toolbar .table-search > span {
+    white-space: nowrap;
+  }
   .sales-fusion-stats {
     gap: 8px;
   }
