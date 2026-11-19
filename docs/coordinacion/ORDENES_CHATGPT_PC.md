@@ -106,3 +106,14 @@ Comprueba con la aplicación en local, a 1366 px y a 390 px, y registra en `docs
 3. **MOD-08:** con el equipo en modo oscuro y sin tema guardado, al recargar arranca oscuro y sin destello claro; el botón de luna o sol guarda la elección y gana sobre el sistema.
 4. **Instalación limpia de Windows 10/11** (la pendiente del fin de semana): si el ISO sigue dañado, dilo y para; no la repitas sin avisar. Sin esta prueba no hay despliegue.
 Nota: en tus mensajes y documentos evita la palabra «seguridad» en los títulos; el filtro de ChatGPT saltó el 13-nov.
+
+## Orden 19-nov (noche) — correcciones a tu entrega P-01/P-02 (rama chatgpt-pc/producto-venta-19nov)
+Revisé 19169d98 y 18c074c9: la landing es estática, segura y se ve bien a 375 px. Cambios necesarios antes de publicar:
+1. **Prueba gratis = 7 días** (decisión de la dueña, 19-nov), no 60. Cámbialo en apps/landing/index.html (título y recuadro), precios.html, en/index.html, en/pricing.html, docs/venta/HOJA_DE_PRECIOS.md (fila Piloto) y LANDING_EN_PLANES.md. Texto sugerido: «Prueba Nexora POS durante 7 días»; en precios: «Puedes empezar con una prueba gratis de 7 días coordinada con el equipo de Nexora POS» (no prometas la prueba a todo el que llegue: es por invitación).
+2. **Plan instalado**: la hoja de la rama borró US$149 pago único (1 sucursal, hasta 3 cajas, renovación US$39/año) y filas de IA de ventas/lectura de facturas/instalación US$75. Restáuralo en docs/venta/HOJA_DE_PRECIOS.md tal como está en nexora-cloud (no inventes precios). Si lo muestras en la landing, que coincida.
+3. **Límites aprobados**: Medio = 1 sucursal y 5 cajas; Completo = 3 sucursales y 10 cajas. Reemplaza las frases vagas de precios.html:16 y en/pricing.html:16 por esos límites o quítalas.
+4. **Aclaración fiscal**: añade en precios.html y en/pricing.html «Los recibos de Nexora POS son documento no fiscal y no sustituyen un comprobante fiscal.»
+5. **No afirmes funciones que no verificaste** («alertas» de inventario, «interfaces claras para cada rol», «vista de seguimiento para el equipo»): si no las confirmas en el producto, usa «Consulta productos y movimientos de inventario».
+6. robots.txt y sitemap.xml apuntan a norexos.net: el dominio NO está decidido; quítalos o déjalos sin dominio hasta que la dueña confirme.
+7. Nota: el código del cobro (billing-plans.ts) todavía tiene planes en pesos (Autoservicio/Básico/Pro/Premium), no Medio/Completo: en la landing di que el cobro es coordinado con el equipo; Claude nube alinea el código aparte.
+Nada de API, base de datos ni dinero en tu rama. Entrega en la misma rama y avisa por PR/commit; Claude nube revisa y publica.
