@@ -1,4 +1,4 @@
-/* landing.css — página pública de Norexos (norexos.net). Estilo Obsidian Lumina.
+/* landing.css — página pública neutral de Nexora POS. Estilo Obsidian Lumina.
    Claro por defecto; oscuro con prefers-color-scheme o data-theme="dark".
    Sin CDN, sin fuentes externas. Contraste AA (≥ 4.5:1), foco visible,
    prefers-reduced-motion respetado. Sin cifras de precios: van en la sección Planes cuando se aprueben. */
@@ -138,11 +138,17 @@ header {
   align-items: center;
   gap: 8px;
 }
-.logo .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.logo .mark {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--primary) 60%, var(--border));
+  border-radius: 8px;
+  color: var(--on-primary);
   background: var(--primary);
+  font-size: 13px;
+  line-height: 1;
 }
 .nav-links {
   display: flex;
@@ -192,6 +198,10 @@ header {
   color: var(--muted);
   max-width: 640px;
   margin: 0 auto 28px;
+}
+
+.hero-actions {
+  margin: 0 auto;
 }
 
 .btn {
@@ -269,6 +279,147 @@ section.alt {
   margin: 0;
 }
 
+.card-kicker {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+}
+
+.split-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 28px;
+}
+
+.text-link {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pricing-preview,
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.price-card {
+  position: relative;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+}
+
+.price-card h2,
+.price-card h3 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.price-card p,
+.price-card li {
+  color: var(--muted);
+}
+
+.price-card.featured {
+  border-color: var(--primary);
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.featured-label {
+  display: inline-block;
+  margin-bottom: 14px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 13%, var(--surface-2));
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+.price {
+  margin: 16px 0 12px;
+  color: var(--text) !important;
+  font-size: clamp(38px, 5vw, 52px);
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.price span {
+  font-size: 17px;
+  letter-spacing: 0;
+  vertical-align: top;
+}
+
+.price small {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.price-intro {
+  min-height: 48px;
+}
+
+.price-card ul {
+  margin: 20px 0 0;
+  padding-left: 18px;
+}
+
+.price-card li + li {
+  margin-top: 8px;
+}
+
+.pilot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.pilot .section-sub {
+  margin-bottom: 0;
+}
+
+.pilot-note {
+  display: grid;
+  flex: 0 0 210px;
+  gap: 4px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.pilot-note strong {
+  color: var(--primary);
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+
+.pilot-note span,
+.fine-print p {
+  color: var(--muted);
+}
+
+.compact-hero {
+  padding-bottom: 44px;
+}
+
+.fine-print {
+  max-width: 760px;
+}
+
 .faq {
   max-width: 760px;
 }
@@ -326,6 +477,19 @@ footer {
   .btn {
     width: 100%;
     max-width: 320px;
+  }
+  .split-heading,
+  .pilot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pricing-preview,
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+  .pilot-note {
+    width: 100%;
+    flex-basis: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {
