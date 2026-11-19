@@ -195,3 +195,16 @@ describe("D5 · deuda de una transferencia de venta rechazada", () => {
     expect(Number(paid.creditBalance)).toBe(0);
   });
 });
+
+describe("D6 · anular una venta con transferencia por verificar", () => {
+  it("cierra su alerta y la saca de Transferencias por verificar", async () => {
+    const t = await transferSale();
+    await sales.voidSale(t.saleId, { reason: "Venta duplicada" }, actor);
+    const alert = await db.alert.findUniqueOrThrow({
+      where: { key: "transfer:" + t.paymentId },
+    });
+    expect(alert.status).toBe("resolved");
+    const list: any[] = await sales.pendingTransfers(actor, {});
+    expect(list.map((p) => p.id)).not.toContain(t.paymentId);
+  });
+});

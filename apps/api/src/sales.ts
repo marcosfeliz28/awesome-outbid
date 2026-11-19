@@ -2940,6 +2940,11 @@ export class SalesController {
         "No se puede anular: la caja ya entregó ese efectivo. Pide a un gerente que lo reponga en la caja (entrada) y vuelve a anular, o anula después del cierre.",
       );
     await refreshReceivableAlert(tx, id, actor.branchId);
+    // D6 (auditoría 19-nov): una transferencia por verificar de una venta
+    // anulada ya no se puede verificar ni rechazar; su alerta se cierra.
+    for (const p of sale.payments)
+      if (p.method === "transfer" && p.status === "pending_verification")
+        await resolveTransferAlert(tx, p.id);
     await reverseIncentives(tx, actor, "void", id, id);
     let cashDifferences: Record<string, number> | undefined;
     if (refundCash && refundAmount > 0) {
@@ -3057,7 +3062,8 @@ export class SalesController {
       where: {
         method: "transfer",
         status: "pending_verification",
-        sale: { branchId: actor.branchId },
+        // D6: la de una venta anulada ya no se verifica ni se rechaza.
+        sale: { branchId: actor.branchId, status: "completed" },
         ...(createdAt ? { createdAt } : {}),
       },
       select: {
