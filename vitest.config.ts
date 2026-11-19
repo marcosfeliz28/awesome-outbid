@@ -63,6 +63,7 @@ export default defineConfig({
       "tests/branches-unit.test.ts",
       "tests/branch-settings-web.test.ts",
       "tests/branches-migracion-postgres.test.ts",
+      "tests/producto-precheck-postgres.test.ts",
       "tests/product-background-postgres.test.ts",
       "tests/product-tenants-postgres.test.ts",
       "tests/product-ncf-sequences-postgres.test.ts",

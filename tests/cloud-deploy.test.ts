@@ -1397,5 +1397,14 @@ describe("CI · cadena de suministro y despliegue protegido", () => {
     expect(read("deploy/render/Dockerfile.api")).toContain(
       "COPY deploy/render/producto-predeploy.mjs deploy/render/producto-predeploy.mjs",
     );
+    // Paso 0: el chequeo previo viaja en la imagen y corre antes de migrar.
+    expect(read("deploy/render/Dockerfile.api")).toContain(
+      "COPY deploy/render/producto-precheck.mjs deploy/render/producto-precheck.mjs",
+    );
+    const predeploy = read("deploy/render/producto-predeploy.mjs");
+    expect(predeploy.indexOf("producto-precheck.mjs")).toBeGreaterThan(0);
+    expect(predeploy.indexOf("producto-precheck.mjs")).toBeLessThan(
+      predeploy.indexOf("producto-bootstrap.sql"),
+    );
   });
 });

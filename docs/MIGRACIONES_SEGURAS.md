@@ -36,7 +36,7 @@ fuera de horario.
 Para una migración pesada planificada (por ejemplo, rellenar una columna en
 una tabla grande), fuera de horario y después de un respaldo:
 
-1. En Render › `nexora-pos-api` › _Environment_, añadir temporalmente
+1. En Render › `nexora-pos-api` (en el producto, `nexora-saas-api`) › _Environment_, añadir temporalmente
    `NEXORA_MIGRATION_STATEMENT_TIMEOUT=30min` (y si hace falta
    `NEXORA_MIGRATION_LOCK_TIMEOUT=30s`). Formato: número seguido de `ms`, `s`
    o `min`.
@@ -115,7 +115,20 @@ deploy` **no muestra los `RAISE NOTICE`** (probado): un bloque
 
 Prisma marca la migración como fallida en `_prisma_migrations` y **todos los
 despliegues siguientes fallan** hasta resolverlo. La tienda sigue con la API
-anterior. Pasos (desde el _Shell_ del servicio `nexora-pos-api`):
+anterior. Pasos desde el _Shell_ del servicio API que se desplegó:
+
+- **Tienda** (`render.yaml`): `nexora-pos-api`.
+- **Producto / nube de venta** (`render.producto.yaml`): **`nexora-saas-api`**
+  (servicio privado, _pserv_; base `nexora-saas-db`). Nunca `nexora-pos-api`.
+  Su `preDeployCommand` (`deploy/render/producto-predeploy.mjs`) empieza con
+  el chequeo previo de solo lectura (`deploy/render/producto-precheck.mjs`):
+  si encuentra una migración fallida sin resolver, un `branchId` de más de
+  80 caracteres o cierres de incentivo repetidos, detiene el despliegue
+  **antes** de tocar la base y dice en el log (_Events_) qué falló y qué
+  hacer. Runbook completo de publicación:
+  [`docs/producto/PUBLICACION_NUBE_VENTA.md`](producto/PUBLICACION_NUBE_VENTA.md).
+
+Pasos:
 
 1. Ver qué pasó, sin cambiar nada:
 
