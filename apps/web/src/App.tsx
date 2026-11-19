@@ -409,6 +409,11 @@ function Login() {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            const normalizedLogin = login.trim();
+            if (!normalizedLogin) {
+              setError("Escribe tu usuario o correo.");
+              return;
+            }
             if (changeRequired) {
               const validation = passwordChangeError(
                 newPassword,
@@ -428,7 +433,7 @@ function Login() {
               if (!changeRequired) {
                 const terminal = storedTerminalCredentials();
                 const data = await post("/auth/login", {
-                  login,
+                  login: normalizedLogin,
                   password,
                   ...(terminal ? { terminal } : {}),
                 });
@@ -446,7 +451,7 @@ function Login() {
               } else {
                 const terminal = storedTerminalCredentials();
                 const data = await post("/auth/change-password", {
-                  login,
+                  login: normalizedLogin,
                   currentPassword: password,
                   newPassword,
                   confirmPassword,

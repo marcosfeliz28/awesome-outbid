@@ -2,6 +2,12 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · VE-001
+
+- El formulario web rechaza un usuario vacío o compuesto solo por espacios antes de llamar al API y usa el valor sin espacios exteriores en entrada/cambio obligatorio.
+- Regresión roja→verde. El foco pasó 4 archivos/56 pruebas, incluidas autenticación, legibilidad y accesibilidad. `pnpm check` pasó con 162 archivos/1,330 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API.
+- Sin cambios de servidor, sesión, permisos, Render, producción, base o credenciales. La rama sigue sin publicar para conservar el único push final.
+
 ## 2026-11-19 · ChatGPT NUBE · UC-27
 
 - `PasswordChangeFields.tsx` avisa en línea `Las contraseñas no coinciden.` y enlaza el error accesible al campo de confirmación; no cambia validación, envío, API ni permisos.

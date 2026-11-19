@@ -48,6 +48,7 @@ export default defineConfig({
       "tests/reports-screen-presentation.test.ts",
       "tests/purchases-history-error.test.ts",
       "tests/password-confirmation-inline.test.ts",
+      "tests/login-empty-user.test.ts",
       "tests/credit-reasons.test.ts",
       "tests/formal-period.test.ts",
       "tests/formal-pdf.test.ts",

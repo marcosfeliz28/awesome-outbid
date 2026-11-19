@@ -8,9 +8,9 @@ Resumen de pantallas que usa el cajero: **Caja** (abrir y cerrar) y **Punto de v
 
 ## 0. Antes de empezar
 
-- Entrar: pantalla de acceso con campo «Tu usuario o correo» y «Tu contraseña», botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:485`, `:512`). La contraseña temporal se cambia al entrar (`apps/web/src/App.tsx:568`).
+- Entrar: pantalla de acceso con campo «Tu usuario o correo» y «Tu contraseña», botón **«Entrar a mi tienda»** (`apps/web/src/App.tsx:490`, `:512`). La contraseña temporal se cambia al entrar (`apps/web/src/App.tsx:573`).
 - El equipo (computadora) debe estar **aprobado**. Si no, sale «Este equipo necesita aprobación … un gerente debe aprobarlo: con su PIN aquí mismo o desde Configuración › Equipos» (`apps/web/src/realtime.tsx:517-520`). Sin equipo aprobado no se puede vender ni mover mercancía (`apps/api/src/common.ts` decorador `RequireTerminal`, usado en `apps/api/src/sales.ts:1532` y `apps/api/src/cash.ts:883`).
-- Cambiar de cajera sin salir: menú de la cuenta › **«Cambiar de usuario con PIN»** (`apps/web/src/App.tsx:1269`). No se puede cambiar con PIN a alguien con más permisos (`apps/api/src/auth.ts:846-860`).
+- Cambiar de cajera sin salir: menú de la cuenta › **«Cambiar de usuario con PIN»** (`apps/web/src/App.tsx:1274`). No se puede cambiar con PIN a alguien con más permisos (`apps/api/src/auth.ts:846-860`).
 
 ## 1. Abrir la caja
 

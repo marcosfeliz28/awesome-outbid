@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · VE-001 · usuario vacío
+
+- **Orden:** punto VE-001 de la pieza 7 de la orden nocturna del 19-nov. Solo formulario web; no cambia API, autenticación del servidor ni permisos.
+- **Cambio:** el envío normaliza `login.trim()`. Si queda vacío, muestra `Escribe tu usuario o correo.` y retorna antes de `post`; los dos flujos autorizados —entrada y cambio obligatorio— envían el usuario normalizado.
+- **Regresión rojo→verde:** `tests/login-empty-user.test.ts` falló primero porque no existía `normalizedLogin`; después pasó. El foco completo pasó **4 archivos / 56 pruebas**, incluidas las coberturas de autenticación, legibilidad y accesibilidad.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **162 archivos / 1,330 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `git diff --check` pasó.
+- **Autoauditoría:** no se altera la contraseña, sesión, terminal, respuesta de error ni contrato del servidor. Un usuario válido conserva su valor salvo espacios exteriores; un valor solo de espacios no inicia red.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
 ## 2026-11-19 · UC-27 · confirmación de contraseña
 
 - **Orden:** punto UC-27 de la pieza 7 de la orden nocturna del 19-nov. Solo presentación en `PasswordChangeFields.tsx`; no cambia autenticación, política, API ni permisos.
