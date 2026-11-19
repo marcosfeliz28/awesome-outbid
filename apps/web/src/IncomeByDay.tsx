@@ -32,6 +32,14 @@ const kindName: Record<string, string> = {
   return_card: "Devolución a tarjeta",
   return_transfer: "Devolución por transferencia",
 };
+// P6: el método llega como código (cash, card…); se muestra en español.
+const methodName: Record<string, string> = {
+  cash: "Efectivo",
+  card: "Tarjeta",
+  transfer: "Transferencia",
+  credit: "Crédito",
+  cod: "Contraentrega",
+};
 export function IncomeByDay() {
   const en = useLanguage() === "en";
   const text = (value: string) => reportSecondaryLabel(value, en);
@@ -308,7 +316,7 @@ export function IncomeByDay() {
                             </td>
                             <td>{item.number}</td>
                             <td>{text(kindName[item.kind] ?? item.kind)}</td>
-                            <td>{item.method}</td>
+                            <td>{item.method ? text(methodName[item.method] ?? item.method) : "—"}</td>
                             <td>{formatMoney(item.amount)}</td>
                             <td>{item.cardLast4 ?? "—"}</td>
                             <td>{item.approvalCode ?? "—"}</td>

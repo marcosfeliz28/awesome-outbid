@@ -18,6 +18,7 @@ import {
 } from "./common";
 import { groupIncomeDays } from "./income-day";
 import { saleIsGvSql, saleNotGvSql } from "./gv-scope";
+import { incomeKindName, methodName } from "./reportes/textos";
 
 type QueryInput = {
   from?: string;
@@ -412,8 +413,8 @@ export class IncomeReportController {
                 timeZone: "America/Santo_Domingo",
               }),
               e.number,
-              e.kind,
-              e.method,
+              incomeKindName(e.kind),
+              methodName(e.method),
               amount(e.amount),
               e.cashSessionId,
               e.cardLast4,
@@ -470,8 +471,8 @@ export class IncomeReportController {
               timeZone: "America/Santo_Domingo",
             }),
             e.number,
-            e.kind,
-            e.method,
+            incomeKindName(e.kind),
+            methodName(e.method),
             Number(e.amount),
             e.cashSessionId,
             e.cardLast4,
