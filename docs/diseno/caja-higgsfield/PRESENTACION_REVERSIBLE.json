@@ -1,5 +1,5 @@
 {
-  "base_sha256": "c4c13cd526d6b9287e174864dfcc086f57b8b3d9eea6d8116303b96ef135ebed",
+  "base_sha256": "ed4c8711217cc5cce5d232c4a51812ae5055f52166fb9472db72b178e422301d",
   "changes": [
     {
       "before": "import { refreshAfterSale }",
