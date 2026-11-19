@@ -156,3 +156,22 @@ describe("dinero-12 · conteo físico", () => {
     expect(forManager.items[0].expected).toBe(7);
   });
 });
+
+// INV-010: servicios y cursos (unidad «servicio») no llevan existencia: no
+// entran en la lista de stock ni en sus contadores.
+describe("INV-010 · la lista de stock no incluye servicios", () => {
+  it("filtra la unidad servicio en la consulta", async () => {
+    const { InventoryController } = await import("../apps/api/src/inventory");
+    let where: any;
+    const db: any = {
+      variant: {
+        findMany: async (args: any) => {
+          where = args.where;
+          return [];
+        },
+      },
+    };
+    await new InventoryController(db).stock(manager);
+    expect(where.product).toEqual({ unit: { not: "servicio" } });
+  });
+});

@@ -619,8 +619,14 @@ export class InventoryController {
   @Get("inventory/stock")
   @Permit("catalog:read")
   async stock(@CurrentUser() actor: Actor) {
+    // INV-010: servicios y cursos (unidad «servicio») no llevan existencia;
+    // fuera de la lista y de sus contadores (sin existencias, stock bajo).
     const rows = await this.db.variant.findMany({
-      where: { branchId: actor.branchId, active: true },
+      where: {
+        branchId: actor.branchId,
+        active: true,
+        product: { unit: { not: "servicio" } },
+      },
       include: {
         product: { include: { category: true } },
         lots: true,
