@@ -4,6 +4,7 @@ import prettier from "prettier";
 import { describe, expect, it } from "vitest";
 import baseline from "./operational-aux-baseline.json";
 import languageLedger from "./operational-aux-language-ledger.json";
+import selectionLedger from "./anulaciones-presentation-ledger.json";
 import moneyLedger from "./operational-aux-money-ledger.json";
 import {
   operationalAuxCopy,
@@ -14,6 +15,13 @@ describe("presentación operativa 4K sin alterar el negocio", () => {
   for (const [name, hash] of Object.entries(baseline)) {
     it(`${name}: permisos, handlers, datos y confirmaciones idénticos a la base`, async () => {
       let translated = source(`${name}.tsx`);
+      if (name === "VoidRequests") {
+        // Undo only the four enumerated UI edits; keep the historic hash intact.
+        for (const edit of selectionLedger) {
+          expect(translated.split(edit.after).length - 1).toBe(1);
+          translated = translated.replace(edit.after, edit.before);
+        }
+      }
       for (const edit of moneyLedger[name as keyof typeof moneyLedger]) {
         expect(translated.split(edit.after).length - 1).toBe(1);
         translated = translated.replace(edit.after, edit.before);
@@ -140,4 +148,35 @@ it("solo importes tienen nowrap; cifras excepcionales permiten desplazamiento", 
     expect(source(`${name}.tsx`)).toContain(
       'className="operational-aux-money"',
     );
+});
+
+describe("Anulaciones 02 selección y preservación exacta", () => {
+  const source = readFileSync("apps/web/src/VoidRequests.tsx", "utf8");
+  const hash = (s: string) => createHash("sha256").update(s).digest("hex");
+  it("02 keeps original request data, visibility guards and action card byte-for-byte", () => {
+    const start = source.indexOf(
+      '                <article className="void-request-card"',
+    );
+    const end =
+      source.indexOf("                </article>", start) +
+      "                </article>".length;
+    expect(hash(source.slice(start, end))).toBe(
+      "d565c3ce4bb35ff029db39e95bf45ffd41371459faeca1e9e675a6e8a7e36a38",
+    );
+  });
+  it("02 keeps approval/refund copy, rejection and decision modal block byte-for-byte", () => {
+    expect(hash(source.slice(source.indexOf("      {approving && (")))).toBe(
+      "a14ba237f92103a388398ef725c8368d13cdff466422ff1b204d900737210aab",
+    );
+    expect(source).toContain('const admin = can(user.permissions, "*");');
+    expect(source).toContain("refetchInterval: 15000");
+    expect(source).toContain('queryKey: ["void-requests", status]');
+  });
+  it("02 renders a single selected detail with accessible selection and stale dialog invalidation", () => {
+    expect(source).toContain("aria-pressed={selected?.id === row.id}");
+    expect(source).toContain("(selected ? [selected] : []).map");
+    expect(source).toContain("selection?.status === status");
+    expect(source).toContain("row.id === approving.id");
+    expect(source).toContain("row.id === rejecting.id");
+  });
 });

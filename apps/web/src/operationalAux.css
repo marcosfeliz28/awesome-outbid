@@ -325,3 +325,61 @@
   font-variant-numeric: tabular-nums;
   vertical-align: bottom;
 }
+
+/* Area 02: compact selection and a single existing request detail. */
+.operational-aux-void .void-request-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 20px;
+  align-items: start;
+}
+.operational-aux-void .void-request-workspace > .void-request-grid {
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 0;
+}
+.operational-aux-void .void-request-list {
+  min-width: 0;
+  border: 1px solid var(--oa-line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--oa-surface);
+}
+.operational-aux-void .void-request-list h2 {
+  margin: 0;
+  padding: 18px;
+  font-size: 20px;
+}
+.operational-aux-void .void-request-select {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  padding: 16px;
+  text-align: start;
+  color: var(--oa-ink);
+  background: var(--oa-surface);
+  border: 0;
+  border-top: 1px solid var(--oa-line);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.operational-aux-void .void-request-select > * {
+  min-width: 0;
+}
+.operational-aux-void .void-request-select[aria-pressed="true"] {
+  background: var(--oa-soft);
+  box-shadow: inset 4px 0 0 var(--oa-gold);
+}
+.operational-aux-void .void-request-select:focus-visible {
+  outline-offset: -4px;
+}
+.operational-aux-void .void-request-select-status {
+  font-weight: 750;
+  color: var(--oa-accent);
+}
+@media (max-width: 760px) {
+  .operational-aux-void .void-request-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

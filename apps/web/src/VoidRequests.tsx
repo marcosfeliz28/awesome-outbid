@@ -3,7 +3,7 @@ import { useLanguage } from "./inicioLanguage";
 import { operationalAuxText } from "./operationalAuxLanguage";
 import { ClipboardX } from "lucide-react";
 import "./operationalAux.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { METHOD_LABEL } from "./Prints";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Badge, Modal } from "@fitstore/ui";
@@ -35,6 +35,35 @@ export function VoidRequests() {
     queryFn: () => api("/void-requests?status=" + status),
     refetchInterval: 15000,
   });
+  const [selection, setSelection] = useState<{
+    status: string;
+    id: string;
+  } | null>(null);
+  const selected =
+    query.data?.find(
+      (row) => selection?.status === status && row.id === selection.id,
+    ) ?? query.data?.[0];
+  // A refresh must not leave an actionable dialog for a removed/resolved request.
+  useEffect(() => {
+    if (!query.data) return;
+    if (
+      approving &&
+      !query.data.some(
+        (row) =>
+          row.id === approving.id &&
+          row.status === "pending" &&
+          !row.approvalBlocker,
+      )
+    )
+      setApproving(null);
+    if (
+      rejecting &&
+      !query.data.some(
+        (row) => row.id === rejecting.id && row.status === "pending",
+      )
+    )
+      setRejecting(null);
+  }, [query.data, approving, rejecting]);
   const refresh = () => client.invalidateQueries();
   return (
     <section className="void-requests-page operational-aux operational-aux-void norexos-premium-workspace">
@@ -68,8 +97,46 @@ export function VoidRequests() {
         </label>
         <QueryState english={english} query={query}>
           {query.data?.length ? (
-            <div className="void-request-grid">
-              {query.data.map((row) => (
+            <div className="void-request-workspace">
+              <nav
+                className="void-request-list"
+                aria-label={english ? "Requests" : "Solicitudes"}
+              >
+                <h2>
+                  {english ? "Requests" : "Solicitudes"} ({query.data.length})
+                </h2>
+                {query.data.map((row) => (
+                  <button
+                    type="button"
+                    className="void-request-select"
+                    key={row.id}
+                    aria-pressed={selected?.id === row.id}
+                    aria-controls="void-request-detail"
+                    onClick={() => setSelection({ status, id: row.id })}
+                  >
+                    <strong>
+                      {t("Factura")} {row.sale.number}
+                    </strong>
+                    <span>{row.requester.name}</span>
+                    <span>
+                      {dateLabel(row.requestedAt, english ? "en-US" : "es-DO")}
+                    </span>
+                    <span>{row.reason}</span>
+                    <span className="void-request-select-status">
+                      {t(states[row.status] ?? row.status)}
+                    </span>
+                  </button>
+                ))}
+              </nav>
+              <div
+                className="void-request-grid"
+                id="void-request-detail"
+                role="region"
+                aria-label={
+                  english ? "Selected request" : "Solicitud seleccionada"
+                }
+              >
+                {(selected ? [selected] : []).map((row) => (
                 <article className="void-request-card" key={row.id}>
                   <div className="void-request-head">
                     <h2>
@@ -187,7 +254,8 @@ export function VoidRequests() {
                     </div>
                   )}
                 </article>
-              ))}
+                ))}
+              </div>
             </div>
           ) : (
             <p>{t("No hay solicitudes en este estado.")}</p>

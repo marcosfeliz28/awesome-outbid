@@ -1,0 +1,18 @@
+[
+  {
+    "before": "import { useState } from \"react\";\n",
+    "after": "import { useEffect, useState } from \"react\";\n"
+  },
+  {
+    "before": "",
+    "after": "  const [selection, setSelection] = useState<{\n    status: string;\n    id: string;\n  } | null>(null);\n  const selected =\n    query.data?.find(\n      (row) => selection?.status === status && row.id === selection.id,\n    ) ?? query.data?.[0];\n  // A refresh must not leave an actionable dialog for a removed/resolved request.\n  useEffect(() => {\n    if (!query.data) return;\n    if (\n      approving &&\n      !query.data.some(\n        (row) =>\n          row.id === approving.id &&\n          row.status === \"pending\" &&\n          !row.approvalBlocker,\n      )\n    )\n      setApproving(null);\n    if (\n      rejecting &&\n      !query.data.some(\n        (row) => row.id === rejecting.id && row.status === \"pending\",\n      )\n    )\n      setRejecting(null);\n  }, [query.data, approving, rejecting]);\n"
+  },
+  {
+    "before": "            <div className=\"void-request-grid\">\n              {query.data.map((row) => (\n",
+    "after": "            <div className=\"void-request-workspace\">\n              <nav\n                className=\"void-request-list\"\n                aria-label={english ? \"Requests\" : \"Solicitudes\"}\n              >\n                <h2>\n                  {english ? \"Requests\" : \"Solicitudes\"} ({query.data.length})\n                </h2>\n                {query.data.map((row) => (\n                  <button\n                    type=\"button\"\n                    className=\"void-request-select\"\n                    key={row.id}\n                    aria-pressed={selected?.id === row.id}\n                    aria-controls=\"void-request-detail\"\n                    onClick={() => setSelection({ status, id: row.id })}\n                  >\n                    <strong>\n                      {t(\"Factura\")} {row.sale.number}\n                    </strong>\n                    <span>{row.requester.name}</span>\n                    <span>\n                      {dateLabel(row.requestedAt, english ? \"en-US\" : \"es-DO\")}\n                    </span>\n                    <span>{row.reason}</span>\n                    <span className=\"void-request-select-status\">\n                      {t(states[row.status] ?? row.status)}\n                    </span>\n                  </button>\n                ))}\n              </nav>\n              <div\n                className=\"void-request-grid\"\n                id=\"void-request-detail\"\n                role=\"region\"\n                aria-label={\n                  english ? \"Selected request\" : \"Solicitud seleccionada\"\n                }\n              >\n                {(selected ? [selected] : []).map((row) => (\n"
+  },
+  {
+    "before": "              ))}\n",
+    "after": "                ))}\n              </div>\n"
+  }
+]
