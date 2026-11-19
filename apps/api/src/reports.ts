@@ -1142,7 +1142,7 @@ export class ReportsController {
             "Mermas, ajustes y devoluciones a proveedor de inventario (a costo)",
           Monto: summary.inventoryLoss,
         },
-        { Concepto: "Ganancia neta", Monto: summary.netProfit },
+        { Concepto: "Ganancia neta (sin ITBIS)", Monto: summary.netProfit },
       ];
     } else if (name === "purchases") {
       // Compras = lo recibido/facturado y aceptado (total de cada recepción:

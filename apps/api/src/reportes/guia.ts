@@ -626,7 +626,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs:
       "La ganancia bruta de cada mes: venta menos costo de la mercancía vendida.",
     paraQueSirve: "Para ver si el negocio gana más o menos cada mes.",
-    comoSeLee: `Es la ganancia antes de pagar gastos (renta, sueldos, luz). ${NETO_POR_VENTA} Margen % no resta el ITBIS.`,
+    comoSeLee: `Es la ganancia antes de pagar gastos (renta, sueldos, luz). ${NETO_POR_VENTA} La venta incluye el ITBIS; el Estado de resultados usa ventas sin ITBIS, por eso su ganancia bruta sale menor. Margen % no resta el ITBIS.`,
     columnas: {
       Mes: c("Mes", "El mes del período, en formato año-mes."),
       Facturas: c("Facturas", "Cuántas facturas tuvo el mes."),
@@ -1180,15 +1180,15 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       "El informe de ventas de un mes (o de un rango de fechas): venta, unidades, ganancia y los 10 productos más vendidos, por categoría. Se descarga en CSV.",
     paraQueSirve:
       "Para ver cómo le fue al mes y en qué categorías y productos se concentra la venta.",
-    comoSeLee: `${NETO_POR_VENTA} La venta descuenta devoluciones aunque la pantalla diga «bruta». Ganancia es venta menos costo, antes de gastos aunque la pantalla diga «neta». Por confirmar cómo debe llamarse cada una. Margen promedio no resta el ITBIS. Ganancia y margen solo los ve quien tiene permiso de ganancia.`,
+    comoSeLee: `${NETO_POR_VENTA} La venta descuenta devoluciones aunque la pantalla diga «bruta». «Ganancia con ITBIS» es venta (con ITBIS) menos costo, antes de gastos; el Estado de resultados la calcula sin ITBIS y por eso sale menor. Por confirmar con la dueña cuál de las dos definiciones queda. Margen promedio no resta el ITBIS. Ganancia y margen solo los ve quien tiene permiso de ganancia.`,
     columnas: {
       "Venta bruta": c(
         "Venta del período",
         "Lo cobrado en el período, menos devoluciones. El nombre de la pantalla dice bruta, por confirmar.",
       ),
-      "Ganancia neta": c(
+      "Ganancia con ITBIS": c(
         "Ganancia",
-        "Venta menos costo. No descuenta gastos. Por confirmar el nombre.",
+        "Venta con ITBIS menos costo. No descuenta gastos.",
       ),
       "Margen promedio": c(
         "Margen promedio",

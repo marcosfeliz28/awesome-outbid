@@ -87,7 +87,9 @@ export const margen: Record<string, ReportDef> = {
       })),
   },
   "utilidad-bruta-por-mes": {
-    title: "Utilidad bruta por mes",
+    // R13: esta ganancia incluye el ITBIS en la venta; la del Estado de
+    // resultados no. Se rotula sin cambiar la cifra (decisión de la dueña).
+    title: "Utilidad bruta por mes (venta con ITBIS − costo)",
     group: "Margen",
     margin: true,
     run: async (db, actor, range) =>
