@@ -101,7 +101,9 @@ it("el operador crea empresas piloto por invitación sin abrir el registro públ
     const created = await http.post("/api/platform/tenants").set("Authorization", auth).send(pilot("piloto-a", "A@example.invalid"));
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     expect(created.body).toMatchObject({ slug: "piloto-a", plan: "basico", status: "trial" });
-    expect(new Date(created.body.trialEndsAt).getTime()).toBeGreaterThan(Date.now() + 29 * 86400000);
+    // Prueba gratis por defecto: 7 días (dueña, 19-nov).
+    expect(new Date(created.body.trialEndsAt).getTime()).toBeGreaterThan(Date.now() + 6.9 * 86400000);
+    expect(new Date(created.body.trialEndsAt).getTime()).toBeLessThan(Date.now() + 7 * 86400000 + 60_000);
     expect(created.body.invitationUrl).toMatch(/^https:\/\/pos\.example\.invalid\/aceptar-invitacion#token=[a-f0-9]{64}$/);
     const tokenA = created.body.invitationUrl.split("#token=")[1];
     const createdB = await http.post("/api/platform/tenants").set("Authorization", auth).send({ ...pilot("piloto-b", "b@example.invalid"), trialDays: 10, plan: "pro" });
