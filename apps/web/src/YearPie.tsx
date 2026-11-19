@@ -105,7 +105,7 @@ export function YearPie({ go }: { go: (page: string) => void }) {
                         <span>{m.invoices ?? 0} {t("ventas")}</span>
                         <span>{t("Bruta")} {formatMoney(m.revenue)}</span>
                         {showProfit && (
-                          <span>{t("Neta")} {formatMoney(m.profit ?? 0)}</span>
+                          <span>{t("Bruta − costo")} {formatMoney(m.profit ?? 0)}</span>
                         )}
                       </div>
                     );
@@ -128,7 +128,7 @@ export function YearPie({ go }: { go: (page: string) => void }) {
             <strong>{monthLabel(picked.month)}</strong>
             <span>{picked.invoices ?? 0} {t("ventas")}</span>
             <span>{t("Bruta")} {formatMoney(picked.revenue)}</span>
-            {showProfit && <span>{t("Neta")} {formatMoney(picked.profit ?? 0)}</span>}
+            {showProfit && <span>{t("Bruta − costo")} {formatMoney(picked.profit ?? 0)}</span>}
             <button type="button" onClick={() => open(picked.month)}>
               {t("Ver detalle del mes")}
             </button>
@@ -149,7 +149,7 @@ export function YearPie({ go }: { go: (page: string) => void }) {
                 />
                 <strong>{monthLabel(m.month)}</strong>
                 <span>{t("Bruta")} {formatMoney(m.revenue)}</span>
-                {showProfit && <span>{t("Neta")} {formatMoney(m.profit ?? 0)}</span>}
+                {showProfit && <span>{t("Bruta − costo")} {formatMoney(m.profit ?? 0)}</span>}
               </button>
             </li>
           ))}
@@ -157,7 +157,7 @@ export function YearPie({ go }: { go: (page: string) => void }) {
       </div>
       {showProfit && (
         <p className="muted year-pie-note">
-          {t("Bruta = lo vendido (devoluciones descontadas). Neta = bruta − costo, sin restar ITBIS ni gastos.")}
+          {t("Bruta = lo vendido (devoluciones descontadas). Bruta − costo no resta ITBIS ni gastos.")}
         </p>
       )}
     </section>

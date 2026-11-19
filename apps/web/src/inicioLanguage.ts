@@ -196,10 +196,13 @@ export const english: Record<string, string> = {
   ventas: "sales",
   Bruta: "Gross",
   Neta: "Net",
+  "Bruta − costo": "Gross − cost",
   "No se pudo cargar las ventas del año.": "Unable to load annual sales.",
   "Ver detalle del mes": "View month details",
   "Bruta = lo vendido (devoluciones descontadas). Neta = bruta − costo, sin restar ITBIS ni gastos.":
     "Gross = sales less returns. Net = gross minus cost, before ITBIS and expenses.",
+  "Bruta = lo vendido (devoluciones descontadas). Bruta − costo no resta ITBIS ni gastos.":
+    "Gross − cost = sales less returns minus cost, before ITBIS and expenses.",
   "Resumen de hoy": "Today's overview",
   "Ventas de hoy": "Today's sales",
   "Alertas de inventario": "Inventory alerts",
