@@ -400,6 +400,13 @@ function meets(
 }
 
 describe("P6 · controles accesibles de venta y caja", () => {
+  it("H250: la tarjeta de fecha clara mantiene contraste AA", () => {
+    expect(css).toMatch(
+      /\.day-other\s*\{[\s\S]*?--day-accent:\s*#92400e;[\s\S]*?--day-bg:\s*#fffbeb;/,
+    );
+    meets("Otro día claro", "#92400e", "#fffbeb", 4.5);
+  });
+
   it("H249: las tarjetas Ayer y Hoy en oscuro mantienen contraste AA", () => {
     expect(css).toMatch(
       /:root\[data-theme="dark"\] \.day-yesterday\s*\{[\s\S]*?--day-accent:\s*#93c5fd;[\s\S]*?--day-bg:\s*#172554;/,
