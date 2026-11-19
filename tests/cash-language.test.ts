@@ -13,7 +13,7 @@ describe("IT-003 · Caja en español e inglés", () => {
     ["Mayor deuda", "Highest balance"],
     ["Más antiguo", "Oldest"],
     [
-      "Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.",
+      "Solo tú ves este cuadro. Se cuadra a fin de mes con la administración.",
       "Only you can see this panel. It is reconciled with management at month end.",
     ],
   ])("traduce %s", (spanish, english) => {

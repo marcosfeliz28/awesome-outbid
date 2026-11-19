@@ -184,7 +184,7 @@ export function MyIncentives() {
         </p>
       ) : null}
       <small>
-        {ct("Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.")}
+        {ct("Solo tú ves este cuadro. Se cuadra a fin de mes con la administración.")}
       </small>
     </section>
   );

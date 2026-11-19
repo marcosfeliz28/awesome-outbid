@@ -79,7 +79,7 @@ const EN: Record<string, string> = {
   devoluciones: "returns",
   "de ventas por cobrar": "from outstanding sales",
   "Incentivo pendiente de cobro (estimado):": "Pending incentive estimate:",
-  "Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.":
+  "Solo tú ves este cuadro. Se cuadra a fin de mes con la administración.":
     "Only you can see this panel. It is reconciled with management at month end.",
   "No está en tu total. Se suma, en el mes del pago, cuando la administración cobre esos créditos.":
     "It is not included in your total. It is added in the payment month when management collects that credit.",
