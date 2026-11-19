@@ -26,6 +26,38 @@ export function validateSecret(
   return secret;
 }
 
+// B4 (auditoría 19-nov): las únicas rutas que reciben JSON grande (Excel de
+// GV y foto del voucher en base64). Sólo con un token de acceso firmado se lee
+// hasta 4 MB; sin él, el cuerpo no se lee y el AuthGuard responde 401.
+const LARGE_JSON_ROUTES = [
+  /^\/api\/gv\/import\/?$/i,
+  /^\/api\/gv\/payments\/?$/i,
+  /^\/api\/gv\/cash\/close\/?$/i,
+  /^\/api\/gv\/appointments\/[^/]+\/payments\/?$/i,
+];
+type Middleware = (req: any, res: any, next: (err?: unknown) => void) => void;
+export function largeJsonBody(
+  jwt: { verify(token: string): any },
+  large: Middleware,
+  small: Middleware,
+): Middleware {
+  return (req, res, next) => {
+    if (!LARGE_JSON_ROUTES.some((route) => route.test(req.path)))
+      return small(req, res, next);
+    const token = String(req.headers.authorization ?? "").replace(
+      /^Bearer /,
+      "",
+    );
+    let signed = false;
+    try {
+      signed = !!token && jwt.verify(token)?.type === "access";
+    } catch {
+      signed = false;
+    }
+    return signed ? large(req, res, next) : next();
+  };
+}
+
 // Secreto de un equipo registrado (Configuración › Equipos): sólo se guarda
 // su hash y se compara en tiempo constante.
 export const hashTerminalSecret = (secret: string) =>

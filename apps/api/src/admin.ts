@@ -18,7 +18,9 @@ import {
   CurrentUser,
   Database,
   Permit,
+  RequireTerminal,
   parse,
+  parsePatch,
   uuid,
   amount,
   reason,
@@ -44,6 +46,7 @@ import {
   isImageDataUrl,
   LOGO_MAX_BYTES,
   RECEIVABLE_SHIFT_LIMIT,
+  permissions as ROLE_PERMISSIONS,
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
 import {
@@ -53,6 +56,8 @@ import {
   temporaryPasswordExpiry,
 } from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
+// B5 (auditoría 19-nov): los únicos permisos que entiende el sistema.
+const KNOWN_PERMISSIONS = new Set(Object.values(ROLE_PERMISSIONS).flat());
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
@@ -312,7 +317,7 @@ export class AdminController {
             !["phone", "legalId", "email"].includes(key) || !isMaskedPii(value),
         ),
       );
-    const data = parse(customerSchema.partial(), body);
+    const data = parsePatch(customerSchema.partial(), body);
     if (
       data.creditLimit !== undefined &&
       !can(actor.permissions, "sale:manage")
@@ -577,17 +582,23 @@ export class AdminController {
   }
   @Post("suppliers")
   @Permit("purchase:write")
-  supplier(@Body() body: unknown, @CurrentUser() actor: Actor) {
-    return this.db.supplier.create({
+  async supplier(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    const row = await this.db.supplier.create({
       data: {
         ...parse(supplierSchema, body),
         createdBy: actor.id,
         branchId: actor.branchId,
       },
     });
+    // B8 (auditoría 19-nov): altas y cambios de configuración en la bitácora.
+    await audit(this.db, actor, "create", "supplier", row.id, undefined, row);
+    return row;
   }
   @Post("supplier-payments")
   @Permit("purchase:write")
+  // B3 (auditoría 19-nov): rebaja la cuenta por pagar; como el resto del
+  // dinero, sólo desde un equipo aprobado (también el rol almacén).
+  @RequireTerminal()
   async supplierPayment(@Body() body: unknown, @CurrentUser() actor: Actor) {
     const { operationId, ...data } = parse(
       z.object({
@@ -645,24 +656,46 @@ export class AdminController {
   @Get("expense-categories") @Permit("expense:write") expenseCategories() {
     return this.db.expenseCategory.findMany({ orderBy: { name: "asc" } });
   }
-  @Post("expense-categories") @Permit("expense:write") expenseCategory(
+  @Post("expense-categories") @Permit("expense:write") async expenseCategory(
     @Body() body: unknown,
+    @CurrentUser() actor: Actor,
   ) {
-    return this.db.expenseCategory.create({
+    const row = await this.db.expenseCategory.create({
       data: parse(
         z.object({ name: z.string().min(2), monthlyBudget: amount }),
         body,
       ),
     });
+    await audit(
+      this.db,
+      actor,
+      "create",
+      "expense_category",
+      row.id,
+      undefined,
+      row,
+    );
+    return row;
   }
-  @Patch("expense-categories/:id") @Permit("expense:write") budget(
+  @Patch("expense-categories/:id") @Permit("expense:write") async budget(
     @Param("id") id: string,
     @Body() body: unknown,
+    @CurrentUser() actor: Actor,
   ) {
-    return this.db.expenseCategory.update({
-      where: { id: parse(uuid, id) },
-      data: parse(z.object({ monthlyBudget: amount }), body),
-    });
+    const where = { id: parse(uuid, id) };
+    const data = parse(z.object({ monthlyBudget: amount }), body);
+    const before = await this.db.expenseCategory.findUniqueOrThrow({ where });
+    const row = await this.db.expenseCategory.update({ where, data });
+    await audit(
+      this.db,
+      actor,
+      "update",
+      "expense_category",
+      row.id,
+      { monthlyBudget: before.monthlyBudget },
+      data,
+    );
+    return row;
   }
   @Get("expenses") @Permit("expense:write") expenses(
     @CurrentUser() actor: Actor,
@@ -1023,13 +1056,23 @@ export class AdminController {
     });
     // SEC-03: la lista del cambio con PIN no expone a quien tiene más
     // permisos (gerencia, administración) a una vendedora o cajera.
-    return (
-      users
-        // Las usuarias de GV no usan la caja de Macgen.
-        .filter((u) => u.role.name !== "gv")
-        .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions))
-        .map(({ role, ...u }) => ({ ...u, role: { name: role.name } }))
-    );
+    const listed = users
+      // Las usuarias de GV no usan la caja de Macgen.
+      .filter((u) => u.role.name !== "gv")
+      .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions));
+    // UC-21 (auditoría 19-nov): dos personas con el mismo nombre se distinguen
+    // en el selector por su caja o por un número de orden.
+    const seen = new Map<string, number>();
+    return listed.map(({ role, ...u }) => {
+      const twins = listed.filter((o) => o.name === u.name).length;
+      const n = (seen.get(u.name) ?? 0) + 1;
+      seen.set(u.name, n);
+      const name =
+        twins < 2
+          ? u.name
+          : `${u.name} (${u.cashierNumber ? "caja " + u.cashierNumber : n})`;
+      return { ...u, name, role: { name: role.name } };
+    });
   }
   @Get("users") @Permit("*") users(@CurrentUser() actor: Actor) {
     return this.db.user.findMany({
@@ -1322,6 +1365,16 @@ export class AdminController {
     });
     if (role.name === "admin" && !data.permissions.includes("*"))
       bad("El rol administrador debe conservar acceso completo.");
+    const unknown = data.permissions.filter((p) => !KNOWN_PERMISSIONS.has(p));
+    if (unknown.length) bad("Permiso desconocido: " + unknown.join(", ") + ".");
+    // Una cuenta con contraseña de 6 números no puede tener acceso fuerte.
+    if (
+      passwordPolicyForRole(role.name) === "cashier-six-digits" &&
+      data.permissions.some((p) => p === "*" || p === "sale:manage")
+    )
+      bad(
+        "Este rol entra con contraseña de 6 números: no puede tener acceso completo ni de gerencia.",
+      );
     return this.db.$transaction(async (tx) => {
       const updated = await tx.role.update({ where: { id }, data });
       await audit(tx, actor, "permissions", "role", id, role, updated);

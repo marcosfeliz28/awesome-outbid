@@ -21,6 +21,7 @@ import {
   audit,
   bad,
   parse,
+  parsePatch,
   uuid,
 } from "./common";
 import {
@@ -175,11 +176,7 @@ export async function planGvCitasImport(
   paymentKeys: Set<string>,
   errors: string[],
 ) {
-  const valid = <T>(
-    schema: z.ZodType<T, any, any>,
-    rows: unknown[],
-    name: string,
-  ) =>
+  const valid = <T>(schema: z.ZodType<T>, rows: unknown[], name: string) =>
     rows.flatMap((row, i) => {
       const r = schema.safeParse(row);
       if (r.success) return [r.data];
@@ -417,7 +414,7 @@ export class GvCitasController {
     @CurrentUser() actor: Actor,
   ) {
     // partial(): lo que no llega queda undefined y Prisma no lo cambia.
-    const { approverPin: pin, ...data } = parse(
+    const { approverPin: pin, ...data } = parsePatch(
       z
         .object({ ...appointmentFields, ...gvRefundFields, approverPin })
         .partial(),
@@ -548,7 +545,7 @@ export class GvCitasController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(z.object(leadFields).partial(), body);
+    const data = parsePatch(z.object(leadFields).partial(), body);
     return this.db.$transaction(async (tx) => {
       const before = await this.lead(tx, actor, id);
       const row = await tx.gvLead.update({ where: { id: before.id }, data });

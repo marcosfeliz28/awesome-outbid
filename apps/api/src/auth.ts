@@ -82,7 +82,7 @@ const credentialAttemptIdentity = (user: any, normalized: string) =>
 // Un valor mal formado no impide entrar: se trata como equipo no aprobado.
 const terminalCredentials = z.unknown().optional();
 const terminalShape = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   secret: z.string().min(16).max(200),
 });
 // Iguales para cuentas existentes e inexistentes: no delatan cuentas. Cada
@@ -497,9 +497,10 @@ export class AuthController implements OnModuleInit {
       "user",
       user.id,
     );
-    // Seguridad (dueña, 23-oct, punto 19): una cuenta de administración que
-    // entra desde un equipo no aprobado deja un aviso (y Telegram si está).
-    if (user.role.name !== "seller" && !terminalId)
+    // Seguridad (dueña, 23-oct, punto 19): una cuenta que entra desde un
+    // equipo no aprobado deja un aviso (y Telegram si está). M1 (auditoría
+    // 19-nov): también la cajera; la clave de 6 números no cambia.
+    if (!terminalId)
       await this.alertUnapprovedLogin(user, ip).catch(() => undefined);
     if (user.mustChangePassword)
       return {
@@ -830,7 +831,7 @@ export class AuthController implements OnModuleInit {
   ) {
     const data = parse(
       z.object({
-        userId: z.string().uuid(),
+        userId: z.guid(),
         pin: z.string().regex(/^\d{4,6}$/),
       }),
       body,
@@ -865,6 +866,11 @@ export class AuthController implements OnModuleInit {
       { pin: data.pin, actor },
     );
     if (!user) bad("PIN incorrecto.");
+    // M3 (auditoría 19-nov): quién abrió la sesión de quién, desde qué equipo.
+    await audit(this.db, actor, "pin_switch", "user", user.id, undefined, {
+      fromUserId: actor.id,
+      targetRole: user.role.name,
+    });
     return this.issue(user, res);
   }
 }

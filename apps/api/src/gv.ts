@@ -25,6 +25,7 @@ import {
   bad,
   denied,
   parse,
+  parsePatch,
   uuid,
 } from "./common";
 import { comprobarLimite, esFormato, nombreArchivo } from "./reportes/export";
@@ -265,7 +266,7 @@ export class GvController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(courseInput.partial(), body);
+    const data = parsePatch(courseInput.partial(), body);
     const before = await this.course(actor, id);
     return this.db.$transaction(async (tx) => {
       const row = await tx.gvCourse.update({
@@ -381,7 +382,7 @@ export class GvController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const { approverPin: pin, ...data } = parse(
+    const { approverPin: pin, ...data } = parsePatch(
       z
         .object({
           courseId: uuid,

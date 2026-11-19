@@ -45,7 +45,7 @@ import { SalesController } from "./sales";
 
 const amount = z.number().nonnegative().max(100000000);
 const discardSchema = z.object({
-  offlineUuid: z.string().uuid(),
+  offlineUuid: z.guid(),
   reason: z.string().trim().min(3).max(300),
   // M-6: qué pasó con la mercancía y el dinero. Sin la clave se conserva el
   // comportamiento anterior (no se mueve nada).

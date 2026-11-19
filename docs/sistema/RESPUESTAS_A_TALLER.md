@@ -47,9 +47,9 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 
 ## 5. La nota de crédito: ¿se imprime, cómo y dónde?
 
-- Una nota de crédito nace al **devolver** una venta con método de reembolso **«Nota de crédito»** (Ventas › fila › **«Devolver»**, solo `sale:manage`, con caja propia abierta) (`apps/web/src/Management.tsx:2100-2122`, `:3639-3690`). El número de la devolución es **NC-000000** (`apps/api/src/sales.ts:3790`).
+- Una nota de crédito nace al **devolver** una venta con método de reembolso **«Nota de crédito»** (Ventas › fila › **«Devolver»**, solo `sale:manage`, con caja propia abierta) (`apps/web/src/Management.tsx:2100-2122`, `:3639-3690`). El número de la devolución es **NC-000000** (`apps/api/src/sales.ts:3789`).
 - **No se imprime sola al devolver.** Se imprime a mano: **Ventas** › abrir la venta (ícono del ojo) › botón **«Imprimir nota NC-…»** (solo `sale:manage`) (`apps/web/src/Management.tsx:3631-3645`).
-- Lo que sale es un **PDF tamaño A4** (no ticket térmico): «Nota de crédito · NC-…», «Nota interna de crédito · no fiscal», fecha, importe, saldo, motivo y el **«Código para presentar en caja»** (32 caracteres) con las condiciones de uso (`apps/api/src/sales.ts:3909-3962`, ruta `GET /returns/:id/credit-note.pdf`). Se descarga y se imprime desde el visor de PDF.
+- Lo que sale es un **PDF tamaño A4** (no ticket térmico): «Nota de crédito · NC-…», «Nota interna de crédito · no fiscal», fecha, importe, saldo, motivo y el **«Código para presentar en caja»** (32 caracteres) con las condiciones de uso (`apps/api/src/sales.ts:3908-3961`, ruta `GET /returns/:id/credit-note.pdf`). Se descarga y se imprime desde el visor de PDF.
 - Para usarla después: en el cobro, método **Nota de crédito**, escribir el código y elegir la nota (`apps/web/src/POS.tsx:2726-2770`). Si la cajera no escribe el código, necesita el PIN de un gerente (`:1872-1884`).
 
 ---
@@ -57,9 +57,9 @@ Detalle: `FLUJO_CAJA_POS.md` §3.
 ## 6. Al finalizar la venta, ¿el comprobante se genera/imprime solo? ¿Cuál es el paso exacto?
 
 - **Se genera solo** en el momento de «Finalizar venta»: aparece la ventana **«¡Una venta más, una meta más cerca!»** con el total, el número **FS-0000123**, el aviso «Venta registrada» y el cambio (`apps/web/src/POS.tsx:2432-2475`). El recibo ya está armado en esa ventana (`:2431-2433`, `InvoicePrint`).
-- **Se imprime solo únicamente si** en Configuración está activa la opción **«Imprimir el recibo automáticamente al cobrar»** (`apps/web/src/Management.tsx:4440-4441`; `apps/web/src/POS.tsx:2363-2364`). De fábrica está **apagada** (`apps/api/src/admin.ts:125`, `default(false)`). **DUDOSO:** no se sabe si la dueña la activó en producción; se ve en Configuración.
+- **Se imprime solo únicamente si** en Configuración está activa la opción **«Imprimir el recibo automáticamente al cobrar»** (`apps/web/src/Management.tsx:4440-4441`; `apps/web/src/POS.tsx:2363-2364`). De fábrica está **apagada** (`apps/api/src/admin.ts:130`, `default(false)`). **DUDOSO:** no se sabe si la dueña la activó en producción; se ve en Configuración.
 - Si está apagada, el paso exacto es: en esa ventana pulsar **«Imprimir recibo»** (`:2381-2384`), que abre el diálogo de impresión del navegador (`window.print()`). También hay **«Recibo PDF»**, **«WhatsApp»**, **«Correo»** y **«Nueva venta»** (`:2385-2430`).
-- El recibo es **«DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL»**; no lleva NCF salvo que la venta ya lo traiga y el modo sea electrónico (`apps/web/src/Prints.tsx:509-510`, `:546-553`). Ancho 80 o 58 mm según Configuración (`apps/api/src/admin.ts:91`).
+- El recibo es **«DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL»**; no lleva NCF salvo que la venta ya lo traiga y el modo sea electrónico (`apps/web/src/Prints.tsx:509-510`, `:546-553`). Ancho 80 o 58 mm según Configuración (`apps/api/src/admin.ts:96`).
 - Para reimprimir luego: menú **Ventas** › ícono de descarga (PDF) de la fila (`apps/web/src/Management.tsx:3398-3408`).
 
 ---

@@ -1702,8 +1702,7 @@ export class SalesController {
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:
                   typeof attempted.cashSessionId === "string" &&
-                  z.string().uuid().safeParse(attempted.cashSessionId)
-                    .success &&
+                  z.guid().safeParse(attempted.cashSessionId).success &&
                   (await tx.cashSession.findFirst({
                     where: {
                       id: attempted.cashSessionId,

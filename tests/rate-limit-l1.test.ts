@@ -40,7 +40,11 @@ describe("L1 · rate limiting sólo con identidades validadas", () => {
   it("el parser JSON queda instalado una sola vez", () => {
     const main = readFileSync("apps/api/src/main.ts", "utf8");
     expect(main).toContain("bodyParser: false");
-    expect(main.match(/app\.use\(jsonBodyParser/g)).toHaveLength(1);
+    // B4 (19-nov): el parser general va dentro de largeJsonBody, una sola vez.
+    expect(main.match(/jsonBodyParser\(\{ limit: "100kb" \}\)/g)).toHaveLength(
+      1,
+    );
+    expect(main.match(/app\.use\(\s*largeJsonBody\(/g)).toHaveLength(1);
     expect(main).not.toContain("createRequestRateLimiter");
   });
   it("61 intentos de una cuenta no bloquean otra cuenta", () => {

@@ -1645,6 +1645,11 @@ export class InventoryController {
         warehouseId: warehouse.id,
       },
     });
+    // B8 (auditoría 19-nov): el conteo queda en la bitácora sin copiar líneas.
+    await audit(this.db, actor, "create", "count", row.id, undefined, {
+      warehouseId: warehouse.id,
+      items: items.length,
+    });
     return blindCount(row, actor);
   }
   @Post("inventory/counts/:id/apply")

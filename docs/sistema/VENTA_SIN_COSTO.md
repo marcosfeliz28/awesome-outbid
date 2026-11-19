@@ -6,7 +6,7 @@ Alcance acordado con la dueña (8-nov): **por ahora no se bloquea ninguna venta*
 
 ## 1. Bloqueo de venta (apagado por defecto)
 
-- Configuración › «No vender productos sin costo» (`blockZeroCostSales`, `apps/api/src/admin.ts:98`, `apps/web/src/Management.tsx:4694`). Por defecto **apagado**. Un guardado de Configuración desde una pantalla vieja que no manda la clave conserva el valor guardado.
+- Configuración › «No vender productos sin costo» (`blockZeroCostSales`, `apps/api/src/admin.ts:103`, `apps/web/src/Management.tsx:4694`). Por defecto **apagado**. Un guardado de Configuración desde una pantalla vieja que no manda la clave conserva el valor guardado.
 - Encendido, la caja no vende una variante activa con `costAvg` 0. Mensaje: «Este producto no tiene costo: pídele a la administración que lo complete. Producto: <nombre>.» (`apps/api/src/sales.ts:635-636`, `:995-999`).
 - Todo camino que crea una venta pasa por `SalesController.complete` (`POST /sales`, `POST /sales/sync` y la revisión de ventas sin conexión `apps/api/src/offline-sale-review.ts:253`). No hay otra escritura de `Sale`/`SaleItem` (GV cobra cursos y servicios en sus propias tablas).
 - Combos: se mira el costo de cada componente.
@@ -28,7 +28,7 @@ Alcance acordado con la dueña (8-nov): **por ahora no se bloquea ninguna venta*
 
 ## 3. Recálculo de costos (solo lectura)
 
-- `GET /reports/cost-recalc?variantId=&from=AAAA-MM-DD&to=AAAA-MM-DD` (`apps/api/src/sales.ts:2255`). Permiso `profit:read`, nunca la vendedora. Todo opcional; fechas en hora de Santo Domingo.
+- `GET /reports/cost-recalc?variantId=&from=AAAA-MM-DD&to=AAAA-MM-DD` (`apps/api/src/sales.ts:2254`). Permiso `profit:read`, nunca la vendedora. Todo opcional; fechas en hora de Santo Domingo.
 - Lista cada factura vigente con líneas a costo 0 de variantes que **ya tienen costo**, con: costo actual → costo propuesto (el costo de hoy de la variante), cambio de costo por línea, `costTotal` antes → después, utilidad y margen antes → después, y los totales del período.
 - Margen según la regla de la dueña: (total − costo) / total, **sin restar ITBIS**.
 - `applicable: false` marca líneas de combo o con devolución (no se corrigen con la vía de abajo); su cambio cuenta 0 en los totales. `hasReturns: true` avisa que la factura tiene devoluciones: la utilidad de la fila no las descuenta.
@@ -38,7 +38,7 @@ Alcance acordado con la dueña (8-nov): **por ahora no se bloquea ninguna venta*
 
 ## 4. Corregir el costo de una factura ya hecha
 
-- `POST /sales/:id/items/:itemId/cost` con `{ unitCost, expectedUnitCost, operationId, confirmAbovePrice?, reason (8-500), managerPin }` (`apps/api/src/sales.ts:2377`). Solo administración (`*`) con PIN de gerencia; equipo aprobado.
+- `POST /sales/:id/items/:itemId/cost` con `{ unitCost, expectedUnitCost, operationId, confirmAbovePrice?, reason (8-500), managerPin }` (`apps/api/src/sales.ts:2376`). Solo administración (`*`) con PIN de gerencia; equipo aprobado.
 - Hace: `SaleItem.unitCost` y su `stockAllocations`, `Sale.costTotal` += (nuevo − viejo) × cantidad, el kárdex de esa salida (`InventoryMovement.unitCost`; si otra línea o un combo de la misma venta saca la misma variante y lote, el kárdex no se toca porque sus movimientos no se distinguen), y resuelve el aviso `zero_cost_sale` cuando la venta ya no tiene líneas en 0 (los servicios no cuentan). Reglas: `expectedUnitCost` es el costo que el administrador vio; si la línea ya tiene otro costo, se rechaza (409) y no se reescribe a gusto una línea ya costeada. `operationId` hace la operación idempotente: repetirla devuelve lo ya hecho sin otra línea en la bitácora. Un costo mayor que el precio de la línea pide `confirmAbovePrice` (la pantalla pregunta); más de 5 veces el precio se rechaza siempre.
 - No toca: total, impuestos, descuentos, pagos, saldo, incentivos ni el efectivo esperado de la caja (sale de los pagos, `apps/api/src/cash.ts:55`). Probado con la caja cerrada.
 - Bitácora `sale_item_cost_corrected`: quién (`userId`, equipo, IP), cuándo, antes (costo, costTotal) → después (costo, costTotal, cambio de ganancia, quién aprobó el PIN, motivo).

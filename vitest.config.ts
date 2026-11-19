@@ -159,6 +159,7 @@ export default defineConfig({
       "tests/auditoria-inventario-clientes.test.ts",
       "tests/caja-cobros-19nov.test.ts",
       "tests/caja-cobros-19nov-postgres.test.ts",
+      "tests/seguridad-19nov.test.ts",
     ],
   },
 });

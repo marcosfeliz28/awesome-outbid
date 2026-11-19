@@ -60,6 +60,7 @@ export const SECURITY_AUDIT_ACTIONS = [
   "login_locked",
   "pin_locked",
   "pin_short_used",
+  "pin_switch",
   "pin_switch_denied",
 ] as const;
 
