@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · P3/P12 · recibo de Caja
+
+- **Orden y duplicación:** `origin/nexora-cloud` continúa en `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`; la orden nocturna mantiene P3 y P12 pendientes en `POS.tsx`. El historial de la rama no contenía estos arreglos.
+- **Cambio:** el enlace de WhatsApp agrega el código de país `1` solo a teléfonos dominicanos locales de diez dígitos; conserva números que ya traen código internacional. El aviso de crédito pendiente corrige `un se cobra` por `se cobra`.
+- **Regresión rojo→verde:** `tests/pos-receipt-presentation.test.ts` falló primero en sus dos casos. Después pasó junto con las guardas de presentación de Caja, ticket y privacidad de cliente: **4 archivos / 33 pruebas**.
+- **Control local final:** la primera corrida completa dejó verdes las 1,333 pruebas funcionales restantes y señaló dos citas de `POS.tsx` desplazadas a líneas vacías; se corrigieron a las líneas de contenido y la prueba documental pasó 4/4. La repetición de `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **165 archivos / 1,334 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. Las 559 citas quedaron con cero movidas y cero perdidas; `git diff --check` pasó.
+- **Autoauditoría:** `whatsAppRecipient` elimina únicamente caracteres de formato y no duplica el `1`; no cambia ni valida datos guardados. La frase corregida no altera importes, crédito ni estado de la venta. `PRODUCTO-POS-RECIBO_REVERSIBLE.json` permite retirar byte por byte las tres ediciones de `POS.tsx` antes de comprobar la base visual histórica.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
 ## 2026-11-19 · PRODUCTO-ALMACÉN · filtro de existencia
 
 - **Orden:** pieza 3 de la orden nocturna del 19-nov. Solo presentación en Inventario; no modifica existencias, movimientos, almacenes, API ni base.

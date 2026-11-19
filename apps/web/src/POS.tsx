@@ -3,6 +3,7 @@ import { CajaVisualPreferences } from "./CajaVisualPreferences";
 import { t, useLanguage } from "./inicioLanguage";
 import { posStockLabel } from "./posStockLabel";
 import { refreshAfterSale } from "./postSaleRefresh";
+import { whatsAppRecipient } from "./whatsAppRecipient";
 import {
   memo,
   useCallback,
@@ -2466,7 +2467,7 @@ function Checkout({
                 <strong>{formatMoney(receipt.creditBalance)}</strong>
               </p>
               <small>
-                Venta registrada. La caja no recibió dinero por esa parte; un se
+                Venta registrada. La caja no recibió dinero por esa parte; se
                 cobra después en Créditos pendientes, en la pestaña Caja.
               </small>
             </div>
@@ -2500,7 +2501,7 @@ function Checkout({
             rel="noreferrer"
             href={
               "https://wa.me/" +
-              contact(customer?.phone).replace(/\D/g, "") +
+              whatsAppRecipient(contact(customer?.phone)) +
               "?text=" +
               encodeURIComponent(text)
             }

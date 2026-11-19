@@ -51,6 +51,7 @@ export default defineConfig({
       "tests/login-empty-user.test.ts",
       "tests/customers-search-presentation.test.ts",
       "tests/inventory-warehouse-filter.test.ts",
+      "tests/pos-receipt-presentation.test.ts",
       "tests/credit-reasons.test.ts",
       "tests/formal-period.test.ts",
       "tests/formal-pdf.test.ts",

@@ -1,0 +1,14 @@
+[
+  {
+    "before": "import { refreshAfterSale } from \"./postSaleRefresh\";\n",
+    "after": "import { refreshAfterSale } from \"./postSaleRefresh\";\nimport { whatsAppRecipient } from \"./whatsAppRecipient\";\n"
+  },
+  {
+    "before": "                Venta registrada. La caja no recibió dinero por esa parte; un se\n                cobra después en Créditos pendientes, en la pestaña Caja.\n",
+    "after": "                Venta registrada. La caja no recibió dinero por esa parte; se\n                cobra después en Créditos pendientes, en la pestaña Caja.\n"
+  },
+  {
+    "before": "              contact(customer?.phone).replace(/\\D/g, \"\") +\n",
+    "after": "              whatsAppRecipient(contact(customer?.phone)) +\n"
+  }
+]
