@@ -2579,7 +2579,8 @@ export function Customers() {
       .includes(search.toLowerCase()),
   );
   return (
-    <div className="catalog-screen">
+    <>
+      <OperationsPresentation area="customers">
       <Heading
         title={ot("Clientes")}
         caption={ot("Consulta contactos, compras y datos de crédito desde un solo directorio.")}
@@ -2676,6 +2677,7 @@ export function Customers() {
           />
         </QueryState>
       </section>
+      </OperationsPresentation>
       {create && (
         <FormModal english={en}
           title={ot("Nuevo cliente")}
@@ -2720,7 +2722,7 @@ export function Customers() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 

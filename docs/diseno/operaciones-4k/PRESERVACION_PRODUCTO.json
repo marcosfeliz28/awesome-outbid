@@ -45,6 +45,18 @@
     {
       "before": "              requestRef: `APP-${new Date().toISOString()}`,\n            });\n            await client.invalidateQueries({ queryKey: [\"customers\"] });\n            toast(\"Cliente anonimizado.\");\n          }}\n        />\n      )}\n",
       "after": "              requestRef: `APP-${new Date().toISOString()}`,\n            });\n            await client.invalidateQueries({ queryKey: [\"customers\"] });\n            toast(ot(\"Cliente anonimizado.\"));\n          }}\n        />\n      )}\n"
+    },
+    {
+      "before": "    <div className=\"catalog-screen\">\n      <Heading\n        title={ot(\"Clientes\")}",
+      "after": "    <>\n      <OperationsPresentation area=\"customers\">\n      <Heading\n        title={ot(\"Clientes\")}"
+    },
+    {
+      "before": "      </section>\n      {create && (\n        <FormModal english={en}\n          title={ot(\"Nuevo cliente\")}",
+      "after": "      </section>\n      </OperationsPresentation>\n      {create && (\n        <FormModal english={en}\n          title={ot(\"Nuevo cliente\")}"
+    },
+    {
+      "before": "      )}\n    </div>\n  );\n}\n\nexport function Promotions()",
+      "after": "      )}\n    </>\n  );\n}\n\nexport function Promotions()"
     }
   ]
 }

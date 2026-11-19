@@ -50,7 +50,7 @@ describe("Operaciones ES/EN: presentación, sin cambiar negocio", () => {
         expect(edit.after).not.toMatch(new RegExp(`<${tag}(?! english=)`));
       }
       if (edit.name === "Customers") {
-        expect(edit.after).toContain('className="catalog-screen"');
+        expect(edit.after).toContain('<OperationsPresentation area="customers">');
         expect(edit.after).toContain('title={ot("Clientes")}');
         expect(edit.after).toContain('aria-labelledby="customers-list-title"');
         expect(edit.after).toContain('id="customers-list-title">{ot("Directorio de clientes")}');

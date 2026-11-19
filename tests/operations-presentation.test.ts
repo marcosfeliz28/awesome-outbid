@@ -76,3 +76,19 @@ it("localizes settings tax and period suffixes without changing values", () => {
  }
  expect(source).toContain('{en ? "Receipt" : "Ticket"} {query.data?.receiptWidth} mm');
 });
+
+it("mounts premium Clientes around the native directory only, preserving modal boundaries", () => {
+  const source = read("apps/web/src/Management.tsx");
+  const customers = source.slice(source.indexOf("export function Customers()"), source.indexOf("export function Promotions()"));
+  const opening = '<OperationsPresentation area="customers">';
+  const closing = "</OperationsPresentation>";
+  expect(customers.split(opening)).toHaveLength(2);
+  const contents = customers.split(opening)[1].split(closing);
+  expect(contents).toHaveLength(2);
+  expect(contents[0]).toContain('aria-labelledby="customers-list-title"');
+  expect(contents[0]).toContain("<QueryState english={en} query={query}>");
+  expect(contents[0]).toContain('can(user.permissions, "customers:erase")');
+  expect(contents[0]).not.toMatch(/<(?:FormModal|ConfirmModal)\b/);
+  expect(contents[1].match(/<FormModal\b/g)).toHaveLength(2);
+  expect(contents[1].match(/<ConfirmModal\b/g)).toHaveLength(1);
+});
