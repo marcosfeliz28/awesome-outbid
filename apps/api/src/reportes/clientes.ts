@@ -156,6 +156,7 @@ export const clientes: Record<string, ReportDef> = {
       const phone = phoneFor(actor);
       const rows = (await db.$queryRaw`
         SELECT c.name, c.phone, COUNT(*)::int AS n,
+          COUNT(DISTINCT ${local(Prisma.sql`s."createdAt"`)}::date)::int AS days,
           SUM(s.total - COALESCE(rt.t, 0)) AS net,
           MIN(${local(Prisma.sql`s."createdAt"`)}::date) AS first,
           MAX(${local(Prisma.sql`s."createdAt"`)}::date) AS last,
@@ -168,6 +169,7 @@ export const clientes: Record<string, ReportDef> = {
         name: string;
         phone: string | null;
         n: number;
+        days: number;
         net: unknown;
         first: Date;
         last: Date;
@@ -178,11 +180,13 @@ export const clientes: Record<string, ReportDef> = {
         Teléfono: phone(r.phone),
         Compras: r.n,
         "Ventas netas": num(r.net),
-        // Días entre la primera y la última compra repartidos entre los intervalos.
+        // R26: días entre la primera y la última compra repartidos entre los
+        // días distintos con compra; varias compras el mismo día no dan 0.
         "Promedio de días entre compras":
-          r.n > 1
-            ? Math.round(((+r.last - +r.first) / 86400000 / (r.n - 1)) * 10) /
-              10
+          r.days > 1
+            ? Math.round(
+                ((+r.last - +r.first) / 86400000 / (r.days - 1)) * 10,
+              ) / 10
             : null,
         "Última compra": r.lastDay,
       }));

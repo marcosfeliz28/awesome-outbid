@@ -32,6 +32,17 @@ const kindName: Record<string, string> = {
   return_card: "Devolución a tarjeta",
   return_transfer: "Devolución por transferencia",
 };
+// P7: la devolución se resta el día en que se hizo (no en el de la venta).
+const INCOME_NET_NOTE =
+  "«Vendido neto» resta cada devolución el día en que se hizo. El Resumen, el Informe mensual y el total del Informe formal la restan en el período de la venta original, por eso las cifras pueden no coincidir.";
+// P6: el método llega como código (cash, card…); se muestra en español.
+const methodName: Record<string, string> = {
+  cash: "Efectivo",
+  card: "Tarjeta",
+  transfer: "Transferencia",
+  credit: "Crédito",
+  cod: "Contraentrega",
+};
 export function IncomeByDay() {
   const en = useLanguage() === "en";
   const text = (value: string) => reportSecondaryLabel(value, en);
@@ -170,7 +181,16 @@ export function IncomeByDay() {
                   }
                 >
                   {scope === "session"
-                    ? `${item.registerId} · ${new Date(item.openedAt).toLocaleDateString(en ? "en-US" : "es-DO")}`
+                    ? // P5/P19: nombre de la caja y de quien abrió, fecha en hora de RD.
+                      [
+                        item.registerName || text("Caja"),
+                        item.userName,
+                        new Date(item.openedAt).toLocaleDateString(en ? "en-US" : "es-DO", {
+                          timeZone: "America/Santo_Domingo",
+                        }),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
                     : item.name}
                 </option>
               ))}
@@ -246,6 +266,10 @@ export function IncomeByDay() {
                   </tbody>
                 </table>
               </div>
+              {/* P7: por qué «Vendido neto» no cuadra con el Resumen. */}
+              <p role="note">
+                {text(INCOME_NET_NOTE)}
+              </p>
               {query.data.gv && (query.data.gv.total || query.data.gv.moneyIn) ? (
                 <div className="cod-hint" role="status">
                   <strong>{en ? "GV (separate, not added)" : "GV (aparte, no suma)"}</strong>{" "}
@@ -308,7 +332,7 @@ export function IncomeByDay() {
                             </td>
                             <td>{item.number}</td>
                             <td>{text(kindName[item.kind] ?? item.kind)}</td>
-                            <td>{item.method}</td>
+                            <td>{item.method ? text(methodName[item.method] ?? item.method) : "—"}</td>
                             <td>{formatMoney(item.amount)}</td>
                             <td>{item.cardLast4 ?? "—"}</td>
                             <td>{item.approvalCode ?? "—"}</td>
