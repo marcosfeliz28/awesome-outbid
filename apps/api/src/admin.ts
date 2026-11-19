@@ -20,6 +20,7 @@ import {
   Permit,
   RequireTerminal,
   parse,
+  parsePatch,
   uuid,
   amount,
   reason,
@@ -316,7 +317,7 @@ export class AdminController {
             !["phone", "legalId", "email"].includes(key) || !isMaskedPii(value),
         ),
       );
-    const data = parse(customerSchema.partial(), body);
+    const data = parsePatch(customerSchema.partial(), body);
     if (
       data.creditLimit !== undefined &&
       !can(actor.permissions, "sale:manage")

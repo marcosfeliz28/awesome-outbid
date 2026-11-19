@@ -31,6 +31,7 @@ import {
   Database,
   Permit,
   parse,
+  parsePatch,
   safe,
   audit,
   bad,
@@ -167,7 +168,7 @@ async function assertCategoriesInBranch(
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
-  attributes: z.record(z.string()).default({}),
+  attributes: z.record(z.string(), z.string()).default({}),
   price: amount,
   costAvg: amount,
   wholesalePrice: amount.optional(),
@@ -415,7 +416,7 @@ export class CatalogController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
+    const data = parsePatch(
       productSchema
         .omit({ variants: true })
         .partial()
@@ -441,7 +442,10 @@ export class CatalogController {
   ) {
     const data = parse(
       z.object({
-        attributes: z.record(z.array(z.string().min(1)).min(1).max(30)),
+        attributes: z.record(
+          z.string(),
+          z.array(z.string().min(1)).min(1).max(30),
+        ),
         price: amount,
         costAvg: amount,
       }),
@@ -503,7 +507,7 @@ export class CatalogController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
+    const data = parsePatch(
       variantSchema.partial().extend({ active: z.boolean().optional() }),
       body,
     );

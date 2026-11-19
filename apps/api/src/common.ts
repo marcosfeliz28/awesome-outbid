@@ -188,12 +188,8 @@ const plural = (n: unknown, one: string, many: string) =>
 // llevan delante el nombre del campo («cantidad debe ser un número»).
 function issueText(issue: any): { own: boolean; text: string } {
   const field = issue.path.length === 1 ? issue.path[0] : undefined;
-  const empty =
-    (issue.code === "invalid_type" &&
-      (issue.received === "undefined" || issue.received === "null")) ||
-    (issue.code === "too_small" &&
-      issue.type === "string" &&
-      Number(issue.minimum) === 1);
+  // El mapa de errores de abajo da «es obligatorio» al campo ausente o vacío.
+  const empty = issue.message === REQUIRED;
   if (empty && typeof field === "string" && REQUIRED_TEXT[field])
     return { own: true, text: REQUIRED_TEXT[field] };
   const message = String(issue.message ?? "");
@@ -207,60 +203,53 @@ export function validationMessage(issues: any[]) {
     ? parts.map((p) => p.text).join(". ") + "."
     : "Revisa los campos: " + parts.map((p) => p.text).join("; ") + ".";
 }
-export function fieldLabel(path: (string | number)[]) {
+export function fieldLabel(path: PropertyKey[]) {
   const parts: string[] = [];
   for (const p of path) {
     if (typeof p === "number") {
       if (parts.length) parts[parts.length - 1] += " " + (p + 1);
       else parts.push("elemento " + (p + 1));
-    } else parts.push(FIELD_NAMES[p] ?? p);
+    } else parts.push(FIELD_NAMES[String(p)] ?? String(p));
   }
   return parts.join(" · ") || "datos";
 }
-z.setErrorMap((issue, ctx) => {
-  switch (issue.code) {
-    case "invalid_type":
-      if (issue.received === "undefined" || issue.received === "null")
-        return { message: "es obligatorio" };
-      return {
-        message:
-          issue.expected === "number"
-            ? "debe ser un número"
-            : issue.expected === "string"
-              ? "debe ser texto"
-              : "tiene un formato inválido",
-      };
-    case "too_small":
-      return {
-        message:
-          issue.type === "string"
-            ? Number(issue.minimum) === 1
-              ? "es obligatorio"
-              : `debe tener al menos ${plural(issue.minimum, "carácter", "caracteres")}`
-            : issue.type === "array"
-              ? `debe tener al menos ${plural(issue.minimum, "elemento", "elementos")}`
-              : issue.inclusive
-                ? `debe ser mayor o igual a ${issue.minimum}`
-                : `debe ser mayor que ${issue.minimum}`,
-      };
-    case "too_big":
-      return {
-        message:
-          issue.type === "string"
-            ? `admite como máximo ${plural(issue.maximum, "carácter", "caracteres")}`
-            : issue.type === "array"
-              ? `admite como máximo ${plural(issue.maximum, "elemento", "elementos")}`
-              : `debe ser como máximo ${issue.maximum}`,
-      };
-    case "invalid_string":
-      return { message: "tiene un formato inválido" };
-    case "invalid_enum_value":
-      return { message: "no es una opción válida" };
-    case "invalid_date":
-      return { message: "no es una fecha válida" };
-    default:
-      return { message: ctx.defaultError };
-  }
+// zod 4: el mapa recibe el problema con su entrada; sin mensaje propio
+// (undefined) se usa el de zod.
+const REQUIRED = "es obligatorio";
+z.config({
+  customError: (issue: any) => {
+    switch (issue.code) {
+      case "invalid_type":
+        if (issue.input === undefined || issue.input === null) return REQUIRED;
+        return issue.expected === "number"
+          ? "debe ser un número"
+          : issue.expected === "string"
+            ? "debe ser texto"
+            : "tiene un formato inválido";
+      case "too_small":
+        return issue.origin === "string"
+          ? Number(issue.minimum) === 1
+            ? REQUIRED
+            : `debe tener al menos ${plural(issue.minimum, "carácter", "caracteres")}`
+          : issue.origin === "array"
+            ? `debe tener al menos ${plural(issue.minimum, "elemento", "elementos")}`
+            : issue.inclusive
+              ? `debe ser mayor o igual a ${issue.minimum}`
+              : `debe ser mayor que ${issue.minimum}`;
+      case "too_big":
+        return issue.origin === "string"
+          ? `admite como máximo ${plural(issue.maximum, "carácter", "caracteres")}`
+          : issue.origin === "array"
+            ? `admite como máximo ${plural(issue.maximum, "elemento", "elementos")}`
+            : `debe ser como máximo ${issue.maximum}`;
+      case "invalid_format":
+        return "tiene un formato inválido";
+      case "invalid_value":
+        return "no es una opción válida";
+      default:
+        return undefined;
+    }
+  },
 });
 // Reconoce el error de validación por su forma y no sólo por instanceof: así
 // sigue siendo 400 aunque otro paquete cargue una copia distinta de zod (R4-08).
@@ -273,13 +262,25 @@ export const parse = <T extends z.ZodTypeAny>(
   schema: T,
   input: unknown,
 ): z.infer<T> => schema.parse(input);
+// Edición parcial (PATCH). zod 4 aplica .default() también en los campos que
+// .partial() vuelve opcionales: sin este filtro, un campo que no llega volvía
+// a su valor de alta (propina 0, estado «agendada») y pisaba el guardado.
+export function parsePatch<T extends z.ZodTypeAny>(
+  schema: T,
+  input: unknown,
+): z.infer<T> {
+  const data = parse(schema, input) as Record<string, unknown>;
+  const sent = input && typeof input === "object" ? input : {};
+  return Object.fromEntries(
+    Object.entries(data).filter(([key]) => Object.hasOwn(sent, key)),
+  ) as z.infer<T>;
+}
 // PostgreSQL acepta un UUID en mayúsculas y lo guarda en minúsculas: se
 // normaliza al validar para que toda comparación con ids de la base (por
-// ejemplo, «¿es mi propia cuenta?») vea el mismo texto.
-export const uuid = z
-  .string()
-  .uuid()
-  .transform((value) => value.toLowerCase());
+// ejemplo, «¿es mi propia cuenta?») vea el mismo texto. z.guid() y no
+// z.uuid(): zod 4 exige la variante RFC y las migraciones crean ids con md5
+// (almacenes, lotes) que no la cumplen.
+export const uuid = z.guid().transform((value) => value.toLowerCase());
 // Importes de dinero: como máximo 2 decimales, porque terminan en Decimal(14,2)
 // y un tercer decimal hacía que orden y recepción no cuadraran (R9-A04).
 export const amount = moneyAmount(100000000, true);

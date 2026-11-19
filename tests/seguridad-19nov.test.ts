@@ -328,3 +328,36 @@ describe("B4 · JSON de 4 MB solo en rutas exactas y con sesión", () => {
     expect(main).not.toMatch(/"\/api\/gv\/payments",/);
   });
 });
+
+describe("M4 · zod sin la vulnerabilidad GHSA-mrhx-c7xc-m3w5", () => {
+  const requireApi = createRequire(
+    new URL("../apps/api/package.json", import.meta.url),
+  );
+  it("la API y shared usan zod 4.6.6 o posterior", () => {
+    const [major, minor, patch] = requireApi("zod/package.json")
+      .version.split(".")
+      .map(Number);
+    expect(major * 1e6 + minor * 1e3 + patch).toBeGreaterThanOrEqual(
+      4006006,
+    );
+  });
+  it("un PATCH no devuelve a su valor de alta los campos que no llegan", async () => {
+    const { parsePatch } = await import("../apps/api/src/common");
+    const { z } = await import("../packages/shared/src");
+    const schema = z
+      .object({
+        tip: z.number().default(0),
+        status: z.enum(["agendada", "realizada"]).default("agendada"),
+        note: z.string().optional(),
+      })
+      .partial();
+    expect(parsePatch(schema, { note: "x" })).toEqual({ note: "x" });
+    expect(parsePatch(schema, { tip: 5 })).toEqual({ tip: 5 });
+  });
+  it("los ids creados por migraciones (md5, sin variante RFC) siguen siendo válidos", async () => {
+    const { uuid } = await import("../apps/api/src/common");
+    expect(uuid.parse("D41D8CD9-8F00-0204-1980-0998ECF8427E")).toBe(
+      "d41d8cd9-8f00-0204-1980-0998ecf8427e",
+    );
+  });
+});
