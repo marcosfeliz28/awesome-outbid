@@ -12,6 +12,18 @@ const reportsLedger = JSON.parse(
     "utf8",
   ),
 ) as Edit[];
+const customerSearchLedger = JSON.parse(
+  readFileSync(
+    "docs/auditoria-ui/PRODUCTO-CLIENTES-BUSQUEDA_REVERSIBLE.json",
+    "utf8",
+  ),
+) as Edit[];
+const warehouseFilterLedger = JSON.parse(
+  readFileSync(
+    "docs/auditoria-ui/PRODUCTO-ALMACEN-FILTRO_REVERSIBLE.json",
+    "utf8",
+  ),
+) as Edit[];
 
 function reverseEdits(source: string, edits: Edit[], label: string) {
   for (const edit of [...edits].reverse()) {
@@ -32,7 +44,18 @@ function reverseEdits(source: string, edits: Edit[], label: string) {
  * byte por byte, incluso cuando varias capas visuales conviven en el archivo.
  */
 export function reverseIt003(source: string, file: It003File) {
-  if (file === "Management")
+  if (file === "Management") {
+    source = reverseEdits(
+      source,
+      warehouseFilterLedger,
+      "PRODUCTO-ALMACEN-FILTRO",
+    );
+    source = reverseEdits(
+      source,
+      customerSearchLedger,
+      "PRODUCTO-CLIENTES-BUSQUEDA",
+    );
     source = reverseEdits(source, reportsLedger, "PRODUCTO-REPORTES");
+  }
   return reverseEdits(source, ledger[file], `IT-003 ${file}`);
 }

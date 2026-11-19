@@ -7,6 +7,7 @@ import { useOperationsText } from "./operationsLanguage";
 import "./premiumOperations.css";
 import { catalogText } from "./catalogLanguage";
 import { handleCatalogImageError } from "./catalogImage";
+import { matchesSearch } from "./customerSearch";
 import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
 import { useLanguage } from "./inicioLanguage";
 import { cashText } from "./cashLanguage";
@@ -904,12 +905,17 @@ export function Inventory() {
         ?.qty ?? 0,
     );
   };
-  const rows = (query.data || []).filter((v: any) =>
-    [v.sku, v.barcode, v.product.name]
-      .join(" ")
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+  const rows = (query.data || [])
+    .filter((v: any) =>
+      [v.sku, v.barcode, v.product.name]
+        .join(" ")
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+    )
+    .filter(
+      (v: any) =>
+        warehouseView === "all" || Number(visibleStock(v)) > 0,
+    );
   return (
     <section className="fusion-inventory" aria-label={translateInventory("Inventario")}>
       <Heading
@@ -2452,9 +2458,12 @@ export function Customers() {
             rows={(query.data || []).filter((c: any) =>
               // P5: sin acceso completo la búsqueda no usa el teléfono, para
               // no servir de oráculo de los dígitos ocultos.
-              (c.name + " " + (fullCustomer ? c.phone : ""))
-                .toLowerCase()
-                .includes(search.toLowerCase()),
+              matchesSearch(
+                [c.name, fullCustomer ? c.phone : ""]
+                  .filter(Boolean)
+                  .join(" "),
+                search,
+              ),
             )}
             empty={ot("No encontramos clientes")}
             emptyDescription={ot("Revisa la búsqueda o registra una persona con Nuevo cliente.")}

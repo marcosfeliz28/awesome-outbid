@@ -1,0 +1,6 @@
+[
+  {
+    "before": "  const rows = (query.data || []).filter((v: any) =>\n    [v.sku, v.barcode, v.product.name]\n      .join(\" \")\n      .toLowerCase()\n      .includes(search.toLowerCase()),\n  );\n",
+    "after": "  const rows = (query.data || [])\n    .filter((v: any) =>\n      [v.sku, v.barcode, v.product.name]\n        .join(\" \")\n        .toLowerCase()\n        .includes(search.toLowerCase()),\n    )\n    .filter(\n      (v: any) =>\n        warehouseView === \"all\" || Number(visibleStock(v)) > 0,\n    );\n"
+  }
+]

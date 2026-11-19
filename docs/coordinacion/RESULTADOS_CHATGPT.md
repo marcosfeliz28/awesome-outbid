@@ -2,6 +2,13 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · PRODUCTO-ALMACÉN y UC-24
+
+- Inventario filtra las filas con existencia cero al seleccionar un almacén concreto, incluido Casa, usando la misma cantidad visible; `Todos` conserva el catálogo completo. Regresión roja→verde; foco 7 archivos/39 pruebas.
+- Clientes conecta `matchesSearch`: ignora tildes/mayúsculas y mantiene el teléfono fuera de la búsqueda para quien no tiene acceso completo. Regresión roja→verde; foco 7 archivos/51 pruebas.
+- Control conjunto: `pnpm check` pasó con 164 archivos/1,332 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API; 559 citas quedaron con cero movidas y cero perdidas, su prueba pasó 4/4 y `git diff --check` pasó.
+- Ambos cambios son solo presentación, con reversión exacta para las pruebas históricas; sin API, movimientos, datos privados, dinero, Render, producción, base o credenciales. La rama sigue sin publicar hasta el SHA final único.
+
 ## 2026-11-19 · ChatGPT NUBE · VE-001
 
 - El formulario web rechaza un usuario vacío o compuesto solo por espacios antes de llamar al API y usa el valor sin espacios exteriores en entrada/cambio obligatorio.

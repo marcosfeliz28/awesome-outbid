@@ -48,7 +48,8 @@ describe("P5: datos de clientes en la lista", () => {
     expect(source).toContain(
       "legalId: customerEditValue(editing.legalId, fullCustomer)",
     );
-    expect(source).toContain('(c.name + " " + (fullCustomer ? c.phone : ""))');
+    expect(source).toContain("matchesSearch(");
+    expect(source).toContain('[c.name, fullCustomer ? c.phone : ""]');
   });
   it("Int P5-1: el selector de cliente del POS no muestra el teléfono completo", () => {
     const pos = flat("apps/web/src/POS.tsx");

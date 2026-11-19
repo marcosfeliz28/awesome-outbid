@@ -1,5 +1,23 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · PRODUCTO-ALMACÉN · filtro de existencia
+
+- **Orden:** pieza 3 de la orden nocturna del 19-nov. Solo presentación en Inventario; no modifica existencias, movimientos, almacenes, API ni base.
+- **Cambio:** al elegir un almacén concreto —incluido `Casa`— la lista conserva únicamente variantes cuyo `visibleStock(v)` es mayor que cero. La vista `Todos` conserva el catálogo completo y la búsqueda por SKU/código/nombre sigue aplicándose antes del filtro.
+- **Regresión rojo→verde:** `tests/inventory-warehouse-filter.test.ts` falló primero porque no existía la segunda condición; después pasó. El foco completo pasó **7 archivos / 39 pruebas**, incluidas las preservaciones byte a byte de `Management.tsx`.
+- **Control local final conjunto:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **164 archivos / 1,332 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `pnpm docs:citas` revisó 559 citas con cero movidas y cero perdidas; su prueba pasó 4/4 y `git diff --check` pasó.
+- **Autoauditoría:** el cambio solo filtra filas ya recibidas; no escribe ni recalcula stock. `Number(visibleStock(v)) > 0` usa la misma cantidad que se muestra en la tabla y evita tratar la cadena `"0"` como verdadera.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · UC-24 · búsqueda de clientes sin acentos
+
+- **Orden:** pieza 3 de la orden nocturna del 19-nov. El helper existente y probado `matchesSearch` todavía no estaba conectado a Clientes.
+- **Cambio:** `Management.tsx` usa `matchesSearch` para que mayúsculas y tildes no impidan encontrar nombres. El teléfono solo entra al texto buscable cuando `fullCustomer` ya permitía verlo; se conserva la protección contra usar dígitos enmascarados como oráculo.
+- **Regresión rojo→verde:** `tests/customers-search-presentation.test.ts` falló primero por import ausente; después pasó. El foco completo pasó **7 archivos / 51 pruebas**, incluidas las pruebas del helper y la preservación exacta de las capas visuales anteriores.
+- **Control local final conjunto:** cubierto por la corrida completa documentada en PRODUCTO-ALMACÉN inmediatamente arriba: 164 archivos / 1,332 pruebas, typecheck, lint y builds web/API verdes.
+- **Autoauditoría:** no cambian campos, datos privados, permisos, API ni edición de clientes; solo el criterio local de coincidencia.
+- **Publicación/CI:** pendiente del único push final de la rama.
+
 ## 2026-11-19 · VE-001 · usuario vacío
 
 - **Orden:** punto VE-001 de la pieza 7 de la orden nocturna del 19-nov. Solo formulario web; no cambia API, autenticación del servidor ni permisos.
