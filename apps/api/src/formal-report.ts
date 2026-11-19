@@ -515,7 +515,7 @@ export class FormalReportController {
         costChanges: costChanges.length > capped,
         rotation: rotationRows.length > 200,
       },
-      note: "Saldo de créditos abiertos al momento de emitir; no reconstruye el saldo histórico. Cajas de prueba identificadas con QA-, TEST- o PRUEBA- excluidas. La rotación es una propuesta basada en ventas brutas de 60 días y stock vendible de Tienda; no cambia precios ni inventario.",
+      note: "Vendido neto resta las devoluciones en el período de la venta original; Ingresos por día las resta el día en que se hicieron, por eso la suma de los días puede no dar este total. Saldo de créditos abiertos al momento de emitir; no reconstruye el saldo histórico. Cajas de prueba identificadas con QA-, TEST- o PRUEBA- excluidas. La rotación es una propuesta basada en ventas brutas de 60 días y stock vendible de Tienda; no cambia precios ni inventario.",
     };
     if (!query.format || query.format === "json") return res.json(report);
     if (query.format !== "pdf") bad("El informe formal se descarga en PDF.");
