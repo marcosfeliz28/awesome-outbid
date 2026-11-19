@@ -175,3 +175,16 @@ describe("INV-010 · la lista de stock no incluye servicios", () => {
     expect(where.product).toEqual({ unit: { not: "servicio" } });
   });
 });
+
+// UC-24: el buscador de clientes ignora acentos y mayúsculas.
+describe("UC-24 · búsqueda sin acentos ni mayúsculas", () => {
+  it("«ramirez» encuentra «Ramírez» y «josé» encuentra «Jose»", async () => {
+    const { matchesSearch } = await import("../apps/web/src/customerSearch");
+    expect(matchesSearch("Ana Ramírez", "ramirez")).toBe(true);
+    expect(matchesSearch("Ana Ramirez", "RAMÍREZ")).toBe(true);
+    expect(matchesSearch("Jose Peña", "josé")).toBe(true);
+    expect(matchesSearch("Jose Peña", "pena")).toBe(true);
+    expect(matchesSearch("Jose Peña", "  ")).toBe(true);
+    expect(matchesSearch("Jose Peña", "maria")).toBe(false);
+  });
+});
