@@ -11,6 +11,7 @@ import {
   SetMetadata,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { randomUUID } from "node:crypto";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaClient } from "@prisma/client";
 import { databaseUrlWithPool } from "./database-pool";
@@ -878,10 +879,31 @@ export class ApiExceptionFilter implements ExceptionFilter {
             : "api";
       captureApiException(exception, area);
     }
-    if (status === 500) console.error(exception);
-    res
-      .status(status)
-      .json({ statusCode: status, message, ...(code ? { code } : {}) });
+    // B7 (auditoría 19-nov): el mensaje de un error de Prisma copia los datos
+    // de la consulta (nombre, teléfono, cédula): al log van sólo el tipo, la
+    // ruta y las líneas del stack, con un id que la respuesta también lleva.
+    const errorId = status === 500 ? randomUUID() : undefined;
+    if (errorId)
+      console.error(
+        JSON.stringify({
+          errorId,
+          name: exception?.name,
+          code: exception?.code,
+          method: req.method,
+          path: req.path,
+          stack: String(exception?.stack ?? "")
+            .split("\n")
+            .filter((line) => /^\s+at /.test(line))
+            .slice(0, 15)
+            .map((line) => line.trim()),
+        }),
+      );
+    res.status(status).json({
+      statusCode: status,
+      message,
+      ...(code ? { code } : {}),
+      ...(errorId ? { errorId } : {}),
+    });
   }
 }
 

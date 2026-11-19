@@ -234,3 +234,41 @@ describe("B5 · PUT /roles solo acepta permisos conocidos", () => {
     }
   });
 });
+
+describe("B7 · un 500 no vuelca datos personales en la consola", () => {
+  it("registra id de error, tipo y ruta, sin el mensaje con datos", async () => {
+    const { ApiExceptionFilter } = await import("../apps/api/src/common");
+    const secret = "María Pérez 809-555-1234 cédula 001-1234567-8";
+    const error = Object.assign(new Error("Invalid args: " + secret), {
+      name: "PrismaClientValidationError",
+    });
+    let body: any;
+    const res: any = {
+      setHeader: () => undefined,
+      status: () => res,
+      json: (b: unknown) => (body = b),
+    };
+    const host: any = {
+      switchToHttp: () => ({
+        getResponse: () => res,
+        getRequest: () => ({ path: "/api/customers", method: "POST" }),
+      }),
+    };
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      new ApiExceptionFilter().catch(error, host);
+      const logged = spy.mock.calls
+        .flat()
+        .map((v) => (typeof v === "string" ? v : JSON.stringify(v)))
+        .join(" ");
+      expect(logged).not.toContain("809-555-1234");
+      expect(logged).not.toContain("María");
+      expect(logged).toContain("PrismaClientValidationError");
+      expect(logged).toContain("/api/customers");
+      expect(body.errorId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(logged).toContain(body.errorId);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
