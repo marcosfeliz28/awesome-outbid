@@ -1056,13 +1056,23 @@ export class AdminController {
     });
     // SEC-03: la lista del cambio con PIN no expone a quien tiene más
     // permisos (gerencia, administración) a una vendedora o cajera.
-    return (
-      users
-        // Las usuarias de GV no usan la caja de Macgen.
-        .filter((u) => u.role.name !== "gv")
-        .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions))
-        .map(({ role, ...u }) => ({ ...u, role: { name: role.name } }))
-    );
+    const listed = users
+      // Las usuarias de GV no usan la caja de Macgen.
+      .filter((u) => u.role.name !== "gv")
+      .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions));
+    // UC-21 (auditoría 19-nov): dos personas con el mismo nombre se distinguen
+    // en el selector por su caja o por un número de orden.
+    const seen = new Map<string, number>();
+    return listed.map(({ role, ...u }) => {
+      const twins = listed.filter((o) => o.name === u.name).length;
+      const n = (seen.get(u.name) ?? 0) + 1;
+      seen.set(u.name, n);
+      const name =
+        twins < 2
+          ? u.name
+          : `${u.name} (${u.cashierNumber ? "caja " + u.cashierNumber : n})`;
+      return { ...u, name, role: { name: role.name } };
+    });
   }
   @Get("users") @Permit("*") users(@CurrentUser() actor: Actor) {
     return this.db.user.findMany({

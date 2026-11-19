@@ -329,6 +329,27 @@ describe("B4 · JSON de 4 MB solo en rutas exactas y con sesión", () => {
   });
 });
 
+describe("UC-21 · el selector del PIN distingue usuarios con el mismo nombre", () => {
+  it("dos «claude» salen con su número de caja o un número de orden", async () => {
+    const { AdminController } = await import("../apps/api/src/admin");
+    const role = { name: "admin", permissions: ["*"] };
+    const db: any = {
+      user: {
+        findMany: async () => [
+          { id: "a", name: "claude", cashierNumber: null, role },
+          { id: "b", name: "claude", cashierNumber: 3, role },
+          { id: "c", name: "Ana", cashierNumber: null, role },
+        ],
+      },
+    };
+    const owner = { ...actor, permissions: ["*"] };
+    const names = (await new AdminController(db).staff(owner)).map(
+      (u: any) => u.name,
+    );
+    expect(names).toEqual(["claude (1)", "claude (caja 3)", "Ana"]);
+  });
+});
+
 describe("M4 · zod sin la vulnerabilidad GHSA-mrhx-c7xc-m3w5", () => {
   const requireApi = createRequire(
     new URL("../apps/api/package.json", import.meta.url),
