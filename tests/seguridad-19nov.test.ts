@@ -1,5 +1,8 @@
 // Arreglos de la auditoría de seguridad del 19-nov-2026 (M3, M4, B1-B8).
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import express from "express";
+import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 
 createRequire(new URL("../apps/api/package.json", import.meta.url))(
@@ -270,5 +273,58 @@ describe("B7 · un 500 no vuelca datos personales en la consola", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe("B4 · JSON de 4 MB solo en rutas exactas y con sesión", () => {
+  const VALID = "token-valido";
+  const jwt = {
+    verify: (t: string) => {
+      if (t !== VALID) throw new Error("firma");
+      return { type: "access" };
+    },
+  };
+  const app = async () => {
+    const { largeJsonBody } = await import("../apps/api/src/security");
+    const a = express();
+    a.use(
+      largeJsonBody(
+        jwt,
+        express.json({ limit: "4mb" }),
+        express.json({ limit: "100kb" }),
+      ),
+    );
+    a.use((req, res) => res.json({ parsed: req.body?.big?.length ?? 0 }));
+    return a;
+  };
+  const big = { big: "x".repeat(1024 * 1024) };
+  it("con sesión, la ruta exacta acepta 1 MB", async () => {
+    const r = await request(await app())
+      .post("/api/gv/payments")
+      .set("Authorization", "Bearer " + VALID)
+      .send(big);
+    expect(r.status).toBe(200);
+    expect(r.body.parsed).toBe(1024 * 1024);
+  });
+  it("sin sesión no se lee el cuerpo (el guardia responde 401)", async () => {
+    for (const auth of [undefined, "Bearer otro"]) {
+      const req = request(await app()).post("/api/gv/import");
+      if (auth) req.set("Authorization", auth);
+      const r = await req.send(big);
+      expect(r.status).toBe(200);
+      expect(r.body.parsed).toBe(0);
+    }
+  });
+  it("las subrutas (anular, revisar) siguen con 100 kb", async () => {
+    const r = await request(await app())
+      .post("/api/gv/payments/abc/void")
+      .set("Authorization", "Bearer " + VALID)
+      .send(big);
+    expect(r.status).toBe(413);
+  });
+  it("main.ts usa el filtro y no el prefijo amplio", () => {
+    const main = readFileSync("apps/api/src/main.ts", "utf8");
+    expect(main).toContain("largeJsonBody(");
+    expect(main).not.toMatch(/"\/api\/gv\/payments",/);
   });
 });
