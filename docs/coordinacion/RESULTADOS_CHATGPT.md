@@ -2,6 +2,14 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · auditoría UI, bloque visual alto
+
+- Base `origin/nexora-cloud` `8014355b`, GV obligatorio `dae41acf`, rama local `chatgpt-nube/auditoria-ui-19nov`.
+- Se corrigieron MTC-001 y MTC-002 con regresiones de contraste que fallaron antes y pasan después (WCAG AA >= 4.5:1). Commits locales: `c2226652`, `ded87d6b` y `b80d2712`.
+- Hay 16 capturas comparativas en `docs/auditoria-ui/capturas/MTC-001-MTC-002/`: 1440/390, claro/oscuro y es/en, con datos ficticios. `tests/accessibility-contract.test.ts` pasó 35/35 y `pnpm check` pasó completo (1,215 pruebas aprobadas, 10 omitidas).
+- Del bloque de diez altos, cuatro ya estaban corregidos en la base integrada; tres son de origen servidor y pertenecen a Claude; IT-003 espera reparto NUBE/PC. El reparto actual no divide los 221 hallazgos restantes entre ambos ChatGPT.
+- Sin push ni PR: la orden exige una sola publicación final y ventana libre de Claude. Hasta resolver ese reparto no hay SHA remoto ni ejecución final de `verify`, `windows-installer` y `render-images`. No hubo despliegue ni cambios en dinero, API, Render, producción, base o credenciales.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

@@ -1,5 +1,17 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · auditoría UI · bloque visual de severidad alta
+
+- **Orden y reparto:** se siguió la versión vigente de `docs/auditoria-ui/ORDEN_CHATGPT_AUDITORIA_UI.md` y `docs/coordinacion/reparto-auditoria-19nov/LEEME.md`, no el adjunto anterior. Base `origin/nexora-cloud` `8014355b`; integración obligatoria de GV `dae41acf`; rama local `chatgpt-nube/auditoria-ui-19nov`.
+- **Bloque revisado (10 hallazgos altos):** MTC-001 y MTC-002 corregidos; DD-05, UC-05, UC-07 y UC-25 ya estaban resueltos en la base integrada; R16, R18 y UC-01 corresponden a texto/datos originados en servidor y quedan con Claude; IT-003 queda pendiente de reparto explícito entre ChatGPT NUBE y PC para no duplicar trabajo.
+- **MTC-001:** se definieron acentos oscuros legibles para Ayer/Hoy (`#93c5fd` y `#6ee7b7`). La regresión falló antes por ausencia de valores y pasó después exigiendo contraste WCAG AA >= 4.5:1.
+- **MTC-002:** el acento claro de Otro día cambió de `#d97706` (3.072:1 sobre `#fffbeb`) a `#92400e`. La regresión falló antes y pasó después con el mismo umbral >= 4.5:1.
+- **Commits locales:** `c2226652` (MTC-001), `ded87d6b` (MTC-002) y `b80d2712` (evidencia visual). No se publicaron.
+- **Evidencia:** 16 capturas antes/después en `docs/auditoria-ui/capturas/MTC-001-MTC-002/`, a 1440x900 y 390x844, claro/oscuro y español/inglés, con API interceptada y datos ficticios. Se revisó visualmente la captura móvil oscura completa.
+- **Comprobaciones locales:** `tests/accessibility-contract.test.ts` 35/35; `pnpm check` con 144 archivos de prueba aprobados, uno omitido, 1,215 pruebas aprobadas y 10 omitidas; typecheck, ESLint y builds web/API aprobados. Fue necesario ejecutar `pnpm db:generate` en el worktree nuevo; no conectó ni migró una base.
+- **Autoauditoría:** los cambios funcionales se limitan a variables CSS y su regresión. No se cambió dinero, descuentos, ganancias, API, datos, permisos, Render, producción ni credenciales. Los documentos de sistema que el control local reajustó por líneas de GV no forman parte de esta entrega.
+- **Bloqueo de publicación:** el reparto vigente asigna 231 hallazgos de presentación al conjunto ChatGPT NUBE/PC, pero no divide los 221 restantes por ejecutor. La orden exige un único push final y una ventana libre de Claude. Para evitar colisiones, no se hizo push, PR ni CI hasta recibir el reparto explícito y la ventana; por tanto aún no existe SHA remoto final que comprobar en `verify`, `windows-installer` y `render-images`.
+
 ## 2026-11-13 · especificaciones de construcción de la primera tanda
 
 - **Orden, base y rama:** nueva cola `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`, ejecutada desde `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560` en `chatgpt-nube/espec-tanda1-13nov`.
