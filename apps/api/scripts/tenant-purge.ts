@@ -1,7 +1,8 @@
 // Baja definitiva de una empresa (operador; sin ruta HTTP). Ver src/tenant-purge.ts.
 // Por defecto sólo cuenta (--dry-run). Para borrar de verdad:
 //   TENANT_PURGE_DATABASE_URL=... PRODUCT_TENANCY=required \
-//   pnpm --filter @fitstore/api tenant:purge <slug> --ejecutar --confirmar <slug> --exportacion empresa.json
+//   pnpm --filter @fitstore/api tenant:purge <slug> --ejecutar --confirmar <slug> --exportacion empresa.json [--aceptar-faltantes N]
+//   (con --exportacion, el dry-run también verifica y cuenta los archivos faltantes)
 // No toma DATABASE_URL: obliga a nombrar la base a propósito.
 import { resolve } from "node:path";
 import { PrismaClient } from "@prisma/client";
@@ -17,7 +18,7 @@ async function main() {
   const slug = args[0];
   if (!slug || slug.startsWith("--"))
     throw new Error(
-      "Uso: tenant:purge <slug> [--dry-run] | <slug> --ejecutar --confirmar <slug> --exportacion <archivo.json>",
+      "Uso: tenant:purge <slug> [--dry-run] | <slug> --ejecutar --confirmar <slug> --exportacion <archivo.json> [--aceptar-faltantes N]",
     );
   const execute = args.includes("--ejecutar") && !args.includes("--dry-run");
   const url = process.env.TENANT_PURGE_DATABASE_URL;
@@ -30,12 +31,17 @@ async function main() {
   const db = new PrismaClient({ datasources: { db: { url } } });
   try {
     const exportPath = flag("--exportacion");
+    const accept = flag("--aceptar-faltantes");
+    if (accept !== undefined && !/^\d+$/.test(accept))
+      throw new Error("--aceptar-faltantes exige un número entero exacto.");
     const result = await purgeTenant({
       db,
       slug,
       execute,
       confirm: flag("--confirmar"),
       exportPath: exportPath ? resolve(exportPath) : undefined,
+      acceptMissing: accept === undefined ? undefined : Number(accept),
+      log: (line) => console.error(line),
     });
     console.log(
       JSON.stringify(
@@ -47,6 +53,7 @@ async function main() {
           filas: result.counts,
           conservadas: result.kept,
           archivos: result.objects.length,
+          archivosFaltantesEnExportacion: result.faltantes ?? "sin --exportacion: no verificado",
           archivosFallidos: result.objectsFailed,
           fecha: new Date().toISOString(),
         },

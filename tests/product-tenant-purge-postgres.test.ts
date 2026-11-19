@@ -16,7 +16,7 @@ import { ApiExceptionFilter, Database } from "../apps/api/src/common";
 import { exportModels, exportTenant } from "../apps/api/src/tenant-export";
 import { tenantScope } from "../apps/api/src/tenant-context";
 import { tenantObjectStore } from "../apps/api/src/tenant-object-store";
-import { purgeTenant } from "../apps/api/src/tenant-purge";
+import { planTenantPurge, purgeTenant, verifyPurgeExport } from "../apps/api/src/tenant-purge";
 
 const root = resolve(import.meta.dirname, "..");
 const apiRequire = createRequire(join(root, "apps/api/package.json"));
@@ -275,6 +275,11 @@ it("tenant:purge borra sólo la empresa A (suspendida ≥30 días y exportada), 
       [A],
     );
 
+    // La empresa Demo nunca se purga.
+    await expect(purgeTenant({ db: owner, slug: "demo" })).rejects.toThrow(
+      /Demo no se purga/,
+    );
+
     // dry-run por defecto: cuenta y no borra.
     const dry = await purgeTenant({ db: owner, slug: "empresa-a" });
     expect(dry.executed).toBe(false);
@@ -341,12 +346,84 @@ it("tenant:purge borra sólo la empresa A (suspendida ≥30 días y exportada), 
         exportPath: exportB,
       }),
     ).rejects.toThrow(/otra empresa/);
-    await writeFile(
-      exportFile,
-      JSON.stringify(
-        await tenantScope.run({ tenantId: A }, () => exportTenant(db, A)),
-      ),
+    const exportOk = await tenantScope.run({ tenantId: A }, () =>
+      exportTenant(db, A),
     );
+    await writeFile(exportFile, JSON.stringify(exportOk));
+
+    // Archivo faltante en la exportación (p. ej. fallo transitorio de S3): no borra
+    // salvo --aceptar-faltantes con el número exacto.
+    const { [objectKey(0)]: lost, ...objectsLeft } = (exportOk as any).objects;
+    expect(lost).toBeDefined();
+    const exportMissing = join(dataDir, "empresa-a-faltantes.json");
+    await writeFile(
+      exportMissing,
+      JSON.stringify({
+        ...exportOk,
+        objects: objectsLeft,
+        faltantes: [{ key: objectKey(0), motivo: "S3 caído" }],
+      }),
+    );
+    const purgeWith = (acceptMissing?: number) =>
+      purgeTenant({
+        db: owner,
+        slug: "empresa-a",
+        execute: true,
+        confirm: "empresa-a",
+        exportPath: exportMissing,
+        acceptMissing,
+      });
+    await expect(purgeWith()).rejects.toThrow(/1 archivos faltantes/);
+    await expect(purgeWith(2)).rejects.toThrow(/1 archivos faltantes/);
+    await expect(verifyPurgeExport(
+        await planTenantPurge(owner, "empresa-a"),
+        exportMissing,
+        1,
+      )).resolves.toBe(1);
+    expect(
+      (
+        await purgeTenant({
+          db: owner,
+          slug: "empresa-a",
+          exportPath: exportMissing,
+        })
+      ).faltantes,
+    ).toBe(1);
+
+    // suspendedAt vuelve a leerse dentro de la transacción (con FOR UPDATE): <30 días cancela y no borra.
+    const racing = new Proxy(owner, {
+      get: (target, key) =>
+        key === "$transaction"
+          ? (fn: any, opts: any) =>
+              target.$transaction(async (tx: any) => {
+                await tx.$executeRawUnsafe(
+                  `UPDATE "Tenant" SET "suspendedAt"=now()-interval '5 days' WHERE id=$1::uuid`,
+                  A,
+                );
+                return fn(tx);
+              }, opts)
+          : typeof target[key] === "function"
+            ? target[key].bind(target)
+            : target[key],
+    });
+    await expect(
+      purgeTenant({
+        db: racing,
+        slug: "empresa-a",
+        execute: true,
+        confirm: "empresa-a",
+        exportPath: exportFile,
+      }),
+    ).rejects.toThrow(/menos de 30 días/);
+    expect(
+      Number(
+        (
+          await sql.query(`SELECT count(*) FROM "Sale" WHERE "tenantId"=$1`, [
+            A,
+          ])
+        ).rows[0].count,
+      ),
+    ).toBe(1);
 
     const done = await purgeTenant({ db: owner,
       slug: "empresa-a",

@@ -34,6 +34,8 @@ export type PurgePlan = {
 };
 export type PurgeResult = PurgePlan & {
   executed: boolean;
+  /** Archivos que la exportación no pudo bajar (sólo si se dio --exportacion). */
+  faltantes?: number;
   objectsFailed: string[];
 };
 
@@ -168,7 +170,12 @@ export async function planTenantPurge(
 
 /** La exportación (GET /api/tenant/export?format=json) debe ser de esta empresa,
  * tomada ya suspendida y con las mismas filas que hoy hay en cada tabla. */
-export async function verifyPurgeExport(plan: PurgePlan, exportPath: string) {
+export async function verifyPurgeExport(
+  plan: PurgePlan,
+  exportPath: string,
+  /** Faltantes que el operador acepta (número exacto); null = sólo informar. */
+  acceptMissing: number | null = 0,
+) {
   const data = JSON.parse(await readFile(exportPath, "utf8")) as {
     formatVersion?: number;
     generatedAt?: string;
@@ -190,6 +197,7 @@ export async function verifyPurgeExport(plan: PurgePlan, exportPath: string) {
         `${table}: ${exported ?? "sin tabla"} en la exportación, ${n} en la base`,
       );
   }
+  const faltantes = new Set((data.faltantes ?? []).map((f) => f.key)).size;
   const listed = new Set([
     ...Object.keys(data.objects ?? {}),
     ...(data.faltantes ?? []).map((f) => f.key),
@@ -197,8 +205,14 @@ export async function verifyPurgeExport(plan: PurgePlan, exportPath: string) {
   const live = plan.liveObjects.filter((key) => !listed.has(key));
   if (live.length)
     problems.push(`archivos sin exportar: ${live.length}`);
+  // Un faltante puede ser un fallo transitorio de S3: borrarlo perdería un archivo nunca exportado.
+  if (acceptMissing !== null && faltantes && acceptMissing !== faltantes)
+    problems.push(
+      `la exportación tiene ${faltantes} archivos faltantes (no exportados); repite la exportación o usa --aceptar-faltantes ${faltantes}`,
+    );
   if (problems.length)
     throw new Error(`Exportación no verificada: ${problems.join("; ")}.`);
+  return faltantes;
 }
 
 export async function purgeTenant(input: {
@@ -207,30 +221,51 @@ export async function purgeTenant(input: {
   execute?: boolean;
   confirm?: string;
   exportPath?: string;
+  acceptMissing?: number;
+  log?: (line: string) => void;
   store?: () => TenantObjectStore;
   now?: Date;
 }): Promise<PurgeResult> {
   const now = input.now ?? new Date();
   const plan = await planTenantPurge(input.db, input.slug, now);
-  if (!input.execute) return { ...plan, executed: false, objectsFailed: [] };
+  if (!input.execute) {
+    const faltantes = input.exportPath
+      ? await verifyPurgeExport(plan, input.exportPath, null)
+      : undefined;
+    return { ...plan, executed: false, objectsFailed: [], faltantes };
+  }
   if (input.confirm !== input.slug)
     throw new Error(
       "Falta --confirmar <slug> con el código exacto de la empresa.",
     );
   if (!input.exportPath)
     throw new Error("Falta --exportacion <archivo.json> de la empresa.");
-  await verifyPurgeExport(plan, input.exportPath);
+  const faltantes = await verifyPurgeExport(
+    plan,
+    input.exportPath,
+    input.acceptMissing ?? 0,
+  );
+  input.log?.(
+    `Archivos faltantes en la exportación: ${faltantes} (aceptados: ${input.acceptMissing ?? 0}).`,
+  );
   const tables = Object.keys(plan.counts).filter((t) => t !== LEDGER);
   await input.db.$transaction(
     async (tx) => {
       await tx.$executeRawUnsafe("SET LOCAL lock_timeout = '10s'");
       // Nada cambió entre el plan y el borrado: misma empresa, suspendida, mismas filas.
-      const locked = await tx.$queryRawUnsafe<{ status: string }[]>(
-        `SELECT status FROM "Tenant" WHERE id = $1::uuid FOR UPDATE`,
+      const locked = await tx.$queryRawUnsafe<
+        { status: string; suspendedAt: Date | null }[]
+      >(
+        `SELECT status, "suspendedAt" FROM "Tenant" WHERE id = $1::uuid FOR UPDATE`,
         plan.tenantId,
       );
-      if (locked[0]?.status !== "suspended")
+      const at = locked[0]?.suspendedAt;
+      if (locked[0]?.status !== "suspended" || !at)
         throw new Error("La empresa cambió de estado; se cancela.");
+      if ((now.getTime() - at.getTime()) / 86_400_000 < PURGE_MIN_SUSPENDED_DAYS)
+        throw new Error(
+          `La empresa lleva menos de ${PURGE_MIN_SUSPENDED_DAYS} días suspendida; se cancela.`,
+        );
       for (const table of tables) {
         const deleted = await tx.$executeRawUnsafe(
           `DELETE FROM ${q(table)} WHERE "tenantId" = $1::uuid`,
@@ -264,5 +299,5 @@ export async function purgeTenant(input: {
       }
     }
   }
-  return { ...plan, objects, executed: true, objectsFailed };
+  return { ...plan, objects, executed: true, objectsFailed, faltantes };
 }
