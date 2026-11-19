@@ -1456,6 +1456,8 @@ model PlatformPayment {
   prevPaidThroughAt DateTime?
   prevPastDueAt     DateTime?
   prevSuspendedAt   DateTime?
+  // H1: plan que tenía antes del cobro (p. ej. «trial»); la anulación lo devuelve.
+  prevPlan          String?
 
   @@index([tenantId, createdAt])
 }

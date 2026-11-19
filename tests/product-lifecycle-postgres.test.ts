@@ -81,18 +81,21 @@ it("expira prueba y cobro, da siete días de gracia, suspende escrituras y conse
     expect((await http.get("/api/tenant/status").set("Authorization", bearer)).body.status).toBe("trial");
     expect((await http.post("/api/categories").set("Authorization", bearer).send({ name: "Antes" })).status).toBe(201);
 
+    // Dueña (19-nov): el aviso al cliente sale 2 días antes, no a los 7.
     await service.queueNotices(now);
-    await service.queueNotices(now);
-    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND status <> 'operator'`, [idA])).rows).toEqual([{ kind: "trial_7" }]);
+    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND status <> 'operator'`, [idA])).rows).toEqual([]);
+    await service.queueNotices(at(now, 5));
+    await service.queueNotices(at(now, 5));
+    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND status <> 'operator'`, [idA])).rows).toEqual([{ kind: "trial_due_2" }]);
     const sent: Array<{ to: string; key: string }> = [];
-    await service.sendPendingNotices(now, async (settings, _subject, _text, key) => {
+    await service.sendPendingNotices(at(now, 5), async (settings, _subject, _text, key) => {
       sent.push({ to: settings.to, key }); return { ok: true };
     });
     expect(sent).toHaveLength(1);
     expect(sent[0]?.to).toBe("owner@example.invalid");
-    await service.sendPendingNotices(now, async () => { throw new Error("Duplicado"); });
-    await service.queueNotices(at(now, 4));
-    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND status <> 'operator' ORDER BY kind`, [idA])).rows).toEqual([{ kind: "trial_3" }, { kind: "trial_7" }]);
+    await service.sendPendingNotices(at(now, 5), async () => { throw new Error("Duplicado"); });
+    await service.queueNotices(at(now, 6));
+    expect((await client.query(`SELECT kind FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND status <> 'operator' ORDER BY kind`, [idA])).rows).toEqual([{ kind: "trial_due_2" }]);
 
     // El trabajador persiste la transición, pero la guardia la calcula también
     // sin depender de que el trabajador llegue a tiempo.
@@ -125,13 +128,15 @@ it("expira prueba y cobro, da siete días de gracia, suspende escrituras y conse
     await service.activateTenant(idA, at(now, 30), now);
     expect((await http.get("/api/tenant/status").set("Authorization", bearer)).body.status).toBe("active");
     expect((await http.post("/api/categories").set("Authorization", bearer).send({ name: "Renovada" })).status).toBe(201);
-    await service.queueNotices(at(now, 23));
+    // Un aviso pendiente de la prueba vieja se descarta tras renovar.
+    await client.query(`INSERT INTO "TenantLifecycleNotice" (id,"tenantId",kind,"dueAt","nextAttemptAt") VALUES (gen_random_uuid(),$1,'trial_due_2',$2,$3)`, [idA, at(now, 1), at(now, 28)]);
+    await service.queueNotices(at(now, 28));
     const afterRenewal: string[] = [];
-    await service.sendPendingNotices(at(now, 23), async (_settings, _subject, _text, key) => {
+    await service.sendPendingNotices(at(now, 28), async (_settings, _subject, _text, key) => {
       afterRenewal.push(key); return { ok: true };
     });
-    expect(afterRenewal).toHaveLength(1); // billing_7; trial_3 antigua se descarta.
-    const stale = await client.query(`SELECT status FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND kind='trial_3'`, [idA]);
+    expect(afterRenewal).toHaveLength(1); // billing_due_2; la de la prueba vieja se descarta.
+    const stale = await client.query(`SELECT status FROM "TenantLifecycleNotice" WHERE "tenantId"=$1 AND kind='trial_due_2' AND "dueAt"=$2`, [idA, at(now, 1)]);
     expect(stale.rows[0].status).toBe("superseded");
     await client.query(`UPDATE "Tenant" SET "paidThroughAt"=$2 WHERE id=$1`, [idA, at(now, -8)]);
     await service.advance(now);

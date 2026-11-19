@@ -34,6 +34,9 @@ const paymentInput = z.object({
     .refine(v => !hasCardLikeDigits(v), "La referencia parece un número de tarjeta; anota solo el número de operación o recibo."),
   months: z.number().int().min(1).max(12).optional(),
   year: z.literal(true).optional(),
+  // H1: una empresa autoregistrada está en «trial» (sin precio); el operador
+  // elige el plan al cobrar y queda fijado en la misma transacción.
+  plan: z.enum(Object.keys(BILLING_PLANS) as [keyof typeof BILLING_PLANS, ...(keyof typeof BILLING_PLANS)[]]).optional(),
 }).strict().refine(v => (v.months === undefined) !== (v.year === undefined), "Indica los meses (1 a 12) o el año, no ambos.");
 
 /** Suma meses en UTC; un 31 pasa al último día del mes corto (31-ene + 1 = 28/29-feb). */
@@ -95,17 +98,22 @@ export class PlatformBillingController {
       if (previous) {
         const { tenantId: previousTenant, ...payment } = previous;
         if (previousTenant !== tenant.id || Number(payment.amount) !== input.amount || payment.method !== input.method ||
-          payment.months !== months || normalizeReference(payment.reference) !== normalizeReference(input.reference))
+          payment.months !== months || normalizeReference(payment.reference) !== normalizeReference(input.reference) ||
+          (input.plan !== undefined && payment.plan !== input.plan))
           throw new HttpException("Esa operación ya se registró con otros datos.", 409);
         // Un pago anulado ya no es un cobro: repetirlo no debe parecer un éxito.
         if (await tx.platformPayment.findFirst({ where: { voidsPaymentId: payment.id }, select: { id: true } }))
           throw new HttpException("Esa operación corresponde a un pago ya anulado; registra el cobro con otra operación.", 409);
         return { tenantId: tenant.id, payment, tenant: { slug: code, status: tenant.status, paidUntil: payment.paidUntil }, replayed: true };
       }
-      const expected = expectedPayment(tenant.plan, months, !!input.year);
-      if (expected === null) throw new HttpException("La empresa no tiene un plan con precio.", 409);
+      const priced = Object.prototype.hasOwnProperty.call(BILLING_PLANS, tenant.plan);
+      if (input.plan !== undefined && priced && input.plan !== tenant.plan)
+        throw new HttpException(`La empresa ya tiene el plan ${tenant.plan}; cámbialo con «Cambiar plan» antes de cobrar otro.`, 409);
+      const plan = priced ? tenant.plan : input.plan;
+      if (!plan) throw new HttpException("La empresa no tiene un plan con precio: elige el plan que paga.", 409);
+      const expected = expectedPayment(plan, months, !!input.year)!;
       if (input.amount !== expected)
-        throw new HttpException(`El monto debe ser RD$${expected.toFixed(2)} (plan ${tenant.plan}, ${input.year ? "un año" : `${months} mes/es`}).`, 400);
+        throw new HttpException(`El monto debe ser RD$${expected.toFixed(2)} (plan ${plan}, ${input.year ? "un año" : `${months} mes/es`}).`, 400);
       // La misma transferencia anotada dos veces regalaba meses: una referencia
       // vigente (no anulada) no se repite en la misma empresa.
       const [same] = await tx.$queryRaw<{ createdAt: Date; amount: string }[]>`
@@ -125,16 +133,16 @@ export class PlatformBillingController {
       const paidUntil = addMonths(paidFrom, months);
       await tx.tenant.update({
         where: { id: tenant.id },
-        data: { status: "active", paidThroughAt: paidUntil, pastDueAt: null, suspendedAt: null },
+        data: { status: "active", plan, paidThroughAt: paidUntil, pastDueAt: null, suspendedAt: null },
       });
       const payment = await tx.platformPayment.create({
-        data: { tenantId: tenant.id, operationId: input.operationId, plan: tenant.plan, amount: input.amount.toFixed(2), method: input.method, reference: input.reference, months, operator, paidFrom, paidUntil,
+        data: { tenantId: tenant.id, operationId: input.operationId, plan, prevPlan: tenant.plan, amount: input.amount.toFixed(2), method: input.method, reference: input.reference, months, operator, paidFrom, paidUntil,
           prevStatus: tenant.status, prevPaidThroughAt: tenant.paidThroughAt, prevPastDueAt: tenant.pastDueAt, prevSuspendedAt: tenant.suspendedAt },
         select: paymentSelect,
       });
       await tx.auditLog.create({ data: {
         tenantId: tenant.id, userId: "plataforma", action: "platform_payment", entity: "platform_payment", entityId: payment.id,
-        after: { amount: payment.amount.toString(), method: input.method, months, plan: tenant.plan, paidUntil: paidUntil.toISOString() },
+        after: { amount: payment.amount.toString(), method: input.method, months, plan, prevPlan: tenant.plan, paidUntil: paidUntil.toISOString() },
       } });
       return { tenantId: tenant.id, payment, tenant: { slug: code, status: "active", paidUntil }, replayed: false };
     }).catch(e => {
@@ -195,7 +203,7 @@ export class PlatformBillingController {
       // 202611040001): la prueba vuelve a «prueba»; lo ya vencido queda suspendido.
       const from = original.paidFrom;
       const data = original.prevStatus
-        ? { status: original.prevStatus, paidThroughAt: original.prevPaidThroughAt, pastDueAt: original.prevPastDueAt, suspendedAt: original.prevSuspendedAt }
+        ? { ...(original.prevPlan ? { plan: original.prevPlan } : {}), status: original.prevStatus, paidThroughAt: original.prevPaidThroughAt, pastDueAt: original.prevPastDueAt, suspendedAt: original.prevSuspendedAt }
         : tenant.trialEndsAt && from.getTime() === tenant.trialEndsAt.getTime()
           ? { status: "trial", paidThroughAt: null, pastDueAt: null }
           : from > new Date()

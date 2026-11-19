@@ -56,7 +56,7 @@ export function Registration() {
   return <main className="product-registration">
     <form onSubmit={submit}>
       <a href="/">← Entrar</a>
-      <h1>Prueba Norexos durante 14 días</h1>
+      <h1>Prueba Norexos durante 7 días</h1>
       <p>Crea tu empresa. Confirma el correo antes de entrar y vender.</p>
       <label className="field"><span>Nombre del negocio</span><input required maxLength={120} value={businessName} onChange={e => setBusinessName(e.target.value)} /></label>
       <label className="field"><span>Tu nombre</span><input required maxLength={120} value={ownerName} onChange={e => setOwnerName(e.target.value)} /></label>

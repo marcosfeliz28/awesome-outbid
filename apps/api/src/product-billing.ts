@@ -2,7 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Res, UploadedFile, UseInter
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { z } from "@fitstore/shared";
-import { Actor, CurrentUser, Database, Permit, bad, conflict, imageType, parse, uuid } from "./common";
+import { Actor, AllowSuspendedBilling, CurrentUser, Database, Permit, bad, conflict, imageType, parse, uuid } from "./common";
 import { RequestRateLimitService } from "./rate-limit";
 import { BILLING_PLANS } from "./billing-plans";
 import { newObjectKey, tenantObjectStore } from "./tenant-object-store";
@@ -70,7 +70,7 @@ export class ProductBillingController {
     return rows.map(({ proofMime, ...row }) => ({ ...row, hasProof: proofMime !== null }));
   }
 
-  @Post("requests") @Permit("*")
+  @Post("requests") @Permit("*") @AllowSuspendedBilling()
   async request(@Body() body: unknown, @CurrentUser() actor: Actor) {
     this.limits.assert("billing-request", [actor.tenantId, actor.id], 5);
     const data = parse(requestInput, body);
@@ -85,7 +85,7 @@ export class ProductBillingController {
     return { id: row.id, plan: row.plan, provider: row.provider, amount: row.amount, status: row.status, instructions: provider.instructions() };
   }
 
-  @Post("requests/:id/proof") @Permit("*")
+  @Post("requests/:id/proof") @Permit("*") @AllowSuspendedBilling()
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_PROOF_BYTES + 1, files: 1 } }))
   async submitProof(@Param("id") id: string, @UploadedFile() file: any, @CurrentUser() actor: Actor) {
     if (!file?.buffer?.length) bad("Adjunta el comprobante.");

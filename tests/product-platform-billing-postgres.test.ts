@@ -196,18 +196,18 @@ it("sólo el operador registra pagos; la bitácora es inmutable y el vencimiento
     expect(await asTenant(B.id, `SELECT reference FROM "PlatformPayment"`)).toEqual([{ reference: "Mensajero 3" }]);
     await expect(asTenant(B.id, `INSERT INTO "PlatformPayment" (id,"tenantId",amount,method,reference,months,operator,"paidFrom","paidUntil") VALUES (gen_random_uuid(), '${B.id}', 1, 'cash', 'propia', 1, 'yo', now(), now() + interval '1 year')`)).rejects.toThrow();
 
-    // Avisos 7 y 3 días antes, dentro del sistema aunque no haya correo configurado.
+    // Avisos 2 días antes y 2 días después (dueña, 19-nov), dentro del sistema aunque no haya correo configurado.
     const lifecycle = app.get(TenantLifecycleService);
-    const due = new Date(Date.now() + 7 * DAY - 60_000);
+    const due = new Date(Date.now() + 2 * DAY - 60_000);
     await q(`UPDATE "Tenant" SET "paidThroughAt"=$2 WHERE id=$1::uuid`, A.id, due);
     await lifecycle.queueNotices(new Date());
     await lifecycle.queueNotices(new Date());
     await lifecycle.sendPendingNotices(new Date());
-    await lifecycle.queueNotices(new Date(due.getTime() - 3 * DAY + 60_000));
+    await lifecycle.queueNotices(new Date(due.getTime() + 2 * DAY + 60_000));
     const notices = await q(`SELECT "tenantId", type, message FROM "Alert" WHERE type='plan_due' ORDER BY message DESC`);
     expect(notices.map(n => n.tenantId)).toEqual([A.id, A.id]);
-    expect(notices[0].message).toMatch(/vence en 7 días.*solo lectura/);
-    expect(notices[1].message).toMatch(/vence en 3 días/);
+    expect(notices[1].message).toMatch(/Tu plan de Norexos vence el .*Paga para seguir/);
+    expect(notices[0].message).toMatch(/venció el .*en mora.*se suspende y queda en solo lectura/);
     expect((await q(`SELECT "tenantId" FROM "RealtimeEvent" WHERE data->>'type'='plan_due'`)).map(r => r.tenantId)).toEqual([A.id, A.id]);
     const inApp = await http.get("/api/alerts?type=plan_due").set("Authorization", A.bearer);
     expect(inApp.status).toBe(200);
@@ -266,5 +266,5 @@ it("no existe pasarela de pago ni campo de tarjeta en el esquema, las migracione
   // «card_in_store» sólo nombra el método: la tarjeta se pasa en el datáfono del local, fuera del sistema.
   const payment = readFileSync(join(prismaDir, "schema.prisma"), "utf8").match(/model PlatformPayment \{[^}]+\}/)![0];
   expect(payment.match(/^\s+(\w+)\s/gm)!.map(s => s.trim()).sort())
-    .toEqual(["amount", "createdAt", "id", "method", "months", "operationId", "operator", "paidFrom", "paidUntil", "plan", "prevPaidThroughAt", "prevPastDueAt", "prevStatus", "prevSuspendedAt", "reference", "tenant", "tenantId", "voidReason", "voidedBy", "voidsPayment", "voidsPaymentId"]);
+    .toEqual(["amount", "createdAt", "id", "method", "months", "operationId", "operator", "paidFrom", "paidUntil", "plan", "prevPaidThroughAt", "prevPastDueAt", "prevPlan", "prevStatus", "prevSuspendedAt", "reference", "tenant", "tenantId", "voidReason", "voidedBy", "voidsPayment", "voidsPaymentId"]);
 });

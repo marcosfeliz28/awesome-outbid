@@ -88,6 +88,9 @@ async function sendVerification(email: string, token: string) {
   if (!response?.ok) throw new HttpException("La cuenta se creó, pero no se pudo enviar el correo. Usa Reenviar confirmación.", 503);
 }
 
+/** Prueba gratis (dueña, 19-nov): 7 días, también por defecto en las invitaciones. */
+export const TRIAL_DAYS = 7;
+
 /** Roles que nace con cada empresa además de «admin» (migración 202610280024_product_base_roles_customer). */
 export const BASE_ROLES = ["manager", "seller", "warehouse"] as const;
 
@@ -147,7 +150,7 @@ export class RegistrationService implements OnModuleDestroy {
       await this.db.$transaction(tx => createTenantWithOwner(tx, {
         slug: input.companyCode, name: input.businessName,
         businessType: input.businessType, plan: "trial", status: "trial",
-        trialEndsAt: new Date(Date.now() + 14 * 86400000),
+        trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86400000),
         termsVersion: legal.termsVersion, termsAcceptedAt: acceptedAt,
         privacyVersion: legal.privacyVersion, privacyAcceptedAt: acceptedAt,
       }, {
