@@ -274,6 +274,19 @@ async function forEachPeriodReturn(
     cursor = page[page.length - 1].id;
   }
 }
+// P22: nombre visible de cada vendedora; si dos personas se llaman igual, la
+// segunda sale con «(2)» para que no parezcan una sola.
+export function sellerLabels(names: Map<string, string>, ids: string[]) {
+  const seen = new Map<string, number>();
+  const out = new Map<string, string>();
+  for (const id of ids) {
+    const name = names.get(id) ?? "(sin nombre)";
+    const n = (seen.get(name) ?? 0) + 1;
+    seen.set(name, n);
+    out.set(id, n > 1 ? `${name} (${n})` : name);
+  }
+  return out;
+}
 // D-05 del dashboard: lo devuelto en el período por día, categoría, forma de
 // pago (lo reembolsado en cajas ocultas no se desglosa) y vendedor.
 async function returnedBreakdown(
@@ -439,7 +452,7 @@ export class ReportsController {
       >`SELECT p.name,c.name AS category, SUM(i.qty-i."returnedQty") AS units,SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS revenue FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.id,p.name,c.name ORDER BY revenue DESC LIMIT 10`,
       this.db.$queryRaw<
         any[]
-      >`SELECT u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.name ORDER BY total DESC`,
+      >`SELECT u.id,u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.id,u.name ORDER BY total DESC`,
       this.db.sale.aggregate({
         where: {
           branchId: actor.branchId,
@@ -529,8 +542,15 @@ export class ReportsController {
       (p) => p._sum.amount ?? 0,
       returned.methods,
     );
-    const sellerIds = returned.sellers.map((r) => r.key);
-    const sellerNames = new Map(
+    // P22: por persona (id), no por nombre: dos usuarias con el mismo nombre
+    // no se suman como una.
+    const sellerIds = [
+      ...new Set([
+        ...returned.sellers.map((r) => r.key),
+        ...sellers.map((i) => i.id),
+      ]),
+    ];
+    const sellerNames = new Map<string, string>(
       (sellerIds.length
         ? await this.db.user.findMany({
             where: { id: { in: sellerIds } },
@@ -541,13 +561,11 @@ export class ReportsController {
     );
     const sellersNet = netOf(
       sellers,
-      (i) => i.name,
+      (i) => i.id,
       (i) => i.total,
-      returned.sellers.map((r) => ({
-        key: sellerNames.get(r.key) ?? r.key,
-        amount: r.amount,
-      })),
+      returned.sellers,
     );
+    const sellerLabel = sellerLabels(sellerNames, [...sellersNet.keys()]);
     const byAmount = (a: { total: number }, b: { total: number }) =>
       b.total - a.total;
     const revenue = money(
@@ -641,7 +659,10 @@ export class ReportsController {
           revenue: Number(i.revenue),
         })),
         sellers: [...sellersNet]
-          .map(([name, total]) => ({ name, total: money(total) }))
+          .map(([id, total]) => ({
+            name: sellerLabel.get(id) ?? id,
+            total: money(total),
+          }))
           .sort(byAmount),
         alerts: alerts.map((alert) => alertForActor(alert, actor)),
         gv,
