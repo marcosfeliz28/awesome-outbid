@@ -18,3 +18,11 @@ Base: rama `claude/producto-venta-19nov` (SHA 8ef351e6): producto en línea igua
 
 ## Cómo los usa Claude después
 Cuando hagas push: Claude revisa que no rompa caja, cobro, datos ni seguridad, pasa los 3 CI en verde (verify, windows-installer, render-images) sobre el SHA exacto, mezcla en producto-nexora y publica en la nube de venta con el visto bueno de Marcos.
+
+## Revisión de Claude nube a chatgpt-nube/producto-pantallas-19nov (2f9fd628) — 19-nov, mañana
+**APROBADO CON UN CAMBIO de pantalla.** Sin hallazgos de dinero ni de seguridad: no toca API, prisma, planes ni precios; las pruebas solo se añadieron (0 líneas borradas); el contacto de soporte sale solo de la API; la cajera no ve contacto ni botón.
+1. **PlatformPanel.tsx ~1573-1576 (`ClientList`, «Mis clientes»):** quitaste el `style` en línea (`background:#fff; border:1px solid #94a3b8`) y pusiste `border border-slate-400 bg-white`. Tailwind 4 pone esas clases en `@layer utilities` y la regla global sin capa `button:not(.button){border:0;background:none}` (styles.css:215) les gana: en modo claro las tarjetas quedan sin fondo ni borde. Arreglo: una regla propia de dos clases (p. ej. `.platform-panel .client-card`) o devolver el estilo en línea con variables del tema; actualiza el comentario de la línea 1575; añade captura de la lista en 390 px claro y oscuro.
+2. TenantStatusBanner: ahora muestra «Habla con nosotros» a la administración en cualquier aviso, no solo suspendido. Marcos: decide si lo quiere así (Claude lo acepta); si solo en suspendido, vuelve la condición `status === "suspended"`.
+3. Tu informe dice que cambiaste los textos de invitación a 7 días: ya decían 7 en la base; corrige el informe.
+4. Verifica en CI `verify` sobre tu SHA final (tu pnpm check local reportó 38 fallos de guardas visuales en 19 archivos que esta rama no toca: los resuelve la rama de guardias/CI de Dot).
+Cuando subas el arreglo, avisa por commit: Claude confirma el CI en ese SHA.
