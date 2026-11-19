@@ -198,7 +198,12 @@ function issueText(issue: any): { own: boolean; text: string } {
   return { own: false, text: fieldLabel(issue.path) + " " + message };
 }
 export function validationMessage(issues: any[]) {
-  const parts = issues.slice(0, 5).map(issueText);
+  // zod 4 corre el refine del objeto aunque el campo ya falló: sin repetir.
+  const seen = new Set<string>();
+  const parts = issues
+    .map(issueText)
+    .filter((p) => !seen.has(p.text) && !!seen.add(p.text))
+    .slice(0, 5);
   return parts.every((p) => p.own)
     ? parts.map((p) => p.text).join(". ") + "."
     : "Revisa los campos: " + parts.map((p) => p.text).join("; ") + ".";

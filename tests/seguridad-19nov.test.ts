@@ -422,3 +422,36 @@ describe("B4 · un cuerpo demasiado grande o mal formado no es un 500", () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe("VE-001/VE-003 · el servidor valida el usuario vacío o con espacios", () => {
+  const attempt = async (body: unknown) => {
+    const { AuthController } = await import("../apps/api/src/auth");
+    const { validationMessage } = await import("../apps/api/src/common");
+    const touched: string[] = [];
+    const db: any = new Proxy(
+      {},
+      { get: (_t, key) => (touched.push(String(key)), undefined) },
+    );
+    const controller = new AuthController(db, {} as any, {} as any);
+    try {
+      await controller.login(body, { headers: {}, ip: "10.0.0.9" } as any, {
+        cookie: () => undefined,
+      } as any);
+      return { message: "sin error", touched };
+    } catch (error: any) {
+      return { message: validationMessage(error.issues ?? []), touched };
+    }
+  };
+  it("vacío, solo espacios o ausente: «Escribe tu usuario.» sin tocar la base", async () => {
+    for (const login of ["", "     ", "\t \n", undefined]) {
+      const r = await attempt({ login, password: "x" });
+      expect(r.message, JSON.stringify(login)).toBe("Escribe tu usuario.");
+      expect(r.touched).toEqual([]);
+    }
+  });
+  it("contraseña vacía: «Escribe tu contraseña.»", async () => {
+    const r = await attempt({ login: "caja1", password: "" });
+    expect(r.message).toBe("Escribe tu contraseña.");
+    expect(r.touched).toEqual([]);
+  });
+});
