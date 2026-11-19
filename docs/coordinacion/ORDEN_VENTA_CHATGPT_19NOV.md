@@ -34,3 +34,8 @@ Cuando subas el arreglo, avisa por commit: Claude confirma el CI en ese SHA.
 3. Alinea «60 días» → «7 días» (prueba gratis por invitación) en: docs/venta/DEMO_10_MIN.md:21, PILOTO_PRIMER_CLIENTE.md:3 y :13, PROPUESTA_PRECIOS.md:32 y :65, contrato/01_CONDICIONES…:46, contrato/05_CONDICIONES_DE_COBRO.md (1.1 y 8.4). Los contratos los revisa luego el abogado: marca el cambio en el commit.
 4. docs/venta/PUBLICAR_LANDING_NOREXOS_NET.md (:10 y :80): quita robots.txt y sitemap.xml de la lista.
 5. Opcional: index.html «Información para decidir – datos organizados…» → «Consulta tus ventas y movimientos».
+
+## Para Dot / ChatGPT: 2 cambios de pantalla detectados en el candidato del producto (claude/producto-final2-19nov d49f7d65)
+Claude ajustó 3 specs e2e (credito: ya no elige «Consumidor final», que en el producto existe en cada empresa y bloquea el crédito por diseño; lumina: simula /api/ai/usage; reportes-config: Excel habilitado + aviso «Corrige las fechas primero», sin petición). Dos cosas son de pantalla protegida y no las toca Claude:
+1. **OBLIGATORIO** `apps/web/src/Management.tsx`, función `Configuration`: `<div className="tabs outside">` perdió `role="group" aria-label="Secciones de configuración"` en la mezcla de igualación (lo había agregado cdebfbb9). Restáuralo (accesibilidad), actualiza el ledger de la guarda y luego vuelve el spec `lumina-reportes-config.spec.ts` a `getByRole("group", { name: "Secciones de configuración" })`.
+2. Opcional: `apps/web/src/AiUsage.tsx` `Rows`: tolerar `byFeature` indefinido (`lines ?? []`) para que la pantalla no caiga con «Esta pantalla tuvo un problema»; y decidir si Reportes vuelve a `disabled={inverted || busy !== null}` (hoy habilitado con aviso).
