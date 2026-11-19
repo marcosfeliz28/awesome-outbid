@@ -37,3 +37,10 @@ it("CP-14: las cuatro acciones superiores del POS permanecen en una fila móvil"
     /@media \(max-width: 600px\) \{[\s\S]*?\.heading-actions \{[\s\S]*?grid-template-columns:\s*minmax\(0, 1\.2fr\) minmax\(0, 1\.2fr\) repeat\(2, 44px\)/,
   );
 });
+
+it("CP-15: el catálogo deja espacio final para la barra móvil de cobro", () => {
+  const fusion = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
+  expect(fusion).toMatch(
+    /@media \(max-width: 600px\) \{[\s\S]*?\.pos-catalog \{[\s\S]*?padding-bottom:\s*calc\(100px \+ env\(safe-area-inset-bottom\)\)/,
+  );
+});

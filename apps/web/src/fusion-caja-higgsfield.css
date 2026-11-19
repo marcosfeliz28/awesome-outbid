@@ -945,6 +945,9 @@
     justify-content: center;
     padding-inline: 0;
   }
+  .pos-layout.fusion-caja-integrada .pos-catalog {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  }
 }
 
 /* Scoped checkout shell and receipt portal: beat legacy violet without changing actions. */
