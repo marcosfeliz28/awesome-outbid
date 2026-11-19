@@ -20,7 +20,7 @@ describe("A1 · dateRange acepta fecha sola o fecha con hora", () => {
     expect(() => dateRange({ from: "basura" })).toThrow(/Rango de fechas/);
     expect(() =>
       dateRange({ from: "2026-11-20", to: "2026-11-19T00:00:00-04:00" }),
-    ).toThrow(/Rango de fechas/);
+    ).toThrow(/posterior a la final/);
   });
 });
 

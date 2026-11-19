@@ -81,7 +81,23 @@ donde no chocaban con funciones del producto. Arreglo encontrado al mezclar:
 - typecheck (`pnpm -r typecheck`): verde. lint (`pnpm lint`): verde.
 - Build web del producto (`VITE_PRODUCT_TENANCY=required pnpm build`): verde,
   incluido `check-product-brand`.
-- Unitarias + -postgres: ver resultado al final de este archivo.
+- Unitarias + -postgres (`vitest run`, 655 archivos, como usuario `postgres`):
+  1,702 pasan, 39 fallan en 19 archivos, 10 omitidas. Todas las -postgres del
+  producto pasan (aislamiento RLS de 77 tablas, matriz, dinero, inventario,
+  plataforma, registro, respaldo/exportación por empresa, baja de cliente).
+  Las que fallan:
+  - 16 archivos de guardias de diseño de Dot que comparan contra la versión de
+    la tienda (caja/productos/inventario/operaciones-presentación,
+    caja-turnos, merchandise-premium, operational-aux, purchase-editors-language,
+    store-settings-language, config-rates-survey-language, operaciones-language,
+    login-legible, login-animacion, tablero-animacion, f2-02-kpi-strip,
+    inicio-integrado, catalog-image «104px»). Ver pendiente 1.
+  - `docs-sistema-citas`: 15 citas de docs/sistema perdieron su línea (se
+    re-anclaron las que se movieron con `node scripts/citas-reanclar.mjs`).
+  - `portabilidad` (3): solo falla corriendo como `postgres` (pnpm/permiso del
+    entorno); como root pasa.
+- Integración (`vitest.integration.config.ts`, necesita API en :3001 + base):
+  **no se corrió** aquí.
 - Matriz de aislamiento: 218 rutas; las 8 nuevas tienen caso A/B en
   `tests/product-route-lote19-postgres.test.ts` (medidor IA, sin costo, guía,
   exportación, recálculo, desverificar, mover de caja, corregir costo).
@@ -113,7 +129,11 @@ donde no chocaban con funciones del producto. Arreglo encontrado al mezclar:
    empresas da error, no fuga.
 7. Migraciones probadas solo en base nueva; falta ensayo sobre copia de la base del
    producto antes de desplegar.
-8. `.env.example` trae `ASSISTANT_MODEL`/`IA_VENTAS_PLAN` de la tienda (sin efecto
+8. Desglose «forma de pago por categoría»: se tomó el de la tienda (banco,
+   «sin cobro registrado», crédito cobrado) y se le sumó la regla del producto:
+   la transferencia rechazada cuenta como crédito.
+9. Citas de docs/sistema: 15 perdidas por la mezcla (pendiente de base-sistema).
+10. `.env.example` trae `ASSISTANT_MODEL`/`IA_VENTAS_PLAN` de la tienda (sin efecto
    en el producto).
 
 ## Orden recomendado para desplegar el producto
