@@ -280,3 +280,54 @@ describe("A4 · ajustes de inventario con clave de operación", () => {
     expect(calls).not.toContain("audit.findFirst");
   });
 });
+
+// A5: mensajes de validación en español claro y con plural correcto.
+describe("A5 · mensajes de validación legibles", () => {
+  const message = async (schema: any, input: unknown) => {
+    const { validationMessage } = await import("../apps/api/src/common");
+    return validationMessage(schema.safeParse(input).error.issues);
+  };
+  it("usuario vacío: «Escribe tu usuario.»", async () => {
+    const { z } = await import("../packages/shared/src");
+    const login = z.object({
+      login: z.string().trim().min(1).max(120),
+      password: z.string().min(1),
+    });
+    expect(await message(login, { login: "", password: "x" })).toBe(
+      "Escribe tu usuario.",
+    );
+    expect(await message(login, { login: "", password: "" })).toBe(
+      "Escribe tu usuario. Escribe tu contraseña.",
+    );
+    // La frase de un refine no lleva delante el nombre del campo.
+    const refined = z
+      .object({ login: z.string().optional() })
+      .refine((v) => !!v.login, {
+        message: "Escribe tu usuario.",
+        path: ["login"],
+      });
+    expect(await message(refined, {})).toBe("Escribe tu usuario.");
+  });
+  it("otro campo vacío: «es obligatorio», nunca «1 caracteres»", async () => {
+    const { z } = await import("../packages/shared/src");
+    const text = await message(z.object({ reason: z.string().min(1) }), {
+      reason: "",
+    });
+    expect(text).toBe("Revisa los campos: motivo es obligatorio.");
+    expect(text).not.toMatch(/1 caracteres/);
+  });
+  it("plural correcto: «1 carácter», «3 caracteres», «1 elemento»", async () => {
+    const { z } = await import("../packages/shared/src");
+    expect(
+      await message(z.object({ code: z.string().min(3) }), { code: "a" }),
+    ).toBe("Revisa los campos: código debe tener al menos 3 caracteres.");
+    expect(
+      await message(z.object({ code: z.string().max(1) }), { code: "ab" }),
+    ).toBe("Revisa los campos: código admite como máximo 1 carácter.");
+    expect(
+      await message(z.object({ items: z.array(z.number()).min(1) }), {
+        items: [],
+      }),
+    ).toBe("Revisa los campos: línea debe tener al menos 1 elemento.");
+  });
+});
