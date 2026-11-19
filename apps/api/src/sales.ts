@@ -3304,12 +3304,21 @@ export class SalesController {
       const found = await tx.payment.findFirstOrThrow({
         where: { id: paymentId, sale: { branchId: actor.branchId } },
       });
-      if (!found.cashSessionId)
+      // 19-nov (caso FS-0000706): el efectivo marcado «Recibido por la dueña»
+      // (fuera de toda caja) se puede pasar a la caja que de verdad lo recibió.
+      const ownerCash =
+        !found.cashSessionId &&
+        found.method === "cash" &&
+        found.entryType === "installment" &&
+        !!found.reference?.startsWith(OWNER_CASH_MARK);
+      if (!found.cashSessionId && !ownerCash)
         bad("Este cobro no está en ninguna caja; no hay de dónde moverlo.");
       if (found.cashSessionId === data.cashSessionId)
         bad("El cobro ya está en esa caja.");
       // Bloqueo en orden fijo (por id) para no cruzarse con otra operación.
-      const ids = [found.cashSessionId, data.cashSessionId].sort();
+      const ids = [found.cashSessionId, data.cashSessionId]
+        .filter((v): v is string => !!v)
+        .sort();
       for (const sessionId of ids)
         await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sessionId}::uuid FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
@@ -3326,23 +3335,38 @@ export class SalesController {
         select: { number: true, status: true },
       });
       if (sale.status !== "completed") bad("La venta ya no está completada.");
-      const from = await tx.cashSession.findUniqueOrThrow({
-        where: { id: payment.cashSessionId! },
-      });
+      const from = payment.cashSessionId
+        ? await tx.cashSession.findUniqueOrThrow({
+            where: { id: payment.cashSessionId },
+          })
+        : null;
       const to = await tx.cashSession.findFirst({
         where: { id: data.cashSessionId, branchId: actor.branchId },
       });
       if (!to) bad("Esa caja no existe en esta sucursal.");
+      // Si era efectivo de la dueña, deja de serlo: se quita la marca (lo que
+      // la seguía queda) y cuenta como recibido por quien tenía esa caja.
+      const rest = ownerCash
+        ? (payment.reference ?? "")
+            .slice(OWNER_CASH_MARK.length)
+            .replace(/^\s*·\s*/, "")
+            .trim()
+        : "";
       await tx.payment.update({
         where: { id: paymentId },
-        data: { cashSessionId: to.id },
+        data: {
+          cashSessionId: to.id,
+          ...(ownerCash
+            ? { reference: rest || null, receivedById: to.userId }
+            : {}),
+        },
       });
       const out: Record<string, unknown> = {};
       for (const [side, session] of [
         ["from", from],
         ["to", to],
       ] as const) {
-        if (!session.closedAt) continue;
+        if (!session || !session.closedAt) continue;
         const fresh = await tx.cashSession.findUniqueOrThrow({
           where: { id: session.id },
         });
@@ -3364,12 +3388,21 @@ export class SalesController {
         "payment_cash_session_moved",
         "payment",
         paymentId,
-        { cashSessionId: from.id },
+        {
+          cashSessionId: from?.id ?? null,
+          ...(ownerCash
+            ? {
+                reference: payment.reference,
+                receivedById: payment.receivedById,
+              }
+            : {}),
+        },
         {
           number: sale.number,
           method: payment.method,
           amount: payment.amount,
           cashSessionId: to.id,
+          ...(ownerCash ? { fromOwnerCash: true } : {}),
           differences: out,
           reason: data.reason,
         },
@@ -3377,7 +3410,7 @@ export class SalesController {
       return {
         ok: true,
         number: sale.number,
-        from: from.id,
+        from: from?.id ?? null,
         to: to.id,
         differences: out,
       };

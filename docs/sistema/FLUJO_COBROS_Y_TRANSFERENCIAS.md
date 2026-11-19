@@ -48,6 +48,7 @@ Pasos exactos en `FLUJO_CAJA_POS.md` §5.1. Resumen:
 - **Cobro de contraentrega cuando el mensajero trae el dinero**: `POST /sales/:id/cod-collections` (`apps/api/src/sales.ts:4119`); pide la referencia del voucher si es tarjeta.
 - **Cobro por persona** (varias ventas de un cliente a la vez): `POST /credit-accounts/:id/collections` (`apps/api/src/sales.ts:4434`, manejador `collectCustomerCredit` en `:4086`); usa `allocateCredit` (`apps/api/src/credit-allocation.ts:2`).
 - **Dueña (`*`)**: al registrar una transferencia se da por recibida y cierra el cobro al instante, solo indica el banco; el efectivo sin caja abierta queda como recibido por ella, fuera de cualquier caja (`apps/web/src/Tienda.tsx:982-984`, `:1098`, `:1216-1217`; API marca `OWNER_CASH_MARK`, `apps/api/src/sales.ts:5092`).
+- **Pasar a una caja el efectivo «Recibido por la dueña»** (19-nov, caso FS-0000706): en Ventas › cobro › «Mover cobro a otra caja», la administración puede mover ese efectivo (que no estaba en ninguna caja) a la caja que de verdad lo recibió, con motivo. Se quita la marca «Recibido por la dueña», cuenta como recibido por quien tenía la caja y, si la caja ya cerró, se recalcula su diferencia con aviso y bitácora (API `POST /payments/:id/move-cash-session`, `apps/api/src/sales.ts`). En un contraentrega mixto, el efectivo lo registra la cajera que lo recibe en su caja y la transferencia la valida la dueña.
 
 ### 3.4 Venta con saldo y devolución
 

@@ -442,3 +442,51 @@ describe("3 · mover un cobro a otra caja", () => {
     ).toBe(1);
   });
 });
+
+describe("4 · pasar a una caja el efectivo marcado «Recibido por la dueña»", () => {
+  it("lo mueve a la caja que lo recibió, quita la marca y recalcula esa caja", async () => {
+    // Contraentrega de 1,500 cobrada por la dueña sin caja (efectivo de la dueña).
+    const cod = await saleOf(cashierToken2, session2.id, 1500, [
+      { method: "cod", amount: 1500 },
+    ]);
+    const saleId = cod.body.id;
+    await ok(`/sales/${saleId}/credit-collections`, owner, {
+      operationId: randomUUID(),
+      lines: [{ method: "cash", amount: 1500 }],
+    });
+    const payment = await db.payment.findFirstOrThrow({
+      where: { saleId, entryType: "installment" },
+    });
+    expect(payment.cashSessionId).toBeNull();
+    expect(payment.reference?.startsWith("Recibido por la dueña")).toBe(true);
+    const cashBefore1 = Number((await sessionRow(session.id)).differenceCash);
+    await ok(`/payments/${payment.id}/move-cash-session`, owner, {
+      cashSessionId: session.id,
+      reason: "QA: el mensajero entregó el efectivo en la caja 1",
+    });
+    const moved = await db.payment.findUniqueOrThrow({
+      where: { id: payment.id },
+    });
+    expect(moved.cashSessionId).toBe(session.id);
+    expect(moved.reference ?? "").not.toContain("Recibido por la dueña");
+    expect(moved.receivedById).toBe(session.userId);
+    // La caja 1 ya estaba cerrada: su efectivo esperado subió 1,500.
+    const c1 = await sessionRow(session.id);
+    expect(Number(c1.differenceCash)).toBeCloseTo(cashBefore1 - 1500, 2);
+    expect(
+      (await alertsOf(session.id)).some((a: any) =>
+        a.key.endsWith(`:move:${payment.id}`),
+      ),
+    ).toBe(true);
+    // Ya no es de la dueña: moverlo otra vez a la misma caja no hace nada.
+    const again = await call(
+      `/payments/${payment.id}/move-cash-session`,
+      owner,
+      {
+        cashSessionId: session.id,
+        reason: "QA: misma caja",
+      },
+    );
+    expect(again.status).toBe(400);
+  });
+});
