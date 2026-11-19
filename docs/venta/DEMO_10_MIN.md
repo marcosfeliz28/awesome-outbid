@@ -18,7 +18,7 @@ Para enseñarle Norexos a un dueño de tienda. Hablar simple, sin tecnicismos.
 | 3–4  | Pagar otra venta con **transferencia**: cuenta y referencia obligatorias. Mostrar que el descuento pide motivo.                                                         | «Todo queda anotado: quién, cuánto y por qué.»                                                    |
 | 4–7  | **Caja › Cerrar y arquear**: contar monedas y billetes, tarjeta y lote. Cerrar. Mostrar el **Cuadre** impreso. Probar una caja que no cuadra: pide PIN y justificación. | «El sistema nunca te completa el monto. Cuentas a ciegas, y si hay diferencia queda justificada.» |
 | 7–9  | **Reportes**: elegir uno (por ejemplo «Ventas por método de pago» o «Cierres y diferencias»), poner fechas y pulsar **PDF**. Mostrar también **Excel**.                 | «Sin hojas de cálculo: lo imprimes o se lo mandas a tu contador.»                                 |
-| 9–10 | Hoja de precios y **piloto de 60 días**. Preguntar: «¿Cuántas cajas tienes?»                                                                                            | «Si te sirve, lo instalamos en tu laptop y lo pruebas 60 días.»                                   |
+| 9–10 | Hoja de precios y **prueba gratis de 7 días por invitación**. Preguntar: «¿Cuántas cajas tienes?»                                                                                            | «Si recibes una invitación, coordinamos una prueba gratis de 7 días.»                                   |
 
 Los precios salen de `HOJA_DE_PRECIOS.md`; no los inventes de memoria.
 

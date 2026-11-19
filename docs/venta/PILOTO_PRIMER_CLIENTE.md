@@ -1,6 +1,6 @@
 # Cómo conseguir el primer cliente (piloto) — borrador N1, 7-nov
 
-Objetivo: 2–3 negocios reales usando Norexos 60 días gratis, a cambio de comentarios, permiso para citarlos y una foto o testimonio. Un piloto prueba instalador, soporte, precios e IA con dinero ajeno en juego.
+Objetivo: 2–3 negocios reales usando Norexos con una prueba gratis de 7 días por invitación, a cambio de comentarios, permiso para citarlos y una foto o testimonio. Un piloto prueba instalador, soporte, precios e IA con dinero ajeno en juego.
 
 ## A quién
 
@@ -10,7 +10,7 @@ Lista inicial: escribir 10 nombres (proveedores, clientes de Grupo MacGen, amist
 ## Cómo
 
 1. Visita de 15 minutos con la demo (docs/venta/DEMO_10_MIN.md, en preparación por ChatGPT PC). Mostrar cierre de caja, reportes en PDF y la IA respondiendo una pregunta real de su negocio.
-2. Oferta: 60 días gratis, instalación incluida, soporte por WhatsApp. Después, precio de introducción (instalado US$149 único).
+2. Oferta por invitación: 7 días gratis, instalación incluida, soporte por WhatsApp. Después, precio de introducción (instalado US$149 único).
 3. Contrato corto de piloto (se deriva del contrato 2; el abogado lo revisa antes del primero).
 4. Instalación guiada en su laptop con el instalador probado; carga de su inventario (opcional, cobrado después).
 5. Seguimiento: llamada al día 3, 14 y 45. Anotar cada problema en un archivo (docs/venta/PILOTO_BITACORA.md).

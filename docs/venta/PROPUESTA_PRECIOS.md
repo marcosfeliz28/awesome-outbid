@@ -29,7 +29,7 @@ Más simple de explicar; menos ingreso en clientes grandes.
 
 ## Opción C: piloto gratis y luego plan
 
-60 días sin costo para los 1–2 clientes del piloto (D6) a cambio de comentarios y permiso de usarlos como referencia; después pasan al plan que les corresponda con 20 % de descuento el primer año.
+7 días sin costo por invitación para los 1–2 clientes del piloto (D6) a cambio de comentarios y permiso de usarlos como referencia; después pasan al plan que les corresponda con 20 % de descuento el primer año.
 
 ## Cuenta de margen (regla de la dueña: margen = (precio − costo)/precio, mínimo 15 %)
 
@@ -62,5 +62,5 @@ Lo que cuesta de verdad (costos conocidos o medibles):
 | Nube Básico                                             | No se ofrece hasta tener hosting compartido verificado                | —                                                  | Pierde dinero.                                                                                                            |
 | Instalación y carga de inventario (opcional)            | **US$75** (una laptop)                                                | US$150                                             | Una persona, medio día.                                                                                                   |
 
-Piloto: 60 días gratis para 2–3 clientes a cambio de comentarios y permiso para citarlos; después pasan al precio de introducción.
+Piloto: 7 días gratis por invitación para 2–3 clientes a cambio de comentarios y permiso para citarlos; después pasan al precio de introducción.
 Cuando el medidor tenga 30 días de uso real, se recalcula el precio de la IA con el costo medido (no el estimado) y se sube si hace falta.

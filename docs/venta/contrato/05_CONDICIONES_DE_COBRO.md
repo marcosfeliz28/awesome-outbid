@@ -6,7 +6,7 @@ Estado: borrador del 31-oct-2026, corregido técnicamente el 7-nov-2026. Anexo B
 
 ## 1. Precios (PENDIENTE)
 
-1.1. Precios de introducción aprobados por la dueña el 7-nov-2026, en dólares estadounidenses, por mes: Medio 69 (lista 79) y Completo 119 (lista 139). El plan Básico en la nube no se ofrece por ahora. Instalación opcional de pago único: 75 por equipo (lista 150). IA de ventas opcional: 7 por usuario y mes (lista 9). Lectura de facturas con IA: 20 al mes incluidas y 0.30 por cada extra. Módulos extra: 15 a 25 por módulo y mes (PENDIENTE). Pago anual: dos meses gratis (PENDIENTE). El piloto gratis de 60 días y sus condiciones se anotan en el Anexo A del contrato. Moneda, tasa de cambio, recargos y plazos siguen PENDIENTES.
+1.1. Precios de introducción aprobados por la dueña el 7-nov-2026, en dólares estadounidenses, por mes: Medio 69 (lista 79) y Completo 119 (lista 139). El plan Básico en la nube no se ofrece por ahora. Instalación opcional de pago único: 75 por equipo (lista 150). IA de ventas opcional: 7 por usuario y mes (lista 9). Lectura de facturas con IA: 20 al mes incluidas y 0.30 por cada extra. Módulos extra: 15 a 25 por módulo y mes (PENDIENTE). Pago anual: dos meses gratis (PENDIENTE). La prueba gratis de 7 días por invitación y sus condiciones se anotan en el Anexo A del contrato. Moneda, tasa de cambio, recargos y plazos siguen PENDIENTES.
 
 1.2. Los precios no incluyen impuestos, comisiones del medio de pago ni costos bancarios, que corren por cuenta del cliente.
 
@@ -70,7 +70,7 @@ El cliente reclama por escrito dentro de [10] días calendario desde que recibe 
 
 8.3. En el plan anual, el descuento depende de pagar los doce meses; si el cliente termina antes por causa suya, no hay devolución (PENDIENTE: la dueña puede preferir devolver el saldo recalculado a precio mensual).
 
-8.4. Piloto gratis (si la dueña lo decide, PENDIENTE): 60 días sin costo a cambio de comentarios y permiso para usar al cliente como referencia; al terminar, el cliente pasa al plan que le corresponda con el descuento aprobado y puede cancelar antes de que empiece el cobro. Sin cancelación, se entiende aceptado el plan.
+8.4. Prueba gratis por invitación (si la dueña lo decide, PENDIENTE): 7 días sin costo a cambio de comentarios y permiso para usar al cliente como referencia; al terminar, el cliente pasa al plan que le corresponda con el descuento aprobado y puede cancelar antes de que empiece el cobro. Sin cancelación, se entiende aceptado el plan.
 
 ## 9. Impuestos y comisiones de terceros
 

@@ -43,7 +43,7 @@ Antes de firmar no se deben dejar espacios en blanco: todo dato entre `[ ]` se c
 | Medio    | 69               | 1          | 5     | 10       | 10 preguntas/día por usuario | correo y chat, 1 día hábil |
 | Completo | 119              | hasta 3    | 10    | 25       | 30 preguntas/día por usuario | prioritario, mismo día     |
 
-Instalación y carga de inventario (opcional, pago único): 75 USD por equipo (lista 150). La IA de ventas es opcional: 7 USD por usuario al mes (lista 9), con 10 preguntas diarias por usuario; la lectura de facturas con IA incluye 20 al mes y cada una extra cuesta 0.30 USD. Módulos extra (GV/citas y cursos, incentivos): 15 a 25 USD al mes cada uno (PENDIENTE). Pago anual con descuento de dos meses (PENDIENTE). Opción de piloto gratis de 60 días y descuento posterior (PENDIENTE; aplica solo si la dueña lo decide y se anota en el Anexo A).
+Instalación y carga de inventario (opcional, pago único): 75 USD por equipo (lista 150). La IA de ventas es opcional: 7 USD por usuario al mes (lista 9), con 10 preguntas diarias por usuario; la lectura de facturas con IA incluye 20 al mes y cada una extra cuesta 0.30 USD. Módulos extra (GV/citas y cursos, incentivos): 15 a 25 USD al mes cada uno (PENDIENTE). Pago anual con descuento de dos meses (PENDIENTE). Opción de prueba gratis de 7 días por invitación y descuento posterior (PENDIENTE; aplica solo si la dueña lo decide y se anota en el Anexo A).
 
 3.2. Si el cliente supera los límites de su plan, la proveedora puede bloquear la función que excede el límite o exigir el cambio de plan, con aviso previo.
 

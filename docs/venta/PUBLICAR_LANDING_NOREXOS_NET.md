@@ -7,7 +7,7 @@
 
 ## 0. Qué se publica
 
-- Carpeta: `apps/landing/` (HTML, CSS, `icon.svg`, `robots.txt`, `sitemap.xml`).
+- Carpeta: `apps/landing/` (HTML, CSS e `icon.svg`).
 - Páginas: `/` (español) y `/en/` (inglés). Sin JavaScript, sin CDN, sin fuentes
   externas, sin cifras de precios.
 - Enlace «Probar gratis»: `https://app.norexos.net/` (ver pendiente P1).
@@ -77,7 +77,6 @@ Nota: el CTA «Probar gratis» debe apuntar a `app.norexos.net` solo después de
 
 - `curl -sI https://norexos.net/` → `200`, `content-type: text/html`.
 - `curl -sI https://norexos.net/en/` → `200`.
-- `curl -s https://norexos.net/sitemap.xml` y `robots.txt` → contenido de `apps/landing/`.
 - `https://www.norexos.net/` → redirige a `https://norexos.net/`.
 - Repetir la verificación de Playwright (`docs/diseno/capturas/landing-norexos-net/`).
 - Probar «Escribir a soporte» (mailto) en un correo real.
