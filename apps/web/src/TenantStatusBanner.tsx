@@ -55,16 +55,26 @@ export function TenantStatusBanner({
   return (
     <div
       role="alert"
-      className="support-mode-banner"
-      style={urgent ? { background: "#7a1f1f", color: "#fff" } : undefined}
+      className={`support-mode-banner tenant-status-banner${urgent ? " tenant-status-banner--urgent" : ""}`}
     >
-      <span>{text}</span>{" "}
-      <button type="button" onClick={onPay}>
+      <div className="tenant-status-banner__content">
+        <strong className="tenant-status-banner__eyebrow">
+          Atención de facturación
+        </strong>
+        <span className="tenant-status-banner__message">{text}</span>
+        {status.data?.supportContact && (
+          <span className="tenant-status-banner__contact">
+            Habla con nosotros: {status.data.supportContact}
+          </span>
+        )}
+      </div>
+      <button
+        type="button"
+        className="button primary tenant-status-banner__action"
+        onClick={onPay}
+      >
         Ir a Plan y facturación
       </button>
-      {status.data?.status === "suspended" && status.data.supportContact && (
-        <span> · Habla con nosotros: {status.data.supportContact}</span>
-      )}
     </div>
   );
 }
