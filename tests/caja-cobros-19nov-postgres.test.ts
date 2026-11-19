@@ -208,3 +208,91 @@ describe("D6 · anular una venta con transferencia por verificar", () => {
     expect(list.map((p) => p.id)).not.toContain(t.paymentId);
   });
 });
+
+// Venta a crédito de RD$ 1,000 con un abono de RD$ 500 con tarjeta sin caja.
+const cardCollectionWithoutCash = async () => {
+  const n = randomUUID();
+  const sale = await db.sale.create({
+    data: {
+      number: "CT-" + n.slice(0, 8),
+      offlineUuid: n,
+      sellerId: actor.id,
+      cashSessionId: session,
+      subtotal: 1000,
+      discountTotal: 0,
+      taxTotal: 0,
+      total: 1000,
+      costTotal: 500,
+      creditBalance: 500,
+      payments: {
+        create: [
+          {
+            cashSessionId: session,
+            method: "credit",
+            amount: 1000,
+            tendered: 1000,
+            status: "pending",
+          },
+          {
+            entryType: "installment",
+            method: "card",
+            amount: 500,
+            tendered: 500,
+          },
+        ],
+      },
+    },
+    include: { payments: true },
+  });
+  const card = sale.payments.find((p: any) => p.method === "card");
+  return { saleId: sale.id as string, paymentId: card.id as string };
+};
+
+describe("D9 · corregir un cobro sin caja a efectivo", () => {
+  it("sin caja ni marca de la dueña se rechaza", async () => {
+    const t = await cardCollectionWithoutCash();
+    const error: any = await sales
+      .correctPaymentMethod(
+        t.saleId,
+        t.paymentId,
+        { method: "cash", reason: "Fue efectivo" },
+        actor,
+      )
+      .catch((e) => e);
+    expect(error?.status).toBe(400);
+    const p = await db.payment.findUniqueOrThrow({
+      where: { id: t.paymentId },
+    });
+    expect(p.method).toBe("card");
+  });
+  it("con la caja indicada entra a esa caja", async () => {
+    const t = await cardCollectionWithoutCash();
+    await sales.correctPaymentMethod(
+      t.saleId,
+      t.paymentId,
+      { method: "cash", cashSessionId: session, reason: "Fue efectivo" },
+      actor,
+    );
+    const p = await db.payment.findUniqueOrThrow({
+      where: { id: t.paymentId },
+    });
+    expect(p.method).toBe("cash");
+    expect(p.cashSessionId).toBe(session);
+  });
+  it("marcado como de la dueña queda con su marca", async () => {
+    const t = await cardCollectionWithoutCash();
+    await sales.correctPaymentMethod(
+      t.saleId,
+      t.paymentId,
+      { method: "cash", ownerConfirmed: true, reason: "Lo tiene la dueña" },
+      actor,
+    );
+    const p = await db.payment.findUniqueOrThrow({
+      where: { id: t.paymentId },
+    });
+    expect(p.method).toBe("cash");
+    expect(p.cashSessionId).toBeNull();
+    expect(p.reference).toMatch(/^Recibido por la dueña/);
+    expect(p.receivedById).toBe(actor.id);
+  });
+});

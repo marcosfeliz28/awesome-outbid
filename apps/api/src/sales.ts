@@ -2567,6 +2567,10 @@ export class SalesController {
         bank: z.string().trim().max(80).optional(),
         reference: z.string().trim().max(120).optional(),
         receivableKind: z.enum(["credit", "cod"]).optional(),
+        // D9: si el cobro no está en ninguna caja y pasa a efectivo, se dice
+        // qué caja recibió el efectivo o que lo recibió la dueña.
+        cashSessionId: uuid.optional(),
+        ownerConfirmed: z.boolean().optional(),
         reason,
       }),
       body,
@@ -2575,6 +2579,9 @@ export class SalesController {
       bad("Escribe el banco y la referencia de la transferencia.");
     const receivable = (m: string) => m === "cod" || m === "credit";
     const result = await moneyDb(this.db).$transaction(async (tx) => {
+      // Orden fijo de bloqueos: caja antes que venta.
+      if (data.method === "cash" && data.cashSessionId)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${data.cashSessionId}::uuid FOR UPDATE`;
       const sale = await editableSale(tx, saleId, actor);
       const payments = await tx.payment.findMany({ where: { saleId } });
       const payment = payments.find((p) => p.id === paymentId);
@@ -2620,6 +2627,23 @@ export class SalesController {
         if (await tx.saleReturn.count({ where: { saleId } }))
           bad("La venta tiene devoluciones; no se puede corregir.");
       }
+      // D9 (auditoría 19-nov): efectivo sin caja no lo controla ningún cuadre.
+      let cashTarget: { id: string; userId: string } | null = null;
+      let ownerCash = false;
+      if (data.method === "cash" && !payment.cashSessionId) {
+        if (data.cashSessionId) {
+          cashTarget = await tx.cashSession.findFirst({
+            where: { id: data.cashSessionId, branchId: actor.branchId },
+            select: { id: true, userId: true },
+          });
+          if (!cashTarget) bad("Esa caja no existe en esta sucursal.");
+        } else if (data.ownerConfirmed === true) ownerCash = true;
+        else
+          bad(
+            "Este cobro no está en ninguna caja. Indica la caja que recibió el efectivo o márcalo como efectivo que recibió la dueña.",
+          );
+      }
+      const sessionId = payment.cashSessionId ?? cashTarget?.id ?? null;
       const settings = await tx.settings.findUnique({
         where: { id: actor.branchId },
       });
@@ -2641,7 +2665,15 @@ export class SalesController {
           tendered: payment.amount,
           change: 0,
           bank: data.method === "transfer" ? data.bank : null,
-          reference: data.reference || null,
+          reference: ownerCash
+            ? (
+                OWNER_CASH_MARK + (data.reference ? " · " + data.reference : "")
+              ).slice(0, 100)
+            : data.reference || null,
+          ...(cashTarget
+            ? { cashSessionId: cashTarget.id, receivedById: cashTarget.userId }
+            : {}),
+          ...(ownerCash ? { receivedById: actor.id } : {}),
           feeAmount:
             data.method === "card"
               ? money(amount.times(config?.cardFeePercent ?? 2.5).div(100))
@@ -2706,9 +2738,9 @@ export class SalesController {
           true,
         );
       let differences: unknown = null;
-      if (payment.cashSessionId) {
+      if (sessionId) {
         const session = await tx.cashSession.findUniqueOrThrow({
-          where: { id: payment.cashSessionId },
+          where: { id: sessionId },
         });
         if (session.closedAt) {
           differences = await refreshClosedCash(tx, session);
@@ -2732,6 +2764,8 @@ export class SalesController {
           status: payment.status,
           bank: payment.bank,
           reference: payment.reference,
+          cashSessionId: payment.cashSessionId,
+          receivedById: payment.receivedById,
           creditBalance: sale.creditBalance,
         },
         {
@@ -2741,7 +2775,8 @@ export class SalesController {
           method: data.method,
           amount: payment.amount,
           creditBalance: balance,
-          cashSessionId: payment.cashSessionId,
+          cashSessionId: sessionId,
+          ...(ownerCash ? { ownerCash: true } : {}),
           differences,
           reason: data.reason,
         },
@@ -2750,7 +2785,7 @@ export class SalesController {
         number: sale.number,
         method: data.method,
         creditBalance: Number(balance),
-        cashSessionId: payment.cashSessionId,
+        cashSessionId: sessionId,
         differences,
       };
     }, MONEY_TRANSACTION);
