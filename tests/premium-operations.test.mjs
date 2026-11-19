@@ -99,3 +99,13 @@ test('incentive empty rates are localized without changing rate selection or amo
  assert.ok(dictionary.includes('"sin tarifas": "no rates configured"'));
  assert.ok(dictionary.includes('return (text: string) => en ? (EN[text] ?? text) : text;'));
 });
+
+test('Alertas highlights only the row whose native details are expanded', () => {
+ const match = /.norexos-premium-workspace\[data-premium-area="alerts"\]\s+\.alert-row:has\(\.alert-detail-trigger\[aria-expanded="true"\]\)/;
+ const styles = css.match(new RegExp(match.source + "\\s*\\{([^}]+)\\}"));
+ assert.ok(styles);
+ assert.match(styles[1], /border-color:\s*var\(--premium-gold\)/);
+ assert.doesNotMatch(styles[1], /animation:|transition:|transform:|color:\s*#/);
+ assert.match(css, new RegExp("@media \\(forced-colors: active\\) \\{\\s*" + match.source + "\\s*\\{\\s*outline: 2px solid Highlight;"));
+ assert.match(management, /className="alert-detail-trigger" aria-expanded=\{selectedId === a.id\}/);
+});
