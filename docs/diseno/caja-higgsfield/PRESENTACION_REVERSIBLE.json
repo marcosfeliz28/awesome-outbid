@@ -1,5 +1,5 @@
 {
-  "base_sha256": "c4c13cd526d6b9287e174864dfcc086f57b8b3d9eea6d8116303b96ef135ebed",
+  "base_sha256": "7a52ce68fe1ff8ae00f4317ce509c21afe0dba7c4765a8d7b0fa367c18b0788d",
   "changes": [
     {
       "before": "import { refreshAfterSale }",
@@ -128,6 +128,18 @@
     {
       "before": "placeholder={t(\"Código o nombre del producto\")}",
       "after": "placeholder={t(\"Buscar producto o código\")}"
+    },
+    {
+      "before": "                  ? \"1 producto encontrado\"",
+      "after": "                  ? t(\"1 producto encontrado\")"
+    },
+    {
+      "before": "                  : `${filtered.length} productos para descubrir`}",
+      "after": "                  : `${filtered.length} ${t(\"productos para descubrir\")}`}"
+    },
+    {
+      "before": "              Abre tu caja para comenzar <ArrowLeft size={14} />",
+      "after": "              {t(\"Abre tu caja para comenzar\")} <ArrowLeft size={14} />"
     }
   ]
 }

@@ -5,6 +5,14 @@ import { operationsText } from "../apps/web/src/operationsLanguage";
 import { ageText } from "../apps/web/src/Tienda";
 
 describe("Caja Fusión: pintura reversible", () => {
+  it("IT-008: traduce el estado visible y el aviso de caja del POS", () => {
+    const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+    const incentives = readFileSync("apps/web/src/Incentives.tsx", "utf8");
+
+    expect(pos).toContain('t("productos para descubrir")');
+    expect(pos).toContain('t("Abre tu caja para comenzar")');
+    expect(incentives).toContain('"Wholesale sale"');
+  });
   it("preserva byte por byte POS, incluyendo handlers, cálculos, stock y carrito", () => {
     const record = JSON.parse(
       readFileSync(
@@ -26,18 +34,20 @@ describe("Caja Fusión: pintura reversible", () => {
     const css = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
     expect(source).toContain('units === 1 ? "artículo" : "artículos"');
     expect(source).toContain('units === 1 ? "item" : "items"');
-    expect(source).toContain('onClick={clearWithUndo}');
-    expect(source).toContain('onClick={() => saveHeld()}');
+    expect(source).toContain("onClick={clearWithUndo}");
+    expect(source).toContain("onClick={() => saveHeld()}");
     expect(source).toContain('onClick={() => saveHeld("quote")}');
-    expect(css).toContain('grid-template-columns: repeat(3,minmax(0,1fr))');
-    expect(css).toContain('min-width: 0; min-height: 44px; padding: 8px 4px');
+    expect(css).toContain("grid-template-columns: repeat(3,minmax(0,1fr))");
+    expect(css).toContain("min-width: 0; min-height: 44px; padding: 8px 4px");
   });
   it("receipt portal and active shell override violet only during checkout", () => {
     const css = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
-    expect(css).toContain('body:has(.pos-layout.fusion-caja-integrada) .modal:has(.sale-success) .button.primary');
-    expect(css).toContain('var(--fc-deep)) !important');
-    expect(css).toContain('--primary-soft: var(--fc-pressed)');
-    expect(css).toContain('background: ButtonFace; color: ButtonText');
+    expect(css).toContain(
+      "body:has(.pos-layout.fusion-caja-integrada) .modal:has(.sale-success) .button.primary",
+    );
+    expect(css).toContain("var(--fc-deep)) !important");
+    expect(css).toContain("--primary-soft: var(--fc-pressed)");
+    expect(css).toContain("background: ButtonFace; color: ButtonText");
   });
   it("preferencias no escriben ni recargan carrito o cobran", () => {
     const source = readFileSync(
@@ -67,14 +77,22 @@ describe("Caja Fusión: pintura reversible", () => {
 });
 
 it("overrides legacy violet active category without losing contrast and scopes the close portal", () => {
- const css=readFileSync("apps/web/src/fusion-caja-higgsfield.css","utf8");
- expect(css).toMatch(/\.category-tabs button\.active\s*\{[^}]*background:[^;]+!important;[^}]*border-color:[^;]+!important;[^}]*color: var\(--fc-ink\)/);
- const scope='body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash)';
- expect(css).toContain(scope+' .button.primary');
- expect(css).toContain(scope+' :is(button,input,textarea):focus-visible');
- const portalRules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(r=>r[1].includes('.modal:has(.close-cash)'));
- for (const rule of portalRules) expect(rule[2]).not.toMatch(/(?:display|position|width|height|overflow|pointer-events|visibility)\s*:/);
- expect(css).toContain('background:Highlight !important;color:HighlightText');
+  const css = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
+  expect(css).toMatch(
+    /\.category-tabs button\.active\s*\{[^}]*background:[^;]+!important;[^}]*border-color:[^;]+!important;[^}]*color: var\(--fc-ink\)/,
+  );
+  const scope =
+    "body:has(:is(.pos-layout.fusion-caja-integrada,.cash-page.fusion-cash-turnos)) .modal:has(.close-cash)";
+  expect(css).toContain(scope + " .button.primary");
+  expect(css).toContain(scope + " :is(button,input,textarea):focus-visible");
+  const portalRules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((r) =>
+    r[1].includes(".modal:has(.close-cash)"),
+  );
+  for (const rule of portalRules)
+    expect(rule[2]).not.toMatch(
+      /(?:display|position|width|height|overflow|pointer-events|visibility)\s*:/,
+    );
+  expect(css).toContain("background:Highlight !important;color:HighlightText");
 });
 
 it("H167 translates audited cash and credit controls without changing Spanish", () => {

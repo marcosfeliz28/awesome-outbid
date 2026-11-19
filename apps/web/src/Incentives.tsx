@@ -1,4 +1,7 @@
-import { configRatesSurveyText, type ConfigRatesSurveyKey } from "./configRatesSurveyLanguage";
+import {
+  configRatesSurveyText,
+  type ConfigRatesSurveyKey,
+} from "./configRatesSurveyLanguage";
 import { useLanguage } from "./inicioLanguage";
 import { useOperationsText } from "./operationsLanguage";
 import { PremiumWorkspace } from "./PremiumWorkspace";
@@ -95,16 +98,21 @@ export const wholesaleField = () =>
 
 export function WholesaleToggle() {
   const { on, set } = useWholesale();
+  const en = useLanguage() === "en";
   return (
     <div className={`wholesale-toggle${on ? " active" : ""}`}>
       <button
         type="button"
         aria-pressed={on}
         onClick={() => set(!on)}
-        title="Sólo cambia tu incentivo: precios y total quedan igual"
+        title={
+          en
+            ? "Only your incentive changes; prices and total stay the same"
+            : "Sólo cambia tu incentivo: precios y total quedan igual"
+        }
       >
         <Tags size={16} aria-hidden="true" />
-        <span>Venta al por mayor</span>
+        <span>{en ? "Wholesale sale" : "Venta al por mayor"}</span>
         <span className="wholesale-switch" aria-hidden="true" />
       </button>
       {on && (
@@ -120,11 +128,14 @@ export function WholesaleToggle() {
 /** Aviso en el cobro y en la venta registrada. */
 export function WholesaleNotice({ on }: { on?: boolean }) {
   const active = useWholesale((s) => s.on);
+  const en = useLanguage() === "en";
   if (!(on ?? active)) return null;
   return (
     <p className="wholesale-notice">
       <Tags size={15} aria-hidden="true" />
-      Venta al por mayor · incentivo a la mitad
+      {en
+        ? "Wholesale sale · half incentive"
+        : "Venta al por mayor · incentivo a la mitad"}
     </p>
   );
 }
@@ -181,7 +192,9 @@ export function MyIncentives() {
         </p>
       ) : null}
       <small>
-        {cashText("Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.")}
+        {cashText(
+          "Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.",
+        )}
       </small>
     </section>
   );
@@ -241,7 +254,9 @@ export function IncentiveRates() {
         <h3 id="incentive-rates-title">{t("Incentivos por categoría")}</h3>
       </div>
       <p>
-        {t("Lo que gana la cajera por cada unidad vendida. «Venta al por mayor» paga la mitad. Cambiar una tarifa no altera lo ya ganado: cada venta guarda la tarifa vigente al cobrar.")}
+        {t(
+          "Lo que gana la cajera por cada unidad vendida. «Venta al por mayor» paga la mitad. Cambiar una tarifa no altera lo ya ganado: cada venta guarda la tarifa vigente al cobrar.",
+        )}
       </p>
       <QueryState english={english} query={query}>
         <form onSubmit={save}>
@@ -258,7 +273,9 @@ export function IncentiveRates() {
                   <tr key={r.categoryId}>
                     <td>
                       {r.name}{" "}
-                      {r.isDefault && <Badge tone="neutral">{t("Por defecto")}</Badge>}
+                      {r.isDefault && (
+                        <Badge tone="neutral">{t("Por defecto")}</Badge>
+                      )}
                     </td>
                     <td>
                       <input
@@ -327,212 +344,257 @@ export function IncentivesPage() {
   };
   return (
     <PremiumWorkspace area="incentives">
-    <div className="incentives-page">
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">{ot("CUADRE MENSUAL")}</span>
-          <h1>{ot("Incentivos")}</h1>
-          <p>
-            {ot("Lo que gana cada cajera por unidad vendida, con su nombre. Se cuadra y se cierra a fin de mes.")}</p>
-        </div>
-        <div className="heading-actions">
-          <label className="field incentive-month">
-            <span>{ot("Mes")}</span>
-            <input
-              type="month"
-              value={month}
-              max={report?.openPeriod ?? currentMonth()}
-              onChange={(e) => e.target.value && setMonth(e.target.value)}
-            />
-          </label>
-          <Button
-            variant="secondary"
-            onClick={() =>
-              download(
-                "/incentives/export.xlsx?month=" + month,
-                `incentivos-${month}.xlsx`,
-              ).catch((e) => toast(e.message, true))
-            }
-          >
-            <Download size={16} />
-            {ot("Exportar Excel")}</Button>
-          {/* B-3: sólo un mes terminado se cierra (la API lo exige). */}
-          {admin && report && !report.closed && month < currentMonth() && (
-            <Button onClick={() => setClosing(true)}>
-              <Lock size={16} />
-              {ot("Cerrar mes")}</Button>
-          )}
-        </div>
-      </div>
-      <QueryState english={en} query={query}>
-        {report && (
-          <div className="panel">
-            <div className="panel-heading incentive-status">
-              <h2>{report.label}</h2>
-              {report.closed ? (
-                <Badge tone="success">
-                  {ot("Mes cerrado ·")}{" "}
-                  {new Date(report.closed.closedAt).toLocaleString("es-DO", {
-                    timeZone: "America/Santo_Domingo",
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}{" "}
-                  · {report.closed.closedByName}
-                </Badge>
-              ) : (
-                <Badge tone="warning">{ot("Mes abierto · cifras preliminares")}</Badge>
+      <div className="incentives-page">
+        <div className="page-heading">
+          <div>
+            <span className="eyebrow">{ot("CUADRE MENSUAL")}</span>
+            <h1>{ot("Incentivos")}</h1>
+            <p>
+              {ot(
+                "Lo que gana cada cajera por unidad vendida, con su nombre. Se cuadra y se cierra a fin de mes.",
               )}
-            </div>
-            {admin && !report.closed && month === currentMonth() && (
-              <p className="incentive-hint">
-                {ot("El mes en curso se cierra cuando termine, a partir del día 1 del mes siguiente.")}</p>
-            )}
-            {report.openPeriod && report.openPeriod !== currentMonth() && (
-              <p className="incentive-hint">
-                {ot("Este mes ya se cerró: las ventas y devoluciones nuevas cuentan en")}{report.openPeriod}.
-              </p>
-            )}
-            {rows.length ? (
-              <div className="table-wrap">
-                <table className="incentive-table">
-                  <thead>
-                    <tr>
-                      <th>{ot("CAJERA")}</th>
-                      <th>{ot("VENTAS")}</th>
-                      <th>{ot("UNIDADES POR CATEGORÍA")}</th>
-                      <th>{ot("BRUTO")}</th>
-                      <th>{ot("DEVOLUCIONES Y ANULACIONES")}</th>
-                      <th>{ot("AL POR MAYOR")}</th>
-                      <th>{ot("NETO")}</th>
-                      <th>{ot("POR COBRAR")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r) => (
-                      <tr key={r.userId}>
-                        <td>
-                          <strong>{r.name}</strong>
-                          <button
-                            type="button"
-                            className="incentive-receipt"
-                            aria-label={"Recibo para firmar de " + r.name}
-                            onClick={() =>
-                              download(
-                                `/incentives/receipt.pdf?month=${month}&userId=${r.userId}`,
-                                `incentivo-${month}-${r.name}.pdf`,
-                              ).catch((e) => toast(e.message, true))
-                            }
-                          >
-                            <FileText size={14} aria-hidden="true" />
-                            {ot("Recibo PDF")}</button>
-                          {r.lateEntries > 0 && (
-                            <small>
-                              {r.lateEntries} {ot("movimiento(s) de un mes ya cerrado")}</small>
-                          )}
-                        </td>
-                        <td>{r.salesCount}</td>
-                        <td>{unitsLabel(r.units)}</td>
-                        <td>{formatMoney(r.gross)}</td>
-                        <td>
-                          {formatMoney(r.deductions)}
-                          {r.priorDeductions !== 0 && (
-                            <small>
-                              {formatMoney(r.priorDeductions)} {ot("de ventas de meses anteriores")}</small>
-                          )}
-                        </td>
-                        <td>
-                          {r.wholesaleSales}{" "}
-                          {r.salesCount > 0 &&
-                            r.wholesaleSales / r.salesCount >= 0.5 && (
-                              <Badge tone="warning">{ot("Revisar")}</Badge>
-                            )}
-                        </td>
-                        <td>
-                          <strong>{formatMoney(r.net)}</strong>
-                          {r.negative && (
-                            <small className="incentive-negative">
-                              <AlertTriangle size={13} aria-hidden="true" />
-                              {ot("Saldo negativo por devoluciones")}</small>
-                          )}
-                        </td>
-                        <td>
-                          {r.pendingCollection ? (
-                            <Badge tone="warning">
-                              {formatMoney(r.pendingCollection)}
-                            </Badge>
-                          ) : (
-                            "—"
-                          )}
-                          {r.pendingEstimate ? (
-                            <small>
-                              {ot("Por cobrar (estimado):")}{" "}
-                              {formatMoney(r.pendingEstimate)}
-                            </small>
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td>Total</td>
-                      <td>{sum("salesCount")}</td>
-                      <td />
-                      <td>{formatMoney(sum("gross"))}</td>
-                      <td>{formatMoney(sum("deductions"))}</td>
-                      <td>{sum("wholesaleSales")}</td>
-                      <td>
-                        <strong>{formatMoney(sum("net"))}</strong>
-                      </td>
-                      <td>{formatMoney(sum("pendingCollection"))}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            ) : (
-              <p className="incentive-hint">
-                {ot("Todavía no hay ventas con incentivo en este mes.")}</p>
+            </p>
+          </div>
+          <div className="heading-actions">
+            <label className="field incentive-month">
+              <span>{ot("Mes")}</span>
+              <input
+                type="month"
+                value={month}
+                max={report?.openPeriod ?? currentMonth()}
+                onChange={(e) => e.target.value && setMonth(e.target.value)}
+              />
+            </label>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                download(
+                  "/incentives/export.xlsx?month=" + month,
+                  `incentivos-${month}.xlsx`,
+                ).catch((e) => toast(e.message, true))
+              }
+            >
+              <Download size={16} />
+              {ot("Exportar Excel")}
+            </Button>
+            {/* B-3: sólo un mes terminado se cierra (la API lo exige). */}
+            {admin && report && !report.closed && month < currentMonth() && (
+              <Button onClick={() => setClosing(true)}>
+                <Lock size={16} />
+                {ot("Cerrar mes")}
+              </Button>
             )}
           </div>
-        )}
-      </QueryState>
-      <div className="panel incentive-rules">
-        <h2>{ot("Cómo se calcula")}</h2>
-        <ul>
-          <li>
-            {ot("Cada unidad vendida paga la tarifa de su categoría a la cajera que registra la venta:")}{" "}
-            {(rates.data ?? [])
-              .filter((r) => r.amount > 0)
-              .map((r) => `${r.name} ${formatMoney(r.amount)}`)
-              .join(" · ") || ot("sin tarifas")}
-            {ot(". Las tarifas se cambian en Configuración y no alteran lo ya ganado.")}</li>
-          <li>
-            {ot("«Venta al por mayor» (un clic en el punto de venta) paga la mitad del incentivo de esa venta; no cambia precios ni totales. La columna «Al por mayor» ayuda a revisar su uso.")}</li>
-          <li>
-            {ot("Devoluciones y anulaciones descuentan en el mes en que ocurren, por unidades devueltas, aunque la venta sea de un mes anterior.")}</li>
-          <li>
-            {ot("«Por cobrar»: incentivo de ventas a crédito o contraentrega aún sin cobrar. Está incluido en el neto; la dueña decide si lo retiene.")}</li>
-          <li>
-            {ot("«Cerrar mes» guarda el cuadre y ya no cambia. Una venta tardía o una devolución de ese mes cuenta en el siguiente mes abierto, con nota.")}</li>
-        </ul>
-      </div>
-      <Modal closeLabel={en ? "Close" : "Cerrar"}
-        open={closing}
-        onClose={() => setClosing(false)}
-        title={"Cerrar " + (report?.label ?? month)}
-      >
-        <p>
-          {ot("Se guardará el cuadre de cada cajera tal como está ahora (neto")}{" "}
-          {formatMoney(sum("net"))}{ot("). Después no se recalcula: las ventas tardías y devoluciones de este mes contarán en el mes siguiente.")}</p>
-        <div className="modal-footer">
-          <Button variant="secondary" onClick={() => setClosing(false)}>
-            {ot("Cancelar")}</Button>
-          <Button onClick={close} disabled={busy}>
-            {busy ? "Cerrando…" : "Cerrar el mes"}
-          </Button>
         </div>
-      </Modal>
-    </div>
+        <QueryState english={en} query={query}>
+          {report && (
+            <div className="panel">
+              <div className="panel-heading incentive-status">
+                <h2>{report.label}</h2>
+                {report.closed ? (
+                  <Badge tone="success">
+                    {ot("Mes cerrado ·")}{" "}
+                    {new Date(report.closed.closedAt).toLocaleString("es-DO", {
+                      timeZone: "America/Santo_Domingo",
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}{" "}
+                    · {report.closed.closedByName}
+                  </Badge>
+                ) : (
+                  <Badge tone="warning">
+                    {ot("Mes abierto · cifras preliminares")}
+                  </Badge>
+                )}
+              </div>
+              {admin && !report.closed && month === currentMonth() && (
+                <p className="incentive-hint">
+                  {ot(
+                    "El mes en curso se cierra cuando termine, a partir del día 1 del mes siguiente.",
+                  )}
+                </p>
+              )}
+              {report.openPeriod && report.openPeriod !== currentMonth() && (
+                <p className="incentive-hint">
+                  {ot(
+                    "Este mes ya se cerró: las ventas y devoluciones nuevas cuentan en",
+                  )}
+                  {report.openPeriod}.
+                </p>
+              )}
+              {rows.length ? (
+                <div className="table-wrap">
+                  <table className="incentive-table">
+                    <thead>
+                      <tr>
+                        <th>{ot("CAJERA")}</th>
+                        <th>{ot("VENTAS")}</th>
+                        <th>{ot("UNIDADES POR CATEGORÍA")}</th>
+                        <th>{ot("BRUTO")}</th>
+                        <th>{ot("DEVOLUCIONES Y ANULACIONES")}</th>
+                        <th>{ot("AL POR MAYOR")}</th>
+                        <th>{ot("NETO")}</th>
+                        <th>{ot("POR COBRAR")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r) => (
+                        <tr key={r.userId}>
+                          <td>
+                            <strong>{r.name}</strong>
+                            <button
+                              type="button"
+                              className="incentive-receipt"
+                              aria-label={"Recibo para firmar de " + r.name}
+                              onClick={() =>
+                                download(
+                                  `/incentives/receipt.pdf?month=${month}&userId=${r.userId}`,
+                                  `incentivo-${month}-${r.name}.pdf`,
+                                ).catch((e) => toast(e.message, true))
+                              }
+                            >
+                              <FileText size={14} aria-hidden="true" />
+                              {ot("Recibo PDF")}
+                            </button>
+                            {r.lateEntries > 0 && (
+                              <small>
+                                {r.lateEntries}{" "}
+                                {ot("movimiento(s) de un mes ya cerrado")}
+                              </small>
+                            )}
+                          </td>
+                          <td>{r.salesCount}</td>
+                          <td>{unitsLabel(r.units)}</td>
+                          <td>{formatMoney(r.gross)}</td>
+                          <td>
+                            {formatMoney(r.deductions)}
+                            {r.priorDeductions !== 0 && (
+                              <small>
+                                {formatMoney(r.priorDeductions)}{" "}
+                                {ot("de ventas de meses anteriores")}
+                              </small>
+                            )}
+                          </td>
+                          <td>
+                            {r.wholesaleSales}{" "}
+                            {r.salesCount > 0 &&
+                              r.wholesaleSales / r.salesCount >= 0.5 && (
+                                <Badge tone="warning">{ot("Revisar")}</Badge>
+                              )}
+                          </td>
+                          <td>
+                            <strong>{formatMoney(r.net)}</strong>
+                            {r.negative && (
+                              <small className="incentive-negative">
+                                <AlertTriangle size={13} aria-hidden="true" />
+                                {ot("Saldo negativo por devoluciones")}
+                              </small>
+                            )}
+                          </td>
+                          <td>
+                            {r.pendingCollection ? (
+                              <Badge tone="warning">
+                                {formatMoney(r.pendingCollection)}
+                              </Badge>
+                            ) : (
+                              "—"
+                            )}
+                            {r.pendingEstimate ? (
+                              <small>
+                                {ot("Por cobrar (estimado):")}{" "}
+                                {formatMoney(r.pendingEstimate)}
+                              </small>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td>Total</td>
+                        <td>{sum("salesCount")}</td>
+                        <td />
+                        <td>{formatMoney(sum("gross"))}</td>
+                        <td>{formatMoney(sum("deductions"))}</td>
+                        <td>{sum("wholesaleSales")}</td>
+                        <td>
+                          <strong>{formatMoney(sum("net"))}</strong>
+                        </td>
+                        <td>{formatMoney(sum("pendingCollection"))}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              ) : (
+                <p className="incentive-hint">
+                  {ot("Todavía no hay ventas con incentivo en este mes.")}
+                </p>
+              )}
+            </div>
+          )}
+        </QueryState>
+        <div className="panel incentive-rules">
+          <h2>{ot("Cómo se calcula")}</h2>
+          <ul>
+            <li>
+              {ot(
+                "Cada unidad vendida paga la tarifa de su categoría a la cajera que registra la venta:",
+              )}{" "}
+              {(rates.data ?? [])
+                .filter((r) => r.amount > 0)
+                .map((r) => `${r.name} ${formatMoney(r.amount)}`)
+                .join(" · ") || ot("sin tarifas")}
+              {ot(
+                ". Las tarifas se cambian en Configuración y no alteran lo ya ganado.",
+              )}
+            </li>
+            <li>
+              {ot(
+                "«Venta al por mayor» (un clic en el punto de venta) paga la mitad del incentivo de esa venta; no cambia precios ni totales. La columna «Al por mayor» ayuda a revisar su uso.",
+              )}
+            </li>
+            <li>
+              {ot(
+                "Devoluciones y anulaciones descuentan en el mes en que ocurren, por unidades devueltas, aunque la venta sea de un mes anterior.",
+              )}
+            </li>
+            <li>
+              {ot(
+                "«Por cobrar»: incentivo de ventas a crédito o contraentrega aún sin cobrar. Está incluido en el neto; la dueña decide si lo retiene.",
+              )}
+            </li>
+            <li>
+              {ot(
+                "«Cerrar mes» guarda el cuadre y ya no cambia. Una venta tardía o una devolución de ese mes cuenta en el siguiente mes abierto, con nota.",
+              )}
+            </li>
+          </ul>
+        </div>
+        <Modal
+          closeLabel={en ? "Close" : "Cerrar"}
+          open={closing}
+          onClose={() => setClosing(false)}
+          title={"Cerrar " + (report?.label ?? month)}
+        >
+          <p>
+            {ot(
+              "Se guardará el cuadre de cada cajera tal como está ahora (neto",
+            )}{" "}
+            {formatMoney(sum("net"))}
+            {ot(
+              "). Después no se recalcula: las ventas tardías y devoluciones de este mes contarán en el mes siguiente.",
+            )}
+          </p>
+          <div className="modal-footer">
+            <Button variant="secondary" onClick={() => setClosing(false)}>
+              {ot("Cancelar")}
+            </Button>
+            <Button onClick={close} disabled={busy}>
+              {busy ? "Cerrando…" : "Cerrar el mes"}
+            </Button>
+          </div>
+        </Modal>
+      </div>
     </PremiumWorkspace>
   );
 }
