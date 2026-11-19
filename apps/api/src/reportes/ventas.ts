@@ -54,7 +54,11 @@ async function compare(db: any, actor: Actor, range: Range, back: number) {
     month(db, actor, shift(ym, -back)),
   ]);
   return [now, before].map((m, index) => ({
-    Mes: monthName(m.ym),
+    // R14: el mes en curso no está completo; R30: un mes sin ventas lo dice.
+    Mes:
+      monthName(m.ym) +
+      (m.ym === monthOf(new Date()) ? " (mes en curso, hasta hoy)" : "") +
+      (m.invoices === 0 ? " (sin ventas registradas)" : ""),
     Facturas: m.invoices,
     "Ventas netas": m.net,
     "Ticket promedio": ticket(m.net, m.invoices),

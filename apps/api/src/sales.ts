@@ -15,7 +15,11 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Prisma } from "@prisma/client";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { allocateCredit } from "./credit-allocation";
+import {
+  allocateCredit,
+  isReceivableSalePayment,
+  RECEIVABLE_SALE_PAYMENT,
+} from "./credit-allocation";
 import {
   expired,
   BUSINESS_TIME_ZONE,
@@ -1698,8 +1702,7 @@ export class SalesController {
                 // Sólo una caja propia de esta sucursal se guarda como evidencia.
                 cashSessionId:
                   typeof attempted.cashSessionId === "string" &&
-                  z.string().uuid().safeParse(attempted.cashSessionId)
-                    .success &&
+                  z.guid().safeParse(attempted.cashSessionId).success &&
                   (await tx.cashSession.findFirst({
                     where: {
                       id: attempted.cashSessionId,
@@ -2563,6 +2566,10 @@ export class SalesController {
         bank: z.string().trim().max(80).optional(),
         reference: z.string().trim().max(120).optional(),
         receivableKind: z.enum(["credit", "cod"]).optional(),
+        // D9: si el cobro no está en ninguna caja y pasa a efectivo, se dice
+        // qué caja recibió el efectivo o que lo recibió la dueña.
+        cashSessionId: uuid.optional(),
+        ownerConfirmed: z.boolean().optional(),
         reason,
       }),
       body,
@@ -2571,6 +2578,9 @@ export class SalesController {
       bad("Escribe el banco y la referencia de la transferencia.");
     const receivable = (m: string) => m === "cod" || m === "credit";
     const result = await moneyDb(this.db).$transaction(async (tx) => {
+      // Orden fijo de bloqueos: caja antes que venta.
+      if (data.method === "cash" && data.cashSessionId)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${data.cashSessionId}::uuid FOR UPDATE`;
       const sale = await editableSale(tx, saleId, actor);
       const payments = await tx.payment.findMany({ where: { saleId } });
       const payment = payments.find((p) => p.id === paymentId);
@@ -2616,6 +2626,23 @@ export class SalesController {
         if (await tx.saleReturn.count({ where: { saleId } }))
           bad("La venta tiene devoluciones; no se puede corregir.");
       }
+      // D9 (auditoría 19-nov): efectivo sin caja no lo controla ningún cuadre.
+      let cashTarget: { id: string; userId: string } | null = null;
+      let ownerCash = false;
+      if (data.method === "cash" && !payment.cashSessionId) {
+        if (data.cashSessionId) {
+          cashTarget = await tx.cashSession.findFirst({
+            where: { id: data.cashSessionId, branchId: actor.branchId },
+            select: { id: true, userId: true },
+          });
+          if (!cashTarget) bad("Esa caja no existe en esta sucursal.");
+        } else if (data.ownerConfirmed === true) ownerCash = true;
+        else
+          bad(
+            "Este cobro no está en ninguna caja. Indica la caja que recibió el efectivo o márcalo como efectivo que recibió la dueña.",
+          );
+      }
+      const sessionId = payment.cashSessionId ?? cashTarget?.id ?? null;
       const settings = await tx.settings.findUnique({
         where: { id: actor.branchId },
       });
@@ -2637,7 +2664,15 @@ export class SalesController {
           tendered: payment.amount,
           change: 0,
           bank: data.method === "transfer" ? data.bank : null,
-          reference: data.reference || null,
+          reference: ownerCash
+            ? (
+                OWNER_CASH_MARK + (data.reference ? " · " + data.reference : "")
+              ).slice(0, 100)
+            : data.reference || null,
+          ...(cashTarget
+            ? { cashSessionId: cashTarget.id, receivedById: cashTarget.userId }
+            : {}),
+          ...(ownerCash ? { receivedById: actor.id } : {}),
           feeAmount:
             data.method === "card"
               ? money(amount.times(config?.cardFeePercent ?? 2.5).div(100))
@@ -2702,9 +2737,9 @@ export class SalesController {
           true,
         );
       let differences: unknown = null;
-      if (payment.cashSessionId) {
+      if (sessionId) {
         const session = await tx.cashSession.findUniqueOrThrow({
-          where: { id: payment.cashSessionId },
+          where: { id: sessionId },
         });
         if (session.closedAt) {
           differences = await refreshClosedCash(tx, session);
@@ -2728,6 +2763,8 @@ export class SalesController {
           status: payment.status,
           bank: payment.bank,
           reference: payment.reference,
+          cashSessionId: payment.cashSessionId,
+          receivedById: payment.receivedById,
           creditBalance: sale.creditBalance,
         },
         {
@@ -2737,7 +2774,8 @@ export class SalesController {
           method: data.method,
           amount: payment.amount,
           creditBalance: balance,
-          cashSessionId: payment.cashSessionId,
+          cashSessionId: sessionId,
+          ...(ownerCash ? { ownerCash: true } : {}),
           differences,
           reason: data.reason,
         },
@@ -2746,7 +2784,7 @@ export class SalesController {
         number: sale.number,
         method: data.method,
         creditBalance: Number(balance),
-        cashSessionId: payment.cashSessionId,
+        cashSessionId: sessionId,
         differences,
       };
     }, MONEY_TRANSACTION);
@@ -2936,6 +2974,11 @@ export class SalesController {
         "No se puede anular: la caja ya entregó ese efectivo. Pide a un gerente que lo reponga en la caja (entrada) y vuelve a anular, o anula después del cierre.",
       );
     await refreshReceivableAlert(tx, id, actor.branchId);
+    // D6 (auditoría 19-nov): una transferencia por verificar de una venta
+    // anulada ya no se puede verificar ni rechazar; su alerta se cierra.
+    for (const p of sale.payments)
+      if (p.method === "transfer" && p.status === "pending_verification")
+        await resolveTransferAlert(tx, p.id);
     await reverseIncentives(tx, actor, "void", id, id);
     let cashDifferences: Record<string, number> | undefined;
     if (refundCash && refundAmount > 0) {
@@ -3053,7 +3096,8 @@ export class SalesController {
       where: {
         method: "transfer",
         status: "pending_verification",
-        sale: { branchId: actor.branchId },
+        // D6: la de una venta anulada ya no se verifica ni se rechaza.
+        sale: { branchId: actor.branchId, status: "completed" },
         ...(createdAt ? { createdAt } : {}),
       },
       select: {
@@ -3137,7 +3181,7 @@ export class SalesController {
   @RequireTerminal()
   @Permit("*")
   async verify(@Param("id") id: string, @CurrentUser() actor: Actor) {
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: parse(uuid, id),
@@ -3191,7 +3235,7 @@ export class SalesController {
         status: "ok",
       });
       return { ok: true };
-    });
+    }, MONEY_TRANSACTION);
   }
   // 29-oct (caso FS-288): una transferencia de VENTA que se verificó contra el
   // depósito equivocado vuelve a «por verificar». Solo administración, con
@@ -3207,7 +3251,7 @@ export class SalesController {
   ) {
     const data = parse(z.object({ reason }), body);
     const paymentId = parse(uuid, id);
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: paymentId,
@@ -3449,7 +3493,7 @@ export class SalesController {
       body,
     );
     const paymentId = parse(uuid, id);
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: paymentId,
@@ -3494,7 +3538,7 @@ export class SalesController {
         },
       );
       return paymentSummary(updated);
-    });
+    }, MONEY_TRANSACTION);
   }
   // Un abono por transferencia que nunca llegó se rechaza: no descuenta la
   // deuda ni entra a la caja, y deja de bloquear devoluciones y abonos de la
@@ -3512,7 +3556,7 @@ export class SalesController {
     @CurrentUser() actor: Actor,
   ) {
     const data = parse(z.object({ reason }), body);
-    return this.db.$transaction(async (tx) => {
+    return moneyDb(this.db).$transaction(async (tx) => {
       const found = await tx.payment.findFirstOrThrow({
         where: {
           id: parse(uuid, id),
@@ -3613,7 +3657,7 @@ export class SalesController {
         ...(saleDebt === undefined ? {} : { saleCreditBalance: saleDebt }),
       });
       return { ok: true };
-    });
+    }, MONEY_TRANSACTION);
   }
   @Post("returns")
   @RequireTerminal()
@@ -4277,7 +4321,7 @@ export class SalesController {
         ? { creditBalance: { equals: 0 }, creditClosedAt: { not: null } }
         : { creditBalance: { gt: 0 } }),
       payments: {
-        some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+        some: RECEIVABLE_SALE_PAYMENT,
       },
       ...(text
         ? { customer: { name: { contains: text, mode: "insensitive" } } }
@@ -4297,10 +4341,13 @@ export class SalesController {
             ? { _min: { createdAt: "asc" } }
             : { _sum: { creditBalance: "desc" } },
         skip: (pageNumber - 1) * 50,
-        take: 50,
+        // P20: una fila de más dice si hay página siguiente.
+        take: 51,
       }),
       this.db.sale.aggregate({ where, _sum: { creditBalance: true } }),
     ]);
+    const hasMore = groups.length > 50;
+    groups.splice(50);
     const customers = await this.db.customer.findMany({
       where: {
         id: { in: groups.flatMap((g) => (g.customerId ? [g.customerId] : [])) },
@@ -4311,6 +4358,7 @@ export class SalesController {
     return {
       total: Number(total._sum.creditBalance ?? 0),
       page: pageNumber,
+      hasMore,
       rows: groups.flatMap((g) => {
         const customer = customers.find((c) => c.id === g.customerId);
         if (!customer) return [];
@@ -4343,7 +4391,7 @@ export class SalesController {
         branchId: actor.branchId,
         status: "completed",
         payments: {
-          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+          some: RECEIVABLE_SALE_PAYMENT,
         },
       },
       include: { payments: { orderBy: { createdAt: "asc" } } },
@@ -4357,7 +4405,7 @@ export class SalesController {
         branchId: actor.branchId,
         status: "completed",
         payments: {
-          some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+          some: RECEIVABLE_SALE_PAYMENT,
         },
       },
       _sum: { creditBalance: true },
@@ -4388,8 +4436,16 @@ export class SalesController {
         total: Number(s.total),
         balance: Number(s.creditBalance),
         closedAt: s.creditClosedAt,
+        // P9 (auditoría 19-nov): también lo que se pagó al vender (no la
+        // parte a crédito), para que el saldo se explique solo.
         payments: s.payments
-          .filter((p) => p.entryType === "installment")
+          .filter(
+            (p) =>
+              p.entryType === "installment" ||
+              (p.entryType === "sale" &&
+                p.status !== "rejected" &&
+                !isReceivableSalePayment(p)),
+          )
           .map((p) => ({
             id: p.id,
             date: p.createdAt,
@@ -4398,6 +4454,7 @@ export class SalesController {
             status: p.status,
             receivedBy:
               users.find((u) => u.id === p.receivedById)?.name ?? null,
+            ...(p.entryType === "sale" ? { atSale: true } : {}),
           })),
       })),
     };
@@ -4463,7 +4520,7 @@ export class SalesController {
       for (const payment of sale.payments) {
         if (doc.y > 710) doc.addPage();
         doc.text(
-          `  ${new Date(payment.date).toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE })} · ${payment.method} · ${formatMoney(payment.amount)} · ${payment.receivedBy ?? ""}${payment.status === "pending_verification" ? " · Por verificar" : ""}`,
+          `  ${new Date(payment.date).toLocaleString("es-DO", { timeZone: BUSINESS_TIME_ZONE })} · ${payment.method} · ${formatMoney(payment.amount)} · ${payment.receivedBy ?? ""}${payment.status === "pending_verification" ? " · Por verificar" : ""}${"atSale" in payment ? " · Pagado al vender" : ""}`,
         );
       }
       doc.moveDown(0.4);
@@ -4528,7 +4585,7 @@ export class SalesController {
           status: "completed",
           creditBalance: { gt: 0 },
           payments: {
-            some: { entryType: "sale", method: { in: ["credit", "cod"] } },
+            some: RECEIVABLE_SALE_PAYMENT,
           },
         },
         select: { id: true, createdAt: true, creditBalance: true },
@@ -4639,9 +4696,7 @@ export class SalesController {
     const state = ["pending", "closed", "all"].includes(stateParam ?? "")
       ? (stateParam as "pending" | "closed" | "all")
       : "pending";
-    const receivablePayment = {
-      some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
-    };
+    const receivablePayment = { some: RECEIVABLE_SALE_PAYMENT };
     const sales = await this.db.sale.findMany({
       where: {
         branchId: actor.branchId,
@@ -4702,11 +4757,7 @@ export class SalesController {
       const collections = s.payments.filter(
         (p) => p.entryType === "installment",
       );
-      const receivableAmount = sum(
-        s.payments.filter(
-          (p) => ["credit", "cod"].includes(p.method) && p.entryType === "sale",
-        ),
-      );
+      const receivableAmount = sum(s.payments.filter(isReceivableSalePayment));
       const pending = Number(s.creditBalance);
       // Pagado = lo que ya descontó la deuda (cobros verificados). Lo que
       // se pagó al vender (efectivo del cobro parcial) no es parte del crédito.
@@ -4960,11 +5011,7 @@ export class SalesController {
       where: { id, branchId: actor.branchId, status: "completed" },
     });
     const receivable = !!(await tx.payment.count({
-      where: {
-        saleId: id,
-        method: { in: ["credit", "cod"] },
-        entryType: "sale",
-      },
+      where: { saleId: id, ...RECEIVABLE_SALE_PAYMENT },
     }));
     if (codOnly && !receivable)
       bad("Esta venta no tiene crédito / contraentrega pendiente.");

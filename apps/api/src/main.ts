@@ -7,7 +7,8 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { json as jsonBodyParser } from "express";
 import { createAppModule } from "./app";
-import { validateSecret } from "./security";
+import { largeJsonBody, validateSecret } from "./security";
+import { JwtService } from "@nestjs/jwt";
 import { corsOrigin } from "./cors-origin";
 import { trustedProxies } from "./rate-limit";
 import { ApiExceptionFilter } from "./common";
@@ -40,19 +41,16 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set("trust proxy", trustedProxies());
   app.setGlobalPrefix("api");
   app.use(helmet());
-  // La importación de GV (sólo «*») trae el Excel completo en JSON: su propio
-  // límite, por debajo del de Nginx (5 MB). El resto sigue en 100 kb.
-  app.use("/api/gv/import", jsonBodyParser({ limit: "4mb" }));
-  // Pagos y cierre de caja de GV traen la foto del voucher (máx. 2 MB) en base64.
+  // La importación de GV (Excel en JSON) y los pagos y cierre de GV (foto del
+  // voucher en base64) admiten 4 MB, por debajo de Nginx (5 MB), sólo en esas
+  // rutas exactas y con sesión (B4, ver largeJsonBody). El resto, 100 kb.
   app.use(
-    [
-      "/api/gv/payments",
-      "/api/gv/cash/close",
-      /^\/api\/gv\/appointments\/[^/]+\/payments$/,
-    ],
-    jsonBodyParser({ limit: "4mb" }),
+    largeJsonBody(
+      app.get(JwtService),
+      jsonBodyParser({ limit: "4mb" }),
+      jsonBodyParser({ limit: "100kb" }),
+    ),
   );
-  app.use(jsonBodyParser({ limit: "100kb" }));
   app.use(cookieParser());
   app.enableCors({
     origin: corsOrigin(webOrigin, process.env.NODE_ENV),

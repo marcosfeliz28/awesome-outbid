@@ -31,6 +31,7 @@ import {
   Database,
   Permit,
   parse,
+  parsePatch,
   safe,
   audit,
   bad,
@@ -167,7 +168,7 @@ async function assertCategoriesInBranch(
 const variantSchema = z.object({
   sku: z.string().trim().min(1).max(80),
   barcode: z.string().trim().min(1).max(80),
-  attributes: z.record(z.string()).default({}),
+  attributes: z.record(z.string(), z.string()).default({}),
   price: amount,
   costAvg: amount,
   wholesalePrice: amount.optional(),
@@ -192,7 +193,7 @@ const productSchema = z.object({
 // Cuerpo de POST /categories. Los atributos tienen tope de 30, igual que los valores
 // de atributos de variante (apps/api/src/catalog.ts, `attributes`).
 export const categoryBody = z.object({
-  name: z.string().min(2),
+  name: z.string().trim().min(2).max(80),
   requiresLot: z.boolean().default(false),
   requiresExpiry: z.boolean().default(false),
   color: z
@@ -265,10 +266,13 @@ export class CatalogController {
   }
   @Post("brands")
   @Permit("catalog:write")
-  brand(@Body() body: unknown) {
-    return this.db.brand.create({
+  async brand(@Body() body: unknown, @CurrentUser() actor: Actor) {
+    const row = await this.db.brand.create({
       data: parse(z.object({ name: z.string().min(2).max(80) }), body),
     });
+    // B8 (auditoría 19-nov).
+    await audit(this.db, actor, "create", "brand", row.id, undefined, row);
+    return row;
   }
   @Get("products")
   @Permit("catalog:read")
@@ -412,7 +416,7 @@ export class CatalogController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
+    const data = parsePatch(
       productSchema
         .omit({ variants: true })
         .partial()
@@ -438,7 +442,10 @@ export class CatalogController {
   ) {
     const data = parse(
       z.object({
-        attributes: z.record(z.array(z.string().min(1)).min(1).max(30)),
+        attributes: z.record(
+          z.string(),
+          z.array(z.string().min(1)).min(1).max(30),
+        ),
         price: amount,
         costAvg: amount,
       }),
@@ -500,7 +507,7 @@ export class CatalogController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(
+    const data = parsePatch(
       variantSchema.partial().extend({ active: z.boolean().optional() }),
       body,
     );

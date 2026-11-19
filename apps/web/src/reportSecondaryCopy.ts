@@ -64,6 +64,9 @@ const labels: Record<string,string> = {
   "Cobro de crédito por transferencia": "Credit collected by transfer",
   "Devolución en efectivo": "Cash return",
   "Devolución a tarjeta": "Card return",
-  "Devolución por transferencia": "Transfer return"
+  "Devolución por transferencia": "Transfer return",
+  "Crédito": "Credit",
+  "Contraentrega": "Cash on delivery",
+  "«Vendido neto» resta cada devolución el día en que se hizo. El Resumen, el Informe mensual y el total del Informe formal la restan en el período de la venta original, por eso las cifras pueden no coincidir.": "«Net sales» subtracts each return on the day it was made. The Summary, the Monthly report and the Formal report total subtract it in the period of the original sale, so the figures may differ."
 };
 export const reportSecondaryLabel = (value: string, english: boolean) => english ? labels[value] ?? value : value;

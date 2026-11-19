@@ -190,7 +190,8 @@ export const inventario: Record<string, ReportDef> = {
     },
   },
   "agotados-con-ventas": {
-    title: "Agotados con ventas recientes",
+    // R28: solo mira la Tienda; Casa puede tener existencia.
+    title: "Agotados en Tienda con ventas recientes",
     group: "Inventario",
     async run(db, actor, range) {
       const rows: any[] = await db.$queryRaw`

@@ -80,7 +80,7 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
         t("Categor\u00eda", "Category"),
         t("Vendido", "Sales"),
         t("Unidades", "Units"),
-        ...(showProfit ? [t("Ganancia", "Profit"), t("Margen %", "Margin %")] : []),
+        ...(showProfit ? [t("Ganancia con ITBIS", "Profit incl. ITBIS"), t("Margen %", "Margin %")] : []),
       ],
       ...data.categories.map((c: Line) => [
         c.name,
@@ -179,9 +179,10 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
               {kpi(t("Venta bruta", "Gross sales"), formatMoney(data.revenue))}
               {showProfit &&
                 kpi(
-                  t("Ganancia neta", "Net profit"),
+                  // R13/DD-07: misma cifra, rotulada; el Estado de resultados usa ventas sin ITBIS.
+                  t("Ganancia con ITBIS", "Profit incl. ITBIS"),
                   formatMoney(data.profit ?? 0),
-                  t("Venta \u2212 costo, sin restar ITBIS", "Sales minus cost, before ITBIS"),
+                  t("Venta con ITBIS \u2212 costo; no resta gastos", "Sales incl. ITBIS minus cost; before expenses"),
                 )}
               {showProfit && kpi(t("Margen promedio", "Average margin"), `${data.margin ?? 0} %`)}
               {kpi(
@@ -215,7 +216,7 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                       <th>{t("Categor\u00eda", "Category")}</th>
                       <th>{t("Vendido", "Sales")}</th>
                       <th>{t("Unidades", "Units")}</th>
-                      {showProfit && <th>{t("Ganancia neta", "Net profit")}</th>}
+                      {showProfit && <th>{t("Ganancia con ITBIS", "Profit incl. ITBIS")}</th>}
                       {showProfit && <th>{t("Margen", "Margin")}</th>}
                     </tr>
                   </thead>
@@ -278,7 +279,7 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                         <th>{t("Producto", "Product")}</th>
                         <th>{t("Unidades", "Units")}</th>
                         <th>{t("Vendido", "Sales")}</th>
-                        {showProfit && <th>{t("Ganancia", "Profit")}</th>}
+                        {showProfit && <th>{t("Ganancia con ITBIS", "Profit incl. ITBIS")}</th>}
                         {showProfit && <th>{t("Margen", "Margin")}</th>}
                       </tr>
                     </thead>
@@ -310,7 +311,7 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                       <th>{t("Producto", "Product")}</th>
                       <th>{t("Unidades", "Units")}</th>
                       <th>{t("Vendido", "Sales")}</th>
-                      {showProfit && <th>{t("Ganancia", "Profit")}</th>}
+                      {showProfit && <th>{t("Ganancia con ITBIS", "Profit incl. ITBIS")}</th>}
                     </tr>
                   </thead>
                   <tbody>

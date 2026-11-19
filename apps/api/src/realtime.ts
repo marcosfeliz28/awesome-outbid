@@ -148,6 +148,14 @@ const bump = (key: string, delta: number) => {
   return next;
 };
 
+// Propuesta A2 (auditoría 19-nov), apagada: tope de equipos que una cuenta de
+// gerencia aprueba sola por hora; el resto queda pendiente. Solo se activa si
+// TERMINAL_AUTO_APPROVE_PER_HOUR tiene un número (decisión de la dueña).
+export function autoApproveLimit(env = process.env) {
+  const n = Number(env.TERMINAL_AUTO_APPROVE_PER_HOUR);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 @Controller()
 export class RealtimeController {
   private hub: RealtimeHub;
@@ -167,9 +175,20 @@ export class RealtimeController {
       }),
       body,
     );
-    const manager = can(actor.permissions, "sale:manage");
+    const isManager = can(actor.permissions, "sale:manage");
+    const limit = autoApproveLimit();
     return this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.id}))::text`;
+      const manager =
+        isManager &&
+        (limit === null ||
+          (await tx.terminal.count({
+            where: {
+              createdBy: actor.id,
+              approvedBy: actor.id,
+              approvedAt: { gte: new Date(Date.now() - 3600000) },
+            },
+          })) < limit);
       const existing = await tx.terminal.findUnique({ where: { id: data.id } });
       if (existing) {
         if (existing.branchId !== actor.branchId || existing.revokedAt)

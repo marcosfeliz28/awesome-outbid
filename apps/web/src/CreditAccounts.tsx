@@ -29,6 +29,7 @@ type Statement = {
       amount: number;
       status: string;
       receivedBy?: string;
+      atSale?: boolean;
     }[];
   }[];
 };
@@ -45,13 +46,20 @@ export function CreditAccounts({ session }: { session: any }) {
   const [method, setMethod] = useState<Method>("cash");
   const [reference, setReference] = useState("");
   const [bank, setBank] = useState("");
+  // P4 (auditoría 19-nov): las mismas cuentas fijas de Configuración que el
+  // cobro desde POS y por factura, para no escribir el banco a mano.
+  const settings = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api<any>("/settings"),
+  });
+  const accounts: string[] = settings.data?.transferAccounts ?? [];
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const list = useQuery({
     queryKey: ["credit-accounts", search, sort, page, view],
     queryFn: () =>
-      api<{ total: number; rows: any[] }>(
+      api<{ total: number; hasMore?: boolean; rows: any[] }>(
         `/credit-accounts?search=${encodeURIComponent(search)}&sort=${sort}&page=${page}&view=${view}`,
       ),
   });
@@ -84,6 +92,7 @@ export function CreditAccounts({ session }: { session: any }) {
             · {methodName[p.method as Method] ?? p.method} ·{" "}
             {formatMoney(p.amount)} · {p.receivedBy ?? ""}
             {p.status === "pending_verification" ? " · Por verificar" : ""}
+            {p.atSale ? " · Pagado al vender" : ""}
           </small>
         ))}
       </div>
@@ -273,7 +282,7 @@ export function CreditAccounts({ session }: { session: any }) {
           Anterior
         </Button>
       )}
-      {(list.data?.rows?.length ?? 0) === 50 && (
+      {list.data?.hasMore && (
         <Button variant="secondary" onClick={() => setPage(page + 1)}>
           Siguiente
         </Button>
@@ -353,14 +362,32 @@ export function CreditAccounts({ session }: { session: any }) {
                     {method === "transfer" && (
                       <label className="field">
                         <span>Banco donde cayó</span>
-                        <input
-                          required
-                          value={bank}
-                          onChange={(e) => {
-                            setBank(e.target.value);
-                            change();
-                          }}
-                        />
+                        {accounts.length ? (
+                          <select
+                            required
+                            value={bank}
+                            onChange={(e) => {
+                              setBank(e.target.value);
+                              change();
+                            }}
+                          >
+                            <option value="">Elige la cuenta…</option>
+                            {accounts.map((a) => (
+                              <option key={a} value={a}>
+                                {a}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            required
+                            value={bank}
+                            onChange={(e) => {
+                              setBank(e.target.value);
+                              change();
+                            }}
+                          />
+                        )}
                       </label>
                     )}
                     {method !== "cash" && (

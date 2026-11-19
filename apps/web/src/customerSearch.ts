@@ -36,3 +36,12 @@ export function pickOnEnter<T extends Candidate>(list: T[], query: string) {
   );
   return starts.length === 1 ? starts[0] : null;
 }
+
+/**
+ * UC-24: el buscador de la pantalla Clientes ignora acentos y mayúsculas
+ * («ramirez» encuentra «Ramírez», «josé» encuentra «Jose»). Texto vacío
+ * coincide con todo. Falta conectarlo en Management.tsx (necesita Dot).
+ */
+export function matchesSearch(text: string, query: string) {
+  return fold(text).includes(fold(query).trim());
+}

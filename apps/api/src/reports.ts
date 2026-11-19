@@ -24,6 +24,7 @@ import {
   replayReturns,
   returnedAt,
   PAYMENT_GROUPS,
+  reportDisplayRows,
   z,
 } from "@fitstore/shared";
 import {
@@ -53,6 +54,7 @@ import {
 import { renderPdf } from "./reportes/export-pdf";
 import { GUIA_REPORTES } from "./reportes/guia";
 import { renderXlsx } from "./reportes/export-xlsx";
+import { auditDetail } from "./reportes/textos";
 
 // Títulos en español de los PDF de los informes de siempre (salía «profit»),
 // los mismos de la pantalla de Reportes.
@@ -268,6 +270,19 @@ async function forEachPeriodReturn(
     cursor = page[page.length - 1].id;
   }
 }
+// P22: nombre visible de cada vendedora; si dos personas se llaman igual, la
+// segunda sale con «(2)» para que no parezcan una sola.
+export function sellerLabels(names: Map<string, string>, ids: string[]) {
+  const seen = new Map<string, number>();
+  const out = new Map<string, string>();
+  for (const id of ids) {
+    const name = names.get(id) ?? "(sin nombre)";
+    const n = (seen.get(name) ?? 0) + 1;
+    seen.set(name, n);
+    out.set(id, n > 1 ? `${name} (${n})` : name);
+  }
+  return out;
+}
 // D-05 del dashboard: lo devuelto en el período por día, categoría, forma de
 // pago (lo reembolsado en cajas ocultas no se desglosa) y vendedor.
 async function returnedBreakdown(
@@ -433,7 +448,7 @@ export class ReportsController {
       >`SELECT p.name,c.name AS category, SUM(i.qty-i."returnedQty") AS units,SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS revenue FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.id,p.name,c.name ORDER BY revenue DESC LIMIT 10`,
       this.db.$queryRaw<
         any[]
-      >`SELECT u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.name ORDER BY total DESC`,
+      >`SELECT u.id,u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.id,u.name ORDER BY total DESC`,
       this.db.sale.aggregate({
         where: {
           branchId: actor.branchId,
@@ -523,8 +538,15 @@ export class ReportsController {
       (p) => p._sum.amount ?? 0,
       returned.methods,
     );
-    const sellerIds = returned.sellers.map((r) => r.key);
-    const sellerNames = new Map(
+    // P22: por persona (id), no por nombre: dos usuarias con el mismo nombre
+    // no se suman como una.
+    const sellerIds = [
+      ...new Set([
+        ...returned.sellers.map((r) => r.key),
+        ...sellers.map((i) => i.id),
+      ]),
+    ];
+    const sellerNames = new Map<string, string>(
       (sellerIds.length
         ? await this.db.user.findMany({
             where: { id: { in: sellerIds } },
@@ -535,13 +557,11 @@ export class ReportsController {
     );
     const sellersNet = netOf(
       sellers,
-      (i) => i.name,
+      (i) => i.id,
       (i) => i.total,
-      returned.sellers.map((r) => ({
-        key: sellerNames.get(r.key) ?? r.key,
-        amount: r.amount,
-      })),
+      returned.sellers,
     );
+    const sellerLabel = sellerLabels(sellerNames, [...sellersNet.keys()]);
     const byAmount = (a: { total: number }, b: { total: number }) =>
       b.total - a.total;
     const revenue = money(
@@ -635,7 +655,10 @@ export class ReportsController {
           revenue: Number(i.revenue),
         })),
         sellers: [...sellersNet]
-          .map(([name, total]) => ({ name, total: money(total) }))
+          .map(([id, total]) => ({
+            name: sellerLabel.get(id) ?? id,
+            total: money(total),
+          }))
           .sort(byAmount),
         alerts: alerts.map((alert) => alertForActor(alert, actor)),
         gv,
@@ -1074,16 +1097,24 @@ export class ReportsController {
         Monto: Number(e.amount),
         Presupuesto: Number(e.category.monthlyBudget),
       }));
-    else if (name === "cash")
-      rows = (
-        await this.db.cashSession.findMany({
-          where: { branchId: actor.branchId, openedAt: range },
-        })
-      ).map((s) => ({
+    else if (name === "cash") {
+      const sessions = await this.db.cashSession.findMany({
+        where: { branchId: actor.branchId, openedAt: range },
+      });
+      // El nombre de quien abrió, no su código interno.
+      const owners = new Map(
+        (
+          await this.db.user.findMany({
+            where: { id: { in: [...new Set(sessions.map((s) => s.userId))] } },
+            select: { id: true, name: true },
+          })
+        ).map((u) => [u.id, u.name]),
+      );
+      rows = sessions.map((s) => ({
         Fecha: s.openedAt.toLocaleString("es-DO", {
           timeZone: BUSINESS_TIME_ZONE,
         }),
-        Usuario: s.userId,
+        Usuario: owners.get(s.userId) ?? s.userId,
         Estado: s.closedAt ? "Cerrada" : "Abierta",
         Esperado: Number(s.expectedCash ?? 0),
         Contado: Number(s.countedCash ?? 0),
@@ -1091,7 +1122,7 @@ export class ReportsController {
         Diferencia_tarjeta: Number(s.differenceCard ?? 0),
         Diferencia_transferencia: Number(s.differenceTransfer ?? 0),
       }));
-    else if (name === "income-statement") {
+    } else if (name === "income-statement") {
       const summary: any = await this.dashboard(query, actor);
       rows = [
         { Concepto: "Ventas sin ITBIS", Monto: summary.netSales },
@@ -1107,7 +1138,7 @@ export class ReportsController {
             "Mermas, ajustes y devoluciones a proveedor de inventario (a costo)",
           Monto: summary.inventoryLoss,
         },
-        { Concepto: "Ganancia neta", Monto: summary.netProfit },
+        { Concepto: "Ganancia neta (sin ITBIS)", Monto: summary.netProfit },
       ];
     } else if (name === "purchases") {
       // Compras = lo recibido/facturado y aceptado (total de cada recepción:
@@ -1559,6 +1590,8 @@ export class ReportsController {
       } else bad("Reporte no disponible.");
     }
     rows = safe(rows, actor);
+    if (query.format === "xlsx" || query.format === "pdf")
+      rows = reportDisplayRows(name, rows);
     if (query.format === "xlsx") {
       const book = new ExcelJS.Workbook();
       const sheet = book.addWorksheet(name.slice(0, 31));
@@ -1912,16 +1945,32 @@ function listing(
           after: true,
         },
       });
+      // Nombres y números en vez de códigos internos: la entidad es la venta.
+      const [users, sales] = await Promise.all([
+        db.user.findMany({
+          where: { id: { in: [...new Set(events.map((e) => e.userId))] } },
+          select: { id: true, name: true },
+        }),
+        db.sale.findMany({
+          where: { id: { in: [...new Set(events.map((e) => e.entityId))] } },
+          select: { id: true, number: true },
+        }),
+      ]);
+      const userName = new Map(users.map((u: any) => [u.id, u.name]));
+      const saleNumber = new Map(sales.map((s: any) => [s.id, s.number]));
       return {
         last: events.at(-1)?.id,
         rows: events.map((e) => ({
           Fecha: localTime(e.createdAt),
+          // Códigos en el JSON; en pantalla, Excel y PDF el evento va en
+          // español y la Referencia (código de la venta) no se muestra.
           Evento: e.action,
-          Usuario: e.userId,
+          Usuario: userName.get(e.userId) ?? e.userId,
           Referencia: e.entityId,
-          // Sin costos para quien no tiene profit:read: el safe() final no
-          // limpia dentro de un texto (R9-dinero-8).
-          Detalle: JSON.stringify(safe(e.after, actor)),
+          Factura: saleNumber.get(e.entityId) ?? "",
+          // Frase sin costos: el safe() final no limpia dentro de un texto
+          // (R9-dinero-8).
+          Detalle: auditDetail(e.action, e.after),
         })),
       };
     },
@@ -1967,7 +2016,7 @@ async function sendListing(
   let batch = await list.read({ take: EXPORT_BATCH });
   const batches = async function* () {
     for (;;) {
-      yield safe(batch.rows, actor);
+      yield reportDisplayRows(name, safe(batch.rows, actor));
       if (batch.rows.length < EXPORT_BATCH) return;
       batch = await list.read({ take: EXPORT_BATCH, cursor: batch.last });
     }

@@ -25,6 +25,7 @@ import {
   bad,
   denied,
   parse,
+  parsePatch,
   uuid,
 } from "./common";
 import { comprobarLimite, esFormato, nombreArchivo } from "./reportes/export";
@@ -58,6 +59,7 @@ import {
   gvAprobacionDuena,
 } from "./gv-money";
 import { gvIncentivosMes } from "./gv-incentives";
+import { refreshClosedGvCash } from "./gv-caja";
 
 export { GV_CONCEPTS, GV_METHODS, gvTotals } from "./gv-money";
 export const GV_COURSE_TYPES = [
@@ -264,7 +266,7 @@ export class GvController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const data = parse(courseInput.partial(), body);
+    const data = parsePatch(courseInput.partial(), body);
     const before = await this.course(actor, id);
     return this.db.$transaction(async (tx) => {
       const row = await tx.gvCourse.update({
@@ -380,7 +382,7 @@ export class GvController {
     @Body() body: unknown,
     @CurrentUser() actor: Actor,
   ) {
-    const { approverPin: pin, ...data } = parse(
+    const { approverPin: pin, ...data } = parsePatch(
       z
         .object({
           courseId: uuid,
@@ -507,6 +509,8 @@ export class GvController {
     const paymentId = parse(uuid, id);
     const approvedBy = await gvAprobacionDuena(this.db, actor, pin);
     return this.db.$transaction(async (tx) => {
+      // Mismo candado que el cierre de la caja de GV, antes que el pago.
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.branchId + ":gv-cash"}))::text AS locked`;
       await tx.$queryRaw`SELECT id FROM "GvPayment" WHERE id = ${paymentId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
       const before = await tx.gvPayment.findFirst({
         where: { id: paymentId, branchId: actor.branchId },
@@ -535,6 +539,12 @@ export class GvController {
         ...row,
         approvedBy,
       });
+      await refreshClosedGvCash(
+        tx,
+        actor,
+        before.cashSessionId,
+        "void:" + row.id,
+      );
       return row;
     });
   }
@@ -561,6 +571,7 @@ export class GvController {
     );
     const paymentId = parse(uuid, id);
     return this.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${actor.branchId + ":gv-cash"}))::text AS locked`;
       await tx.$queryRaw`SELECT id FROM "GvPayment" WHERE id = ${paymentId}::uuid AND "branchId" = ${actor.branchId} FOR UPDATE`;
       const before = await tx.gvPayment.findFirst({
         where: { id: paymentId, branchId: actor.branchId },
@@ -608,6 +619,13 @@ export class GvController {
         before,
         row,
       );
+      if (!data.verified)
+        await refreshClosedGvCash(
+          tx,
+          actor,
+          before.cashSessionId,
+          "reject:" + row.id,
+        );
       return row;
     });
   }

@@ -58,6 +58,43 @@ export async function resolveGvCashAlerts(
   });
 }
 
+/**
+ * D16 (auditoría 19-nov): anular o rechazar un pago de una caja de GV ya
+ * cerrada recalcula lo esperado y la diferencia de ese cierre (lo contado no
+ * cambia), para que el cierre guardado y los informes digan lo mismo. Llamar
+ * con el candado `branch:gv-cash` tomado.
+ */
+export async function refreshClosedGvCash(
+  tx: any,
+  actor: Actor,
+  sessionId: string | null | undefined,
+  ref: string,
+) {
+  if (!sessionId) return null;
+  const s = await tx.gvCashSession.findUnique({ where: { id: sessionId } });
+  if (!s?.closedAt) return null;
+  const e = await gvCajaEsperado(tx, s.id);
+  const expectedCash = d(s.openingAmount).plus(e.efectivo);
+  const difference = d(s.countedCash ?? 0)
+    .minus(expectedCash)
+    .plus(d(s.countedCard ?? 0).minus(e.tarjeta))
+    .plus(d(s.countedTransfer ?? 0).minus(e.transferencia));
+  const row = await tx.gvCashSession.update({
+    where: { id: s.id },
+    data: {
+      expectedCash: fix(expectedCash),
+      expectedCard: fix(e.tarjeta),
+      expectedTransfer: fix(e.transferencia),
+      difference: fix(difference),
+    },
+  });
+  await audit(tx, actor, "gv_cash_refreshed", "gv_cash", s.id, s, {
+    ...row,
+    ref,
+  });
+  return row;
+}
+
 @Controller("gv/cash")
 export class GvCajaController {
   constructor(@Inject(Database) private readonly db: Database) {}
@@ -183,6 +220,17 @@ export class GvCajaController {
         transfer: d(data.countedTransfer).minus(e.transferencia),
       };
       const difference = diffs.cash.plus(diffs.card).plus(diffs.transfer);
+      // D16 (auditoría 19-nov): un cierre con diferencia lleva justificación,
+      // como en la caja de MacGen. Sin montos en el mensaje (arqueo ciego).
+      if (
+        (!diffs.cash.isZero() ||
+          !diffs.card.isZero() ||
+          !diffs.transfer.isZero()) &&
+        data.notes.length < 3
+      )
+        bad(
+          "El conteo no cuadra con lo registrado. Vuelve a contar o escribe la justificación en notas para cerrar.",
+        );
       const row = await tx.gvCashSession.update({
         where: { id: s.id },
         data: {

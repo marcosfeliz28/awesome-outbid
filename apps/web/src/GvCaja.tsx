@@ -55,6 +55,7 @@ export function GvCaja() {
   const [opening, setOpening] = useState("0");
   const [counted, setCounted] = useState({ cash: "", card: "", transfer: "" });
   const [batchProof, setBatchProof] = useState("");
+  const [notes, setNotes] = useState("");
   const [result, setResult] = useState<Closed | null>(null);
   const run = async (work: () => Promise<unknown>) => {
     try {
@@ -155,6 +156,14 @@ export function GvCaja() {
                 onChange={setBatchProof}
               />
             )}
+            <label className="field">
+              <span>Notas (justificación si el conteo no cuadra)</span>
+              <input
+                value={notes}
+                maxLength={500}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </label>
             <Button
               disabled={
                 !counted.cash ||
@@ -170,10 +179,12 @@ export function GvCaja() {
                       countedCard: Number(counted.card),
                       countedTransfer: Number(counted.transfer),
                       batchProof: batchProof || undefined,
+                      notes: notes.trim(),
                     }),
                   );
                   setCounted({ cash: "", card: "", transfer: "" });
                   setBatchProof("");
+                  setNotes("");
                 })
               }
             >

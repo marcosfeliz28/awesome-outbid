@@ -1,5 +1,9 @@
 import Decimal from "decimal.js";
 import { z } from "zod";
+// zod 4 prueba `new Function` (JIT) al validar; el contenedor de escritorio y la
+// web con política CSP sin `unsafe-eval` lo registran como bloqueo. En el
+// navegador se valida sin JIT (más lento solo en esquemas enormes).
+if (typeof window !== "undefined") z.config({ jitless: true });
 // La API usa esta misma instancia de zod. Con la API compilada (CommonJS) un
 // import directo de "zod" cargaría otra copia y sus errores no se reconocerían
 // (R4-08).
@@ -548,14 +552,14 @@ export const safeDiscount = (price: number, cost: number, minMargin = 15) =>
         ),
       );
 export const saleSchema = z.object({
-  offlineUuid: z.string().uuid(),
+  offlineUuid: z.guid(),
   capturedAt: z.string().datetime().optional(),
-  customerId: z.string().uuid().nullable().optional(),
-  cashSessionId: z.string().uuid(),
+  customerId: z.guid().nullable().optional(),
+  cashSessionId: z.guid(),
   items: z
     .array(
       z.object({
-        variantId: z.string().uuid(),
+        variantId: z.guid(),
         qty: stockQty(10000),
         discountPercent: z.number().min(0).max(100).default(0),
         // El descuento por monto no se guarda: se vuelve porcentaje y la línea
@@ -604,7 +608,7 @@ export const saleSchema = z.object({
             "credit",
             "cod",
           ]),
-          creditNoteId: z.string().uuid().optional(),
+          creditNoteId: z.guid().optional(),
           creditNoteCode: z
             .string()
             .trim()
@@ -1106,4 +1110,83 @@ export function surveyAnswers(input: unknown) {
     string,
     boolean | number | string | undefined
   >;
+}
+
+// Textos en español de los códigos internos que salen en reportes (métodos de
+// pago, tipos de kardex y eventos de bitácora). Un código nuevo sin etiqueta
+// sale tal cual, para no esconder datos. El JSON de la API conserva el código
+// (cash, return_waste, return…): la traducción es solo de lo que se ve en
+// pantalla, Excel y PDF (reportCellText / reportDisplayRows).
+
+const METHOD: Record<string, string> = {
+  cash: "Efectivo",
+  card: "Tarjeta",
+  transfer: "Transferencia",
+  credit: "Crédito",
+  cod: "Contraentrega",
+  credit_note: "Nota de crédito",
+};
+export const methodName = (method: string | null | undefined) =>
+  method ? (METHOD[method] ?? method) : "";
+
+const KARDEX: Record<string, string> = {
+  purchase: "Entrada",
+  sale: "Venta",
+  adjustment: "Ajuste",
+  count: "Conteo físico",
+  waste: "Merma",
+  supplier_return: "Devolución a proveedor",
+  return: "Devolución",
+  return_waste: "Merma por devolución",
+  void: "Anulación (vuelve al stock)",
+  transfer_in: "Traspaso recibido",
+  transfer_out: "Traspaso enviado",
+};
+export const kardexTypeName = (type: string) => KARDEX[type] ?? type;
+
+const AUDIT_ACTION: Record<string, string> = {
+  void: "Anulación",
+  return: "Devolución",
+  discount_approved: "Descuento aprobado",
+};
+export const auditActionName = (action: string) =>
+  AUDIT_ACTION[action] ?? action;
+
+// Columna con código interno de cada reporte y su traducción visible.
+const CODE_COLUMNS: Record<
+  string,
+  Record<string, ((v: string) => string) | undefined> | undefined
+> = {
+  "by-payment": { Método: methodName },
+  kardex: { Tipo: kardexTypeName },
+  "returns-discounts": { Evento: auditActionName },
+};
+// Columnas que solo sirven a programas (código interno): no se muestran.
+const HIDDEN_COLUMNS: Record<string, string[] | undefined> = {
+  "returns-discounts": ["Referencia"],
+};
+
+/** ¿Se muestra esta columna del reporte en pantalla, Excel y PDF? */
+export const reportColumnVisible = (report: string, key: string) =>
+  !HIDDEN_COLUMNS[report]?.includes(key);
+
+/** Texto visible de una celda: el código interno en español; lo demás igual. */
+export function reportCellText(report: string, key: string, value: unknown) {
+  const label = CODE_COLUMNS[report]?.[key];
+  return label && typeof value === "string" ? label(value) : value;
+}
+
+/** Filas tal como se ven (Excel y PDF): códigos en español, sin columnas internas. */
+export function reportDisplayRows<T extends Record<string, unknown>>(
+  report: string,
+  rows: T[],
+): Record<string, unknown>[] {
+  if (!CODE_COLUMNS[report] && !HIDDEN_COLUMNS[report]) return rows;
+  return rows.map((row) =>
+    Object.fromEntries(
+      Object.entries(row)
+        .filter(([key]) => reportColumnVisible(report, key))
+        .map(([key, value]) => [key, reportCellText(report, key, value)]),
+    ),
+  );
 }

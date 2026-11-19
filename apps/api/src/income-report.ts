@@ -16,8 +16,9 @@ import {
   canViewCashExpected,
   denied,
 } from "./common";
-import { groupIncomeDays } from "./income-day";
+import { cashReconciliation, groupIncomeDays } from "./income-day";
 import { saleIsGvSql, saleNotGvSql } from "./gv-scope";
+import { incomeKindName, methodName } from "./reportes/textos";
 
 type QueryInput = {
   from?: string;
@@ -180,8 +181,19 @@ const labels = [
   "Vendido neto",
 ];
 const amount = (value: unknown) => Number(value ?? 0).toFixed(2);
-function csvCell(value: unknown) {
-  const s = String(value ?? "");
+// PDF: montos como en pantalla (RD$ 1,500.00); CSV y Excel quedan numéricos.
+const rd = (value: unknown) =>
+  "RD$ " +
+  Number(value ?? 0).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+export function csvCell(value: unknown) {
+  let s = String(value ?? "");
+  // B1 (auditoría 19-nov): Excel ejecuta como fórmula el texto que empieza con
+  // = + - @ tab o retorno (referencia o banco escritos en caja); los importes
+  // negativos quedan como número.
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s;
   return /[",\r\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 function csvLine(values: unknown[]) {
@@ -278,23 +290,24 @@ export class IncomeReportController {
       card: Number(session.expectedCard ?? 0),
       transfer: Number(session.expectedTransfer ?? 0),
     };
-    const report = {
-      cash: row.cash + row.collectionCash,
-      card: row.card + row.collectionCard,
-      transfer: row.transfer + row.collectionTransfer,
-    };
-    const difference = {
-      cash: Number((report.cash - expected.cash).toFixed(2)),
-      card: Number((report.card - expected.card).toFixed(2)),
-      transfer: Number((report.transfer - expected.transfer).toFixed(2)),
-    };
+    // D15: los pagos en dólares de esta caja (la caja los cuenta aparte).
+    const usdPayments = await this.db.payment.aggregate({
+      where: {
+        cashSessionId: session.id,
+        currency: "USD",
+        sale: { status: "completed" },
+        status: { not: "rejected" },
+        OR: [{ entryType: { not: "installment" } }, { status: "ok" }],
+      },
+      _sum: { amount: true, change: true },
+    });
     return {
       comparable: true,
       day: row.day,
-      report,
-      expected,
-      difference,
-      matches: Object.values(difference).every((value) => value === 0),
+      ...cashReconciliation(row, expected, {
+        amount: Number(usdPayments._sum.amount ?? 0),
+        change: Number(usdPayments._sum.change ?? 0),
+      }),
     };
   }
   @Get("reports/income-by-day")
@@ -412,8 +425,8 @@ export class IncomeReportController {
                 timeZone: "America/Santo_Domingo",
               }),
               e.number,
-              e.kind,
-              e.method,
+              incomeKindName(e.kind),
+              methodName(e.method),
               amount(e.amount),
               e.cashSessionId,
               e.cardLast4,
@@ -470,8 +483,8 @@ export class IncomeReportController {
               timeZone: "America/Santo_Domingo",
             }),
             e.number,
-            e.kind,
-            e.method,
+            incomeKindName(e.kind),
+            methodName(e.method),
             Number(e.amount),
             e.cashSessionId,
             e.cardLast4,
@@ -498,7 +511,7 @@ export class IncomeReportController {
     doc
       .fontSize(9)
       .text(
-        `${opt.from} a ${opt.to} · Fecha de emisión ${new Date().toLocaleDateString("es-DO")}`,
+        `${opt.from} a ${opt.to} · Fecha de emisión ${new Date().toLocaleDateString("es-DO", { timeZone: "America/Santo_Domingo" })}`,
       )
       .moveDown();
     for (const row of rows) {
@@ -506,16 +519,16 @@ export class IncomeReportController {
       doc
         .font("Helvetica-Bold")
         .text(
-          `${localDate(row.day)} · Vendido ${amount(row.sold)} · Ingresó ${amount(row.moneyIn)}`,
+          `${localDate(row.day)} · Vendido ${rd(row.sold)} · Ingresó ${rd(row.moneyIn)}`,
         );
       doc
         .font("Helvetica")
         .text(
-          `Venta: efectivo ${amount(row.cash)} · tarjeta ${amount(row.card)} · transferencia ${amount(row.transfer)} · crédito ${amount(row.creditGenerated)}`,
+          `Venta: efectivo ${rd(row.cash)} · tarjeta ${rd(row.card)} · transferencia ${rd(row.transfer)} · crédito ${rd(row.creditGenerated)}`,
         );
       doc
         .text(
-          `Cobros de crédito: efectivo ${amount(row.collectionCash)} · tarjeta ${amount(row.collectionCard)} · transferencia ${amount(row.collectionTransfer)} · devoluciones ${amount(row.returns)}`,
+          `Cobros de crédito: efectivo ${rd(row.collectionCash)} · tarjeta ${rd(row.collectionCard)} · transferencia ${rd(row.collectionTransfer)} · devoluciones ${rd(row.returns)}`,
         )
         .moveDown(0.5);
     }
@@ -524,7 +537,7 @@ export class IncomeReportController {
     for await (const event of this.exportDetail(actor, opt, total)) {
       if (doc.y > 520) doc.addPage();
       doc.text(
-        `${event.day} ${event.date.toLocaleTimeString("es-DO", { timeZone: "America/Santo_Domingo" })} · ${event.number ?? ""} · ${event.kind} · ${amount(event.amount)} · ${event.bank ?? ""} ${event.reference ?? ""}`,
+        `${event.day} ${event.date.toLocaleTimeString("es-DO", { timeZone: "America/Santo_Domingo" })} · ${event.number ?? ""} · ${incomeKindName(event.kind)} · ${rd(event.amount)} · ${event.bank ?? ""} ${event.reference ?? ""}`,
       );
     }
     doc.fontSize(8).text("Documento interno, sin valor fiscal");

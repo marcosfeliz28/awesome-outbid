@@ -126,7 +126,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs:
       "Compara el mes que termina en la fecha final del reporte con el mes anterior.",
     paraQueSirve: "Para ver si este mes vende más o menos que el mes pasado.",
-    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas; ese mes sale marcado «sin ventas registradas». El mes que todavía no termina sale marcado «mes en curso, hasta hoy».`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -149,7 +149,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       "Compara el mes que termina en la fecha final del reporte con el mismo mes del año pasado.",
     paraQueSirve:
       "Para ver si el negocio crece frente al mismo mes del año anterior, sin que pesen las temporadas.",
-    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas.`,
+    comoSeLee: `Usa el mes de la fecha final del reporte, no todo el rango: la fecha «Desde» no cambia el resultado. ${NETO_VENTAS} El cambio % solo aparece en el mes actual y queda vacío si el mes de comparación no tuvo ventas; ese mes sale marcado «sin ventas registradas». El mes que todavía no termina sale marcado «mes en curso, hasta hoy».`,
     columnas: {
       Mes: c("Mes", "El mes que se compara."),
       Facturas: c("Facturas", "Cuántas facturas se hicieron en ese mes."),
@@ -626,7 +626,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     queEs:
       "La ganancia bruta de cada mes: venta menos costo de la mercancía vendida.",
     paraQueSirve: "Para ver si el negocio gana más o menos cada mes.",
-    comoSeLee: `Es la ganancia antes de pagar gastos (renta, sueldos, luz). ${NETO_POR_VENTA} Margen % no resta el ITBIS.`,
+    comoSeLee: `Es la ganancia antes de pagar gastos (renta, sueldos, luz). ${NETO_POR_VENTA} La venta incluye el ITBIS; el Estado de resultados usa ventas sin ITBIS, por eso su ganancia bruta sale menor. Margen % no resta el ITBIS.`,
     columnas: {
       Mes: c("Mes", "El mes del período, en formato año-mes."),
       Facturas: c("Facturas", "Cuántas facturas tuvo el mes."),
@@ -862,7 +862,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver qué productos vendíamos y se acabaron, y reponerlos.",
     comoSeLee:
-      "Solo aparecen productos con existencia en cero o menos en la tienda, y con ventas en el período. Última venta es el día de la última venta dentro del período.",
+      "Solo aparecen productos con existencia en cero o menos en la tienda, y con ventas en el período. Casa puede tener piezas: agotado quiere decir agotado en Tienda. Última venta es el día de la última venta dentro del período.",
     columnas: {
       SKU: c("Código", "El código interno del producto (SKU)."),
       Producto: c("Producto", "Nombre del producto."),
@@ -961,7 +961,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
     paraQueSirve:
       "Para ver qué clientes compran seguido y cuáles compran pocas veces.",
     comoSeLee:
-      "Cuenta las compras del período. Las devoluciones de cada venta se restan siempre, sin importar cuándo se devolvieron. Promedio de días entre compras es cuántos días pasan en promedio entre una compra y la siguiente. El teléfono aparece parcial si no tienes permiso para verlo completo.",
+      "Cuenta las compras del período. Las devoluciones de cada venta se restan siempre, sin importar cuándo se devolvieron. Promedio de días entre compras es cuántos días pasan en promedio entre un día de compra y el siguiente; varias compras el mismo día cuentan como un solo día. El teléfono aparece parcial si no tienes permiso para verlo completo.",
     columnas: {
       Cliente: c("Cliente", "Nombre del cliente."),
       Teléfono: c("Teléfono", "Teléfono del cliente."),
@@ -972,7 +972,7 @@ export const GUIA_REPORTES: Record<string, Guia> = {
       ),
       "Promedio de días entre compras": c(
         "Días entre compras",
-        "Cuántos días pasan en promedio entre una compra y la siguiente. Vacío si compró una sola vez.",
+        "Cuántos días pasan en promedio entre un día de compra y el siguiente. Vacío si compró un solo día.",
       ),
       "Última compra": c(
         "Última compra",
@@ -1180,15 +1180,15 @@ const INFORMES_MACGEN: Record<string, Guia> = {
       "El informe de ventas de un mes (o de un rango de fechas): venta, unidades, ganancia y los 10 productos más vendidos, por categoría. Se descarga en CSV.",
     paraQueSirve:
       "Para ver cómo le fue al mes y en qué categorías y productos se concentra la venta.",
-    comoSeLee: `${NETO_POR_VENTA} La venta descuenta devoluciones aunque la pantalla diga «bruta». Ganancia es venta menos costo, antes de gastos aunque la pantalla diga «neta». Por confirmar cómo debe llamarse cada una. Margen promedio no resta el ITBIS. Ganancia y margen solo los ve quien tiene permiso de ganancia.`,
+    comoSeLee: `${NETO_POR_VENTA} La venta descuenta devoluciones aunque la pantalla diga «bruta». «Ganancia con ITBIS» es venta (con ITBIS) menos costo, antes de gastos; el Estado de resultados la calcula sin ITBIS y por eso sale menor. Por confirmar con la dueña cuál de las dos definiciones queda. Margen promedio no resta el ITBIS. Ganancia y margen solo los ve quien tiene permiso de ganancia.`,
     columnas: {
       "Venta bruta": c(
         "Venta del período",
         "Lo cobrado en el período, menos devoluciones. El nombre de la pantalla dice bruta, por confirmar.",
       ),
-      "Ganancia neta": c(
+      "Ganancia con ITBIS": c(
         "Ganancia",
-        "Venta menos costo. No descuenta gastos. Por confirmar el nombre.",
+        "Venta con ITBIS menos costo. No descuenta gastos.",
       ),
       "Margen promedio": c(
         "Margen promedio",

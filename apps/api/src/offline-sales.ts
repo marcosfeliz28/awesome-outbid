@@ -20,7 +20,7 @@ import {
 import { closedCashChanged, refreshClosedCash } from "./cash";
 
 const resolutionBase = {
-  offlineUuid: z.string().uuid(),
+  offlineUuid: z.guid(),
   previousTotal: z.number().nonnegative().max(100000000),
   reason: z.string().trim().min(3).max(300),
 };
