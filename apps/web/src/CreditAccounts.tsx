@@ -5,7 +5,7 @@ import { formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post } from "./api";
 import { QueryState, toast } from "./helpers";
 import { useLanguage } from "./inicioLanguage";
-import { cashText } from "./cashLanguage";
+import { cashText, creditSalesCount } from "./cashLanguage";
 
 type Method = "cash" | "card" | "transfer";
 const methodName: Record<Method, string> = {
@@ -255,14 +255,13 @@ export function CreditAccounts({ session }: { session: any }) {
                 <strong>{row.customer.name}</strong>
                 <small>
                   {view === "paid"
-                    ? row.openSales +
-                      " ventas pagadas" +
+                    ? creditSalesCount(row.openSales, true, cashLanguage) +
                       (row.lastClosedAt
                         ? " · Último cierre " +
                           new Date(row.lastClosedAt).toLocaleDateString("es-DO")
                         : "")
-                    : row.openSales +
-                      " ventas abiertas · La más antigua hace " +
+                    : creditSalesCount(row.openSales, false, cashLanguage) +
+                      " · La más antigua hace " +
                       row.oldestDays +
                       " días"}
                 </small>

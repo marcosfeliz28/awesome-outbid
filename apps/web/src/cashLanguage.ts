@@ -115,3 +115,21 @@ const EN: Record<string, string> = {
 export function cashText(text: string, language: Language): string {
   return language === "en" ? (EN[text] ?? text) : text;
 }
+
+export function creditSalesCount(
+  count: number,
+  paid: boolean,
+  language: Language,
+): string {
+  if (language === "en") {
+    return `${count} ${paid ? "paid" : "open"} sale${count === 1 ? "" : "s"}`;
+  }
+  const state = paid
+    ? count === 1
+      ? "pagada"
+      : "pagadas"
+    : count === 1
+      ? "abierta"
+      : "abiertas";
+  return `${count} ${count === 1 ? "venta" : "ventas"} ${state}`;
+}

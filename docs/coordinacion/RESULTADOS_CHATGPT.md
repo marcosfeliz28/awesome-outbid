@@ -5,7 +5,7 @@ Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin q
 ## 2026-11-19 · ChatGPT NUBE · auditoría UI de producto (avance)
 
 - Rama local sin publicar: `chatgpt-nube/auditoria-ui-19nov`; referencia remota leída: `origin/nexora-cloud` `b9589bbb1dc4b3d426ce393445acb7c508eedca4`.
-- Puntos protegidos terminados y comprobados: etiqueta de servicio (`cc4d0f3c`), alerta de fondo menor (`61b433f2`) y `operationId` estable en ajustes (`dc3bf275`). IT-045/CC-12 corrige `Sólo` → `Solo` con regresión y 16 capturas. La última corrida de `pnpm check` aprobó 1,233 pruebas y ambos builds.
+- Puntos protegidos terminados y comprobados: etiqueta de servicio (`cc4d0f3c`), alerta de fondo menor (`61b433f2`) y `operationId` estable en ajustes (`dc3bf275`). IT-045/CC-12 corrige `Sólo` → `Solo`; CC-10 corrige `1 ventas abiertas` y cubre ocho variantes. Cada punto tiene regresión y 16 capturas. La última corrida de `pnpm check` aprobó 1,241 pruebas y ambos builds.
 - Bloqueo para Claude: el cobro `Recibido por la dueña` tiene `cashSessionId: null`, pero `/payments/:id/move-cash-session` rechaza pagos sin caja de origen. La rama de presentación no puede ofrecer un botón funcional sin un cambio de API prohibido por la orden.
 - La entrega de 231 hallazgos sigue en curso. No hubo push, PR, mezcla, despliegue ni acceso a Render, producción, base o credenciales; aún no existe SHA remoto final para los tres CI.
 

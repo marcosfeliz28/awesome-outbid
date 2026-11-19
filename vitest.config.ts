@@ -155,6 +155,7 @@ export default defineConfig({
       "tests/config-ai-drive-language.test.ts",
       "tests/store-settings-language.test.ts",
       "tests/cash-language.test.ts",
+      "tests/credit-account-plural.test.ts",
       "tests/dashboard-category-color.test.ts",
       "tests/uc07-users-mobile.test.ts",
       "tests/pos-service-stock-label.test.ts",
