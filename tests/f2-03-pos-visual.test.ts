@@ -25,3 +25,8 @@ it("CP-12: las tres acciones inferiores del carrito caben con el mismo ancho en 
     /@media \(min-width: 601px\) \{[\s\S]*?\.cart-bottom-actions \{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/,
   );
 });
+
+it("CP-13: el buscador usa una ayuda breve que cabe en 390 px", () => {
+  const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+  expect(pos).toContain('placeholder={t("Buscar producto o código")}');
+});

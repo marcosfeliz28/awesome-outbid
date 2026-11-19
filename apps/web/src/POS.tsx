@@ -979,7 +979,7 @@ export function POS({ go }: { go: (page: string) => void }) {
             <input
               ref={search}
               aria-label={t("Buscar productos")}
-              placeholder={t("Código o nombre del producto")}
+              placeholder={t("Buscar producto o código")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
