@@ -12,12 +12,13 @@ usa la marca neutral **Nexora POS**.
 
 ## Planes visibles
 
-- **Medio — US$69 al mes**
-- **Completo — US$119 al mes**
-- **Piloto — 60 días, solo por invitación**
+- **Medio — US$69 al mes**: hasta 1 sucursal y 5 cajas.
+- **Completo — US$119 al mes**: hasta 3 sucursales y 10 cajas.
+- **Prueba gratis — 7 días, solo por invitación.**
 
-La landing no dice que el piloto sea gratis, no anuncia registro público y no
-ofrece un mecanismo de cobro. Esas decisiones siguen reservadas a la dueña.
+La landing no abre registro público ni cobra. La activación y la forma de
+cobro se coordinan con el equipo. Los recibos no son fiscales y no sustituyen
+un comprobante fiscal. No preparar robots.txt ni sitemap hasta decidir el dominio.
 
 ## Reglas de contenido
 
