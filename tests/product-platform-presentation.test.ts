@@ -55,4 +55,12 @@ describe("presentación de plan, prueba e invitación", () => {
     );
     expect(platform).not.toContain('style={{ background: "#fff"');
   });
+
+  it("conserva el fondo y el borde temáticos en las tarjetas de Mis clientes", () => {
+    const styles = readFileSync("apps/web/src/styles.css", "utf8");
+    expect(platform).toContain('className="platform-client-card ');
+    expect(styles).toMatch(
+      /\.platform-panel \.platform-client-card\s*\{\s*background: var\(--surface\);\s*border: 1px solid var\(--input-border\);\s*\}/,
+    );
+  });
 });
