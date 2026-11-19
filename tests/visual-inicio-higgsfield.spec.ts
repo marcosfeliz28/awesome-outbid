@@ -173,6 +173,27 @@ for (const width of [1440, 390])
         });
       });
     }
+
+for (const width of [1440, 390])
+  for (const theme of ["light", "dark"])
+    test(`demostración inglesa ${width} ${theme}: captura`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await setup(page, theme, "green", "en");
+      await expect(
+        page.getByRole("button", { name: "Explore my reports", exact: true }),
+      ).toBeVisible();
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth,
+      );
+      expect(overflow).toBeLessThanOrEqual(width + 1);
+      await mkdir(evidence, { recursive: true });
+      await page.screenshot({
+        path: `${evidence}/inicio-${width}-${theme}-en.png`,
+        fullPage: true,
+      });
+    });
 test("teclado, inglés y movimiento reducido", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });

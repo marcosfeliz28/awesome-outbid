@@ -124,6 +124,10 @@
     {
       "before": "aria-label={`Ver carrito (${units} artículos)`}",
       "after": "aria-label={`${language === \"en\" ? \"View cart\" : \"Ver carrito\"} (${units} ${language === \"en\" ? (units === 1 ? \"item\" : \"items\") : (units === 1 ? \"artículo\" : \"artículos\")})`}"
+    },
+    {
+      "before": "placeholder={t(\"Código o nombre del producto\")}",
+      "after": "placeholder={t(\"Buscar producto o código\")}"
     }
   ]
 }
