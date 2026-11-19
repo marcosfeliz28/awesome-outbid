@@ -9324,6 +9324,11 @@ td strong {
 
 /* Panel del operador: mantiene la jerarquía nueva legible con el tema oscuro
    global, sin cambiar los formularios ni sus contratos. */
+.platform-panel .platform-client-card {
+  background: var(--surface);
+  border: 1px solid var(--input-border);
+}
+
 :root[data-theme="dark"] .platform-panel {
   background: var(--bg);
   color: var(--text);

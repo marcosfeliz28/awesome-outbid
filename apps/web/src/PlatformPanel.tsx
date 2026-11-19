@@ -1572,8 +1572,8 @@ function ClientList({
               <button
                 type="button"
                 onClick={() => onOpen(t.slug)}
-                // Estilo en línea: la regla global button:not(.button) quita fondo y borde.
-                className="flex w-full min-w-0 flex-col items-start gap-1 rounded-xl border border-slate-400 bg-white p-3 text-left"
+                // La regla propia conserva la superficie pese al reinicio global de botones.
+                className="platform-client-card flex w-full min-w-0 flex-col items-start gap-1 rounded-xl p-3 text-left"
               >
                 <span className="w-full break-words text-base font-bold text-slate-900">
                   {t.name}
