@@ -170,8 +170,113 @@ describe("A3 · fondo de apertura menor deja alerta alta", () => {
     await new CashController(db).open({ openingAmount: 2000 }, opener);
     expect(alerts).toHaveLength(0);
   });
-  it("es un tipo manual: la evaluación periódica no la borra", async () => {
+  it("es un tipo manual (la evaluación periódica no la borra)", async () => {
     const { MANUAL_ALERT_TYPES } = await import("../apps/api/src/alerts");
     expect(MANUAL_ALERT_TYPES).toContain("opening_shortfall");
+  });
+});
+
+// A4: ajuste/merma/devolución con clave repetida no mueve existencias otra vez.
+const VARIANT = "11111111-1111-4111-8111-111111111111";
+const OP = "22222222-2222-4222-8222-222222222222";
+function fakeInventoryDb(previous: any) {
+  const calls: string[] = [];
+  const tx: any = {
+    $queryRaw: async () => [],
+    auditLog: {
+      findFirst: async () => {
+        calls.push("audit.findFirst");
+        return previous;
+      },
+    },
+    variant: {
+      findFirstOrThrow: async () => ({
+        id: VARIANT,
+        stock: 7,
+        costAvg: 100,
+        product: { category: { requiresLot: false } },
+        lots: [],
+      }),
+      update: async () => calls.push("variant.update"),
+    },
+    settings: { findUnique: async () => null },
+    variantStock: { findMany: async () => [] },
+    warehouse: {
+      findFirst: async () => {
+        calls.push("warehouse");
+        throw new Error("camino normal");
+      },
+    },
+    inventoryMovement: { create: async () => calls.push("movement") },
+    supplier: { findFirstOrThrow: async () => ({}) },
+  };
+  const db: any = { $transaction: async (fn: any) => fn(tx) };
+  return { db, calls };
+}
+const inventoryActor = {
+  id: "u1",
+  name: "Gerente",
+  branchId: "main",
+  permissions: ["*"],
+  terminalId: "t1",
+} as any;
+
+describe("A4 · ajustes de inventario con clave de operación", () => {
+  it("clave repetida devuelve la variante sin mover existencias", async () => {
+    const { InventoryController } = await import("../apps/api/src/inventory");
+    const { db, calls } = fakeInventoryDb({
+      action: "waste",
+      after: { operationId: OP, qty: -2, variantId: VARIANT },
+    });
+    const result: any = await new InventoryController(db).adjustment(
+      {
+        variantId: VARIANT,
+        qty: -2,
+        reason: "Se rompió",
+        type: "waste",
+        operationId: OP,
+      },
+      inventoryActor,
+    );
+    expect(result.id).toBe(VARIANT);
+    expect(calls).toContain("audit.findFirst");
+    expect(calls).not.toContain("movement");
+    expect(calls).not.toContain("variant.update");
+    expect(calls).not.toContain("warehouse");
+  });
+  it("la misma clave con otra cantidad es un error", async () => {
+    const { InventoryController } = await import("../apps/api/src/inventory");
+    const { db } = fakeInventoryDb({
+      action: "waste",
+      after: { operationId: OP, qty: -2 },
+    });
+    await expect(
+      new InventoryController(db).adjustment(
+        {
+          variantId: VARIANT,
+          qty: -5,
+          reason: "Se rompió",
+          type: "waste",
+          operationId: OP,
+        },
+        inventoryActor,
+      ),
+    ).rejects.toThrow(/clave de la operación/);
+  });
+  it("sin clave sigue el camino de siempre (compatible)", async () => {
+    const { InventoryController } = await import("../apps/api/src/inventory");
+    const { db, calls } = fakeInventoryDb(null);
+    await expect(
+      new InventoryController(db).adjustment(
+        {
+          variantId: VARIANT,
+          warehouseId: OP,
+          qty: -1,
+          reason: "Ajuste de prueba",
+        },
+        inventoryActor,
+      ),
+    ).rejects.toThrow(/camino normal/);
+    expect(calls).not.toContain("audit.findFirst");
   });
 });
