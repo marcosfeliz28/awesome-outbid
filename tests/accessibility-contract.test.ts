@@ -554,6 +554,37 @@ describe("Resumen · tarjetas de ventas por día", () => {
   });
 });
 
+describe("Resumen · delimitación móvil", () => {
+  it("MTC-003: separa la barra inferior y la pista de progreso de su superficie", () => {
+    const light = variables(":root");
+    const dark = { ...light, ...variables(':root[data-theme="dark"]') };
+    for (const [theme, palette] of [
+      ["claro", light],
+      ["oscuro", dark],
+    ] as const) {
+      meets(
+        `barra móvil ${theme}`,
+        palette["--input-border"],
+        palette["--bg"],
+        3,
+      );
+      meets(
+        `pista de progreso ${theme}`,
+        palette["--input-border"],
+        palette["--surface"],
+        3,
+      );
+    }
+    expect(css).toMatch(
+      /\.goods-mobile-bar\s*\{[^}]*border-top:\s*1px solid var\(--input-border\)/,
+    );
+    expect(css).toMatch(
+      /\.progress-track\s*\{[\s\S]*?background:\s*var\(--input-border\)/,
+    );
+  });
+
+});
+
 describe("G11 · listener de teclado con modal", () => {
   it.each(["F4", "F8", "F12"])(
     "%s se consume y no ejecuta la acción detrás del diálogo",

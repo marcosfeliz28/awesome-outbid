@@ -1286,7 +1286,7 @@ kbd {
 }
 .progress-track {
   height: 5px;
-  background: var(--surface-soft);
+  background: var(--input-border);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -4626,6 +4626,7 @@ td strong {
     right: 0;
     z-index: 40;
     background: var(--surface, #fff);
+    border-top: 1px solid var(--input-border);
     padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
     box-shadow: 0 -2px 12px #0002;
   }
