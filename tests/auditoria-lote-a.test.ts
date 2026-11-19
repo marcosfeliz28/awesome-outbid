@@ -107,3 +107,71 @@ describe("A2 · caja cerrada: transferencia contada sigue a la esperada", () => 
     expect(tx.updates[0].data.countedTransfer).toBeUndefined();
   });
 });
+
+// A3: abrir con menos fondo que el último cierre no se bloquea, pero deja una
+// alerta alta con el faltante, quién abrió y la nota.
+function fakeOpenDb(lastLeft: number) {
+  const alerts: any[] = [];
+  const created: any[] = [];
+  const tx: any = {
+    $queryRaw: async () => [],
+    cashSession: {
+      findFirst: async () => null,
+      create: async ({ data }: any) => {
+        const row = { id: "new-session", ...data };
+        created.push(row);
+        return row;
+      },
+    },
+    auditLog: { create: async () => ({}) },
+    alert: { upsert: async (args: any) => alerts.push(args) },
+  };
+  const db: any = {
+    cashSession: {
+      findFirst: async ({ where }: any) =>
+        where.closedAt === null
+          ? null
+          : { id: "last", countedCash: lastLeft, closeDetails: {} },
+    },
+    $transaction: async (fn: any) => fn(tx),
+  };
+  return { db, alerts, created };
+}
+const opener = {
+  id: "u1",
+  name: "Cajera Prueba",
+  branchId: "main",
+  permissions: ["cash:write"],
+  terminalId: "t1",
+} as any;
+
+describe("A3 · fondo de apertura menor deja alerta alta", () => {
+  it("abre la caja y crea la alerta opening_shortfall", async () => {
+    const { CashController } = await import("../apps/api/src/cash");
+    const { db, alerts, created } = fakeOpenDb(2000);
+    const row: any = await new CashController(db).open(
+      { openingAmount: 1500, openingNote: "Me dieron menos cambio" },
+      opener,
+    );
+    expect(row.id).toBe("new-session");
+    expect(created).toHaveLength(1);
+    expect(alerts).toHaveLength(1);
+    const alert = alerts[0].create;
+    expect(alert.type).toBe("opening_shortfall");
+    expect(alert.severity).toBe("high");
+    expect(alert.entityId).toBe("new-session");
+    expect(alert.message).toContain("Cajera Prueba");
+    expect(alert.message).toContain("500.00");
+    expect(alert.message).toContain("Me dieron menos cambio");
+  });
+  it("con fondo igual o mayor no crea alerta", async () => {
+    const { CashController } = await import("../apps/api/src/cash");
+    const { db, alerts } = fakeOpenDb(2000);
+    await new CashController(db).open({ openingAmount: 2000 }, opener);
+    expect(alerts).toHaveLength(0);
+  });
+  it("es un tipo manual: la evaluación periódica no la borra", async () => {
+    const { MANUAL_ALERT_TYPES } = await import("../apps/api/src/alerts");
+    expect(MANUAL_ALERT_TYPES).toContain("opening_shortfall");
+  });
+});

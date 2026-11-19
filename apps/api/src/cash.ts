@@ -277,6 +277,33 @@ export async function refreshClosedCash(tx: any, session: any) {
   });
   return differences;
 }
+// A3 (auditoría 19-nov): abrir con menos fondo del que dejó el último cierre
+// no se bloquea (solo pide nota, dueña 15-oct), pero deja una alerta alta con
+// el faltante, quién abrió y la nota para que gerencia lo revise.
+export async function openingShortfallAlert(
+  tx: any,
+  actor: Actor,
+  session: { id: string; branchId: string; openingAmount: unknown },
+  shortfall: { suggested: number },
+  note: string | undefined,
+) {
+  const missing = d(shortfall.suggested).minus(session.openingAmount as any);
+  await tx.alert.upsert({
+    where: { key: "opening-shortfall:" + session.id },
+    create: {
+      key: "opening-shortfall:" + session.id,
+      type: "opening_shortfall",
+      severity: "high",
+      entityId: session.id,
+      branchId: session.branchId,
+      message:
+        `Fondo de apertura menor: ${actor.name} abrió con RD$ ${formatAmount(Number(session.openingAmount))}; ` +
+        `el último cierre dejó RD$ ${formatAmount(shortfall.suggested)} (faltan RD$ ${formatAmount(Number(missing))}). ` +
+        `Nota: ${note ?? ""}`,
+    },
+    update: {},
+  });
+}
 // #6 (revisión 25-oct): algo cambió una caja ya cerrada (método corregido,
 // venta sin conexión registrada o anulación después del cierre). Lo pide con
 // justificación quien lo hace y queda una alerta para la dueña; si entró
@@ -879,7 +906,8 @@ export class CashController {
     // D-03: el fondo que se declara al abrir no puede ser menor que lo que el
     // último cierre de este equipo dejó en la gaveta sin que quede explicado.
     // Menor exige solo una nota (sin PIN, orden de la dueña 15-oct); la
-    // diferencia queda en la bitácora. Igual o mayor abre como siempre.
+    // diferencia queda en la bitácora y en una alerta alta (A3). Igual o
+    // mayor abre como siempre.
     let shortfall: {
       suggested: number;
       fromSessionId: string;
@@ -948,6 +976,8 @@ export class CashController {
               approvedBy: shortfall.approvedBy,
             },
           );
+        if (shortfall)
+          await openingShortfallAlert(tx, actor, row, shortfall, openingNote);
         return row;
       });
     } catch (error: any) {
