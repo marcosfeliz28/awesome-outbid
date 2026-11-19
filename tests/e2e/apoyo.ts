@@ -182,7 +182,12 @@ export async function ensureStock(
     );
     if (sellable >= min) continue;
     // Un lote por día de vencimiento: repetir la suite no llena la base de lotes.
-    const expiryDate = new Date(Date.now() + 365 * DAY).toISOString();
+    // Mediodía UTC fijo: el mismo lote del día siempre trae el mismo
+    // vencimiento (con la hora exacta, una segunda reposición el mismo día
+    // chocaba con «Ese lote ya tiene un vencimiento diferente»).
+    const expiryDate =
+      new Date(Date.now() + 365 * DAY).toISOString().slice(0, 10) +
+      "T12:00:00.000Z";
     const added = await request.post("/api/inventory/adjustments", {
       headers,
       data: {
