@@ -332,6 +332,14 @@ PUT /api/alert-rules
 PUT /api/incentives/rates
 PUT /api/roles/:id
 PUT /api/settings
+GET /api/ai/usage
+GET /api/inventory/without-cost
+GET /api/reportes/:name/guia
+GET /api/reports/:name/export
+GET /api/reports/cost-recalc
+POST /api/payments/:id/move-cash-session
+POST /api/payments/:id/unverify
+POST /api/sales/:id/items/:itemId/cost
 `.trim().split("\n"));
 
 // Health endpoints deliberately operate without a tenant to support service
@@ -352,7 +360,8 @@ it("enumera todas las rutas reales del módulo producto y excluye respaldos glob
   // Both directions matter: a newly registered route must have a case, and a
   // deleted/renamed route must not leave a stale "covered" manifest entry.
   expect([...TESTED_PRODUCT_ROUTES].sort()).toEqual(required.sort());
-  expect(required).toHaveLength(210);
+  // 210 del producto + 8 del lote 19-nov (casos en product-route-lote19-postgres).
+  expect(required).toHaveLength(218);
   expect(routes).toContain("GET /api/reports/:name");
   expect(routes).toContain("GET /api/incentives/export.xlsx");
   expect(routes).toContain("GET /api/sales/:id/receipt.pdf");

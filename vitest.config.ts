@@ -43,6 +43,7 @@ export default defineConfig({
       "tests/product-billing-web.test.ts",
       "tests/product-ncf-settings-web.test.ts",
       "tests/product-route-matrix-postgres.test.ts",
+      "tests/product-route-lote19-postgres.test.ts",
       "tests/product-route-export-postgres.test.ts",
       "tests/product-route-money-postgres.test.ts",
       "tests/product-route-money-extra-postgres.test.ts",
