@@ -41,6 +41,8 @@ import {
   useBusinessDay,
 } from "./ExecutiveDashboard";
 import type { AskDashboard } from "./dashboardQuestions";
+import "./fusion-inicio-integrado.css";
+import "./fusion-higgsfield.css";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -216,7 +218,7 @@ export function Dashboard({
     },
   ];
   return (
-    <>
+    <div className={executive ? undefined : "fusion-inicio-integrado"} lang="es">
       <div className="page-heading">
         <div>
           <div className="eyebrow">
@@ -860,6 +862,6 @@ export function Dashboard({
           </div>
         )}
       </QueryState>
-    </>
+    </div>
   );
 }

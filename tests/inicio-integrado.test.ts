@@ -13,6 +13,16 @@ import { resolveAccent } from "../apps/web/src/AppearanceControls";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+
+const dashboardSource = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+// El tablero de producto tiene un componente ejecutivo propio. La guarda de
+// tienda conserva su base y sus inversiones históricas; el producto usa su
+// propia base aprobada, no el hash del resultado de este ajuste.
+const productDashboard = dashboardSource.includes(
+  '} from "./ExecutiveDashboard";',
+);
+const productLayout =
+  '<div className={executive ? undefined : "fusion-inicio-integrado"} lang="es">';
 describe("Inicio integrado: preservación", () => {
   it("limita preferencias a Inicio y conserva el diálogo legal existente", () => {
     const source = readFileSync("apps/web/src/App.tsx", "utf8");
@@ -41,9 +51,10 @@ describe("Inicio integrado: preservación", () => {
       expect(dateLabel(value)).toBe("—");
     }
     expect(dateLabel("2024-02-29")).not.toBe("—");
-    const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
-    expect(dashboard).toContain(
-      'className="fusion-inicio-integrado" lang={language}',
+    expect(dashboardSource).toContain(
+      productDashboard
+        ? productLayout
+        : 'className="fusion-inicio-integrado" lang={language}',
     );
     const shell = readFileSync("apps/web/src/App.tsx", "utf8");
     for (const region of ["topbar", "app-footer", "fusion-preferences"])
@@ -103,9 +114,52 @@ describe("Inicio integrado: preservación", () => {
     expect(shell).toContain(
       'page === "dashboard" && <AppearanceControls language={language} />',
     );
+    if (productDashboard) {
+      expect(shell).toContain(
+        "English covers these controls and main navigation. Overview content is in Spanish.",
+      );
+      expect(shell).not.toContain("English covers Overview and main navigation.");
+      const baseCss = readFileSync(
+        "apps/web/src/fusion-inicio-integrado.css",
+        "utf8",
+      );
+      const detailCss = readFileSync("apps/web/src/fusion-higgsfield.css", "utf8");
+      expect(baseCss).not.toMatch(/^\.fusion-(?:appearance|accent-)/m);
+      expect(detailCss).not.toMatch(/^\.fi-theme-options\s*\{/m);
+      expect(detailCss).toContain(":where(.fusion-preferences) .fi-theme-options");
+    }
   });
   it("conserva byte a byte el Dashboard base salvo wrapper y pintura", () => {
-    let source = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+    let source = dashboardSource;
+    if (productDashboard) {
+      const productReversible = [
+        {
+          before: "",
+          after: 'import "./fusion-inicio-integrado.css";\n',
+        },
+        {
+          before: "",
+          after: 'import "./fusion-higgsfield.css";\n',
+        },
+        {
+          before: "    <>\n      <div className=\"page-heading\">",
+          after: `    ${productLayout}\n      <div className="page-heading">`,
+        },
+        {
+          before: "      </QueryState>\n    </>\n  );\n}",
+          after: "      </QueryState>\n    </div>\n  );\n}",
+        },
+      ];
+      for (const edit of [...productReversible].reverse()) {
+        expect(source.split(edit.after)).toHaveLength(2);
+        source = source.replace(edit.after, edit.before);
+      }
+      // Dashboard exacto en f26b7353, antes del wrapper y la pintura.
+      expect(createHash("sha256").update(source).digest("hex")).toBe(
+        "4e45662d3fda543e384ad67a3c63091c9aec88b39400b9785b494afaae3da1a9",
+      );
+      return;
+    }
     const reversible: { before: string; after: string }[] = JSON.parse(
       readFileSync("docs/diseno/inicio-integrado/I18N_REVERSIBLE.json", "utf8"),
     );

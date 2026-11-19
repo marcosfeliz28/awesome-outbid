@@ -5,9 +5,11 @@ const read = (path: string) => readFileSync(path, "utf8");
 describe("Inventario Higgsfield: presentación sin alterar negocio", () => {
   it("conserva Inventory byte a byte al quitar el contenedor visual", () => {
     const source = read("apps/web/src/Management.tsx");
+    // Esta rama valida la versión comercial, no el flujo anterior de tienda.
+    // Conservamos la huella y la reversión completas para cada producto.
     const record = JSON.parse(
       read("docs/diseno/inventario/PRESENTACION_REVERSIBLE.json"),
-    );
+    ).producto;
     let inventory = source.slice(
       source.indexOf("export function Inventory()"),
       source.indexOf("export function Purchases()"),

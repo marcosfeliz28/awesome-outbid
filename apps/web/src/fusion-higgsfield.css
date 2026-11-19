@@ -436,7 +436,7 @@
   --fh-surface: #111714;
   --fh-deep: #020504;
 }
-.fi-theme-options {
+:where(.fusion-preferences) .fi-theme-options {
   display: inline-flex;
   gap: 5px;
   padding-right: 12px;

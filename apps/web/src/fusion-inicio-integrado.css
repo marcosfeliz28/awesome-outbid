@@ -406,13 +406,13 @@
     0 0 9px #0088bf33;
 }
 /* Named color choices: not color-only indicators, no hover-only controls. */
-.fusion-appearance {
+:where(.fusion-preferences) .fusion-appearance {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
 }
-.fusion-accent-choice {
+:where(.fusion-preferences) .fusion-accent-choice {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -427,15 +427,15 @@
   color: #1e293b;
   cursor: pointer;
 }
-.fusion-accent-choice[aria-pressed="true"] {
+:where(.fusion-preferences) .fusion-accent-choice[aria-pressed="true"] {
   outline: 2px solid currentColor;
   outline-offset: 1px;
 }
-.fusion-accent-choice:focus-visible {
+:where(.fusion-preferences) .fusion-accent-choice:focus-visible {
   outline: 3px solid #c89028;
   outline-offset: 3px;
 }
-.fusion-accent-swatch {
+:where(.fusion-preferences) .fusion-accent-swatch {
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -444,10 +444,10 @@
     inset 0 1px 2px #ffffffaa,
     0 1px 2px #0005;
 }
-.fusion-accent-blue .fusion-accent-swatch {
+:where(.fusion-preferences) .fusion-accent-blue .fusion-accent-swatch {
   background: #116b9b;
 }
-:root[data-theme="dark"] .fusion-accent-choice {
+:root[data-theme="dark"] :where(.fusion-preferences) .fusion-accent-choice {
   color: #f5f7fa;
   background: #15232b;
   border-color: #8195a4;

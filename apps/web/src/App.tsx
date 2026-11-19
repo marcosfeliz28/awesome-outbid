@@ -1601,7 +1601,11 @@ function Shell() {
         {page === "dashboard" && <div className="fusion-preferences" lang={language}>
           <label>{language === "en" ? "Language" : "Idioma"} <select aria-label={language === "en" ? "Interface language" : "Idioma de la interfaz"} value={language} onChange={(e) => setLanguage(e.target.value === "en" ? "en" : "es")}><option value="es">Español</option><option value="en">English</option></select></label>
           {page === "dashboard" && <AppearanceControls language={language} />}
-          <small role="status">{language === "en" ? "English covers Overview and main navigation. Other pages, store data and server messages retain their original language." : "Traducción disponible: Inicio y navegación principal. Las demás pantallas, datos de tienda y mensajes del servidor conservan su idioma original."}</small>
+          <small role="status">
+            {language === "en"
+              ? "English covers these controls and main navigation. Overview content is in Spanish. Other pages, store data and server messages retain their original language."
+              : "Traducción disponible: estos controles y la navegación principal. El contenido de Inicio está en español. Las demás pantallas, los datos de tienda y los mensajes del servidor conservan su idioma original."}
+          </small>
         </div>}
         <header className="topbar" lang={language}>
           <div className="topbar-left">

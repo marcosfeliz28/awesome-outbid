@@ -22,9 +22,17 @@ describe("Productos: presentación sin mutaciones", () => {
     expect(view).not.toMatch(/DEMO|128|\bfetch\(|\bpost\(|\bapi\(/);
   });
   it("conserva permisos de edición y detalle original", () => {
-    expect(management).toContain('can(user.permissions, "catalog:write")');
-    expect(management).toContain('can(user.permissions, "profit:read")');
-    expect(management).toContain('setDetail(p); setTab("General");');
+    const start = management.indexOf("export function Catalog()");
+    const catalog = management.slice(
+      start,
+      management.indexOf("export function Barcode", start),
+    );
+    expect(catalog).toContain('can(user.permissions, "catalog:write")');
+    expect(catalog).toContain('can(user.permissions, "profit:read")');
+    // Un salto de línea no cambia el comportamiento del botón Ver.
+    expect(catalog).toMatch(
+      /<button\s+aria-label=\{ct\("Ver "\) \+ p\.name\}\s+onClick=\{\(\) => \{\s*setDetail\(p\);\s*setTab\("General"\);\s*\}\}/,
+    );
     expect(view).toContain("onDetail(selected)");
   });
   it("selección accesible y fallback al filtrar", () => {

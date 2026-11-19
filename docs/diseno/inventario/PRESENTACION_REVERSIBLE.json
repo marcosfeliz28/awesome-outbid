@@ -282,5 +282,253 @@
       "before": "<DataTable\n                rows={counts.data || []}",
       "after": "<DataTable\n                english={inventoryLanguage === \"en\"}\n                rows={counts.data || []}"
     }
-  ]
+  ],
+  "producto": {
+    "base": "8ef351e6",
+    "source_ref": "8ab75f9c",
+    "nota": "La reversión del producto conserva el almacén configurable, búsqueda por palabras, estado accesible, tarjetas/vacío, estado de existencias y formularios de ajuste y conteo por lote. Este anclaje no incorpora cambios de la tienda ni usa el código de ejecución como fuente dinámica.",
+    "inventory_sha256": "42e67d1f8edf3192773575c1776c01361cf6071b3b397540fba9c484136400a2",
+    "changes": [
+      {
+        "before": "    <>\n",
+        "after": "    <section className=\"fusion-inventory\" aria-label=\"Inventario\">\n"
+      },
+      {
+        "before": "    </>\n  );\n}\n\n",
+        "after": "    </section>\n  );\n}\n\n"
+      },
+      {
+        "before": "export function Inventory() {",
+        "after": "export function Inventory() {\n  const inventoryLanguage = useLanguage();\n  const translateInventory = (text: string) => inventoryText(text, inventoryLanguage);"
+      },
+      {
+        "before": "title=\"Cada unidad, bajo control\"",
+        "after": "title={translateInventory(\"Cada unidad, bajo control\")}"
+      },
+      {
+        "before": "caption=\"El inventario correcto hace espacio para mejores decisiones.\"",
+        "after": "caption={translateInventory(\"El inventario correcto hace espacio para mejores decisiones.\")}"
+      },
+      {
+        "before": "label: \"Almacén\"",
+        "after": "label: translateInventory(\"Almacén\")"
+      },
+      {
+        "before": "label: \"Almacén\"",
+        "after": "label: translateInventory(\"Almacén\")"
+      },
+      {
+        "before": ">Almacén<",
+        "after": ">{translateInventory(\"Almacén\")}<"
+      },
+      {
+        "before": ">Todos<",
+        "after": ">{translateInventory(\"Todos\")}<"
+      },
+      {
+        "before": ">\n              Stock actual\n            <",
+        "after": ">\n              {translateInventory(\"Stock actual\")}\n            <"
+      },
+      {
+        "before": ">\n              Conteos físicos\n            <",
+        "after": ">\n              {translateInventory(\"Conteos físicos\")}\n            <"
+      },
+      {
+        "before": "placeholder=\"Buscar producto o código\"",
+        "after": "placeholder={translateInventory(\"Buscar producto o código\")}"
+      },
+      {
+        "before": "label: \"Producto / Variante\"",
+        "after": "label: translateInventory(\"Producto / Variante\")"
+      },
+      {
+        "before": "label: \"Precio\"",
+        "after": "label: translateInventory(\"Precio\")"
+      },
+      {
+        "before": "label: \"Costo\"",
+        "after": "label: translateInventory(\"Costo\")"
+      },
+      {
+        "before": "label: \"Total\"",
+        "after": "label: translateInventory(\"Total\")"
+      },
+      {
+        "before": "label: \"Vencimiento\"",
+        "after": "label: translateInventory(\"Vencimiento\")"
+      },
+      {
+        "before": ": \"No aplica\"",
+        "after": ": translateInventory(\"No aplica\")"
+      },
+      {
+        "before": "label: \"Acciones\"",
+        "after": "label: translateInventory(\"Acciones\")"
+      },
+      {
+        "before": ">\n                        Ajustar\n                      <",
+        "after": ">\n                        {translateInventory(\"Ajustar\")}\n                      <"
+      },
+      {
+        "before": ">\n                        Contar\n                      <",
+        "after": ">\n                        {translateInventory(\"Contar\")}\n                      <"
+      },
+      {
+        "before": "empty=\"Todavía no hay conteos físicos\"",
+        "after": "empty={translateInventory(\"Todavía no hay conteos físicos\")}"
+      },
+      {
+        "before": "emptyDescription=\"Pulsa Contar junto a un artículo para registrar su existencia real.\"",
+        "after": "emptyDescription={translateInventory(\"Pulsa Contar junto a un artículo para registrar su existencia real.\")}"
+      },
+      {
+        "before": "label: \"Fecha\"",
+        "after": "label: translateInventory(\"Fecha\")"
+      },
+      {
+        "before": "label: \"Artículos\"",
+        "after": "label: translateInventory(\"Artículos\")"
+      },
+      {
+        "before": "label: \"Estado\"",
+        "after": "label: translateInventory(\"Estado\")"
+      },
+      {
+        "before": "? \"Aplicado\"",
+        "after": "? translateInventory(\"Aplicado\")"
+      },
+      {
+        "before": ": \"Pendiente\"",
+        "after": ": translateInventory(\"Pendiente\")"
+      },
+      {
+        "before": "label: \"Acción\"",
+        "after": "label: translateInventory(\"Acción\")"
+      },
+      {
+        "before": ">\n                          Aprobar ajuste\n                        <",
+        "after": ">\n                          {translateInventory(\"Aprobar ajuste\")}\n                        <"
+      },
+      {
+        "before": "aria-label=\"Inventario\"",
+        "after": "aria-label={translateInventory(\"Inventario\")}"
+      },
+      {
+        "before": "<Heading\n",
+        "after": "<Heading\n        eyebrow={inventoryLanguage === \"en\" ? \"YOUR BUSINESS, WITH CLARITY\" : \"TU NEGOCIO, CON CLARIDAD\"}\n"
+      },
+      {
+        "before": "                    \"Sin lote\",",
+        "after": "                    translateInventory(\"Sin lote\"),"
+      },
+      {
+        "before": "aria-label={\"Kardex de \" + v.product.name}",
+        "after": "aria-label={(inventoryLanguage === \"en\" ? \"Stock ledger for \" : \"Kardex de \") + v.product.name}"
+      },
+      {
+        "before": "<FormModal\n          title={\"Ajustar · \" + adjust.product.name}",
+        "after": "<FormModal\n          english={inventoryLanguage === \"en\"}\n          title={translateInventory(\"Ajustar\") + \" · \" + adjust.product.name}"
+      },
+      {
+        "before": "<FormModal\n          title={\"Conteo físico · \" + count.product.name}",
+        "after": "<FormModal\n          english={inventoryLanguage === \"en\"}\n          title={translateInventory(\"Conteo físico\") + \" · \" + count.product.name}"
+      },
+      {
+        "before": "\"Cantidad (+ entrada / − salida)\"",
+        "after": "translateInventory(\"Cantidad (+ entrada / − salida)\")"
+      },
+      {
+        "before": "\"Tipo\"",
+        "after": "translateInventory(\"Tipo\")"
+      },
+      {
+        "before": "\"Ajuste\"",
+        "after": "translateInventory(\"Ajuste\")"
+      },
+      {
+        "before": "\"Merma\"",
+        "after": "translateInventory(\"Merma\")"
+      },
+      {
+        "before": "\"Devolución a proveedor\"",
+        "after": "translateInventory(\"Devolución a proveedor\")"
+      },
+      {
+        "before": "\"Proveedor (solo en devolución a proveedor)\"",
+        "after": "translateInventory(\"Proveedor (solo en devolución a proveedor)\")"
+      },
+      {
+        "before": "\"Referencia de la devolución (documento o nota de crédito)\"",
+        "after": "translateInventory(\"Referencia de la devolución (documento o nota de crédito)\")"
+      },
+      {
+        "before": "\"Motivo\"",
+        "after": "translateInventory(\"Motivo\")"
+      },
+      {
+        "before": "title={\"Kardex · \" + (kardex?.product.name || \"\")}",
+        "after": "title={(inventoryLanguage === \"en\" ? \"Stock ledger · \" : \"Kardex · \") + (kardex?.product.name || \"\")}"
+      },
+      {
+        "before": "<Kardex variantId={kardex.id} />",
+        "after": "<Kardex variantId={kardex.id} english={inventoryLanguage === \"en\"} />"
+      },
+      {
+        "before": "export function Inventory() {",
+        "after": "export function Inventory() {\n  useInventoryAppearance();"
+      },
+      {
+        "before": "<QueryState query={query}>",
+        "after": "<QueryState query={query} english={inventoryLanguage === \"en\"}>"
+      },
+      {
+        "before": "<QueryState query={counts}>",
+        "after": "<QueryState query={counts} english={inventoryLanguage === \"en\"}>"
+      },
+      {
+        "before": "attrLabel(v.attributes)",
+        "after": "attrLabel(v.attributes, inventoryLanguage === \"en\" ? \"Standard variant\" : \"Única\")"
+      },
+      {
+        "before": "      {user.role !== \"seller\" && can(user.permissions, \"profit:read\") && (",
+        "after": "      {!query.isPending && !query.error && mode === \"stock\" && (\n        <InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} />\n      )}\n      {user.role !== \"seller\" && can(user.permissions, \"profit:read\") && ("
+      },
+      {
+        "before": "!query.isPending && !query.error && mode === \"stock\" && (",
+        "after": "!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === \"stock\" && ("
+      },
+      {
+        "before": "<InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} />",
+        "after": "<InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} scope={selectedWarehouse?.name || (inventoryLanguage === \"en\" ? \"In store\" : \"En Tienda\")} />"
+      },
+      {
+        "before": "                    <span>\n                      <strong>{v.product.name}</strong>\n                      <small>\n                        {v.sku} · {attrLabel(v.attributes, inventoryLanguage === \"en\" ? \"Standard variant\" : \"Única\")}\n                      </small>\n                    </span>",
+        "after": "                    <InventoryProduct name={v.product.name} image={v.product.imageUrl}>\n                      <small>\n                        {v.sku} · {attrLabel(v.attributes, inventoryLanguage === \"en\" ? \"Standard variant\" : \"Única\")}\n                      </small>\n                    </InventoryProduct>"
+      },
+      {
+        "before": "      <WarehousesPanel rows={rows} warehouseId={warehouseView} />",
+        "after": "      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === \"stock\" && (\n        <div className=\"inventory-insights\">\n          <InventoryAlerts rows={rows} stock={visibleStock} en={inventoryLanguage === \"en\"} scope={selectedWarehouse?.name || (inventoryLanguage === \"en\" ? \"In store\" : \"En Tienda\")} onInspect={setKardex} />\n          <InventoryMovements />\n        </div>\n      )}\n      <WarehousesPanel rows={rows} warehouseId={warehouseView} />"
+      },
+      {
+        "before": "<InventoryMovements />",
+        "after": "<InventoryMovements en={inventoryLanguage === \"en\"} />"
+      },
+      {
+        "before": "dateLabel(lot.expiryDate) : translateInventory",
+        "after": "dateLabel(lot.expiryDate, inventoryLanguage === \"en\" ? \"en-US\" : \"es-DO\") : translateInventory"
+      },
+      {
+        "before": "render: (c) => dateLabel(c.createdAt) },",
+        "after": "render: (c) => dateLabel(c.createdAt, inventoryLanguage === \"en\" ? \"en-US\" : \"es-DO\") },"
+      },
+      {
+        "before": "<DataTable\n              cards\n              rows={rows}",
+        "after": "<DataTable\n              english={inventoryLanguage === \"en\"}\n              cards\n              rows={rows}"
+      },
+      {
+        "before": "<DataTable\n                rows={counts.data || []}",
+        "after": "<DataTable\n                english={inventoryLanguage === \"en\"}\n                rows={counts.data || []}"
+      }
+    ]
+  }
 }
