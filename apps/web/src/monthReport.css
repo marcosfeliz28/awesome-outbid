@@ -1,0 +1,40 @@
+/* The monthly top-10 tables keep rank compact and money intact, like the approved report. */
+.norexos-premium-workspace[data-premium-area="month-report"]
+  .month-product-table
+  :is(td, th):nth-child(2) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.norexos-premium-workspace[data-premium-area="month-report"]
+  .month-product-table
+  :is(td, th):nth-child(n + 3) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 769px) {
+  .norexos-premium-workspace[data-premium-area="month-report"]
+    .month-product-table
+    :is(td, th):first-child:not([colspan]) {
+    width: 1%;
+    min-width: 0;
+    white-space: nowrap;
+    text-align: end;
+  }
+
+  .norexos-premium-workspace[data-premium-area="month-report"]
+    .month-product-table
+    :is(td, th):nth-child(2) {
+    min-width: 8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .norexos-premium-workspace[data-premium-area="month-report"]
+    .table-cards
+    .month-product-table
+    td::before {
+    white-space: normal;
+  }
+}

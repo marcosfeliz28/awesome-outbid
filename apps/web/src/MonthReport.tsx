@@ -1,3 +1,4 @@
+import "./monthReport.css";
 import { ReportEmblem, CategoryRevenueBars } from "./ReportVisuals";
 import { useLanguage } from "./inicioLanguage";
 import { PremiumWorkspace } from "./PremiumWorkspace";
@@ -272,7 +273,7 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                   ))}
                 </div>
                 <div className="table-scroll">
-                  <table className="month-table">
+                  <table className="month-table month-product-table">
                     <thead>
                       <tr>
                         <th>#</th>
@@ -304,7 +305,7 @@ export function MonthReport({ go }: { go: (page: string) => void }) {
                 <h2>{t("Las 10 m\u00e1s vendidas (por unidades)", "Top 10 best sellers (by units)")}</h2>
               </div>
               <div className="table-scroll">
-                <table className="month-table">
+                <table className="month-table month-product-table">
                   <thead>
                     <tr>
                       <th>#</th>
