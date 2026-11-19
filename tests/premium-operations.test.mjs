@@ -99,3 +99,11 @@ test('incentive empty rates are localized without changing rate selection or amo
  assert.ok(dictionary.includes('"sin tarifas": "no rates configured"'));
  assert.ok(dictionary.includes('return (text: string) => en ? (EN[text] ?? text) : text;'));
 });
+
+test('PNG14 configuration tab tiles are limited to inactive dark-green choices', () => {
+ const tileRule = css.match(/:root\[data-theme="dark"\]:not\(\[data-accent="blue"\]\):not\(\[data-overview-surface="black"\]\)\s+\.norexos-premium-workspace\[data-premium-area="configuration"\]\s+\.settings-workspace-layout > \.tabs > button:not\(\.active\)\s*\{([^}]+)\}/);
+ assert.ok(tileRule);
+ assert.match(tileRule[1], /background: linear-gradient/);
+ assert.match(tileRule[1], /border: 1px solid/);
+ assert.doesNotMatch(tileRule[1], /outline|animation|transition/);
+});
