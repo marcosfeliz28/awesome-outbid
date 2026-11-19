@@ -71,6 +71,14 @@ it("localizes product search labels while preserving merchandise handlers", () =
 });
 it("reverses ReceiptHistory display-only edits exactly with permissions and queries intact", () => {
   let original = readFileSync("apps/web/src/Purchases.tsx", "utf8");
+  const presentationEdit = JSON.parse(
+    readFileSync(
+      "docs/auditoria-ui/PRODUCTO-RECEPCIONES_REVERSIBLE.json",
+      "utf8",
+    ),
+  ) as { before: string; after: string };
+  expect(original.split(presentationEdit.after).length - 1).toBe(1);
+  original = original.replace(presentationEdit.after, presentationEdit.before);
   const ledger = JSON.parse(readFileSync("tests/receipt-history-language.ledger.json", "utf8"));
   expect(original).toContain('timeZone: "America/Santo_Domingo"');
   expect(original).toContain('english ? "No receipts yet."');

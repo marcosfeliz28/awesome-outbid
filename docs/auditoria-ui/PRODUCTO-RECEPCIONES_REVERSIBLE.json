@@ -1,0 +1,4 @@
+{
+  "before": "      ) : !rows.length ? (\n",
+  "after": "      ) : query.isError ? (\n        <div className=\"error-panel\" role=\"alert\">\n          <p>\n            {english\n              ? \"Could not load receipt history.\"\n              : \"No se pudo cargar el historial de recepciones.\"}\n          </p>\n          <Button variant=\"secondary\" onClick={() => query.refetch()}>\n            {english ? \"Retry\" : \"Reintentar\"}\n          </Button>\n        </div>\n      ) : !rows.length ? (\n"
+}

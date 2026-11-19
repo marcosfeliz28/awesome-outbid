@@ -2,6 +2,12 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · PRODUCTO-RECEPCIONES
+
+- `Purchases.tsx` distingue un error de carga del historial vacío y ofrece `Reintentar` / `Retry`; el botón solo repite la consulta existente.
+- La regresión quedó roja antes por ausencia de `query.isError` y verde después. El foco pasó 3 archivos/11 pruebas, con preservación reversible del editor. `pnpm check` pasó con 160 archivos/1,328 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API.
+- Sin cambios de API, compras, inventario, dinero, Render, producción, base o credenciales. Sigue sin push: los tres CI se comprobarán sobre el único SHA final.
+
 ## 2026-11-19 · ChatGPT NUBE · PRODUCTO-REPORTES
 
 - Base de dependencia: `origin/claude/publicar-lote5-19nov` `02cb36b7`; rama propia `chatgpt-nube/auditoria-ui-19nov`, sin publicar todavía.

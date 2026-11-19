@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · PRODUCTO-RECEPCIONES · error recuperable
+
+- **Orden:** pieza 4 de la orden nocturna del 19-nov en `origin/nexora-cloud` `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`. Solo pantalla protegida; no se modificaron API, compras, inventario ni datos.
+- **Problema y cambio:** el fallo de `GET /goods-receipts` se confundía con un historial vacío. `Purchases.tsx` ahora muestra `No se pudo cargar el historial de recepciones.` / `Could not load receipt history.` y un botón `Reintentar` / `Retry` que llama a `query.refetch()`.
+- **Regresión rojo→verde:** `tests/purchases-history-error.test.ts` falló primero con `expected -1 to be greater than -1` porque no existía la rama `query.isError`; después pasó. El foco completo pasó **3 archivos / 11 pruebas**, incluida la preservación byte a byte del editor mediante `PRODUCTO-RECEPCIONES_REVERSIBLE.json`.
+- **Autoauditoría:** el error se evalúa después de conexión/carga y antes del vacío; no se confunde con “sin recepciones”. El botón usa la misma consulta y filtros; no escribe, duplica ni altera una recepción. La primera corrida completa señaló una segunda guarda histórica (`merchandise-premium`); se añadió la misma reversión exacta y la repetición quedó verde.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **160 archivos / 1,328 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `git diff --check` pasó.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
 ## 2026-11-19 · PRODUCTO-REPORTES · tabla legible
 
 - **Orden y base:** leí la nueva orden de `origin/nexora-cloud` `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`. Como los helpers y la API indicados todavía no estaban en esa rama, rebasé la rama propia sobre el lote publicado `origin/claude/publicar-lote5-19nov` `02cb36b738ffe3415889e3618e2a3e0df95297c8`; no mezclé nada en `nexora-cloud`.
