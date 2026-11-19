@@ -2,16 +2,8 @@
 // pago, tipos de kardex y eventos de bitácora). Un código nuevo sin etiqueta
 // sale tal cual, para no esconder datos.
 
-const METHOD: Record<string, string> = {
-  cash: "Efectivo",
-  card: "Tarjeta",
-  transfer: "Transferencia",
-  credit: "Crédito",
-  cod: "Contraentrega",
-  credit_note: "Nota de crédito",
-};
-export const methodName = (method: string | null | undefined) =>
-  method ? (METHOD[method] ?? method) : "";
+import { methodName } from "@fitstore/shared";
+export { auditActionName, kardexTypeName, methodName } from "@fitstore/shared";
 
 const INCOME_KIND: Record<string, string> = {
   sale_cash: "Venta en efectivo",
@@ -26,29 +18,6 @@ const INCOME_KIND: Record<string, string> = {
   return_transfer: "Devolución por transferencia",
 };
 export const incomeKindName = (kind: string) => INCOME_KIND[kind] ?? kind;
-
-const KARDEX: Record<string, string> = {
-  purchase: "Entrada",
-  sale: "Venta",
-  adjustment: "Ajuste",
-  count: "Conteo físico",
-  waste: "Merma",
-  supplier_return: "Devolución a proveedor",
-  return: "Devolución",
-  return_waste: "Merma por devolución",
-  void: "Anulación (vuelve al stock)",
-  transfer_in: "Traspaso recibido",
-  transfer_out: "Traspaso enviado",
-};
-export const kardexTypeName = (type: string) => KARDEX[type] ?? type;
-
-const AUDIT_ACTION: Record<string, string> = {
-  void: "Anulación",
-  return: "Devolución",
-  discount_approved: "Descuento aprobado",
-};
-export const auditActionName = (action: string) =>
-  AUDIT_ACTION[action] ?? action;
 
 const rd = (value: unknown) =>
   "RD$ " +

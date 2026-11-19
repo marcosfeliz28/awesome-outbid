@@ -12,7 +12,7 @@ import EmbeddedPostgres from "embedded-postgres";
 import { ReportsController } from "../apps/api/src/reports";
 import { REPORTES } from "../apps/api/src/reportes";
 import { FormalReportController } from "../apps/api/src/formal-report";
-import { permissions } from "../packages/shared/src";
+import { permissions, reportDisplayRows } from "../packages/shared/src";
 
 // Auditoría de reportes (19-nov-2026): textos del servidor en español,
 // vendedoras por persona y días entre compras. Cada prueba falla con el
@@ -228,13 +228,23 @@ async function report(name: string, query: Record<string, string> = day) {
   return body;
 }
 
+// El JSON de la API conserva los códigos (cash, void, purchase y el id de la
+// venta) que leen las pruebas de dinero (T3, R9-dinero-8/9, D-05, N-4, R9-A05);
+// el español va en lo que se ve: pantalla, Excel y PDF (reportDisplayRows).
 describe("Textos del servidor en reportes", () => {
   it("Devoluciones y descuentos: evento, persona, factura y detalle legibles", async () => {
     const { rows } = await report("returns-discounts");
-    expect(rows.map((r: any) => [r.Evento, r.Usuario, r.Referencia])).toEqual([
+    expect(rows.map((r: any) => [r.Evento, r.Usuario, r.Factura])).toEqual([
+      ["void", "Ana Pérez", "QA-1"],
+      ["discount_approved", "Ana Pérez", "QA-1"],
+    ]);
+    const shown = reportDisplayRows("returns-discounts", rows);
+    expect(shown.map((r: any) => [r.Evento, r.Usuario, r.Factura])).toEqual([
       ["Anulación", "Ana Pérez", "QA-1"],
       ["Descuento aprobado", "Ana Pérez", "QA-1"],
     ]);
+    // El código de la venta no se muestra.
+    for (const r of shown) expect(r).not.toHaveProperty("Referencia");
     expect(rows[0].Detalle).toBe("Motivo: Error de cobro");
     expect(rows[1].Detalle).toContain("(la misma persona que vendió)");
     for (const r of rows) expect(r.Detalle).not.toMatch(/[{}]/);
@@ -247,9 +257,15 @@ describe("Textos del servidor en reportes", () => {
 
   it("Kardex y método de pago en español", async () => {
     const kardex = await report("kardex");
-    expect(kardex.rows.map((r: any) => r.Tipo)).toEqual(["Entrada"]);
+    expect(kardex.rows.map((r: any) => r.Tipo)).toEqual(["purchase"]);
+    expect(
+      reportDisplayRows("kardex", kardex.rows).map((r: any) => r.Tipo),
+    ).toEqual(["Entrada"]);
     const payment = await report("by-payment");
-    expect(payment.rows.map((r: any) => r.Método)).toEqual(["Efectivo"]);
+    expect(payment.rows.map((r: any) => r.Método)).toEqual(["cash"]);
+    expect(
+      reportDisplayRows("by-payment", payment.rows).map((r: any) => r.Método),
+    ).toEqual(["Efectivo"]);
   });
 });
 

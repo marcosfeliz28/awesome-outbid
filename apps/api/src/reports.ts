@@ -24,6 +24,7 @@ import {
   replayReturns,
   returnedAt,
   PAYMENT_GROUPS,
+  reportDisplayRows,
   z,
 } from "@fitstore/shared";
 import {
@@ -53,12 +54,7 @@ import {
 import { renderPdf } from "./reportes/export-pdf";
 import { GUIA_REPORTES } from "./reportes/guia";
 import { renderXlsx } from "./reportes/export-xlsx";
-import {
-  auditActionName,
-  auditDetail,
-  kardexTypeName,
-  methodName,
-} from "./reportes/textos";
+import { auditDetail } from "./reportes/textos";
 
 // Títulos en español de los PDF de los informes de siempre (salía «profit»),
 // los mismos de la pantalla de Reportes.
@@ -1331,7 +1327,7 @@ export class ReportsController {
           );
         rows = [...methods]
           .map(([method, m]) => ({
-            Método: methodName(method),
+            Método: method,
             Ventas: money(m.sold),
             Cobros_de_crédito: money(m.collected),
           }))
@@ -1594,6 +1590,8 @@ export class ReportsController {
       } else bad("Reporte no disponible.");
     }
     rows = safe(rows, actor);
+    if (query.format === "xlsx" || query.format === "pdf")
+      rows = reportDisplayRows(name, rows);
     if (query.format === "xlsx") {
       const book = new ExcelJS.Workbook();
       const sheet = book.addWorksheet(name.slice(0, 31));
@@ -1916,7 +1914,7 @@ function listing(
             Fecha: localTime(m.createdAt),
             SKU: m.variant.sku,
             Producto: m.variant.product.name,
-            Tipo: kardexTypeName(m.type),
+            Tipo: m.type,
             Cantidad: Number(m.qty),
             Saldo: Number(m.balanceAfter),
             Costo: Number(m.unitCost),
@@ -1964,9 +1962,12 @@ function listing(
         last: events.at(-1)?.id,
         rows: events.map((e) => ({
           Fecha: localTime(e.createdAt),
-          Evento: auditActionName(e.action),
+          // Códigos en el JSON; en pantalla, Excel y PDF el evento va en
+          // español y la Referencia (código de la venta) no se muestra.
+          Evento: e.action,
           Usuario: userName.get(e.userId) ?? e.userId,
-          Referencia: saleNumber.get(e.entityId) ?? e.entityId,
+          Referencia: e.entityId,
+          Factura: saleNumber.get(e.entityId) ?? "",
           // Frase sin costos: el safe() final no limpia dentro de un texto
           // (R9-dinero-8).
           Detalle: auditDetail(e.action, e.after),
@@ -2015,7 +2016,7 @@ async function sendListing(
   let batch = await list.read({ take: EXPORT_BATCH });
   const batches = async function* () {
     for (;;) {
-      yield safe(batch.rows, actor);
+      yield reportDisplayRows(name, safe(batch.rows, actor));
       if (batch.rows.length < EXPORT_BATCH) return;
       batch = await list.read({ take: EXPORT_BATCH, cursor: batch.last });
     }
