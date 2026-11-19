@@ -1,6 +1,18 @@
 [
   {
+    "before": "import { InventorySummary } from \"./InventorySummary\";\n",
+    "after": "import { InventorySummary } from \"./InventorySummary\";\nimport { shouldShowWarehouseRow } from \"./inventoryWarehouseView\";\n"
+  },
+  {
     "before": "  const rows = (query.data || []).filter((v: any) =>\n    [v.sku, v.barcode, v.product.name]\n      .join(\" \")\n      .toLowerCase()\n      .includes(search.toLowerCase()),\n  );\n",
-    "after": "  const rows = (query.data || [])\n    .filter((v: any) =>\n      [v.sku, v.barcode, v.product.name]\n        .join(\" \")\n        .toLowerCase()\n        .includes(search.toLowerCase()),\n    )\n    .filter(\n      (v: any) =>\n        warehouseView === \"all\" || Number(visibleStock(v)) > 0,\n    );\n"
+    "after": "  const searchRows = (query.data || []).filter((v: any) =>\n      [v.sku, v.barcode, v.product.name]\n        .join(\" \")\n        .toLowerCase()\n        .includes(search.toLowerCase()),\n    );\n  const rows = searchRows.filter((v: any) =>\n    shouldShowWarehouseRow(\n      warehouseView,\n      selectedWarehouse?.kind,\n      visibleStock(v),\n    ),\n  );\n"
+  },
+  {
+    "before": "<InventorySummary rows={rows}",
+    "after": "<InventorySummary rows={searchRows}"
+  },
+  {
+    "before": "<InventoryAlerts rows={rows}",
+    "after": "<InventoryAlerts rows={searchRows}"
   }
 ]

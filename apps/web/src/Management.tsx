@@ -17,6 +17,7 @@ import { InventoryProduct } from "./InventoryProduct";
 import { InventoryAlerts } from "./InventoryAlerts";
 import { InventoryMovements } from "./InventoryMovements";
 import { InventorySummary } from "./InventorySummary";
+import { shouldShowWarehouseRow } from "./inventoryWarehouseView";
 import "./fusion-inventory.css";
 import { CatalogPresentation } from "./CatalogPresentation";
 import {
@@ -905,17 +906,19 @@ export function Inventory() {
         ?.qty ?? 0,
     );
   };
-  const rows = (query.data || [])
-    .filter((v: any) =>
+  const searchRows = (query.data || []).filter((v: any) =>
       [v.sku, v.barcode, v.product.name]
         .join(" ")
         .toLowerCase()
         .includes(search.toLowerCase()),
-    )
-    .filter(
-      (v: any) =>
-        warehouseView === "all" || Number(visibleStock(v)) > 0,
     );
+  const rows = searchRows.filter((v: any) =>
+    shouldShowWarehouseRow(
+      warehouseView,
+      selectedWarehouse?.kind,
+      visibleStock(v),
+    ),
+  );
   return (
     <section className="fusion-inventory" aria-label={translateInventory("Inventario")}>
       <Heading
@@ -924,7 +927,7 @@ export function Inventory() {
         caption={translateInventory("El inventario correcto hace espacio para mejores decisiones.")}
       />
       {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === "stock" && (
-        <InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} />
+        <InventorySummary rows={searchRows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} />
       )}
       {user.role !== "seller" && can(user.permissions, "profit:read") && (
         <WithoutCostCard />
@@ -1109,7 +1112,7 @@ export function Inventory() {
       </div>
       {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === "stock" && (
         <div className="inventory-insights">
-          <InventoryAlerts rows={rows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} onInspect={setKardex} />
+          <InventoryAlerts rows={searchRows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} onInspect={setKardex} />
           <InventoryMovements en={inventoryLanguage === "en"} />
         </div>
       )}

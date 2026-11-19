@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · revisión del filtro de almacén
+
+- **Orden y base:** Claude aprobó `chatgpt-nube/auditoria-ui-19nov` con un cambio en `origin/nexora-cloud` `16c1469f`. La corrección vive en la rama propia `chatgpt-nube/filtro-almacen-19nov`, basada en la entrega aprobada e incorporando la orden actual.
+- **Problema y cambio:** el filtro `visibleStock(v) > 0` ocultaba agotados y negativos en Tienda, y además retiraba esas filas de resumen y alertas. Ahora Tienda/Todos muestran `0`, negativos y positivos; Casa/otros almacenes ocultan solo `0`; resumen y alertas usan las filas de búsqueda sin el filtro de existencia.
+- **Regresión rojo→verde:** antes falló por el helper inexistente. Después pasaron **6 archivos / 32 pruebas**, incluyendo semántica directa para `0` y `−2`, conteo de dos agotados y preservaciones exactas de `Management.tsx`.
+- **Control local:** `pnpm check` pasó con typecheck, ESLint, **168 archivos / 1,349 pruebas** (un archivo / diez pruebas omitidos) y builds web/API. `git diff --check` pasó.
+- **Autoauditoría:** no se reinterpreta ni escribe stock; `visibleStock` sigue siendo la única fuente. `WarehousesPanel` conserva las filas de tabla para no ampliar opciones de traspaso. La evidencia reversible fue actualizada sin cambiar hashes históricos. No se tocaron API, dinero, Render, producción, base ni credenciales.
+- **Publicación/CI:** pendiente del único push final y los tres CI del SHA remoto.
+
 ## 2026-11-19 · P2 · últimos siete días reales
 
 - **Base y duplicación:** se incorporó `origin/nexora-cloud` `ac7ee042c6c66909eeee06259c9a59ae46415e49` mediante merge limpio. P2 seguía pendiente y no estaba en el historial de la rama.

@@ -2,6 +2,15 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · revisión del filtro de almacén
+
+- **Orden y rama:** revisión `16c1469f` de Claude sobre `0f8ca8d1`; rama nueva `chatgpt-nube/filtro-almacen-19nov`, con `origin/nexora-cloud` incorporado. No duplica otro trabajo activo.
+- **Cambio:** Tienda y Todos conservan variantes con existencia `0`, negativa o positiva. Casa/otros almacenes ocultan únicamente `0` y conservan negativos. `InventorySummary` e `InventoryAlerts` reciben las filas que coinciden con la búsqueda antes del filtro visual, por lo que `0` y `−2` cuentan como agotados. `WarehousesPanel` y la tabla conservan su alcance previo.
+- **Regresión rojo→verde:** primero falló `tests/inventory-warehouse-filter.test.ts` con `Cannot find module '../apps/web/src/inventoryWarehouseView'`. Después el foco pasó **6 archivos / 32 pruebas**, cubriendo Tienda `0/−2`, Casa `0/−2`, Todos, resumen/alertas y las guardas byte a byte.
+- **Control local:** `pnpm check` terminó con código 0: typecheck, ESLint, **168 archivos / 1,349 pruebas** (un archivo / diez pruebas omitidos) y builds web/API verdes. `git diff --check` pasó.
+- **Autoauditoría:** el helper solo decide visibilidad y no cambia `visibleStock`, cantidades, movimientos, API, permisos, dinero ni base. La capa reversible conserva los hashes históricos. Sin Render, producción, credenciales, mezcla ni despliegue.
+- **Publicación/CI:** pendiente del único push final y de comprobar `verify`, `windows-installer` y `render-images` sobre ese SHA.
+
 ## 2026-11-19 · ChatGPT NUBE · P2 en Resumen
 
 - `Últimos 7 días` ahora usa el día final y las seis fechas civiles anteriores; antes usaba el lunes de la semana y podía consultar solo 1–6 días. El mismo rango alimenta Resumen y la exportación.
