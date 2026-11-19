@@ -57,9 +57,9 @@ import { RequestRateLimitService } from "./rate-limit";
 const customerSchema = z.object({
   creditLimit: amount.optional(),
   name: z.string().trim().min(2).max(120),
-  phone: z.string().max(30).optional(),
+  phone: z.string().trim().max(30).optional(),
   email: z.string().email().or(z.literal("")).optional(),
-  legalId: z.string().max(30).optional(),
+  legalId: z.string().trim().max(30).optional(),
   notes: z.string().max(1000).default(""),
 });
 const anonymizeCustomerSchema = z.object({
@@ -67,9 +67,9 @@ const anonymizeCustomerSchema = z.object({
   requestRef: z.string().trim().min(3).max(100),
 });
 const supplierSchema = z.object({
-  name: z.string().min(2).max(120),
-  legalId: z.string().max(30).optional(),
-  phone: z.string().max(30).optional(),
+  name: z.string().trim().min(2).max(120),
+  legalId: z.string().trim().max(30).optional(),
+  phone: z.string().trim().max(30).optional(),
   email: z.string().email().or(z.literal("")).optional(),
   paymentTermsDays: z.number().int().min(0).max(365).default(30),
   leadTimeDays: z.number().int().min(0).max(365).default(7),

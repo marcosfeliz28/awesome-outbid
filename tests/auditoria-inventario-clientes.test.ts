@@ -188,3 +188,66 @@ describe("UC-24 · búsqueda sin acentos ni mayúsculas", () => {
     expect(matchesSearch("Jose Peña", "maria")).toBe(false);
   });
 });
+
+// VE (validación de entradas) en proveedores, clientes y categorías: solo
+// espacios no es un nombre; los espacios de los bordes se recortan; largo con
+// tope.
+describe("VE · entradas de proveedores, clientes y categorías", () => {
+  const fakeAdminDb = () => {
+    const created: any[] = [];
+    const db: any = {
+      supplier: {
+        create: async ({ data }: any) => (created.push(data), data),
+      },
+      customer: {
+        create: async ({ data }: any) => (
+          created.push(data),
+          { id: "c1", ...data }
+        ),
+      },
+      auditLog: { create: async () => ({}) },
+    };
+    return { db, created };
+  };
+  it("proveedor: nombre con solo espacios se rechaza; bordes recortados", async () => {
+    const { AdminController } = await import("../apps/api/src/admin");
+    const { db, created } = fakeAdminDb();
+    const admin = new AdminController(db);
+    expect(() => admin.supplier({ name: "     " }, manager)).toThrow();
+    expect(created).toHaveLength(0);
+    await admin.supplier(
+      {
+        name: "  Distribuidora X  ",
+        phone: " 809 555 0000 ",
+        legalId: " 101 ",
+      },
+      manager,
+    );
+    expect(created[0]).toMatchObject({
+      name: "Distribuidora X",
+      phone: "809 555 0000",
+      legalId: "101",
+    });
+  });
+  it("cliente: teléfono y cédula sin espacios en los bordes", async () => {
+    const { AdminController } = await import("../apps/api/src/admin");
+    const { db, created } = fakeAdminDb();
+    await new AdminController(db).customer(
+      { name: " Ana ", phone: " 8095550000 ", legalId: " 00112345678 " },
+      manager,
+    );
+    expect(created[0]).toMatchObject({
+      name: "Ana",
+      phone: "8095550000",
+      legalId: "00112345678",
+    });
+  });
+  it("categoría: solo espacios o más de 80 letras se rechaza", async () => {
+    const { categoryBody } = await import("../apps/api/src/catalog");
+    expect(categoryBody.safeParse({ name: "    " }).success).toBe(false);
+    expect(categoryBody.safeParse({ name: "x".repeat(81) }).success).toBe(
+      false,
+    );
+    expect(categoryBody.parse({ name: "  Fajas  " }).name).toBe("Fajas");
+  });
+});

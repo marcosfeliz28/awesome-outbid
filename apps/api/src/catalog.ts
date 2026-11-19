@@ -192,7 +192,7 @@ const productSchema = z.object({
 // Cuerpo de POST /categories. Los atributos tienen tope de 30, igual que los valores
 // de atributos de variante (apps/api/src/catalog.ts, `attributes`).
 export const categoryBody = z.object({
-  name: z.string().min(2),
+  name: z.string().trim().min(2).max(80),
   requiresLot: z.boolean().default(false),
   requiresExpiry: z.boolean().default(false),
   color: z
