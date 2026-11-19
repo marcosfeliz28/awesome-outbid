@@ -156,7 +156,7 @@ Cuadrícula de métodos (`:2535-2574`). Se elige el método, se escribe el monto
    - **«Notas del cierre»**, y la casilla obligatoria «Confirmo que conté efectivo y tarjeta. Las transferencias las suma el sistema.»
 5. Botón **«Cerrar caja e imprimir cuadre»** (`Tienda.tsx:475-478`). `POST /cash-sessions/:id/close` (`cash.ts:1112`).
 6. Reglas del cierre en el servidor:
-   - Las **transferencias las suma el sistema**, no la cajera (`cash.ts:1213`).
+   - Las **transferencias las suma el sistema**, no la cajera (`cash.ts:1233`). Si después del cierre se verifica un abono por transferencia o se rechaza una transferencia, la transferencia contada sigue a la esperada y su diferencia queda en 0; efectivo y tarjeta no se tocan. Los cierres anteriores al 16-oct (cuando la cajera aún escribía la transferencia) no se pisan (`cash.ts:227-236`).
    - Si tarjeta, efectivo o dólares **no cuadran** y quien cierra es cajera (o gerente cerrando SU caja, salvo `*`): no cierra sin el **PIN de otra persona con permiso** y una **justificación del descuadre** (mín. 10 letras). El mensaje no dice cuánto falta ni sobra (`cash.ts:1248-1300`). Mensajes: «El total de tarjeta no coincide con el sistema…», «La caja no cuadra con el sistema. Vuelve a contar…» (`:1268-1274`).
    - Desde el **2.º intento** que no cuadra, todo cierre pide justificación y PIN: «Ya hubo 2 intentos de cierre que no cuadraron…» (`cash.ts:46-48`, `:1254-1268`).
    - Diferencia mayor a «cashDifferenceLimit» (RD$ 100 por defecto) → exige nota y crea alerta «cash_difference» (`cash.ts:203-226`, `:1390-1410`).

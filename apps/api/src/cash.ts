@@ -224,15 +224,35 @@ export function cashCloseRequiresNote(
     ? Math.max(...values) > differenceLimit
     : values.some((value) => value > 0);
 }
+// Cierres hechos con la regla «las transferencias las suma el sistema»
+// (commit 02a834e4 del 14-oct; se toma desde el 16-oct por margen de
+// despliegue): los nuevos llevan la marca; los demás se reconocen por fecha.
+const AUTO_TRANSFER_SINCE = new Date("2026-10-16T04:00:00.000Z");
+export function transferCountedBySystem(session: any) {
+  if ((session.closeDetails as any)?.transferBySystem === true) return true;
+  return (
+    !!session.closedAt && new Date(session.closedAt) >= AUTO_TRANSFER_SINCE
+  );
+}
 // Recalcula lo esperado de una caja ya cerrada (venta offline sincronizada o
 // transferencia verificada después del cierre) y guarda las diferencias.
 export async function refreshClosedCash(tx: any, session: any) {
   const expected = await cashExpected(tx, session);
-  const differences = closeDifferences(session, expected);
+  // A2 (auditoría 19-nov): desde el 14-oct la transferencia «contada» la pone
+  // el sistema al cerrar (= esperada), no la cajera. Si después se verifica un
+  // abono o se rechaza una transferencia, lo contado sigue a lo esperado para
+  // no inventar un faltante/sobrante de transferencia. Los cierres anteriores
+  // pudieron traer una cifra escrita por la cajera: ésos no se pisan.
+  const autoTransfer = transferCountedBySystem(session);
+  const differences = closeDifferences(
+    autoTransfer ? { ...session, countedTransfer: expected.transfer } : session,
+    expected,
+  );
   const details = (session.closeDetails as any) ?? {};
   await tx.cashSession.update({
     where: { id: session.id },
     data: {
+      ...(autoTransfer ? { countedTransfer: expected.transfer } : {}),
       // Los cierres anteriores al pago en dólares no esperaban US$: no se
       // les inventa un descuadre al recalcular.
       ...(details.expectedUsd !== undefined || expected.usd
@@ -1225,6 +1245,8 @@ export class CashController {
           eurRate: settings?.eurRate ?? null,
           // Decisión 38: quién cerró la caja (puede no ser su dueño).
           closedBy: { id: actor.id, name: actor.name },
+          // A2: la transferencia contada la puso el sistema, no la cajera.
+          transferBySystem: true,
         },
       };
       const differences = closeDifferences(data, expected);
