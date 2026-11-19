@@ -81,3 +81,14 @@ Después, tres piezas de diseño para lo que toca dinero, que **no se construye*
 9. **COM-04** (cantidad editable en el carrito): reglas de límites (existencia, descuento por línea, mayoreo) y qué hace con precio, promoción e ITBIS.
 10. **COM-03** parte de aviso de margen bajo: confirma que respeta (precio − costo) / precio sin restar ITBIS y el mínimo de 15 %.
 Termina con una tabla con el orden de construcción que recomiendas y las dependencias entre las diez.
+
+## Orden 19-nov (noche) — pantallas pendientes de los arreglos de Claude nube (lote en claude/publicar-lote5-19nov)
+Claude no toca pantallas protegidas (regla 4). La API ya está lista; falta SOLO la pantalla. Nada de API, base de datos ni dinero en tu rama. Entrega en chatgpt-nube/auditoria-ui-19nov (o la rama que uses) y Claude revisa y publica con los 3 CI en verde.
+1. **Reportes (Management.tsx):** la API devuelve códigos (`cash`, `return`, `return_waste`) y el id de venta en `Referencia`; usa `reportCellText` y `reportColumnVisible` de `packages/shared` (y `reportDisplayRows`) para mostrar español y ocultar `Referencia`; hay columna nueva `Factura`. Sin esto la tabla muestra códigos.
+2. **POS.tsx:** «Infinity en stock» (líneas ~62, 1631, 1684); WhatsApp sin el 1 (P3); «un se cobra» (P12); CP-01 descuento global (reproducir en navegador), CP-02, CP-11.
+3. **Management.tsx:** buscador de clientes usa `matchesSearch` de `apps/web/src/customerSearch.ts` (~línea 2425; sin acentos ni mayúsculas); filtro de almacén «Casa» filtra por `visibleStock(v) > 0` (~línea 900); Ventas > corregir método: campos de caja que recibió el efectivo (`cashSessionId`) y marca de efectivo de la dueña (`ownerConfirmed`) para tarjeta→efectivo sin caja (D9), ofreciendo solo cajas abiertas; botón «pasar a una caja el efectivo Recibido por la dueña» (POST /payments/:id/move-cash-session, con motivo); `operationId` opcional en el formulario de ajustes; etiqueta de la alerta `opening_shortfall`.
+4. **Purchases.tsx (~526-531):** historial de recepciones: rama `query.isError` con «Reintentar».
+5. **Tienda.tsx:** P8 (cierre que parece fallido si el cuadre no carga) y P11 (total «Por cobrar» menor sin aviso). Y añade `Tienda.tsx` a la lista de pantallas protegidas (la guarda store-settings-language ya lo exige byte a byte).
+6. **Dashboard.tsx:** P2 «Últimos 7 días» empieza el lunes; DD-06 porcentajes que suman 99 % (método del mayor resto); DD-07 «Ganancia bruta» con/sin ITBIS; P14 montos de tablas con «RD$»; P15 mostrar el rango aplicado si se borra «Desde» (la API devuelve from y to).
+7. **App.tsx / formularios:** login: rechazar usuario vacío antes de enviar (VE-001); UC-30 la campana cuenta 200 y Resumen 6: decidir qué contar; `PasswordChangeFields.tsx` UC-27 aviso en línea «las contraseñas no coinciden»; caja GV: campo Notas ya existe, mostrar el error si el cierre con diferencia no lo trae.
+Nota: en tus mensajes evita la palabra «seguridad» en los títulos (filtro de ChatGPT).
