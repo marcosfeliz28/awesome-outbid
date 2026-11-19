@@ -865,6 +865,11 @@ export class AuthController implements OnModuleInit {
       { pin: data.pin, actor },
     );
     if (!user) bad("PIN incorrecto.");
+    // M3 (auditoría 19-nov): quién abrió la sesión de quién, desde qué equipo.
+    await audit(this.db, actor, "pin_switch", "user", user.id, undefined, {
+      fromUserId: actor.id,
+      targetRole: user.role.name,
+    });
     return this.issue(user, res);
   }
 }
