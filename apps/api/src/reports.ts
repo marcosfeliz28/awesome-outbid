@@ -53,6 +53,12 @@ import {
 import { renderPdf } from "./reportes/export-pdf";
 import { GUIA_REPORTES } from "./reportes/guia";
 import { renderXlsx } from "./reportes/export-xlsx";
+import {
+  auditActionName,
+  auditDetail,
+  kardexTypeName,
+  methodName,
+} from "./reportes/textos";
 
 // Títulos en español de los PDF de los informes de siempre (salía «profit»),
 // los mismos de la pantalla de Reportes.
@@ -1074,16 +1080,24 @@ export class ReportsController {
         Monto: Number(e.amount),
         Presupuesto: Number(e.category.monthlyBudget),
       }));
-    else if (name === "cash")
-      rows = (
-        await this.db.cashSession.findMany({
-          where: { branchId: actor.branchId, openedAt: range },
-        })
-      ).map((s) => ({
+    else if (name === "cash") {
+      const sessions = await this.db.cashSession.findMany({
+        where: { branchId: actor.branchId, openedAt: range },
+      });
+      // El nombre de quien abrió, no su código interno.
+      const owners = new Map(
+        (
+          await this.db.user.findMany({
+            where: { id: { in: [...new Set(sessions.map((s) => s.userId))] } },
+            select: { id: true, name: true },
+          })
+        ).map((u) => [u.id, u.name]),
+      );
+      rows = sessions.map((s) => ({
         Fecha: s.openedAt.toLocaleString("es-DO", {
           timeZone: BUSINESS_TIME_ZONE,
         }),
-        Usuario: s.userId,
+        Usuario: owners.get(s.userId) ?? s.userId,
         Estado: s.closedAt ? "Cerrada" : "Abierta",
         Esperado: Number(s.expectedCash ?? 0),
         Contado: Number(s.countedCash ?? 0),
@@ -1091,7 +1105,7 @@ export class ReportsController {
         Diferencia_tarjeta: Number(s.differenceCard ?? 0),
         Diferencia_transferencia: Number(s.differenceTransfer ?? 0),
       }));
-    else if (name === "income-statement") {
+    } else if (name === "income-statement") {
       const summary: any = await this.dashboard(query, actor);
       rows = [
         { Concepto: "Ventas sin ITBIS", Monto: summary.netSales },
@@ -1296,7 +1310,7 @@ export class ReportsController {
           );
         rows = [...methods]
           .map(([method, m]) => ({
-            Método: method,
+            Método: methodName(method),
             Ventas: money(m.sold),
             Cobros_de_crédito: money(m.collected),
           }))
@@ -1881,7 +1895,7 @@ function listing(
             Fecha: localTime(m.createdAt),
             SKU: m.variant.sku,
             Producto: m.variant.product.name,
-            Tipo: m.type,
+            Tipo: kardexTypeName(m.type),
             Cantidad: Number(m.qty),
             Saldo: Number(m.balanceAfter),
             Costo: Number(m.unitCost),
@@ -1912,16 +1926,29 @@ function listing(
           after: true,
         },
       });
+      // Nombres y números en vez de códigos internos: la entidad es la venta.
+      const [users, sales] = await Promise.all([
+        db.user.findMany({
+          where: { id: { in: [...new Set(events.map((e) => e.userId))] } },
+          select: { id: true, name: true },
+        }),
+        db.sale.findMany({
+          where: { id: { in: [...new Set(events.map((e) => e.entityId))] } },
+          select: { id: true, number: true },
+        }),
+      ]);
+      const userName = new Map(users.map((u: any) => [u.id, u.name]));
+      const saleNumber = new Map(sales.map((s: any) => [s.id, s.number]));
       return {
         last: events.at(-1)?.id,
         rows: events.map((e) => ({
           Fecha: localTime(e.createdAt),
-          Evento: e.action,
-          Usuario: e.userId,
-          Referencia: e.entityId,
-          // Sin costos para quien no tiene profit:read: el safe() final no
-          // limpia dentro de un texto (R9-dinero-8).
-          Detalle: JSON.stringify(safe(e.after, actor)),
+          Evento: auditActionName(e.action),
+          Usuario: userName.get(e.userId) ?? e.userId,
+          Referencia: saleNumber.get(e.entityId) ?? e.entityId,
+          // Frase sin costos: el safe() final no limpia dentro de un texto
+          // (R9-dinero-8).
+          Detalle: auditDetail(e.action, e.after),
         })),
       };
     },
