@@ -1022,7 +1022,9 @@ export function Inventory() {
                     <div className="table-actions">
                       <button
                         className="text-link"
-                        onClick={() => setAdjust(v)}
+                        onClick={() =>
+                          setAdjust({ ...v, operationId: crypto.randomUUID() })
+                        }
                       >
                         {translateInventory("Ajustar")}
                       </button>
@@ -1172,6 +1174,7 @@ export function Inventory() {
           onSubmit={(data) =>
             post("/inventory/adjustments", {
               ...data,
+              operationId: adjust.operationId,
               variantId: adjust.id,
               lotId: data.lotId || undefined,
               lotNumber: data.lotNumber || undefined,
