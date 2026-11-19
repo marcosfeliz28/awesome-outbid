@@ -179,4 +179,31 @@ describe("Hallazgo 16 · caja de GV", () => {
     );
     expect(done.differences.total).toBe("-100.00");
   });
+  it("anular un pago de una caja de GV cerrada recalcula su cierre", async () => {
+    const { GvController } = await import("../apps/api/src/gv");
+    const session = {
+      id: "g1",
+      openingAmount: 0,
+      closedAt: new Date("2026-11-18T22:00:00Z"),
+      countedCash: 500,
+      countedCard: 0,
+      countedTransfer: 0,
+      expectedCash: 500,
+      difference: 0,
+    };
+    const { db, updates } = gvDb(session, [
+      efectivo("8f6c1a2e-1b2c-4d3e-8f4a-5b6c7d8e9f01", 500),
+    ]);
+    const gv = new GvController(db);
+    await gv.voidPayment(
+      "8f6c1a2e-1b2c-4d3e-8f4a-5b6c7d8e9f01",
+      { reason: "Cobro duplicado" },
+      actor,
+    );
+    const refreshed = updates.find((u) => "expectedCash" in u);
+    expect(refreshed).toMatchObject({
+      expectedCash: "0.00",
+      difference: "500.00",
+    });
+  });
 });
