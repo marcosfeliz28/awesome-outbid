@@ -72,3 +72,8 @@ description: Lecciones operativas de Norexos 1 (cómo hacer las cosas rápido y 
 - El digest que da la API es del ZIP del artefacto, no del `.exe`; los artefactos caducan a los 7 días.
 - `actions_list` usa `perPage`, no `per_page`; sin el nombre correcto devuelve 30 corridas.
 
+
+## 19-nov
+- Correr `tests/docs-sistema-citas.test.ts` reescribe `docs/sistema/*` en el árbol: tras correrlo en una rama de mezcla, `git checkout -- docs/sistema` antes de cambiar de rama (si no, el checkout aborta).
+- Mover efectivo «Recibido por la dueña» a una caja: `POST /payments/:id/move-cash-session {cashSessionId, reason}`; el listado de cajas es `GET /cash-sessions` (no `/cash/sessions`) y el cuadre `GET /cash-sessions/:id/cuadre` (cashCheck). Verificar antes/después por los 3 caminos: lista, cuadre y respuesta del POST.
+- Run CI de claude/publicar-lote2-19nov 979eb9a4 → 44463120659.
