@@ -64,3 +64,13 @@ it("IT-018/IT-019: aclara el encabezado de Excel y separa su acción", () => {
     /\.casa-import-actions\s*\{[^}]*display:\s*flex[^}]*gap:\s*10px/,
   );
 });
+
+it("INV-011: mantiene las tres acciones dentro del borde visible en escritorio", () => {
+  const css = read("apps/web/src/fusion-inventory.css");
+  expect(css).toMatch(
+    /@media \(min-width: 769px\)[\s\S]*?\.fusion-inventory :is\(th, td\):last-child\s*\{[\s\S]*?position:\s*sticky[\s\S]*?right:\s*0/,
+  );
+  expect(css).toMatch(
+    /\.fusion-inventory \.table-actions\s*\{[\s\S]*?flex-wrap:\s*nowrap[\s\S]*?min-width:\s*160px/,
+  );
+});
