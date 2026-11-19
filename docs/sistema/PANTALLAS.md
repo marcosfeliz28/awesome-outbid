@@ -51,7 +51,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 ## Caja
 
 - **Etiqueta:** «Caja». **Permiso:** `cash:write`. **Componente:** `Cash`, `apps/web/src/Management.tsx:1690`. Título en pantalla: «Una caja que siempre cuadra» (`:1670`).
-- **Qué hace:** abrir caja («Abrir caja», `:1674-1677`), «Movimiento» de efectivo (entrada/salida, `:1688-1692`), «Cerrar y arquear» (`:1693`), ventas guardadas sin conexión (`:1750-1917`), «Historial de cajas» con botones «Cuadre», «Venta diaria», «Por forma de pago» (`:1918-2014`; `apps/web/src/Tienda.tsx:486-516`), y el panel **«Créditos pendientes»** (crédito y contraentrega) (`apps/web/src/Tienda.tsx:596-797`). También muestra «Mis incentivos» (`:1748`).
+- **Qué hace:** abrir caja («Abrir caja», `:1674-1677`), «Movimiento» de efectivo (entrada/salida, `:1688-1692`), «Cerrar y arquear» (`:1693`), ventas guardadas sin conexión (`:1750-1917`), «Historial de cajas» con botones «Cuadre», «Venta diaria», «Por forma de pago» (`:1918-2014`; `apps/web/src/Tienda.tsx:498-528`), y el panel **«Créditos pendientes»** (crédito y contraentrega) (`apps/web/src/Tienda.tsx:608-809`). También muestra «Mis incentivos» (`:1748`).
 - **Flujo corto:** «Abrir caja» → vender en Punto de venta → (si hace falta) «Movimiento» → al terminar «Cerrar y arquear» → contar → «Cerrar caja e imprimir cuadre».
 - Detalle: `FLUJO_CAJA_POS.md` y `FLUJO_COBROS_Y_TRANSFERENCIAS.md`.
 
@@ -66,7 +66,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 
 - **Etiqueta:** «Solicitudes de anulación». **Permiso:** `sale:write`. **Componente:** `apps/web/src/VoidRequests.tsx:21`.
 - **Qué hace:** lista (filtro Pendientes/Todas/Aprobadas/Rechazadas/Canceladas, `:45-54`). La administración ve «Aprobar y anular» y «Rechazar» (`:123-136`); la cajera solo puede cancelar su propia solicitud (`:137-155`).
-- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2117`, `POST void-requests/:id/approve`).
+- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2121`, `POST void-requests/:id/approve`).
 
 ## Conciliar transferencias
 
@@ -117,7 +117,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 ## Reportes
 
 - **Etiqueta:** «Reportes». **Permiso:** `reports:read`. **Componente:** `Reports`, `apps/web/src/Management.tsx:2946`. Título: «Los números cuentan tu historia» (`:2861`).
-- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:3008`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:790`; carpeta `apps/api/src/reportes/`).
+- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:3008`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:821`; carpeta `apps/api/src/reportes/`).
 
 ## Resumen
 
@@ -126,7 +126,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 
 ## Alertas
 
-- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3180`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1438-1458`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:517`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:921-924`).
+- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3180`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1442-1462`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:517`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:921-924`).
 
 ## Incentivos
 
@@ -142,7 +142,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 
 - **Etiqueta:** «Configuración» (botón al fondo del menú, `sale:manage`). **Componente:** `apps/web/src/Management.tsx:4445`. Título «A la medida de tu negocio» (`:4150`).
 - **Pestañas** (`:4155-4158`):
-  - **Negocio y reglas:** datos del negocio, «Editar configuración» (descuento vendedor 10 %, margen bajo 15 %, devolución, tasa del dólar, cuentas de banco para transferencias, terminales de tarjeta, imprimir el recibo automáticamente, ventas sin conexión, «No vender productos sin costo» (apagado por defecto; aún no desplegado, ver `VENTA_SIN_COSTO.md`), ventas a crédito, preparación de NCF, ITBIS incluido: `:4026-4141`), cajas y cajeros (`apps/web/src/Tienda.tsx:1275-1407`), avisos por Telegram, respaldo a Drive, tasas de incentivos y encuesta de caja (`:4223-4227`).
+  - **Negocio y reglas:** datos del negocio, «Editar configuración» (descuento vendedor 10 %, margen bajo 15 %, devolución, tasa del dólar, cuentas de banco para transferencias, terminales de tarjeta, imprimir el recibo automáticamente, ventas sin conexión, «No vender productos sin costo» (apagado por defecto; aún no desplegado, ver `VENTA_SIN_COSTO.md`), ventas a crédito, preparación de NCF, ITBIS incluido: `:4026-4141`), cajas y cajeros (`apps/web/src/Tienda.tsx:1291-1423`), avisos por Telegram, respaldo a Drive, tasas de incentivos y encuesta de caja (`:4223-4227`).
   - **Usuarios y permisos:** «Crear usuario», Editar, «Restablecer contraseña», Activar/Desactivar y «Permisos por rol» (`:4230-4310`).
   - **Bitácora:** registro de acciones (`:4312-4335`).
   - **Equipos:** aprobar o revocar equipos (`:4171`).
