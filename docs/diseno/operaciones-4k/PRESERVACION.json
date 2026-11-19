@@ -1,6 +1,6 @@
 {
   "base": "de114c35",
-  "base_sha256": "f1faf6d776d3084e7294f65ffc237833b8a3011fabfbc6125150a2ee2bb55a97",
+  "base_sha256": "c050f3b7663268d7c67c3e15b6406626bdbb1848834ef436c2a28ce899457294",
   "changes": [
     {
       "before": "import { catalogText } from \"./catalogLanguage\";\nimport { handleCatalogImageError } from \"./catalogImage\";\nimport { SalesFusionStats, SalesFusionPreview } from \"./SalesFusion\";\nimport { useLanguage } from \"./inicioLanguage\";\n",
