@@ -206,9 +206,7 @@ export function CloseCashModal({
     [confirmBlindClose, setConfirmBlindClose] = useState(false),
     [cardNeedsPin, setCardNeedsPin] = useState(false),
     [cashNeedsPin, setCashNeedsPin] = useState(false),
-    [needsReason, setNeedsReason] = useState(false),
-    // P8 (auditoría 19-nov): la caja cerró pero el cuadre no cargó.
-    [closedWithoutCuadre, setClosedWithoutCuadre] = useState(false);
+    [needsReason, setNeedsReason] = useState(false);
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value });
   const subtotal =
@@ -248,7 +246,6 @@ export function CloseCashModal({
       return;
     }
     setBusy(true);
-    let closed = false;
     try {
       const pending = await localDB.sales
         .filter((s) => s.input.cashSessionId === session.id)
@@ -281,19 +278,10 @@ export function CloseCashModal({
           ? { managerPin: form.managerPin }
           : {}),
       });
-      closed = true;
       const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
       await client.invalidateQueries();
       onClosed(cuadre);
     } catch (e: any) {
-      if (closed) {
-        setClosedWithoutCuadre(true);
-        setError(
-          "La caja quedó cerrada, pero no se pudo cargar el cuadre. Imprímelo desde Historial de cajas.",
-        );
-        void client.invalidateQueries();
-        return;
-      }
       setError(e.message);
       if (/total de tarjeta no coincide/i.test(e.message))
         setCardNeedsPin(true);
@@ -484,7 +472,7 @@ export function CloseCashModal({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button disabled={busy || closedWithoutCuadre} className="print-big">
+          <Button disabled={busy} className="print-big">
             <Printer size={18} />
             {busy ? "Cerrando…" : "Cerrar caja e imprimir cuadre"}
           </Button>
@@ -621,8 +609,6 @@ export function CodPending({ session }: { session: any }) {
   const shown = filterCredits(rows, search);
   // B-01: la API manda null en los importes de la caja abierta (hiddenUntilClose).
   const totalPending = rows.reduce((a, r) => a + (Number(r.pending) || 0), 0);
-  // P11 (auditoría 19-nov): el total no cuenta los ocultos; se dice cuántos.
-  const hiddenCount = rows.filter((r) => r.hiddenUntilClose).length;
   const money = (r: any, v: unknown) =>
     r.hiddenUntilClose ? "—" : formatMoney(v as any);
   return (
@@ -690,8 +676,6 @@ export function CodPending({ session }: { session: any }) {
             <p className="cod-hint">
               {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
               cobrar: <strong>{formatMoney(totalPending)}</strong>
-              {hiddenCount > 0 &&
-                ` (sin contar ${hiddenCount} de cajas abiertas)`}
             </p>
           )}
           {rows.length > 0 && (
@@ -1354,10 +1338,7 @@ export function StoreSettings() {
                   {t.registerNumber ? t.registerNumber + " · " : ""}
                   {t.registerName || t.name}
                 </strong>
-                <small>
-                  {st("Equipo: ")}
-                  {t.name}
-                </small>
+                <small>{st("Equipo: ")}{t.name}</small>
               </span>
               <Button variant="secondary" onClick={() => setRegister(t)}>
                 {st("Editar caja")}

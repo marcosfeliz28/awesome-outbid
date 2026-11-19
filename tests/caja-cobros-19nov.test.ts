@@ -214,31 +214,6 @@ describe("Hallazgo 16 · caja de GV", () => {
 const source = (file: string) =>
   readFileSync(resolve("apps/web/src", file), "utf8");
 
-describe("P8 · cierre de caja: el cuadre que no carga no parece un cierre fallido", () => {
-  it("separa el cierre de la carga del cuadre y no deja cerrar dos veces", () => {
-    const tienda = source("Tienda.tsx");
-    const close = tienda.indexOf('"/close"');
-    const closedFlag = tienda.indexOf("closed = true;", close);
-    const cuadre = tienda.indexOf('"/cuadre"', close);
-    expect(closedFlag).toBeGreaterThan(close);
-    expect(closedFlag).toBeLessThan(cuadre);
-    expect(tienda).toContain(
-      "La caja quedó cerrada, pero no se pudo cargar el cuadre. Imprímelo desde Historial de cajas.",
-    );
-    expect(tienda).toContain("disabled={busy || closedWithoutCuadre}");
-  });
-});
-
-describe("P11 · Créditos pendientes: el total avisa los montos ocultos", () => {
-  it("dice cuántos créditos de cajas abiertas no suman", () => {
-    const tienda = source("Tienda.tsx");
-    expect(tienda).toContain(
-      "const hiddenCount = rows.filter((r) => r.hiddenUntilClose).length;",
-    );
-    expect(tienda).toContain("(sin contar ${hiddenCount} de cajas abiertas)");
-  });
-});
-
 describe("CC-05 · Conciliar transferencias agrupa «POULAR» con Popular", () => {
   it("las variantes conocidas de Popular van a su grupo", async () => {
     const { bankGroup } =
