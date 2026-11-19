@@ -452,7 +452,7 @@ describe("4 · pasar a una caja el efectivo marcado «Recibido por la dueña»",
     const saleId = cod.body.id;
     await ok(`/sales/${saleId}/credit-collections`, owner, {
       operationId: randomUUID(),
-      lines: [{ method: "cash", amount: 1500 }],
+      lines: [{ method: "cash", amount: 1500, ownerConfirmed: true }],
     });
     const payment = await db.payment.findFirstOrThrow({
       where: { saleId, entryType: "installment" },
@@ -469,7 +469,7 @@ describe("4 · pasar a una caja el efectivo marcado «Recibido por la dueña»",
     });
     expect(moved.cashSessionId).toBe(session.id);
     expect(moved.reference ?? "").not.toContain("Recibido por la dueña");
-    expect(moved.receivedById).toBe(session.userId);
+    expect(moved.receivedById).toBe((await sessionRow(session.id)).userId);
     // La caja 1 ya estaba cerrada: su efectivo esperado subió 1,500.
     const c1 = await sessionRow(session.id);
     expect(Number(c1.differenceCash)).toBeCloseTo(cashBefore1 - 1500, 2);
@@ -478,7 +478,7 @@ describe("4 · pasar a una caja el efectivo marcado «Recibido por la dueña»",
         a.key.endsWith(`:move:${payment.id}`),
       ),
     ).toBe(true);
-    // Ya no es de la dueña: moverlo otra vez a la misma caja no hace nada.
+    // Ya está en esa caja: moverlo otra vez a la misma no hace nada.
     const again = await call(
       `/payments/${payment.id}/move-cash-session`,
       owner,

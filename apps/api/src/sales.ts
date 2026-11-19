@@ -3330,6 +3330,17 @@ export class SalesController {
         conflict("El cobro cambió de caja. Actualiza la venta.");
       if (payment.status === "rejected")
         bad("Este cobro fue rechazado; no se mueve.");
+      // Se vuelve a comprobar con el cobro ya bloqueado: otra operación pudo
+      // cambiar su método o referencia entre la primera lectura y el bloqueo.
+      if (
+        ownerCash &&
+        !(
+          payment.method === "cash" &&
+          payment.status === "ok" &&
+          !!payment.reference?.startsWith(OWNER_CASH_MARK)
+        )
+      )
+        conflict("El cobro cambió. Actualiza la venta.");
       const sale = await tx.sale.findUniqueOrThrow({
         where: { id: payment.saleId },
         select: { number: true, status: true },
