@@ -1,8 +1,10 @@
 import { useLanguage } from "./inicioLanguage";
+import { cashText } from "./cashLanguage";
 import { storeSettingsText } from "./storeSettingsLanguage";
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
 import { filterCredits } from "./codPendingSearch";
+import { creditPendingSummary } from "./codPendingSummary";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Printer, Truck, Upload } from "lucide-react";
@@ -11,6 +13,7 @@ import { CASH_DENOMINATIONS, can, formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post, localDB, useStore } from "./api";
 import { FormModal, QueryState, toast, mutate, today } from "./helpers";
 import { closeCashIntro } from "./managementMessages";
+import { completeCashClose } from "./cashCloseFlow";
 import { CreditAccounts } from "./CreditAccounts";
 import { pendingCloseMessage } from "./pendingSales";
 import {
@@ -262,25 +265,35 @@ export function CloseCashModal({
           .map(([k, v]) => [k, Math.floor(parse(v))] as const)
           .filter(([, v]) => v > 0),
       );
-      await post("/cash-sessions/" + session.id + "/close", {
-        denominations,
-        countedCash: subtotal,
-        vouchers: parse(form.vouchers),
-        countedUsd: parse(form.countedUsd),
-        countedEur: parse(form.countedEur),
-        countedCard: parse(form.countedCard),
-        countedTransfer: parse(form.countedTransfer),
-        ...(delivered === null ? {} : { delivered }),
-        notes: form.notes,
-        differenceReason: form.differenceReason,
-        batchNumber: form.batchNumber.trim(),
-        ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
-          ? { managerPin: form.managerPin }
-          : {}),
-      });
-      const cuadre = await api("/cash-sessions/" + session.id + "/cuadre");
-      await client.invalidateQueries();
-      onClosed(cuadre);
+      const result = await completeCashClose(
+        () =>
+          post("/cash-sessions/" + session.id + "/close", {
+            denominations,
+            countedCash: subtotal,
+            vouchers: parse(form.vouchers),
+            countedUsd: parse(form.countedUsd),
+            countedEur: parse(form.countedEur),
+            countedCard: parse(form.countedCard),
+            countedTransfer: parse(form.countedTransfer),
+            ...(delivered === null ? {} : { delivered }),
+            notes: form.notes,
+            differenceReason: form.differenceReason,
+            batchNumber: form.batchNumber.trim(),
+            ...(voucherNeedsPin || cardNeedsPin || cashNeedsPin
+              ? { managerPin: form.managerPin }
+              : {}),
+          }),
+        () => api("/cash-sessions/" + session.id + "/cuadre"),
+      );
+      if (result.status === "ready") onClosed(result.cuadre);
+      else {
+        toast(
+          "Caja cerrada correctamente, pero no se pudo cargar el cuadre. Vuelve a abrirlo desde Historial de cajas.",
+          true,
+        );
+        onClose();
+      }
+      await client.invalidateQueries().catch(() => {});
     } catch (e: any) {
       setError(e.message);
       if (/total de tarjeta no coincide/i.test(e.message))
@@ -490,6 +503,8 @@ export function SessionPrintButtons({
   session: any;
   onPrint: (p: Printing) => void;
 }) {
+  const cashLanguage = useLanguage();
+  const ct = (text: string) => cashText(text, cashLanguage);
   const open = async (kind: PrintKind) => {
     try {
       onPrint(await loadSessionPrint(kind, session.id));
@@ -502,14 +517,14 @@ export function SessionPrintButtons({
       {session.closedAt && (
         <Button variant="secondary" onClick={() => open("cuadre")}>
           <Printer size={15} />
-          Cuadre
+          {ct("Cuadre")}
         </Button>
       )}
       <Button variant="ghost" onClick={() => open("daily")}>
-        Venta diaria
+        {ct("Venta diaria")}
       </Button>
       <Button variant="ghost" onClick={() => open("method")}>
-        Por forma de pago
+        {ct("Por forma de pago")}
       </Button>
     </div>
   );
@@ -518,6 +533,8 @@ export function SessionPrintButtons({
 /** Reportes de la sucursal por fecha y usuario (requiere reports:read). */
 export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
   const user = useStore((s) => s.user)!;
+  const cashLanguage = useLanguage();
+  const ct = (text: string) => cashText(text, cashLanguage);
   const [date, setDate] = useState(today()),
     [userId, setUserId] = useState("");
   const users = useQuery({
@@ -544,7 +561,7 @@ export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
   return (
     <div className="day-reports">
       <label className="field">
-        <span>Fecha</span>
+        <span>{ct("Fecha")}</span>
         <input
           type="date"
           value={date}
@@ -553,9 +570,9 @@ export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
       </label>
       {!!users.data && (
         <label className="field">
-          <span>Usuario</span>
+          <span>{ct("Usuario")}</span>
           <select value={userId} onChange={(e) => setUserId(e.target.value)}>
-            <option value="">Todos</option>
+            <option value="">{ct("Todos")}</option>
             {users.data.map((u: any) => (
               <option key={u.id} value={u.id}>
                 {(u.cashierNumber ? u.cashierNumber + " · " : "") + u.name}
@@ -566,11 +583,11 @@ export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
       )}
       <Button variant="secondary" onClick={() => open("daily")}>
         <Printer size={15} />
-        Venta diaria del día
+        {ct("Venta diaria del día")}
       </Button>
       <Button variant="secondary" onClick={() => open("method")}>
         <Printer size={15} />
-        Por forma de pago del día
+        {ct("Por forma de pago del día")}
       </Button>
     </div>
   );
@@ -585,16 +602,32 @@ const CREDIT_STATUS: Record<string, { label: string; tone: any }> = {
 // Casilla de días (orden de la dueña, 19-oct): sin vencimiento, sólo cuenta
 // los días de calendario que el crédito / contraentrega lleva sin cerrarse.
 const dayCount = (days: number) => (days === 1 ? "1 día" : `${days} días`);
-export const ageText = (days: number, closed: boolean) =>
-  closed
+export const ageText = (
+  days: number,
+  closed: boolean,
+  language: "es" | "en" = "es",
+) => {
+  if (language === "en") {
+    if (closed)
+      return days <= 0
+        ? "Paid the same day"
+        : `Paid in ${days} day${days === 1 ? "" : "s"}`;
+    return days <= 0
+      ? "Outstanding for 0 days · from today"
+      : `Outstanding for ${days} day${days === 1 ? "" : "s"}`;
+  }
+  return closed
     ? days <= 0
       ? "Se cobró el mismo día"
       : `Se cobró en ${dayCount(days)}`
     : days <= 0
       ? "Lleva 0 días · es de hoy"
       : `Lleva ${dayCount(days)} sin cobrar`;
+};
 export function CodPending({ session }: { session: any }) {
   const user = useStore((s) => s.user);
+  const cashLanguage = useLanguage();
+  const ct = (text: string) => cashText(text, cashLanguage);
   const isAdmin = can(user?.permissions ?? [], "*");
   const [view, setView] = useState<"sales" | "customers">("sales");
   const [state, setState] = useState<"pending" | "closed">("pending");
@@ -608,7 +641,8 @@ export function CodPending({ session }: { session: any }) {
   const rows = query.data ?? [];
   const shown = filterCredits(rows, search);
   // B-01: la API manda null en los importes de la caja abierta (hiddenUntilClose).
-  const totalPending = rows.reduce((a, r) => a + (Number(r.pending) || 0), 0);
+  const { visibleTotal: totalPending, hiddenCount } =
+    creditPendingSummary(rows);
   const money = (r: any, v: unknown) =>
     r.hiddenUntilClose ? "—" : formatMoney(v as any);
   return (
@@ -616,13 +650,12 @@ export function CodPending({ session }: { session: any }) {
       <div className="panel-heading">
         <div>
           <h2 id="credits-title">
-            <Truck size={20} /> Créditos pendientes
+            <Truck size={20} /> {ct("Créditos pendientes")}
           </h2>
           <p>
-            Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en
-            efectivo, de cualquier día: el dinero entra a su caja y lo entrega
-            al cerrar. La tarjeta y la transferencia las registra la
-            administración.
+            {ct(
+              "Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en efectivo, de cualquier día: el dinero entra a su caja y lo entrega al cerrar. La tarjeta y la transferencia las registra la administración.",
+            )}
           </p>
         </div>
         <div
@@ -632,8 +665,8 @@ export function CodPending({ session }: { session: any }) {
         >
           {(
             [
-              ["pending", "Pendientes"],
-              ["closed", "Cerrados"],
+              ["pending", ct("Pendientes")],
+              ["closed", ct("Cerrados")],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -656,7 +689,7 @@ export function CodPending({ session }: { session: any }) {
             aria-pressed={view === "sales"}
             onClick={() => setView("sales")}
           >
-            Por venta
+            {ct("Por venta")}
           </button>
           <button
             type="button"
@@ -664,7 +697,7 @@ export function CodPending({ session }: { session: any }) {
             aria-pressed={view === "customers"}
             onClick={() => setView("customers")}
           >
-            Por persona
+            {ct("Por persona")}
           </button>
         </div>
       )}
@@ -673,14 +706,24 @@ export function CodPending({ session }: { session: any }) {
       ) : (
         <>
           {state === "pending" && rows.length > 0 && (
-            <p className="cod-hint">
-              {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
-              cobrar: <strong>{formatMoney(totalPending)}</strong>
-            </p>
+            <>
+              <p className="cod-hint">
+                {rows.length} {rows.length === 1 ? "crédito" : "créditos"} ·{" "}
+                {hiddenCount ? ct("Por cobrar visible:") : ct("Por cobrar:")}{" "}
+                <strong>{formatMoney(totalPending)}</strong>
+              </p>
+              {hiddenCount > 0 && (
+                <p className="cod-hint" role="status">
+                  {ct(
+                    "Hay importes ocultos hasta cerrar la caja; este total no incluye esas ventas.",
+                  )}
+                </p>
+              )}
+            </>
           )}
           {rows.length > 0 && (
             <label className="field">
-              <span>Buscar por cliente, factura o teléfono</span>
+              <span>{ct("Buscar por cliente, factura o teléfono")}</span>
               <input
                 type="search"
                 value={search}
@@ -698,8 +741,8 @@ export function CodPending({ session }: { session: any }) {
           <QueryState query={query}>
             {rows.length && !shown.length ? (
               <Empty
-                title="No hay coincidencias"
-                description="Prueba con otro nombre, número de factura o teléfono."
+                title={ct("No hay coincidencias")}
+                description={ct("Prueba con otro nombre, número de factura o teléfono.")}
               />
             ) : rows.length ? (
               <div className="cod-list">
@@ -722,7 +765,7 @@ export function CodPending({ session }: { session: any }) {
                           })}
                         </span>
                         <strong>
-                          {ageText(r.ageDays, r.status === "closed")}
+                          {ageText(r.ageDays, r.status === "closed", cashLanguage)}
                         </strong>
                       </div>
                       <small>
@@ -786,7 +829,7 @@ export function CodPending({ session }: { session: any }) {
                     </strong>
                     {state === "pending" && (
                       <Button onClick={() => setCollecting(r)}>
-                        Registrar cobro
+                        {ct("Registrar cobro")}
                       </Button>
                     )}
                   </div>
@@ -796,13 +839,17 @@ export function CodPending({ session }: { session: any }) {
               <Empty
                 title={
                   state === "pending"
-                    ? "Sin créditos pendientes"
-                    : "Sin créditos cerrados"
+                    ? ct("Sin créditos pendientes")
+                    : ct("Sin créditos cerrados")
                 }
                 description={
                   state === "pending"
-                    ? "Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago."
-                    : "Los créditos saldados aparecerán aquí con quién y cuándo los cerró."
+                    ? ct(
+                        "Las ventas a crédito aparecerán aquí, con el nombre del cliente, hasta completar el pago.",
+                      )
+                    : ct(
+                        "Los créditos saldados aparecerán aquí con quién y cuándo los cerró.",
+                      )
                 }
               />
             )}

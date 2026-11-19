@@ -527,6 +527,17 @@ export function ReceiptHistory({ compact = false }: { compact?: boolean }) {
         <p className="modal-intro">{english ? "History requires a connection." : "El historial necesita conexión."}</p>
       ) : query.isLoading ? (
         <p className="modal-intro">{english ? "Loading receipts…" : "Cargando recepciones…"}</p>
+      ) : query.isError ? (
+        <div className="error-panel" role="alert">
+          <p>
+            {english
+              ? "Could not load receipt history."
+              : "No se pudo cargar el historial de recepciones."}
+          </p>
+          <Button variant="secondary" onClick={() => query.refetch()}>
+            {english ? "Retry" : "Reintentar"}
+          </Button>
+        </div>
       ) : !rows.length ? (
         <p className="modal-intro">{english ? "No receipts yet." : "Todavía no hay recepciones."}</p>
       ) : (

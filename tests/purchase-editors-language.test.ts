@@ -4,6 +4,13 @@ import { describe, it, expect } from "vitest";
 import { PURCHASE_EDITOR_EN, purchaseEditorText } from "../apps/web/src/purchaseEditorLanguage";
 const source = readFileSync("apps/web/src/Purchases.tsx", "utf8");
 const ledger = JSON.parse(readFileSync("docs/diseno/operaciones-4k/EDITORES_IDIOMA_PRESERVACION.json", "utf8"));
+const presentationEdit = JSON.parse(
+ readFileSync("docs/auditoria-ui/PRODUCTO-RECEPCIONES_REVERSIBLE.json", "utf8"),
+) as { before: string; after: string };
+const occurrences = source.split(presentationEdit.after).length - 1;
+if (occurrences !== 1)
+ throw new Error(`PRODUCTO-RECEPCIONES: se esperaba una edición reversible y hubo ${occurrences}`);
+const preservedSource = source.replace(presentationEdit.after, presentationEdit.before);
 const baseline = ledger.changes[0].before as string;
 function nodes(text: string, kind: "business" | "handlers" | "functions") {
  const file = ts.createSourceFile("Purchases.tsx", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -30,11 +37,11 @@ describe("Purchase and receipt editors: language without business changes", () =
   expect(editor).toContain("english={english}");
  });
  it("preserves requests, idempotency, error policy, handlers and input constraints", () => {
-  expect(nodes(source,"business")).toEqual(nodes(baseline,"business"));
-  expect(nodes(source,"handlers")).toEqual(nodes(baseline,"handlers"));
+  expect(nodes(preservedSource,"business")).toEqual(nodes(baseline,"business"));
+  expect(nodes(preservedSource,"handlers")).toEqual(nodes(baseline,"handlers"));
  });
  it("does not modify DocumentFields, ReceiptHistory, ReceiptDetail or other functions", () => {
-  expect(nodes(source,"functions")).toEqual(nodes(baseline,"functions"));
+  expect(nodes(preservedSource,"functions")).toEqual(nodes(baseline,"functions"));
  });
  it("translates damage reason labels but retains saved values and payment enums", () => {
   expect(source).toContain('DAMAGE_REASONS.map((r) => ({ label: et(r), value: r }))');
@@ -50,7 +57,12 @@ describe("Purchase and receipt editors: language without business changes", () =
   expect(readFileSync("apps/web/src/helpers.tsx", "utf8")).toContain('export { CustomerPrivacyNotice } from "./CustomerPrivacyNotice"');
  });
  it("records exact source changes without editing shared modules outside scope", () => {
-  for(const change of ledger.changes) expect(readFileSync(change.file,"utf8")).toBe(change.after);
+  for(const change of ledger.changes) {
+   const actual = change.file === "apps/web/src/Purchases.tsx"
+    ? preservedSource
+    : readFileSync(change.file,"utf8");
+   expect(actual).toBe(change.after);
+  }
   const helper = ledger.changes[1];
   const oldStart = helper.before.indexOf("export function CustomerPrivacyNotice()");
   const oldEnd = helper.before.indexOf("export function FormModal",oldStart);

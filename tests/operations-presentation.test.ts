@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
+import { reverseIt003 } from "./it003-preservation";
 const read = (path: string) => readFileSync(path, "utf8");
 describe("Operaciones high4K: presentación sin cambio de negocio", () => {
   it("revierte la decoración y conserva Management completo exactamente", () => {
     const ledger = JSON.parse(read("docs/diseno/operaciones-4k/PRESERVACION.json"));
-    let source = read("apps/web/src/Management.tsx");
+    let source = reverseIt003(read("apps/web/src/Management.tsx"), "Management");
     for (const edit of [...ledger.changes].reverse()) {
       expect(source.split(edit.after).length).toBe(2);
       source = source.replace(edit.after, edit.before);

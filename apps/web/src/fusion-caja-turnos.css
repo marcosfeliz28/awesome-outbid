@@ -357,17 +357,20 @@
 
 /* History action cells must not compete with the mobile data-label column. */
 @media (max-width: 768px) {
-  .cash-page.fusion-cash-turnos td[data-label="Acciones"] {
+  .cash-page.fusion-cash-turnos td[data-label="Acciones"],
+  .cash-page.fusion-cash-turnos td[data-label="Actions"] {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     text-align: left;
     gap: 10px;
   }
-  .cash-page.fusion-cash-turnos td[data-label="Acciones"]::before {
+  .cash-page.fusion-cash-turnos td[data-label="Acciones"]::before,
+  .cash-page.fusion-cash-turnos td[data-label="Actions"]::before {
     flex: none;
   }
   .cash-page.fusion-cash-turnos td[data-label="Acciones"] > *,
+  .cash-page.fusion-cash-turnos td[data-label="Actions"] > *,
   .cash-page.fusion-cash-turnos .cash-history-actions .button {
     width: 100%;
     min-width: 0;

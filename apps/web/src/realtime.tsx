@@ -23,6 +23,8 @@ import {
   useStore,
 } from "./api";
 import { attrLabel, toast } from "./helpers";
+import { useLanguage } from "./inicioLanguage";
+import { cashText } from "./cashLanguage";
 // «Producto · talla: RD$ 1,500.00 → RD$ 1,700.00» (R9-offline-3).
 export const priceChanges = (changes: { item: CartItem; before: number }[]) =>
   changes
@@ -594,6 +596,8 @@ export function CashElsewhere({
   compact?: boolean;
 }) {
   const user = useStore((s) => s.user)!;
+  const cashLanguage = useLanguage();
+  const ct = (text: string) => cashText(text, cashLanguage);
   const client = useQueryClient();
   const [open, setOpen] = useState(false),
     [pin, setPin] = useState(""),
@@ -610,7 +614,7 @@ export function CashElsewhere({
         "/cash-sessions/" + session.id + "/transfer",
         needsPin ? { managerPin: pin } : {},
       );
-      toast("Caja trasladada a este equipo.");
+      toast(ct("Caja trasladada a este equipo."));
       setOpen(false);
       setPin("");
       await client.invalidateQueries({ queryKey: ["cash-sessions"] });
@@ -629,28 +633,32 @@ export function CashElsewhere({
         <MonitorSmartphone size={compact ? 18 : 22} aria-hidden="true" />
         <div>
           <strong>
-            Tu caja está abierta en «{session.registerName ?? "otro equipo"}»
+            {ct("Tu caja está abierta en")} «
+            {session.registerName ?? ct("otro equipo")}»
           </strong>
           <p>
-            Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.
+            {ct(
+              "Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.",
+            )}
           </p>
         </div>
         <Button variant="secondary" onClick={() => setOpen(true)}>
-          Trasladar caja aquí
+          {ct("Trasladar caja aquí")}
         </Button>
       </div>
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Trasladar caja a este equipo"
+        title={ct("Trasladar caja a este equipo")}
       >
         <p className="modal-intro">
-          Las ventas, abonos y movimientos de esta caja se registrarán desde
-          este equipo. El cambio queda en la bitácora con ambos equipos.
+          {ct(
+            "Las ventas, abonos y movimientos de esta caja se registrarán desde este equipo. El cambio queda en la bitácora con ambos equipos.",
+          )}
         </p>
         {needsPin && (
           <label className="field">
-            PIN del gerente
+            {ct("PIN del gerente")}
             <input
               type="password"
               inputMode="numeric"
@@ -670,7 +678,7 @@ export function CashElsewhere({
           disabled={busy || (needsPin && pin.length < 4)}
           onClick={submit}
         >
-          {busy ? "Trasladando…" : "Trasladar caja"}
+          {busy ? ct("Trasladando…") : ct("Trasladar caja")}
         </Button>
       </Modal>
     </>

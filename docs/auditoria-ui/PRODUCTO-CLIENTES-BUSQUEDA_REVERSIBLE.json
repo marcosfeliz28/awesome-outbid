@@ -1,0 +1,10 @@
+[
+  {
+    "before": "import { handleCatalogImageError } from \"./catalogImage\";\n",
+    "after": "import { handleCatalogImageError } from \"./catalogImage\";\nimport { matchesSearch } from \"./customerSearch\";\n"
+  },
+  {
+    "before": "              (c.name + \" \" + (fullCustomer ? c.phone : \"\"))\n                .toLowerCase()\n                .includes(search.toLowerCase()),\n",
+    "after": "              matchesSearch(\n                [c.name, fullCustomer ? c.phone : \"\"]\n                  .filter(Boolean)\n                  .join(\" \"),\n                search,\n              ),\n"
+  }
+]

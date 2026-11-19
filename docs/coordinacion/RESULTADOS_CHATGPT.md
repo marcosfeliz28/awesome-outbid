@@ -2,6 +2,83 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · P2 en Resumen
+
+- `Últimos 7 días` ahora usa el día final y las seis fechas civiles anteriores; antes usaba el lunes de la semana y podía consultar solo 1–6 días. El mismo rango alimenta Resumen y la exportación.
+- Regresión roja por helper ausente y verde después. El foco aprobó 3 archivos/60 pruebas, incluida la guarda reversible del Dashboard.
+- `pnpm check` pasó con 168 archivos/1,347 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API. Las 559 citas quedaron sin mover ni perder; el foco documental/P2 pasó 3 archivos/21 pruebas y `git diff --check` pasó.
+- Solo presentación del rango: sin cambios de ventas, importes, API, Render, producción, base o credenciales. La publicación y los tres CI quedan pendientes del SHA remoto.
+
+## 2026-11-19 · ChatGPT NUBE · P11 en créditos pendientes
+
+- Si la caja abierta oculta uno o más importes, el encabezado ahora dice `Por cobrar visible` y aclara que el subtotal no incluye esas ventas. Sin importes ocultos mantiene `Por cobrar`; las filas protegidas siguen mostrando `—`.
+- Regresión roja primero y verde después. El foco aprobó 4 archivos/33 pruebas con escenarios mixto, visible y totalmente oculto, traducciones y guardas históricas.
+- La repetición final de `pnpm check` aprobó typecheck, lint, 167 archivos/1,344 pruebas (un archivo/10 pruebas omitidos) y los builds web/API. El único fallo del primer pase fue una coincidencia byte a byte del ledger; se ajustó y su foco quedó 2 archivos/7 pruebas verde. Las 559 citas quedaron sin mover ni perder; su prueba pasó 4/4 y `git diff --check` pasó.
+- Autoauditoría: se conserva la misma suma local y solo se cuenta `hiddenUntilClose`; no se revelan ni estiman importes y no cambian API, dinero, permisos o base.
+- La rama permanece sin publicar hasta el único SHA final; los tres CI todavía no se declaran.
+
+## 2026-11-19 · ChatGPT NUBE · P8 en cierre de caja
+
+- La pantalla distingue un cierre realmente rechazado de un cierre confirmado cuyo cuadre no pudo cargarse. En el segundo caso cierra el formulario, informa dónde reabrir el impreso y nunca repite el POST.
+- Regresión roja primero y verde después; el foco pasó 4 archivos/19 pruebas, con tres caminos del flujo y preservación byte a byte de `Tienda.tsx`.
+- `pnpm check` pasó sobre la base actualizada con 166 archivos/1,338 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API.
+- Sin cambios de payload, importes, conteos, PIN, permisos, API, base, Render, producción o credenciales. La rama sigue sin publicar hasta el SHA final único.
+
+## 2026-11-19 · ChatGPT NUBE · P3/P12 en recibo de Caja
+
+- El enlace de WhatsApp agrega `1` únicamente a teléfonos locales dominicanos de diez dígitos y conserva números que ya tienen código internacional. El texto `un se cobra` quedó como `se cobra`.
+- Regresión roja primero en ambos casos y verde después; el foco pasó 4 archivos/33 pruebas, incluidas las guardas byte a byte de Caja.
+- `pnpm check` pasó con 165 archivos/1,334 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API. El primer pase detectó dos citas desplazadas; se corrigieron y la prueba documental pasó 4/4, con 559 citas sin pérdidas.
+- Solo presentación del recibo: sin cambios de venta, crédito, dinero, API, base, Render, producción o credenciales. La rama sigue sin publicar hasta el SHA final único.
+
+## 2026-11-19 · ChatGPT NUBE · PRODUCTO-ALMACÉN y UC-24
+
+- Inventario filtra las filas con existencia cero al seleccionar un almacén concreto, incluido Casa, usando la misma cantidad visible; `Todos` conserva el catálogo completo. Regresión roja→verde; foco 7 archivos/39 pruebas.
+- Clientes conecta `matchesSearch`: ignora tildes/mayúsculas y mantiene el teléfono fuera de la búsqueda para quien no tiene acceso completo. Regresión roja→verde; foco 7 archivos/51 pruebas.
+- Control conjunto: `pnpm check` pasó con 164 archivos/1,332 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API; 559 citas quedaron con cero movidas y cero perdidas, su prueba pasó 4/4 y `git diff --check` pasó.
+- Ambos cambios son solo presentación, con reversión exacta para las pruebas históricas; sin API, movimientos, datos privados, dinero, Render, producción, base o credenciales. La rama sigue sin publicar hasta el SHA final único.
+
+## 2026-11-19 · ChatGPT NUBE · VE-001
+
+- El formulario web rechaza un usuario vacío o compuesto solo por espacios antes de llamar al API y usa el valor sin espacios exteriores en entrada/cambio obligatorio.
+- Regresión roja→verde. El foco pasó 4 archivos/56 pruebas, incluidas autenticación, legibilidad y accesibilidad. `pnpm check` pasó con 162 archivos/1,330 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API.
+- Sin cambios de servidor, sesión, permisos, Render, producción, base o credenciales. La rama sigue sin publicar para conservar el único push final.
+
+## 2026-11-19 · ChatGPT NUBE · UC-27
+
+- `PasswordChangeFields.tsx` avisa en línea `Las contraseñas no coinciden.` y enlaza el error accesible al campo de confirmación; no cambia validación, envío, API ni permisos.
+- Regresión roja→verde. El foco pasó 3 archivos/50 pruebas, con las coberturas existentes de accesibilidad y autenticación. `pnpm check` pasó con 161 archivos/1,329 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API.
+- Sin push, mezcla, despliegue ni acceso a Render, producción, base o credenciales. Los tres CI quedan para el SHA final único.
+
+## 2026-11-19 · ChatGPT NUBE · PRODUCTO-RECEPCIONES
+
+- `Purchases.tsx` distingue un error de carga del historial vacío y ofrece `Reintentar` / `Retry`; el botón solo repite la consulta existente.
+- La regresión quedó roja antes por ausencia de `query.isError` y verde después. El foco pasó 3 archivos/11 pruebas, con preservación reversible del editor. `pnpm check` pasó con 160 archivos/1,328 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API.
+- Sin cambios de API, compras, inventario, dinero, Render, producción, base o credenciales. Sigue sin push: los tres CI se comprobarán sobre el único SHA final.
+
+## 2026-11-19 · ChatGPT NUBE · PRODUCTO-REPORTES
+
+- Base de dependencia: `origin/claude/publicar-lote5-19nov` `02cb36b7`; rama propia `chatgpt-nube/auditoria-ui-19nov`, sin publicar todavía.
+- La tabla de Reportes ahora aplica los helpers compartidos: traduce códigos, oculta `Referencia` y conserva `Factura`. No cambia API, JSON, exportaciones ni cifras.
+- Regresión roja antes y verde después; control focal inicial: 2 archivos y 9 pruebas verdes. Evidencia: 16 PNG, 1440/390, claro/oscuro y ES/EN, en `docs/auditoria-ui/capturas/PRODUCTO-REPORTES/`.
+- El foco completo pasó 7 archivos/45 pruebas; `pnpm check` aprobó typecheck, lint, 159 archivos/1,327 pruebas (un archivo/10 pruebas omitidos) y builds web/API. Las 559 citas documentales quedaron sin pérdidas y `git diff --check` pasó.
+- Sin mezcla, push, despliegue ni acceso a Render, producción, base de tienda o credenciales. Los tres CI quedan para el único SHA final de la rama.
+
+## 2026-11-19 · ChatGPT NUBE · auditoría UI de producto (avance)
+
+- Rama local sin publicar: `chatgpt-nube/auditoria-ui-19nov`; referencia remota leída: `origin/nexora-cloud` `b9589bbb1dc4b3d426ce393445acb7c508eedca4`.
+- Puntos protegidos terminados y comprobados: etiqueta de servicio (`cc4d0f3c`), alerta de fondo menor (`61b433f2`) y `operationId` estable en ajustes (`dc3bf275`). IT-045/CC-12 corrige `Sólo` → `Solo`; CC-10 corrige `1 ventas abiertas` y cubre ocho variantes. Cada punto tiene regresión y 16 capturas. La última corrida de `pnpm check` aprobó 1,241 pruebas y ambos builds.
+- Bloqueo para Claude: el cobro `Recibido por la dueña` tiene `cashSessionId: null`, pero `/payments/:id/move-cash-session` rechaza pagos sin caja de origen. La rama de presentación no puede ofrecer un botón funcional sin un cambio de API prohibido por la orden.
+- La entrega de 231 hallazgos sigue en curso. No hubo push, PR, mezcla, despliegue ni acceso a Render, producción, base o credenciales; aún no existe SHA remoto final para los tres CI.
+
+## 2026-11-19 · ChatGPT NUBE · auditoría UI, bloque visual alto
+
+- Base `origin/nexora-cloud` `8014355b`, GV obligatorio `dae41acf`, rama local `chatgpt-nube/auditoria-ui-19nov`.
+- Se corrigieron MTC-001 y MTC-002 con regresiones de contraste que fallaron antes y pasan después (WCAG AA >= 4.5:1). Commits locales: `c2226652`, `ded87d6b` y `b80d2712`.
+- Hay 16 capturas comparativas en `docs/auditoria-ui/capturas/MTC-001-MTC-002/`: 1440/390, claro/oscuro y es/en, con datos ficticios. `tests/accessibility-contract.test.ts` pasó 35/35 y `pnpm check` pasó completo (1,215 pruebas aprobadas, 10 omitidas).
+- Del bloque de diez altos, cuatro ya estaban corregidos en la base integrada; tres son de origen servidor y pertenecen a Claude; IT-003 espera reparto NUBE/PC. El reparto actual no divide los 221 hallazgos restantes entre ambos ChatGPT.
+- Sin push ni PR: la orden exige una sola publicación final y ventana libre de Claude. Hasta resolver ese reparto no hay SHA remoto ni ejecución final de `verify`, `windows-installer` y `render-images`. No hubo despliegue ni cambios en dinero, API, Render, producción, base o credenciales.
+
 ## 2026-11-14 · ChatGPT PC · tercer recorrido y Windows limpio
 
 - **Orden/base/rama:** «Cola 14-nov», `origin/nexora-cloud` `1d118b16e779ab41827d60daee0e59295747f643`; `chatgpt-pc/despues3-14nov`. Solo documentos/capturas; ningún cambio de código ni despliegue.

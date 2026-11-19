@@ -1,0 +1,10 @@
+[
+  {
+    "before": "",
+    "after": "import { dashboardCategoryColor } from \"./dashboardCategoryColor\";\n"
+  },
+  {
+    "before": "            {data?.category?.map((c: any) => {\n              const total = data.category.reduce(\n                  (a: number, i: any) => a + i.total,\n                  0,\n                ),\n                percent = total ? (c.total / total) * 100 : 0;\n              return (\n                <div className=\"category-row\" key={c.name}>\n                  <div>\n                    <span>\n                      <i style={{ background: c.color }} />\n                      {c.name}\n                    </span>\n                    <strong>{percent.toFixed(0)}%</strong>\n                  </div>\n                  <div className=\"progress-track\">\n                    <div\n                      style={{ width: `${percent}%`, background: c.color }}\n                    />\n                  </div>\n                </div>\n              );\n            })}\n",
+    "after": "            {data?.category?.map((c: any) => {\n              const total = data.category.reduce(\n                  (a: number, i: any) => a + i.total,\n                  0,\n                ),\n                percent = total ? (c.total / total) * 100 : 0,\n                color = dashboardCategoryColor(c.name, c.color);\n              return (\n                <div className=\"category-row\" key={c.name}>\n                  <div>\n                    <span>\n                      <i style={{ background: color }} />\n                      {c.name}\n                    </span>\n                    <strong>{percent.toFixed(0)}%</strong>\n                  </div>\n                  <div className=\"progress-track\">\n                    <div\n                      style={{ width: `${percent}%`, background: color }}\n                    />\n                  </div>\n                </div>\n              );\n            })}\n"
+  }
+]

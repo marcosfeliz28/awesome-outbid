@@ -48,6 +48,12 @@
  .norexos-premium-workspace .table-actions { flex-wrap: wrap; }
  .norexos-premium-workspace .pagination { flex-wrap: wrap; }
 }
+@media(max-width: 600px) {
+ .norexos-premium-workspace[data-premium-area="configuration"] .table-cards td:is([data-label="Acción"], [data-label="Action"]) { display:block; text-align:left; }
+ .norexos-premium-workspace[data-premium-area="configuration"] .table-cards td:is([data-label="Acción"], [data-label="Action"])::before { display:block; margin-bottom:8px; }
+ .norexos-premium-workspace[data-premium-area="configuration"] .table-cards td:is([data-label="Acción"], [data-label="Action"]) .inline-actions { width:100%; flex-wrap:wrap; min-width:0; gap:8px; }
+ .norexos-premium-workspace[data-premium-area="configuration"] .table-cards td:is([data-label="Acción"], [data-label="Action"]) .text-link { flex:1 1 100%; width:100%; max-width:100%; justify-content:flex-start; overflow-wrap:anywhere; }
+}
 @media(prefers-reduced-motion: reduce) {
  .norexos-premium-workspace button { transition: none; }
  .norexos-premium-workspace button:not(:disabled):hover,

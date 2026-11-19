@@ -4,6 +4,8 @@ import { Button, Modal } from "@fitstore/ui";
 import { formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post } from "./api";
 import { QueryState, toast } from "./helpers";
+import { useLanguage } from "./inicioLanguage";
+import { cashText, creditSalesCount } from "./cashLanguage";
 
 type Method = "cash" | "card" | "transfer";
 const methodName: Record<Method, string> = {
@@ -36,6 +38,10 @@ type Statement = {
 
 export function CreditAccounts({ session }: { session: any }) {
   const client = useQueryClient();
+  const cashLanguage = useLanguage();
+  const ct = (text: string) => cashText(text, cashLanguage);
+  const paymentMethod = (method: string) =>
+    methodName[method as Method] ? ct(methodName[method as Method]) : method;
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("amount");
   // «open»: con deuda; «paid»: ya pagaron o se cerraron (dueña, 15-oct).
@@ -89,7 +95,7 @@ export function CreditAccounts({ session }: { session: any }) {
             {new Date(p.date).toLocaleString("es-DO", {
               timeZone: "America/Santo_Domingo",
             })}{" "}
-            · {methodName[p.method as Method] ?? p.method} ·{" "}
+            · {paymentMethod(p.method)} ·{" "}
             {formatMoney(p.amount)} · {p.receivedBy ?? ""}
             {p.status === "pending_verification" ? " · Por verificar" : ""}
             {p.atSale ? " · Pagado al vender" : ""}
@@ -198,7 +204,7 @@ export function CreditAccounts({ session }: { session: any }) {
             setPage(1);
           }}
         >
-          Pendientes
+          {ct("Pendientes")}
         </Button>
         <Button
           variant={view === "paid" ? "primary" : "secondary"}
@@ -207,12 +213,12 @@ export function CreditAccounts({ session }: { session: any }) {
             setPage(1);
           }}
         >
-          Ya pagaron
+          {ct("Ya pagaron")}
         </Button>
       </div>
       <div className="form-grid">
         <label className="field">
-          <span>Buscar por nombre</span>
+          <span>{ct("Buscar por nombre")}</span>
           <input
             value={search}
             onChange={(e) => {
@@ -222,7 +228,7 @@ export function CreditAccounts({ session }: { session: any }) {
           />
         </label>
         <label className="field">
-          <span>Ordenar</span>
+          <span>{ct("Ordenar")}</span>
           <select
             value={sort}
             onChange={(e) => {
@@ -230,14 +236,14 @@ export function CreditAccounts({ session }: { session: any }) {
               setPage(1);
             }}
           >
-            <option value="amount">Mayor deuda</option>
-            <option value="age">Más antiguo</option>
+            <option value="amount">{ct("Mayor deuda")}</option>
+            <option value="age">{ct("Más antiguo")}</option>
           </select>
         </label>
       </div>
       {view === "open" && (
         <p>
-          Total general por cobrar:{" "}
+          {ct("Total general por cobrar:")}{" "}
           <strong>{formatMoney(list.data?.total ?? 0)}</strong>
         </p>
       )}
@@ -249,14 +255,13 @@ export function CreditAccounts({ session }: { session: any }) {
                 <strong>{row.customer.name}</strong>
                 <small>
                   {view === "paid"
-                    ? row.openSales +
-                      " ventas pagadas" +
+                    ? creditSalesCount(row.openSales, true, cashLanguage) +
                       (row.lastClosedAt
                         ? " · Último cierre " +
                           new Date(row.lastClosedAt).toLocaleDateString("es-DO")
                         : "")
-                    : row.openSales +
-                      " ventas abiertas · La más antigua hace " +
+                    : creditSalesCount(row.openSales, false, cashLanguage) +
+                      " · La más antigua hace " +
                       row.oldestDays +
                       " días"}
                 </small>
@@ -264,7 +269,7 @@ export function CreditAccounts({ session }: { session: any }) {
               </div>
               {view === "open" && <strong>{formatMoney(row.balance)}</strong>}
               <Button onClick={() => setSelected(row.customer.id)}>
-                Ver estado de cuenta
+                {ct("Ver estado de cuenta")}
               </Button>
             </div>
           ))}
@@ -279,16 +284,20 @@ export function CreditAccounts({ session }: { session: any }) {
       </QueryState>
       {page > 1 && (
         <Button variant="secondary" onClick={() => setPage(page - 1)}>
-          Anterior
+          {ct("Anterior")}
         </Button>
       )}
       {list.data?.hasMore && (
         <Button variant="secondary" onClick={() => setPage(page + 1)}>
-          Siguiente
+          {ct("Siguiente")}
         </Button>
       )}
       {selected && (
-        <Modal open onClose={() => setSelected(null)} title="Estado de cuenta">
+        <Modal
+          open
+          onClose={() => setSelected(null)}
+          title={ct("Estado de cuenta")}
+        >
           <QueryState query={detail}>
             {statement && (
               <div className="credit-statement">
@@ -298,7 +307,7 @@ export function CreditAccounts({ session }: { session: any }) {
                   {statement.customer.legalId ?? ""}
                 </p>
                 <p>
-                  Saldo total: <strong>{formatMoney(statement.balance)}</strong>
+                  {ct("Saldo total:")} <strong>{formatMoney(statement.balance)}</strong>
                 </p>
                 {statement.truncated && (
                   <p role="alert">
@@ -311,17 +320,17 @@ export function CreditAccounts({ session }: { session: any }) {
                   onClick={download}
                   disabled={statement.truncated}
                 >
-                  Descargar estado de cuenta PDF
+                  {ct("Descargar estado de cuenta PDF")}
                 </Button>
-                <h3>Pendientes</h3>
+                <h3>{ct("Pendientes")}</h3>
                 <div className="cod-list">
                   {pendingSales.map((sale) => saleRow(sale))}
                 </div>
-                {!pendingSales.length && <p>Nada pendiente.</p>}
+                {!pendingSales.length && <p>{ct("Nada pendiente.")}</p>}
                 {!!paidSales.length && (
                   <details>
                     <summary>
-                      Ya pagadas o cerradas ({paidSales.length})
+                      {ct("Ya pagadas o cerradas")} ({paidSales.length})
                     </summary>
                     <div className="cod-list">
                       {paidSales.map((sale) => saleRow(sale))}
@@ -330,9 +339,9 @@ export function CreditAccounts({ session }: { session: any }) {
                 )}
                 {statement.balance > 0 && (
                   <form className="form-grid" onSubmit={submit}>
-                    <h3 className="full">Registrar pago</h3>
+                    <h3 className="full">{ct("Registrar pago")}</h3>
                     <label className="field">
-                      <span>Monto</span>
+                      <span>{ct("Monto")}</span>
                       <input
                         type="number"
                         min="0.01"
@@ -346,7 +355,7 @@ export function CreditAccounts({ session }: { session: any }) {
                       />
                     </label>
                     <label className="field">
-                      <span>Forma de pago</span>
+                      <span>{ct("Forma de pago")}</span>
                       <select
                         value={method}
                         onChange={(e) => {
@@ -354,14 +363,14 @@ export function CreditAccounts({ session }: { session: any }) {
                           change();
                         }}
                       >
-                        <option value="cash">Efectivo</option>
-                        <option value="card">Tarjeta</option>
-                        <option value="transfer">Transferencia</option>
+                        <option value="cash">{ct("Efectivo")}</option>
+                        <option value="card">{ct("Tarjeta")}</option>
+                        <option value="transfer">{ct("Transferencia")}</option>
                       </select>
                     </label>
                     {method === "transfer" && (
                       <label className="field">
-                        <span>Banco donde cayó</span>
+                        <span>{ct("Banco donde cayó")}</span>
                         {accounts.length ? (
                           <select
                             required
@@ -371,7 +380,7 @@ export function CreditAccounts({ session }: { session: any }) {
                               change();
                             }}
                           >
-                            <option value="">Elige la cuenta…</option>
+                            <option value="">{ct("Elige la cuenta…")}</option>
                             {accounts.map((a) => (
                               <option key={a} value={a}>
                                 {a}
@@ -394,8 +403,8 @@ export function CreditAccounts({ session }: { session: any }) {
                       <label className="field">
                         <span>
                           {method === "transfer"
-                            ? "Referencia (opcional)"
-                            : "Referencia"}
+                            ? ct("Referencia (opcional)")
+                            : ct("Referencia")}
                         </span>
                         <input
                           value={reference}
@@ -408,10 +417,10 @@ export function CreditAccounts({ session }: { session: any }) {
                       </label>
                     )}
                     <p className="full">
-                      Reparto previsto:{" "}
+                      {ct("Reparto previsto:")}{" "}
                       {preview
                         .map((p) => `${p.number}: ${formatMoney(p.amount)}`)
-                        .join(" · ") || "Indica un monto"}
+                        .join(" · ") || ct("Indica un monto")}
                     </p>
                     {left > 0 && cents > 0 && (
                       <p className="form-error full">
@@ -428,7 +437,7 @@ export function CreditAccounts({ session }: { session: any }) {
                       type="submit"
                       disabled={busy || left > 0 || cents <= 0}
                     >
-                      Registrar pago
+                      {ct("Registrar pago")}
                     </Button>
                   </form>
                 )}

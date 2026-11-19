@@ -21,7 +21,7 @@ Convenciones: dinero en `Decimal(14,2)` (centavos exactos, nunca decimales flota
 
 | Modelo                               | Qué es                                                                              | Notas                                                                                                                                                                                                           | Línea          |
 | ------------------------------------ | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `Category`                           | Categoría.                                                                          | `requiresLot` y `requiresExpiry` (lote y vencimiento obligatorios), `color`. Categorías de fábrica: Suplementos, Ropa deportiva, Fajas, Accesorios de gym, Maquillaje (`packages/shared/src/index.ts:793-799`). | `:60`          |
+| `Category`                           | Categoría.                                                                          | `requiresLot` y `requiresExpiry` (lote y vencimiento obligatorios), `color`. Categorías de fábrica: Suplementos, Ropa deportiva, Fajas, Accesorios de gym, Maquillaje (`packages/shared/src/index.ts:797-803`). | `:60`          |
 | `Product`                            | Producto (la ficha).                                                                | `sku`, `brand`, `taxRate` (18), `minStock`, `unit` (si es `"servicio"` no tiene existencia: `packages/shared/src/index.ts` `isService`), `isKit`                                                                | `:94`          |
 | `Variant`                            | **Lo que realmente se vende**: una variante concreta (talla, color, sabor).         | `sku`, `barcode`, `attributes` (JSON), `costAvg` (costo promedio), `price`, `wholesalePrice`, **`stock` = existencia en Tienda**                                                                                | `:120`         |
 | `KitComponent`                       | Componentes de un combo.                                                            | `qty`                                                                                                                                                                                                           | `:158`         |
@@ -33,7 +33,7 @@ Convenciones: dinero en `Decimal(14,2)` (centavos exactos, nunca decimales flota
 | `InventoryCount`                     | Conteo físico (`items` JSON).                                                       | `status`: `pending` → `applied`                                                                                                                                                                                 | `:661`         |
 | `Promotion`                          | Oferta automática que aplica la caja (no cambia el precio).                         | `type`: `percent`, `amount`, `special_price`, `nxm`, `second_half`; `scope` (variante, producto, categoría o marca), `startsAt`/`endsAt`, `isClearance`                                                         | `:750`         |
 
-**Tipos de movimiento de kardex** (`InventoryMovement.type`) que escribe el código: `sale` (venta; `apps/api/src/sales.ts:1219`), `void` (anulación; `sales.ts:2874`), `return` y `return_waste` (devolución al stock o a merma; `sales.ts:3589`, `:3250`), `purchase` (recepción de compra; `apps/api/src/inventory.ts:1380`), `count` (conteo aplicado; `inventory.ts:452`, `:1648`), `adjustment`/`waste`/`supplier_return` (ajustes manuales; `inventory.ts:909`, tipos en `Management.tsx:1129`), `transfer_out` y `transfer_in` (`apps/api/src/warehouses.ts:326-358`). Las entradas y salidas de la pantalla «Mercancía» las guarda `apps/api/src/merchandise.ts:346` con el motivo elegido. DUDOSO: no se enumeró cada literal de `type`; confirmar con `grep -rn "stockChange(" apps/api/src` antes de citar uno nuevo.
+**Tipos de movimiento de kardex** (`InventoryMovement.type`) que escribe el código: `sale` (venta; `apps/api/src/sales.ts:1219`), `void` (anulación; `sales.ts:2912`), `return` y `return_waste` (devolución al stock o a merma; `sales.ts:3677`, `:3250`), `purchase` (recepción de compra; `apps/api/src/inventory.ts:1380`), `count` (conteo aplicado; `inventory.ts:452`, `:1648`), `adjustment`/`waste`/`supplier_return` (ajustes manuales; `inventory.ts:909`, tipos en `Management.tsx:1144`), `transfer_out` y `transfer_in` (`apps/api/src/warehouses.ts:326-358`). Las entradas y salidas de la pantalla «Mercancía» las guarda `apps/api/src/merchandise.ts:346` con el motivo elegido. DUDOSO: no se enumeró cada literal de `type`; confirmar con `grep -rn "stockChange(" apps/api/src` antes de citar uno nuevo.
 
 ## 3. Clientes y ventas
 
@@ -58,7 +58,7 @@ Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emit
 
 `Payment` (`schema.prisma:458`):
 
-- **`method`** (cómo se pagó): `cash` (efectivo; con `currency = "USD"` si fue en dólares), `card`, `transfer`, `credit_note`, `cod` (crédito y contraentrega) y `credit` (crédito puro, no lo envía la pantalla de caja) (`packages/shared/src/index.ts:599-606`). En reportes y recibos, `cod` y `credit` se muestran como «Crédito / contraentrega» (`apps/web/src/Prints.tsx:498-505`).
+- **`method`** (cómo se pagó): `cash` (efectivo; con `currency = "USD"` si fue en dólares), `card`, `transfer`, `credit_note`, `cod` (crédito y contraentrega) y `credit` (crédito puro, no lo envía la pantalla de caja) (`packages/shared/src/index.ts:603-610`). En reportes y recibos, `cod` y `credit` se muestran como «Crédito / contraentrega» (`apps/web/src/Prints.tsx:498-505`).
 - **`status`** (en qué punto está):
   - **`ok`** — válido y aplicado (efectivo, tarjeta, transferencia verificada, abono aplicado).
   - **`pending_verification`** — **transferencia que nadie ha comprobado en el banco** (venta o abono).
@@ -67,9 +67,9 @@ Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emit
     Fuente: `apps/api/src/sales.ts:1405-1411`, `:2263-2270`, `:4424-4429`.
 - **`entryType`** (de dónde viene el pago):
   - **`sale`** — pago hecho **al vender**.
-  - **`installment`** — **abono o cobro posterior** de un crédito/contraentrega (`sales.ts:4107`).
-    Un abono `pending_verification` no descuenta `Sale.creditBalance` hasta verificarse (`sales.ts:4781-4791`, `:2775-2790`).
-- Otros campos: `amount` (lo **aplicado** a la venta, ya sin cambio), `tendered` (lo **entregado** por el cliente), `change` (vuelto en pesos), `bank` (cuenta o terminal), `reference`, `cardBrand`/`cardLast4`/`approvalCode`/`cardType`, `feeAmount` (comisión de tarjeta: `cardFeePercent`, 2.5 % si no hay configuración, `sales.ts:1423-1429`), `proofUrl` (foto de evidencia), `receivedById` (quién recibió un cobro), `currency`/`amountUsd`/`usdRate` (dólares), `cashSessionId` (a qué caja pertenece), `creditNoteId`.
+  - **`installment`** — **abono o cobro posterior** de un crédito/contraentrega (`sales.ts:4195`).
+    Un abono `pending_verification` no descuenta `Sale.creditBalance` hasta verificarse (`sales.ts:4876-4886`, `:2775-2790`).
+- Otros campos: `amount` (lo **aplicado** a la venta, ya sin cambio), `tendered` (lo **entregado** por el cliente), `change` (vuelto en pesos), `bank` (cuenta o terminal), `reference`, `cardBrand`/`cardLast4`/`approvalCode`/`cardType`, `feeAmount` (comisión de tarjeta: `cardFeePercent`, 2.5 % si no hay configuración, `sales.ts:1427-1433`), `proofUrl` (foto de evidencia), `receivedById` (quién recibió un cobro), `currency`/`amountUsd`/`usdRate` (dólares), `cashSessionId` (a qué caja pertenece), `creditNoteId`.
 
 ## 5. Caja
 
@@ -78,7 +78,7 @@ Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emit
 | `CashSession`  | **Una caja** (de apertura a cierre) de **una persona**. | `userId`, `registerId` (equipo), `openingAmount`, `openedAt`, `closedAt` (nulo = abierta), `expectedCash/Card/Transfer`, `countedCash/Card/Transfer`, `differenceCash/Card/Transfer`, `difference`, `notes`, `closeDetails` (JSON del cuadre: denominaciones, vales, dólares, `delivered`/`left`, lote del verifón, aprobadores) | `:673` |
 | `CashMovement` | Entrada o salida de efectivo durante el turno.          | `type`: `in` o `out`, `amount`, `reason`, `operationId`                                                                                                                                                                                                                                                                          | `:704` |
 
-Reglas: una persona solo puede tener **una caja abierta** (índice único parcial, `apps/api/src/cash.ts:940-967`); el esperado se calcula, no se guarda hasta el cierre (`cash.ts:55-113`); las transferencias del cierre las suma el sistema (`cash.ts:1263`).
+Reglas: una persona solo puede tener **una caja abierta** (índice único parcial, `apps/api/src/cash.ts:940-967`); el esperado se calcula, no se guarda hasta el cierre (`cash.ts:55-113`); las transferencias del cierre las suma el sistema (`cash.ts:1262`).
 
 ## 6. Compras
 
@@ -132,6 +132,6 @@ PurchaseOrder >─< PurchaseItem · GoodsReceipt · Supplier
 
 - **Total esperado de caja** (`cashExpected`, `apps/api/src/cash.ts:55-113`).
 - **Deuda de un cliente** = suma de `creditBalance` de sus ventas completadas (`apps/api/src/sales.ts:350` `customerOpenDebt`).
-- **Margen** = `(precio − costo) / precio × 100` sin restar ITBIS (`packages/shared/src/index.ts:484-487`).
+- **Margen** = `(precio − costo) / precio × 100` sin restar ITBIS (`packages/shared/src/index.ts:488-491`).
 - **Pendiente de GV**, ver §8.
 - **Costo promedio** (`Variant.costAvg`) lo actualiza cada entrada con costo y flete repartido (`apps/api/src/inventory.ts:165` `receiptCosts`, `:450-520` `stockChange`).

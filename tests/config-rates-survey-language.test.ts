@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import ledger from "./config-rates-survey-ledger.json";
+import { reverseIt003 } from "./it003-preservation";
 import {
   configRatesSurveyCopy,
   configRatesSurveyText,
@@ -11,6 +12,7 @@ describe("Configuración: tarifas y resumen de encuesta ES/EN", () => {
   for (const [name, entry] of Object.entries(ledger)) {
     it(`${name}: reversiones de presentación recuperan íntegra la base 8ec7f99b7`, () => {
       let source = readFileSync(`apps/web/src/${name}.tsx`, "utf8");
+      if (name === "Incentives") source = reverseIt003(source, "Incentives");
       for (const edit of entry.edits) {
         expect(source.split(edit.after).length - 1).toBe(1);
         source = source.replace(edit.after, edit.before);

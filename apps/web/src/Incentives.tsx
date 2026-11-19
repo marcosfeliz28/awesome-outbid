@@ -1,5 +1,6 @@
 import { configRatesSurveyText, type ConfigRatesSurveyKey } from "./configRatesSurveyLanguage";
 import { useLanguage } from "./inicioLanguage";
+import { cashText } from "./cashLanguage";
 import { useOperationsText } from "./operationsLanguage";
 import { PremiumWorkspace } from "./PremiumWorkspace";
 import "./premiumOperations.css";
@@ -134,6 +135,8 @@ export function WholesaleNotice({ on }: { on?: boolean }) {
 
 export function MyIncentives() {
   const user = useStore((s) => s.user)!;
+  const cashLanguage = useLanguage();
+  const ct = (text: string) => cashText(text, cashLanguage);
   const online = useStore((s) => s.online);
   const query = useQuery({
     queryKey: ["incentives-me"],
@@ -152,35 +155,36 @@ export function MyIncentives() {
       <div>
         <h3 id="incentive-mine-title">
           <HandCoins size={17} aria-hidden="true" />
-          Mis incentivos · {query.data.label}
+          {ct("Mis incentivos")} · {query.data.label}
         </h3>
         <strong data-testid="mis-incentivos-neto">
           {formatMoney(row?.net ?? 0)}
         </strong>
       </div>
       <p>
-        {netUnits(row?.units ?? [])} unidades · {row?.salesCount ?? 0} ventas ·{" "}
-        {row?.wholesaleSales ?? 0} al por mayor
+        {netUnits(row?.units ?? [])} {ct("unidades")} · {row?.salesCount ?? 0}{" "}
+        {ct("ventas")} · {row?.wholesaleSales ?? 0} {ct("al por mayor")}
         {row?.deductions ? (
-          <> · devoluciones {formatMoney(row.deductions)}</>
+          <> · {ct("devoluciones")} {formatMoney(row.deductions)}</>
         ) : null}
         {row?.pendingCollection ? (
-          <> · {formatMoney(row.pendingCollection)} de ventas por cobrar</>
+          <> · {formatMoney(row.pendingCollection)} {ct("de ventas por cobrar")}</>
         ) : null}
       </p>
       {query.data.pendingEstimate ? (
         <p className="incentive-pending" data-testid="incentivo-pendiente">
-          Incentivo pendiente de cobro (estimado):{" "}
+          {ct("Incentivo pendiente de cobro (estimado):")}{" "}
           <strong>{formatMoney(query.data.pendingEstimate)}</strong>
           <small>
             {" "}
-            No está en tu total. Se suma, en el mes del pago, cuando la
-            administración cobre esos créditos.
+            {ct(
+              "No está en tu total. Se suma, en el mes del pago, cuando la administración cobre esos créditos.",
+            )}
           </small>
         </p>
       ) : null}
       <small>
-        Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.
+        {ct("Solo tú ves este cuadro. Se cuadra a fin de mes con la administración.")}
       </small>
     </section>
   );

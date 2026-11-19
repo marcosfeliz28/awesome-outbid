@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import ts from "typescript";
 import { describe, it, expect } from "vitest";
 import { STORE_SETTINGS_EN, storeSettingsText } from "../apps/web/src/storeSettingsLanguage";
+import { reverseIt003 } from "./it003-preservation";
 const source = readFileSync("apps/web/src/Tienda.tsx", "utf8");
 const ledger = JSON.parse(readFileSync("docs/diseno/operaciones-4k/STORE_SETTINGS_IDIOMA.json", "utf8"));
 const before = ledger.changes[1].before as string;
@@ -35,7 +36,7 @@ describe("Store settings ES/EN", () => {
   expect(after).toContain(".filter((t) => !t.revokedAt)");
  });
  it("changes only StoreSettings and its imports, reversible to base hash", () => {
-  let original = source;
+  let original = reverseIt003(source, "Tienda");
   for(const edit of [...ledger.changes].reverse()) {
    expect(original.split(edit.after)).toHaveLength(2);
    original = original.replace(edit.after,edit.before);

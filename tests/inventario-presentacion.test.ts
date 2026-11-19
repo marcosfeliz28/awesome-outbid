@@ -1,10 +1,14 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, it, expect } from "vitest";
+import { reverseIt003 } from "./it003-preservation";
 const read = (path: string) => readFileSync(path, "utf8");
 describe("Inventario Higgsfield: presentación sin alterar negocio", () => {
   it("conserva Inventory byte a byte al quitar el contenedor visual", () => {
-    const source = read("apps/web/src/Management.tsx");
+    const source = reverseIt003(
+      read("apps/web/src/Management.tsx"),
+      "Management",
+    );
     const record = JSON.parse(
       read("docs/diseno/inventario/PRESENTACION_REVERSIBLE.json"),
     );

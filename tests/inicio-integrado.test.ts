@@ -13,6 +13,7 @@ import { resolveAccent } from "../apps/web/src/AppearanceControls";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { reverseDd05 } from "./dd05-preservation";
 describe("Inicio integrado: preservación", () => {
   it("limita preferencias a Inicio y conserva el diálogo legal existente", () => {
     const source = readFileSync("apps/web/src/App.tsx", "utf8");
@@ -105,7 +106,7 @@ describe("Inicio integrado: preservación", () => {
     );
   });
   it("conserva byte a byte el Dashboard base salvo wrapper y pintura", () => {
-    let source = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
+    let source = reverseDd05(readFileSync("apps/web/src/Dashboard.tsx", "utf8"));
     const reversible: { before: string; after: string }[] = JSON.parse(
       readFileSync("docs/diseno/inicio-integrado/I18N_REVERSIBLE.json", "utf8"),
     );

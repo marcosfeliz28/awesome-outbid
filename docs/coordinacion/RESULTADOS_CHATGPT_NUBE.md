@@ -1,5 +1,120 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · P2 · últimos siete días reales
+
+- **Base y duplicación:** se incorporó `origin/nexora-cloud` `ac7ee042c6c66909eeee06259c9a59ae46415e49` mediante merge limpio. P2 seguía pendiente y no estaba en el historial de la rama.
+- **Problema y cambio:** la opción decía `Últimos 7 días`, pero usaba `weekStart()` y un lunes consultaba un solo día. `dashboardSevenDayStart(to)` resta seis fechas civiles al día final, de modo que consulta y exportación comparten un intervalo inclusivo de siete días. `weekStart()` conserva su significado y sus pruebas.
+- **Regresión rojo→verde:** `tests/dashboard-period.test.ts` falló primero porque el helper no existía. Después pasó con jueves, lunes y cruces de mes/año; el foco conjunto aprobó **3 archivos / 60 pruebas**, incluida la preservación byte a byte del Dashboard.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **168 archivos / 1,347 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. Las 559 citas se conservaron sin mover ni perder; el foco documental y de P2 pasó 3 archivos/21 pruebas y `git diff --check` pasó.
+- **Autoauditoría:** no se cambian ventas, importes, API, zona horaria ni exportador. La fecha civil se valida y se calcula al mediodía UTC para evitar desplazamientos; una entrada inválida se conserva. `P2-DASHBOARD-PERIODO_REVERSIBLE.json` retira exactamente P2 antes de comprobar el hash histórico.
+- **Publicación/CI:** pendiente de la publicación permitida de la rama; aún no se declaran los tres CI del SHA final.
+
+## 2026-11-19 · P11 · total visible de créditos pendientes
+
+- **Base y duplicación:** sobre `origin/nexora-cloud` `e0baf4d896fa1b230c2bdefd64b1167e8d4f8a21`, P11 seguía pendiente en la orden nocturna y no estaba resuelto en `HEAD`. La API ya marca los importes ocultos de caja abierta con `hiddenUntilClose`; no se modificó ese contrato.
+- **Problema y cambio:** el encabezado sumaba únicamente importes visibles pero decía `Por cobrar`, por lo que un subtotal podía parecer el total. Cuando existe al menos una fila oculta ahora dice `Por cobrar visible` y avisa que el total no incluye esas ventas; sin filas ocultas conserva `Por cobrar`. Las filas ocultas continúan mostrando `—`.
+- **Regresión rojo→verde:** `tests/tienda-pending-total.test.ts` falló primero porque no existía la nueva etiqueta. Después pasó con casos mixto, totalmente visible y totalmente oculto. El foco conjunto aprobó **4 archivos / 33 pruebas**, incluidas traducciones, caja ciega y la guarda de presentación.
+- **Control local final:** la primera corrida completa encontró únicamente que el ledger no reproducía el formato exacto de `Tienda.tsx`; se corrigió la evidencia reversible y su foco pasó 2 archivos/7 pruebas. La repetición de `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **167 archivos / 1,344 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `pnpm docs:citas` conservó las 559 citas sin mover ni perder ninguna; la prueba documental pasó 4/4 y `git diff --check` pasó.
+- **Autoauditoría:** `creditPendingSummary` conserva exactamente la suma anterior (`Number(pending) || 0`) y solo cuenta banderas `hiddenUntilClose`; no infiere deuda, no revela importes ni cambia dinero, API, permisos o base. `PRODUCTO-TIENDA-POR-COBRAR_REVERSIBLE.json` retira exactamente P11 antes de comprobar el hash histórico de `Tienda.tsx`.
+- **Publicación/CI:** pendiente del único push final de la rama; todavía no se declara `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · P8 · cierre confirmado sin cuadre
+
+- **Base y duplicación:** se incorporó `origin/nexora-cloud` `e0baf4d896fa1b230c2bdefd64b1167e8d4f8a21` mediante merge limpio en la rama propia. P8 había sido intentado y revertido antes por la guarda de `Tienda.tsx`; no estaba resuelto en `HEAD` ni en el lote 6.
+- **Problema y cambio:** el POST de cierre y el GET posterior del cuadre compartían un `catch`; si el cierre quedaba guardado y fallaba el impreso, la pantalla parecía permitir cerrarlo otra vez. `completeCashClose` propaga un fallo real del cierre, pero devuelve `closed_without_cuadre` cuando solo falla el impreso. La pantalla confirma `Caja cerrada correctamente`, indica reabrirlo desde Historial, cierra el formulario e invalida las consultas.
+- **Regresión rojo→verde:** `tests/tienda-close-success.test.ts` falló primero porque no existía la confirmación. Después pasó con casos de cierre+cuadre, cierre rechazado y cierre confirmado/cuadre fallido; el foco completo pasó **4 archivos / 19 pruebas**, incluida la reversión byte a byte de `Tienda.tsx`.
+- **Control local final:** `pnpm check` terminó con código 0 sobre la base actualizada: typecheck y ESLint pasaron; **166 archivos / 1,338 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron.
+- **Autoauditoría:** no cambian endpoint, payload, importes, conteos, PIN, permisos ni reglas de cierre. La función garantiza que el cierre se invoca una sola vez; si este falla no solicita el cuadre. `PRODUCTO-TIENDA-CIERRE_REVERSIBLE.json` retira exactamente la importación y el bloque P8 antes de comprobar el hash histórico.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · P3/P12 · recibo de Caja
+
+- **Orden y duplicación:** `origin/nexora-cloud` continúa en `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`; la orden nocturna mantiene P3 y P12 pendientes en `POS.tsx`. El historial de la rama no contenía estos arreglos.
+- **Cambio:** el enlace de WhatsApp agrega el código de país `1` solo a teléfonos dominicanos locales de diez dígitos; conserva números que ya traen código internacional. El aviso de crédito pendiente corrige `un se cobra` por `se cobra`.
+- **Regresión rojo→verde:** `tests/pos-receipt-presentation.test.ts` falló primero en sus dos casos. Después pasó junto con las guardas de presentación de Caja, ticket y privacidad de cliente: **4 archivos / 33 pruebas**.
+- **Control local final:** la primera corrida completa dejó verdes las 1,333 pruebas funcionales restantes y señaló dos citas de `POS.tsx` desplazadas a líneas vacías; se corrigieron a las líneas de contenido y la prueba documental pasó 4/4. La repetición de `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **165 archivos / 1,334 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. Las 559 citas quedaron con cero movidas y cero perdidas; `git diff --check` pasó.
+- **Autoauditoría:** `whatsAppRecipient` elimina únicamente caracteres de formato y no duplica el `1`; no cambia ni valida datos guardados. La frase corregida no altera importes, crédito ni estado de la venta. `PRODUCTO-POS-RECIBO_REVERSIBLE.json` permite retirar byte por byte las tres ediciones de `POS.tsx` antes de comprobar la base visual histórica.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · PRODUCTO-ALMACÉN · filtro de existencia
+
+- **Orden:** pieza 3 de la orden nocturna del 19-nov. Solo presentación en Inventario; no modifica existencias, movimientos, almacenes, API ni base.
+- **Cambio:** al elegir un almacén concreto —incluido `Casa`— la lista conserva únicamente variantes cuyo `visibleStock(v)` es mayor que cero. La vista `Todos` conserva el catálogo completo y la búsqueda por SKU/código/nombre sigue aplicándose antes del filtro.
+- **Regresión rojo→verde:** `tests/inventory-warehouse-filter.test.ts` falló primero porque no existía la segunda condición; después pasó. El foco completo pasó **7 archivos / 39 pruebas**, incluidas las preservaciones byte a byte de `Management.tsx`.
+- **Control local final conjunto:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **164 archivos / 1,332 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `pnpm docs:citas` revisó 559 citas con cero movidas y cero perdidas; su prueba pasó 4/4 y `git diff --check` pasó.
+- **Autoauditoría:** el cambio solo filtra filas ya recibidas; no escribe ni recalcula stock. `Number(visibleStock(v)) > 0` usa la misma cantidad que se muestra en la tabla y evita tratar la cadena `"0"` como verdadera.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · UC-24 · búsqueda de clientes sin acentos
+
+- **Orden:** pieza 3 de la orden nocturna del 19-nov. El helper existente y probado `matchesSearch` todavía no estaba conectado a Clientes.
+- **Cambio:** `Management.tsx` usa `matchesSearch` para que mayúsculas y tildes no impidan encontrar nombres. El teléfono solo entra al texto buscable cuando `fullCustomer` ya permitía verlo; se conserva la protección contra usar dígitos enmascarados como oráculo.
+- **Regresión rojo→verde:** `tests/customers-search-presentation.test.ts` falló primero por import ausente; después pasó. El foco completo pasó **7 archivos / 51 pruebas**, incluidas las pruebas del helper y la preservación exacta de las capas visuales anteriores.
+- **Control local final conjunto:** cubierto por la corrida completa documentada en PRODUCTO-ALMACÉN inmediatamente arriba: 164 archivos / 1,332 pruebas, typecheck, lint y builds web/API verdes.
+- **Autoauditoría:** no cambian campos, datos privados, permisos, API ni edición de clientes; solo el criterio local de coincidencia.
+- **Publicación/CI:** pendiente del único push final de la rama.
+
+## 2026-11-19 · VE-001 · usuario vacío
+
+- **Orden:** punto VE-001 de la pieza 7 de la orden nocturna del 19-nov. Solo formulario web; no cambia API, autenticación del servidor ni permisos.
+- **Cambio:** el envío normaliza `login.trim()`. Si queda vacío, muestra `Escribe tu usuario o correo.` y retorna antes de `post`; los dos flujos autorizados —entrada y cambio obligatorio— envían el usuario normalizado.
+- **Regresión rojo→verde:** `tests/login-empty-user.test.ts` falló primero porque no existía `normalizedLogin`; después pasó. El foco completo pasó **4 archivos / 56 pruebas**, incluidas las coberturas de autenticación, legibilidad y accesibilidad.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **162 archivos / 1,330 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `git diff --check` pasó.
+- **Autoauditoría:** no se altera la contraseña, sesión, terminal, respuesta de error ni contrato del servidor. Un usuario válido conserva su valor salvo espacios exteriores; un valor solo de espacios no inicia red.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · UC-27 · confirmación de contraseña
+
+- **Orden:** punto UC-27 de la pieza 7 de la orden nocturna del 19-nov. Solo presentación en `PasswordChangeFields.tsx`; no cambia autenticación, política, API ni permisos.
+- **Cambio:** cuando la confirmación ya tiene contenido y difiere de la nueva contraseña, aparece `Las contraseñas no coinciden.` como alerta en línea. El campo expone `aria-invalid` y enlaza el mensaje con `aria-describedby`; el aviso desaparece al coincidir o al vaciar la confirmación.
+- **Regresión rojo→verde:** `tests/password-confirmation-inline.test.ts` falló primero porque no existía `mismatch`; después pasó. El foco completo pasó **3 archivos / 50 pruebas**, incluidas las 35 de accesibilidad y 14 de autenticación existentes.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **161 archivos / 1,329 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `git diff --check` pasó.
+- **Autoauditoría:** no se altera `required`, longitud, patrón para cajera, fortaleza, envío ni mensajes del servidor. No se tocaron dinero, Render, producción, base ni credenciales.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · PRODUCTO-RECEPCIONES · error recuperable
+
+- **Orden:** pieza 4 de la orden nocturna del 19-nov en `origin/nexora-cloud` `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`. Solo pantalla protegida; no se modificaron API, compras, inventario ni datos.
+- **Problema y cambio:** el fallo de `GET /goods-receipts` se confundía con un historial vacío. `Purchases.tsx` ahora muestra `No se pudo cargar el historial de recepciones.` / `Could not load receipt history.` y un botón `Reintentar` / `Retry` que llama a `query.refetch()`.
+- **Regresión rojo→verde:** `tests/purchases-history-error.test.ts` falló primero con `expected -1 to be greater than -1` porque no existía la rama `query.isError`; después pasó. El foco completo pasó **3 archivos / 11 pruebas**, incluida la preservación byte a byte del editor mediante `PRODUCTO-RECEPCIONES_REVERSIBLE.json`.
+- **Autoauditoría:** el error se evalúa después de conexión/carga y antes del vacío; no se confunde con “sin recepciones”. El botón usa la misma consulta y filtros; no escribe, duplica ni altera una recepción. La primera corrida completa señaló una segunda guarda histórica (`merchandise-premium`); se añadió la misma reversión exacta y la repetición quedó verde.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **160 archivos / 1,328 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `git diff --check` pasó.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · PRODUCTO-REPORTES · tabla legible
+
+- **Orden y base:** leí la nueva orden de `origin/nexora-cloud` `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`. Como los helpers y la API indicados todavía no estaban en esa rama, rebasé la rama propia sobre el lote publicado `origin/claude/publicar-lote5-19nov` `02cb36b738ffe3415889e3618e2a3e0df95297c8`; no mezclé nada en `nexora-cloud`.
+- **Cambio de pantalla:** `Management.tsx` usa `reportDisplayRows`, `reportColumnVisible` y `reportCellText`. La tabla traduce los códigos visibles, oculta `Referencia` en `returns-discounts` y conserva la nueva columna `Factura`. No modifica JSON, exportaciones, API, base, permisos ni cifras.
+- **Regresión rojo→verde:** `tests/reports-screen-presentation.test.ts` falló primero porque `Management.tsx` no contenía `reportCellText`; después pasó. Junto con `tests/reportes-textos.test.ts`: **2 archivos, 9 pruebas verdes**. La primera corrida conjunta detectó dependencias locales antiguas (`TypeError: z.guid is not a function`); `pnpm install --frozen-lockfile` sincronizó exactamente el lockfile y la repetición quedó verde.
+- **Evidencia visual:** 16 capturas antes/después en `docs/auditoria-ui/capturas/PRODUCTO-REPORTES/`: 1440×900 y 390×844, claro/oscuro, ES/EN. En el antes se ven `return`, `discount_approved` y `Referencia`; en el después se ven `Devolución`, `Descuento aprobado`, `Factura` y no `Referencia`.
+- **Autoauditoría:** inspeccioné escritorio claro y móvil oscuro completos; `Factura` es legible y las tarjetas móviles no exponen el identificador interno. El diff funcional se limita a la presentación de Reportes y su prueba. La preservación reversible de `Management.tsx`, las citas documentales y las demás presentaciones protegidas quedaron verdes. No tocó dinero, precios, cálculos, API, base, Render, producción ni credenciales.
+- **Control local final:** el foco pasó **7 archivos / 45 pruebas**. `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **159 archivos / 1,327 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `pnpm docs:citas` revisó 559 citas con cero movidas y cero perdidas; `git diff --check` pasó.
+- **Publicación/CI:** pendiente junto con el resto de la rama, porque la orden exige un solo push final. No se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
+## 2026-11-19 · auditoría UI · continuación de pantallas protegidas
+
+- **Referencia actualizada:** `origin/nexora-cloud` quedó en `b9589bbb1dc4b3d426ce393445acb7c508eedca4`. La orden vigente sigue siendo `docs/coordinacion/reparto-auditoria-19nov/ORDEN_CHATGPT_PRODUCTO_19NOV.md` en `origin/claude/reparto-auditoria-19nov`; asigna a esta rama los 231 hallazgos de presentación y cuatro puntos protegidos. La rama local es `chatgpt-nube/auditoria-ui-19nov`; no se mezcló ni publicó.
+- **`Infinity en stock` → `Servicio`:** commit local `cc4d0f3c9987fa5650703666f407cf619975e72d`. Solo cambia la etiqueta visual de productos sin límite; conserva el valor interno `Infinity`. La regresión falló antes por módulo ausente y pasó después. Hay 16 capturas antes/después, 1440×900 y 390×844, claro/oscuro, ES/EN, en `docs/auditoria-ui/capturas/PRODUCTO-SERVICIO/`.
+- **`opening_shortfall`:** commit local `61b433f232f95a0d1d236fc8725c37d24627c964`. La alerta muestra `Fondo de apertura menor` en español y `Opening fund shortfall` en inglés. La regresión falló antes y pasó después; hay 16 capturas equivalentes en `docs/auditoria-ui/capturas/PRODUCTO-APERTURA/`.
+- **`operationId` en ajustes:** commit local `dc3bf275020ca728c9b571ec1728c1cab1fd404a`. El formulario genera un UUID estable al abrirse y lo envía en la solicitud; no cambia API, base, permisos ni inventario. La regresión falló antes y pasó después; las 16 capturas en `docs/auditoria-ui/capturas/PRODUCTO-AJUSTE/` documentan que la presentación permanece idéntica.
+- **IT-045 / CC-12:** corregí la única frase de la tarjeta `Mis incentivos`: `Sólo tú ves este cuadro` → `Solo tú ves este cuadro`, manteniendo intacta la traducción inglesa. La regresión falló antes porque el diccionario no reconocía el texto corregido y pasó después. Hay 16 capturas antes/después, 1440×900 y 390×844, claro/oscuro, ES/EN, en `docs/auditoria-ui/capturas/IT-045/`.
+- **CC-10:** la vista `Por persona` ahora concuerda `1 venta abierta`/`N ventas abiertas` y las variantes pagada e inglesa. La regresión quedó roja primero porque la función no existía y después aprobó ocho casos. Hay 16 capturas antes/después en `docs/auditoria-ui/capturas/CC-10/`; la móvil española muestra exactamente `1 ventas abiertas` antes y `1 venta abierta` después.
+- **Control local:** después de cada punto se ejecutó `pnpm check`. La última corrida aprobó typecheck, ESLint, 151 archivos de prueba (uno omitido), 1,241 pruebas (10 omitidas) y los builds web/API.
+- **Bloqueo real — mover efectivo recibido por la dueña:** la interfaz ordinaria ya ofrece `Mover cobro a otra caja` cuando existe `cashSessionId` (`apps/web/src/Management.tsx:3834,4118-4147`). El efectivo `Recibido por la dueña` se guarda con `cashSessionId: null` (`apps/api/src/sales.ts:4988,5092`) y el endpoint de movimiento lo rechaza expresamente con `Este cobro no está en ninguna caja; no hay de dónde moverlo.` (`apps/api/src/sales.ts:3293-3310`). Añadir solo el botón produciría un flujo que siempre falla. Resolverlo requiere definir y cambiar contrato/API, reservado a Claude por la orden; no se implementó una apariencia engañosa.
+- **Estado de entrega:** continúan pendientes la clasificación y ejecución de los demás hallazgos hasta que `corregidos + bloqueados + ya resueltos + decisión = 231`. No hay SHA remoto final ni CI de rama todavía; no se afirma que los 231 estén terminados.
+
+## 2026-11-19 · auditoría UI · bloque visual de severidad alta
+
+- **Orden y reparto:** se siguió la versión vigente de `docs/auditoria-ui/ORDEN_CHATGPT_AUDITORIA_UI.md` y `docs/coordinacion/reparto-auditoria-19nov/LEEME.md`, no el adjunto anterior. Base `origin/nexora-cloud` `8014355b`; integración obligatoria de GV `dae41acf`; rama local `chatgpt-nube/auditoria-ui-19nov`.
+- **Bloque revisado (10 hallazgos altos):** MTC-001 y MTC-002 corregidos; DD-05, UC-05, UC-07 y UC-25 ya estaban resueltos en la base integrada; R16, R18 y UC-01 corresponden a texto/datos originados en servidor y quedan con Claude; IT-003 queda pendiente de reparto explícito entre ChatGPT NUBE y PC para no duplicar trabajo.
+- **MTC-001:** se definieron acentos oscuros legibles para Ayer/Hoy (`#93c5fd` y `#6ee7b7`). La regresión falló antes por ausencia de valores y pasó después exigiendo contraste WCAG AA >= 4.5:1.
+- **MTC-002:** el acento claro de Otro día cambió de `#d97706` (3.072:1 sobre `#fffbeb`) a `#92400e`. La regresión falló antes y pasó después con el mismo umbral >= 4.5:1.
+- **Commits locales:** `c2226652` (MTC-001), `ded87d6b` (MTC-002) y `b80d2712` (evidencia visual). No se publicaron.
+- **Evidencia:** 16 capturas antes/después en `docs/auditoria-ui/capturas/MTC-001-MTC-002/`, a 1440x900 y 390x844, claro/oscuro y español/inglés, con API interceptada y datos ficticios. Se revisó visualmente la captura móvil oscura completa.
+- **Comprobaciones locales:** `tests/accessibility-contract.test.ts` 35/35; `pnpm check` con 144 archivos de prueba aprobados, uno omitido, 1,215 pruebas aprobadas y 10 omitidas; typecheck, ESLint y builds web/API aprobados. Fue necesario ejecutar `pnpm db:generate` en el worktree nuevo; no conectó ni migró una base.
+- **Autoauditoría:** los cambios funcionales se limitan a variables CSS y su regresión. No se cambió dinero, descuentos, ganancias, API, datos, permisos, Render, producción ni credenciales. Los documentos de sistema que el control local reajustó por líneas de GV no forman parte de esta entrega.
+- **Bloqueo de publicación:** el reparto vigente asigna 231 hallazgos de presentación al conjunto ChatGPT NUBE/PC, pero no divide los 221 restantes por ejecutor. La orden exige un único push final y una ventana libre de Claude. Para evitar colisiones, no se hizo push, PR ni CI hasta recibir el reparto explícito y la ventana; por tanto aún no existe SHA remoto final que comprobar en `verify`, `windows-installer` y `render-images`.
+
 ## 2026-11-13 · especificaciones de construcción de la primera tanda
 
 - **Orden, base y rama:** nueva cola `13-nov (2)` de `ORDENES_CHATGPT_NUBE.md`, ejecutada desde `origin/nexora-cloud` `511d223f0c0c512f54b900265b2c6c1e59d4c560` en `chatgpt-nube/espec-tanda1-13nov`.

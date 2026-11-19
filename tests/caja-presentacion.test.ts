@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, it, expect } from "vitest";
+import { reverseProductoServicio } from "./producto-servicio-preservation";
+import { reverseProductoPosRecibo } from "./producto-pos-recibo-preservation";
 
 describe("Caja Fusión: pintura reversible", () => {
   it("preserva byte por byte POS, incluyendo handlers, cálculos, stock y carrito", () => {
@@ -10,7 +12,9 @@ describe("Caja Fusión: pintura reversible", () => {
         "utf8",
       ),
     );
-    let source = readFileSync("apps/web/src/POS.tsx", "utf8");
+    let source = reverseProductoServicio(
+      reverseProductoPosRecibo(readFileSync("apps/web/src/POS.tsx", "utf8")),
+    );
     for (const edit of [...record.changes].reverse()) {
       expect(source).toContain(edit.after);
       source = source.replace(edit.after, edit.before);

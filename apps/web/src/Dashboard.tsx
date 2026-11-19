@@ -31,13 +31,15 @@ import {
   Plus,
 } from "lucide-react";
 import { Button, Badge, Modal } from "@fitstore/ui";
-import { can, weekStart } from "@fitstore/shared";
+import { can } from "@fitstore/shared";
 import { api, download, post, useStore } from "./api";
 import { QueryState, today, toast } from "./helpers";
 import { YearPie } from "./YearPie";
 import { KpiStrip } from "./KpiStrip";
 import { CountUp } from "./impacto";
 import { kpiStripVisible } from "./kpiStripModel";
+import { dashboardCategoryColor } from "./dashboardCategoryColor";
+import { dashboardSevenDayStart } from "./dashboardPeriod";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -148,7 +150,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
         : period === "day"
           ? day
           : period === "week"
-            ? weekStart()
+            ? dashboardSevenDayStart(to)
             : to.slice(0, 8) + "01";
   const query = useQuery({
     queryKey: ["dashboard", from, to],
@@ -577,19 +579,20 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                   (a: number, i: any) => a + i.total,
                   0,
                 ),
-                percent = total ? (c.total / total) * 100 : 0;
+                percent = total ? (c.total / total) * 100 : 0,
+                color = dashboardCategoryColor(c.name, c.color);
               return (
                 <div className="category-row" key={c.name}>
                   <div>
                     <span>
-                      <i style={{ background: c.color }} />
+                      <i style={{ background: color }} />
                       {c.name}
                     </span>
                     <strong>{percent.toFixed(0)}%</strong>
                   </div>
                   <div className="progress-track">
                     <div
-                      style={{ width: `${percent}%`, background: c.color }}
+                      style={{ width: `${percent}%`, background: color }}
                     />
                   </div>
                 </div>

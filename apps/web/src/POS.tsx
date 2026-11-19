@@ -1,7 +1,9 @@
 import "./fusion-caja-higgsfield.css";
 import { CajaVisualPreferences } from "./CajaVisualPreferences";
 import { t, useLanguage } from "./inicioLanguage";
+import { posStockLabel } from "./posStockLabel";
 import { refreshAfterSale } from "./postSaleRefresh";
+import { whatsAppRecipient } from "./whatsAppRecipient";
 import {
   memo,
   useCallback,
@@ -1624,6 +1626,7 @@ const ProductGrid = memo(function ProductGrid({
   allowNegativeStock: boolean;
   onAdd: (product: Product) => void;
 }) {
+  const language = useLanguage();
   return (
     <div className="product-grid">
       {products.map((p) => {
@@ -1681,7 +1684,7 @@ const ProductGrid = memo(function ProductGrid({
                     Math.min(...p.variants.map((v) => Number(v.price))),
                   )}
                 </strong>
-                <span>{stock} en stock</span>
+                <span>{posStockLabel(stock, isService(p), language)}</span>
               </div>
             </div>
           </button>
@@ -2464,7 +2467,7 @@ function Checkout({
                 <strong>{formatMoney(receipt.creditBalance)}</strong>
               </p>
               <small>
-                Venta registrada. La caja no recibió dinero por esa parte; un se
+                Venta registrada. La caja no recibió dinero por esa parte; se
                 cobra después en Créditos pendientes, en la pestaña Caja.
               </small>
             </div>
@@ -2498,7 +2501,7 @@ function Checkout({
             rel="noreferrer"
             href={
               "https://wa.me/" +
-              contact(customer?.phone).replace(/\D/g, "") +
+              whatsAppRecipient(contact(customer?.phone)) +
               "?text=" +
               encodeURIComponent(text)
             }

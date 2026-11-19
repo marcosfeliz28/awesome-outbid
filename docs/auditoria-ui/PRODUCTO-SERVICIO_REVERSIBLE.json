@@ -1,0 +1,14 @@
+[
+  {
+    "before": "import { t, useLanguage } from \"./inicioLanguage\";\n",
+    "after": "import { t, useLanguage } from \"./inicioLanguage\";\nimport { posStockLabel } from \"./posStockLabel\";\n"
+  },
+  {
+    "before": "}) {\n  return (\n    <div className=\"product-grid\">",
+    "after": "}) {\n  const language = useLanguage();\n  return (\n    <div className=\"product-grid\">"
+  },
+  {
+    "before": "                <span>{stock} en stock</span>",
+    "after": "                <span>{posStockLabel(stock, isService(p), language)}</span>"
+  }
+]
