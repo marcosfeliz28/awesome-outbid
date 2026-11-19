@@ -1007,6 +1007,20 @@ model Settings {
   updatedAt DateTime @updatedAt
 }
 
+// Sucursales de la empresa (202611190001_branches). id = el texto que guardan
+// las columnas "branchId" ('main' es la principal); único por empresa.
+model Branch {
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  tenantId  String   @db.Uuid
+  id        String
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@id([tenantId, id])
+}
+
 model Counter {
   tenant Tenant @relation(fields: [tenantId], references: [id])
   tenantId String @default(dbgenerated("'00000000-0000-0000-0000-000000000001'::uuid")) @db.Uuid
@@ -1405,6 +1419,7 @@ model Tenant {
   aiPackCreditRows AiPackCredit[]
   cashierSurveyRows CashierSurvey[]
   changeRequestRows ChangeRequest[]
+  branchRows Branch[]
   platformPaymentRows PlatformPayment[]
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique

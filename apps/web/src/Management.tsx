@@ -90,6 +90,7 @@ import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
 import { InventoryImportButton } from "./InventoryImport";
 import { NcfSequenceSettings } from "./NcfSequenceSettings";
+import { BranchSettings } from "./BranchSettings";
 import { formatReportCell, isReportMoneyColumn } from "./report-format";
 import { EmptyIllustration } from "./EmptyIllustration";
 import {
@@ -4613,6 +4614,7 @@ export function Configuration() {
               <>
                 <StoreSettings />
                 {product && <SupportAccessCard />}
+                {product && <BranchSettings />}
                 <NcfSequenceSettings />
                 <TelegramNotices />
                 {/* El producto no tiene respaldo a Drive por empresa (sin /backups). */}
