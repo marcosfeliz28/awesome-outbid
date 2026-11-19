@@ -24,6 +24,7 @@ export function PasswordChangeFields({
   const cashier = isCashierPasswordRole(policy);
   const rules = passwordRules(password, policy);
   const complete = rules.filter((rule) => rule.met).length;
+  const mismatch = confirmation.length > 0 && confirmation !== password;
   const strength =
     complete === 5
       ? "Cumple las reglas"
@@ -90,10 +91,23 @@ export function PasswordChangeFields({
           maxLength={cashier ? 6 : 128}
           pattern={cashier ? "[0-9]{6}" : undefined}
           title={cashier ? "Escribe exactamente 6 números." : undefined}
+          aria-invalid={mismatch}
+          aria-describedby={
+            mismatch ? "password-confirmation-error" : undefined
+          }
           value={confirmation}
           onChange={(event) => onConfirmation(event.target.value)}
         />
       </label>
+      {mismatch && (
+        <p
+          id="password-confirmation-error"
+          className="form-error"
+          role="alert"
+        >
+          Las contraseñas no coinciden.
+        </p>
+      )}
     </div>
   );
 }

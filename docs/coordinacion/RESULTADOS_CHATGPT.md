@@ -2,6 +2,12 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-19 · ChatGPT NUBE · UC-27
+
+- `PasswordChangeFields.tsx` avisa en línea `Las contraseñas no coinciden.` y enlaza el error accesible al campo de confirmación; no cambia validación, envío, API ni permisos.
+- Regresión roja→verde. El foco pasó 3 archivos/50 pruebas, con las coberturas existentes de accesibilidad y autenticación. `pnpm check` pasó con 161 archivos/1,329 pruebas (un archivo/10 pruebas omitidos), typecheck, lint y builds web/API.
+- Sin push, mezcla, despliegue ni acceso a Render, producción, base o credenciales. Los tres CI quedan para el SHA final único.
+
 ## 2026-11-19 · ChatGPT NUBE · PRODUCTO-RECEPCIONES
 
 - `Purchases.tsx` distingue un error de carga del historial vacío y ofrece `Reintentar` / `Retry`; el botón solo repite la consulta existente.

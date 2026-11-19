@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · UC-27 · confirmación de contraseña
+
+- **Orden:** punto UC-27 de la pieza 7 de la orden nocturna del 19-nov. Solo presentación en `PasswordChangeFields.tsx`; no cambia autenticación, política, API ni permisos.
+- **Cambio:** cuando la confirmación ya tiene contenido y difiere de la nueva contraseña, aparece `Las contraseñas no coinciden.` como alerta en línea. El campo expone `aria-invalid` y enlaza el mensaje con `aria-describedby`; el aviso desaparece al coincidir o al vaciar la confirmación.
+- **Regresión rojo→verde:** `tests/password-confirmation-inline.test.ts` falló primero porque no existía `mismatch`; después pasó. El foco completo pasó **3 archivos / 50 pruebas**, incluidas las 35 de accesibilidad y 14 de autenticación existentes.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **161 archivos / 1,329 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron. `git diff --check` pasó.
+- **Autoauditoría:** no se altera `required`, longitud, patrón para cajera, fortaleza, envío ni mensajes del servidor. No se tocaron dinero, Render, producción, base ni credenciales.
+- **Publicación/CI:** pendiente del único push final de la rama; no se declara todavía `verify`, `windows-installer` ni `render-images` sobre SHA final.
+
 ## 2026-11-19 · PRODUCTO-RECEPCIONES · error recuperable
 
 - **Orden:** pieza 4 de la orden nocturna del 19-nov en `origin/nexora-cloud` `1ce7134a37f471a8734bebb04c6eb2b55ded49b9`. Solo pantalla protegida; no se modificaron API, compras, inventario ni datos.
