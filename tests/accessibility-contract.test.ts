@@ -400,6 +400,17 @@ function meets(
 }
 
 describe("P6 · controles accesibles de venta y caja", () => {
+  it("H249: las tarjetas Ayer y Hoy en oscuro mantienen contraste AA", () => {
+    expect(css).toMatch(
+      /:root\[data-theme="dark"\] \.day-yesterday\s*\{[\s\S]*?--day-accent:\s*#93c5fd;[\s\S]*?--day-bg:\s*#172554;/,
+    );
+    expect(css).toMatch(
+      /:root\[data-theme="dark"\] \.day-today\s*\{[\s\S]*?--day-accent:\s*#6ee7b7;[\s\S]*?--day-bg:\s*#052e22;/,
+    );
+    meets("Ayer oscuro", "#93c5fd", "#172554", 4.5);
+    meets("Hoy oscuro", "#6ee7b7", "#052e22", 4.5);
+  });
+
   it("H131: GV usa una señal de categoría distinta a Fajas en el Resumen", () => {
     const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");
     expect(dashboard).toContain('name.startsWith("GV ") ? "#7c3aed"');
