@@ -14,7 +14,8 @@
     "billing:panel": "tsx scripts/platform-billing-panel.ts",
     "inventory:import": "tsx scripts/import-inventario.ts",
     "tenant:backup": "tsx scripts/tenant-backup.ts",
-    "baja": "tsx --tsconfig tsconfig.json scripts/baja-cliente.ts"
+    "baja": "tsx --tsconfig tsconfig.json scripts/baja-cliente.ts",
+    "tenant:purge": "tsx scripts/tenant-purge.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

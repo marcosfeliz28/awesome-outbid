@@ -537,7 +537,7 @@ describe("INC · incentivos por cajera", () => {
   it("una venta de un mes ya cerrado cuenta en el siguiente mes abierto, con nota", async () => {
     // Cierre del mes actual sólo durante esta prueba (base de pruebas).
     const already = await db.incentivePeriodClose.findUnique({
-      where: { branchId_period: { branchId: "main", period: month } },
+      where: { tenantId_branchId_period: { tenantId: "00000000-0000-0000-0000-000000000001", branchId: "main", period: month } },
     });
     expect(already).toBeNull();
     // B-3 (auditoría 01): la API ya no cierra el mes en curso. La regla de

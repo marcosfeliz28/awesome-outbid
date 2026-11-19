@@ -103,8 +103,9 @@ it("el PIN de equipos y las pruebas Telegram no cruzan empresas", async () => {
     expect(states.rows[1].approvedAt).not.toBeNull();
 
     // Se habilita después de arrancar el módulo: el trabajador de envío no se
-    // registró, por lo que esta prueba nunca contacta a Telegram. Se verifica
-    // el encolado real de Nest/Prisma, separado por tenant.
+    // registró, por lo que esta prueba nunca contacta a Telegram.
+    // A2/M4: en modo producto el chat global del entorno se ignora; la prueba
+    // de un admin no se encola ni escribe a ese chat (sería de todas las empresas).
     process.env.TELEGRAM_BOT_TOKEN = "bot-local-sin-red";
     process.env.TELEGRAM_CHAT_ID = "chat-local-sin-red";
     const deniedTelegram = await send(http.post("/api/notifications/telegram/test"), b, cashierUser, cashierSession);
@@ -113,10 +114,10 @@ it("el PIN de equipos y las pruebas Telegram no cruzan empresas", async () => {
     const bTelegram = await send(http.post("/api/notifications/telegram/test"));
     expect(aTelegram.status, JSON.stringify(aTelegram.body)).toBe(201);
     expect(bTelegram.status, JSON.stringify(bTelegram.body)).toBe(201);
-    expect(aTelegram.body).toMatchObject({ enabled: true, queued: true });
-    expect(bTelegram.body).toMatchObject({ enabled: true, queued: true });
-    const queued = await sql.query(`SELECT "tenantId",count(*)::int AS n FROM "NotificationOutbox" WHERE "eventType"='test' GROUP BY "tenantId" ORDER BY "tenantId"`);
-    expect(queued.rows).toEqual([{ tenantId: a.tenantId, n: 1 }, { tenantId: b.tenantId, n: 1 }]);
+    expect(aTelegram.body).toMatchObject({ enabled: false, queued: false });
+    expect(bTelegram.body).toMatchObject({ enabled: false, queued: false });
+    const queued = await sql.query(`SELECT count(*)::int AS n FROM "NotificationOutbox"`);
+    expect(queued.rows).toEqual([{ n: 0 }]);
 
     const foreignApprove = await send(http.post(`/api/terminals/${a.terminalId}/approve`));
     expect([403, 404]).toContain(foreignApprove.status);

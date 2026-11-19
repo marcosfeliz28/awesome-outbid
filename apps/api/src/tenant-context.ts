@@ -26,6 +26,11 @@ export function tenantUnique<Field extends string>(field: Field, value: string |
   } as { [Key in `tenantId_${Field}`]: { tenantId: string } & Record<Field, string> };
 }
 
+// M3: clave de candado de aviso (pg_advisory_xact_lock) por empresa, para que
+// una empresa no bloquee a otra. La tienda conserva la clave de siempre.
+export const tenantLock = (key: string) =>
+  productMode() ? `${currentTenantId()}:${key}` : key;
+
 export async function forEachActiveTenant<Result>(
   db: { activeTenantIds(): Promise<string[]> },
   task: () => Promise<Result>,

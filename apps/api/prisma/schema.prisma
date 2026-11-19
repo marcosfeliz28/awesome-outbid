@@ -1239,7 +1239,7 @@ model IncentiveRate {
   updatedBy  String?
   updatedAt  DateTime @updatedAt
 
-  @@unique([branchId, categoryId])
+  @@unique([tenantId, branchId, categoryId])
 }
 
 // Instantánea por línea vendida (kind "sale") y sus reversos negativos por
@@ -1285,7 +1285,7 @@ model IncentivePeriodClose {
   closedBy  String   @db.Uuid
   closedAt  DateTime @default(now())
 
-  @@unique([branchId, period])
+  @@unique([tenantId, branchId, period])
 }
 
 // Cuadre cerrado de una cajera en un mes: instantánea inmutable.
@@ -1311,7 +1311,7 @@ model IncentiveSettlement {
   closedByName      String
   closedAt          DateTime @default(now())
 
-  @@unique([branchId, period, userId])
+  @@unique([tenantId, branchId, period, userId])
 }
 
 // Respaldo diario cifrado a Google Drive (apps/api/src/drive-backup.ts,

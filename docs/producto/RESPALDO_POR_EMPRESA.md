@@ -56,3 +56,27 @@ JSON y la hoja `__objetos` (fragmentos Base64) en Excel. Ambos formatos
 incluyen MIME y SHA-256 y se cancelan si falta cualquier archivo referenciado.
 La exportación sirve para portabilidad y revisión; la única restauración
 automatizada comprobada aquí es la del respaldo cifrado `NXTB/2`.
+
+## Baja definitiva de una empresa (`tenant:purge`)
+
+Herramienta de operador, sin ruta HTTP. Usa **sólo** `TENANT_PURGE_DATABASE_URL`
+(conexión como dueño de la base, sin RLS; nunca `DATABASE_URL`). Borrar exige
+además `PRODUCT_TENANCY=required`. Nunca se imprime la conexión. Rechaza la
+empresa Demo, las que no están suspendidas y las suspendidas hace menos de 30
+días (se vuelve a comprobar dentro de la transacción, con `FOR UPDATE`).
+
+1. **Dry-run** (por defecto, no borra): `pnpm --filter @fitstore/api tenant:purge <slug>`
+   cuenta filas y archivos. Con `--exportacion <archivo.json>` también verifica
+   la exportación e informa `archivosFaltantesEnExportacion`.
+2. **Exportación**: `GET /api/tenant/export?format=json` con la empresa ya
+   suspendida; debe coincidir fila por fila con la base y listar todos sus archivos.
+3. **Ejecutar**: `... tenant:purge <slug> --ejecutar --confirmar <slug> --exportacion <archivo.json>`.
+   Borra todo en una transacción y luego los archivos del bucket; conserva
+   `Tenant`, `PlatformPayment` y `AiPackCredit`. Si un archivo falla, el comando
+   sale con código 2 y se repite.
+
+**Faltantes**: si la exportación trae archivos en `faltantes` (a veces es un
+fallo transitorio de S3), el purge se rechaza: repite la exportación. Sólo si el
+archivo de verdad no existe, añade `--aceptar-faltantes N` con el número exacto
+que muestra el dry-run; si no coincide, se rechaza. Esos archivos se borrarán
+del bucket sin copia.

@@ -492,8 +492,12 @@ describe("Render · proxy público", () => {
       "Referrer-Policy",
       "Permissions-Policy",
     ])
-      expect(nginx.split(`proxy_hide_header ${name};`)).toHaveLength(3);
+      expect(nginx.split(`proxy_hide_header ${name};`)).toHaveLength(4);
     expect(nginx).toContain("location ^~ /api/ {");
+    // A3: la exportación de la empresa tiene 900 s antes de que Nginx dé 504.
+    const exportBlock = nginx.match(/location = \/api\/tenant\/export \{[^}]*\}/)?.[0] ?? "";
+    expect(exportBlock).toContain("proxy_read_timeout 900s;");
+    expect(exportBlock).toContain("proxy_pass http://nexora_api;");
     // /api conserva `no-referrer`, más estricto que lo que usa la web.
     expect(nginx).toContain('~^/api/ "no-referrer";');
     expect(headers).toContain(
@@ -654,15 +658,15 @@ describe("Render · proxy público", () => {
     expect(nginx).not.toContain("real_ip_header");
     expect(
       nginx.match(/proxy_set_header X-Forwarded-For \$nexora_client_ip;/g),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(
       nginx.match(/proxy_set_header X-Real-IP \$nexora_client_ip;/g),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     // Las cabeceras del borde no llegan a la API.
     expect(nginx.match(/proxy_set_header CF-Connecting-IP "";/g)).toHaveLength(
-      2,
+      3,
     );
-    expect(nginx.match(/proxy_set_header True-Client-IP "";/g)).toHaveLength(2);
+    expect(nginx.match(/proxy_set_header True-Client-IP "";/g)).toHaveLength(3);
     expect(nginx).toContain("proxy_set_header X-Forwarded-Proto https;");
     // El snippet se genera al arrancar y la imagen trae el generador.
     const entrypoint = read("deploy/render/start-nginx.sh");

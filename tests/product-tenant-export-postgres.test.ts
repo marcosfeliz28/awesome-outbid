@@ -10,7 +10,7 @@ import supertest from "supertest";
 import { expect, it } from "vitest";
 import { createAppModule } from "../apps/api/src/app";
 import { ApiExceptionFilter, Database } from "../apps/api/src/common";
-import { exportExcel, exportModels, exportTenant, exportTenantToFile } from "../apps/api/src/tenant-export";
+import { exportExcel, exportModels, exportTenant, exportTenantToFile, MAX_EXPORTS, takeExportSlot } from "../apps/api/src/tenant-export";
 import { tenantScope } from "../apps/api/src/tenant-context";
 import { tenantObjectStore } from "../apps/api/src/tenant-object-store";
 
@@ -35,6 +35,18 @@ it("el Excel conserva textos largos por fragmentos y no ejecuta fórmulas sumini
   expect(chunks?.rowCount).toBe(4);
   expect([2,3,4].map(row => String(chunks?.getCell(`E${row}`).value)).join("")).toBe(JSON.stringify({ note: "x".repeat(70000) }));
   expect(workbook.getWorksheet("__objetos")?.getCell("E2").value).toBe("YWJj");
+});
+
+it("una exportación a la vez por empresa y como mucho 2 en el servidor (409 claro)", () => {
+  expect(MAX_EXPORTS).toBe(2);
+  const releaseA = takeExportSlot(a);
+  expect(() => takeExportSlot(a)).toThrow(expect.objectContaining({ status: 409, message: expect.stringContaining("de tu empresa en curso") }));
+  const releaseB = takeExportSlot(b);
+  expect(() => takeExportSlot("70000000-0000-4000-8000-000000000009")).toThrow(expect.objectContaining({ status: 409, message: expect.stringContaining("otras exportaciones") }));
+  releaseA();
+  takeExportSlot(a)();
+  releaseB();
+  takeExportSlot("70000000-0000-4000-8000-000000000009")();
 });
 
 async function port() {
@@ -80,6 +92,9 @@ it("exporta todas las tablas de su empresa, nunca secretos ni datos ajenos, incl
     await sql.query(`INSERT INTO "McpAuthorizationCode" (id,"tenantId","branchId","userId","sessionId","authVersion","clientId","redirectUri",challenge,"codeHash","expiresAt")
       VALUES (gen_random_uuid(),$1,'main',$2,$3,0,'client-qa','https://example.invalid/callback','secret-pkce-challenge','secret-mcp-code-hash',now()+interval '5 minutes')`, [a,mcpUser,mcpSession]);
     await sql.query(`UPDATE "Role" SET permissions=ARRAY['catalog:read'] WHERE "tenantId"=$1`, [b]);
+    await sql.query(`UPDATE "User" SET "mustChangePassword"=true,"passwordExpiresAt"='2027-01-01T00:00:00Z' WHERE "tenantId"=$1`, [a]);
+    await sql.query(`INSERT INTO "NcfSequence" (id,"tenantId",type,"authorizationReference","firstNumber","lastNumber","nextNumber","numberWidth","expiryApplies","recordedBy","updatedAt")
+      VALUES (gen_random_uuid(),$1,'B02','DGII-AUT-2026-0042',1,100,1,8,false,$2,now())`, [a, mcpUser]);
     process.env.PRODUCT_TENANCY = "required";
     process.env.PRODUCT_OBJECT_STORE_DIR = join(directory, "objects");
     const objectKey = "billing/70000000-0000-4000-8000-000000000003";
@@ -99,6 +114,10 @@ it("exporta todas las tablas de su empresa, nunca secretos ni datos ajenos, incl
       for (const secret of ["secret-password-hash","secret-pin-hash","secret-api-key","secret-refresh-token","secret-oauth-token","secret-pkce-challenge","secret-mcp-code-hash","Marca B","Empresa B"])
         expect(portable).not.toContain(secret);
       expect(portable).toContain("[RESERVADO]");
+      // M7: la autorización DGII y el estado de la clave no son secretos.
+      expect(snapshot.tables.NcfSequence[0].authorizationReference).toBe("DGII-AUT-2026-0042");
+      expect(snapshot.tables.User[0]).toMatchObject({ mustChangePassword: true, passwordExpiresAt: "2027-01-01T00:00:00.000Z", passwordHash: "[RESERVADO]" });
+      expect(snapshot.faltantes).toEqual([]);
       expect(snapshot.objects?.[objectKey]?.base64).toBe(objectBytes.toString("base64"));
       const excel = await exportExcel(snapshot);
       const workbook = new (apiRequire("exceljs").Workbook)();
@@ -113,6 +132,7 @@ it("exporta todas las tablas de su empresa, nunca secretos ni datos ajenos, incl
       await expect(tenantScope.run({ tenantId: a }, () => exportTenant(db, a))).rejects.toThrow("sobran FutureBusinessTable");
       await sql.query(`DROP TABLE "FutureBusinessTable"`);
     } finally { await db.$disconnect(); }
+    await sql.query(`UPDATE "User" SET "mustChangePassword"=false,"passwordExpiresAt"=NULL WHERE "tenantId"=$1`, [a]);
 
     const secret = "solo-test-exportacion-tenant-clave-larga";
     const { NestFactory } = apiRequire("@nestjs/core");
@@ -174,9 +194,24 @@ it("exporta todas las tablas de su empresa, nunca secretos ni datos ajenos, incl
         .rejects.toThrow("Exportación cancelada");
       const temporaryAfter = (await readdir(tmpdir())).filter(name => name.startsWith("nexora-tenant-export-"));
       expect(temporaryAfter.filter(name => !temporaryBefore.has(name))).toEqual([]);
+      // A4: un archivo faltante no rompe la exportación: se lista y se sigue.
       await tenantObjectStore().delete(a, objectKey);
-      await expect(tenantScope.run({ tenantId: a }, () => exportTenantToFile(volumeDb, a, "json")))
-        .rejects.toThrow();
+      for (const format of ["json", "xlsx"] as const) {
+        const file = await tenantScope.run({ tenantId: a }, () => exportTenantToFile(volumeDb, a, format));
+        try {
+          if (format === "json") {
+            const parsed = JSON.parse(await readFile(file.path, "utf8"));
+            expect(parsed.tables.Brand).toHaveLength(1502);
+            expect(parsed.objects).toEqual({});
+            expect(parsed.faltantes).toEqual([{ key: objectKey, motivo: expect.any(String) }]);
+          } else {
+            const workbook = new (apiRequire("exceljs").Workbook)();
+            await workbook.xlsx.readFile(file.path);
+            expect(workbook.getWorksheet("__faltantes")?.getCell("A2").value).toBe(objectKey);
+            expect(workbook.getWorksheet("NcfSequence")?.getRow(1).values).toContain("authorizationReference");
+          }
+        } finally { await rm(file.directory, { recursive: true, force: true }); }
+      }
       const afterMissing = (await readdir(tmpdir())).filter(name => name.startsWith("nexora-tenant-export-"));
       expect(afterMissing.filter(name => !temporaryBefore.has(name))).toEqual([]);
     } finally { await volumeDb.$disconnect(); }

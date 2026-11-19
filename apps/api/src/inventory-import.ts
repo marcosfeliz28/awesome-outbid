@@ -1,4 +1,4 @@
-import { tenantUnique } from "./tenant-context";
+import { tenantLock, tenantUnique } from "./tenant-context";
 // Pantalla «Importar inventario» (sólo administración): vista previa y carga
 // del Excel de existencias. La lógica está en inventory-import-core.ts (la
 // misma del script de línea de comandos). El archivo vive sólo en memoria
@@ -364,7 +364,7 @@ export class InventoryImportController {
       return await retrySerializable(() =>
         this.db.$transaction(
           async (tx) => {
-            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('nexora-inventory-import'))`;
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantLock("nexora-inventory-import")}))`;
             const plan = await this.casaPlan(buffer, actor, tx);
             if (plan.problems.length)
               bad("Corrige el archivo antes de cargarlo.");

@@ -54,6 +54,16 @@ export class Database extends PrismaClient {
       );
       if (role[0]?.role !== "nexora_tenant_runtime")
         throw new Error("RLS de producto no está activo; se cancela el arranque.");
+    } else if (process.env.NODE_ENV === "production") {
+      // B6: sin PRODUCT_TENANCY la API corre como tienda (sin RLS, empresa Demo).
+      // Si la base ya tiene otras empresas es el servicio del producto con la
+      // variable perdida: no arranca. La tienda sólo tiene la Demo (o no tiene
+      // la tabla): cualquier error de la consulta deja arrancar.
+      const others = await this.$queryRawUnsafe<{ n: number }[]>(
+        `SELECT count(*)::int AS n FROM "Tenant" WHERE id <> $1::uuid`, DEMO_TENANT_ID,
+      ).catch(() => [{ n: 0 }]);
+      if ((others[0]?.n ?? 0) > 0)
+        throw new Error("Base multiempresa sin PRODUCT_TENANCY=required; se cancela el arranque.");
     }
     // D-B7: avisa (sin impedir el arranque) si la sesión no está en UTC.
     await checkDatabaseTimeZone(this);
