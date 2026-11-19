@@ -54,3 +54,13 @@ it("distingue disabled sin cambiar el atributo ni las acciones", () => {
   );
   expect(css).toMatch(/button:disabled\s*\{[^}]*cursor: not-allowed/);
 });
+
+it("IT-018/IT-019: aclara el encabezado de Excel y separa su acción", () => {
+  const panel = read("apps/web/src/WarehousesPanel.tsx");
+  const css = read("apps/web/src/styles.css");
+  expect(panel).toContain("PRECIODETALLE (sin espacio)");
+  expect(panel).toContain('className="casa-import-actions"');
+  expect(css).toMatch(
+    /\.casa-import-actions\s*\{[^}]*display:\s*flex[^}]*gap:\s*10px/,
+  );
+});

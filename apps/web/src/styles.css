@@ -1592,6 +1592,15 @@ td strong {
 .field input[type="checkbox"] {
   width: 20px;
 }
+.casa-import-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.casa-import-actions label {
+  font-weight: 700;
+}
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -237,24 +237,26 @@ export function WarehousesPanel({
           </h2>
           <p>
             {en
-              ? "The spreadsheet uses columns ID, EXISTENCIA, COSTO and PRECIODETALLE. New products are created with zero units in Store. Batch-tracked products are counted by batch."
-              : "El Excel usa las columnas ID, EXISTENCIA, COSTO y PRECIODETALLE. Los productos nuevos se crean con cero unidades en Tienda. Los productos con lote se cuentan por lote."}
+              ? "The spreadsheet uses columns ID, EXISTENCIA, COSTO and PRECIODETALLE (no space). New products are created with zero units in Store. Batch-tracked products are counted by batch."
+              : "El Excel usa las columnas ID, EXISTENCIA, COSTO y PRECIODETALLE (sin espacio). Los productos nuevos se crean con cero unidades en Tienda. Los productos con lote se cuentan por lote."}
           </p>
-          <label htmlFor="casa-excel">
-            {en ? "Home spreadsheet" : "Excel de Casa"}
-          </label>
-          <input
-            id="casa-excel"
-            type="file"
-            accept=".xlsx"
-            onChange={(e) => {
-              setFile(e.target.files?.[0] || null);
-              setPreview(null);
-            }}
-          />
-          <Button disabled={!file || busy} onClick={() => upload("preview")}>
-            {en ? "Review file" : "Revisar archivo"}
-          </Button>
+          <div className="casa-import-actions">
+            <label htmlFor="casa-excel">
+              {en ? "Home spreadsheet" : "Excel de Casa"}
+            </label>
+            <input
+              id="casa-excel"
+              type="file"
+              accept=".xlsx"
+              onChange={(e) => {
+                setFile(e.target.files?.[0] || null);
+                setPreview(null);
+              }}
+            />
+            <Button disabled={!file || busy} onClick={() => upload("preview")}>
+              {en ? "Review file" : "Revisar archivo"}
+            </Button>
+          </div>
           {preview && (
             <div role="status">
               <p>
