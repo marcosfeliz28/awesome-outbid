@@ -1,4 +1,5 @@
 import { useLanguage } from "./inicioLanguage";
+import { useOperationsText } from "./operationsLanguage";
 import { storeSettingsText } from "./storeSettingsLanguage";
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
@@ -585,15 +586,17 @@ const CREDIT_STATUS: Record<string, { label: string; tone: any }> = {
 // Casilla de días (orden de la dueña, 19-oct): sin vencimiento, sólo cuenta
 // los días de calendario que el crédito / contraentrega lleva sin cerrarse.
 const dayCount = (days: number) => (days === 1 ? "1 día" : `${days} días`);
-export const ageText = (days: number, closed: boolean) =>
+export const ageText = (days: number, closed: boolean, english = false) =>
   closed
     ? days <= 0
-      ? "Se cobró el mismo día"
-      : `Se cobró en ${dayCount(days)}`
+      ? english ? "Collected on the same day" : "Se cobró el mismo día"
+      : english ? `Collected in ${days} ${days === 1 ? "day" : "days"}` : `Se cobró en ${dayCount(days)}`
     : days <= 0
-      ? "Lleva 0 días · es de hoy"
-      : `Lleva ${dayCount(days)} sin cobrar`;
+      ? english ? "0 days · today" : "Lleva 0 días · es de hoy"
+      : english ? `Outstanding for ${days} ${days === 1 ? "day" : "days"}` : `Lleva ${dayCount(days)} sin cobrar`;
 export function CodPending({ session }: { session: any }) {
+  const cashText = useOperationsText();
+  const english = useLanguage() === "en";
   const user = useStore((s) => s.user);
   const isAdmin = can(user?.permissions ?? [], "*");
   const [view, setView] = useState<"sales" | "customers">("sales");
@@ -616,7 +619,7 @@ export function CodPending({ session }: { session: any }) {
       <div className="panel-heading">
         <div>
           <h2 id="credits-title">
-            <Truck size={20} /> Créditos pendientes
+            <Truck size={20} /> {cashText("Créditos pendientes")}
           </h2>
           <p>
             Ventas entregadas sin pago. Cualquier cajera puede cerrarlas en
@@ -632,8 +635,8 @@ export function CodPending({ session }: { session: any }) {
         >
           {(
             [
-              ["pending", "Pendientes"],
-              ["closed", "Cerrados"],
+              ["pending", cashText("Pendientes")],
+              ["closed", cashText("Cerrados")],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -656,7 +659,7 @@ export function CodPending({ session }: { session: any }) {
             aria-pressed={view === "sales"}
             onClick={() => setView("sales")}
           >
-            Por venta
+            {cashText("Por venta")}
           </button>
           <button
             type="button"
@@ -664,7 +667,7 @@ export function CodPending({ session }: { session: any }) {
             aria-pressed={view === "customers"}
             onClick={() => setView("customers")}
           >
-            Por persona
+            {cashText("Por persona")}
           </button>
         </div>
       )}
@@ -717,12 +720,12 @@ export function CodPending({ session }: { session: any }) {
                       <div className="cod-age">
                         <span>
                           Día de la venta:{" "}
-                          {new Date(r.createdAt).toLocaleString("es-DO", {
+                          {new Date(r.createdAt).toLocaleString(english ? "en-US" : "es-DO", {
                             timeZone: "America/Santo_Domingo",
                           })}
                         </span>
                         <strong>
-                          {ageText(r.ageDays, r.status === "closed")}
+                          {ageText(r.ageDays, r.status === "closed", english)}
                         </strong>
                       </div>
                       <small>
@@ -744,7 +747,7 @@ export function CodPending({ session }: { session: any }) {
                       {r.closedAt && (
                         <small>
                           Cerrado el{" "}
-                          {new Date(r.closedAt).toLocaleString("es-DO", {
+                          {new Date(r.closedAt).toLocaleString(english ? "en-US" : "es-DO", {
                             timeZone: "America/Santo_Domingo",
                           })}
                           {r.closedBy ? " por " + r.closedBy : ""}
@@ -786,7 +789,7 @@ export function CodPending({ session }: { session: any }) {
                     </strong>
                     {state === "pending" && (
                       <Button onClick={() => setCollecting(r)}>
-                        Registrar cobro
+                        {cashText("Registrar cobro")}
                       </Button>
                     )}
                   </div>

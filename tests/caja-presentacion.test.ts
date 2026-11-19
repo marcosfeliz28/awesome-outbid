@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, it, expect } from "vitest";
+import { operationsText } from "../apps/web/src/operationsLanguage";
+import { ageText } from "../apps/web/src/Tienda";
 
 describe("Caja Fusión: pintura reversible", () => {
   it("preserva byte por byte POS, incluyendo handlers, cálculos, stock y carrito", () => {
@@ -73,4 +75,20 @@ it("overrides legacy violet active category without losing contrast and scopes t
  const portalRules=[...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(r=>r[1].includes('.modal:has(.close-cash)'));
  for (const rule of portalRules) expect(rule[2]).not.toMatch(/(?:display|position|width|height|overflow|pointer-events|visibility)\s*:/);
  expect(css).toContain('background:Highlight !important;color:HighlightText');
+});
+
+it("H167 translates audited cash and credit controls without changing Spanish", () => {
+  expect(operationsText(true, "Una caja que siempre cuadra")).toBe(
+    "A register that always balances",
+  );
+  expect(operationsText(true, "Abrir mi caja")).toBe("Open my register");
+  expect(operationsText(true, "Créditos pendientes")).toBe(
+    "Outstanding credit",
+  );
+  expect(operationsText(true, "Por persona")).toBe("By customer");
+  expect(operationsText(true, "Mayor deuda")).toBe("Highest balance");
+  expect(operationsText(true, "Registrar cobro")).toBe("Record payment");
+  expect(operationsText(false, "Abrir caja")).toBe("Abrir caja");
+  expect(ageText(38, false, true)).toBe("Outstanding for 38 days");
+  expect(ageText(38, false)).toBe("Lleva 38 días sin cobrar");
 });

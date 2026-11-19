@@ -133,6 +133,7 @@ export function WholesaleNotice({ on }: { on?: boolean }) {
 // «Mis incentivos»: la cajera ve sólo lo suyo (en Caja)
 
 export function MyIncentives() {
+  const cashText = useOperationsText();
   const user = useStore((s) => s.user)!;
   const online = useStore((s) => s.online);
   const query = useQuery({
@@ -152,7 +153,7 @@ export function MyIncentives() {
       <div>
         <h3 id="incentive-mine-title">
           <HandCoins size={17} aria-hidden="true" />
-          Mis incentivos · {query.data.label}
+          {cashText("Mis incentivos")} · {query.data.label}
         </h3>
         <strong data-testid="mis-incentivos-neto">
           {formatMoney(row?.net ?? 0)}
@@ -180,7 +181,7 @@ export function MyIncentives() {
         </p>
       ) : null}
       <small>
-        Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.
+        {cashText("Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.")}
       </small>
     </section>
   );

@@ -1688,6 +1688,8 @@ const alertTypeLabel = (type: string) =>
   ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " ");
 
 export function Cash() {
+  const cashText = useOperationsText();
+  const english = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
   const query = useQuery({
@@ -1766,13 +1768,13 @@ export function Cash() {
   return (
     <div className="cash-page fusion-cash-turnos">
       <Heading
-        title="Una caja que siempre cuadra"
-        caption="Abre el día con claridad. Ciérralo con tranquilidad."
+        title={cashText("Una caja que siempre cuadra")}
+        caption={cashText("Abre el día con claridad. Ciérralo con tranquilidad.")}
       >
         {!active ? (
           <Button onClick={() => setOpen(true)}>
             <Wallet size={17} />
-            Abrir caja
+            {cashText("Abrir caja")}
           </Button>
         ) : (
           <>
@@ -1797,49 +1799,49 @@ export function Cash() {
       {active && canSeeExpected ? (
         <div className="cash-overview">
           <div className="cash-main">
-            <Badge tone="success">Caja abierta</Badge>
+            <Badge tone="success">{cashText("Caja abierta")}</Badge>
             <h2>{active.registerName ?? active.registerId}</h2>
             <p>
               Desde{" "}
-              {new Date(active.openedAt).toLocaleString("es-DO", {
+              {new Date(active.openedAt).toLocaleString(english ? "en-US" : "es-DO", {
                 timeZone: "America/Santo_Domingo",
               })}
             </p>
             <strong>{formatMoney(active.expected.cash)}</strong>
-            <span>Efectivo esperado</span>
+            <span>{cashText("Efectivo esperado")}</span>
           </div>
           <div className="panel cash-methods">
             <div>
-              <span>Apertura</span>
+              <span>{cashText("Apertura")}</span>
               <strong>{formatMoney(active.openingAmount)}</strong>
             </div>
             <div>
-              <span>Tarjeta esperada</span>
+              <span>{cashText("Tarjeta esperada")}</span>
               <strong>{formatMoney(active.expected.card)}</strong>
             </div>
             <div>
-              <span>Transferencia esperada</span>
+              <span>{cashText("Transferencia esperada")}</span>
               <strong>{formatMoney(active.expected.transfer)}</strong>
             </div>
             <div>
-              <span>Movimientos de efectivo</span>
+              <span>{cashText("Movimientos de efectivo")}</span>
               <strong>{active.expected.movements.length}</strong>
             </div>
           </div>
         </div>
       ) : active ? (
         <div className="panel">
-          <Badge tone="success">Caja abierta</Badge>
+          <Badge tone="success">{cashText("Caja abierta")}</Badge>
           <h2>{active.registerName ?? active.registerId}</h2>
           <p>{openCashBlindNote(false)}</p>
         </div>
       ) : (
         <div className="panel">
           <Empty
-            title="Tu día empieza con una caja abierta"
-            description="Registra el fondo inicial para comenzar a vender."
+            title={cashText("Tu día empieza con una caja abierta")}
+            description={cashText("Registra el fondo inicial para comenzar a vender.")}
             action={
-              <Button onClick={() => setOpen(true)}>Abrir mi caja</Button>
+              <Button onClick={() => setOpen(true)}>{cashText("Abrir mi caja")}</Button>
             }
           />
         </div>

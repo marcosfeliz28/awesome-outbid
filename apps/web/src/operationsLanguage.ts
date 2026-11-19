@@ -1,5 +1,31 @@
 import { useLanguage } from "./inicioLanguage";
 const EN: Record<string, string> = {
+"Una caja que siempre cuadra": "A register that always balances",
+"Abre el día con claridad. Ciérralo con tranquilidad.": "Open the day with clarity. Close it with confidence.",
+"Abrir caja": "Open register",
+"Abrir mi caja": "Open my register",
+"Caja abierta": "Register open",
+"Efectivo esperado": "Expected cash",
+"Apertura": "Opening amount",
+"Tarjeta esperada": "Expected card payments",
+"Transferencia esperada": "Expected transfers",
+"Movimientos de efectivo": "Cash movements",
+"Tu día empieza con una caja abierta": "Your day starts with an open register",
+"Registra el fondo inicial para comenzar a vender.": "Record the opening float to start selling.",
+"Créditos pendientes": "Outstanding credit",
+"Pendientes": "Outstanding",
+"Cerrados": "Closed",
+"Por venta": "By sale",
+"Por persona": "By customer",
+"Ya pagaron": "Paid",
+"Buscar por nombre": "Search by name",
+"Ordenar": "Sort",
+"Mayor deuda": "Highest balance",
+"Más antiguo": "Oldest first",
+"Registrar cobro": "Record payment",
+"Registrar pago": "Record payment",
+"Mis incentivos": "My incentives",
+"Sólo tú ves este cuadro. Se cuadra a fin de mes con la administración.": "Only you can see this panel. It is reconciled with administration at month end.",
 "sin tarifas": "no rates configured",
 "Prioriza productos sin rotación o próximos a vencer. El descuento sugerido protege tu costo.": "Prioritize slow-moving or expiring products. The suggested discount protects your cost.",
 "oportunidades": "opportunities",
@@ -147,7 +173,10 @@ const EN: Record<string, string> = {
   "Reportes": "Reports"
 };
 /** UI-only labels; never translates records, IDs, amounts or API payloads. */
+export function operationsText(english: boolean, text: string) {
+ return english ? (EN[text] ?? text) : text;
+}
 export function useOperationsText() {
  const en = useLanguage() === "en";
- return (text: string) => en ? (EN[text] ?? text) : text;
+ return (text: string) => operationsText(en, text);
 }

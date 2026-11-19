@@ -4,6 +4,7 @@ import { Button, Modal } from "@fitstore/ui";
 import { formatMoney } from "@fitstore/shared";
 import { api, apiBlob, post } from "./api";
 import { QueryState, toast } from "./helpers";
+import { useOperationsText } from "./operationsLanguage";
 
 type Method = "cash" | "card" | "transfer";
 const methodName: Record<Method, string> = {
@@ -34,6 +35,7 @@ type Statement = {
 };
 
 export function CreditAccounts({ session }: { session: any }) {
+  const cashText = useOperationsText();
   const client = useQueryClient();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("amount");
@@ -198,12 +200,12 @@ export function CreditAccounts({ session }: { session: any }) {
             setPage(1);
           }}
         >
-          Ya pagaron
+          {cashText("Ya pagaron")}
         </Button>
       </div>
       <div className="form-grid">
         <label className="field">
-          <span>Buscar por nombre</span>
+          <span>{cashText("Buscar por nombre")}</span>
           <input
             value={search}
             onChange={(e) => {
@@ -213,7 +215,7 @@ export function CreditAccounts({ session }: { session: any }) {
           />
         </label>
         <label className="field">
-          <span>Ordenar</span>
+          <span>{cashText("Ordenar")}</span>
           <select
             value={sort}
             onChange={(e) => {
@@ -221,8 +223,8 @@ export function CreditAccounts({ session }: { session: any }) {
               setPage(1);
             }}
           >
-            <option value="amount">Mayor deuda</option>
-            <option value="age">Más antiguo</option>
+            <option value="amount">{cashText("Mayor deuda")}</option>
+            <option value="age">{cashText("Más antiguo")}</option>
           </select>
         </label>
       </div>
@@ -321,7 +323,7 @@ export function CreditAccounts({ session }: { session: any }) {
                 )}
                 {statement.balance > 0 && (
                   <form className="form-grid" onSubmit={submit}>
-                    <h3 className="full">Registrar pago</h3>
+                    <h3 className="full">{cashText("Registrar pago")}</h3>
                     <label className="field">
                       <span>Monto</span>
                       <input
@@ -401,7 +403,7 @@ export function CreditAccounts({ session }: { session: any }) {
                       type="submit"
                       disabled={busy || left > 0 || cents <= 0}
                     >
-                      Registrar pago
+                      {cashText("Registrar pago")}
                     </Button>
                   </form>
                 )}
