@@ -45,6 +45,7 @@ import {
   isImageDataUrl,
   LOGO_MAX_BYTES,
   RECEIVABLE_SHIFT_LIMIT,
+  permissions as ROLE_PERMISSIONS,
 } from "@fitstore/shared";
 import { normalizeUsername, passwordHash } from "./auth";
 import {
@@ -54,6 +55,8 @@ import {
   temporaryPasswordExpiry,
 } from "./password-policy";
 import { RequestRateLimitService } from "./rate-limit";
+// B5 (auditoría 19-nov): los únicos permisos que entiende el sistema.
+const KNOWN_PERMISSIONS = new Set(Object.values(ROLE_PERMISSIONS).flat());
 
 const customerSchema = z.object({
   creditLimit: amount.optional(),
@@ -1351,6 +1354,16 @@ export class AdminController {
     });
     if (role.name === "admin" && !data.permissions.includes("*"))
       bad("El rol administrador debe conservar acceso completo.");
+    const unknown = data.permissions.filter((p) => !KNOWN_PERMISSIONS.has(p));
+    if (unknown.length) bad("Permiso desconocido: " + unknown.join(", ") + ".");
+    // Una cuenta con contraseña de 6 números no puede tener acceso fuerte.
+    if (
+      passwordPolicyForRole(role.name) === "cashier-six-digits" &&
+      data.permissions.some((p) => p === "*" || p === "sale:manage")
+    )
+      bad(
+        "Este rol entra con contraseña de 6 números: no puede tener acceso completo ni de gerencia.",
+      );
     return this.db.$transaction(async (tx) => {
       const updated = await tx.role.update({ where: { id }, data });
       await audit(tx, actor, "permissions", "role", id, role, updated);

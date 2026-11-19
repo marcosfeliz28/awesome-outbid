@@ -189,3 +189,48 @@ describe("B8 · escrituras de configuración dejan rastro en la bitácora", () =
     );
   });
 });
+
+describe("B5 · PUT /roles solo acepta permisos conocidos", () => {
+  const ROLE = "44444444-4444-4444-8444-444444444444";
+  const owner = { ...actor, role: "admin", permissions: ["*"] };
+  const setup = async (name: string) => {
+    const { AdminController } = await import("../apps/api/src/admin");
+    const updates: any[] = [];
+    const db: any = {
+      role: { findUniqueOrThrow: async () => ({ id: ROLE, name }) },
+      $transaction: async (fn: any) =>
+        fn({
+          role: {
+            update: async (a: any) => (updates.push(a.data), a.data),
+          },
+          auditLog: { create: async () => undefined },
+        }),
+    };
+    return { c: new AdminController(db), updates };
+  };
+  it("rechaza un permiso inventado", async () => {
+    const { c, updates } = await setup("warehouse");
+    await expect(
+      c.role(ROLE, { permissions: ["catalog:read", "todo:poder"] }, owner),
+    ).rejects.toThrow(/todo:poder/);
+    expect(updates).toHaveLength(0);
+  });
+  it("acepta los permisos de la lista", async () => {
+    const { c, updates } = await setup("warehouse");
+    await c.role(
+      ROLE,
+      { permissions: ["catalog:read", "inventory:write"] },
+      owner,
+    );
+    expect(updates).toHaveLength(1);
+  });
+  it("el rol con contraseña de 6 números no recibe * ni sale:manage", async () => {
+    for (const p of ["*", "sale:manage"]) {
+      const { c, updates } = await setup("seller");
+      await expect(
+        c.role(ROLE, { permissions: ["sale:write", p] }, owner),
+      ).rejects.toThrow(/6 números/);
+      expect(updates).toHaveLength(0);
+    }
+  });
+});
