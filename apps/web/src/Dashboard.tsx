@@ -64,7 +64,31 @@ function DayFigures({
     enabled: can(user.permissions, "reports:read"),
   });
   const data = query.data;
-  const revenue = Number(data?.revenue ?? 0),
+  if (!data && (query.isError || query.fetchStatus !== "idle"))
+    return (
+      <div className={"day-figures day-" + tone}>
+        <span className="day-title">{title}</span>
+        <strong>—</strong>
+        {query.isError ? (
+          <small role="alert">
+            No se pudo cargar.{" "}
+            <button type="button" onClick={() => query.refetch()}>
+              Reintentar
+            </button>
+          </small>
+        ) : (
+          <small>Cargando…</small>
+        )}
+      </div>
+    );
+  if (!data)
+    return (
+      <div className={"day-figures day-" + tone}>
+        <span className="day-title">{title}</span>
+        <strong>—</strong>
+      </div>
+    );
+  const revenue = Number(data.revenue ?? 0),
     cost = Number(data?.costTotal ?? 0);
   return (
     <div className={"day-figures day-" + tone}>
@@ -410,7 +434,7 @@ export function Dashboard({
             </div>
             <YearPie go={go} />
             <DayCard />
-            <div className="kpi-grid">
+            <div className="kpi-grid tablero-kpis">
               {metric.map((m) => (
                 <article className="kpi-card" key={m.label}>
                   <div className="kpi-top">

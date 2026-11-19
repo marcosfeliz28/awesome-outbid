@@ -38,7 +38,7 @@ Permiso `inventory:write`; el rol `seller` queda bloqueado (`apps/api/src/mercha
 4. **«Confirmar salida»** (`:1297-1310`), pregunta «¿Confirmar salida de N unidad(es) por …?» (`:498-505`).
 5. Una orden solo permite entradas; una factura solo permite entradas (`merchandise.ts:475`, `:478`).
 
-- El **tipo** importa para el reporte de ganancias: una merma real no se registra como «conteo». Tipos de la bitácora de la dueña: `conteo`, `entrada`, `salida`, `regalo`, `ajuste` (`.claude/skills/mercancia/SKILL.md:27-29`). Mermas, ajustes y devoluciones a proveedor se restan a costo en el Resumen; las «Correcciones del conteo de inventario» **no restan** (`apps/web/src/Dashboard.tsx:727-734`).
+- El **tipo** importa para el reporte de ganancias: una merma real no se registra como «conteo». Tipos de la bitácora de la dueña: `conteo`, `entrada`, `salida`, `regalo`, `ajuste` (`.claude/skills/mercancia/SKILL.md:27-29`). Mermas, ajustes y devoluciones a proveedor se restan a costo en el Resumen; las «Correcciones del conteo de inventario» **no restan** (`apps/web/src/Dashboard.tsx:837-844`).
 
 ## 3. Pantalla «Inventario»: stock, ajustes y conteos
 
@@ -58,8 +58,8 @@ Dentro de **Inventario**, panel **«Almacenes y traspasos»** (`apps/web/src/War
 1. Tabla **«Dónde está la mercancía»**: Producto, Tienda, Casa, Total y «Valor a costo» (`:76-110`; API `GET /inventory/location-report`, `apps/api/src/warehouses.ts:99`).
 2. Solo `*` (administración) ve **«Traspasar mercancía»**: «El movimiento resta del origen y suma al destino en una sola operación.» Se elige el producto, se pulsa **«Traspasar»** y se llena la ventana **«Traspasar · producto»**: **Desde**, **Hasta**, **Cantidad** (3 decimales), «Lote (si aplica)», **Motivo** (mín. 3 letras) (`:113-205`).
 3. API `POST /inventory/transfers`, permiso `*`, equipo registrado, idempotente por `operationId` (`apps/api/src/warehouses.ts:157-345`). Valida: dos almacenes distintos, sin renglones repetidos, existencia suficiente en el origen («No hay suficiente existencia en … para …») y lote obligatorio en productos con lote/vencimiento («Selecciona el lote de la mercancía que quieres mover.») (`:117-120`, `:195-206`, `:276-282`). Escribe dos movimientos de kardex `transfer_out` y `transfer_in` (`:310-360`).
-4. **«Historial de traspasos»**: Fecha, Desde, Hasta, Producto, Cantidad, Motivo (`WarehousesPanel.tsx:316`; API `GET /inventory/transfers`, `warehouses.ts:139`).
-5. **«Levantamiento inicial de Casa»**: sube un Excel con columnas **ID, EXISTENCIA, COSTO y PRECIODETALLE**; primero vista previa («Existencia actual en Casa» / «Existencia después de cargar») y luego aplicar. Los productos nuevos se crean con 0 en Tienda; los de lote se cuentan por lote (`apps/api/src/inventory-import.ts:236-257`, `WarehousesPanel.tsx:258-320`; API `inventory-import/casa/preview` y `/apply`, `apps/api/src/inventory-import.ts:315`, `:346`, permiso `inventory:import`, que solo tiene `*`).
+4. **«Historial de traspasos»**: Fecha, Desde, Hasta, Producto, Cantidad, Motivo (`WarehousesPanel.tsx:375`; API `GET /inventory/transfers`, `warehouses.ts:139`).
+5. **«Levantamiento inicial de Casa»**: sube un Excel con columnas **ID, EXISTENCIA, COSTO y PRECIODETALLE**; primero vista previa («Existencia actual en Casa» / «Existencia después de cargar») y luego aplicar. Los productos nuevos se crean con 0 en Tienda; los de lote se cuentan por lote (`apps/api/src/inventory-import.ts:237-259`, `WarehousesPanel.tsx:258-320`; API `inventory-import/casa/preview` y `/apply`, `apps/api/src/inventory-import.ts:315`, `:346`, permiso `inventory:import`, que solo tiene `*`).
 6. Un traspaso de Casa a Tienda es el único camino normal para que mercancía de Casa se pueda vender.
 
 ## 5. Compras y facturas de proveedor

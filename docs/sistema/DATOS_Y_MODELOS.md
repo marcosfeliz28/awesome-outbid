@@ -52,7 +52,7 @@ Convenciones: dinero en `Decimal(14,2)` (centavos exactos, nunca decimales flota
 
 Estados de una venta (`Sale.status`): **`completed`** y **`voided`** (anulada) (`apps/api/prisma/schema.prisma:314-318` comentario CHECK `sale_status_valid`).
 
-Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emite NCF** (`schema.prisma:361`, `apps/web/src/Prints.tsx:508`).
+Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emite NCF** (`schema.prisma:361`, `apps/web/src/Prints.tsx:515`).
 
 ## 4. Pagos: método, estado y tipo de entrada
 

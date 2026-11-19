@@ -3066,13 +3066,6 @@ td strong {
       -webkit-backdrop-filter: blur(18px) saturate(150%);
     }
   }
-  .login-stats svg {
-    transition: none;
-  }
-  .login-stats > span:hover svg,
-  .login-stats > span:focus-within svg {
-    transform: none;
-  }
 }
 @keyframes login-enter {
   from {
@@ -3084,8 +3077,14 @@ td strong {
     transform: none;
   }
 }
-.login-stats > span:hover svg,
-.login-stats > span:focus-within svg {
+.login-art > *:not(.login-scene) {
+  animation: login-enter var(--nx-dur-slow) var(--nx-ease-out) backwards;
+}
+.login-form-panel form {
+  animation: login-enter var(--nx-dur-slow) var(--nx-ease-out) backwards;
+}
+.login-faces li:hover svg,
+.login-faces li:focus-within svg {
   transform: translateY(-2px) scale(1.12);
 }
 .login-art {
@@ -3115,7 +3114,7 @@ td strong {
 .login-art > p {
   margin: 0;
   max-width: 560px;
-  font-size: 16px;
+  font-size: var(--fs-base);
   line-height: 1.6;
   color: var(--lg-muted);
 }
@@ -3278,6 +3277,7 @@ td strong {
   background: #ffffff08;
 }
 .login-faces svg {
+  transition: transform var(--nx-dur-fast) var(--nx-ease-out);
   grid-row: span 2;
   width: 18px;
   height: 18px;
@@ -3291,7 +3291,7 @@ td strong {
   color: #fff;
 }
 .login-faces small {
-  font-size: 12px;
+  font-size: var(--fs-base);
   line-height: 1.35;
   color: var(--lg-muted);
 }
@@ -3320,13 +3320,14 @@ td strong {
 }
 .login-vault > p {
   margin: 0 0 18px;
-  font-size: 14px;
+  font-size: var(--fs-base);
   color: var(--lg-muted);
 }
 .login-vault > p.form-error {
   margin: 0 0 14px;
   padding: 12px;
-  font-size: 13px;
+  font-size: var(--fs-base);
+  animation: login-enter var(--nx-dur-base) var(--nx-ease-out) backwards;
   color: #ffd6dc;
   background: #2a1219;
   border-color: #7a2e3f;
@@ -3359,7 +3360,7 @@ td strong {
   padding: 10px 14px;
   gap: 4px;
   border-radius: 16px;
-  font-size: 12px;
+  font-size: var(--fs-base);
   background: #ffffff08;
   border: 1px solid var(--lg-line);
   transition:
@@ -3390,10 +3391,19 @@ td strong {
 .login-vault .field input::placeholder {
   color: #8b93ab;
 }
-.login-vault .field input:focus,
 .login-vault .field input:focus-visible {
-  outline: none;
-  box-shadow: none;
+  outline: 3px solid var(--lg-emerald);
+  outline-offset: 2px;
+}
+.login-vault .button:focus-visible,
+.login-vault .password-toggle:focus-visible {
+  outline: 3px solid var(--lg-emerald);
+  outline-offset: 2px;
+}
+.login-hint {
+  display: block;
+  margin: -4px 0 12px;
+  color: var(--lg-muted);
 }
 /* Enfoque con spotlight: el campo activo se ilumina; los demás bajan el borde. */
 .login-vault:focus-within .field:not(:focus-within) {
@@ -3596,17 +3606,24 @@ td strong {
   .login-art h1 {
     font-size: 32px;
   }
-  .login-art > p {
-    font-size: 15px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .login-laser,
   .login-brand-mark,
   .login-brand-mark::after,
   .login-prism-frame img,
-  .login-prism-scan {
+  .login-prism-scan,
+  .login-art > *:not(.login-scene),
+  .login-form-panel form,
+  .login-vault > p.form-error {
     animation: none;
+  }
+  .login-faces svg {
+    transition: none;
+  }
+  .login-faces li:hover svg,
+  .login-faces li:focus-within svg {
+    transform: none;
   }
   .login-vault .field,
   .login-vault .button {

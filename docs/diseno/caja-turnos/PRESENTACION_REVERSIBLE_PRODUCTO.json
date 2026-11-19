@@ -1,0 +1,15 @@
+{
+  "source_commit": "8ef351e6e178922e85f7e73a40713a4e60224618",
+  "base_sha256": "a91762d085c21d7733a67a2ec95d0bed6b3ff6ac9eab5c6fdd62186f235b5ee9",
+  "changes": [
+    {
+      "before": "import \"./passwordChange.css\";",
+      "after": "import \"./passwordChange.css\";\nimport \"./fusion-caja-turnos.css\";"
+    },
+    {
+      "before": "<div className=\"cash-page\">",
+      "after": "<div className=\"cash-page fusion-cash-turnos\">"
+    }
+  ],
+  "integration_note": "Base del producto: Management.tsx de source_commit sin la importación CSS y la clase raíz de Caja y Turnos. Se preserva cada byte restante, incluidas las diferencias de producto y la caja ciega. El registro de tienda se conserva aparte."
+}

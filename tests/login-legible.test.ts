@@ -12,21 +12,21 @@ const block = (selector: string) => {
 // poco visible en la pantalla de entrada.
 describe("Entrada (login) · letra y foco", () => {
   it.each([
-    ".login-art p",
-    ".login-stats > span",
-    ".login-form-panel form > p",
-    ".login-form-panel .field",
+    ".login-art > p",
+    ".login-faces small",
+    ".login-vault > p",
+    ".login-vault .field",
   ])("%s usa la letra base de 16 px", (selector) => {
     expect(block(selector)).toMatch(/font-size:\s*var\(--fs-base\)/);
   });
   it("el foco de los campos tiene un contorno visible, no solo una sombra tenue", () => {
-    const focus = block(".login-form-panel .field input:focus-visible");
+    const focus = block(".login-vault .field input:focus-visible");
     expect(focus).toMatch(/outline:\s*3px solid/);
     expect(focus).not.toMatch(/outline:\s*none/);
   });
   it("el botón y el enlace de mostrar contraseña también muestran foco", () => {
     expect(css).toMatch(
-      /\.login-form-panel (?:\.button|\.show-password)[^{]*:focus-visible/,
+      /\.login-vault \.button:focus-visible,\s*\.login-vault \.password-toggle:focus-visible \{[^}]*outline:\s*3px solid/,
     );
   });
 });

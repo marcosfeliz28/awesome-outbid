@@ -46,6 +46,9 @@ describe("presentación operativa 4K sin alterar el negocio", () => {
           /\s*<span className="operational-aux-emblem" aria-hidden="true">\s*<(ClipboardX|ArrowRightLeft|Truck) size=\{34\} strokeWidth=\{1\.6\} \/>\s*<\/span>/,
           "",
         );
+      // En producto, la conciliación de d2d853c9 ya incluye la revisión
+      // humana de comprobantes. La reversión deja este flujo completo en el
+      // texto protegido, además de permisos, importes y confirmaciones.
       const normalized = await prettier.format(restored, {
         parser: "typescript",
       });

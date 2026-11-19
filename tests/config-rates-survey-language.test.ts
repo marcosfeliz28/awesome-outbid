@@ -9,7 +9,7 @@ import {
 } from "../apps/web/src/configRatesSurveyLanguage";
 describe("Configuración: tarifas y resumen de encuesta ES/EN", () => {
   for (const [name, entry] of Object.entries(ledger)) {
-    it(`${name}: reversiones de presentación recuperan íntegra la base 8ec7f99b7`, () => {
+    it(`${name}: reversiones de presentación recuperan íntegra la base del producto 8ef351e6`, () => {
       let source = readFileSync(`apps/web/src/${name}.tsx`, "utf8");
       for (const edit of entry.edits) {
         expect(source.split(edit.after).length - 1).toBe(1);

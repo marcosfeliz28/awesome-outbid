@@ -46,8 +46,9 @@ it("keeps merchandise toolbar out of shell layout on mobile", () => {
  expect(css).not.toMatch(/\.goods-mobile-bar\s*\{[^}]*position:\s*static/);
  expect(css).toContain('.app-shell:has(.catalog-fusion) .goods-mobile-bar .button.primary');
  const globalCss=readFileSync("apps/web/src/styles.css","utf8");
- expect(globalCss).toContain('.app-shell:has(.goods-mobile-bar) .main-content');
- expect(globalCss).toContain('padding-bottom: 104px');
+ // El producto deja 176 px para que la barra y el lanzador no cubran el contenido.
+ expect(globalCss).toMatch(/\.app-shell:has\(\.goods-mobile-bar\) \.main-content\s*\{\s*padding-bottom:\s*calc\(176px \+ env\(safe-area-inset-bottom\)\);/);
+ expect(globalCss).toMatch(/\.app-shell:has\(\.goods-actions\.has-items\) \.main-content\s*\{\s*padding-bottom:\s*calc\(104px \+ env\(safe-area-inset-bottom\)\);/);
 });
 it("fits long preview price and prevents desktop heading/category spill", () => {
   const css = readFileSync("apps/web/src/catalogPresentation.css", "utf8");

@@ -729,12 +729,16 @@ function Login() {
               <input
                 type="text"
                 autoComplete="username"
+                aria-describedby="login-user-hint"
                 required
                 placeholder="Tu usuario o correo"
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
               />
             </label>
+            <small className="login-hint" id="login-user-hint">
+              Usa el usuario o correo asignado por tu empresa.
+            </small>
             {tab === "clave" || changeRequired ? (
               <div
                 id="login-tabpanel"

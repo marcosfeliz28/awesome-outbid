@@ -34,7 +34,7 @@ Pasos exactos en `FLUJO_CAJA_POS.md` §5.1. Resumen:
 
 - Se pueden agregar varias líneas: **«Agregar otra forma de pago»** (`apps/web/src/Tienda.tsx:1286`). Cada línea: «Forma de pago» (Efectivo; Tarjeta y Transferencia solo con `sale:manage`) y «Monto entregado» (`:1124`).
 - **Efectivo** entra a la **caja abierta** de quien registra. Si no tiene caja: «No tienes caja abierta: sin ella no puedes recibir efectivo. Abre tu caja o registra solo tarjeta o transferencia.» (`apps/web/src/Tienda.tsx:1177`; API: manejador `credit-collections`, `apps/api/src/sales.ts:4937`).
-- Casilla (cajera): **«Este efectivo ya lo tiene la dueña (no entra a mi gaveta)»** + «PIN de gerente» (`apps/web/src/Tienda.tsx:1107`; API, reglas de PIN en el mismo manejador `apps/api/src/sales.ts:4937`).
+- Casilla (cajera): **«Este efectivo ya lo tiene la dueña (no entra a mi gaveta)»** + «PIN de gerente» (`apps/web/src/Tienda.tsx:1157`; API, reglas de PIN en el mismo manejador `apps/api/src/sales.ts:4937`).
 - **Tarjeta**: «Referencia del voucher» obligatoria (`apps/web/src/Tienda.tsx:1222`).
 - **Transferencia**: «Banco» (lista de cuentas de Configuración) y «Referencia» (obligatoria salvo para la dueña).
 - **Foto de la evidencia** opcional: «Subir foto de la evidencia», JPG/PNG/WebP hasta 2 MB (`apps/web/src/Tienda.tsx:987`).

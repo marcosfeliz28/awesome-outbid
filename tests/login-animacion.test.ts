@@ -33,13 +33,15 @@ describe("Entrada (login) · animación y didáctica", () => {
     expect(new Set(props)).toEqual(new Set(["opacity", "transform"]));
   });
   it("los íconos de las ventajas reaccionan al cursor y al foco sin pasar de 240 ms", () => {
-    expect(css).toMatch(/\.login-stats > span:(?:hover|focus-within)[^{]*svg/);
-    expect(rule(".login-stats svg")).toMatch(
+    expect(css).toMatch(
+      /\.login-faces li:hover svg,\s*\.login-faces li:focus-within svg/,
+    );
+    expect(rule(".login-faces svg")).toMatch(
       /transition:\s*transform var\(--nx-dur-/,
     );
   });
   it("el error de la entrada aparece con movimiento corto", () => {
-    expect(rule(".login-form-panel form > p.form-error")).toMatch(
+    expect(rule(".login-vault > p.form-error")).toMatch(
       /animation:\s*login-enter var\(--nx-dur-base\)/,
     );
   });
@@ -53,7 +55,10 @@ describe("Entrada (login) · animación y didáctica", () => {
       .find((b) => b.includes(".login-form-panel form"));
     expect(m, "falta el bloque de movimiento reducido del login").toBeTruthy();
     expect(m).toMatch(/animation:\s*none/);
-    expect(m).toMatch(/\.login-stats svg/);
+    expect(m).toMatch(/\.login-faces svg \{\s*transition:\s*none/);
+    expect(m).toMatch(
+      /\.login-faces li:focus-within svg \{\s*transform:\s*none/,
+    );
   });
   it("ninguna duración del login se escribe suelta", () => {
     const start = css.indexOf(".login-page {");
@@ -68,6 +73,7 @@ describe("Entrada (login) · animación y didáctica", () => {
     expect(loose).toBeNull();
   });
   it("hay una pista corta junto al usuario, en español sencillo", () => {
-    expect(app).toMatch(/className="login-hint"/);
+    expect(app).toMatch(/className="login-hint" id="login-user-hint"/);
+    expect(app).toMatch(/aria-describedby="login-user-hint"/);
   });
 });

@@ -1,6 +1,6 @@
 {
   "Incentives": {
-    "sha256": "8b69790253f25f7d53ff4b5927f9531ce542cf31b10485f4c9e9f4a23625b470",
+    "sha256": "d150522f4a1fdb8c0967eff2b3bfdbb6b34e86389115764246e0019a3a8075db",
     "edits": [
       {
         "before": "import { useLanguage } from \"./inicioLanguage\";\nimport { useOperationsText } from \"./operationsLanguage\";\nimport { PremiumWorkspace } from \"./PremiumWorkspace\";\nimport \"./premiumOperations.css\";\n",
@@ -33,11 +33,11 @@
     ]
   },
   "QuickQuestions": {
-    "sha256": "a994526c012000a5585637981e3af0afbf6149c6264b6be5d27b2ba1bb5df435",
+    "sha256": "5ad32d0eecb9cb3e43fc2f172443b798e95e791f0fd059f36eeefb786b3b6dd5",
     "edits": [
       {
-        "before": "import { useEffect, useState, type ReactNode } from \"react\";\nimport { useQuery, useQueryClient } from \"@tanstack/react-query\";\nimport { ChevronRight, MessageCircleQuestion } from \"lucide-react\";\nimport { Button, Modal } from \"@fitstore/ui\";\n",
-        "after": "import { useLanguage } from \"./inicioLanguage\";\nimport { configRatesSurveyText, type ConfigRatesSurveyKey } from \"./configRatesSurveyLanguage\";\nimport { useEffect, useState, type ReactNode } from \"react\";\nimport { useQuery, useQueryClient } from \"@tanstack/react-query\";\nimport { ChevronRight, MessageCircleQuestion } from \"lucide-react\";\nimport { Button, Modal } from \"@fitstore/ui\";\n"
+        "before": "import { useEffect, useState, type ReactNode } from \"react\";\nimport { useQuery, useQueryClient } from \"@tanstack/react-query\";\nimport { ChevronRight, MessageCircleQuestion, Sparkles } from \"lucide-react\";\nimport { Button, Modal } from \"@fitstore/ui\";\n",
+        "after": "import { useLanguage } from \"./inicioLanguage\";\nimport { configRatesSurveyText, type ConfigRatesSurveyKey } from \"./configRatesSurveyLanguage\";\nimport { useEffect, useState, type ReactNode } from \"react\";\nimport { useQuery, useQueryClient } from \"@tanstack/react-query\";\nimport { ChevronRight, MessageCircleQuestion, Sparkles } from \"lucide-react\";\nimport { Button, Modal } from \"@fitstore/ui\";\n"
       },
       {
         "before": "}\n\n/** Resumen de la encuesta para la administración (Configuración). */\nexport function CashierSurveySummary() {\n  const query = useQuery({\n    queryKey: [\"survey-summary\"],\n    queryFn: () =>\n      api<{\n",
