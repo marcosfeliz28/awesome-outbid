@@ -28,6 +28,10 @@
   --fc-glint: #f7f8db61;
   --fc-pressed: #063f28;
 }
+:root[data-theme="dark"] .pos-layout.fusion-caja-integrada .product-image img {
+  /* El blanco de fotografías heredadas se funde con la superficie oscura. */
+  mix-blend-mode: multiply;
+}
 :root[data-accent="blue"] .app-shell:has(.pos-layout.fusion-caja-integrada) {
   --fc-bg: #e8eef5;
   --fc-surface: #f6f9ff;

@@ -44,3 +44,10 @@ it("CP-15: el catálogo deja espacio final para la barra móvil de cobro", () =>
     /@media \(max-width: 600px\) \{[\s\S]*?\.pos-catalog \{[\s\S]*?padding-bottom:\s*calc\(100px \+ env\(safe-area-inset-bottom\)\)/,
   );
 });
+
+it("CP-17: las fotos con fondo blanco se integran al tema oscuro del POS", () => {
+  const fusion = readFileSync("apps/web/src/fusion-caja-higgsfield.css", "utf8");
+  expect(fusion).toMatch(
+    /:root\[data-theme="dark"\][\s\S]*?\.product-image img \{[\s\S]*?mix-blend-mode:\s*multiply/,
+  );
+});
