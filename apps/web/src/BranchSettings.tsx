@@ -17,6 +17,10 @@ export type BranchRow = {
 const patch = (path: string, data: unknown) =>
   api(path, { method: "PATCH", body: JSON.stringify(data) });
 
+export function isBranchPlanLimitMessage(message: string): boolean {
+  return /^El plan .+ permite \d+ sucursal(?:es)?\./i.test(message.trim());
+}
+
 export function BranchSettings() {
   const client = useQueryClient();
   const me = useStore((state) => state.user?.id);
@@ -55,37 +59,101 @@ export function BranchSettings() {
   const rows = branches.data ?? [];
   const active = rows.filter((b) => b.active);
   return (
-    <section aria-labelledby="branch-settings-title">
-      <div className="panel-heading">
-        <h3 id="branch-settings-title">Sucursales</h3>
+    <section
+      className="branch-settings"
+      aria-labelledby="branch-settings-title"
+      aria-busy={branches.isLoading || busy}
+    >
+      <div className="branch-settings__heading">
+        <div>
+          <span className="branch-settings__eyebrow">Organización</span>
+          <h3 id="branch-settings-title">Sucursales</h3>
+        </div>
+        <span className="branch-settings__count">
+          {active.length} {active.length === 1 ? "activa" : "activas"}
+        </span>
       </div>
-      <p className="cod-hint">
+      <p className="branch-settings__intro">
         Cada sucursal tiene su caja, inventario, clientes y numeración de
         facturas. La sucursal nueva copia los ajustes de la principal (nombre
         comercial, impuestos, moneda), no su inventario.
       </p>
       {error && (
-        <p className="form-error" role="alert">
+        <p
+          className={
+            isBranchPlanLimitMessage(error)
+              ? "form-error branch-plan-message"
+              : "form-error"
+          }
+          role="alert"
+        >
           {error}
         </p>
       )}
       {branches.isError && (
-        <p role="alert">No se pudieron cargar las sucursales.</p>
+        <p className="form-error" role="alert">
+          No se pudieron cargar las sucursales.
+        </p>
       )}
-      <ul>
+      {branches.isLoading && (
+        <p className="branch-settings__state" role="status">
+          Cargando sucursales…
+        </p>
+      )}
+      {!branches.isLoading && !branches.isError && rows.length === 0 && (
+        <p className="branch-settings__state" role="status">
+          Todavía no hay sucursales para mostrar.
+        </p>
+      )}
+      <ul className="branch-grid" aria-label="Sucursales registradas">
         {rows.map((branch) => (
-          <li key={branch.id}>
-            <strong>{branch.name}</strong>
-            {branch.current && " · estás aquí"}
-            {!branch.active && " · desactivada"}
-            {branch.users.length > 0 && (
-              <span> · {branch.users.map((u) => u.name).join(", ")}</span>
-            )}
-            <div>
+          <li
+            key={branch.id}
+            className={`branch-card${branch.current ? " branch-card--current" : ""}${!branch.active ? " branch-card--inactive" : ""}`}
+          >
+            <div className="branch-card__heading">
+              <div>
+                <strong>{branch.name}</strong>
+                {branch.current && " · estás aquí"}
+                {!branch.active && " · desactivada"}
+              </div>
+              <span
+                className={`branch-status${branch.active ? " branch-status--active" : " branch-status--inactive"}`}
+              >
+                {branch.current
+                  ? "Sucursal actual"
+                  : branch.active
+                    ? "Activa"
+                    : "Desactivada"}
+              </span>
+            </div>
+            <div className="branch-card__people">
+              <span className="branch-card__label">Personas asignadas</span>
+              {branch.users.length > 0 ? (
+                <ul>
+                  {branch.users.map((user) => (
+                    <li key={user.id}>
+                      <span className="branch-person-avatar" aria-hidden="true">
+                        {user.name.trim().charAt(0).toUpperCase()}
+                      </span>
+                      <span>
+                        <strong>{user.name}</strong>
+                        <small>{user.role}</small>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="branch-card__empty">
+                  Sin personas asignadas
+                </span>
+              )}
+            </div>
+            <div className="branch-card__actions">
               {branch.active && !branch.current && (
                 <button
                   type="button"
-                  className="text-link"
+                  className="button secondary"
                   disabled={busy || !me}
                   onClick={() =>
                     void run(
@@ -100,7 +168,7 @@ export function BranchSettings() {
               )}
               <button
                 type="button"
-                className="text-link"
+                className="button secondary"
                 disabled={busy}
                 onClick={() => {
                   const next = window.prompt(
@@ -118,7 +186,7 @@ export function BranchSettings() {
               {branch.id !== "main" && (
                 <button
                   type="button"
-                  className="text-link"
+                  className="button secondary"
                   disabled={busy}
                   onClick={() =>
                     void run(() =>
@@ -135,54 +203,74 @@ export function BranchSettings() {
           </li>
         ))}
       </ul>
-      <h4>Mover a una persona</h4>
-      <ul>
-        {rows.flatMap((branch) =>
-          branch.users
-            .filter((u) => u.id !== me)
-            .map((user) => (
-              <li key={user.id}>
-                <label className="field">
-                  <span>
-                    {user.name} ({user.role})
-                  </span>
-                  <select
-                    value={branch.id}
-                    disabled={busy}
-                    onChange={(e) =>
-                      void run(() =>
-                        post(`/branches/${e.target.value}/users`, {
-                          userId: user.id,
-                        }),
-                      )
-                    }
-                  >
-                    {active.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </li>
-            )),
-        )}
-      </ul>
-      <form onSubmit={create} className="form-grid">
-        <label className="field">
-          <span>Nombre de la sucursal nueva</span>
-          <input
-            required
-            minLength={2}
-            maxLength={60}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-        <button className="button primary" disabled={busy}>
-          Crear sucursal
-        </button>
-      </form>
+      <div className="branch-settings__tools">
+        <section
+          className="branch-tool-card"
+          aria-labelledby="move-person-title"
+        >
+          <div className="branch-tool-card__heading">
+            <h4 id="move-person-title">Asignar personas</h4>
+            <p>Mueve cada persona a la sucursal donde trabaja.</p>
+          </div>
+          <ul className="branch-people-list">
+            {rows.flatMap((branch) =>
+              branch.users
+                .filter((u) => u.id !== me)
+                .map((user) => (
+                  <li key={user.id}>
+                    <label className="branch-person-assignment field">
+                      <span>
+                        {user.name} ({user.role})
+                      </span>
+                      <select
+                        value={branch.id}
+                        disabled={busy}
+                        aria-label={`Sucursal de ${user.name}`}
+                        onChange={(e) =>
+                          void run(() =>
+                            post(`/branches/${e.target.value}/users`, {
+                              userId: user.id,
+                            }),
+                          )
+                        }
+                      >
+                        {active.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </li>
+                )),
+            )}
+          </ul>
+        </section>
+        <section
+          className="branch-tool-card"
+          aria-labelledby="new-branch-title"
+        >
+          <div className="branch-tool-card__heading">
+            <h4 id="new-branch-title">Nueva sucursal</h4>
+            <p>Comienza con los ajustes de la sucursal principal.</p>
+          </div>
+          <form onSubmit={create} className="branch-create-form">
+            <label className="field">
+              <span>Nombre de la sucursal nueva</span>
+              <input
+                required
+                minLength={2}
+                maxLength={60}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <button className="button primary" disabled={busy}>
+              Crear sucursal
+            </button>
+          </form>
+        </section>
+      </div>
     </section>
   );
 }
