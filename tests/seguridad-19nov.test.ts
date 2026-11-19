@@ -382,3 +382,43 @@ describe("M4 · zod sin la vulnerabilidad GHSA-mrhx-c7xc-m3w5", () => {
     );
   });
 });
+
+describe("B4 · un cuerpo demasiado grande o mal formado no es un 500", () => {
+  const respond = async (error: unknown) => {
+    const { ApiExceptionFilter } = await import("../apps/api/src/common");
+    let status = 0;
+    let body: any;
+    const res: any = {
+      setHeader: () => undefined,
+      status: (s: number) => ((status = s), res),
+      json: (b: unknown) => (body = b),
+    };
+    const host: any = {
+      switchToHttp: () => ({
+        getResponse: () => res,
+        getRequest: () => ({ path: "/api/gv/payments/x/void" }),
+      }),
+    };
+    new ApiExceptionFilter().catch(error, host);
+    return { status, body };
+  };
+  it("413 con mensaje claro", async () => {
+    const r = await respond(
+      Object.assign(new Error("request entity too large"), {
+        type: "entity.too.large",
+        status: 413,
+      }),
+    );
+    expect(r.status).toBe(413);
+    expect(r.body.message).toMatch(/demasiado grande/);
+  });
+  it("JSON mal formado es 400", async () => {
+    const r = await respond(
+      Object.assign(new SyntaxError("Unexpected token"), {
+        type: "entity.parse.failed",
+        status: 400,
+      }),
+    );
+    expect(r.status).toBe(400);
+  });
+});

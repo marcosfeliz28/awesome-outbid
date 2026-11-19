@@ -837,6 +837,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
     } else if (isZodError(exception)) {
       status = 400;
       message = validationMessage(exception.issues);
+    } else if (exception?.type === "entity.too.large") {
+      // Errores del lector del cuerpo (express.json): son del cliente, no 500.
+      status = 413;
+      message = "El contenido enviado es demasiado grande.";
+    } else if (exception?.type === "entity.parse.failed") {
+      status = 400;
+      message = "Los datos enviados no tienen un formato válido.";
     } else if (exception?.code === "P2002") {
       status = 409;
       message = "Ya existe un registro con esos datos.";
