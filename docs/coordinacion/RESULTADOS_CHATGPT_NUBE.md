@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · auditoría UI · continuación de pantallas protegidas
+
+- **Referencia actualizada:** `origin/nexora-cloud` quedó en `b9589bbb1dc4b3d426ce393445acb7c508eedca4`. La orden vigente sigue siendo `docs/coordinacion/reparto-auditoria-19nov/ORDEN_CHATGPT_PRODUCTO_19NOV.md` en `origin/claude/reparto-auditoria-19nov`; asigna a esta rama los 231 hallazgos de presentación y cuatro puntos protegidos. La rama local es `chatgpt-nube/auditoria-ui-19nov`; no se mezcló ni publicó.
+- **`Infinity en stock` → `Servicio`:** commit local `cc4d0f3c9987fa5650703666f407cf619975e72d`. Solo cambia la etiqueta visual de productos sin límite; conserva el valor interno `Infinity`. La regresión falló antes por módulo ausente y pasó después. Hay 16 capturas antes/después, 1440×900 y 390×844, claro/oscuro, ES/EN, en `docs/auditoria-ui/capturas/PRODUCTO-SERVICIO/`.
+- **`opening_shortfall`:** commit local `61b433f232f95a0d1d236fc8725c37d24627c964`. La alerta muestra `Fondo de apertura menor` en español y `Opening fund shortfall` en inglés. La regresión falló antes y pasó después; hay 16 capturas equivalentes en `docs/auditoria-ui/capturas/PRODUCTO-APERTURA/`.
+- **`operationId` en ajustes:** commit local `dc3bf275020ca728c9b571ec1728c1cab1fd404a`. El formulario genera un UUID estable al abrirse y lo envía en la solicitud; no cambia API, base, permisos ni inventario. La regresión falló antes y pasó después; las 16 capturas en `docs/auditoria-ui/capturas/PRODUCTO-AJUSTE/` documentan que la presentación permanece idéntica.
+- **Control local:** después de cada punto se ejecutó `pnpm check`. La última corrida aprobó typecheck, ESLint, 150 archivos de prueba (uno omitido), 1,233 pruebas (10 omitidas) y los builds web/API.
+- **Bloqueo real — mover efectivo recibido por la dueña:** la interfaz ordinaria ya ofrece `Mover cobro a otra caja` cuando existe `cashSessionId` (`apps/web/src/Management.tsx:3834,4118-4147`). El efectivo `Recibido por la dueña` se guarda con `cashSessionId: null` (`apps/api/src/sales.ts:4988,5092`) y el endpoint de movimiento lo rechaza expresamente con `Este cobro no está en ninguna caja; no hay de dónde moverlo.` (`apps/api/src/sales.ts:3293-3310`). Añadir solo el botón produciría un flujo que siempre falla. Resolverlo requiere definir y cambiar contrato/API, reservado a Claude por la orden; no se implementó una apariencia engañosa.
+- **Estado de entrega:** continúan pendientes la clasificación y ejecución de los demás hallazgos hasta que `corregidos + bloqueados + ya resueltos + decisión = 231`. No hay SHA remoto final ni CI de rama todavía; no se afirma que los 231 estén terminados.
+
 ## 2026-11-19 · auditoría UI · bloque visual de severidad alta
 
 - **Orden y reparto:** se siguió la versión vigente de `docs/auditoria-ui/ORDEN_CHATGPT_AUDITORIA_UI.md` y `docs/coordinacion/reparto-auditoria-19nov/LEEME.md`, no el adjunto anterior. Base `origin/nexora-cloud` `8014355b`; integración obligatoria de GV `dae41acf`; rama local `chatgpt-nube/auditoria-ui-19nov`.
