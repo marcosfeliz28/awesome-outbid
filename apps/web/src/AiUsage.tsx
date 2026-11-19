@@ -25,13 +25,14 @@ type Usage = {
 export const usd = (n: number | null, en = false) =>
   n == null ? (en ? "unpriced" : "sin precio") : "US$" + n.toFixed(4);
 
-function Rows({ title, lines }: { title: string; lines: Line[] }) {
+function Rows({ title, lines }: { title: string; lines?: Line[] }) {
   const en = useLanguage() === "en";
+  const safeLines = lines ?? [];
   return (
     <>
       <h4>{title}</h4>
       <ul className="ai-usage-list">
-        {lines.map((l) => (
+        {safeLines.map((l) => (
           <li
             key={l.key}
             style={{

@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-19 · Pantallas protegidas de producto final 2
+
+- Rama `chatgpt-nube/producto-final2-pantallas-19nov`, desde `origin/claude/producto-final2-19nov` `d49f7d65caf3a8d4e832e5658fb793396f236d15`; orden nueva de `origin/nexora-cloud` `36d2b634`, sin trabajo vigente duplicado.
+- Configuración recupera `role="group"` y `aria-label="Secciones de configuración"`; el E2E usa de nuevo el rol accesible. El ledger de presentación invierte esta adición y conserva el hash base protegido.
+- El medidor de IA trata `byFeature` ausente como lista vacía. No se cambió el botón Reportes, que era una decisión opcional no resuelta.
+- Rojo → verde: 1/42 falló antes; luego 42/42. Guardas focales: 72/72. Playwright del flujo en escritorio y 390 px: 2/2.
+- `pnpm check` verde después de generar Prisma localmente: 1,791 pruebas aprobadas, 10 omitidas, tipos, lint y builds aprobados. La primera corrida se detuvo únicamente porque el worktree nuevo no tenía cliente Prisma generado.
+- Autoauditoría: sin API, reglas de dinero, permisos, Render, producción, base real, credenciales, mezcla, PR ni despliegue. Las modificaciones de `docs/sistema` son reanclajes automáticos de citas desplazadas por `Management.tsx`.
+- Se publicará una sola vez; el SHA final y los tres CI se registran tras comprobarlos, sin un commit adicional.
+
 ## 2026-11-19 · Pantallas de producto y planes
 
 - **Rama/base:** `chatgpt-nube/producto-pantallas-19nov`, desde `origin/claude/producto-venta-19nov` `8ef351e6e178922e85f7e73a40713a4e60224618`.

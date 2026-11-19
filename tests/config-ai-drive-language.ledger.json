@@ -12,7 +12,11 @@
       },
       {
         "before": "function Rows({ title, lines }: { title: string; lines: Line[] }) {",
-        "after": "function Rows({ title, lines }: { title: string; lines: Line[] }) {\n  const en = useLanguage() === \"en\";"
+        "after": "function Rows({ title, lines }: { title: string; lines?: Line[] }) {\n  const en = useLanguage() === \"en\";\n  const safeLines = lines ?? [];"
+      },
+      {
+        "before": "{lines.map((l) => (",
+        "after": "{safeLines.map((l) => ("
       },
       {
         "before": "{l.calls} llamadas · {l.inputTokens + l.outputTokens} tokens ·{\" \"}\n              {usd(l.costUsd)}",

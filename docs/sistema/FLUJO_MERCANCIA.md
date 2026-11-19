@@ -5,9 +5,9 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`. Regla madre: **todo 
 ## 1. Dónde está la mercancía
 
 - Hay **dos almacenes** por sucursal: **Tienda** (`kind=store`, vendible) y **Casa** (`kind=home`, no vendible). Se crean solos con la sucursal (`apps/api/prisma/migrations/202610240401_warehouses/migration.sql:52-57`, `:70-74`); solo la Tienda puede ser vendible (`:11`, `CHECK warehouse_sellable_store`).
-- **La caja vende de Tienda.** El campo `Variant.stock` es el stock de Tienda; el de Casa está en `VariantStock` (`apps/api/prisma/schema.prisma` modelos `Variant` y `VariantStock`; la pantalla lo confirma en `apps/web/src/Management.tsx:941-952`).
+- **La caja vende de Tienda.** El campo `Variant.stock` es el stock de Tienda; el de Casa está en `VariantStock` (`apps/api/prisma/schema.prisma` modelos `Variant` y `VariantStock`; la pantalla lo confirma en `apps/web/src/Management.tsx:952-963`).
 - **Casa solo se mueve con instrucción expresa de la dueña, y cada salida dice su destino** (regalo a X / traspaso a Tienda) (`.claude/skills/mercancia/SKILL.md:33`).
-- Cada cambio de existencia deja un renglón de **kardex** (`InventoryMovement`) con tipo, cantidad, saldo después, motivo y usuario (`apps/api/prisma/schema.prisma` modelo `InventoryMovement`). Se ve con el ícono del ojo en Inventario (`apps/web/src/Management.tsx:1103-1103`, `:760`).
+- Cada cambio de existencia deja un renglón de **kardex** (`InventoryMovement`) con tipo, cantidad, saldo después, motivo y usuario (`apps/api/prisma/schema.prisma` modelo `InventoryMovement`). Se ve con el ícono del ojo en Inventario (`apps/web/src/Management.tsx:1114-1114`, `:760`).
 - Lotes: categorías con `requiresLot` y/o `requiresExpiry` exigen número de lote y vencimiento (`apps/api/prisma/schema.prisma` modelo `Category`; `apps/web/src/Merchandise.tsx:1213`, `:1172`). Un lote vencido no se recibe: «No se recibe mercancía vencida.» (`apps/api/src/merchandise.ts:672`).
 
 ## 2. Pantalla «Mercancía»: entradas y salidas
@@ -38,17 +38,17 @@ Permiso `inventory:write`; el rol `seller` queda bloqueado (`apps/api/src/mercha
 4. **«Confirmar salida»** (`:1297-1310`), pregunta «¿Confirmar salida de N unidad(es) por …?» (`:498-505`).
 5. Una orden solo permite entradas; una factura solo permite entradas (`merchandise.ts:475`, `:478`).
 
-- El **tipo** importa para el reporte de ganancias: una merma real no se registra como «conteo». Tipos de la bitácora de la dueña: `conteo`, `entrada`, `salida`, `regalo`, `ajuste` (`.claude/skills/mercancia/SKILL.md:27-29`). Mermas, ajustes y devoluciones a proveedor se restan a costo en el Resumen; las «Correcciones del conteo de inventario» **no restan** (`apps/web/src/Dashboard.tsx:837-844`).
+- El **tipo** importa para el reporte de ganancias: una merma real no se registra como «conteo». Tipos de la bitácora de la dueña: `conteo`, `entrada`, `salida`, `regalo`, `ajuste` (`.claude/skills/mercancia/SKILL.md:27-29`). Mermas, ajustes y devoluciones a proveedor se restan a costo en el Resumen; las «Correcciones del conteo de inventario» **no restan** (`apps/web/src/Dashboard.tsx:839-846`).
 
 ## 3. Pantalla «Inventario»: stock, ajustes y conteos
 
 Permiso `inventory:write` (`apps/web/src/App.tsx:310`).
 
-- Selector **«Almacén»**: Todos / Tienda / Casa (`Management.tsx:981-989`). Pestañas **«Stock actual»** y **«Conteos físicos»** (`:858-870`). Columnas: Producto / Variante, Precio, Costo (solo `profit:read`), «En Tienda» o «En Casa», Total, «Lote en Tienda», Vencimiento, Acciones (`:880-945`).
+- Selector **«Almacén»**: Todos / Tienda / Casa (`Management.tsx:992-1000`). Pestañas **«Stock actual»** y **«Conteos físicos»** (`:858-870`). Columnas: Producto / Variante, Precio, Costo (solo `profit:read`), «En Tienda» o «En Casa», Total, «Lote en Tienda», Vencimiento, Acciones (`:880-945`).
 - **«Ajustar»** (`:946-950`, ventana `:1018-1090`): Almacén, **«Cantidad (+ entrada / − salida)»**, Tipo (**Ajuste**, **Merma**, **Devolución a proveedor**), Proveedor y referencia (solo devolución), «Lote de salida», «Lote de entrada», «Vencimiento de entrada», **«Motivo»** obligatorio. API `POST /inventory/adjustments`, permiso `inventory:write` (`apps/api/src/inventory.ts:725-808`). No deja negativo: «Stock insuficiente en …» (`inventory.ts:798`); pide lote/vencimiento donde corresponde (`:748-755`). Acepta una clave opcional `operationId`: si llega repetida (reenvío, doble clic) devuelve la variante sin mover existencias otra vez, y la misma clave con otros datos da error (`apps/api/src/inventory.ts:601-628`). La pantalla todavía no la manda (`Management.tsx` está protegido por el diseño de Dot).
 - **«Contar»** (`:951`, ventana `:1092-1130`): Almacén y **«Cantidad contada»**. Crea un **conteo físico pendiente** (`POST /inventory/counts`, `inventory:write`, `apps/api/src/inventory.ts:1612-1666`). Un conteo **no cambia la existencia hasta aprobarlo**.
-- **Aprobar un conteo**: pestaña «Conteos físicos» › estado «Pendiente» › **«Aprobar ajuste»** (solo `sale:manage`) → «Conteo aprobado y aplicado.» (`Management.tsx:2081-2106`; API `POST /inventory/counts/:id/apply`, `apps/api/src/inventory.ts:1686-1756`). Si el stock cambió desde el conteo: «El stock cambió. Repite el conteo.» (`inventory.ts:1768`); los productos con lote se ajustan desde su lote (`:1597`).
-- **Kardex** (ojo): movimientos de la variante (`Management.tsx:880-899`, API `GET /inventory/movements`, `inventory.ts:706`).
+- **Aprobar un conteo**: pestaña «Conteos físicos» › estado «Pendiente» › **«Aprobar ajuste»** (solo `sale:manage`) → «Conteo aprobado y aplicado.» (`Management.tsx:2095-2120`; API `POST /inventory/counts/:id/apply`, `apps/api/src/inventory.ts:1686-1756`). Si el stock cambió desde el conteo: «El stock cambió. Repite el conteo.» (`inventory.ts:1768`); los productos con lote se ajustan desde su lote (`:1597`).
+- **Kardex** (ojo): movimientos de la variante (`Management.tsx:891-910`, API `GET /inventory/movements`, `inventory.ts:706`).
 - **Compras**: ver §5.
 
 ## 4. Traspasos Casa ↔ Tienda
@@ -64,12 +64,12 @@ Dentro de **Inventario**, panel **«Almacenes y traspasos»** (`apps/web/src/War
 
 ## 5. Compras y facturas de proveedor
 
-Pantalla **Compras** (`purchase:write`), `apps/web/src/Management.tsx:1358`:
+Pantalla **Compras** (`purchase:write`), `apps/web/src/Management.tsx:1369`:
 
 - **«Orden de compra»** (botón): proveedor + líneas con cantidad y costo (`apps/web/src/Purchases.tsx:155-311`; API `POST /purchase-orders`, `apps/api/src/inventory.ts:1082`). Número de orden consecutivo.
 - En la lista de órdenes, **recibir** una orden abre el editor de recepción (`Purchases.tsx:340-455`; API `POST /purchase-orders/:id/receive`, `inventory.ts:1069`): cantidad buena y dañada por línea (nunca más que lo pendiente: «Cantidad mayor que lo pendiente.»), flete y otros costos, lote y vencimiento, documento del proveedor. El flete y otros costos se **reparten** en el costo de cada línea (`apps/api/src/inventory.ts:165` `receiptCosts`, llamada en `:1165`). Se crea una `GoodsReceipt` y sube el stock de Tienda.
 - **Recepciones** (pestaña): historial con detalle y exportación (`Purchases.tsx:461-647`; API `GET /goods-receipts`, `inventory.ts:1454`, `:1441`; exportar `goods-receipts/export` requiere `reports:read`, `:1360`).
-- **Proveedores**: crear proveedor (nombre, RNC, teléfono, correo, plazo de pago, entrega) y **registrar un pago al proveedor** (monto, método, referencia) (`Management.tsx:1388`, `:1348-1370`; API `apps/api/src/admin.ts:608-640`). Las cuentas por pagar salen en el reporte «Compras y cuentas por pagar» (`Management.tsx:3022`).
+- **Proveedores**: crear proveedor (nombre, RNC, teléfono, correo, plazo de pago, entrega) y **registrar un pago al proveedor** (monto, método, referencia) (`Management.tsx:1399`, `:1348-1370`; API `apps/api/src/admin.ts:608-640`). Las cuentas por pagar salen en el reporte «Compras y cuentas por pagar» (`Management.tsx:3040`).
 - La **factura del proveedor** (foto/PDF/Excel) que se sube en Mercancía queda adjunta a la recepción y no se puede borrar (`apps/api/prisma/schema.prisma` modelo `GoodsReceipt`, campo `attachmentId`; modelos `InvoiceDraft` e `InvoiceAttachment`). Hay un tope diario de facturas sin confirmar: «Tienes muchas facturas sin confirmar hoy. Confirma o espera.» (`merchandise.ts:247`).
 - No confundir: **«FS-0000123» es el número de una VENTA de la tienda** (factura al cliente), no una factura de proveedor (`apps/api/src/sales.ts:1227`). La factura del proveedor se identifica por su propio número (`supplierInvoice`) y NCF (`supplierNcf`).
 

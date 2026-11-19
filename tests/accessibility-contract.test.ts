@@ -12,6 +12,32 @@ import {
 
 const css = readFileSync("apps/web/src/styles.css", "utf8");
 
+describe("producto final 2 · pantallas protegidas", () => {
+  it("expone Configuración como grupo y evita que un byFeature ausente tumbe la pantalla", () => {
+    const management = readFileSync("apps/web/src/Management.tsx", "utf8");
+    const configuration = management.slice(
+      management.indexOf("export function Configuration()"),
+      management.indexOf("export function StoreSettings()"),
+    );
+    expect(configuration).toMatch(
+      /<div\s+className="tabs outside"\s+role="group"\s+aria-label="Secciones de configuración"\s*>/,
+    );
+
+    const spec = readFileSync("tests/e2e/lumina-reportes-config.spec.ts", "utf8");
+    expect(spec).toMatch(
+      /page\.getByRole\(\s*"group",\s*\{\s*name:\s*"Secciones de configuración"/,
+    );
+    expect(spec).not.toContain('page.locator(".main-content .tabs.outside")');
+
+    const aiUsage = readFileSync("apps/web/src/AiUsage.tsx", "utf8");
+    expect(aiUsage).toContain(
+      "function Rows({ title, lines }: { title: string; lines?: Line[] })",
+    );
+    expect(aiUsage).toContain("const safeLines = lines ?? [];");
+    expect(aiUsage).toContain("{safeLines.map((l) => (");
+  });
+});
+
 describe("U2 · identidad y ayuda de producción", () => {
   const app = readFileSync("apps/web/src/App.tsx", "utf8");
   const dashboard = readFileSync("apps/web/src/Dashboard.tsx", "utf8");

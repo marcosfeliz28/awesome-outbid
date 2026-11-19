@@ -5034,7 +5034,11 @@ export function Configuration() {
         caption={ot("Define cómo trabaja tu tienda, desde los impuestos hasta los permisos.")}
       />
       <div className="settings-workspace-layout">
-      <div className="tabs outside">
+      <div
+        className="tabs outside"
+        role="group"
+        aria-label="Secciones de configuración"
+      >
         {[
           ["business", "Negocio y reglas"],
           ["users", "Usuarios y permisos"],

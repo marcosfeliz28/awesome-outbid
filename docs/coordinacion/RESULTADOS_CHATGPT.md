@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE y ChatGPT PC
 
+## 2026-11-19 · ChatGPT NUBE · pantallas protegidas de producto final 2
+
+- **Orden y rama:** tarea nueva añadida a `ORDEN_VENTA_CHATGPT_19NOV.md` en `origin/nexora-cloud` `36d2b634`, ejecutada en `chatgpt-nube/producto-final2-pantallas-19nov` desde `origin/claude/producto-final2-19nov` `d49f7d65caf3a8d4e832e5658fb793396f236d15`. No había otra rama vigente ejecutando estos dos cambios.
+- **Configuración:** se restauró el grupo accesible `Secciones de configuración`, se mantuvo `aria-pressed` en sus botones y el E2E volvió a localizarlo por rol/nombre en vez de una clase CSS. La guarda reversible de presentación registra explícitamente esta adición sin relajar su hash base.
+- **Medidor de IA:** `Rows` usa una lista vacía si `byFeature` falta en una respuesta, evitando que esa ausencia tumbe toda la pantalla. No se cambió el comportamiento del botón Reportes porque la orden lo dejó como decisión opcional y el candidato ya muestra el aviso exigido.
+- **Regresión roja → verde:** `tests/accessibility-contract.test.ts` falló 1/42 antes por el grupo ausente y pasa 42/42 después. Las guardas relacionadas pasan 72/72 y el E2E real `lumina-reportes-config.spec.ts` pasa 2/2 (1440 y 390 px).
+- **Control completo local:** tras generar el cliente Prisma del worktree, `pnpm check` terminó con código 0: typecheck, ESLint, 1,791 pruebas aprobadas (10 omitidas) y builds web/API. La primera ejecución sin cliente generado se detuvo en typecheck; no fue un fallo del cambio.
+- **Autoauditoría:** el diff funcional se limita a `Management.tsx`, `AiUsage.tsx`, sus regresiones/ledgers y el locator E2E; `docs/sistema` solo reancla citas desplazadas por las líneas añadidas. No se tocaron API, dinero, permisos, base, Render, producción ni credenciales. Sin mezcla, PR ni despliegue.
+- **Publicación y CI:** esta sección pertenece al único commit que se publicará. El SHA remoto final y `verify`, `windows-installer` y `render-images` se comprobarán sobre ese mismo SHA, sin añadir un commit posterior para autorreferenciarlo.
+
 ## 2026-11-19 · ChatGPT NUBE · pantallas de producto y planes
 
 - **Rama/base:** `chatgpt-nube/producto-pantallas-19nov`, creada desde `origin/claude/producto-venta-19nov` `8ef351e6e178922e85f7e73a40713a4e60224618`. El SHA final es el commit que contiene esta sección; no se mezcló en `nexora-cloud`.

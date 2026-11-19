@@ -45,6 +45,10 @@
     {
       "before": "              requestRef: `APP-${new Date().toISOString()}`,\n            });\n            await client.invalidateQueries({ queryKey: [\"customers\"] });\n            toast(\"Cliente anonimizado.\");\n          }}\n        />\n      )}\n",
       "after": "              requestRef: `APP-${new Date().toISOString()}`,\n            });\n            await client.invalidateQueries({ queryKey: [\"customers\"] });\n            toast(ot(\"Cliente anonimizado.\"));\n          }}\n        />\n      )}\n"
+    },
+    {
+      "before": "      <div className=\"tabs outside\">\n        {[\n          [\"business\", \"Negocio y reglas\"],",
+      "after": "      <div\n        className=\"tabs outside\"\n        role=\"group\"\n        aria-label=\"Secciones de configuración\"\n      >\n        {[\n          [\"business\", \"Negocio y reglas\"],"
     }
   ]
 }

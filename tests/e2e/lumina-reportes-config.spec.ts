@@ -181,10 +181,10 @@ for (const viewport of [
     });
 
     await open(page, "settings");
-    // La mezcla con nexora-cloud (Management.tsx, guarda byte por byte) quitó
-    // role="group"/aria-label de las pestañas; queda pedido a Dot. Se sigue
-    // exigiendo aria-pressed en cada pestaña.
-    const sections = page.locator(".main-content .tabs.outside");
+    // El grupo accesible identifica estas pestañas sin depender de su clase.
+    const sections = page.getByRole("group", {
+      name: "Secciones de configuración",
+    });
     for (const label of [
       "Negocio y reglas",
       "Usuarios y permisos",
