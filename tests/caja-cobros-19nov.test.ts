@@ -239,6 +239,17 @@ describe("P11 · Créditos pendientes: el total avisa los montos ocultos", () =>
   });
 });
 
+describe("CC-05 · Conciliar transferencias agrupa «POULAR» con Popular", () => {
+  it("las variantes conocidas de Popular van a su grupo", async () => {
+    const { bankGroup } =
+      await import("../apps/web/src/transfer-reconciliation-utils");
+    expect(bankGroup("POULAR")).toBe("Popular");
+    expect(bankGroup("BPD")).toBe("Popular");
+    expect(bankGroup("Banco Popular")).toBe("Popular");
+    expect(bankGroup("31434")).toBe("Otros");
+  });
+});
+
 describe("P4 · Créditos por persona: el banco sale de la lista de Configuración", () => {
   it("usa settings.transferAccounts en un select", () => {
     const credit = source("CreditAccounts.tsx");
