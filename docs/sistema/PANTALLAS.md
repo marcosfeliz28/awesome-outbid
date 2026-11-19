@@ -66,7 +66,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 
 - **Etiqueta:** «Solicitudes de anulación». **Permiso:** `sale:write`. **Componente:** `apps/web/src/VoidRequests.tsx:21`.
 - **Qué hace:** lista (filtro Pendientes/Todas/Aprobadas/Rechazadas/Canceladas, `:45-54`). La administración ve «Aprobar y anular» y «Rechazar» (`:123-136`); la cajera solo puede cancelar su propia solicitud (`:137-155`).
-- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2117`, `POST void-requests/:id/approve`).
+- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2121`, `POST void-requests/:id/approve`).
 
 ## Conciliar transferencias
 
@@ -126,7 +126,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 
 ## Alertas
 
-- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3180`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1438-1458`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:517`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:921-924`).
+- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3180`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1442-1462`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:517`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:921-924`).
 
 ## Incentivos
 

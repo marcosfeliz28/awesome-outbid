@@ -13,6 +13,7 @@ import {
   denied,
 } from "./common";
 import { cashExpectedMany } from "./cash";
+import { RECEIVABLE_SALE_PAYMENT } from "./credit-allocation";
 import { gvTotals, saleNotGvSql } from "./gv-scope";
 import { incomeOptions, incomeSummary } from "./income-report";
 import { formalPeriod, reportMargin, isTestRegister } from "./formal-period";
@@ -181,7 +182,7 @@ export class FormalReportController {
           createdAt: { lte: range.lte },
           creditBalance: { gt: 0 },
           payments: {
-            some: { entryType: "sale", method: { in: ["cod", "credit"] } },
+            some: RECEIVABLE_SALE_PAYMENT,
           },
         },
         select: {
@@ -202,7 +203,7 @@ export class FormalReportController {
           createdAt: { lte: range.lte },
           creditBalance: { gt: 0 },
           payments: {
-            some: { entryType: "sale", method: { in: ["cod", "credit"] } },
+            some: RECEIVABLE_SALE_PAYMENT,
           },
         },
         _sum: { creditBalance: true },

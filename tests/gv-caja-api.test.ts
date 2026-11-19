@@ -178,12 +178,21 @@ describe("GV · caja propia", () => {
       ).status,
     ).toBe(400);
     expect((await ok("/gv/cash/current", gv)).cardPayments).toBe(1);
-    // Declara 100 menos en efectivo.
+    // Declara 100 menos en efectivo: sin justificación no cierra (D16).
+    const noNotes = await request("/gv/cash/close", gv, {
+      countedCash: 1400,
+      countedCard: 300,
+      countedTransfer: 0,
+      batchProof: GV_PROOF_PNG,
+    });
+    expect(noNotes.status).toBe(400);
+    expect(JSON.stringify(noNotes.body)).toContain("justificación");
     const closed = await ok("/gv/cash/close", gv, {
       countedCash: 1400,
       countedCard: 300,
       countedTransfer: 0,
       batchProof: GV_PROOF_PNG,
+      notes: "Faltan 100 en la gaveta (prueba)",
     });
     const listed = (await ok("/gv/cash", admin)).find(
       (c: any) => c.id === closed.session.id,

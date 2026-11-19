@@ -394,6 +394,16 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
   const returns = await db.saleReturn.findMany({
     where: { cashSessionId: session.id },
   });
+  // Hallazgo 4 (19-nov): los cobros de venta se cuentan por la caja del
+  // pago, como en cashExpected. Así un cobro movido a otra caja sale de este
+  // cuadre y entra en el de la otra, y la diferencia impresa es la guardada.
+  const salePayments = await db.payment.findMany({
+    where: {
+      cashSessionId: session.id,
+      entryType: "sale",
+      sale: { status: "completed", branchId: session.branchId },
+    },
+  });
   // Las ventas devueltas en esta caja, aunque se vendieran en otra: el cuadre
   // nombra cada devolución con su venta original (R9-A02).
   const returnedSales = returns.length
@@ -417,25 +427,14 @@ export async function buildCuadre(db: any, actor: Actor, session: any) {
     "credit_note",
   ])
     salesByMethod[method] = sumOf(
-      completed.flatMap((s: any) =>
-        s.payments
-          .filter(
-            (p: any) =>
-              p.entryType === "sale" &&
-              p.method === method &&
-              p.status !== "rejected",
-          )
-          // Efectivo en dólares: a la gaveta de pesos sólo le toca el vuelto.
-          .map((p: any) =>
-            p.currency === "USD" ? { amount: d(p.change).negated() } : p,
-          ),
-      ),
+      salePayments
+        .filter((p: any) => p.method === method && p.status !== "rejected")
+        // Efectivo en dólares: a la gaveta de pesos sólo le toca el vuelto.
+        .map((p: any) =>
+          p.currency === "USD" ? { amount: d(p.change).negated() } : p,
+        ),
     );
-  const usdSales = completed.flatMap((s: any) =>
-    s.payments.filter(
-      (p: any) => p.entryType === "sale" && p.currency === "USD",
-    ),
-  );
+  const usdSales = salePayments.filter((p: any) => p.currency === "USD");
   const expectedUsd = money(
     usdSales.reduce((a: any, p: any) => a.plus(p.amountUsd), d(0)),
   );

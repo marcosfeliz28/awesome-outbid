@@ -23,7 +23,8 @@ export function bankGroup(bank: string | null): BankGroup {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
   if (/\bbhd\b/.test(value)) return "BHD";
-  if (/\bpopular\b/.test(value)) return "Popular";
+  // CC-05 (19-nov): «POULAR» y «BPD» (Banco Popular Dominicano) son Popular.
+  if (/\b(popular|poular|bpd)\b/.test(value)) return "Popular";
   if (/\b(banreservas|reservas)\b/.test(value)) return "Banreservas";
   return "Otros";
 }

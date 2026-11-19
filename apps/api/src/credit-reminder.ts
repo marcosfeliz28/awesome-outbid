@@ -15,6 +15,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { BUSINESS_TIME_ZONE, d, formatMoney, money } from "@fitstore/shared";
 import { Database } from "./common";
+import { RECEIVABLE_SALE_PAYMENT } from "./credit-allocation";
 import {
   enqueue,
   escapeHtml,
@@ -164,7 +165,7 @@ export class CreditReminderService {
         status: "completed",
         creditBalance: { gt: 0 },
         payments: {
-          some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
+          some: RECEIVABLE_SALE_PAYMENT,
         },
       },
       distinct: ["branchId"],
@@ -183,7 +184,7 @@ export class CreditReminderService {
             status: "completed",
             creditBalance: { gt: 0 },
             payments: {
-              some: { method: { in: ["credit", "cod"] }, entryType: "sale" },
+              some: RECEIVABLE_SALE_PAYMENT,
             },
           },
           select: { customerId: true, creditBalance: true, createdAt: true },

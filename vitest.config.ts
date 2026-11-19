@@ -157,6 +157,8 @@ export default defineConfig({
       "tests/config-rates-survey-language.test.ts",
       "tests/auditoria-lote-a.test.ts",
       "tests/auditoria-inventario-clientes.test.ts",
+      "tests/caja-cobros-19nov.test.ts",
+      "tests/caja-cobros-19nov-postgres.test.ts",
     ],
   },
 });
