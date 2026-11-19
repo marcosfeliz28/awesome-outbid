@@ -28,32 +28,76 @@ describe("U2 · identidad y ayuda de producción", () => {
     expect(app).toContain('(page === "styles" && SHOW_STYLE_GUIDE)');
   });
   it("la guardia real rechaza informe mensual sin permiso y estilos en producción", () => {
-    const file = ts.createSourceFile("App.tsx", app, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const file = ts.createSourceFile(
+      "App.tsx",
+      app,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    );
     let condition = "";
     function walk(node: ts.Node) {
-      if (ts.isIfStatement(node) && node.expression.getText(file).includes("!allowed.some"))
+      if (
+        ts.isIfStatement(node) &&
+        node.expression.getText(file).includes("!allowed.some")
+      )
         condition = node.expression.getText(file);
       ts.forEachChild(node, walk);
     }
     walk(file);
     expect(condition).toContain('can(user.permissions, "reports:read")');
     expect(condition).not.toContain("Monthly report");
-    const redirect = new Function("user", "allowed", "pantalla", "page", "SHOW_STYLE_GUIDE", "can", "return Boolean(" + condition + ")");
-    const can = (permissions: string[], permission: string) => permissions.includes(permission) || permissions.includes("*");
-    for (const page of ["month-report", "month-report?from=2026-11-01&to=2026-11-18"]) {
-      expect(redirect({permissions: []}, [], "month-report", page, false, can)).toBe(true);
-      expect(redirect({permissions: ["reports:read"]}, [], "month-report", page, false, can)).toBe(false);
+    const redirect = new Function(
+      "user",
+      "allowed",
+      "pantalla",
+      "page",
+      "SHOW_STYLE_GUIDE",
+      "can",
+      "return Boolean(" + condition + ")",
+    );
+    const can = (permissions: string[], permission: string) =>
+      permissions.includes(permission) || permissions.includes("*");
+    for (const page of [
+      "month-report",
+      "month-report?from=2026-11-01&to=2026-11-18",
+    ]) {
+      expect(
+        redirect({ permissions: [] }, [], "month-report", page, false, can),
+      ).toBe(true);
+      expect(
+        redirect(
+          { permissions: ["reports:read"] },
+          [],
+          "month-report",
+          page,
+          false,
+          can,
+        ),
+      ).toBe(false);
     }
-    expect(redirect({permissions: []}, [], "styles", "styles", false, can)).toBe(true);
-    expect(redirect({permissions: []}, [], "styles", "styles", true, can)).toBe(false);
+    expect(
+      redirect({ permissions: [] }, [], "styles", "styles", false, can),
+    ).toBe(true);
+    expect(
+      redirect({ permissions: [] }, [], "styles", "styles", true, can),
+    ).toBe(false);
   });
   it("records modal ownership before Escape bubbling can remove the dialog", () => {
-    expect(app).toContain('new WeakSet<KeyboardEvent>()');
-    expect(app).toContain('window.addEventListener("keydown", rememberModalEvent, true)');
-    expect(app).toContain('window.removeEventListener("keydown", rememberModalEvent, true)');
-    expect(app).toContain('modalKeyEvents.current.add(event)');
-    expect(app).toContain('event.key !== "Escape" || modalKeyEvents.current.has(event)');
-    expect(app).toContain('e.key === "Escape" && !modalKeyEvents.current.has(e)');
+    expect(app).toContain("new WeakSet<KeyboardEvent>()");
+    expect(app).toContain(
+      'window.addEventListener("keydown", rememberModalEvent, true)',
+    );
+    expect(app).toContain(
+      'window.removeEventListener("keydown", rememberModalEvent, true)',
+    );
+    expect(app).toContain("modalKeyEvents.current.add(event)");
+    expect(app).toContain(
+      'event.key !== "Escape" || modalKeyEvents.current.has(event)',
+    );
+    expect(app).toContain(
+      'e.key === "Escape" && !modalKeyEvents.current.has(e)',
+    );
     // A captured event remains owned by the modal even after its DOM is removed.
     const events = new WeakSet<Event>();
     const escape = new Event("keydown");
@@ -164,9 +208,7 @@ describe("Textos que dicen lo que funciona hoy", () => {
     const preguntas = read("docs/MANUAL-CAJERA-PREGUNTAS.md");
 
     expect(manual).toContain("El fondo menor no requiere PIN");
-    expect(manual).not.toContain(
-      "pide al gerente su PIN cuando se solicite",
-    );
+    expect(manual).not.toContain("pide al gerente su PIN cuando se solicite");
     expect(manual).toContain(
       "últimos cuatro dígitos, aprobación, marca, terminal si aparece y tipo",
     );
@@ -512,6 +554,25 @@ describe("G10 · contrato de contraste WCAG AA", () => {
     expect(css).not.toContain("color: #cab5ee");
     expect(css).not.toContain("background: var(--green, #059669)");
     expect(css).toMatch(/\.cart-security\s*\{[^}]*color:\s*var\(--muted\)/s);
+  });
+});
+
+describe("MTC-001 · contraste de las ventas diarias en tema oscuro", () => {
+  it.each([
+    ["Ayer", '[data-theme="dark"] .day-yesterday'],
+    ["Hoy", '[data-theme="dark"] .day-today'],
+  ])("mantiene %s y su cifra por encima de 4.5:1", (label, selector) => {
+    const palette = variables(selector);
+    expect(
+      palette["--day-accent"],
+      `${label}: falta color oscuro explícito`,
+    ).toMatch(/^#[0-9a-f]{6}$/i);
+    meets(
+      `${label} en tema oscuro`,
+      palette["--day-accent"],
+      palette["--day-bg"],
+      4.5,
+    );
   });
 });
 

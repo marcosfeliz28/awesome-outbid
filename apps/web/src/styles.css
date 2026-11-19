@@ -6508,9 +6508,11 @@ td strong {
 }
 
 [data-theme="dark"] .day-yesterday {
+  --day-accent: #93c5fd;
   --day-bg: #172554;
 }
 [data-theme="dark"] .day-today {
+  --day-accent: #6ee7b7;
   --day-bg: #052e22;
 }
 [data-theme="dark"] .day-other {
