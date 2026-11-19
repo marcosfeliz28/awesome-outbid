@@ -455,3 +455,39 @@ describe("VE-001/VE-003 · el servidor valida el usuario vacío o con espacios",
     expect(r.touched).toEqual([]);
   });
 });
+
+describe("M1 (parcial) · la cajera que entra desde un equipo no aprobado deja aviso", () => {
+  it("login de seller sin equipo aprobado llama al aviso", async () => {
+    const { AuthController, passwordHash } = await import(
+      "../apps/api/src/auth"
+    );
+    const seller = {
+      id: actor.id,
+      name: "Cajera A",
+      active: true,
+      branchId: BRANCH,
+      mustChangePassword: false,
+      passwordHash: await passwordHash("482913"),
+      role: { name: "seller", permissions: ["sale:write"] },
+    };
+    const db: any = {
+      user: { findFirst: async () => seller },
+      auditLog: { create: async () => undefined },
+    };
+    const c = new AuthController(db, {} as any, {
+      rememberAuthIdentity: () => undefined,
+    } as any) as any;
+    c.approvedTerminal = async () => null;
+    c.limitPublicCredentials = () => ({ normalized: "x" });
+    c.passwordAttempt = async () => undefined;
+    c.issue = async () => ({ accessToken: "x" });
+    const alerts: string[] = [];
+    c.alertUnapprovedLogin = async (u: any) => alerts.push(u.id);
+    await c.login(
+      { login: "caja1", password: "482913" },
+      { headers: {}, ip: "10.0.0.9" },
+      {},
+    );
+    expect(alerts).toEqual([seller.id]);
+  });
+});

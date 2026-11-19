@@ -497,9 +497,10 @@ export class AuthController implements OnModuleInit {
       "user",
       user.id,
     );
-    // Seguridad (dueña, 23-oct, punto 19): una cuenta de administración que
-    // entra desde un equipo no aprobado deja un aviso (y Telegram si está).
-    if (user.role.name !== "seller" && !terminalId)
+    // Seguridad (dueña, 23-oct, punto 19): una cuenta que entra desde un
+    // equipo no aprobado deja un aviso (y Telegram si está). M1 (auditoría
+    // 19-nov): también la cajera; la clave de 6 números no cambia.
+    if (!terminalId)
       await this.alertUnapprovedLogin(user, ip).catch(() => undefined);
     if (user.mustChangePassword)
       return {
