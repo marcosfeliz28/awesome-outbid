@@ -59,7 +59,7 @@ export function CreditAccounts({ session }: { session: any }) {
   const list = useQuery({
     queryKey: ["credit-accounts", search, sort, page, view],
     queryFn: () =>
-      api<{ total: number; rows: any[] }>(
+      api<{ total: number; hasMore?: boolean; rows: any[] }>(
         `/credit-accounts?search=${encodeURIComponent(search)}&sort=${sort}&page=${page}&view=${view}`,
       ),
   });
@@ -282,7 +282,7 @@ export function CreditAccounts({ session }: { session: any }) {
           Anterior
         </Button>
       )}
-      {(list.data?.rows?.length ?? 0) === 50 && (
+      {list.data?.hasMore && (
         <Button variant="secondary" onClick={() => setPage(page + 1)}>
           Siguiente
         </Button>

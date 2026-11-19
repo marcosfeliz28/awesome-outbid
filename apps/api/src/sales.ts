@@ -4342,10 +4342,13 @@ export class SalesController {
             ? { _min: { createdAt: "asc" } }
             : { _sum: { creditBalance: "desc" } },
         skip: (pageNumber - 1) * 50,
-        take: 50,
+        // P20: una fila de más dice si hay página siguiente.
+        take: 51,
       }),
       this.db.sale.aggregate({ where, _sum: { creditBalance: true } }),
     ]);
+    const hasMore = groups.length > 50;
+    groups.splice(50);
     const customers = await this.db.customer.findMany({
       where: {
         id: { in: groups.flatMap((g) => (g.customerId ? [g.customerId] : [])) },
@@ -4356,6 +4359,7 @@ export class SalesController {
     return {
       total: Number(total._sum.creditBalance ?? 0),
       page: pageNumber,
+      hasMore,
       rows: groups.flatMap((g) => {
         const customer = customers.find((c) => c.id === g.customerId);
         if (!customer) return [];

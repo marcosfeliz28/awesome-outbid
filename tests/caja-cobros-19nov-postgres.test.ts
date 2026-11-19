@@ -297,6 +297,14 @@ describe("D9 · corregir un cobro sin caja a efectivo", () => {
   });
 });
 
+describe("P20 · Créditos por persona: «Siguiente» solo si hay más", () => {
+  it("dice hasMore según haya más de 50 personas", async () => {
+    const accounts: any = await sales.creditAccounts(actor);
+    expect(accounts.hasMore).toBe(accounts.rows.length > 50);
+    expect(accounts.rows.length).toBeLessThanOrEqual(50);
+  });
+});
+
 describe("P9 · estado de cuenta con lo pagado al vender", () => {
   it("una venta de 1,500 con 500 en caja muestra los 500", async () => {
     const n = randomUUID();
