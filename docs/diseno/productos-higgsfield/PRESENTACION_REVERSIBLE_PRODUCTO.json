@@ -13,6 +13,10 @@
     {
       "before": "        </QueryState>\n      </section>\n      {create && (\n        <FormModal\n          english={en}\n          title={ct(\"Un nuevo producto para tu tienda\")}",
       "after": "        </QueryState>\n      </section>\n      </CatalogPresentation>\n      {create && (\n        <FormModal\n          english={en}\n          title={ct(\"Un nuevo producto para tu tienda\")}"
+    },
+    {
+      "before": "            <div className=\"product-detail\">\n              <img src={detail.imageUrl} alt={detail.name} />\n              <div>\n                <Badge tone=\"violet\">{detail.category.name}</Badge>\n                <h2>{detail.name}</h2>",
+      "after": "            <div className=\"product-detail\">\n              <img\n                key={detail.id + \":\" + detail.imageUrl}\n                src={detail.imageUrl || \"/products/accessories.svg\"}\n                onError={(event) => handleCatalogImageError(event.currentTarget)}\n                alt={detail.name}\n              />\n              <div>\n                <Badge tone=\"violet\">{detail.category.name}</Badge>"
     }
   ]
 }

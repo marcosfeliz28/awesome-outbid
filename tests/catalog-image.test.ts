@@ -57,3 +57,18 @@ it("fits long preview price and prevents desktop heading/category spill", () => 
   expect(css).toContain('th:nth-child(3) { white-space:nowrap; overflow-wrap:normal; }');
   expect(css).toContain('max-width:100%; white-space:normal; overflow-wrap:anywhere;');
 });
+
+it("keeps the detail modal named once and reuses the guarded photo fallback", () => {
+  const source = readFileSync("apps/web/src/Management.tsx", "utf8");
+  const modalStart = source.indexOf("open={!!detail}");
+  const modal = source.slice(modalStart, source.indexOf("</Modal>", modalStart));
+  expect(modal).toContain('title={detail?.name || ct("Producto")}');
+  expect(modal).not.toContain("<h2>{detail.name}</h2>");
+
+  const general = modal.slice(modal.indexOf('className="product-detail"'));
+  const photo = general.match(/<img\s[\s\S]*?\/>/)?.[0];
+  expect(photo).toContain('key={detail.id + ":" + detail.imageUrl}');
+  expect(photo).toContain('src={detail.imageUrl || "/products/accessories.svg"}');
+  expect(photo).toContain('onError={(event) => handleCatalogImageError(event.currentTarget)}');
+  expect(photo).toContain('alt={detail.name}');
+});
