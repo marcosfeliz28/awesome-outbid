@@ -23,7 +23,7 @@ Alcance acordado con la dueña (8-nov): **por ahora no se bloquea ninguna venta*
 
 ## 2. Lista de productos sin costo
 
-- `GET /inventory/without-cost` (`apps/api/src/inventory.ts:620`). Permiso `profit:read` y nunca la vendedora (403). Solo la sucursal de quien pregunta. Devuelve `total`, `withStock` e `items` (nombre, SKU, precio, existencia), primero los que tienen existencia. Excluye servicios e inactivos.
+- `GET /inventory/without-cost` (`apps/api/src/inventory.ts:648`). Permiso `profit:read` y nunca la vendedora (403). Solo la sucursal de quien pregunta. Devuelve `total`, `withStock` e `items` (nombre, SKU, precio, existencia), primero los que tienen existencia. Excluye servicios e inactivos.
 - Pantalla: tarjeta «Productos sin costo» arriba de Inventario, solo si hay alguno (`apps/web/src/ZeroCost.tsx:20`, `apps/web/src/Management.tsx:917`). Lista simple, cabe a 390 px. El costo se completa en Productos (un cambio de costo a mano ya deja aviso `cost_change`).
 
 ## 3. Recálculo de costos (solo lectura)

@@ -61,7 +61,14 @@ describe("Auditoría Claude 2 · regresiones focales", () => {
     const inventory = source("apps/api/src/inventory.ts");
     const apiTests = source("tests/api.test.ts");
     expect(inventory).toContain("operationId: uuid,");
-    expect(inventory).not.toContain("operationId: uuid.optional()");
+    // A4 (auditoría 19-nov): solo el ajuste/merma/devolución la acepta
+    // opcional (clientes viejos); la recepción de compras la sigue exigiendo.
+    expect(inventory.split("operationId: uuid.optional()")).toHaveLength(2);
+    const optional = inventory.indexOf("operationId: uuid.optional()");
+    expect(optional).toBeGreaterThan(
+      inventory.indexOf('@Post("inventory/adjustments")'),
+    );
+    expect(optional).toBeLessThan(inventory.indexOf('@Get("purchase-orders")'));
     expect(apiTests).toContain("misma recepción de una orden no la duplica");
     expect(apiTests).toContain("Promise.all");
   });

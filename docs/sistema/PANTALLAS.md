@@ -108,7 +108,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 
 ## Clientes
 
-- **Etiqueta:** «Clientes». **Permiso:** `customers:write`. **Componente:** `Customers`, `apps/web/src/Management.tsx:2373`. Título: «Personas que vuelven a elegirte» (`:2304`). Botón «Nuevo cliente». Teléfono, cédula y correo completos solo para `sale:manage` o `customers:erase` (el resto los ve enmascarados) (`apps/api/src/common.ts:276-281`). Anonimizar un cliente requiere `customers:erase` (`apps/api/src/admin.ts:353-354`).
+- **Etiqueta:** «Clientes». **Permiso:** `customers:write`. **Componente:** `Customers`, `apps/web/src/Management.tsx:2373`. Título: «Personas que vuelven a elegirte» (`:2304`). Botón «Nuevo cliente». Teléfono, cédula y correo completos solo para `sale:manage` o `customers:erase` (el resto los ve enmascarados) (`apps/api/src/common.ts:317-322`). Anonimizar un cliente requiere `customers:erase` (`apps/api/src/admin.ts:353-354`).
 
 ## Promociones
 
@@ -117,7 +117,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 ## Reportes
 
 - **Etiqueta:** «Reportes». **Permiso:** `reports:read`. **Componente:** `Reports`, `apps/web/src/Management.tsx:2946`. Título: «Los números cuentan tu historia» (`:2861`).
-- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:3008`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:785`; carpeta `apps/api/src/reportes/`).
+- **Qué hace:** menú de reportes agrupados (Ventas, etc., `:2733-2800`), elegir el reporte, «Desde»/«Hasta», botones «Excel» y «PDF» (`:2930-2945`, hasta 50,000 filas en Excel y 10,000 en PDF, `:2980`). Lista base de 20 reportes en `:2706-2730` (por ejemplo «Ventas detalladas», «Utilidad por producto», «Inventario valorizado», «Cierres y diferencias», «Ventas por método de pago», «Ingresos por día y método», «Informe formal diario/mensual»). Los de utilidad/margen solo con `profit:read` (`apps/web/src/Management.tsx:3008`). El servidor suma más reportes (hasta 40) en `GET /reportes` (`apps/api/src/reports.ts:790`; carpeta `apps/api/src/reportes/`).
 
 ## Resumen
 
@@ -126,7 +126,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1110-1140`):
 
 ## Alertas
 
-- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3180`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1438-1458`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:515`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:919-922`).
+- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3180`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1438-1458`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:517`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:921-924`).
 
 ## Incentivos
 
