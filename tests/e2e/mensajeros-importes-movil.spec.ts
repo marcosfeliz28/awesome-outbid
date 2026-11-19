@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./apoyo";
 import { assertOperationalMoney } from "../visual-helpers/operational-money";
 
 test("Mensajeros a 390 px: facturas e importes anchos quedan legibles sin desbordar", async ({
