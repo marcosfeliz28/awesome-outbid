@@ -29,7 +29,8 @@ export function WithoutCostCard() {
     <div className="panel" role="region" aria-label="Productos sin costo">
       <h3>Productos sin costo</h3>
       <p>
-        {total} activos sin costo, {withStock} con existencia. No se pueden
+        {total} productos activos sin costo, {withStock} con existencia (no
+        cuenta servicios, cursos ni productos desactivados). No se pueden
         vender hasta completar su costo en el producto.
       </p>
       <Button variant="secondary" onClick={() => setOpen(!open)}>

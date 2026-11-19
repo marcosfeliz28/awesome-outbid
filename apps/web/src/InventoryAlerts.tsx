@@ -40,6 +40,7 @@ export function InventoryAlerts({
         Number.isFinite(Number(minimum)) &&
         Number(raw) <= Number(minimum)),
   );
+  const empty = alerts.filter(({ raw }) => Number(raw) <= 0).length;
   return (
     <section
       className="inventory-alerts panel"
@@ -69,6 +70,8 @@ export function InventoryAlerts({
             {en
               ? alerts.length === 1 ? "variant to review" : "variants to review"
               : alerts.length === 1 ? "variante por revisar" : "variantes por revisar"}
+            {/* INV-009: misma regla en todo almacén; se dice qué suma. */}
+            {` (${empty} ${en ? "with no stock" : "sin existencias"}, ${alerts.length - empty} ${en ? "low stock" : "con stock bajo"})`}
           </p>
           <ul>
             {alerts.slice(0, 5).map(({ row, raw, minimum }, index) => (
