@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import "./merchandisePremium.css";
+import { useLanguage } from "./inicioLanguage";
+import { usePremiumWorkspace } from "./PremiumWorkspace";
+import { merchandiseText } from "./merchandiseLanguage";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
@@ -177,7 +181,7 @@ function ContinuousScanner({
 function ProductSearch({
   variants,
   onPick,
-  label = "Buscar producto",
+  label,
   only,
   autoFocus = false,
   initialText = "",
@@ -189,6 +193,9 @@ function ProductSearch({
   autoFocus?: boolean;
   initialText?: string;
 }) {
+  const language = useLanguage();
+  const t = (key: keyof typeof merchandiseText) => merchandiseText[key][language];
+  const displayLabel = label ?? t("searchProduct");
   const [text, setText] = useState(initialText);
   const pool = only ? variants.filter((v) => v.product.id === only) : variants;
   const results = useMemo(() => {
@@ -211,13 +218,13 @@ function ProductSearch({
   return (
     <div className="goods-search">
       <label className="field">
-        {label}
+        {displayLabel}
         <span className="goods-search-input">
           <Search size={16} aria-hidden="true" />
           <input
             value={text}
             autoFocus={autoFocus}
-            placeholder="Nombre, SKU, sabor, talla o color"
+            placeholder={t("searchPlaceholder")}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && results[0]) {
@@ -232,7 +239,7 @@ function ProductSearch({
       {results.length > 0 && (
         // G12: lista de resultados con botones (no es un listbox navegable
         // con flechas: Enter toma el primero).
-        <ul className="goods-results" aria-label={"Resultados: " + label}>
+        <ul className="goods-results" aria-label={t("searchResults") + ": " + displayLabel}>
           {results.map((v) => (
             <li key={v.id}>
               <button
@@ -245,15 +252,15 @@ function ProductSearch({
                 <span>
                   <strong>{v.product.name}</strong>
                   <small>
-                    {attrLabel(v.attributes ?? {})} · {v.sku}
+                    {attrLabel(v.attributes ?? {}, language === "en" ? "Default" : "Única")} · {v.sku}
                   </small>
                 </span>
                 <Badge tone={Number(v.stock) > 0 ? "neutral" : "warning"}>
-                  {Number(v.stock)} en stock
+                  {Number(v.stock)} {t("inStock")}
                 </Badge>
                 {Number(v.expiredStock) > 0 && (
                   <Badge tone="warning">
-                    vencido: {Number(v.expiredStock)}
+                    {t("expiredStock")}: {Number(v.expiredStock)}
                   </Badge>
                 )}
               </button>
@@ -281,6 +288,9 @@ export function Merchandise({
 }: {
   assistantAvailable?: boolean;
 }) {
+  usePremiumWorkspace();
+  const language = useLanguage();
+  const t = (key: keyof typeof merchandiseText) => merchandiseText[key][language];
   const { user, online } = useStore();
   const client = useQueryClient();
   const seesCost = can(user!.permissions, "profit:read");
@@ -639,11 +649,13 @@ export function Merchandise({
   };
   const recent = (history.data ?? []).filter((h) => h.result?.receiptId);
   return (
-    <div className="merchandise">
+    <div className="merchandise goods-premium norexos-premium-workspace">
       <header className="goods-header">
-        <div>
-          <h1>Mercancía</h1>
-          <p>Entradas y salidas con revisión antes de confirmar.</p>
+        <div className="goods-premium-heading">
+          <span className="goods-premium-emblem" aria-hidden="true"><PackagePlus size={32} /></span>
+          <div>
+          <h1>{t("title")}</h1>
+          <p>{t("subtitle")}</p>
           {assistantAvailable && (
             <Button
               className="goods-assistant-inline"
@@ -659,11 +671,12 @@ export function Merchandise({
               Pregúntale a Norexos
             </Button>
           )}
+          </div>
         </div>
         <div
           className="goods-mode"
-          role="group"
-          aria-label="Tipo de movimiento"
+          role="tablist"
+          aria-label={t("movementType")}
         >
           <button
             type="button"
@@ -671,7 +684,7 @@ export function Merchandise({
             className={direction === "entry" ? "active" : ""}
             onClick={() => switchTo("entry")}
           >
-            <PackagePlus size={18} aria-hidden="true" /> ENTRADA
+            <PackagePlus size={18} aria-hidden="true" /> {t("entry")}
           </button>
           <button
             type="button"
@@ -679,7 +692,7 @@ export function Merchandise({
             className={direction === "exit" ? "active exit" : ""}
             onClick={() => switchTo("exit")}
           >
-            <PackageMinus size={18} aria-hidden="true" /> SALIDA
+            <PackageMinus size={18} aria-hidden="true" /> {t("exit")}
           </button>
         </div>
       </header>
@@ -688,11 +701,11 @@ export function Merchandise({
         <div className="goods-done" role="status">
           <div>
             <strong>
-              {result.direction === "exit" ? "Salida" : "Entrada"} registrada
+              {result.direction === "exit" ? t("exitRegistered") : t("entryRegistered")}
             </strong>
             <span>
-              {result.units} unidad(es) · {result.variantIds?.length ?? 0}{" "}
-              producto(s)
+              {result.units} {t("unitCount")} · {result.variantIds?.length ?? 0}{" "}
+              {t("productCount")}
               {result.direction === "entry" && seesCost
                 ? " · " + formatMoney(result.total)
                 : ""}
@@ -711,7 +724,7 @@ export function Merchandise({
         {direction === "entry" ? (
           <div className="goods-grid">
             <label className="field">
-              Proveedor (opcional)
+              {t("supplier")}
               <select
                 disabled={!!draft}
                 value={supplierId}
@@ -720,7 +733,7 @@ export function Merchandise({
                   setOrder("");
                 }}
               >
-                <option value="">Sin proveedor</option>
+                <option value="">{t("noSupplier")}</option>
                 {suppliers.data?.map((s: any) => (
                   <option value={s.id} key={s.id}>
                     {s.name}
@@ -730,7 +743,7 @@ export function Merchandise({
             </label>
             {online && (
               <label className="field">
-                Orden de compra (opcional)
+                {t("order")}
                 <select
                   value={orderId}
                   disabled={!supplierId || !!draft}
@@ -776,7 +789,7 @@ export function Merchandise({
                   }}
                 >
                   <option value="">
-                    {supplierId ? "Sin orden" : "Elige primero el proveedor"}
+                    {supplierId ? t("noOrder") : t("pickSupplierFirst")}
                   </option>
                   {orders.data
                     ?.filter(
@@ -795,7 +808,7 @@ export function Merchandise({
         ) : (
           <div className="goods-grid">
             <label className="field">
-              Motivo de la salida
+              {t("exitReason")}
               <select
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -815,7 +828,7 @@ export function Merchandise({
                     value={supplierId}
                     onChange={(e) => setSupplier(e.target.value)}
                   >
-                    <option value="">Elige el proveedor</option>
+                    <option value="">{t("pickSupplier")}</option>
                     {suppliers.data?.map((s: any) => (
                       <option value={s.id} key={s.id}>
                         {s.name}
@@ -824,7 +837,7 @@ export function Merchandise({
                   </select>
                 </label>
                 <label className="field">
-                  Referencia (documento o nota de crédito)
+                  {t("reference")}
                   <input
                     maxLength={60}
                     value={doc.supplierInvoice ?? ""}
@@ -839,10 +852,9 @@ export function Merchandise({
         )}
         {direction === "entry" && (
           <details className="goods-document">
-            <summary>Documento del proveedor (opcional)</summary>
+            <summary>{t("supplierDocument")}</summary>
             <p className="goods-cost-note">
-              Factura, NCF y condición de pago para la contable. Puedes
-              completarlo después desde el historial.
+              {t("documentHint")}
             </p>
             <DocumentFields value={doc} onChange={setDoc} />
           </details>
@@ -859,15 +871,15 @@ export function Merchandise({
           >
             <FileSpreadsheet size={22} aria-hidden="true" />
             <span>
-              <strong>Importar factura del proveedor</strong>
+              <strong>{t("importInvoice")}</strong>
               <small>
                 {!online
-                  ? "Necesita conexión a internet."
+                  ? t("needsConnection")
                   : items.length
-                    ? "Disponible con la lista vacía."
+                    ? t("emptyListOnly")
                     : options.data?.aiEnabled
-                      ? "Excel, CSV, foto o PDF de la factura."
-                      : "Excel o CSV de la factura."}
+                      ? t("importFormatsAi")
+                      : t("importFormats")}
               </small>
             </span>
           </button>
@@ -884,7 +896,7 @@ export function Merchandise({
             }}
           >
             <label className="field">
-              Código de barras o SKU
+              {t("barcode")}
               <span className="goods-search-input">
                 <ScanBarcode size={16} aria-hidden="true" />
                 <input
@@ -897,15 +909,13 @@ export function Merchandise({
               </span>
             </label>
             <div className="goods-scan-actions">
-              <Button type="submit" variant="secondary">
-                Sumar una unidad
-              </Button>
+              <Button type="submit">{t("addUnit")}</Button>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => setCamera(true)}
               >
-                <Camera size={16} aria-hidden="true" /> Escanear con la cámara
+                <Camera size={16} aria-hidden="true" /> {t("camera")}
               </Button>
             </div>
           </form>
@@ -924,10 +934,9 @@ export function Merchandise({
       {draft && (
         <section className="goods-review">
           <div>
-            <h2>Revisión de factura</h2>
+            <h2>{t("invoiceReview")}</h2>
             <p>
-              Nada entra al inventario hasta que confirmes. Comprueba cada
-              producto, cantidad, costo y dato fiscal leído de la factura.
+              {t("reviewNotice")}
             </p>
             {draft.fiscal && (
               <div className="goods-cost-note" role="status">
@@ -958,7 +967,7 @@ export function Merchandise({
               {unresolved > 0 ? (
                 <Badge tone="warning">{unresolved} por resolver</Badge>
               ) : (
-                <Badge tone="success">Todas emparejadas</Badge>
+                <Badge tone="success">{t("allMatched")}</Badge>
               )}
               {draft.skipped > 0 && (
                 <Badge tone="warning">
@@ -977,7 +986,7 @@ export function Merchandise({
                 )
               }
             >
-              <Download size={16} aria-hidden="true" /> Descargar comprobante
+              <Download size={16} aria-hidden="true" /> {t("downloadReceipt")}
             </Button>
           )}
         </section>
@@ -988,8 +997,8 @@ export function Merchandise({
           <ScanBarcode size={28} aria-hidden="true" />
           <p>
             {direction === "entry"
-              ? "Escanea o busca los productos que llegaron."
-              : "Escanea o busca los productos que salen del inventario."}
+              ? t("emptyEntry")
+              : t("emptyExit")}
           </p>
         </div>
       )}
@@ -1030,8 +1039,8 @@ export function Merchandise({
                 </div>
                 <button
                   className="icon-button"
-                  aria-label="Quitar línea"
-                  title="Quitar línea"
+                  aria-label={t("removeLine")}
+                  title={t("removeLine")}
                   onClick={() =>
                     setItems((old) => old.filter((_, i) => i !== index))
                   }
@@ -1089,7 +1098,7 @@ export function Merchandise({
                   <ProductSearch
                     variants={variants}
                     label={
-                      l.productId ? "O busca otro producto" : "Buscar producto"
+                      l.productId ? t("searchOtherProduct") : t("searchProduct")
                     }
                     onPick={(v) =>
                       patch(index, { variantId: v.id, quick: undefined })
@@ -1099,7 +1108,7 @@ export function Merchandise({
                     variant="secondary"
                     onClick={() => setUnknown("review:" + index)}
                   >
-                    <Plus size={16} aria-hidden="true" /> Crear producto rápido
+                    <Plus size={16} aria-hidden="true" /> {t("quickCreate")}
                   </Button>
                 </>
               )}
@@ -1122,11 +1131,11 @@ export function Merchandise({
               <div className="goods-fields">
                 <div className="field">
                   {/* La etiqueta apunta al campo, no a los botones +/−. */}
-                  <label htmlFor={"goods-qty-" + index}>Cantidad</label>
+                  <label htmlFor={"goods-qty-" + index}>{t("qty")}</label>
                   <span className="goods-qty">
                     <button
                       type="button"
-                      aria-label="Restar una unidad"
+                      aria-label={t("minusUnit")}
                       onClick={() =>
                         patch(index, {
                           qty: Math.max(
@@ -1151,7 +1160,7 @@ export function Merchandise({
                     />
                     <button
                       type="button"
-                      aria-label="Sumar otra unidad"
+                      aria-label={t("plusUnit")}
                       onClick={() => patch(index, { qty: Number(l.qty) + 1 })}
                     >
                       <Plus size={16} />
@@ -1160,13 +1169,13 @@ export function Merchandise({
                 </div>
                 {direction === "entry" && (
                   <label className="field">
-                    Costo unitario
+                    {t("unitCost")}
                     <input
                       type="number"
                       min="0.01"
                       step="0.01"
                       inputMode="decimal"
-                      placeholder="Escribe el costo"
+                      placeholder={t("costPlaceholder")}
                       aria-invalid={!(Number(l.unitCost) > 0) && !l.quick}
                       value={l.unitCost ?? ""}
                       onChange={(e) =>
@@ -1210,7 +1219,7 @@ export function Merchandise({
                 <div className="goods-fields">
                   {(category?.requiresLot || l.lotNumber !== undefined) && (
                     <label className="field">
-                      Lote
+                      {t("lot")}
                       <input
                         value={l.lotNumber ?? ""}
                         onChange={(e) =>
@@ -1223,7 +1232,7 @@ export function Merchandise({
                   )}
                   {(category?.requiresExpiry || l.expiryDate !== undefined) && (
                     <label className="field">
-                      Vencimiento
+                      {t("expiry")}
                       <input
                         type="date"
                         value={l.expiryDate ?? ""}
@@ -1239,14 +1248,14 @@ export function Merchandise({
               ) : (
                 (category?.requiresLot || (v?.lots?.length ?? 0) > 0) && (
                   <label className="field">
-                    Lote de salida
+                    {t("exitLot")}
                     <select
                       value={l.lotId ?? ""}
                       onChange={(e) =>
                         patch(index, { lotId: e.target.value || undefined })
                       }
                     >
-                      <option value="">Elegir lote</option>
+                      <option value="">{t("chooseLot")}</option>
                       {v?.lots
                         ?.filter((lot: any) => Number(lot.qty) > 0)
                         .map((lot: any) => (
@@ -1274,7 +1283,7 @@ export function Merchandise({
         <section className="panel goods-card">
           <div className="goods-grid">
             <label className="field">
-              Flete
+              {t("freight")}
               <input
                 type="number"
                 min="0"
@@ -1285,7 +1294,7 @@ export function Merchandise({
               />
             </label>
             <label className="field">
-              Impuestos adicionales
+              {t("extraTax")}
               <input
                 type="number"
                 min="0"
@@ -1296,7 +1305,7 @@ export function Merchandise({
               />
             </label>
             <label className="field">
-              Total de la factura
+              {t("invoiceTotal")}
               <input
                 type="number"
                 min="0"
@@ -1310,7 +1319,7 @@ export function Merchandise({
               />
             </label>
             <div className="goods-sum">
-              <span>Total calculado</span>
+              <span>{t("computedTotal")}</span>
               <strong>{formatMoney(subtotal)}</strong>
             </div>
           </div>
@@ -1340,13 +1349,13 @@ export function Merchandise({
       <div className={`goods-actions ${items.length ? "has-items" : ""}`}>
         <span className="goods-actions-summary">
           {items.length
-            ? `${items.length} producto(s) · ${units} unidad(es)` +
+            ? `${items.length} ${t("productCount")} · ${units} ${t("unitCount")}` +
               (direction === "entry" && !missingCost
                 ? " · " + formatMoney(subtotal)
                 : "")
-            : "Sin productos"}
-          {unresolved > 0 && ` · ${unresolved} por resolver`}
-          {missingCost && " · faltan costos"}
+            : t("noProducts")}
+          {unresolved > 0 && ` · ${unresolved} ${t("unresolvedCount")}`}
+          {missingCost && " · " + t("missingCosts")}
         </span>
         <Button
           className={`goods-confirm ${direction === "exit" ? "exit" : ""}`}
@@ -1354,30 +1363,30 @@ export function Merchandise({
           onClick={confirm}
         >
           {busy
-            ? "Registrando…"
+            ? t("registering")
             : direction === "entry"
-              ? "Confirmar entrada"
-              : "Confirmar salida"}
+              ? t("confirmEntry")
+              : t("confirmExit")}
         </Button>
       </div>
 
       {online && (
         <section className="panel goods-card">
-          <h2>Historial de recepciones</h2>
+          <h2>{t("receiptHistory")}</h2>
           <ReceiptHistory compact />
         </section>
       )}
 
       {recent.length > 0 && (
         <section className="panel goods-card">
-          <h2>Entradas recientes</h2>
+          <h2>{t("recentReceipts")}</h2>
           <ul className="goods-history">
             {recent.map((h) => (
               <li key={h.id}>
                 <span>
                   <strong>{when(h.createdAt)}</strong>
                   <small>
-                    {h.result.variantIds?.length ?? 0} producto(s)
+                    {h.result.variantIds?.length ?? 0} {t("productCount")}
                     {seesCost && h.result.total !== undefined
                       ? " · " + formatMoney(h.result.total)
                       : ""}
@@ -1390,7 +1399,7 @@ export function Merchandise({
                     setLabels(true);
                   }}
                 >
-                  <Printer size={16} aria-hidden="true" /> Etiquetas
+                  <Printer size={16} aria-hidden="true" /> {t("labels")}
                 </Button>
               </li>
             ))}
@@ -1400,16 +1409,16 @@ export function Merchandise({
 
       {queue.length > 0 && (
         <section className="panel goods-card">
-          <h2>Pendientes de este equipo</h2>
+          <h2>{t("localPending")}</h2>
           <ul className="goods-history">
             {queue.map((row) => (
               <li key={row.id}>
                 <span>
                   <strong>
                     {row.status === "conflict"
-                      ? "Requiere revisión"
-                      : "Pendiente"}{" "}
-                    · {row.input.direction === "entry" ? "Entrada" : "Salida"}
+                      ? t("needsReview")
+                      : t("pending")}{" "}
+                    · {row.input.direction === "entry" ? t("queuedEntry") : t("queuedExit")}
                   </strong>
                   <small>{row.message ?? when(row.createdAt)}</small>
                 </span>
@@ -1428,14 +1437,14 @@ export function Merchandise({
                         await client.invalidateQueries();
                       }}
                     >
-                      Reintentar
+                      {t("retry")}
                     </Button>
                     <Button
                       variant="secondary"
                       onClick={() => {
                         if (
                           !window.confirm(
-                            "¿Cargar esta operación para corregirla? La cola conservará la original hasta confirmar la corrección.",
+                            t("loadQueuedReview"),
                           )
                         )
                           return;
@@ -1480,7 +1489,7 @@ export function Merchandise({
                         operationId.current = row.id;
                       }}
                     >
-                      Revisar
+                      {t("review")}
                     </Button>
                   </span>
                 )}
@@ -1495,13 +1504,14 @@ export function Merchandise({
       )}
       {unknown !== null && (
         <FormModal
-          title="Crear producto rápido"
+          english={language === "en"}
+          title={t("quickCreate")}
           onClose={() => setUnknown(null)}
           fields={[
-            { key: "name", label: "Nombre", required: true },
+            { key: "name", label: t("quickName"), required: true },
             {
               key: "categoryId",
-              label: "Categoría",
+              label: t("quickCategory"),
               type: "select",
               required: true,
               options:
@@ -1512,7 +1522,7 @@ export function Merchandise({
             },
             {
               key: "barcode",
-              label: "Código de barras",
+              label: t("quickBarcode"),
               required: true,
               initial: unknown.startsWith("review:")
                 ? items[Number(unknown.split(":")[1])]?.supplierCode
@@ -1520,7 +1530,7 @@ export function Merchandise({
             },
             {
               key: "price",
-              label: "Precio de venta",
+              label: t("quickPrice"),
               type: "number",
               required: true,
               min: 0.01,
@@ -1528,7 +1538,7 @@ export function Merchandise({
             },
             {
               key: "cost",
-              label: "Costo",
+              label: t("quickCost"),
               type: "number",
               required: true,
               min: 0.01,
@@ -1536,7 +1546,7 @@ export function Merchandise({
             },
             {
               key: "variant",
-              label: "Variante (sabor, talla, color…)",
+              label: t("quickVariant"),
               required: true,
               initial: "Única",
             },

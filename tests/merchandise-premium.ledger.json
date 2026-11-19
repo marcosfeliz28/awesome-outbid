@@ -1,0 +1,301 @@
+{
+  "sha256": "c7be782166d418bdf286f5d9310fa893137295d5156a7651692a07a235b1a9f9",
+  "edits": [
+    {
+      "before": "import { useEffect, useMemo, useRef, useState } from \"react\";",
+      "after": "import { useEffect, useMemo, useRef, useState } from \"react\";\nimport \"./merchandisePremium.css\";"
+    },
+    {
+      "before": "<div className=\"merchandise\">",
+      "after": "<div className=\"merchandise goods-premium norexos-premium-workspace\">"
+    },
+    {
+      "before": "<header className=\"goods-header\">\n        <div>",
+      "after": "<header className=\"goods-header\">\n        <div className=\"goods-premium-heading\">\n          <span className=\"goods-premium-emblem\" aria-hidden=\"true\"><PackagePlus size={32} /></span>\n          <div>"
+    },
+    {
+      "before": "<p>Entradas y salidas con revisión antes de confirmar.</p>\n        </div>",
+      "after": "<p>Entradas y salidas con revisión antes de confirmar.</p>\n          </div>\n        </div>"
+    },
+    {
+      "before": "import \"./merchandisePremium.css\";",
+      "after": "import \"./merchandisePremium.css\";\nimport { useLanguage } from \"./inicioLanguage\";\nimport { useInventoryAppearance } from \"./inventoryAppearance\";\nimport { merchandiseText } from \"./merchandiseLanguage\";"
+    },
+    {
+      "before": "export function Merchandise() {",
+      "after": "export function Merchandise() {\n  useInventoryAppearance();\n  const language = useLanguage();\n  const t = (key: keyof typeof merchandiseText) => merchandiseText[key][language];"
+    },
+    {
+      "before": ">Mercancía<",
+      "after": ">{t(\"title\")}<"
+    },
+    {
+      "before": ">Entradas y salidas con revisión antes de confirmar.<",
+      "after": ">{t(\"subtitle\")}<"
+    },
+    {
+      "before": ">Sin proveedor<",
+      "after": ">{t(\"noSupplier\")}<"
+    },
+    {
+      "before": ">Elige el proveedor<",
+      "after": ">{t(\"pickSupplier\")}<"
+    },
+    {
+      "before": ">Documento del proveedor (opcional)<",
+      "after": ">{t(\"supplierDocument\")}<"
+    },
+    {
+      "before": ">Importar factura del proveedor<",
+      "after": ">{t(\"importInvoice\")}<"
+    },
+    {
+      "before": ">Sumar una unidad<",
+      "after": ">{t(\"addUnit\")}<"
+    },
+    {
+      "before": ">Revisión de factura<",
+      "after": ">{t(\"invoiceReview\")}<"
+    },
+    {
+      "before": ">Todas emparejadas<",
+      "after": ">{t(\"allMatched\")}<"
+    },
+    {
+      "before": ">Historial de recepciones<",
+      "after": ">{t(\"receiptHistory\")}<"
+    },
+    {
+      "before": ">Entradas recientes<",
+      "after": ">{t(\"recentReceipts\")}<"
+    },
+    {
+      "before": ">Pendientes de este equipo<",
+      "after": ">{t(\"localPending\")}<"
+    },
+    {
+      "before": "Proveedor (opcional)",
+      "after": "{t(\"supplier\")}"
+    },
+    {
+      "before": "Orden de compra (opcional)",
+      "after": "{t(\"order\")}"
+    },
+    {
+      "before": "Motivo de la salida",
+      "after": "{t(\"exitReason\")}"
+    },
+    {
+      "before": "Referencia (documento o nota de crédito)",
+      "after": "{t(\"reference\")}"
+    },
+    {
+      "before": "Código de barras o SKU",
+      "after": "{t(\"barcode\")}"
+    },
+    {
+      "before": "Escanear con la cámara",
+      "after": "{t(\"camera\")}"
+    },
+    {
+      "before": "Descargar comprobante",
+      "after": "{t(\"downloadReceipt\")}"
+    },
+    {
+      "before": "<PackagePlus size={18} aria-hidden=\"true\" /> ENTRADA",
+      "after": "<PackagePlus size={18} aria-hidden=\"true\" /> {t(\"entry\")}"
+    },
+    {
+      "before": "<PackageMinus size={18} aria-hidden=\"true\" /> SALIDA",
+      "after": "<PackageMinus size={18} aria-hidden=\"true\" /> {t(\"exit\")}"
+    },
+    {
+      "before": "aria-label=\"Tipo de movimiento\"",
+      "after": "aria-label={t(\"movementType\")}"
+    },
+    {
+      "before": "aria-label=\"Quitar línea\"",
+      "after": "aria-label={t(\"removeLine\")}"
+    },
+    {
+      "before": "title=\"Quitar línea\"",
+      "after": "title={t(\"removeLine\")}"
+    },
+    {
+      "before": "\"Sin orden\"",
+      "after": "t(\"noOrder\")"
+    },
+    {
+      "before": "\"Elige primero el proveedor\"",
+      "after": "t(\"pickSupplierFirst\")"
+    },
+    {
+      "before": "\"Necesita conexión a internet.\"",
+      "after": "t(\"needsConnection\")"
+    },
+    {
+      "before": "\"Disponible con la lista vacía.\"",
+      "after": "t(\"emptyListOnly\")"
+    },
+    {
+      "before": "\"Excel, CSV, foto o PDF de la factura.\"",
+      "after": "t(\"importFormatsAi\")"
+    },
+    {
+      "before": "\"Excel o CSV de la factura.\"",
+      "after": "t(\"importFormats\")"
+    },
+    {
+      "before": "\"Escanea o busca los productos que llegaron.\"",
+      "after": "t(\"emptyEntry\")"
+    },
+    {
+      "before": "\"Escanea o busca los productos que salen del inventario.\"",
+      "after": "t(\"emptyExit\")"
+    },
+    {
+      "before": "Nada entra al inventario hasta que confirmes. Comprueba cada\n              producto, cantidad y costo.",
+      "after": "{t(\"reviewNotice\")}"
+    },
+    {
+      "before": ">Cantidad<",
+      "after": ">{t(\"qty\")}<"
+    },
+    {
+      "before": ">Total calculado<",
+      "after": ">{t(\"computedTotal\")}<"
+    },
+    {
+      "before": ">Elegir lote<",
+      "after": ">{t(\"chooseLot\")}<"
+    },
+    {
+      "before": "\n                    Costo unitario\n                    <input",
+      "after": "\n                    {t(\"unitCost\")}\n                    <input"
+    },
+    {
+      "before": "\n                      Lote\n                      <input",
+      "after": "\n                      {t(\"lot\")}\n                      <input"
+    },
+    {
+      "before": "\n                      Vencimiento\n                      <input",
+      "after": "\n                      {t(\"expiry\")}\n                      <input"
+    },
+    {
+      "before": "\n                    Lote de salida\n                    <select",
+      "after": "\n                    {t(\"exitLot\")}\n                    <select"
+    },
+    {
+      "before": "\n              Flete\n              <input",
+      "after": "\n              {t(\"freight\")}\n              <input"
+    },
+    {
+      "before": "\n              Impuestos adicionales\n              <input",
+      "after": "\n              {t(\"extraTax\")}\n              <input"
+    },
+    {
+      "before": "\n              Total de la factura\n              <input",
+      "after": "\n              {t(\"invoiceTotal\")}\n              <input"
+    },
+    {
+      "before": "aria-label=\"Restar una unidad\"",
+      "after": "aria-label={t(\"minusUnit\")}"
+    },
+    {
+      "before": "aria-label=\"Sumar otra unidad\"",
+      "after": "aria-label={t(\"plusUnit\")}"
+    },
+    {
+      "before": "placeholder=\"Escribe el costo\"",
+      "after": "placeholder={t(\"costPlaceholder\")}"
+    },
+    {
+      "before": "import { useInventoryAppearance } from \"./inventoryAppearance\";",
+      "after": "import { usePremiumWorkspace } from \"./PremiumWorkspace\";"
+    },
+    {
+      "before": "  useInventoryAppearance();",
+      "after": "  usePremiumWorkspace();"
+    },
+    {
+      "before": "      {unknown !== null && (\n        <FormModal\n          title=\"Crear producto rápido\"\n          onClose={() => setUnknown(null)}\n          fields={[\n            { key: \"name\", label: \"Nombre\", required: true },\n            {\n              key: \"categoryId\",\n              label: \"Categoría\",\n              type: \"select\",\n              required: true,\n              options:\n                categories.data?.map((c: any) => ({\n                  value: c.id,\n                  label: c.name,\n                })) ?? [],\n            },\n            {\n              key: \"barcode\",\n              label: \"Código de barras\",\n              required: true,\n              initial: unknown.startsWith(\"review:\")\n                ? items[Number(unknown.split(\":\")[1])]?.supplierCode\n                : unknown,\n            },\n            {\n              key: \"price\",\n              label: \"Precio de venta\",\n              type: \"number\",\n              required: true,\n              min: 0.01,\n              step: \"0.01\",\n            },\n            {\n              key: \"cost\",\n              label: \"Costo\",\n              type: \"number\",\n              required: true,\n              min: 0.01,\n              step: \"0.01\",\n            },\n            {\n              key: \"variant\",\n              label: \"Variante (sabor, talla, color…)\",\n              required: true,\n              initial: \"Única\",\n            },\n          ]}\n",
+      "after": "      {unknown !== null && (\n        <FormModal\n          english={language === \"en\"}\n          title={t(\"quickCreate\")}\n          onClose={() => setUnknown(null)}\n          fields={[\n            { key: \"name\", label: t(\"quickName\"), required: true },\n            {\n              key: \"categoryId\",\n              label: t(\"quickCategory\"),\n              type: \"select\",\n              required: true,\n              options:\n                categories.data?.map((c: any) => ({\n                  value: c.id,\n                  label: c.name,\n                })) ?? [],\n            },\n            {\n              key: \"barcode\",\n              label: t(\"quickBarcode\"),\n              required: true,\n              initial: unknown.startsWith(\"review:\")\n                ? items[Number(unknown.split(\":\")[1])]?.supplierCode\n                : unknown,\n            },\n            {\n              key: \"price\",\n              label: t(\"quickPrice\"),\n              type: \"number\",\n              required: true,\n              min: 0.01,\n              step: \"0.01\",\n            },\n            {\n              key: \"cost\",\n              label: t(\"quickCost\"),\n              type: \"number\",\n              required: true,\n              min: 0.01,\n              step: \"0.01\",\n            },\n            {\n              key: \"variant\",\n              label: t(\"quickVariant\"),\n              required: true,\n              initial: \"Única\",\n            },\n          ]}\n"
+    },
+    {
+      "before": "              Factura, NCF y condición de pago para la contable. Puedes\n              completarlo después desde el historial.",
+      "after": "              {t(\"documentHint\")}"
+    },
+    {
+      "before": "{busy\n            ? \"Registrando…\"\n            : direction === \"entry\"\n              ? \"Confirmar entrada\"\n              : \"Confirmar salida\"}",
+      "after": "{busy\n            ? t(\"registering\")\n            : direction === \"entry\"\n              ? t(\"confirmEntry\")\n              : t(\"confirmExit\")}"
+    },
+    {
+      "before": "function ProductSearch({\n  variants,\n  onPick,\n  label = \"Buscar producto\",\n  only,\n  autoFocus = false,\n  initialText = \"\",\n}: {\n  variants: CatalogVariant[];\n  onPick: (v: CatalogVariant) => void;\n  label?: string;\n  only?: string;\n  autoFocus?: boolean;\n  initialText?: string;\n}) {\n  const [text, setText] = useState(initialText);\n  const pool = only ? variants.filter((v) => v.product.id === only) : variants;\n  const results = useMemo(() => {\n    if (!text.trim()) return only ? pool.slice(0, 12) : [];\n    return pool\n      .filter((v) => {\n        // Palabra por palabra, como la caja (dueña, 21-oct).\n        return matchesSearch(\n          [\n            v.product.name,\n            v.sku,\n            v.barcode,\n            attrLabel(v.attributes ?? {}),\n          ].join(\" \"),\n          text,\n        );\n      })\n      .slice(0, 8);\n  }, [text, pool, only]);\n  return (\n    <div className=\"goods-search\">\n      <label className=\"field\">\n        {label}\n        <span className=\"goods-search-input\">\n          <Search size={16} aria-hidden=\"true\" />\n          <input\n            value={text}\n            autoFocus={autoFocus}\n            placeholder=\"Nombre, SKU, sabor, talla o color\"\n            onChange={(e) => setText(e.target.value)}\n            onKeyDown={(e) => {\n              if (e.key === \"Enter\" && results[0]) {\n                e.preventDefault();\n                onPick(results[0]);\n                setText(\"\");\n              }\n            }}\n          />\n        </span>\n      </label>\n      {results.length > 0 && (\n        // G12: lista de resultados con botones (no es un listbox navegable\n        // con flechas: Enter toma el primero).\n        <ul className=\"goods-results\" aria-label={\"Resultados: \" + label}>\n          {results.map((v) => (\n            <li key={v.id}>\n              <button\n                type=\"button\"\n                onClick={() => {\n                  onPick(v);\n                  setText(\"\");\n                }}\n              >\n                <span>\n                  <strong>{v.product.name}</strong>\n                  <small>\n                    {attrLabel(v.attributes ?? {})} · {v.sku}\n                  </small>\n                </span>\n                <Badge tone={Number(v.stock) > 0 ? \"neutral\" : \"warning\"}>\n                  {Number(v.stock)} en stock\n                </Badge>\n                {Number(v.expiredStock) > 0 && (\n                  <Badge tone=\"warning\">\n                    vencido: {Number(v.expiredStock)}\n                  </Badge>\n                )}\n              </button>\n            </li>\n          ))}\n        </ul>\n      )}\n    </div>\n  );\n}\n",
+      "after": "function ProductSearch({\n  variants,\n  onPick,\n  label,\n  only,\n  autoFocus = false,\n  initialText = \"\",\n}: {\n  variants: CatalogVariant[];\n  onPick: (v: CatalogVariant) => void;\n  label?: string;\n  only?: string;\n  autoFocus?: boolean;\n  initialText?: string;\n}) {\n  const language = useLanguage();\n  const t = (key: keyof typeof merchandiseText) => merchandiseText[key][language];\n  const displayLabel = label ?? t(\"searchProduct\");\n  const [text, setText] = useState(initialText);\n  const pool = only ? variants.filter((v) => v.product.id === only) : variants;\n  const results = useMemo(() => {\n    if (!text.trim()) return only ? pool.slice(0, 12) : [];\n    return pool\n      .filter((v) => {\n        // Palabra por palabra, como la caja (dueña, 21-oct).\n        return matchesSearch(\n          [\n            v.product.name,\n            v.sku,\n            v.barcode,\n            attrLabel(v.attributes ?? {}),\n          ].join(\" \"),\n          text,\n        );\n      })\n      .slice(0, 8);\n  }, [text, pool, only]);\n  return (\n    <div className=\"goods-search\">\n      <label className=\"field\">\n        {displayLabel}\n        <span className=\"goods-search-input\">\n          <Search size={16} aria-hidden=\"true\" />\n          <input\n            value={text}\n            autoFocus={autoFocus}\n            placeholder={t(\"searchPlaceholder\")}\n            onChange={(e) => setText(e.target.value)}\n            onKeyDown={(e) => {\n              if (e.key === \"Enter\" && results[0]) {\n                e.preventDefault();\n                onPick(results[0]);\n                setText(\"\");\n              }\n            }}\n          />\n        </span>\n      </label>\n      {results.length > 0 && (\n        // G12: lista de resultados con botones (no es un listbox navegable\n        // con flechas: Enter toma el primero).\n        <ul className=\"goods-results\" aria-label={t(\"searchResults\") + \": \" + displayLabel}>\n          {results.map((v) => (\n            <li key={v.id}>\n              <button\n                type=\"button\"\n                onClick={() => {\n                  onPick(v);\n                  setText(\"\");\n                }}\n              >\n                <span>\n                  <strong>{v.product.name}</strong>\n                  <small>\n                    {attrLabel(v.attributes ?? {}, language === \"en\" ? \"Default\" : \"Única\")} · {v.sku}\n                  </small>\n                </span>\n                <Badge tone={Number(v.stock) > 0 ? \"neutral\" : \"warning\"}>\n                  {Number(v.stock)} {t(\"inStock\")}\n                </Badge>\n                {Number(v.expiredStock) > 0 && (\n                  <Badge tone=\"warning\">\n                    {t(\"expiredStock\")}: {Number(v.expiredStock)}\n                  </Badge>\n                )}\n              </button>\n            </li>\n          ))}\n        </ul>\n      )}\n    </div>\n  );\n}\n"
+    },
+    {
+      "before": "l.productId ? \"O busca otro producto\" : \"Buscar producto\"",
+      "after": "l.productId ? t(\"searchOtherProduct\") : t(\"searchProduct\")"
+    },
+    {
+      "before": "<Plus size={16} aria-hidden=\"true\" /> Crear producto rápido",
+      "after": "<Plus size={16} aria-hidden=\"true\" /> {t(\"quickCreate\")}"
+    },
+    {
+      "before": "`${items.length} producto(s) · ${units} unidad(es)`",
+      "after": "`${items.length} ${t(\"productCount\")} · ${units} ${t(\"unitCount\")}`"
+    },
+    {
+      "before": ": \"Sin productos\"}",
+      "after": ": t(\"noProducts\")}"
+    },
+    {
+      "before": "` · ${unresolved} por resolver`",
+      "after": "` · ${unresolved} ${t(\"unresolvedCount\")}`"
+    },
+    {
+      "before": "{missingCost && \" · faltan costos\"}",
+      "after": "{missingCost && \" · \" + t(\"missingCosts\")}"
+    },
+    {
+      "before": "{h.result.variantIds?.length ?? 0} producto(s)",
+      "after": "{h.result.variantIds?.length ?? 0} {t(\"productCount\")}"
+    },
+    {
+      "before": "<Printer size={16} aria-hidden=\"true\" /> Etiquetas",
+      "after": "<Printer size={16} aria-hidden=\"true\" /> {t(\"labels\")}"
+    },
+    {
+      "before": "? \"Requiere revisión\"\n                      : \"Pendiente\"",
+      "after": "? t(\"needsReview\")\n                      : t(\"pending\")"
+    },
+    {
+      "before": "{row.input.direction === \"entry\" ? \"Entrada\" : \"Salida\"}",
+      "after": "{row.input.direction === \"entry\" ? t(\"entry\") : t(\"exit\")}"
+    },
+    {
+      "before": "                      Reintentar\n",
+      "after": "                      {t(\"retry\")}\n"
+    },
+    {
+      "before": "                      Revisar\n",
+      "after": "                      {t(\"review\")}\n"
+    },
+    {
+      "before": "\"¿Cargar esta operación para corregirla? La cola conservará la original hasta confirmar la corrección.\",",
+      "after": "t(\"loadQueuedReview\"),"
+    },
+    {
+      "before": "{result.direction === \"exit\" ? \"Salida\" : \"Entrada\"} registrada",
+      "after": "{result.direction === \"exit\" ? t(\"exitRegistered\") : t(\"entryRegistered\")}"
+    },
+    {
+      "before": "{result.units} unidad(es) · {result.variantIds?.length ?? 0}{\" \"}\n              producto(s)",
+      "after": "{result.units} {t(\"unitCount\")} · {result.variantIds?.length ?? 0}{\" \"}\n              {t(\"productCount\")}"
+    },
+    {
+      "before": "{row.input.direction === \"entry\" ? t(\"entry\") : t(\"exit\")}",
+      "after": "{row.input.direction === \"entry\" ? t(\"queuedEntry\") : t(\"queuedExit\")}"
+    }
+  ]
+}

@@ -12,14 +12,14 @@ import { nextFieldOnEnter } from "./posKeyboard";
 
 export const today = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "America/Santo_Domingo" });
-export const dateLabel = (value: string) =>
-  new Date(value).toLocaleDateString("es-DO", {
+export const dateLabel = (value: string, locale = "es-DO") =>
+  new Date(value).toLocaleDateString(locale, {
     timeZone: "America/Santo_Domingo",
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-export const attrLabel = (attributes: Record<string, string>) =>
+export const attrLabel = (attributes: Record<string, string>, fallback = "Única") =>
   [
     ...new Set([
       "talla",
@@ -32,7 +32,7 @@ export const attrLabel = (attributes: Record<string, string>) =>
   ]
     .filter((key) => attributes[key])
     .map((key) => attributes[key])
-    .join(" · ") || "Única";
+    .join(" · ") || fallback;
 type ToastAction = { label: string; run: () => void };
 let toastHandler: (
   message: string,
@@ -125,6 +125,13 @@ function Toast({
     </div>
   );
 }
+// Cada aviso cierra sólo el suyo: el temporizador de uno anterior puede
+// vencer antes de que React lo desmonte y borraba el aviso nuevo (así se
+// perdía «Sesión cerrada por inactividad.», G9).
+export const closeOwn =
+  (id: number) =>
+  <T extends { id: number }>(current: T | null) =>
+    current?.id === id ? null : current;
 // Dos lugares: un error y un aviso informativo. Un aviso informativo ya no
 // tapa un error que la cajera todavía no leyó (05-M2).
 export function Toasts() {
@@ -151,14 +158,18 @@ export function Toasts() {
   return (
     <>
       {error && (
-        <Toast key={error.id} notice={error} onClose={() => setError(null)} />
+        <Toast
+          key={error.id}
+          notice={error}
+          onClose={() => setError(closeOwn(error.id))}
+        />
       )}
       {info && (
         <Toast
           key={info.id}
           notice={info}
           stacked={!!error}
-          onClose={() => setInfo(null)}
+          onClose={() => setInfo(closeOwn(info.id))}
         />
       )}
     </>
@@ -167,9 +178,11 @@ export function Toasts() {
 export function QueryState({
   query,
   children,
+  english = false,
 }: {
   query: any;
   children: ReactNode;
+  english?: boolean;
 }) {
   // 05-M3: sin conexión React Query deja en pausa las consultas al servidor:
   // antes quedaba «Cargando datos…» para siempre.
@@ -177,20 +190,20 @@ export function QueryState({
     return (
       <div className="error-panel" role="status">
         <WifiOff />
-        <p>Sin conexión: esta información necesita internet.</p>
+        <p>{english ? "Offline: this information needs an internet connection." : "Sin conexión: esta información necesita internet."}</p>
         <Button variant="secondary" onClick={() => query.refetch()}>
-          Reintentar
+          {english ? "Retry" : "Reintentar"}
         </Button>
       </div>
     );
-  if (query.isPending) return <Loading />;
+  if (query.isPending) return <Loading label={english ? "Loading data…" : undefined} />;
   if (query.error)
     return (
       <div className="error-panel" role="alert">
         <AlertCircle />
-        <p>{managementQueryError(query.error)}</p>
+        <p>{english ? (query.error?.status === 401 ? "Your session ended. Sign in again to continue." : query.error?.status === 403 ? "You do not have access to this information. Ask management for help." : "We could not load this information. Check your connection and retry.") : managementQueryError(query.error)}</p>
         <Button variant="secondary" onClick={() => query.refetch()}>
-          Reintentar
+          {english ? "Retry" : "Reintentar"}
         </Button>
       </div>
     );
@@ -224,20 +237,10 @@ export type Field = {
 };
 // 03-A1: aviso corto al pedir los datos de un cliente. El texto jurídico
 // completo lo redacta la tienda con su abogado; /privacidad.html es el resumen.
-export function CustomerPrivacyNotice() {
-  return (
-    <p className="privacy-notice full">
-      Usamos estos datos sólo para registrar las ventas, garantías y créditos
-      del cliente. Teléfono, correo y cédula/RNC son opcionales. El cliente
-      puede pedir verlos, corregirlos o borrarlos.{" "}
-      <a href="/privacidad.html" target="_blank" rel="noopener">
-        Privacidad
-      </a>
-    </p>
-  );
-}
+export { CustomerPrivacyNotice } from "./CustomerPrivacyNotice";
 export function FormModal({
   title,
+  english = false,
   fields,
   onSubmit,
   onClose,
@@ -246,6 +249,7 @@ export function FormModal({
   onFieldChange,
 }: {
   title: string;
+  english?: boolean;
   fields: Field[] | ((values: Record<string, any>) => Field[]);
   onSubmit: (data: Record<string, any>) => Promise<unknown>;
   onClose: () => void;
@@ -290,7 +294,7 @@ export function FormModal({
         if (f.type === "number") data[f.key] = Number(data[f.key]);
       await onSubmit(data);
       await client.invalidateQueries();
-      toast("Cambios guardados.");
+      toast(english ? "Changes saved." : "Cambios guardados.");
       onClose();
     } catch (e: any) {
       setError(businessErrorMessage(e));
@@ -299,7 +303,7 @@ export function FormModal({
     }
   }
   return (
-    <Modal open onClose={onClose} title={title}>
+    <Modal open onClose={onClose} title={title} closeLabel={english ? "Close" : "Cerrar"}>
       <form onSubmit={submit} className="form-grid">
         {resolvedFields.map((f) => (
           <label
@@ -318,7 +322,7 @@ export function FormModal({
                   changeField(f.key, e.target.value, f.resetFieldsOnChange)
                 }
               >
-                <option value="">Seleccionar…</option>
+                <option value="">{english ? "Select…" : "Seleccionar…"}</option>
                 {f.options?.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -348,7 +352,7 @@ export function FormModal({
                 inputMode={f.inputMode}
                 pattern={f.pattern}
                 title={f.title}
-                step={f.step || "0.01"}
+                step={f.step || (f.type === "number" ? "0.01" : undefined)}
                 value={values[f.key]}
                 onChange={(e) => changeField(f.key, e.target.value)}
                 onKeyDown={
@@ -364,14 +368,24 @@ export function FormModal({
         {notice}
         {error && (
           <p className="form-error full" role="alert">
-            {error}
+            {english && error === businessErrorMessage(null)
+              ? "We could not complete the operation. Check the information and your connection, then try again. If it continues, ask management for help."
+              : error}
           </p>
         )}
         <div className="modal-footer full">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancelar
+            {english ? "Cancel" : "Cancelar"}
           </Button>
-          <Button disabled={busy}>{busy ? "Guardando…" : "Guardar"}</Button>
+          <Button disabled={busy}>
+            {busy
+              ? english
+                ? "Saving…"
+                : "Guardando…"
+              : english
+                ? "Save"
+                : "Guardar"}
+          </Button>
         </div>
       </form>
     </Modal>
@@ -379,12 +393,14 @@ export function FormModal({
 }
 export function ConfirmModal({
   title,
+  english = false,
   description,
   confirmLabel = "Confirmar",
   onConfirm,
   onClose,
 }: {
   title: string;
+  english?: boolean;
   description: string;
   confirmLabel?: string;
   onConfirm: (reason: string) => Promise<void>;
@@ -410,7 +426,7 @@ export function ConfirmModal({
         }}
       >
         <label className="field">
-          <span>Motivo obligatorio</span>
+          <span>{english ? "Reason required" : "Motivo obligatorio"}</span>
           <textarea
             minLength={3}
             required
@@ -421,10 +437,10 @@ export function ConfirmModal({
         {error && <p className="form-error">{error}</p>}
         <div className="modal-footer">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancelar
+            {english ? "Cancel" : "Cancelar"}
           </Button>
           <Button variant="danger" disabled={busy}>
-            {busy ? "Procesando…" : confirmLabel}
+            {busy ? (english ? "Processing…" : "Procesando…") : confirmLabel}
           </Button>
         </div>
       </form>

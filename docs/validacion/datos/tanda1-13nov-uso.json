@@ -1,0 +1,125 @@
+{
+  "base": "511d223f0c0c512f54b900265b2c6c1e59d4c560",
+  "COM08": {
+    "credits": 15,
+    "totalPending": 4500,
+    "target": "Valentina Ramos / FS-0000861",
+    "role": "seller",
+    "searchInputs": 0,
+    "scrollFromTop": [
+      {
+        "width": 1366,
+        "from": "Caja, scrollY=0",
+        "scrollDelta": 600,
+        "scrollActions": 5,
+        "endY": 2400,
+        "target": "FS-0000861 Valentina Ramos",
+        "rows": 15
+      },
+      {
+        "width": 390,
+        "from": "Caja, scrollY=0",
+        "scrollDelta": 600,
+        "scrollActions": 11,
+        "endY": 6600,
+        "target": "FS-0000861 Valentina Ramos",
+        "rows": 15
+      }
+    ],
+    "navigationClicks": {
+      "390": 2,
+      "1366": 1
+    },
+    "totalActions": {
+      "390": 13,
+      "1366": 6
+    }
+  },
+  "COM03": {
+    "product": "Bandas Resistance / Lila",
+    "saved": false,
+    "originalPrice": 300,
+    "originalCost": 180,
+    "tests": [
+      {
+        "price": 1000,
+        "cost": 900,
+        "expectedMarginPercent": 10,
+        "marginVisible": false
+      },
+      {
+        "price": 1000,
+        "cost": 800,
+        "expectedMarginPercent": 20,
+        "marginVisible": false
+      }
+    ]
+  },
+  "DIS02": [
+    {
+      "width": 1366,
+      "close": "Escape",
+      "before": {
+        "amount": "77.77",
+        "payments": "Efectivo\nRD$ 123.45"
+      },
+      "after": {
+        "amount": "300",
+        "payments": ""
+      },
+      "cartKept": true
+    },
+    {
+      "width": 1366,
+      "close": "fuera",
+      "before": {
+        "amount": "77.77",
+        "payments": "Efectivo\nRD$ 123.45"
+      },
+      "after": {
+        "amount": "300",
+        "payments": ""
+      },
+      "cartKept": true
+    },
+    {
+      "width": 390,
+      "close": "Escape",
+      "before": {
+        "amount": "77.77",
+        "payments": "Efectivo\nRD$ 123.45"
+      },
+      "after": {
+        "amount": "300",
+        "payments": ""
+      },
+      "cartKept": true
+    },
+    {
+      "width": 390,
+      "close": "fuera",
+      "before": {
+        "amount": "77.77",
+        "payments": "Efectivo\nRD$ 123.45"
+      },
+      "after": {
+        "amount": "300",
+        "payments": ""
+      },
+      "cartKept": true
+    }
+  ],
+  "MOD08": {
+    "windows": {
+      "AppsUseLightTheme": 0,
+      "SystemUsesLightTheme": 0
+    },
+    "prefersColorScheme": "dark",
+    "withoutSavedTheme": "light",
+    "withSavedDarkTheme": "light-frame-then-dark",
+    "desktopFilmstripFrames": 26,
+    "mobileFilmstripFrames": 21,
+    "throttle": "none",
+    "durationClaim": null
+  }
+}

@@ -1,4 +1,5 @@
 import { currentTenantId, tenantUnique } from "./tenant-context";
+import { Prisma } from "@prisma/client";
 import {
   Body,
   Controller,
@@ -396,7 +397,9 @@ export const INVENTORY_LOSS_SQL = `m.qty < 0 AND m.type IN ('adjustment','waste'
 // ajustes de la dueña que dicen «conteo», «auditoría», «reversa»… en
 // cualquier parte del motivo (dueña, 17-oct: la ganancia neta salía negativa
 // por ordenar el inventario). Un conteo físico posterior sí es merma.
-export const COUNT_CORRECTION_SQL = `((m.type = 'count' AND m."createdAt" < '2026-10-16') OR (m.type = 'adjustment' AND COALESCE(m.reason, '') ~* '(conteo|teddy|auditor|reversa|casa a 0|no existe|no hay)'))`;
+// Conteos físicos anteriores a esta fecha son de la puesta en marcha (corrección, no merma).
+const COUNT_CORRECTION_BEFORE = "2026-10-16";
+export const COUNT_CORRECTION_SQL = `((m.type = 'count' AND m."createdAt" < '${COUNT_CORRECTION_BEFORE}') OR (m.type = 'adjustment' AND COALESCE(m.reason, '') ~* '(conteo|teddy|auditor|reversa|casa a 0|no existe|no hay)'))`;
 export const SUPPLIER_RETURN_SQL = `m.qty < 0 AND (m.type = 'supplier_return' OR (m.type = 'merchandise_exit' AND m.reason = 'devolución a proveedor'))`;
 // N-1: toda devolución a proveedor deja una alerta (no se resuelve sola) con el
 // proveedor, la referencia y el costo, hasta que una persona confirme el crédito.
@@ -431,11 +434,8 @@ export async function inventoryLossAlert(tx: any, actor: Actor) {
   if (can(actor.permissions, "sale:manage")) return;
   const day = businessDate();
   const since = new Date(day + "T00:00:00-04:00");
-  const rows = await tx.$queryRawUnsafe(
-    `SELECT COALESCE(SUM(-m.qty * m."unitCost"), 0)::text AS loss FROM "InventoryMovement" m WHERE m."branchId" = $1 AND m."userId" = $2 AND m."createdAt" >= $3 AND ${INVENTORY_LOSS_SQL}`,
-    actor.branchId,
-    actor.id,
-    since,
+  const rows = await tx.$queryRaw(
+    Prisma.sql`SELECT COALESCE(SUM(-m.qty * m."unitCost"), 0)::text AS loss FROM "InventoryMovement" m WHERE m."branchId" = ${actor.branchId} AND m."userId" = ${actor.id} AND m."createdAt" >= ${since} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
   );
   const loss = money(rows[0]?.loss ?? 0);
   const settings = await tx.settings.findFirst({
@@ -598,6 +598,34 @@ export async function takeStock(
   return pieces;
 }
 
+// A4: la clave queda en la bitácora del ajuste (after.operationId). Con el
+// candado por clave, un reenvío espera al primero; si éste ya se guardó, se
+// devuelve la variante sin duplicar. La misma clave con otros datos es error.
+async function repeatedAdjustment(
+  tx: any,
+  actor: Actor,
+  data: { operationId?: string; variantId: string; type: string; qty: number },
+) {
+  if (!data.operationId) return null;
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"inventory-op:" + data.operationId}))::text AS locked`;
+  const previous = await tx.auditLog.findFirst({
+    where: {
+      entity: "variant",
+      entityId: data.variantId,
+      branchId: actor.branchId,
+      after: { path: ["operationId"], equals: data.operationId },
+    },
+    select: { action: true, after: true },
+  });
+  if (!previous) return null;
+  if (
+    previous.action !== data.type ||
+    Number((previous.after as any)?.qty) !== Number(data.qty)
+  )
+    bad("La clave de la operación ya corresponde a otro ajuste.");
+  return safe(await lockVariant(tx, data.variantId, actor), actor);
+}
+
 @Controller()
 export class InventoryController {
   constructor(@Inject(Database) private db: Database) {}
@@ -638,6 +666,41 @@ export class InventoryController {
       actor,
     );
   }
+  // Productos activos sin costo (dueña, 8-nov): no se pueden vender hasta
+  // completar el costo. Solo quien ve costos; nunca la vendedora.
+  @Get("inventory/without-cost")
+  @Permit("profit:read")
+  async withoutCost(@CurrentUser() actor: Actor) {
+    if (!seesCost(actor)) denied();
+    const rows = await this.db.variant.findMany({
+      where: {
+        branchId: actor.branchId,
+        active: true,
+        costAvg: { lte: 0 },
+        product: { active: true, unit: { not: "servicio" } },
+      },
+      select: {
+        id: true,
+        sku: true,
+        price: true,
+        stock: true,
+        product: { select: { id: true, name: true } },
+      },
+      orderBy: [{ stock: "desc" }, { sku: "asc" }],
+    });
+    return {
+      total: rows.length,
+      withStock: rows.filter((r) => d(r.stock).gt(0)).length,
+      items: rows.map((r) => ({
+        variantId: r.id,
+        productId: r.product.id,
+        name: r.product.name,
+        sku: r.sku,
+        price: Number(r.price),
+        stock: Number(r.stock),
+      })),
+    };
+  }
   @Get("inventory/movements")
   @Permit("catalog:read")
   async movements(
@@ -676,6 +739,10 @@ export class InventoryController {
         // N-1: la devolución a proveedor necesita proveedor y referencia.
         supplierId: uuid.optional(),
         reference: z.string().trim().min(1).max(60).optional(),
+        // A4 (auditoría 19-nov): clave opcional del formulario. Si llega
+        // repetida (reenvío, doble clic) se devuelve la variante sin volver a
+        // mover existencias. Sin clave se comporta como siempre.
+        operationId: uuid.optional(),
       }),
       body,
     );
@@ -701,6 +768,8 @@ export class InventoryController {
     return retrySerializable(() =>
       this.db.$transaction(
         async (tx) => {
+          const repeated = await repeatedAdjustment(tx, actor, data);
+          if (repeated) return repeated;
           const warehouse = data.warehouseId
             ? await tx.warehouse.findFirst({
                 where: {

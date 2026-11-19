@@ -45,7 +45,8 @@ export const REQUEST_RATE_LIMITS = {
   inventoryImportSession: positiveLimit(
     process.env.INVENTORY_IMPORT_SESSION_RATE_LIMIT,
     20,
-  ),
+  ), // IA de ventas: por USUARIO (no por sesión), además del tope diario del plan.
+  assistantUser: positiveLimit(process.env.ASSISTANT_USER_RATE_LIMIT, 6),
 };
 
 /** Sólo recibe identidades ya verificadas contra la base de datos. */
@@ -218,6 +219,15 @@ export class AuthenticatedRateLimitGuard implements CanActivate {
         "inventory-import-session",
         identity,
         REQUEST_RATE_LIMITS.inventoryImportSession,
+      );
+    else if (
+      method === "POST" &&
+      (path === "/api/assistant/ask" || path === "/assistant/ask")
+    )
+      this.limits.assert(
+        "assistant-user",
+        [String(actor.id)],
+        REQUEST_RATE_LIMITS.assistantUser,
       );
     // Un solo cubo para todos los */import (catálogo y facturas): alternar
     // entre importadores no multiplica el cupo.

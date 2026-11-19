@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$InstallDir,
   [Parameter(Mandatory = $true)][string]$CredentialFile,
   [string]$ResultPath

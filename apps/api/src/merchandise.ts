@@ -40,6 +40,8 @@ import {
   uuid,
   assertWholeUnits,
 } from "./common";
+import { reserveAiInvoiceRead } from "./ai-daily-limit";
+import { recordAiUsage } from "./ai-usage";
 import { assertCodesFree, explainCodeConflict } from "./catalog";
 import {
   checkDamage,
@@ -274,8 +276,11 @@ export class MerchandiseController {
         )
       )
         bad("Usa foto PNG/JPEG/WebP o PDF.");
+      await reserveAiInvoiceRead(this.db, actor);
       extracted = await extractAnthropic(file, process.env.ANTHROPIC_API_KEY, {
         model: process.env.ANTHROPIC_MODEL || DEFAULT_INVOICE_MODEL,
+        onUsage: (model, usage, ok) =>
+          void recordAiUsage(this.db, actor, "factura", model, usage, ok),
       });
       // El RNC sugerido por IA no cambia el maestro de proveedores. Si el
       // usuario eligió uno cuyo RNC registrado contradice la foto, no se

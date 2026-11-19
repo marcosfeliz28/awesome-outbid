@@ -1,0 +1,113 @@
+export const operationalAuxCopy = {
+  VENTAS: "SALES",
+  "Solicitudes de anulación": "Void requests",
+  Estado: "Status",
+  Pendientes: "Pending",
+  Todas: "All",
+  Aprobadas: "Approved",
+  Rechazadas: "Rejected",
+  Canceladas: "Cancelled",
+  Factura: "Invoice",
+  "· Solicitó": "· Requested by",
+  "Cliente:": "Customer:",
+  "Total:": "Total:",
+  "Motivo:": "Reason:",
+  Artículos: "Items",
+  Pagos: "Payments",
+  "No se puede aprobar:": "Cannot approve:",
+  "Nota:": "Note:",
+  Revisó: "Reviewed by",
+  "Aprobar y anular": "Approve and void",
+  Rechazar: "Reject",
+  "Cancelar solicitud": "Cancel request",
+  "No hay solicitudes en este estado.":
+    "There are no requests with this status.",
+  "Se anulará la venta y se revertirán sus movimientos. Si la caja original cerró y hubo efectivo, abre tu caja para el reembolso.":
+    "The sale will be voided and its movements reversed. If the original register was closed and cash was involved, open your register for the refund.",
+  Cancelar: "Cancel",
+  "Sí, aprobar y anular": "Yes, approve and void",
+  "Esta pantalla es solo para administración.":
+    "This screen is for administrators only.",
+  ADMINISTRACIÓN: "ADMINISTRATION",
+  "Conciliar transferencias": "Reconcile transfers",
+  "Compara cada factura con el banco antes de verificarla. El total ayuda a revisar; no verifica pagos por sí solo.":
+    "Compare each invoice with the bank before verifying it. The total helps with the review; it does not verify payments on its own.",
+  "Fecha del pago (opcional)": "Payment date (optional)",
+  "Todas las fechas": "All dates",
+  "Exportar lista a CSV": "Export list to CSV",
+  "Resultado de cada transferencia": "Result for each transfer",
+  "No hay transferencias pendientes para esta fecha.":
+    "There are no pending transfers for this date.",
+  "pendientes)": "pending)",
+  "Seleccionar factura": "Select invoice",
+  "Envío:": "Delivery fee:",
+  "· Esperado:": "· Expected:",
+  "Banco:": "Bank:",
+  "· Referencia:": "· Reference:",
+  "Factura hecha por:": "Invoice created by:",
+  "Usar RD$": "Use RD$",
+  "como envío": "as the delivery fee",
+  "Editar envío": "Edit delivery fee",
+  "Motivo del rechazo": "Rejection reason",
+  "Confirmar rechazo": "Confirm rejection",
+  "Seleccionadas:": "Selected:",
+  "Total esperado seleccionado:": "Selected expected total:",
+  "Total del banco (RD$)": "Bank total (RD$)",
+  "Diferencia:": "Difference:",
+  "Envíos del mensajero": "Courier deliveries",
+  "Consulta cuánto se debe y registra los envíos pagados. Este registro no mueve la caja.":
+    "Check the amount owed and record paid deliveries. This record does not move money from the cash register.",
+  Desde: "From",
+  Hasta: "To",
+  "Exportar CSV": "Export CSV",
+  "Total a pagar:": "Total payable:",
+  "Mensajero:": "Courier:",
+  "No hay envíos pendientes en este período.":
+    "There are no pending deliveries in this period.",
+  "Seleccionados:": "Selected:",
+  "Nota del pago (opcional)": "Payment note (optional)",
+  "Historial de pagados": "Payment history",
+  "Registró:": "Recorded by:",
+  "Facturas:": "Invoices:",
+  "No hay pagos registrados en este período.":
+    "There are no recorded payments in this period.",
+  "Revisa cada solicitud antes de decidir.":
+    "Review each request before deciding.",
+  "Consulta el estado de tus solicitudes.":
+    "Check the status of your requests.",
+  "Sin nombre": "Unnamed",
+  Pendiente: "Pending",
+  Aprobada: "Approved",
+  Rechazada: "Rejected",
+  Cancelada: "Cancelled",
+  "Aprobar solicitud · ": "Approve request · ",
+  "Rechazar solicitud · ": "Reject request · ",
+  "Nota obligatoria para la solicitante": "Required note for the requester",
+  "Sin cliente": "No customer",
+  "Sin banco": "No bank",
+  "Sin referencia": "No reference",
+  "Sin identificar": "Unidentified",
+  "Usa números y punto decimal, sin separador de miles.":
+    "Use digits and a decimal point, with no thousands separator.",
+  "Escribe el total del banco": "Enter the bank total",
+  "Cuadrado · RD$ 0.00": "Balanced · RD$ 0.00",
+  "Procesando…": "Processing…",
+  "Verificar seleccionadas": "Verify selected",
+  "Registrando…": "Recording…",
+  "Marcar como pagado": "Mark as paid",
+  "Seleccionar envío de ": "Select delivery for ",
+  "Banco ": "Bank ",
+  Efectivo: "Cash",
+  Tarjeta: "Card",
+  Transferencia: "Transfer",
+  Crédito: "Credit",
+  Contraentrega: "Cash on delivery",
+} as const;
+export type OperationalAuxKey = keyof typeof operationalAuxCopy;
+/** Unknown server values are preserved; never translate business error messages. */
+export function operationalAuxText(english: boolean, text: string): string {
+  return english &&
+    Object.prototype.hasOwnProperty.call(operationalAuxCopy, text)
+    ? operationalAuxCopy[text as OperationalAuxKey]
+    : text;
+}

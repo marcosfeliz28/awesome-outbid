@@ -15,16 +15,20 @@ import {
   RECEIVABLE_PAYMENT,
 } from "./common";
 import { cashExpectedMany } from "./cash";
+import { gvApartado, gvTotals, saleNotGvSql } from "./gv-scope";
 import { incomeOptions, incomeSummary } from "./income-report";
 import { formalPeriod, reportMargin, isTestRegister } from "./formal-period";
 
 type FormalInput = { period?: string; date?: string; format?: string };
+// Desde este período la rotación de inventario va en el reporte formal (DGII, 27-oct-2026).
+const DGII_ROTATION_FROM = "2026-10-27";
 const testStarts = ["qa-", "qa_", "test-", "test_", "prueba-", "prueba_"];
 const testSessionWhere: Prisma.CashSessionWhereInput = {
   OR: testStarts.map((prefix) => ({
     registerId: { startsWith: prefix, mode: "insensitive" },
   })),
 };
+// Sin cajas de prueba. Créditos, anulaciones y descuentos incluyen GV.
 const realSaleWhere: Prisma.SaleWhereInput = {
   OR: [
     { cashSessionId: null },
@@ -34,6 +38,7 @@ const realSaleWhere: Prisma.SaleWhereInput = {
 const utc = (date: Date) =>
   Prisma.sql`(${date}::timestamptz AT TIME ZONE 'UTC')`;
 const real = Prisma.sql`COALESCE(cs."registerId",'') !~* '^(qa|test|prueba)[-_]'`;
+const realMacgen = () => Prisma.sql`${real} AND ${saleNotGvSql()}`;
 const num = (v: unknown) => Number(v ?? 0);
 const capped = 500;
 const money2 = (value: unknown) => formatMoney(num(value));
@@ -69,6 +74,8 @@ export class FormalReportController {
       sellerRows,
       categoryRows,
       productRows,
+      dailyWithGv,
+      gv,
     ] = await Promise.all([
       incomeSummary(this.db, actor, opt),
       this.db.$queryRaw<
@@ -83,7 +90,7 @@ export class FormalReportController {
         SELECT COALESCE(SUM(s.total),0) sold,COALESCE(SUM(s."costTotal"),0) cost,
           COALESCE(SUM(s."taxTotal"),0) tax,COALESCE(SUM(s."discountTotal"),0) discount,COUNT(*)::bigint count
         FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
           AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}`),
       this.db.$queryRaw<
         { total: unknown; cost: unknown; tax: unknown; count: bigint }[]
@@ -92,48 +99,55 @@ export class FormalReportController {
           COALESCE(SUM(r."taxTotal"),0) tax,COUNT(*)::bigint count
         FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
           LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
-        WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
-          AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)}`),
+        WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
+          AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}`),
       this.db.$queryRaw<
         { userId: string; sold: unknown; returned: unknown; count: bigint }[]
       >(Prisma.sql`
         SELECT "userId",SUM(sold) sold,SUM(returned) returned,SUM(n)::bigint count FROM (
           SELECT s."sellerId"::text AS "userId",s.total sold,0 returned,1 n
           FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-          WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+          WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
             AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
           UNION ALL
           -- Neto de devoluciones (D-05): lo devuelto en el período, a quien vendió.
           SELECT s."sellerId"::text,0,r.total,0
           FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
             LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
-          WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
+          WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
             AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)}
         ) x GROUP BY "userId" ORDER BY SUM(sold)-SUM(returned) DESC LIMIT 500`),
       this.db.$queryRaw<
         { categoryId: string; sold: unknown; soldProducts: bigint }[]
       >(Prisma.sql`
-        SELECT c.id::text AS "categoryId",COALESCE(SUM(i."lineTotal"),0) sold,
-          COUNT(DISTINCT p.id)::bigint AS "soldProducts"
+        SELECT c.id::text AS "categoryId",COALESCE(SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)),0) sold,
+          COUNT(DISTINCT p.id) FILTER (WHERE p.active)::bigint AS "soldProducts"
         FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId"
           JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId"
           JOIN "Category" c ON c.id=p."categoryId"
           LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
-        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${real}
-          AND p.active=true AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
+        WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${realMacgen()}
+          AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)}
         GROUP BY c.id ORDER BY sold DESC`),
       this.db.$queryRaw<
         { categoryId: string; name: string; products: bigint }[]
       >(Prisma.sql`
         SELECT c.id::text AS "categoryId",c.name,COUNT(p.id)::bigint products
         FROM "Category" c LEFT JOIN "Product" p ON p."categoryId"=c.id AND p.active=true AND p."branchId"=${actor.branchId}
-        WHERE c."branchId"=${actor.branchId} GROUP BY c.id,c.name ORDER BY c.name`),
+        WHERE c."branchId"=${actor.branchId} ${gvApartado() ? Prisma.sql`AND c.name NOT ILIKE 'GV %'` : Prisma.empty} GROUP BY c.id,c.name ORDER BY c.name`),
+      // El arqueo de las cajas vio también lo cobrado de GV.
+      incomeSummary(this.db, actor, { ...opt, gv: "include" }),
+      gvTotals(this.db, actor, range, realSaleWhere),
     ]);
     const sales = salesAmounts[0],
       returned = returnsAmounts[0];
     const sold = num(sales?.sold) - num(returned?.total);
     const cost = num(sales?.cost) - num(returned?.cost);
     const moneyIn = daily.reduce((sum, row) => sum + row.moneyIn, 0);
+    const registerMoneyIn = dailyWithGv.reduce(
+      (sum, row) => sum + row.moneyIn,
+      0,
+    );
     const cashIn = daily.reduce(
       (sum, row) => sum + row.cash + row.collectionCash,
       0,
@@ -173,6 +187,8 @@ export class FormalReportController {
           ...realSaleWhere,
           branchId: actor.branchId,
           status: "completed",
+          // Créditos vendidos hasta el cierre del período (no los de después).
+          createdAt: { lte: range.lte },
           creditBalance: { gt: 0 },
           payments: {
             some: RECEIVABLE_PAYMENT,
@@ -193,6 +209,7 @@ export class FormalReportController {
           ...realSaleWhere,
           branchId: actor.branchId,
           status: "completed",
+          createdAt: { lte: range.lte },
           creditBalance: { gt: 0 },
           payments: {
             some: RECEIVABLE_PAYMENT,
@@ -232,7 +249,8 @@ export class FormalReportController {
           ...realSaleWhere,
           branchId: actor.branchId,
           status: "voided",
-          updatedAt: range,
+          // Por fecha de la factura, como el reporte «Anulaciones» (S-18).
+          createdAt: range,
         },
         select: {
           number: true,
@@ -284,13 +302,22 @@ export class FormalReportController {
       where: { branchId: actor.branchId, kind: "store", active: true },
       select: { name: true },
     });
+    // La contable veía el código interno de la caja; se muestra su nombre.
+    const terminal = new Map(
+      (
+        await this.db.terminal.findMany({
+          where: { branchId: actor.branchId },
+          select: { id: true, name: true },
+        })
+      ).map((t) => [t.id, t.name]),
+    );
     const sessions = cashSessions.filter((s) => !isTestRegister(s.registerId));
     const expected = await cashExpectedMany(this.db, sessions.slice(0, capped));
     const cash = sessions.slice(0, capped).map((s) => {
       const e = expected.get(s.id);
       return {
         id: s.id,
-        register: s.registerId,
+        register: terminal.get(s.registerId) ?? s.registerId,
         user: person.get(s.userId) ?? s.userId,
         openedAt: s.openedAt,
         closedAt: s.closedAt,
@@ -327,12 +354,12 @@ export class FormalReportController {
       );
     }, 0);
     // El esperado de las cajas cuenta las transferencias por verificar.
-    const pendingIn = daily.reduce((sum, row) => sum + row.pendingTransfer, 0);
+    const pendingIn = dailyWithGv.reduce((sum, row) => sum + row.pendingTransfer, 0);
     const cashReconciliation = {
-      moneyIn: Number(moneyIn.toFixed(2)),
+      moneyIn: Number(registerMoneyIn.toFixed(2)),
       pendingTransfer: Number(pendingIn.toFixed(2)),
       sessionMoney: Number(sessionMoney.toFixed(2)),
-      difference: Number((moneyIn + pendingIn - sessionMoney).toFixed(2)),
+      difference: Number((registerMoneyIn + pendingIn - sessionMoney).toFixed(2)),
       comparable:
         sessions.length <= capped &&
         sessions.every(
@@ -380,7 +407,7 @@ export class FormalReportController {
     });
     const rotationStart = new Date(opt.end.getTime() - 60 * 86400000);
     const rotationRows =
-      period.to >= "2026-10-27"
+      period.to >= DGII_ROTATION_FROM
         ? await this.db.$queryRaw<
             {
               sku: string;
@@ -424,7 +451,7 @@ export class FormalReportController {
       ),
     ))
       findings.push(
-        `${s.register}: diferencias de cierre E ${money2(s.differenceCash)} / T ${money2(s.differenceCard)} / Tr ${money2(s.differenceTransfer)}.`,
+        `${s.register} (${s.user}): diferencias de cierre E ${money2(s.differenceCash)} / T ${money2(s.differenceCard)} / Tr ${money2(s.differenceTransfer)}.`,
       );
     if (voids.length)
       findings.push(
@@ -472,6 +499,8 @@ export class FormalReportController {
         // Transferencias sin verificar: no son dinero ingresado todavía.
         pendingTransfer: daily.reduce((sum, r) => sum + r.pendingTransfer, 0),
       },
+      // GV es otra empresa: aparte, no suma en los totales de arriba.
+      gv,
       cash,
       cashReconciliation,
       findings,
@@ -573,7 +602,14 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
   line(
     `Banco esperado por pagos: ${fmt(report.totals.bankIn)} · Efectivo ingresado para caja: ${fmt(report.totals.cashIn)} · Devoluciones: ${report.totals.returns} · Descuentos: ${fmt(report.totals.discounts)}`,
   );
+  if (report.gv?.count)
+    line(
+      `GV (aparte, no suma): vendido neto ${fmt(report.gv.total)} en ${report.gv.count} ventas.`,
+    );
   section("Por día y forma de pago");
+  line(
+    "Dinero de cada día: la devolución se resta el día en que se hizo. El vendido neto del resumen la resta en el período de la venta original.",
+  );
   for (const row of report.daily) {
     line(
       `${row.day} · Vendido ${fmt(row.sold)} · Entró ${fmt(row.moneyIn)} · Crédito ${fmt(row.creditGenerated)}`,
@@ -585,7 +621,7 @@ export function renderFormalPdf(res: NodeJS.WritableStream, report: any) {
   }
   section("Cajas y arqueo");
   line(
-    `Ingresó ${fmt(report.cashReconciliation.moneyIn)} · Según cajas ${fmt(report.cashReconciliation.sessionMoney)} · Diferencia ${fmt(report.cashReconciliation.difference)}`,
+    `Ingresó (incluye GV) ${fmt(report.cashReconciliation.moneyIn)} · Según cajas ${fmt(report.cashReconciliation.sessionMoney)} · Diferencia ${fmt(report.cashReconciliation.difference)}`,
     true,
   );
   if (!report.cashReconciliation.comparable)

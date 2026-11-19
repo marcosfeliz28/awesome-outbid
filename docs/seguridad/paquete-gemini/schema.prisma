@@ -1,0 +1,1293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  permissions String[]
+  users       User[]
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id                 String    @id @default(uuid()) @db.Uuid
+  name               String
+  // Nombre corto que la persona escribe para entrar (por ejemplo, "E Soto").
+  username           String?
+  // Versión normalizada, sin acentos y en minúsculas, para buscar sin errores.
+  usernameKey        String?   @unique
+  email              String    @unique
+  passwordHash       String
+  mustChangePassword Boolean   @default(false)
+  // N-08: una contraseña temporal vence (7 días). Null = sin vencimiento
+  // (cambio de contraseña forzado por política, no por una clave temporal).
+  passwordExpiresAt  DateTime?
+  pinHash            String
+  roleId             String    @db.Uuid
+  role               Role      @relation(fields: [roleId], references: [id])
+  active             Boolean   @default(true)
+  authVersion        Int       @default(0)
+  failedAttempts     Int       @default(0)
+  lockedUntil        DateTime?
+  branchId           String    @default("main")
+  // Número de cajero visible en el cuadre y los reportes (p. ej. 1031).
+  cashierNumber      Int?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  voidRequestsMade   SaleVoidRequest[] @relation("VoidRequestRequester")
+  voidRequestsReviewed SaleVoidRequest[] @relation("VoidRequestReviewer")
+  courierPaymentsMade Sale[] @relation("CourierPaidBy")
+  courierPayouts CourierPayout[] @relation("CourierPayoutActor")
+  cashierSurveys CashierSurvey[]
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  authVersion Int      @default(0)
+  sessionId   String?  @db.Uuid
+  hash        String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+model Category {
+  id             String    @id @default(uuid()) @db.Uuid
+  name           String    @unique
+  requiresLot    Boolean   @default(false)
+  requiresExpiry Boolean   @default(false)
+  color          String    @default("#7C3AED")
+  attributes     Json      @default("[]")
+  products       Product[]
+  branchId       String    @default("main")
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Brand {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+}
+
+model Supplier {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String
+  legalId          String?
+  phone            String?
+  email            String?
+  paymentTermsDays Int      @default(30)
+  leadTimeDays     Int      @default(7)
+  active           Boolean  @default(true)
+  branchId         String   @default("main")
+  createdBy        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Product {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String
+  sku         String    @unique
+  categoryId  String    @db.Uuid
+  category    Category  @relation(fields: [categoryId], references: [id])
+  brand       String    @default("FitStore")
+  supplierId  String?   @db.Uuid
+  description String    @default("")
+  imageUrl    String?
+  taxRate     Decimal   @default(18) @db.Decimal(5, 2)
+  minStock    Decimal   @default(5) @db.Decimal(14, 3)
+  maxStock    Decimal   @default(80) @db.Decimal(14, 3)
+  unit        String    @default("unidad")
+  location    String    @default("")
+  active      Boolean   @default(true)
+  isKit       Boolean   @default(false)
+  variants    Variant[]
+  branchId    String    @default("main")
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([name])
+}
+
+model Variant {
+  id             String              @id @default(uuid()) @db.Uuid
+  productId      String              @db.Uuid
+  product        Product             @relation(fields: [productId], references: [id])
+  sku            String              @unique
+  barcode        String              @unique
+  attributes     Json                @default("{}")
+  costAvg        Decimal             @db.Decimal(14, 2)
+  price          Decimal             @db.Decimal(14, 2)
+  wholesalePrice Decimal?            @db.Decimal(14, 2)
+  stock          Decimal             @default(0) @db.Decimal(14, 3)
+  active         Boolean             @default(true)
+  lots           Lot[]
+  warehouseStocks VariantStock[]
+  transferLines StockTransferLine[]
+  movements      InventoryMovement[]
+  saleItems      SaleItem[]
+  // Claves foráneas de 202610210002_datos_restricciones.
+  purchaseItems  PurchaseItem[]
+  kitComponents  KitComponent[]      @relation("KitVariant")
+  usedInKits     KitComponent[]      @relation("KitComponentVariant")
+  branchId       String              @default("main")
+  createdBy      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  // K2 (migración 202610170001_variant_code_unique): además de los @unique
+  // exactos, la base impone índices únicos de expresión que Prisma no
+  // representa, globales como los anteriores:
+  //   "Variant_sku_ci_key"     ON (lower(btrim(sku)))     WHERE btrim(sku) <> ''
+  //   "Variant_barcode_ci_key" ON (lower(btrim(barcode))) WHERE btrim(barcode) <> ''
+  // Si al migrar ya había repetidos, el índice se omite (NOTICE + AuditLog
+  // k2_code_index_skipped) hasta corregirlos y volver a ejecutar la migración.
+
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([productId])
+}
+
+model KitComponent {
+  id                 String  @id @default(uuid()) @db.Uuid
+  kitVariantId       String  @db.Uuid
+  kitVariant         Variant @relation("KitVariant", fields: [kitVariantId], references: [id])
+  componentVariantId String  @db.Uuid
+  componentVariant   Variant @relation("KitComponentVariant", fields: [componentVariantId], references: [id])
+  // CHECK kit_component_qty_positive (qty > 0), 202610210002.
+  qty                Decimal @db.Decimal(14, 3)
+
+  @@unique([kitVariantId, componentVariantId])
+}
+
+model Lot {
+  id                  String              @id @default(uuid()) @db.Uuid
+  variantId           String              @db.Uuid
+  variant             Variant             @relation(fields: [variantId], references: [id])
+  lotNumber           String
+  lotNumberNormalized String
+  expiryDate          DateTime?
+  qty                 Decimal             @db.Decimal(14, 3)
+  cost                Decimal             @db.Decimal(14, 2)
+  branchId            String              @default("main")
+  createdBy           String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  movements           InventoryMovement[]
+  warehouseStocks     LotStock[]
+  transferLines       StockTransferLine[]
+  saleItems           SaleItem[]
+
+  @@unique([variantId, lotNumberNormalized])
+  @@index([expiryDate])
+}
+
+// Evidencia de duplicados históricos resueltos por la migración I1. No tiene
+// relaciones deliberadamente: conserva los identificadores aunque el lote sea
+// eliminado años después.
+model LotIdentityConflict {
+  conflictKey         String    @id
+  variantId           String    @db.Uuid
+  lotNumberNormalized String
+  keeperLotId         String    @db.Uuid
+  sourceLotIds        Json
+  expiryDates         Json
+  chosenExpiryDate    DateTime?
+  resolution          String
+  createdAt           DateTime  @default(now())
+}
+
+model InventoryMovement {
+  id           String   @id @default(uuid()) @db.Uuid
+  variantId    String   @db.Uuid
+  variant      Variant  @relation(fields: [variantId], references: [id])
+  lotId        String?  @db.Uuid
+  lot          Lot?     @relation(fields: [lotId], references: [id], onDelete: Restrict)
+  type         String
+  qty          Decimal  @db.Decimal(14, 3)
+  unitCost     Decimal  @db.Decimal(14, 2)
+  balanceAfter Decimal  @db.Decimal(14, 3)
+  refId        String?
+  reason       String
+  userId       String
+  branchId     String   @default("main")
+  warehouseId  String?  @db.Uuid
+  warehouse    Warehouse? @relation(fields: [warehouseId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([lotId])
+  @@index([variantId, createdAt])
+  @@index([branchId, createdAt])
+}
+
+model Warehouse {
+  id String @id @default(uuid()) @db.Uuid
+  branchId String @default("main")
+  name String
+  kind String
+  active Boolean @default(true)
+  sellable Boolean @default(false)
+  stocks VariantStock[]
+  lotStocks LotStock[]
+  outgoingTransfers StockTransfer[] @relation("TransferFrom")
+  incomingTransfers StockTransfer[] @relation("TransferTo")
+  movements InventoryMovement[]
+  counts InventoryCount[]
+  @@unique([branchId, kind])
+}
+
+model VariantStock {
+  variantId String @db.Uuid
+  warehouseId String @db.Uuid
+  qty Decimal @default(0) @db.Decimal(14, 3)
+  variant Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  @@id([variantId, warehouseId])
+  @@index([warehouseId])
+}
+
+model LotStock {
+  lotId String @db.Uuid
+  warehouseId String @db.Uuid
+  qty Decimal @default(0) @db.Decimal(14, 3)
+  lot Lot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  @@id([lotId, warehouseId])
+}
+
+model StockTransfer {
+  id String @id @default(uuid()) @db.Uuid
+  operationId String @unique @db.Uuid
+  branchId String @default("main")
+  fromId String @db.Uuid
+  toId String @db.Uuid
+  from Warehouse @relation("TransferFrom", fields: [fromId], references: [id])
+  to Warehouse @relation("TransferTo", fields: [toId], references: [id])
+  reason String
+  userId String
+  createdAt DateTime @default(now())
+  lines StockTransferLine[]
+  @@index([branchId, createdAt])
+}
+
+model StockTransferLine {
+  id String @id @default(uuid()) @db.Uuid
+  transferId String @db.Uuid
+  variantId String @db.Uuid
+  lotId String? @db.Uuid
+  lot Lot? @relation(fields: [lotId], references: [id], onDelete: Restrict)
+  qty Decimal @db.Decimal(14, 3)
+  transfer StockTransfer @relation(fields: [transferId], references: [id])
+  variant Variant @relation(fields: [variantId], references: [id])
+  @@index([variantId])
+}
+
+model Customer {
+  id          String    @id @default(uuid()) @db.Uuid
+  creditLimit Decimal   @default(0) @db.Decimal(14, 2)
+  name        String
+  phone       String?
+  email       String?
+  legalId     String?
+  notes       String    @default("")
+  active      Boolean   @default(true)
+  anonymizedAt DateTime?
+  branchId    String    @default("main")
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  // Claves foráneas de 202610210002_datos_restricciones (un cliente no se
+  // borra: se anonimiza).
+  sales        Sale[]
+  creditNotes  CreditNote[]
+}
+
+model Sale {
+  id                     String       @id @default(uuid()) @db.Uuid
+  number                 String       @unique
+  status                 String       @default("completed")
+  offlineUuid            String       @unique @db.Uuid
+  requestHash            String       @default("")
+  customerId             String?      @db.Uuid
+  customer               Customer?    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  sellerId               String       @db.Uuid
+  cashSessionId          String?      @db.Uuid
+  cashSession            CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  // CHECK sale_amounts_nonnegative y sale_status_valid (completed | voided),
+  // migración 202610210002_datos_restricciones.
+  subtotal               Decimal      @db.Decimal(14, 2)
+  discountTotal          Decimal      @db.Decimal(14, 2)
+  discountReason         String?
+  discountRule           String?
+  discountApprovedBy   String?      @db.Uuid
+  discountApprovedName String?
+  discountApprovedRole String?
+  taxTotal               Decimal      @db.Decimal(14, 2)
+  taxIncluded            Boolean      @default(true)
+  total                  Decimal      @db.Decimal(14, 2)
+  costTotal              Decimal      @db.Decimal(14, 2)
+  // Envío de tercero: nunca forma parte de total, costo ni caja.
+  courierFee             Decimal      @default(0) @db.Decimal(12, 2)
+  // Sin valor por defecto desde 202610250401: sólo con envío.
+  courierName            String?
+  courierPaidAt          DateTime?
+  courierPaidById        String?      @db.Uuid
+  courierPaidBy          User?        @relation("CourierPaidBy", fields: [courierPaidById], references: [id], onDelete: Restrict)
+  courierPayoutItem      CourierPayoutItem?
+  creditBalance          Decimal      @default(0) @db.Decimal(14, 2)
+  creditDueDate          DateTime?
+  // Cuenta por cobrar saldada (migración 202610240201_credito_cobros): cuándo
+  // y quién dejó el saldo en cero. Nulo mientras el crédito está abierto.
+  creditClosedAt         DateTime?
+  creditClosedById       String?      @db.Uuid
+  // Incentivo al cobrar: las ventas a crédito nuevas acreditan el incentivo de
+  // la cajera a medida que se cobran (docs/INCENTIVOS.md). false = venta
+  // anterior, que sigue el comportamiento viejo (todo al vender).
+  incentiveOnCollection  Boolean      @default(false)
+  // Etiqueta de estadística de la venta por cobrar (dueña, 19-oct): "credit"
+  // (Crédito) o "cod" (Contraentrega). Mismas reglas y mismo cobro; nulo en
+  // ventas anteriores o sin saldo (migración 202610250201_receivable_kind).
+  receivableKind         String?
+  ncf                    String?      @unique
+  ncfType                String?
+  recipientLegalId       String?
+  fiscalStatus           String       @default("not_issued")
+  notes                  String       @default("")
+  voidedReason           String?
+  voidedBy               String?
+  // «Venta al por mayor» (INC): sólo reduce el incentivo de la cajera a la
+  // mitad; no cambia precios ni totales (docs/INCENTIVOS.md).
+  wholesale              Boolean      @default(false)
+  items                  SaleItem[]
+  payments               Payment[]
+  returns                SaleReturn[]
+  voidRequests           SaleVoidRequest[]
+  branchId               String       @default("main")
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  // Migración 202610210001_datos_indices (deuda del cliente, anonimización).
+  @@index([customerId])
+  @@index([createdAt])
+  @@index([sellerId, createdAt])
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([cashSessionId])
+}
+
+model SaleVoidRequest {
+  id             String   @id @default(uuid()) @db.Uuid
+  saleId         String   @db.Uuid
+  sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  requestedById  String   @db.Uuid
+  requester      User     @relation("VoidRequestRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedById   String?  @db.Uuid
+  reviewer       User?    @relation("VoidRequestReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+  operationId    String   @unique @db.Uuid
+  reasonCode     String
+  reason         String
+  status         String   @default("pending")
+  resolutionNote String?
+  requestedAt    DateTime @default(now())
+  reviewedAt     DateTime?
+  cancelledAt    DateTime?
+  updatedAt      DateTime @updatedAt
+  branchId       String   @default("main")
+
+  @@index([branchId, status, requestedAt])
+  @@index([saleId])
+  @@index([requestedById, requestedAt])
+}
+
+model CourierPayout {
+  operationId String @id @db.Uuid
+  branchId String
+  actorId String @db.Uuid
+  actor User @relation("CourierPayoutActor", fields: [actorId], references: [id], onDelete: Restrict)
+  note String?
+  requestHash String
+  total Decimal @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+  items CourierPayoutItem[]
+
+  @@index([branchId, createdAt])
+}
+
+model CourierPayoutItem {
+  id String @id @default(uuid()) @db.Uuid
+  payoutId String @db.Uuid
+  payout CourierPayout @relation(fields: [payoutId], references: [operationId], onDelete: Restrict)
+  saleId String @unique @db.Uuid
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  fee Decimal @db.Decimal(12, 2)
+
+  @@index([payoutId])
+}
+
+model SaleItem {
+  id               String  @id @default(uuid()) @db.Uuid
+  saleId           String  @db.Uuid
+  sale             Sale    @relation(fields: [saleId], references: [id])
+  variantId        String  @db.Uuid
+  variant          Variant @relation(fields: [variantId], references: [id])
+  lotId            String? @db.Uuid
+  lot              Lot?    @relation(fields: [lotId], references: [id], onDelete: SetNull)
+  qty              Decimal @db.Decimal(14, 3)
+  returnedQty      Decimal @default(0) @db.Decimal(14, 3)
+  unitPrice        Decimal @db.Decimal(14, 2)
+  unitCost         Decimal @db.Decimal(14, 2)
+  discount         Decimal @db.Decimal(14, 2)
+  tax              Decimal @db.Decimal(14, 2)
+  lineTotal        Decimal @db.Decimal(14, 2)
+  stockAllocations Json    @default("[]")
+  // Promoción automática aplicada (copia del nombre al vender) · G15.
+  promotionName    String?
+
+  @@index([variantId])
+  @@index([lotId])
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([saleId])
+}
+
+model Payment {
+  id             String   @id @default(uuid()) @db.Uuid
+  saleId         String   @db.Uuid
+  sale           Sale     @relation(fields: [saleId], references: [id])
+  cashSessionId  String?  @db.Uuid
+  cashSession    CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  creditNoteId   String?  @db.Uuid
+  creditNote     CreditNote? @relation(fields: [creditNoteId], references: [id], onDelete: Restrict)
+  // CHECK payment_amounts_nonnegative (monto, entregado, cambio, comisión).
+  entryType      String   @default("sale")
+  idempotencyKey String?  @unique @db.Uuid
+  createdAt      DateTime @default(now())
+  method         String
+  amount         Decimal  @db.Decimal(14, 2)
+  tendered       Decimal  @db.Decimal(14, 2)
+  change         Decimal  @default(0) @db.Decimal(14, 2)
+  bank           String?
+  reference      String?
+  cardBrand      String?
+  cardLast4      String?
+  approvalCode   String?
+  cardType       String?
+  feeAmount      Decimal  @default(0) @db.Decimal(14, 2)
+  status         String   @default("ok")
+  proofUrl       String?
+  // Quién recibió el dinero de un cobro de crédito (administrador que lo
+  // registró). Migración 202610240201_credito_cobros.
+  receivedById   String?  @db.Uuid
+  // Efectivo en dólares (migración 202610250301_pago_dolares): amount es el
+  // equivalente en pesos; amountUsd y usdRate, lo recibido y la tasa usada.
+  currency       String   @default("DOP")
+  amountUsd      Decimal? @db.Decimal(14, 2)
+  usdRate        Decimal? @db.Decimal(12, 4)
+
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([saleId])
+  @@index([cashSessionId])
+}
+
+// Un cobro por cliente puede abarcar varias ventas; conserva la respuesta y
+// el hash del pedido para reintentos sin volver a mover caja ni incentivos.
+model CreditAllocationOperation {
+  operationId String   @id @db.Uuid
+  branchId    String
+  customerId  String   @db.Uuid
+  actorId     String   @db.Uuid
+  requestHash String
+  result      Json
+  createdAt   DateTime @default(now())
+
+  @@index([branchId, customerId, createdAt])
+}
+
+model SaleReturn {
+  id             String   @id @default(uuid()) @db.Uuid
+  saleId         String   @db.Uuid
+  sale           Sale     @relation(fields: [saleId], references: [id])
+  number         String   @unique
+  reason         String
+  total          Decimal  @db.Decimal(14, 2)
+  taxTotal       Decimal  @db.Decimal(14, 2)
+  costTotal      Decimal  @db.Decimal(14, 2)
+  // Unidades que no volvieron al stock vendible y su costo (merma): se
+  // registran aparte para no descontar la utilidad dos veces (R9-A05).
+  wasteQty       Decimal  @default(0) @db.Decimal(14, 3)
+  wasteCostTotal Decimal  @default(0) @db.Decimal(14, 2)
+  refundAmount   Decimal  @default(0) @db.Decimal(14, 2)
+  refundMethod   String
+  cashSessionId  String?  @db.Uuid
+  cashSession    CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  creditNote     CreditNote?
+  // CHECK sale_return_amounts_nonnegative y sale_return_refund_method_valid.
+  userId         String
+  items          Json
+  branchId       String   @default("main")
+  // Clave de la operación que envía la interfaz: un reintento devuelve esta fila (R9-A01).
+  operationId    String?  @unique @db.Uuid
+  createdAt      DateTime @default(now())
+
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([saleId])
+  @@index([cashSessionId])
+}
+
+model CreditNote {
+  id             String   @id @default(uuid()) @db.Uuid
+  redemptionCode String   @unique
+  returnId       String   @unique @db.Uuid
+  saleReturn     SaleReturn @relation(fields: [returnId], references: [id])
+  customerId     String?  @db.Uuid
+  customer       Customer? @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  amount         Decimal  @db.Decimal(14, 2)
+  balance        Decimal  @db.Decimal(14, 2)
+  createdAt      DateTime @default(now())
+  payments       Payment[]
+}
+
+model Quote {
+  id             String   @id @default(uuid()) @db.Uuid
+  type           String   @default("quote")
+  customerId     String?  @db.Uuid
+  userId         String
+  items          Json
+  notes          String   @default("")
+  globalDiscount Decimal  @default(0) @db.Decimal(5, 2)
+  // La venta en espera conserva la marca «Venta al por mayor» (INC).
+  wholesale      Boolean  @default(false)
+  status         String   @default("open")
+  branchId       String   @default("main")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PurchaseOrder {
+  id              String         @id @default(uuid()) @db.Uuid
+  number          String         @unique
+  supplierId      String         @db.Uuid
+  status          String         @default("ordered")
+  expectedDate    DateTime?
+  total           Decimal        @db.Decimal(14, 2)
+  // Documento del proveedor y condición de pago (opcionales; se completan después).
+  supplierInvoice String?
+  supplierNcf     String?
+  invoiceDate     DateTime?
+  paymentType     String?
+  creditDays      Int?
+  itbis           Decimal?       @db.Decimal(14, 2)
+  items           PurchaseItem[]
+  receipts        GoodsReceipt[]
+  branchId        String         @default("main")
+  createdBy       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model PurchaseItem {
+  id          String        @id @default(uuid()) @db.Uuid
+  orderId     String        @db.Uuid
+  order       PurchaseOrder @relation(fields: [orderId], references: [id])
+  variantId   String        @db.Uuid
+  variant     Variant       @relation(fields: [variantId], references: [id])
+  // CHECK purchase_item_quantities_valid: qty > 0 y
+  // recibido + dañado <= pedido (202610210002_datos_restricciones).
+  qty         Decimal       @db.Decimal(14, 3)
+  receivedQty Decimal       @default(0) @db.Decimal(14, 3)
+  // Dañadas o rechazadas al recibir: no entran al stock y cierran lo pendiente.
+  damagedQty  Decimal       @default(0) @db.Decimal(14, 3)
+  unitCost    Decimal       @db.Decimal(14, 2)
+
+  // Migración 202610210001_datos_indices (recepción de una orden).
+  @@index([orderId])
+}
+
+model GoodsReceipt {
+  id                String         @id @default(uuid()) @db.Uuid
+  orderId           String?        @db.Uuid
+  // RESTRICT como en 202610030001_initial: una orden con recepciones no se
+  // borra (sin onDelete explícito Prisma supondría SetNull: deriva D-B1).
+  order             PurchaseOrder? @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  // Compras sin orden: proveedor, total (líneas + flete + impuestos) y comprobante.
+  supplierId        String?        @db.Uuid
+  total             Decimal?       @db.Decimal(14, 2)
+  attachmentId      String?        @db.Uuid
+  // La factura del proveedor de una recepción no se puede borrar (D-M5).
+  attachment        InvoiceAttachment? @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
+  operationId       String?        @unique @db.Uuid
+  freight           Decimal        @db.Decimal(14, 2)
+  otherCosts        Decimal        @db.Decimal(14, 2)
+  items             Json
+  // Documento del proveedor y condición de pago (para la contable y el 606).
+  supplierInvoice   String?
+  supplierNcf       String?
+  invoiceDate       DateTime?
+  paymentType       String?
+  creditDays        Int?
+  itbis             Decimal?       @db.Decimal(14, 2)
+  // Costo de lo dañado o rechazado (fuera del total que se debe).
+  damagedCost       Decimal        @default(0) @db.Decimal(14, 2)
+  // Total del documento del proveedor tal como se presentó, y la diferencia
+  // reconocida: factura − aceptado (total) − dañado (R9-A03).
+  invoiceTotal      Decimal?       @db.Decimal(14, 2)
+  invoiceDifference Decimal        @default(0) @db.Decimal(14, 2)
+  userId            String
+  branchId          String         @default("main")
+  createdAt         DateTime       @default(now())
+
+  @@index([supplierId, createdAt])
+  @@index([branchId, createdAt])
+}
+
+model SupplierPayment {
+  id         String   @id @default(uuid()) @db.Uuid
+  supplierId String   @db.Uuid
+  amount     Decimal  @db.Decimal(14, 2)
+  method     String
+  reference  String?
+  branchId   String   @default("main")
+  createdBy  String?
+  createdAt  DateTime @default(now())
+  // D-M4: clave del formulario; un reintento devuelve el mismo pago.
+  operationId String? @unique @db.Uuid
+}
+
+model InventoryCount {
+  id        String   @id @default(uuid()) @db.Uuid
+  items     Json
+  status    String   @default("pending")
+  userId    String
+  appliedBy String?
+  branchId  String   @default("main")
+  warehouseId String? @db.Uuid
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model CashSession {
+  id                 String    @id @default(uuid()) @db.Uuid
+  registerId         String    @default("terminal-1")
+  userId             String
+  openingAmount      Decimal   @db.Decimal(14, 2)
+  openedAt           DateTime  @default(now())
+  closedAt           DateTime?
+  expectedCash       Decimal?  @db.Decimal(14, 2)
+  countedCash        Decimal?  @db.Decimal(14, 2)
+  expectedCard       Decimal?  @db.Decimal(14, 2)
+  countedCard        Decimal?  @db.Decimal(14, 2)
+  expectedTransfer   Decimal?  @db.Decimal(14, 2)
+  countedTransfer    Decimal?  @db.Decimal(14, 2)
+  differenceCash     Decimal?  @db.Decimal(14, 2)
+  differenceCard     Decimal?  @db.Decimal(14, 2)
+  differenceTransfer Decimal?  @db.Decimal(14, 2)
+  difference         Decimal?  @db.Decimal(14, 2)
+  notes              String    @default("")
+  // Cuadre de la tienda: denominaciones, vales, US$/€ y entregado/dejado.
+  closeDetails       Json?
+  branchId           String    @default("main")
+  // Claves foráneas de 202610210002_datos_restricciones; además los CHECK
+  // cash_session_closed_after_opened y cash_session_opening_nonnegative.
+  sales              Sale[]
+  payments           Payment[]
+  returns            SaleReturn[]
+  movements          CashMovement[]
+
+  @@index([userId, closedAt])
+}
+
+model CashMovement {
+  id        String   @id @default(uuid()) @db.Uuid
+  // D-M4: clave del formulario; un reintento devuelve el mismo movimiento.
+  operationId String? @unique @db.Uuid
+  sessionId String   @db.Uuid
+  session   CashSession @relation(fields: [sessionId], references: [id])
+  // CHECK cash_movement_type_valid (in | out) y cash_movement_amount_nonnegative.
+  type      String
+  amount    Decimal  @db.Decimal(14, 2)
+  reason    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Migración 202610200001_perf_indexes_links (enlaces entre tablas).
+  @@index([sessionId])
+}
+
+model ExpenseCategory {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String    @unique
+  monthlyBudget Decimal   @default(10000) @db.Decimal(14, 2)
+  expenses      Expense[]
+}
+
+model Expense {
+  id          String          @id @default(uuid()) @db.Uuid
+  categoryId  String          @db.Uuid
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
+  date        DateTime        @default(now())
+  amount      Decimal         @db.Decimal(14, 2)
+  method      String
+  supplierId  String?
+  description String
+  receiptUrl  String?
+  recurring   Boolean         @default(false)
+  voided      Boolean         @default(false)
+  branchId    String          @default("main")
+  createdBy   String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  // D-M4: clave del formulario; un reintento devuelve el mismo gasto.
+  operationId String?         @unique @db.Uuid
+
+  @@index([date])
+}
+
+model Promotion {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  type        String   @default("percent")
+  value       Decimal  @db.Decimal(14, 2)
+  startsAt    DateTime
+  endsAt      DateTime
+  scope       Json
+  active      Boolean  @default(true)
+  isClearance Boolean  @default(false)
+  branchId    String   @default("main")
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Alert {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  type      String
+  severity  String
+  entityId  String
+  message   String
+  status    String   @default("new")
+  branchId  String   @default("main")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Migración 202610230101_alertas_indices (lista paginada de GET /alerts).
+  @@index([branchId, updatedAt])
+  @@index([branchId, status, updatedAt])
+  @@index([entityId])
+}
+
+model AlertRule {
+  id        String   @id @default(uuid()) @db.Uuid
+  type      String   @unique
+  threshold Json
+  active    Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  terminalId String?  @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String
+  action     String
+  entity     String
+  entityId   String
+  before     Json?
+  after      Json?
+  ip         String?
+  branchId   String   @default("main")
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  // Migración 202610210001_datos_indices (venta offline en conflicto,
+  // anonimización).
+  @@index([entityId, entity])
+}
+
+model Settings {
+  id        String   @id @default("main")
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model Counter {
+  key   String @id
+  value Int    @default(0)
+}
+
+model AuthAttempt {
+  key             String    @id
+  failedAttempts  Int       @default(0)
+  lockedUntil     DateTime?
+  // Primer fallo de la racha (o inicio de la ventana de una hora de los cupos
+  // por cuenta y por PIN), 202610200201_auth_attempt_window.
+  windowStartedAt DateTime?
+  // Último intento (disparador auth_attempt_touch, 202610210003): permite
+  // purgar las filas viejas (retention.ts). La clave lleva la IP.
+  updatedAt       DateTime  @default(now())
+}
+
+model AuthSession {
+  terminalId     String?  @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  lastActivityAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Terminal {
+  id             String    @id @db.Uuid
+  name           String
+  branchId       String
+  revokedAt      DateTime?
+  lastActivityAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  // Enrolamiento: un equipo nuevo de vendedor/almacén espera aprobación de un gerente.
+  approvedAt     DateTime?
+  approvedBy     String?   @db.Uuid
+  // Hash del secreto que guarda el dispositivo; impide reclamar el ID desde otro equipo.
+  secretHash     String?
+  createdBy      String?   @db.Uuid
+  lastUserId     String?   @db.Uuid
+  // Registrado antes de la ronda 4 (sin secreto): requiere aprobación de un gerente.
+  legacy         Boolean   @default(false)
+  // Caja que se imprime en el cuadre y los reportes (p. ej. 4012 «GPRO STORE RD»).
+  registerNumber Int?
+  registerName   String?
+}
+
+model RealtimeEvent {
+  id        BigInt   @id @default(autoincrement())
+  branchId  String
+  type      String
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@index([branchId, id])
+}
+
+model MerchandiseOperation {
+  id          String   @id @db.Uuid
+  branchId    String
+  userId      String
+  terminalId  String?  @db.Uuid
+  requestHash String
+  result      Json
+  createdAt   DateTime @default(now())
+}
+
+model SupplierImportProfile {
+  id         String @id @default(uuid()) @db.Uuid
+  supplierId String @db.Uuid
+  branchId   String
+  mapping    Json
+
+  @@unique([supplierId, branchId])
+}
+
+model SupplierCode {
+  id         String @id @default(uuid()) @db.Uuid
+  supplierId String @db.Uuid
+  branchId   String
+  code       String
+  variantId  String @db.Uuid
+
+  @@unique([supplierId, branchId, code])
+}
+
+model InvoiceDraft {
+  id                   String   @id @default(uuid()) @db.Uuid
+  branchId             String
+  userId               String
+  supplierId           String?  @db.Uuid
+  lines                Json
+  total                Decimal? @db.Decimal(14, 2)
+  attachmentId         String?  @db.Uuid
+  confirmedOperationId String?  @unique @db.Uuid
+  createdAt            DateTime @default(now())
+}
+
+model InvoiceAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  branchId  String
+  userId    String
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+  // GoodsReceipt_attachmentId_fkey (RESTRICT): no se borra si una recepción
+  // la usa (202610210002_datos_restricciones).
+  goodsReceipts GoodsReceipt[]
+}
+
+// Cola durable de avisos por Telegram (apps/api/src/notifications.ts). El
+// texto se guarda ya renderizado y sin datos personales sensibles; el token y
+// el chat sólo viven en las variables de entorno.
+model NotificationOutbox {
+  id            String    @id @db.Uuid
+  eventType     String
+  refId         String
+  payload       Json
+  status        String    @default("pending")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  sentAt        DateTime?
+  branchId      String    @default("main")
+
+  @@unique([eventType, refId])
+  @@index([status, nextAttemptAt])
+}
+
+// Incentivos por cajera (docs/INCENTIVOS.md, apps/api/src/incentives.ts).
+// Tarifa por unidad vendida de cada categoría. Sin fila, la categoría usa la
+// tarifa por defecto según su nombre (Suplementos 50, Fajas 50, Maquillaje 25,
+// las demás 0). Cambiarla no altera lo ya ganado: cada entrada guarda la suya.
+model IncentiveRate {
+  id         String   @id @default(uuid()) @db.Uuid
+  branchId   String   @default("main")
+  categoryId String   @db.Uuid
+  amount     Decimal  @db.Decimal(14, 2)
+  updatedBy  String?
+  updatedAt  DateTime @updatedAt
+
+  @@unique([branchId, categoryId])
+}
+
+// Instantánea por línea vendida (kind "sale") y sus reversos negativos por
+// devolución ("return", refId = devolución) o anulación ("void", refId =
+// venta). El monto ya viene calculado: cantidad × tarifa × 0.5 si mayorista.
+// period es el mes (America/Santo_Domingo) en que cuenta; originPeriod, el de
+// la venta original.
+model IncentiveEntry {
+  id           String   @id @default(uuid()) @db.Uuid
+  kind         String
+  refId        String   @db.Uuid
+  saleId       String   @db.Uuid
+  saleItemId   String   @db.Uuid
+  userId       String   @db.Uuid
+  categoryId   String?  @db.Uuid
+  categoryName String
+  qty          Decimal  @db.Decimal(14, 3)
+  rateAtSale   Decimal  @db.Decimal(14, 2)
+  wholesale    Boolean  @default(false)
+  amount       Decimal  @db.Decimal(14, 2)
+  period       String
+  originPeriod String
+  note         String?
+  branchId     String   @default("main")
+  createdAt    DateTime @default(now())
+
+  @@unique([saleItemId, kind, refId])
+  @@index([branchId, period, userId])
+  @@index([saleId])
+}
+
+// Cierre de un mes: marca inmutable por sucursal y mes.
+model IncentivePeriodClose {
+  id        String   @id @default(uuid()) @db.Uuid
+  branchId  String   @default("main")
+  period    String
+  closedBy  String   @db.Uuid
+  closedAt  DateTime @default(now())
+
+  @@unique([branchId, period])
+}
+
+// Cuadre cerrado de una cajera en un mes: instantánea inmutable.
+model IncentiveSettlement {
+  id                String   @id @default(uuid()) @db.Uuid
+  branchId          String   @default("main")
+  period            String
+  userId            String   @db.Uuid
+  userName          String
+  units             Json
+  salesCount        Int
+  wholesaleSales    Int
+  gross             Decimal  @db.Decimal(14, 2)
+  deductions        Decimal  @db.Decimal(14, 2)
+  net               Decimal  @db.Decimal(14, 2)
+  pendingCollection Decimal  @db.Decimal(14, 2)
+  priorDeductions   Decimal  @db.Decimal(14, 2)
+  entryCount        Int
+  closedBy          String   @db.Uuid
+  closedByName      String
+  closedAt          DateTime @default(now())
+
+  @@unique([branchId, period, userId])
+}
+
+// Respaldo diario cifrado a Google Drive (apps/api/src/drive-backup.ts,
+// docs/RESPALDO_DRIVE.md). Una sola fila «main». refreshTokenEnc va cifrado
+// con AES-256-GCM (clave derivada de BACKUP_ENCRYPTION_KEY); jamás en claro ni
+// en respuestas. lockId/lockedUntil: arriendo para un solo respaldo a la vez.
+model DriveBackup {
+  id                  String    @id @default("main")
+  refreshTokenEnc     String?
+  accountEmail        String?
+  folderId            String?
+  branchId            String    @default("main")
+  connectedAt         DateTime?
+  connectedBy         String?
+  authError           String?
+  lockId              String?
+  lockedUntil         DateTime?
+  runningSince        DateTime?
+  lastRunAt           DateTime?
+  lastTrigger         String?
+  lastStatus          String?
+  lastError           String?
+  lastDurationMs      Int?
+  lastSuccessAt       DateTime?
+  lastSize            BigInt?
+  lastFileName        String?
+  consecutiveFailures Int       @default(0)
+  dayKey              String?
+  dayAttempts         Int       @default(0)
+  nextRetryAt         DateTime?
+  lastAlertAt         DateTime?
+  updatedAt           DateTime  @default(now()) @updatedAt
+}
+
+// Módulo GV Makeup Studio (docs/coordinacion/MODULO-GV.md). Registro de
+// cursos, inscripciones y cobros: no son ventas de la caja ni comprobantes.
+// externalId: clave de la importación (única por sucursal) para reimportar
+// sin duplicar.
+model GvCourse {
+  id          String         @id @default(uuid()) @db.Uuid
+  branchId    String         @default("main")
+  externalId  String?
+  name        String
+  // CHECK gv_course_type_valid: automaquillaje | brazilian | personalizado | otro
+  type        String
+  date        DateTime       @db.Date
+  price       Decimal        @db.Decimal(14, 2)
+  capacity    Int
+  active      Boolean        @default(true)
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  enrollments GvEnrollment[]
+
+  @@unique([branchId, externalId])
+  @@index([branchId, date])
+}
+
+model GvEnrollment {
+  id             String      @id @default(uuid()) @db.Uuid
+  branchId       String      @default("main")
+  externalId     String?
+  operationId    String?     @unique @db.Uuid
+  courseId       String      @db.Uuid
+  course         GvCourse    @relation(fields: [courseId], references: [id])
+  clientName     String
+  phone          String?
+  instagram      String?
+  agreedPrice    Decimal     @db.Decimal(14, 2)
+  // CHECK gv_enrollment_status_valid: activa | no_asistio | personalizado | cancelada | reembolsada
+  status         String      @default("activa")
+  attended       Boolean?
+  boughtBrushSet Boolean     @default(false)
+  note           String?
+  // Reembolso (estado «reembolsada»): se resta de los ingresos.
+  refundAmount   Decimal?    @db.Decimal(14, 2)
+  refundDate     DateTime?   @db.Date
+  createdBy      String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  payments       GvPayment[]
+
+  @@unique([branchId, externalId])
+  @@index([courseId])
+}
+
+model GvPayment {
+  id           String        @id @default(uuid()) @db.Uuid
+  branchId     String        @default("main")
+  externalId   String?
+  operationId  String?       @unique @db.Uuid
+  enrollmentId String?       @db.Uuid
+  enrollment   GvEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  // Cita de maquillaje (FK en la migración 202610260902_gv_citas).
+  appointmentId String?        @db.Uuid
+  appointment   GvAppointment? @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  date         DateTime      @db.Date
+  // CHECK gv_payment_amount_positive
+  amount       Decimal       @db.Decimal(14, 2)
+  // CHECK: separo | restante | segundo | tercero | otro
+  concept      String
+  // CHECK: efectivo | transferencia | tarjeta
+  method       String
+  bank         String?
+  reference    String?
+  // Adónde cae el dinero de tarjeta: «gv» = área GV / Grupo Génesis, sin cuenta
+  // de banco. Nulo en efectivo y transferencia (esa usa `bank`).
+  destination  String?
+  // Moneda del pago (decisiones de la dueña, 31-oct). En US$: rate = pesos por
+  // dólar y amountDop = equivalente en pesos. En pesos, amountDop = amount.
+  currency     String        @default("DOP")
+  rate         Decimal?      @db.Decimal(14, 4)
+  amountDop    Decimal?      @db.Decimal(14, 2)
+  // Transferencia: pendiente hasta verificarla; efectivo y tarjeta, verificados.
+  verified     Boolean       @default(false)
+  // Caja GV en la que se cobró y recibo interno (GV-0000001, contador
+  // «gvrecibo:<sucursal>»). El recibo no es comprobante fiscal (sin NCF).
+  cashSessionId String?       @db.Uuid
+  cashSession   GvCashSession? @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  receiptNumber String?
+  proof        GvProof?
+  verifiedBy   String?
+  verifiedAt   DateTime?
+  // Rechazado (transferencia que no llegó o pago anulado): no cuenta como pagado.
+  rejectedAt   DateTime?
+  rejectedBy   String?
+  rejectReason String?
+  createdBy    String
+  createdAt    DateTime      @default(now())
+
+  @@unique([branchId, externalId])
+  @@unique([branchId, receiptNumber])
+  @@index([enrollmentId])
+  @@index([appointmentId])
+  @@index([cashSessionId])
+  @@index([branchId, date])
+}
+
+// Caja propia de GV (opción B): separada de CashSession de MacGen. Una abierta
+// por sucursal (índice único parcial gv_cash_one_open en la migración).
+model GvCashSession {
+  id               String      @id @default(uuid()) @db.Uuid
+  branchId         String      @default("main")
+  userId           String
+  openingAmount    Decimal     @db.Decimal(14, 2)
+  openedAt         DateTime    @default(now())
+  closedAt         DateTime?
+  closedBy         String?
+  expectedCash     Decimal?    @db.Decimal(14, 2)
+  countedCash      Decimal?    @db.Decimal(14, 2)
+  expectedCard     Decimal?    @db.Decimal(14, 2)
+  countedCard      Decimal?    @db.Decimal(14, 2)
+  expectedTransfer Decimal?    @db.Decimal(14, 2)
+  countedTransfer  Decimal?    @db.Decimal(14, 2)
+  difference       Decimal?    @db.Decimal(14, 2)
+  notes            String      @default("")
+  payments         GvPayment[]
+  // Foto del cierre de lote del terminal (obligatoria si hubo pagos con tarjeta).
+  proof            GvProof?
+
+  @@index([branchId, openedAt])
+}
+
+// Foto o PDF de un voucher/comprobante (pago) o del cierre de lote (caja).
+// Tabla aparte para que las listas de pagos nunca arrastren los bytes.
+model GvProof {
+  id            String          @id @default(uuid()) @db.Uuid
+  paymentId     String?         @unique @db.Uuid
+  payment       GvPayment?      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  cashSessionId String?         @unique @db.Uuid
+  cashSession   GvCashSession?  @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  contentType   String
+  size          Int
+  data          Bytes
+  createdBy     String
+  createdAt     DateTime        @default(now())
+}
+
+// GV Makeup Studio · citas de maquillaje (docs/coordinacion/MODULO-GV.md §3 y
+// §5). Los pagos de una cita van en GvPayment.appointmentId; el pendiente se
+// calcula (total − pagos), no se guarda. externalId: clave del Excel o de la
+// pantalla (op:<uuid>) para que importar o reenviar no duplique.
+model GvAppointment {
+  id           String   @id @default(uuid()) @db.Uuid
+  branchId     String   @default("main")
+  date         DateTime @db.Timestamptz(3)
+  clientName   String
+  phone        String?
+  instagram    String?
+  service      String
+  artists      String[]
+  afterHours   Boolean  @default(false)
+  total        Decimal  @db.Decimal(14, 2)
+  tip          Decimal  @default(0) @db.Decimal(14, 2)
+  status       String   @default("agendada")
+  note         String?
+  weddingQuote Decimal? @db.Decimal(14, 2)
+  venue        String?
+  people       Int?
+  // Reembolso (estado «reembolsada»): se resta de los ingresos.
+  refundAmount Decimal? @db.Decimal(14, 2)
+  refundDate   DateTime? @db.Date
+  externalId   String?
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  payments     GvPayment[]
+
+  @@unique([branchId, externalId])
+  @@index([branchId, date])
+}
+
+// GV · interesadas (prospectos).
+model GvLead {
+  id         String   @id @default(uuid()) @db.Uuid
+  branchId   String   @default("main")
+  name       String
+  phone      String?
+  interest   String?
+  action     String?
+  status     String   @default("por_contactar")
+  note       String?
+  externalId String?
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([branchId, externalId])
+  @@index([branchId, status])
+}
+
+// Encuesta de la caja: una respuesta editable por persona (CASHIER_SURVEY).
+model CashierSurvey {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId  String   @default("main")
+  answers   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Medidor de uso y costo de IA (docs/sistema/MEDIDOR_IA.md). costUsd null = precio del modelo sin cargar.
+model AiUsage {
+  id           String   @id @default(uuid()) @db.Uuid
+  createdAt    DateTime @default(now())
+  userId       String?  @db.Uuid
+  branchId     String   @default("main")
+  feature      String
+  model        String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  cacheTokens  Int?
+  costUsd      Decimal? @db.Decimal(12, 6)
+  ok           Boolean  @default(true)
+
+  @@index([branchId, createdAt])
+}
+
+// Baja de cliente (scripts/baja-cliente.ts, src/baja.ts). Constancia sin datos
+// personales; la supresión no la borra.
+model BranchTermination {
+  branchId     String    @id
+  terminatedAt DateTime?
+  exportedAt   DateTime?
+  exportSha256 String?
+  suppressedAt DateTime?
+  actaSha256   String?
+  actaTexto    String?
+  updatedAt    DateTime  @default(now()) @updatedAt
+}

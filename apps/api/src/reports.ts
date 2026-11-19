@@ -4,6 +4,7 @@ import type { Response } from "express";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { Prisma } from "@prisma/client";
+import { gvTotals, saleNotGvSql, saleNotGvWhere } from "./gv-scope";
 import {
   COUNT_CORRECTION_SQL,
   INVENTORY_LOSS_SQL,
@@ -38,16 +39,90 @@ import {
   safe,
   denied,
   canViewCashExpected,
+  audit,
 } from "./common";
 import { ADMIN_ONLY_ALERT_TYPES, alertForActor } from "./alerts";
 import { REPORTES } from "./reportes";
+import {
+  PRESENTACION,
+  exportable,
+  comprobarLimite,
+  construirModelo,
+  esFormato,
+  nombreArchivo,
+  puedeVerReporte,
+} from "./reportes/export";
+import { renderPdf } from "./reportes/export-pdf";
+import { GUIA_REPORTES } from "./reportes/guia";
+import { renderXlsx } from "./reportes/export-xlsx";
 
+// Títulos en español de los PDF de los informes de siempre (salía «profit»),
+// los mismos de la pantalla de Reportes.
+const TITULOS: Record<string, string> = {
+  sales: "Ventas detalladas",
+  "monthly-consumption": "Consumo mensual",
+  profit: "Utilidad por producto",
+  "inventory-value": "Inventario valorizado",
+  kardex: "Kardex",
+  "low-stock": "Stock bajo y reposición",
+  "no-movement": "Productos sin movimiento",
+  expiring: "Lotes próximos a vencer",
+  abc: "Clasificación ABC",
+  expenses: "Gastos y presupuesto",
+  "income-statement": "Estado de resultados",
+  cash: "Cierres y diferencias",
+  "by-seller": "Ventas por vendedor",
+  "by-payment": "Ventas por método de pago",
+  "ventas-categoria-forma-pago":
+    "Ventas por categoría y forma de pago (% y monto)",
+  "returns-discounts": "Devoluciones y descuentos",
+  customers: "Mejores clientes",
+  purchases: "Compras y cuentas por pagar",
+};
+// Reportes de Dinero que no miden ventas netas (cuadres, abonos, anuladas…).
+const NOT_NET_SALES = [
+  "descuadres",
+  "entradas-cuenta",
+  "diferencias-cuadre",
+  "anulaciones",
+  "devoluciones-producto",
+  "envios-mensajero",
+];
+
+// PDF de los informes de siempre: encabezado de columnas una vez y filas con
+// sus valores (antes cada fila repetía «Campo: valor»). Total solo donde sumar
+// tiene sentido (utilidad por producto), con el margen de ese total.
+export function pdfLines(rows: Record<string, unknown>[], withTotal: boolean) {
+  if (!rows.length) return ["Sin datos en este período."];
+  const keys = Object.keys(rows[0]);
+  const lines = [
+    keys.join(" | "),
+    ...rows.map((r) => keys.map((k) => String(r[k] ?? "")).join(" | ")),
+  ];
+  if (withTotal) {
+    const sum = (k: string) =>
+      money(rows.reduce((t, r) => t.plus(Number(r[k]) || 0), d(0)));
+    const total: Record<string, unknown> = { [keys[0]]: "Total" };
+    for (const k of ["Ventas", "Costo", "Unidades", "Utilidad"])
+      if (keys.includes(k)) total[k] = sum(k);
+    if (keys.includes("Margen"))
+      total.Margen = margin(total.Ventas as number, total.Costo as number);
+    lines.push(keys.map((k) => String(total[k] ?? "")).join(" | "));
+  }
+  return lines;
+}
+
+// Acepta fecha sola («2026-11-19», se completa con el día entero en UTC-4) o
+// fecha con hora («2026-11-19T00:00:00-04:00», se usa tal cual): Caja manda la
+// segunda forma y pegarle otra hora la volvía inválida (auditoría A1).
+const withTime = (value: string, time: string) =>
+  new Date(value.includes("T") ? value : value + time);
 export function dateRange(query: Record<string, string>) {
   const from = query.from
-    ? new Date(query.from + "T00:00:00-04:00")
+    ? withTime(query.from, "T00:00:00-04:00")
     : new Date(Date.now() - 30 * 86400000);
-  const to = query.to ? new Date(query.to + "T23:59:59.999-04:00") : new Date();
-  if (!Number.isFinite(+from) || !Number.isFinite(+to))
+  const to = query.to ? withTime(query.to, "T23:59:59.999-04:00") : new Date();
+  if (!Number.isFinite(+from) || !Number.isFinite(+to) || from > to)
     bad("Rango de fechas inválido.");
   if (from > to) bad("La fecha inicial es posterior a la final.");
   return { gte: from, lte: to };
@@ -135,16 +210,16 @@ function saleSql(
   sellerId?: string,
   method?: string,
 ) {
-  return Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}${sellerId ? Prisma.sql` AND s."sellerId" = ${sellerId}::uuid` : Prisma.empty}${method ? Prisma.sql` AND EXISTS (SELECT 1 FROM "Payment" pm WHERE pm."saleId" = s.id AND pm.method = ${method})` : Prisma.empty}`;
+  return Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()} AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}${sellerId ? Prisma.sql` AND s."sellerId" = ${sellerId}::uuid` : Prisma.empty}${method ? Prisma.sql` AND EXISTS (SELECT 1 FROM "Payment" pm WHERE pm."saleId" = s.id AND pm.method = ${method})` : Prisma.empty}`;
 }
 const addTo = (map: Map<string, any>, key: string, amount: unknown) =>
   map.set(key, (map.get(key) ?? d(0)).plus(amount as any));
 
 // D-05: una sola definición de venta neta en todos los informes de ventas.
-// Lo vendido en el período (por la fecha de la venta) menos lo devuelto en el
-// período (por la fecha de la devolución), igual que «ingresos» del dashboard.
+// Lo vendido en el período menos lo devuelto de esas ventas: la devolución va al
+// período de la venta original (opción A, 1-nov), igual que «ingresos» del dashboard.
 // Cada desglose descuenta la devolución en su propia dimensión: día de la
-// devolución, vendedor y categoría de la venta original, y forma de pago (lo
+// venta, vendedor y categoría de la venta original, y forma de pago (lo
 // reembolsado con su método; lo que redujo la deuda, con el crédito o la
 // contraentrega de la venta).
 async function periodReturns(
@@ -158,8 +233,7 @@ async function periodReturns(
   return db.saleReturn.findMany({
     where: {
       branchId: actor.branchId,
-      createdAt: range,
-      ...(sale ? { sale } : {}),
+      sale: { ...sale, createdAt: range },
     },
     orderBy: { id: "asc" },
     take: RETURN_BATCH,
@@ -169,6 +243,7 @@ async function periodReturns(
         select: {
           sellerId: true,
           customerId: true,
+          createdAt: true,
           payments: { select: { method: true, entryType: true } },
           items: {
             select: {
@@ -250,8 +325,8 @@ async function returnedBreakdown(
     colors = new Map<string, string>(),
     methods = new Map<string, any>(),
     sellers = new Map<string, any>();
-  await forEachPeriodReturn(db, actor, range, undefined, (r) => {
-    addTo(days, businessDate(r.createdAt), r.total);
+  await forEachPeriodReturn(db, actor, range, saleNotGvWhere, (r) => {
+    addTo(days, businessDate(r.sale.createdAt), r.total);
     for (const { category, amount } of returnedByCategory(r)) {
       addTo(categories, category.name, amount);
       if (!colors.has(category.name)) colors.set(category.name, category.color);
@@ -283,10 +358,12 @@ export class ReportsController {
     @CurrentUser() actor: Actor,
   ) {
     const range = dateRange(query);
+    // GV es otra empresa: fuera de las cifras de Macgen, aparte en `gv`.
     const where = {
       branchId: actor.branchId,
       status: "completed",
       createdAt: range,
+      ...saleNotGvWhere,
     };
     // Los mismos límites para los paneles en SQL crudo.
     const since = utc(range.gte),
@@ -330,6 +407,7 @@ export class ReportsController {
       collected,
       returned,
       inventoryLossRows,
+      gv,
     ] = await Promise.all([
       this.db.sale.aggregate({
         where,
@@ -337,7 +415,10 @@ export class ReportsController {
         _count: true,
       }),
       this.db.saleReturn.aggregate({
-        where: { branchId: actor.branchId, createdAt: range },
+        where: {
+          branchId: actor.branchId,
+          sale: { createdAt: range, ...saleNotGvWhere },
+        },
         _sum: { total: true, taxTotal: true, costTotal: true },
       }),
       this.db.expense.aggregate({
@@ -349,6 +430,7 @@ export class ReportsController {
           branchId: actor.branchId,
           status: "completed",
           createdAt: previousRange,
+          ...saleNotGvWhere,
         },
         _sum: { total: true },
       }),
@@ -368,10 +450,10 @@ export class ReportsController {
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo','YYYY-MM-DD') AS day, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day ORDER BY day`,
+      >`SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo','YYYY-MM-DD') AS day, SUM(total) AS total FROM "Sale" s WHERE "branchId"=${actor.branchId} AND status='completed' AND ${saleNotGvSql()} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day ORDER BY day`,
       this.db.$queryRaw<
         any[]
-      >`SELECT c.name,c.color,SUM(i."lineTotal") AS total FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY total DESC`,
+      >`SELECT c.name,c.color,SUM(i."lineTotal") AS total FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY total DESC`,
       // Cómo se cobraron las ventas del período: el crédito es su propio
       // método y sus abonos no se suman otra vez (R9-dinero-9).
       this.db.payment.groupBy({
@@ -392,31 +474,38 @@ export class ReportsController {
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT p.name,c.name AS category, SUM(i.qty-i."returnedQty") AS units,SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS revenue FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.id,p.name,c.name ORDER BY revenue DESC LIMIT 10`,
+      >`SELECT p.name,c.name AS category, SUM(i.qty-i."returnedQty") AS units,SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS revenue FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.id,p.name,c.name ORDER BY revenue DESC LIMIT 10`,
       this.db.$queryRaw<
         any[]
-      >`SELECT u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.name ORDER BY total DESC`,
+      >`SELECT u.name,SUM(s.total) AS total FROM "Sale" s JOIN "User" u ON u.id=s."sellerId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY u.name ORDER BY total DESC`,
       this.db.sale.aggregate({
         where: {
           branchId: actor.branchId,
           status: "completed",
           createdAt: { gte: priorYearStart, lte: priorYearEnd },
+          ...saleNotGvWhere,
         },
         _sum: { total: true },
       }),
       this.db.saleReturn.aggregate({
         where: {
           branchId: actor.branchId,
-          createdAt: { gte: priorYearStart, lte: priorYearEnd },
+          sale: {
+            createdAt: { gte: priorYearStart, lte: priorYearEnd },
+            ...saleNotGvWhere,
+          },
         },
         _sum: { total: true },
       }),
       this.db.$queryRaw<
         any[]
-      >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day,hour ORDER BY day,hour`,
+      >`SELECT EXTRACT(ISODOW FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS day, EXTRACT(HOUR FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS hour, COUNT(*)::int AS invoices, SUM(total) AS total FROM "Sale" s WHERE "branchId"=${actor.branchId} AND status='completed' AND ${saleNotGvSql()} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY day,hour ORDER BY day,hour`,
       // La tendencia compara ingresos netos de devoluciones (R9-dinero-10).
       this.db.saleReturn.aggregate({
-        where: { branchId: actor.branchId, createdAt: previousRange },
+        where: {
+          branchId: actor.branchId,
+          sale: { createdAt: previousRange, ...saleNotGvWhere },
+        },
         _sum: { total: true },
       }),
       // Abonos cobrados en el período (fecha del abono, no de la venta): su
@@ -426,7 +515,11 @@ export class ReportsController {
           entryType: "installment",
           status: "ok",
           createdAt: range,
-          sale: { branchId: actor.branchId, status: "completed" },
+          sale: {
+            branchId: actor.branchId,
+            status: "completed",
+            ...saleNotGvWhere,
+          },
         },
         _sum: { feeAmount: true },
       }),
@@ -435,6 +528,7 @@ export class ReportsController {
       this.db.$queryRaw<
         any[]
       >`SELECT COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE NOT (${Prisma.raw(COUNT_CORRECTION_SQL)})), 0) AS loss, COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(COUNT_CORRECTION_SQL)}), 0) AS "countCorrections", COALESCE(SUM(-m.qty * m."unitCost") FILTER (WHERE ${Prisma.raw(SUPPLIER_RETURN_SQL)}), 0) AS "supplierReturns" FROM "InventoryMovement" m WHERE m."branchId"=${actor.branchId} AND m."createdAt">=${since} AND m."createdAt"<=${until} AND ${Prisma.raw(INVENTORY_LOSS_SQL)}`,
+      gvTotals(this.db, actor, range),
     ]);
     // D-05: los desgloses descuentan las mismas devoluciones que «revenue».
     const netOf = <T>(
@@ -546,6 +640,8 @@ export class ReportsController {
         // Ganancia bruta = ventas con ITBIS (netas de devoluciones) - costo, la
         // misma base del margen (#8); netProfit usa esa misma base.
         grossProfit: money(d(revenue).minus(cost)),
+        // Regla de la dueña: ventas con ITBIS − costo; va con `margin` (S-01).
+        profit: money(d(revenue).minus(cost)),
         expenses: expense,
         // M-5: lo que salió del inventario sin venta también es pérdida.
         inventoryLoss,
@@ -595,6 +691,7 @@ export class ReportsController {
               (a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
           ),
         alerts: alerts.map((alert) => alertForActor(alert, actor)),
+        gv,
         from: range.gte,
         to: range.lte,
       },
@@ -619,9 +716,9 @@ export class ReportsController {
     const month = Prisma.sql`EXTRACT(MONTH FROM (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int`;
     const [sales, returns] = (await Promise.all([
       this.db
-        .$queryRaw`SELECT ${month} AS m, COUNT(*)::int AS invoices, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "Sale" WHERE "branchId"=${actor.branchId} AND status='completed' AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
+        .$queryRaw`SELECT ${month} AS m, COUNT(*)::int AS invoices, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "Sale" s WHERE "branchId"=${actor.branchId} AND status='completed' AND ${saleNotGvSql()} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
       this.db
-        .$queryRaw`SELECT ${month} AS m, SUM(total) AS revenue, SUM("costTotal") AS cost FROM "SaleReturn" WHERE "branchId"=${actor.branchId} AND "createdAt">=${since} AND "createdAt"<=${until} GROUP BY m`,
+        .$queryRaw`SELECT EXTRACT(MONTH FROM ((s."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'America/Santo_Domingo'))::int AS m, SUM(r.total) AS revenue, SUM(r."costTotal") AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY m`,
     ])) as any[][];
     const months = Array.from({ length: 12 }, (_, i) => {
       const sold = sales.find((r) => r.m === i + 1);
@@ -667,20 +764,56 @@ export class ReportsController {
     const units = Prisma.sql`(i.qty-i."returnedQty")`;
     // El asistente pide la lista completa (`top`, hasta 500); la pantalla, 10.
     const topLimit = Math.min(500, Math.max(1, Number.parseInt(query.top, 10) || 10));
-    const [categories, top, count, mix] = (await Promise.all([
+    // Costo de lo vendido menos lo devuelto que reingresó: la merma de la devolución
+    // (wasteCost de cada parte) sigue siendo costo, igual que en el año y el resumen.
+    const cost = Prisma.sql`${units}*i."unitCost"+COALESCE((SELECT SUM((e->>'wasteCost')::numeric) FROM "SaleReturn" rr CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(rr.items::jsonb)='array' THEN rr.items::jsonb ELSE '[]'::jsonb END) e WHERE rr."saleId"=i."saleId" AND e->>'saleItemId'=i.id::text),0)`;
+    const [categories, top, count, mix, ranked, gv] = (await Promise.all([
       this.db
-        .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
+        .$queryRaw`SELECT c.name, c.color, SUM(${line}) AS revenue, SUM(${units}) AS units, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name,c.color ORDER BY revenue DESC`,
       this.db
-        .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${units}*i."unitCost") AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT ${topLimit}`,
+        .$queryRaw`SELECT p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY p.name, v.sku HAVING SUM(${units}) > 0 ORDER BY units DESC, revenue DESC LIMIT ${topLimit}`,
       this.db
-        .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
+        .$queryRaw`SELECT COUNT(*)::int AS invoices FROM "Sale" s WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until}`,
       // Orden 18-oct: cómo se pagó cada categoría. Lo vendido de la categoría
       // en cada factura se reparte según la mezcla de pagos de esa factura.
       canViewCashExpected(actor)
         ? this.db
-            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", CASE WHEN p.status='rejected' THEN 'credit' ELSE p.method END AS method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" GROUP BY cl.name, sp.method`
+            .$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(${line}) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY i."saleId", c.name), pk AS (SELECT p."saleId", CASE WHEN p.method='transfer' AND p.status='pending_verification' THEN 'transfer_pending' ELSE p.method END AS method, CASE WHEN p.method='transfer' THEN COALESCE(NULLIF(BTRIM(p.bank),''),'Sin banco') WHEN p.method='card' THEN NULLIF(BTRIM(p.bank),'') END AS bank, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method NOT IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2, 3), cr AS (SELECT p."saleId", SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p.status<>'rejected' AND p.method IN ('credit','cod') AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1), sp AS (SELECT "saleId", method, bank, amt FROM pk UNION ALL SELECT cr."saleId", 'credit', NULL::text, LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT cr."saleId", 'credit_paid', NULL::text, cr.amt-LEAST(cr.amt, s."creditBalance") FROM cr JOIN "Sale" s ON s.id=cr."saleId" UNION ALL SELECT s.id, 'unrecorded', NULL::text, GREATEST(s.total-COALESCE((SELECT SUM(amt) FROM pk WHERE pk."saleId"=s.id),0)-COALESCE((SELECT amt FROM cr WHERE cr."saleId"=s.id),0), 0) FROM "Sale" s WHERE s.id IN (SELECT "saleId" FROM cl)), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, sp.bank, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" WHERE sp.amt>0 GROUP BY cl.name, sp.method, sp.bank`
         : Promise.resolve(null),
-    ])) as any[][];
+      // Top 10 de cada categoría (la lista de categorías sale de los datos), por unidades y por monto.
+      this.db
+        .$queryRaw`WITH t AS (SELECT c.name AS category, p.name, v.sku, SUM(${units}) AS units, SUM(${line}) AS revenue, SUM(${cost}) AS cost FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE s."branchId"=${actor.branchId} AND s.status='completed' AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} GROUP BY c.name, p.name, v.sku HAVING SUM(${units}) > 0), r AS (SELECT t.*, ROW_NUMBER() OVER (PARTITION BY category ORDER BY units DESC, revenue DESC, sku) AS ru, ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, units DESC, sku) AS ra FROM t) SELECT * FROM r WHERE ru<=10 OR ra<=10`,
+      gvTotals(this.db, actor, range),
+    ])) as [
+      any[],
+      any[],
+      any[],
+      any[],
+      any[],
+      { total: number; count: number },
+    ];
+    // Devoluciones sin líneas (SaleReturn heredado, items vacíos) de ventas del período:
+    // el desglose no las ve por línea, así que van en una fila propia. Criterio único con el
+    // año: cada devolución se atribuye al período de la VENTA original (orden 1-nov).
+    // También bajan los cobros por forma de reembolso.
+    const legacyRows = (await this.db
+      .$queryRaw`SELECT r."refundMethod" AS method, COALESCE(SUM(r.total),0) AS revenue, COALESCE(SUM(r."costTotal"),0) AS cost FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId" WHERE r."branchId"=${actor.branchId} AND ${saleNotGvSql()} AND s."createdAt">=${since} AND s."createdAt"<=${until} AND jsonb_typeof(r.items::jsonb)='array' AND jsonb_array_length(r.items::jsonb)=0 GROUP BY 1`) as any[];
+    const legacyRevenue = legacyRows.reduce((a, r) => a.plus(r.revenue), d(0));
+    const legacyCost = legacyRows.reduce((a, r) => a.plus(r.cost), d(0));
+    const lines = [
+      ...categories,
+      ...(legacyRevenue.isZero()
+        ? []
+        : [
+            {
+              name: "Devoluciones sin detalle",
+              color: "#94a3b8",
+              revenue: legacyRevenue.negated(),
+              cost: legacyCost.negated(),
+              units: 0,
+            },
+          ]),
+    ];
     // Días del período hasta hoy: el promedio diario no se diluye con días
     // que todavía no llegan.
     const last = new Date(Math.min(+range.lte, Date.now()));
@@ -704,9 +837,9 @@ export class ReportsController {
       };
     };
     const total = row({
-      revenue: categories.reduce((a, r) => a.plus(r.revenue ?? 0), d(0)),
-      cost: categories.reduce((a, r) => a.plus(r.cost ?? 0), d(0)),
-      units: categories.reduce((a, r) => a + Number(r.units ?? 0), 0),
+      revenue: lines.reduce((a, r) => a.plus(r.revenue ?? 0), d(0)),
+      cost: lines.reduce((a, r) => a.plus(r.cost ?? 0), d(0)),
+      units: lines.reduce((a, r) => a + Number(r.units ?? 0), 0),
     });
     const invoices = Number(count[0]?.invoices ?? 0);
     return safe(
@@ -718,23 +851,108 @@ export class ReportsController {
         ...total,
         averagePerDay: money(total.revenue / days),
         averageTicket: invoices ? money(total.revenue / invoices) : 0,
-        categories: categories.map((r) => ({
+        // GV aparte: no entra en los totales de arriba.
+        gv,
+        categories: lines.map((r) => ({
           name: r.name,
           color: r.color,
           ...row(r),
         })),
         top: top.map((r) => ({ name: r.name, sku: r.sku, ...row(r) })),
+        topByCategory: lines.map((c) => {
+          const rows = ranked.filter((r) => r.category === c.name);
+          const list = (key: string) =>
+            rows
+              .filter((r) => Number(r[key]) <= 10)
+              .sort((a, b) => Number(a[key]) - Number(b[key]))
+              .map((r) => ({ name: r.name, sku: r.sku, ...row(r) }));
+          return {
+            category: c.name,
+            byUnits: list("ru"),
+            byAmount: list("ra"),
+          };
+        }),
         // null: quien no ve el esperado de caja no ve la mezcla de pagos.
         payments: mix
-          ? mix.map((r: any) => ({
-              category: r.category,
-              method: r.method,
-              amount: money(d(r.amount ?? 0)),
-            }))
+          ? [
+              ...mix.map((r: any) => ({
+                category: r.category,
+                method: r.method,
+                bank: r.bank ?? null,
+                amount: money(d(r.amount ?? 0)),
+              })),
+              ...legacyRows
+                .filter((r) => !d(r.revenue).isZero())
+                .map((r) => ({
+                  category: "Devoluciones sin detalle",
+                  method: r.method,
+                  bank: null,
+                  amount: money(d(r.revenue).negated()),
+                })),
+            ]
           : null,
       },
       actor,
     );
+  }
+  // Exportación a PDF o Excel: las mismas filas que la pantalla (def.run), con
+  // los mismos permisos, límite de filas y auditoría de quién exportó qué.
+  @Get("reports/:name/export")
+  @Permit("reports:read")
+  async reportExport(
+    @Param("name") name: string,
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+    @Res() res: Response,
+  ) {
+    const def = Object.hasOwn(REPORTES, name) ? REPORTES[name] : null;
+    if (!def || !exportable(name))
+      bad("Este reporte todavía no se puede exportar.");
+    if (!esFormato(query.format)) bad("Formato no válido: usa pdf o xlsx.");
+    if (!puedeVerReporte(def, actor.permissions)) denied();
+    const range = dateRange(query);
+    const settings = ((
+      await this.db.settings.findUnique({ where: tenantUnique("id", actor.branchId) })
+    )?.data ?? {}) as any;
+    const rows = await def.run(this.db, actor, range, query);
+    comprobarLimite(rows.length);
+    const modelo = construirModelo({
+      nombre: name,
+      guia: GUIA_REPORTES[name],
+      presentacion: PRESENTACION[name],
+      titulo: def.title,
+      filas: rows,
+      negocio: settings.name ?? "",
+      desde: range.gte,
+      hasta: range.lte,
+      generadoPor: actor.name,
+      emitido: new Date().toLocaleString("es-DO", {
+        timeZone: BUSINESS_TIME_ZONE,
+        dateStyle: "long",
+        timeStyle: "short",
+      }),
+    });
+    const archivo =
+      query.format === "xlsx"
+        ? await renderXlsx(modelo)
+        : await renderPdf(modelo);
+    await audit(this.db, actor, "report.export", "Report", name, undefined, {
+      format: query.format,
+      from: query.from ?? null,
+      to: query.to ?? null,
+      rows: rows.length,
+    });
+    res.setHeader(
+      "Content-Type",
+      query.format === "xlsx"
+        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        : "application/pdf",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${nombreArchivo(name, query.from, query.to, query.format)}"`,
+    );
+    res.end(archivo);
   }
   // Lista de los 40 reportes que esta persona puede abrir.
   @Get("reportes")
@@ -743,7 +961,22 @@ export class ReportsController {
     const margin = can(actor.permissions, "profit:read");
     return Object.entries(REPORTES)
       .filter(([, r]) => margin || !r.margin)
-      .map(([name, r]) => ({ name, title: r.title, group: r.group }));
+      .map(([name, r]) => ({
+        name,
+        title: r.title,
+        group: r.group,
+        exportable: exportable(name),
+      }));
+  }
+  // «¿Qué es y cómo se lee?»: texto de la guía, solo lectura, mismo permiso.
+  @Get("reportes/:name/guia")
+  @Permit("reports:read")
+  reportGuide(@Param("name") name: string, @CurrentUser() actor: Actor) {
+    const def = Object.hasOwn(REPORTES, name) ? REPORTES[name] : null;
+    if (!def || !exportable(name)) bad("Este reporte no tiene guía.");
+    if (!puedeVerReporte(def, actor.permissions)) denied();
+    const { queEs, paraQueSirve, comoSeLee } = GUIA_REPORTES[name];
+    return { queEs, paraQueSirve, comoSeLee };
   }
   @Get("reports/:name")
   @Permit("reports:read")
@@ -791,7 +1024,9 @@ export class ReportsController {
           from: range40.gte,
           to: range40.lte,
           printedAt: new Date(),
-          note: "Ventas netas: facturas vigentes menos devoluciones.",
+          note: NOT_NET_SALES.includes(name)
+            ? ""
+            : "Ventas netas: facturas vigentes menos devoluciones.",
           rows: await r40.run(this.db, actor, range40, query),
         },
         query.format,
@@ -810,6 +1045,8 @@ export class ReportsController {
       createdAt: range,
       ...(query.sellerId ? { sellerId: parse(uuid, query.sellerId) } : {}),
       ...(query.method ? { payments: { some: { method: query.method } } } : {}),
+      // GV es otra empresa: sus ventas no entran en estos informes de Macgen.
+      ...saleNotGvWhere,
     };
     // Las devoluciones del período de esas mismas ventas (de cualquier fecha).
     const { createdAt: _saleDate, ...returnSaleWhere } = saleWhere;
@@ -921,7 +1158,10 @@ export class ReportsController {
       rows = [
         { Concepto: "Ventas sin ITBIS", Monto: summary.netSales },
         { Concepto: "Costo de lo vendido", Monto: summary.costTotal },
-        { Concepto: "Ganancia bruta", Monto: summary.grossProfit },
+        {
+          Concepto: "Ganancia bruta (ventas sin ITBIS − costo)",
+          Monto: summary.grossProfit,
+        },
         { Concepto: "Gastos", Monto: summary.expenses },
         { Concepto: "Comisiones bancarias", Monto: summary.fees },
         {
@@ -1241,12 +1481,16 @@ export class ReportsController {
         // reconstruido con todas las devoluciones de la venta, también las de
         // otros períodos. Se calcula al leer, así que es idempotente.
         const histories = new Map<string, ReturnType<typeof replayReturns>>();
+        // Devoluciones heredadas sin líneas (items vacío): no se ven por línea,
+        // pero el dashboard sí las descuenta; van en una fila propia (igual que
+        // el desglose del mes) para que Ventas, Costo y Utilidad cuadren.
+        let legacyTotal = d(0),
+          legacyCost = d(0);
         for (let cursor: string | undefined; ;) {
           const page = await this.db.saleReturn.findMany({
             where: {
               branchId: actor.branchId,
-              createdAt: range,
-              sale: returnSaleWhere,
+              sale: saleWhere,
             },
             orderBy: { id: "asc" },
             take: RETURN_BATCH,
@@ -1255,6 +1499,8 @@ export class ReportsController {
               id: true,
               saleId: true,
               items: true,
+              total: true,
+              costTotal: true,
               sale: {
                 select: {
                   costTotal: true,
@@ -1277,6 +1523,10 @@ export class ReportsController {
               histories.get(returned.saleId) ??
               replayReturns(returned.sale, returned.sale.returns);
             histories.set(returned.saleId, history);
+            if (Array.isArray(returned.items) && !returned.items.length) {
+              legacyTotal = legacyTotal.plus(returned.total);
+              legacyCost = legacyCost.plus(returned.costTotal);
+            }
             (returned.items as any[]).forEach((part, n) => {
               const found = history.parts.get(returned.id + "#" + n);
               const line = found
@@ -1310,7 +1560,24 @@ export class ReportsController {
           if (page.length < RETURN_BATCH) break;
           cursor = page[page.length - 1].id;
         }
+        // Sin categoría: con filtro de categoría no aplica. Y «abc» no clasifica restas.
+        if (
+          name === "profit" &&
+          !query.categoryId &&
+          (!legacyTotal.isZero() || !legacyCost.isZero())
+        )
+          grouped.set("legacy-returns", {
+            Producto: "Devoluciones sin detalle",
+            Categoría: "—",
+            Ventas: d(0),
+            gross: legacyTotal.negated(),
+            Costo: legacyCost.negated(),
+            Unidades: 0,
+          });
         rows = [...grouped.values()].map(({ gross, ...i }) => {
+          // Regla de la dueña (#8): venta con ITBIS, utilidad = venta − costo y
+          // margen sobre esa venta, como «Margen por producto» y el panel.
+          // Antes Ventas/Utilidad iban sin ITBIS y el margen no cuadraba (S-02).
           const Ventas = money(gross ?? 0),
             Costo = money(i.Costo);
           return {
@@ -1396,7 +1663,7 @@ export class ReportsController {
       doc.pipe(res);
       doc
         .fontSize(18)
-        .text("Norexos · " + name)
+        .text("Norexos · " + (TITULOS[name] ?? name))
         .fontSize(9)
         .text(
           range.gte.toLocaleDateString("en-CA", {
@@ -1408,12 +1675,7 @@ export class ReportsController {
             }),
         )
         .moveDown();
-      for (const row of rows)
-        doc.text(
-          Object.entries(row)
-            .map(([k, v]) => k + ": " + pdfValue(k, v, name))
-            .join(" | "),
-        );
+      for (const line of pdfLines(rows, name === "profit")) doc.text(line);
       doc.end();
       return;
     }
@@ -1422,11 +1684,7 @@ export class ReportsController {
   @Get("sales/mine/:period")
   @Permit("sale:write")
   mine(@Param("period") period: string, @CurrentUser() actor: Actor) {
-    return mySales(
-      this.db,
-      actor,
-      parse(z.enum(["today", "week"]), period),
-    );
+    return mySales(this.db, actor, parse(z.enum(["today", "week"]), period));
   }
 }
 
@@ -1493,7 +1751,11 @@ export async function mySales(
     credit_note: d(0),
   };
   const key = (method: string, rejected = false) =>
-    rejected || method === "cod" ? "credit" : method in methods ? method : "credit_note";
+    rejected || method === "cod"
+      ? "credit"
+      : method in methods
+        ? method
+        : "credit_note";
   const shown = (sessionId: string | null) =>
     !sessionId || !hidden.includes(sessionId);
   let hiddenUntilClose = false;
@@ -1526,7 +1788,9 @@ export async function mySales(
   // Caja ciega: con caja propia abierta (o cobros en una abierta) ningún
   // importe, ni suelto ni sumable, para que no se deduzca el efectivo esperado.
   if (ownOpen || hiddenUntilClose) {
-    const [{ units }] = await db.$queryRaw<{ units: unknown }[]>`SELECT COALESCE(SUM(i.qty-i."returnedQty"),0) AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
+    const [{ units }] = await db.$queryRaw<
+      { units: unknown }[]
+    >`SELECT COALESCE(SUM(i.qty-i."returnedQty"),0) AS units FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" WHERE s."branchId"=${actor.branchId} AND s."sellerId"=${actor.id}::uuid AND s.status='completed' AND s."createdAt">=${utc(range.gte)} AND s."createdAt"<=${utc(range.lte)}`;
     return {
       day,
       from,
@@ -1545,14 +1809,21 @@ export async function mySales(
     total: money(d(sales._sum.total ?? 0).minus(returned)),
     methods: Object.fromEntries(
       Object.entries(methods).map(([k, v]) => [k, money(v)]),
-    ) as Record<"cash" | "card" | "transfer" | "credit" | "credit_note", number>,
+    ) as Record<
+      "cash" | "card" | "transfer" | "credit" | "credit_note",
+      number
+    >,
     hiddenUntilClose: false as const,
     pendingTransfers: {
       count: pending._count,
       amount: money(pending._sum.amount ?? 0),
     },
     lastSale: last
-      ? { number: last.number, total: money(last.total), createdAt: last.createdAt }
+      ? {
+          number: last.number,
+          total: money(last.total),
+          createdAt: last.createdAt,
+        }
       : null,
     topProduct: top[0]
       ? { name: top[0].name, units: d(top[0].units as any).toNumber() }
@@ -1566,6 +1837,11 @@ export async function mySales(
 // de empezar la descarga.
 export const LISTINGS = ["sales", "fiscal", "kardex", "returns-discounts"];
 const EXPORT_BATCH = 1000;
+// Estado fiscal en español para el informe y sus descargas (la base guarda la clave).
+export const FISCAL_LABEL: Record<string, string> = {
+  not_issued: "Sin emitir",
+  issued: "Emitido",
+};
 type ListingPage = { take: number; skip?: number; cursor?: string };
 type Listing = {
   count: () => Promise<number>;
@@ -1638,7 +1914,7 @@ function listing(
             Saldo_crédito: Number(s.creditBalance),
             NCF: s.ncf ?? "",
             Tipo_NCF: s.ncfType ?? "",
-            Estado_fiscal: s.fiscalStatus,
+            Estado_fiscal: FISCAL_LABEL[s.fiscalStatus] ?? s.fiscalStatus,
             Devoluciones: money(returned.get(s.id) ?? 0),
           })),
         };
@@ -1885,7 +2161,7 @@ async function sendListing(
     doc.pipe(res);
     doc
       .fontSize(18)
-      .text("Norexos · " + name)
+      .text("Norexos · " + (TITULOS[name] ?? name))
       .fontSize(9)
       .text(
         range.gte.toLocaleDateString("en-CA", {
@@ -1897,13 +2173,12 @@ async function sendListing(
           }),
       )
       .moveDown();
-    for await (const rows of batches())
-      for (const row of rows)
-        doc.text(
-          Object.entries(row)
-            .map(([k, v]) => k + ": " + pdfValue(k, v, name))
-            .join(" | "),
-        );
+    let first = true;
+    for await (const rows of batches()) {
+      const lines = pdfLines(rows, false);
+      for (const line of first ? lines : lines.slice(1)) doc.text(line);
+      first = false;
+    }
     doc.end();
   } catch (error) {
     // La descarga ya empezó: se corta para que no quede un archivo a medias
@@ -2036,7 +2311,7 @@ export async function storeReport(
     // Orden 18-oct: % y monto por categoría y forma de pago. Lo vendido de la
     // categoría en cada factura se reparte según la mezcla de pagos.
     const mix =
-      (await db.$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE ${where} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", CASE WHEN p.status='rejected' THEN 'credit' ELSE p.method END AS method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" GROUP BY cl.name, sp.method ORDER BY cl.name, amount DESC`) as any[];
+      (await db.$queryRaw`WITH cl AS (SELECT i."saleId", c.name, SUM(i."lineTotal"*(1-i."returnedQty"/i.qty)) AS rev FROM "SaleItem" i JOIN "Sale" s ON s.id=i."saleId" JOIN "Variant" v ON v.id=i."variantId" JOIN "Product" p ON p.id=v."productId" JOIN "Category" c ON c.id=p."categoryId" WHERE ${where} GROUP BY i."saleId", c.name), sp AS (SELECT p."saleId", CASE WHEN p.status='rejected' THEN 'credit' ELSE p.method END AS method, SUM(p.amount) AS amt FROM "Payment" p WHERE p."entryType"='sale' AND p."saleId" IN (SELECT "saleId" FROM cl) GROUP BY 1, 2), st AS (SELECT "saleId", SUM(amt) AS tot FROM sp GROUP BY "saleId") SELECT cl.name AS category, sp.method, SUM(cl.rev*sp.amt/NULLIF(st.tot,0)) AS amount FROM cl JOIN sp ON sp."saleId"=cl."saleId" JOIN st ON st."saleId"=cl."saleId" WHERE sp.amt>0 GROUP BY cl.name, sp.method ORDER BY cl.name, amount DESC`) as any[];
     const label: Record<string, string> = {
       cash: "Efectivo",
       card: "Tarjeta",

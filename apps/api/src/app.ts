@@ -40,6 +40,7 @@ import { CashController } from "./cash";
 import { ReportsController } from "./reports";
 import { CashierSurveyController } from "./cashier-survey";
 import { ChangeRequestsController } from "./change-requests";
+import { AiUsageController } from "./ai-usage";
 import { IncomeReportController } from "./income-report";
 import { FormalReportController } from "./formal-report";
 import { AlertCacheInterceptor, AlertEngine, AlertsController } from "./alerts";
@@ -49,6 +50,7 @@ import { OfflineSaleReviewController } from "./offline-sale-review";
 import { IncentivesController } from "./incentives";
 import { NotificationsController, NotificationWorker } from "./notifications";
 import { CreditReminderService } from "./credit-reminder";
+import { GvCajaVigilante } from "./gv-vigilante";
 import { RetentionWorker } from "./retention";
 import { TenantObjectDeletionWorker } from "./tenant-object-deletion";
 import { UsdRateWorker } from "./usd-rate";
@@ -63,6 +65,9 @@ import {
 } from "./rate-limit";
 import { SecurityMaintenance } from "./security";
 import { tenantFromRequest, tenantScope } from "./tenant-context";
+import { GvController } from "./gv";
+import { GvCitasController } from "./gv-citas";
+import { GvCajaController } from "./gv-caja";
 
 @Controller()
 export class HealthController {
@@ -101,7 +106,7 @@ export function createAppModule(secret: string) {
       ...(product ? [OnboardingController] : []),
       ...(product ? [TenantLifecycleController] : []),
       ...(product ? [ProductBillingController] : []),
-      ...(product ? [AssistantController] : []),
+      AssistantController,
       ...(product ? [TransferProofReviewController] : []),
       ...(product ? [SupportAccessController, PlatformSupportController] : []),
       ...(product ? [McpController] : []),
@@ -118,6 +123,7 @@ export function createAppModule(secret: string) {
       ReportsController,
       CashierSurveyController,
       ChangeRequestsController,
+      AiUsageController,
       AlertsController,
       ...(product ? [NcfSequencesController] : []),
       OfflineSalesController,
@@ -125,12 +131,15 @@ export function createAppModule(secret: string) {
       NotificationsController,
       IncentivesController,
       ...(!product ? [DriveBackupController] : []),
+      // GV Makeup Studio es un negocio interno de la tienda: apagado en el producto.
+      ...(!product ? [GvController, GvCitasController, GvCajaController] : []),
     ],
     providers: [
       Database,
       AlertEngine,
       NotificationWorker,
       CreditReminderService,
+      ...(!product ? [GvCajaVigilante] : []),
       RetentionWorker,
       TenantObjectDeletionWorker,
       ...(!product ? [DriveBackupService, DriveBackupWorker] : []),

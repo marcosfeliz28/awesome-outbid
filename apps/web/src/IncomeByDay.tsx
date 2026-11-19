@@ -1,3 +1,5 @@
+import { useLanguage } from "./inicioLanguage";
+import { reportSecondaryLabel } from "./reportSecondaryCopy";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@fitstore/ui";
@@ -33,6 +35,8 @@ const kindName: Record<string, string> = {
   return_transfer: "Devolución por transferencia",
 };
 export function IncomeByDay() {
+  const en = useLanguage() === "en";
+  const text = (value: string) => reportSecondaryLabel(value, en);
   const [from, setFrom] = useState(today().slice(0, 8) + "01");
   const [to, setTo] = useState(today());
   const [scope, setScope] = useState<Scope>("all");
@@ -96,15 +100,15 @@ export function IncomeByDay() {
     <section className="panel income-by-day report-workspace">
       <div className="panel-heading report-workspace-heading">
         <div>
-          <h2>Ingresos por día y forma de pago</h2>
+          <h2>{text("Ingresos por d\u00eda y forma de pago")}</h2>
           <p>
-            Separa lo vendido del dinero que entró y del crédito aún por cobrar.
+            {text("Separa lo vendido del dinero que entr\u00f3 y del cr\u00e9dito a\u00fan por cobrar.")}
           </p>
         </div>
       </div>
       <div className="date-filters report-filters">
         <label className="field">
-          <span>Desde</span>
+          <span>{text("Desde")}</span>
           <input
             type="date"
             value={from}
@@ -115,7 +119,7 @@ export function IncomeByDay() {
           />
         </label>
         <label className="field">
-          <span>Hasta</span>
+          <span>{text("Hasta")}</span>
           <input
             type="date"
             value={to}
@@ -126,7 +130,7 @@ export function IncomeByDay() {
           />
         </label>
         <label className="field">
-          <span>Alcance</span>
+          <span>{text("Alcance")}</span>
           <select
             value={scope}
             onChange={(e) => {
@@ -135,20 +139,20 @@ export function IncomeByDay() {
               setDay("");
             }}
           >
-            <option value="all">Todo el negocio</option>
-            <option value="session">Caja (turno)</option>
-            <option value="user">Usuario</option>
-            <option value="equipment">Equipo</option>
+            <option value="all">{text("Todo el negocio")}</option>
+            <option value="session">{text("Caja (turno)")}</option>
+            <option value="user">{text("Usuario")}</option>
+            <option value="equipment">{text("Equipo")}</option>
           </select>
         </label>
         {scope !== "all" && (
           <label className="field">
             <span>
               {scope === "session"
-                ? "Caja"
+                ? text("Caja")
                 : scope === "user"
-                  ? "Usuario"
-                  : "Equipo"}
+                  ? text("Usuario")
+                  : text("Equipo")}
             </span>
             <select
               value={scopeId}
@@ -157,7 +161,7 @@ export function IncomeByDay() {
                 setDay("");
               }}
             >
-              <option value="">Selecciona</option>
+              <option value="">{text("Selecciona")}</option>
               {(choices ?? []).map((item: any) => (
                 <option
                   key={item.id}
@@ -168,7 +172,7 @@ export function IncomeByDay() {
                   }
                 >
                   {scope === "session"
-                    ? `${item.registerId} · ${new Date(item.openedAt).toLocaleDateString("es-DO")}`
+                    ? `${item.registerId} · ${new Date(item.openedAt).toLocaleDateString(en ? "en-US" : "es-DO")}`
                     : item.name}
                 </option>
               ))}
@@ -178,7 +182,7 @@ export function IncomeByDay() {
       </div>
       {!valid && (
         <p role="note">
-          Selecciona fechas válidas y el alcance para consultar el reporte.
+          {text("Selecciona fechas v\u00e1lidas y el alcance para consultar el reporte.")}
         </p>
       )}
       <div className="table-actions report-export-actions">
@@ -189,26 +193,26 @@ export function IncomeByDay() {
             disabled={!valid}
             onClick={() => exportFile(format)}
           >
-            Descargar {format.toUpperCase()}
+            {en ? "Download" : "Descargar"} {format.toUpperCase()}
           </Button>
         ))}
       </div>
       {valid && (
-        <QueryState query={query}>
+        <QueryState query={query} english={en}>
           {query.data && (
             <>
               <div
                 className="table-wrap"
                 tabIndex={0}
                 role="region"
-                aria-label="Ingresos por día; desplázate para ver todas las columnas"
+                aria-label={text("Ingresos por d\u00eda; despl\u00e1zate para ver todas las columnas")}
               >
                 <table>
                   <thead>
                     <tr>
-                      <th>Fecha</th>
+                      <th>{text("Fecha")}</th>
                       {columns.map(([key, label]) => (
-                        <th key={key}>{label}</th>
+                        <th key={key}>{text(label)}</th>
                       ))}
                     </tr>
                   </thead>
@@ -244,18 +248,25 @@ export function IncomeByDay() {
                   </tbody>
                 </table>
               </div>
+              {query.data.gv && (query.data.gv.total || query.data.gv.moneyIn) ? (
+                <div className="cod-hint" role="status">
+                  <strong>{en ? "GV (separate, not added)" : "GV (aparte, no suma)"}</strong>{" "}
+                  · {en ? "Net sold" : "Vendido neto"} {formatMoney(query.data.gv.total)} ·{" "}
+                  {en ? "Money in" : "Dinero ingresado"} {formatMoney(query.data.gv.moneyIn)}
+                </div>
+              ) : null}
               {reconciliation && (
                 <div className="cod-hint" role="status">
                   {reconciliation.comparable ? (
                     <>
                       <strong>
                         {reconciliation.matches
-                          ? "Cuadra con el cierre"
-                          : "Diferencia con el cierre"}
+                          ? (en ? "Matches the closing" : "Cuadra con el cierre")
+                          : (en ? "Difference from the closing" : "Diferencia con el cierre")}
                       </strong>{" "}
-                      · Efectivo {formatMoney(reconciliation.difference.cash)} ·
-                      Tarjeta {formatMoney(reconciliation.difference.card)} ·
-                      Transferencia{" "}
+                      · {text("Efectivo")} {formatMoney(reconciliation.difference.cash)} ·
+                      {text("Tarjeta")} {formatMoney(reconciliation.difference.card)} ·
+                      {text("Transferencia")}{" "}
                       {formatMoney(reconciliation.difference.transfer)}
                     </>
                   ) : (
@@ -265,40 +276,40 @@ export function IncomeByDay() {
               )}
               {day && (
                 <div className="income-day-detail">
-                  <h3>Movimientos del {day}</h3>
+                  <h3>{en ? "Movements on" : "Movimientos del"} {day}</h3>
                   <Button variant="secondary" onClick={() => setDay("")}>
-                    Cerrar detalle
+                    {text("Cerrar detalle")}
                   </Button>
                   <div
                     className="table-wrap"
                     tabIndex={0}
                     role="region"
-                    aria-label="Movimientos del día"
+                    aria-label={text("Movimientos del d\u00eda")}
                   >
                     <table>
                       <thead>
                         <tr>
-                          <th>Hora</th>
-                          <th>Documento</th>
-                          <th>Tipo</th>
-                          <th>Método</th>
-                          <th>Importe</th>
-                          <th>Últimos 4</th>
-                          <th>Aprobación</th>
-                          <th>Banco</th>
-                          <th>Referencia</th>
+                          <th>{text("Hora")}</th>
+                          <th>{text("Documento")}</th>
+                          <th>{text("Tipo")}</th>
+                          <th>{text("M\u00e9todo")}</th>
+                          <th>{text("Importe")}</th>
+                          <th>{text("\u00daltimos 4")}</th>
+                          <th>{text("Aprobaci\u00f3n")}</th>
+                          <th>{text("Banco")}</th>
+                          <th>{text("Referencia")}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {(query.data.detail ?? []).map((item: any) => (
                           <tr key={item.id + item.kind}>
                             <td>
-                              {new Date(item.date).toLocaleTimeString("es-DO", {
+                              {new Date(item.date).toLocaleTimeString(en ? "en-US" : "es-DO", {
                                 timeZone: "America/Santo_Domingo",
                               })}
                             </td>
                             <td>{item.number}</td>
-                            <td>{kindName[item.kind] ?? item.kind}</td>
+                            <td>{text(kindName[item.kind] ?? item.kind)}</td>
                             <td>{item.method}</td>
                             <td>{formatMoney(item.amount)}</td>
                             <td>{item.cardLast4 ?? "—"}</td>
@@ -310,13 +321,13 @@ export function IncomeByDay() {
                       </tbody>
                     </table>
                   </div>
-                  <p>{query.data.detailTotal ?? 0} movimientos</p>
+                  <p>{query.data.detailTotal ?? 0} {en ? "movements" : "movimientos"}</p>
                   {page > 1 && (
                     <Button
                       variant="secondary"
                       onClick={() => setPage(page - 1)}
                     >
-                      Anterior
+                      {text("Anterior")}
                     </Button>
                   )}
                   {page * 100 < (query.data.detailTotal ?? 0) && (
@@ -324,7 +335,7 @@ export function IncomeByDay() {
                       variant="secondary"
                       onClick={() => setPage(page + 1)}
                     >
-                      Siguiente
+                      {text("Siguiente")}
                     </Button>
                   )}
                 </div>

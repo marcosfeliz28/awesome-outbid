@@ -1,0 +1,24 @@
+/* Medidor de IA (AiUsage.tsx). Mismo aspecto que .drive-card; clase propia para no chocar con sus pruebas. */
+.ai-usage-card {
+  padding: 25px 30px;
+  border-top: 1px solid var(--border);
+}
+.ai-usage-card h3,
+.ai-usage-card h4 {
+  margin: 0;
+  font-size: max(var(--fs-min), calc(15px * var(--fs-scale)));
+}
+.ai-usage-card p,
+.ai-usage-card li {
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
+  margin: 8px 0;
+}
+.ai-usage-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ai-usage-card .ai-error {
+  color: var(--danger-text);
+  font-weight: 600;
+}

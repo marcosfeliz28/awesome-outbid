@@ -1,3 +1,21 @@
+import { ReportEmblem } from "./ReportVisuals";
+import { reportLabel } from "./reportPresentationCopy";
+import { PremiumWorkspace } from "./PremiumWorkspace";
+import { operacionesText } from "./operacionesLanguage";
+import { OperationsPresentation } from "./OperationsPresentation";
+import { useOperationsText } from "./operationsLanguage";
+import "./premiumOperations.css";
+import { catalogText } from "./catalogLanguage";
+import { handleCatalogImageError } from "./catalogImage";
+import { SalesFusionStats, SalesFusionPreview } from "./SalesFusion";
+import { useLanguage } from "./inicioLanguage";
+import { inventoryText } from "./inventoryLanguage";
+import { useInventoryAppearance } from "./inventoryAppearance";
+import { InventoryProduct } from "./InventoryProduct";
+import { InventoryAlerts } from "./InventoryAlerts";
+import { InventoryMovements } from "./InventoryMovements";
+import { InventorySummary } from "./InventorySummary";
+import "./fusion-inventory.css";
 import {
   CashElsewhere,
   Equipment,
@@ -27,12 +45,14 @@ import {
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import { formatMoney, can, DEFAULT_SETTINGS } from "@fitstore/shared";
+import { marginHint } from "./productMargin";
 import {
   api,
   post,
   loadCatalog,
   useStore,
   download,
+  printPdf,
   DOWNLOAD_FAILED,
   localDB,
   syncSales,
@@ -57,10 +77,12 @@ import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { CourierFeeEditor } from "./CourierFeeEditor";
 import { SaleEditPanel, editableNow } from "./SaleEditPanel";
+import { SaleCostPanel, WithoutCostCard } from "./ZeroCost";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
 import { SupportAccessCard } from "./SupportAccess";
 import { productTenancyRequired } from "./productTenancy";
+import { exportPath, exportFileName, type ExportFormat } from "./reportExport";
 import {
   CloseCashModal,
   CodPending,
@@ -85,9 +107,12 @@ import {
 } from "./managementMessages";
 import { passwordChangeError, passwordPolicyForRole } from "./passwordChange";
 import "./passwordChange.css";
+import "./fusion-caja-turnos.css";
 import { IncentiveRates, MyIncentives } from "./Incentives";
 import { CashierSurveySummary } from "./QuickQuestions";
 import { DriveBackupCard } from "./DriveBackup";
+import { AiUsageCard } from "./AiUsage";
+import { readVisual, setVisual, withTransition } from "./impacto";
 import { InventoryImportButton } from "./InventoryImport";
 import { NcfSequenceSettings } from "./NcfSequenceSettings";
 import { formatReportCell, isReportMoneyColumn } from "./report-format";
@@ -105,12 +130,13 @@ type Column = {
   render: (row: any) => ReactNode;
   className?: string;
 };
-function QueryState({ query, children }: { query: any; children: ReactNode }) {
+function QueryState({ query, children, english = false }: { query: any; children: ReactNode; english?: boolean }) {
   return (
     <BaseQueryState
+      english={english}
       query={
         query.error
-          ? { ...query, error: { message: managementQueryError(query.error) } }
+          ? { ...query, error: { status: query.error.status, message: managementQueryError(query.error) } }
           : query
       }
     >
@@ -121,6 +147,7 @@ function QueryState({ query, children }: { query: any; children: ReactNode }) {
 function DataTable({
   rows,
   columns,
+  english = false,
   empty = "Todavía no hay registros",
   emptyDescription = "Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.",
   emptyIllustration,
@@ -128,6 +155,7 @@ function DataTable({
 }: {
   rows: any[];
   columns: Column[];
+  english?: boolean;
   empty?: string;
   emptyDescription?: string;
   emptyIllustration?: "inventario" | "reportes";
@@ -174,21 +202,21 @@ function DataTable({
       {totalPages > 1 && (
         <div className="pagination">
           <span>
-            {rows.length} registros · Página {page} de {totalPages}
+            {english ? `${rows.length} records · Page ${page} of ${totalPages}` : `${rows.length} registros · Página ${page} de ${totalPages}`}
           </span>
           <Button
             variant="ghost"
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
           >
-            Anterior
+            {english ? "Previous" : "Anterior"}
           </Button>
           <Button
             variant="ghost"
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
           >
-            Siguiente
+            {english ? "Next" : "Siguiente"}
           </Button>
         </div>
       )}
@@ -202,10 +230,12 @@ function DataTable({
   );
 }
 function Heading({
+  eyebrow = "TU NEGOCIO, CON CLARIDAD",
   title,
   caption,
   children,
 }: {
+  eyebrow?: string;
   title: string;
   caption: string;
   children?: ReactNode;
@@ -213,7 +243,7 @@ function Heading({
   return (
     <div className="page-heading">
       <div>
-        <span className="eyebrow">TU NEGOCIO, CON CLARIDAD</span>
+        <span className="eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
         <p>{caption}</p>
       </div>
@@ -257,6 +287,8 @@ const paymentOptions = [
 ];
 
 export function Catalog() {
+  const en = useLanguage() === "en";
+  const ct = (text: string) => catalogText(en, text);
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
   const query = useQuery({ queryKey: ["catalog"], queryFn: loadCatalog });
@@ -264,6 +296,19 @@ export function Catalog() {
     queryKey: ["categories"],
     queryFn: () => api("/categories"),
   });
+  // COM-03: el aviso de margen usa el mínimo de Ajustes (15 % si no se puede leer).
+  const marginSettings = useQuery<any>({
+    queryKey: ["settings"],
+    queryFn: () => api("/settings"),
+    retry: false,
+  });
+  const lowMargin = marginSettings.data?.lowMargin;
+  const withMargin = (list: Field[]) => (values: Record<string, any>) =>
+    list.map((f) =>
+      f.key === "costAvg"
+        ? { ...f, help: marginHint(values.price, values.costAvg, lowMargin, en) }
+        : f,
+    );
   const [search, setSearch] = useState(""),
     [category, setCategory] = useState(""),
     [create, setCreate] = useState(false),
@@ -282,23 +327,23 @@ export function Catalog() {
         matchesWords(productSearchText(p), words),
     ) || [];
   const fields: Field[] = [
-    { key: "name", label: "Nombre del producto", required: true },
+    { key: "name", label: ct("Nombre del producto"), required: true },
     { key: "sku", label: "SKU", required: true },
     {
       key: "categoryId",
-      label: "Categoría",
+      label: ct("Categoría"),
       type: "select",
       required: true,
       options: cats.data?.map((c: any) => ({ label: c.name, value: c.id })),
     },
-    { key: "brand", label: "Marca", initial: "Norexos" },
-    { key: "barcode", label: "Código de barras", required: true },
-    requiredNumber("price", "Precio de venta"),
-    requiredNumber("costAvg", "Costo de entrada"),
-    requiredNumber("minStock", "Stock mínimo", 5),
+    { key: "brand", label: ct("Marca"), initial: "Norexos" },
+    { key: "barcode", label: ct("Código de barras"), required: true },
+    requiredNumber("price", ct("Precio de venta")),
+    requiredNumber("costAvg", ct("Costo de entrada")),
+    requiredNumber("minStock", ct("Stock mínimo"), 5),
     {
       key: "service",
-      label: "Es un servicio (se vende sin existencia)",
+      label: ct("Es un servicio (se vende sin existencia)"),
       type: "checkbox",
     },
     {
@@ -310,10 +355,10 @@ export function Catalog() {
     },
     {
       key: "imageUrl",
-      label: "URL de la foto",
+      label: ct("URL de la foto"),
       initial: "/products/accessories.svg",
     },
-    { key: "description", label: "Descripción", type: "textarea" },
+    { key: "description", label: ct("Descripción"), type: "textarea" },
   ];
   return (
     <div className="catalog-screen">
@@ -335,18 +380,18 @@ export function Catalog() {
                   "plantilla-productos.xlsx",
                 ).catch(() =>
                   toast(
-                    "No pudimos descargar la plantilla. Revisa tu conexión e inténtalo de nuevo.",
+                    ct("No pudimos descargar la plantilla. Revisa tu conexión e inténtalo de nuevo."),
                     true,
                   ),
                 )
               }
             >
               <Download size={16} />
-              Plantilla
+              {ct("Plantilla")}
             </Button>
             <label className="button secondary">
               <Upload size={16} />
-              Importar Excel
+              {ct("Importar Excel")}
               <input
                 type="file"
                 accept=".xlsx"
@@ -361,11 +406,11 @@ export function Catalog() {
                         method: "POST",
                         body: data,
                       });
-                      toast(`${result.imported} productos importados.`);
+                      toast(en ? `${result.imported} products imported.` : `${result.imported} productos importados.`);
                       await client.invalidateQueries();
                     } catch {
                       toast(
-                        "No pudimos importar el archivo. Revisa las columnas y los datos de la plantilla antes de volver a intentar.",
+                        ct("No pudimos importar el archivo. Revisa las columnas y los datos de la plantilla antes de volver a intentar."),
                         true,
                       );
                     }
@@ -377,6 +422,7 @@ export function Catalog() {
             {can(user.permissions, "inventory:import") && (
               <InventoryImportButton />
             )}
+
           </>
         )}
       </Heading>
@@ -392,22 +438,23 @@ export function Catalog() {
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar nombre, SKU o marca"
+            placeholder={ct("Buscar nombre, SKU o marca")}
           />
           <select
-            aria-label="Filtrar por categoría"
+            aria-label={ct("Filtrar por categoría")}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            <option value="">Todas las categorías</option>
+            <option value="">{ct("Todas las categorías")}</option>
             {cats.data?.map((c: any) => (
               <option value={c.id} key={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
+
         </div>
-        <QueryState query={query}>
+        <QueryState query={query} english={en}>
           <DataTable
             cards
             rows={rows}
@@ -423,11 +470,13 @@ export function Catalog() {
             }
             columns={[
               {
-                label: "Producto",
+                label: ct("Producto"),
                 render: (p) => (
                   <div className="table-product">
                     <img
+                      key={p.imageUrl}
                       src={p.imageUrl || "/products/accessories.svg"}
+                      onError={(event) => handleCatalogImageError(event.currentTarget)}
                       alt=""
                     />
                     <div>
@@ -440,12 +489,12 @@ export function Catalog() {
                 ),
               },
               {
-                label: "Categoría",
+                label: ct("Categoría"),
                 render: (p) => <Badge>{p.category.name}</Badge>,
               },
-              { label: "Variantes", render: (p) => p.variants.length },
+              { label: ct("Variantes"), render: (p) => p.variants.length },
               {
-                label: "Precio",
+                label: ct("Precio"),
                 render: (p) => formatMoney(p.variants[0]?.price || 0),
               },
               {
@@ -459,17 +508,17 @@ export function Catalog() {
                     <Badge
                       tone={stock <= Number(p.minStock) ? "warning" : "success"}
                     >
-                      {stock} unidades
+                      {stock} {en ? "units" : "unidades"}
                     </Badge>
                   );
                 },
               },
               {
-                label: "Acciones",
+                label: ct("Acciones"),
                 render: (p) => (
                   <div className="table-actions">
                     <button
-                      aria-label={"Ver " + p.name}
+                      aria-label={ct("Ver ") + p.name}
                       onClick={() => {
                         setDetail(p);
                         setTab("General");
@@ -478,14 +527,14 @@ export function Catalog() {
                       <Eye size={17} />
                     </button>
                     <button
-                      aria-label={"Etiquetas de " + p.name}
+                      aria-label={ct("Etiquetas de ") + p.name}
                       onClick={() => setLabels(p)}
                     >
                       <Printer size={17} />
                     </button>
                     {write && (
                       <button
-                        aria-label={"Variantes de " + p.name}
+                        aria-label={ct("Variantes de ") + p.name}
                         onClick={() => setMatrix(p)}
                       >
                         <Boxes size={17} />
@@ -500,8 +549,9 @@ export function Catalog() {
       </section>
       {create && (
         <FormModal
-          title="Un nuevo producto para tu tienda"
-          fields={fields}
+          english={en}
+          title={ct("Un nuevo producto para tu tienda")}
+          fields={withMargin(fields)}
           onClose={() => setCreate(false)}
           onSubmit={(values) => {
             const { barcode, price, costAvg, service, ...data } = values;
@@ -519,30 +569,31 @@ export function Catalog() {
       )}
       {matrix && (
         <FormModal
-          title={"Crear variantes · " + matrix.name}
+          english={en}
+          title={ct("Crear variantes · ") + matrix.name}
           fields={[
             {
               key: "attribute1",
-              label: "Primer atributo",
+              label: ct("Primer atributo"),
               initial: "talla",
               required: true,
             },
             {
               key: "values1",
-              label: "Valores separados por coma",
+              label: ct("Valores separados por coma"),
               initial: "S,M,L",
               required: true,
             },
-            { key: "attribute2", label: "Segundo atributo", initial: "color" },
+            { key: "attribute2", label: ct("Segundo atributo"), initial: "color" },
             {
               key: "values2",
-              label: "Valores separados por coma",
+              label: ct("Valores separados por coma"),
               initial: "Negro,Azul",
             },
-            requiredNumber("price", "Precio", Number(matrix.variants[0].price)),
+            requiredNumber("price", ct("Precio"), Number(matrix.variants[0].price)),
             requiredNumber(
               "costAvg",
-              "Costo",
+              ct("Costo"),
               Number(matrix.variants[0].costAvg || 0),
             ),
           ]}
@@ -572,9 +623,10 @@ export function Catalog() {
         />
       )}
       <Modal
+        closeLabel={en ? "Close" : "Cerrar"}
         open={!!detail}
         onClose={() => setDetail(null)}
-        title={detail?.name || "Producto"}
+        title={detail?.name || ct("Producto")}
         wide
       >
         <div className="tabs">
@@ -584,7 +636,7 @@ export function Catalog() {
               key={t}
               onClick={() => setTab(t)}
             >
-              {t}
+              {ct(t)}
             </button>
           ))}
         </div>
@@ -599,7 +651,7 @@ export function Catalog() {
                   {detail.brand} · {detail.sku}
                 </p>
                 <p>
-                  Stock mínimo: {detail.minStock} · Stock máximo:{" "}
+                  {ct("Stock mínimo")}: {detail.minStock} · {ct("Stock máximo")}:{" "}
                   {detail.maxStock}
                 </p>
                 <p>ITBIS: {detail.taxRate}%</p>
@@ -611,18 +663,19 @@ export function Catalog() {
                     }
                   >
                     <Pencil size={16} />
-                    Editar producto
+                    {ct("Editar producto")}
                   </Button>
                 )}
               </div>
             </div>
           ) : tab === "Variantes" ? (
             <DataTable
+            english={en}
               rows={detail.variants}
               columns={[
-                { label: "Variante", render: (v) => attrLabel(v.attributes) },
+                { label: ct("Variante"), render: (v) => attrLabel(v.attributes, en ? "Standard variant" : "Única") },
                 {
-                  label: "SKU / Código",
+                  label: ct("SKU / Código"),
                   render: (v) => (
                     <span>
                       {v.sku}
@@ -630,25 +683,25 @@ export function Catalog() {
                     </span>
                   ),
                 },
-                { label: "Precio", render: (v) => formatMoney(v.price) },
+                { label: ct("Precio"), render: (v) => formatMoney(v.price) },
                 { label: "Stock", render: (v) => v.stock },
                 ...(can(user.permissions, "profit:read")
                   ? [
                       {
-                        label: "Costo",
+                        label: ct("Costo"),
                         render: (v: any) => formatMoney(v.costAvg),
                       },
                     ]
                   : []),
                 {
-                  label: "Acción",
+                  label: ct("Acción"),
                   render: (v) =>
                     write && (
                       <button
                         className="text-link"
                         onClick={() => setEditing({ type: "variant", data: v })}
                       >
-                        Editar precio
+                        {ct("Editar precio")}
                       </button>
                     ),
                 },
@@ -656,30 +709,32 @@ export function Catalog() {
             />
           ) : tab === "Lotes" ? (
             <DataTable
+            english={en}
               rows={detail.variants.flatMap((v) =>
                 (v.lots || []).map((l) => ({ ...l, sku: v.sku })),
               )}
               columns={[
                 { label: "SKU", render: (l) => l.sku },
-                { label: "Lote", render: (l) => l.lotNumber },
+                { label: ct("Lote"), render: (l) => l.lotNumber },
                 {
-                  label: "Vencimiento",
+                  label: ct("Vencimiento"),
                   render: (l) =>
-                    l.expiryDate ? dateLabel(l.expiryDate) : "No aplica",
+                    l.expiryDate ? dateLabel(l.expiryDate, en ? "en-US" : "es-DO") : ct("No aplica"),
                 },
-                { label: "Cantidad", render: (l) => l.qty },
+                { label: ct("Cantidad"), render: (l) => l.qty },
               ]}
             />
           ) : (
-            <Kardex variantId={detail.variants[0].id} />
+            <Kardex variantId={detail.variants[0].id} english={en} />
           ))}
       </Modal>
       {editing && (
         <FormModal
+          english={en}
           title={
             editing.type === "product"
-              ? "Editar producto"
-              : "Editar variante y precio"
+              ? ct("Editar producto")
+              : ct("Editar variante y precio")
           }
           initial={editing.data}
           fields={
@@ -697,11 +752,11 @@ export function Catalog() {
                   },
                   { key: "active", label: "Producto activo", type: "checkbox" },
                 ]
-              : [
-                  requiredNumber("price", "Precio"),
-                  requiredNumber("costAvg", "Costo promedio"),
-                  { key: "barcode", label: "Código de barras", required: true },
-                ]
+              : withMargin([
+                  requiredNumber("price", ct("Precio")),
+                  requiredNumber("costAvg", ct("Costo promedio")),
+                  { key: "barcode", label: ct("Código de barras"), required: true },
+                ])
           }
           onClose={() => setEditing(null)}
           onSubmit={async (data) => {
@@ -723,17 +778,18 @@ export function Catalog() {
         />
       )}
       <Modal
+        closeLabel={en ? "Close" : "Cerrar"}
         open={!!labels}
         onClose={() => setLabels(null)}
-        title="Etiquetas de código de barras"
+        title={ct("Etiquetas de código de barras")}
       >
-        <p>Imprime las etiquetas de cada variante.</p>
+        <p>{ct("Imprime las etiquetas de cada variante.")}</p>
         <div className="barcode-labels receipt-only-on-print">
           {labels?.variants.map((v) => (
             <div className="barcode-label" key={v.id}>
               <strong>{labels.name}</strong>
-              <small>{attrLabel(v.attributes)}</small>
-              <Barcode value={v.barcode} />
+              <small>{attrLabel(v.attributes, en ? "Standard variant" : "Única")}</small>
+              <Barcode value={v.barcode} english={en} />
               <span>{v.barcode}</span>
               <b>{formatMoney(v.price)}</b>
             </div>
@@ -741,13 +797,13 @@ export function Catalog() {
         </div>
         <Button onClick={() => window.print()}>
           <Printer size={17} />
-          Imprimir etiquetas
+          {ct("Imprimir etiquetas")}
         </Button>
       </Modal>
     </div>
   );
 }
-export function Barcode({ value }: { value: string }) {
+export function Barcode({ value, english = false }: { value: string; english?: boolean }) {
   const patterns = [
     "nnnwwnwnn",
     "wnnwnnnnw",
@@ -814,28 +870,32 @@ export function Barcode({ value }: { value: string }) {
     <svg
       viewBox={`-10 0 ${x + 20} 40`}
       height="42"
-      aria-label={"Código de barras " + value}
+      aria-label={(english ? "Barcode " : "Código de barras ") + value}
     >
       {bars}
     </svg>
   );
 }
-function Kardex({ variantId }: { variantId: string }) {
+function Kardex({ variantId, english = false }: { variantId: string; english?: boolean }) {
+  const t = (text: string) => inventoryText(text, english ? "en" : "es");
   const query = useQuery({
     queryKey: ["movements", variantId],
     queryFn: () => api("/inventory/movements?variantId=" + variantId),
   });
   return (
-    <QueryState query={query}>
+    <QueryState query={query} english={english}>
       <DataTable
         cards
+        english={english}
         rows={query.data || []}
+        empty={english ? "No stock movements" : undefined}
+        emptyDescription={english ? "Recorded movements will appear here." : undefined}
         columns={[
-          { label: "Fecha", render: (m) => dateLabel(m.createdAt) },
-          { label: "Tipo", render: (m) => <Badge>{m.type}</Badge> },
-          { label: "Cantidad", render: (m) => m.qty },
-          { label: "Saldo", render: (m) => m.balanceAfter },
-          { label: "Motivo", render: (m) => m.reason },
+          { label: t("Fecha"), render: (m) => dateLabel(m.createdAt, english ? "en-US" : "es-DO") },
+          { label: t("Tipo"), render: (m) => <Badge>{m.type}</Badge> },
+          { label: t("Cantidad"), render: (m) => m.qty },
+          { label: t("Saldo"), render: (m) => m.balanceAfter },
+          { label: t("Motivo"), render: (m) => m.reason },
         ]}
       />
     </QueryState>
@@ -843,6 +903,9 @@ function Kardex({ variantId }: { variantId: string }) {
 }
 
 export function Inventory() {
+  useInventoryAppearance();
+  const inventoryLanguage = useLanguage();
+  const translateInventory = (text: string) => inventoryText(text, inventoryLanguage);
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
   const query = useQuery({
@@ -899,33 +962,32 @@ export function Inventory() {
     matchesWords(productSearchText({ ...v.product, variants: [v] }), words),
   );
   return (
-    <>
+    <section className="fusion-inventory" aria-label={translateInventory("Inventario")}>
       <Heading
-        title="Inventario"
-        caption="El inventario correcto hace espacio para mejores decisiones."
+        eyebrow={inventoryLanguage === "en" ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={translateInventory("Cada unidad, bajo control")}
+        caption={translateInventory("El inventario correcto hace espacio para mejores decisiones.")}
       />
-      <div className="panel inventory-panel">
-        <div className="panel-heading">
-          <div>
-            <h2>Existencias por almacén</h2>
-            <p>Consulta cantidades, lotes y vencimientos antes de ajustar.</p>
-          </div>
-          <div className="field inventory-warehouse-field">
-            <label htmlFor="warehouse-view">Almacén</label>
-            <select
-              id="warehouse-view"
-              value={warehouseView}
-              onChange={(e) => setWarehouseView(e.target.value)}
-            >
-              <option value="all">Todos</option>
-              {(warehouses.data || []).map((w: any) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === "stock" && (
+        <InventorySummary rows={rows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} />
+      )}
+      {user.role !== "seller" && can(user.permissions, "profit:read") && (
+        <WithoutCostCard />
+      )}
+      <div className="panel">
+        <label htmlFor="warehouse-view">{translateInventory("Almacén")}</label>
+        <select
+          id="warehouse-view"
+          value={warehouseView}
+          onChange={(e) => setWarehouseView(e.target.value)}
+        >
+          <option value="all">{translateInventory("Todos")}</option>
+          {(warehouses.data || []).map((w: any) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
+            </option>
+          ))}
+        </select>
         <div className="table-toolbar">
           <div className="tabs">
             <button
@@ -934,7 +996,7 @@ export function Inventory() {
               aria-pressed={mode === "stock"}
               onClick={() => setMode("stock")}
             >
-              Stock actual
+              {translateInventory("Stock actual")}
             </button>
             <button
               type="button"
@@ -942,40 +1004,40 @@ export function Inventory() {
               aria-pressed={mode === "counts"}
               onClick={() => setMode("counts")}
             >
-              Conteos físicos
+              {translateInventory("Conteos físicos")}
             </button>
           </div>
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar producto o código"
+            placeholder={translateInventory("Buscar producto o código")}
           />
         </div>
-        <QueryState query={query}>
+        <QueryState query={query} english={inventoryLanguage === "en"}>
           {mode === "stock" ? (
             <DataTable
               cards
+              english={inventoryLanguage === "en"}
               rows={rows}
               empty="No encontramos artículos en el inventario"
               emptyIllustration="inventario"
               emptyDescription="Revisa la búsqueda o registra una entrada de mercancía."
               columns={[
                 {
-                  label: "Producto / Variante",
+                  label: translateInventory("Producto / Variante"),
                   render: (v) => (
-                    <span>
-                      <strong>{v.product.name}</strong>
+                    <InventoryProduct name={v.product.name} image={v.product.imageUrl}>
                       <small>
-                        {v.sku} · {attrLabel(v.attributes)}
+                        {v.sku} · {attrLabel(v.attributes, inventoryLanguage === "en" ? "Standard variant" : "Única")}
                       </small>
-                    </span>
+                    </InventoryProduct>
                   ),
                 },
-                { label: "Precio", render: (v) => formatMoney(v.price) },
+                { label: translateInventory("Precio"), render: (v) => formatMoney(v.price) },
                 ...(can(user.permissions, "profit:read")
                   ? [
                       {
-                        label: "Costo",
+                        label: translateInventory("Costo"),
                         render: (v: any) => formatMoney(v.costAvg),
                       },
                     ]
@@ -1003,15 +1065,15 @@ export function Inventory() {
                     </Badge>
                   ),
                 },
-                { label: "Total", render: (v) => v.totalStock },
+                { label: translateInventory("Total"), render: (v) => v.totalStock },
                 {
                   label: `Lote en ${storeWarehouseName}`,
                   render: (v) =>
                     v.lots.find((l: any) => Number(l.qty) > 0)?.lotNumber ||
-                    "Sin lote",
+                    translateInventory("Sin lote"),
                 },
                 {
-                  label: "Vencimiento",
+                  label: translateInventory("Vencimiento"),
                   render: (v) => {
                     const lot = v.lots
                       .filter((l: any) => Number(l.qty) > 0 && l.expiryDate)
@@ -1019,25 +1081,25 @@ export function Inventory() {
                         (a: any, b: any) =>
                           +new Date(a.expiryDate) - +new Date(b.expiryDate),
                       )[0];
-                    return lot ? dateLabel(lot.expiryDate) : "No aplica";
+                    return lot ? dateLabel(lot.expiryDate, inventoryLanguage === "en" ? "en-US" : "es-DO") : translateInventory("No aplica");
                   },
                 },
                 {
-                  label: "Acciones",
+                  label: translateInventory("Acciones"),
                   render: (v) => (
                     <div className="table-actions">
                       <button
                         className="text-link"
                         onClick={() => setAdjust(v)}
                       >
-                        Ajustar
+                        {translateInventory("Ajustar")}
                       </button>
                       <button className="text-link" onClick={() => setCount(v)}>
-                        Contar
+                        {translateInventory("Contar")}
                       </button>
                       <button
                         onClick={() => setKardex(v)}
-                        aria-label={"Kardex de " + v.product.name}
+                        aria-label={(inventoryLanguage === "en" ? "Stock ledger for " : "Kardex de ") + v.product.name}
                       >
                         <Eye size={17} />
                       </button>
@@ -1047,26 +1109,27 @@ export function Inventory() {
               ]}
             />
           ) : (
-            <QueryState query={counts}>
+            <QueryState query={counts} english={inventoryLanguage === "en"}>
               <DataTable
+                english={inventoryLanguage === "en"}
                 rows={counts.data || []}
-                empty="Todavía no hay conteos físicos"
-                emptyDescription="Pulsa Contar junto a un artículo para registrar su existencia real."
+                empty={translateInventory("Todavía no hay conteos físicos")}
+                emptyDescription={translateInventory("Pulsa Contar junto a un artículo para registrar su existencia real.")}
                 columns={[
-                  { label: "Fecha", render: (c) => dateLabel(c.createdAt) },
-                  { label: "Artículos", render: (c) => c.items.length },
+                  { label: translateInventory("Fecha"), render: (c) => dateLabel(c.createdAt, inventoryLanguage === "en" ? "en-US" : "es-DO") },
+                  { label: translateInventory("Artículos"), render: (c) => c.items.length },
                   {
-                    label: "Estado",
+                    label: translateInventory("Estado"),
                     render: (c) => (
                       <Badge
                         tone={c.status === "applied" ? "success" : "warning"}
                       >
-                        {c.status === "applied" ? "Aplicado" : "Pendiente"}
+                        {c.status === "applied" ? translateInventory("Aplicado") : translateInventory("Pendiente")}
                       </Badge>
                     ),
                   },
                   {
-                    label: "Acción",
+                    label: translateInventory("Acción"),
                     render: (c) =>
                       c.status === "pending" &&
                       can(user.permissions, "sale:manage") && (
@@ -1088,7 +1151,7 @@ export function Inventory() {
                             }
                           }}
                         >
-                          Aprobar ajuste
+                          {translateInventory("Aprobar ajuste")}
                         </Button>
                       ),
                   },
@@ -1098,14 +1161,21 @@ export function Inventory() {
           )}
         </QueryState>
       </div>
+      {!query.isPending && !query.error && Array.isArray(query.data) && !warehouses.isPending && !warehouses.error && mode === "stock" && (
+        <div className="inventory-insights">
+          <InventoryAlerts rows={rows} stock={visibleStock} en={inventoryLanguage === "en"} scope={selectedWarehouse?.name || (inventoryLanguage === "en" ? "In store" : "En Tienda")} onInspect={setKardex} />
+          <InventoryMovements en={inventoryLanguage === "en"} />
+        </div>
+      )}
       <WarehousesPanel rows={rows} warehouseId={warehouseView} />
       {adjust && (
         <FormModal
-          title={"Ajustar · " + adjust.product.name}
+          english={inventoryLanguage === "en"}
+          title={translateInventory("Ajustar") + " · " + adjust.product.name}
           fields={[
             {
               key: "warehouseId",
-              label: "Almacén",
+              label: translateInventory("Almacén"),
               type: "select",
               required: true,
               initial: countWarehouseId,
@@ -1115,24 +1185,24 @@ export function Inventory() {
               })),
             },
             {
-              ...requiredNumber("qty", "Cantidad (+ entrada / − salida)"),
+              ...requiredNumber("qty", translateInventory("Cantidad (+ entrada / − salida)")),
               min: -100000,
               initial: 1,
             },
             {
               key: "type",
-              label: "Tipo",
+              label: translateInventory("Tipo"),
               type: "select",
               initial: "adjustment",
               options: [
-                { label: "Ajuste", value: "adjustment" },
-                { label: "Merma", value: "waste" },
-                { label: "Devolución a proveedor", value: "supplier_return" },
+                { label: translateInventory("Ajuste"), value: "adjustment" },
+                { label: translateInventory("Merma"), value: "waste" },
+                { label: translateInventory("Devolución a proveedor"), value: "supplier_return" },
               ],
             },
             {
               key: "supplierId",
-              label: "Proveedor (solo en devolución a proveedor)",
+              label: translateInventory("Proveedor (solo en devolución a proveedor)"),
               type: "select",
               options: (adjustSuppliers.data || []).map((x: any) => ({
                 label: x.name,
@@ -1142,7 +1212,7 @@ export function Inventory() {
             {
               key: "reference",
               label:
-                "Referencia de la devolución (documento o nota de crédito)",
+                translateInventory("Referencia de la devolución (documento o nota de crédito)"),
             },
             // Un lote existente sirve para sacar o para sumar sin repetir
             // número ni vencimiento; sólo un lote nuevo los pide, y el
@@ -1175,7 +1245,7 @@ export function Inventory() {
               : []),
             {
               key: "reason",
-              label: "Motivo",
+              label: translateInventory("Motivo"),
               required: true,
               type: "textarea",
             },
@@ -1204,11 +1274,12 @@ export function Inventory() {
       )}
       {count && (
         <FormModal
-          title={"Conteo físico · " + count.product.name}
+          english={inventoryLanguage === "en"}
+          title={translateInventory("Conteo físico") + " · " + count.product.name}
           fields={[
             {
               key: "warehouseId",
-              label: "Almacén",
+              label: translateInventory("Almacén"),
               type: "select",
               required: true,
               initial:
@@ -1274,16 +1345,18 @@ export function Inventory() {
       <Modal
         open={!!kardex}
         onClose={() => setKardex(null)}
-        title={"Kardex · " + (kardex?.product.name || "")}
+        title={(inventoryLanguage === "en" ? "Stock ledger · " : "Kardex · ") + (kardex?.product.name || "")}
         wide
       >
-        {kardex && <Kardex variantId={kardex.id} />}
+        {kardex && <Kardex variantId={kardex.id} english={inventoryLanguage === "en"} />}
       </Modal>
-    </>
+    </section>
   );
 }
 
 export function Purchases() {
+  const en = useLanguage() === "en";
+  const ot = (text: string) => operacionesText(en, text);
   // La API no envía el total de la orden a quien no ve costos (F2).
   const seesCost = can(useStore((s) => s.user)!.permissions, "profit:read");
   const orders = useQuery({
@@ -1305,18 +1378,19 @@ export function Purchases() {
     [receive, setReceive] = useState<any>(null),
     [paySupplier, setPaySupplier] = useState<any>(null);
   return (
-    <>
+    <OperationsPresentation area="purchases">
       <Heading
-        title="Compras que impulsan tu tienda"
-        caption="Del proveedor al estante, con costos y lotes claros."
+        eyebrow={ot("TU NEGOCIO, CON CLARIDAD")}
+        title={ot("Compras")}
+        caption={ot("Gestión de órdenes de compra, recepciones y proveedores.")}
       >
         <Button variant="secondary" onClick={() => setNewSupplier(true)}>
           <Plus size={16} />
-          Proveedor
+          {ot("Proveedor")}
         </Button>
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
-          Orden de compra
+          {ot("Orden de compra")}
         </Button>
       </Heading>
       <div className="panel">
@@ -1326,69 +1400,70 @@ export function Purchases() {
               className={tab === "orders" ? "active" : ""}
               onClick={() => setTab("orders")}
             >
-              Órdenes
+              {ot("Órdenes")}
             </button>
             <button
               className={tab === "suppliers" ? "active" : ""}
               onClick={() => setTab("suppliers")}
             >
-              Proveedores
+              {ot("Proveedores")}
             </button>
             <button
               className={tab === "receipts" ? "active" : ""}
               onClick={() => setTab("receipts")}
             >
-              Recepciones
+              {ot("Recepciones")}
             </button>
           </div>
         </div>
         {tab === "receipts" ? (
           <ReceiptHistory />
         ) : tab === "orders" ? (
-          <QueryState query={orders}>
-            <DataTable
+          <QueryState english={en} query={orders}>
+            <DataTable english={en}
               rows={orders.data || []}
-              empty="Todavía no hay órdenes de compra"
-              emptyDescription="Crea una Orden de compra para registrar tu próxima compra."
+              empty={ot("Todavía no hay órdenes de compra")}
+              emptyDescription={ot("Crea una Orden de compra para registrar tu próxima compra.")}
               columns={[
-                { label: "Orden", render: (o) => <strong>{o.number}</strong> },
+                { label: ot("Orden"), render: (o) => <strong>{o.number}</strong> },
                 {
-                  label: "Proveedor",
+                  label: ot("Proveedor"),
                   render: (o) =>
                     suppliers.data?.find((s: any) => s.id === o.supplierId)
-                      ?.name || "Proveedor",
+                      ?.name || ot("Proveedor"),
                 },
-                { label: "Fecha", render: (o) => dateLabel(o.createdAt) },
-                { label: "Artículos", render: (o) => o.items.length },
+                { label: ot("Fecha"), render: (o) => dateLabel(o.createdAt, en ? "en-US" : "es-DO") },
+                { label: ot("Artículos"), render: (o) => o.items.length },
                 ...(seesCost
                   ? [
                       {
-                        label: "Total",
+                        label: ot("Total"),
+                        className: "operations-money",
                         render: (o: any) => formatMoney(o.total),
                       },
                     ]
                   : []),
                 {
-                  label: "Estado",
+                  label: ot("Estado"),
                   render: (o) => (
                     <Badge
                       tone={o.status === "received" ? "success" : "warning"}
                     >
                       {{
-                        ordered: "Por recibir",
-                        partial: "Parcial",
-                        received: "Recibida",
+                        ordered: ot("Por recibir"),
+                        partial: ot("Parcial"),
+                        received: ot("Recibida"),
                       }[o.status as string] || o.status}
                     </Badge>
                   ),
                 },
                 {
-                  label: "Acción",
+                  label: ot("Acción"),
                   render: (o) =>
                     o.status !== "received" && (
                       <Button variant="secondary" onClick={() => setReceive(o)}>
                         <ArrowDownToLine size={16} />
-                        Recibir
+                        {ot("Recibir")}
                       </Button>
                     ),
                 },
@@ -1396,19 +1471,19 @@ export function Purchases() {
             />
           </QueryState>
         ) : (
-          <QueryState query={suppliers}>
-            <DataTable
+          <QueryState english={en} query={suppliers}>
+            <DataTable english={en}
               rows={suppliers.data || []}
-              empty="Todavía no hay proveedores"
-              emptyDescription="Pulsa Proveedor para registrar quién te vende la mercancía."
+              empty={ot("Todavía no hay proveedores")}
+              emptyDescription={ot("Pulsa Proveedor para registrar quién te vende la mercancía.")}
               columns={[
                 {
-                  label: "Proveedor",
+                  label: ot("Proveedor"),
                   render: (s) => <strong>{s.name}</strong>,
                 },
                 { label: "RNC", render: (s) => s.legalId || "—" },
                 {
-                  label: "Contacto",
+                  label: ot("Contacto"),
                   render: (s) => (
                     <span>
                       {s.phone}
@@ -1417,12 +1492,12 @@ export function Purchases() {
                   ),
                 },
                 {
-                  label: "Plazo de pago",
-                  render: (s) => s.paymentTermsDays + " días",
+                  label: ot("Plazo de pago"),
+                  render: (s) => s.paymentTermsDays + ot(" días"),
                 },
-                { label: "Entrega", render: (s) => s.leadTimeDays + " días" },
+                { label: ot("Entrega"), render: (s) => s.leadTimeDays + ot(" días") },
                 {
-                  label: "Acción",
+                  label: ot("Acción"),
                   render: (s) => (
                     <Button
                       variant="secondary"
@@ -1435,7 +1510,7 @@ export function Purchases() {
                         })
                       }
                     >
-                      Registrar pago
+                      {ot("Registrar pago")}
                     </Button>
                   ),
                 },
@@ -1445,15 +1520,15 @@ export function Purchases() {
         )}
       </div>
       {newSupplier && (
-        <FormModal
-          title="Nuevo proveedor"
+        <FormModal english={en}
+          title={ot("Nuevo proveedor")}
           fields={[
-            { key: "name", label: "Nombre", required: true },
-            { key: "legalId", label: "RNC / identificación" },
-            { key: "phone", label: "Teléfono" },
-            { key: "email", label: "Correo", type: "email" },
-            requiredNumber("paymentTermsDays", "Plazo de pago (días)", 30),
-            requiredNumber("leadTimeDays", "Tiempo de entrega (días)", 7),
+            { key: "name", label: ot("Nombre"), required: true },
+            { key: "legalId", label: ot("RNC / identificación") },
+            { key: "phone", label: ot("Teléfono") },
+            { key: "email", label: ot("Correo"), type: "email" },
+            requiredNumber("paymentTermsDays", ot("Plazo de pago (días)"), 30),
+            requiredNumber("leadTimeDays", ot("Tiempo de entrega (días)"), 7),
           ]}
           onClose={() => setNewSupplier(false)}
           onSubmit={(data) => post("/suppliers", data)}
@@ -1474,19 +1549,19 @@ export function Purchases() {
         />
       )}
       {paySupplier && (
-        <FormModal
-          title={"Pago · " + paySupplier.name}
+        <FormModal english={en}
+          title={ot("Pago · ") + paySupplier.name}
           fields={[
-            { ...requiredNumber("amount", "Monto del pago"), min: 0.01 },
+            { ...requiredNumber("amount", ot("Monto del pago")), min: 0.01 },
             {
               key: "method",
-              label: "Método",
+              label: ot("Método"),
               type: "select",
               required: true,
               initial: "transfer",
-              options: paymentOptions,
+              options: paymentOptions.map((option) => ({ ...option, label: ot(option.label) })),
             },
-            { key: "reference", label: "Referencia" },
+            { key: "reference", label: ot("Referencia") },
           ]}
           onClose={() => setPaySupplier(null)}
           onSubmit={(data) =>
@@ -1498,10 +1573,12 @@ export function Purchases() {
           }
         />
       )}
-    </>
+    </OperationsPresentation>
   );
 }
 export function Expenses() {
+  const en = useLanguage() === "en";
+  const ot = (text: string) => operacionesText(en, text);
   const query = useQuery({
     queryKey: ["expenses"],
     queryFn: () => api("/expenses"),
@@ -1518,14 +1595,15 @@ export function Expenses() {
   const month = today().slice(0, 7);
   const rows = query.data || [];
   return (
-    <>
+    <OperationsPresentation area="expenses">
       <Heading
-        title="Tus gastos, sin sorpresas"
-        caption="Controla lo que sale para cuidar lo que ganas."
+        eyebrow={ot("TU NEGOCIO, CON CLARIDAD")}
+        title={ot("Gastos")}
+        caption={ot("Control y presupuesto de gastos operativos.")}
       >
         <Button onClick={() => setCreate(crypto.randomUUID())}>
           <Plus size={17} />
-          Registrar gasto
+          {ot("Registrar gasto")}
         </Button>
       </Heading>
       <div className="budget-grid">
@@ -1544,14 +1622,14 @@ export function Expenses() {
                 <strong>{c.name}</strong>
                 <button
                   className="icon-button"
-                  aria-label={"Editar presupuesto de " + c.name}
+                  aria-label={ot("Editar presupuesto de ") + c.name}
                   onClick={() => setBudget(c)}
                 >
                   <Pencil size={16} />
                 </button>
               </div>
               <h2>{formatMoney(used)}</h2>
-              <small>de {formatMoney(c.monthlyBudget)} este mes</small>
+              <small>{ot("de")} {formatMoney(c.monthlyBudget)} {ot("este mes")}</small>
               <div className="progress-track">
                 <div
                   style={{
@@ -1566,37 +1644,39 @@ export function Expenses() {
                 />
               </div>
               <Badge tone={percent >= 80 ? "warning" : "violet"}>
-                {percent.toFixed(0)}% del presupuesto
+                {percent.toFixed(0)}% {ot("del presupuesto")}
               </Badge>
             </div>
           );
         })}
       </div>
       <div className="panel">
-        <QueryState query={query}>
-          <DataTable
+        <QueryState english={en} query={query}>
+          <DataTable english={en}
+            empty={ot("Todavía no hay registros")}
+            emptyDescription={ot("Revisa la búsqueda y los filtros, o registra un nuevo dato desde esta pantalla.")}
             rows={rows}
             columns={[
-              { label: "Fecha", render: (e) => dateLabel(e.date) },
+              { label: ot("Fecha"), render: (e) => dateLabel(e.date, en ? "en-US" : "es-DO") },
               {
-                label: "Descripción",
+                label: ot("Descripción"),
                 render: (e) => (
                   <span>
                     <strong>{e.description}</strong>
-                    {e.recurring && <small>Marcado recurrente</small>}
+                    {e.recurring && <small>{ot("Marcado recurrente")}</small>}
                   </span>
                 ),
               },
               {
-                label: "Categoría",
+                label: ot("Categoría"),
                 render: (e) => <Badge>{e.category.name}</Badge>,
               },
               {
-                label: "Método",
+                label: ot("Método"),
                 render: (e) =>
-                  paymentOptions.find((p) => p.value === e.method)?.label,
+                  paymentOptions.find((p) => p.value === e.method)?.label && ot(paymentOptions.find((p) => p.value === e.method)!.label),
               },
-              { label: "Monto", render: (e) => formatMoney(e.amount) },
+              { label: ot("Monto"), className: "operations-money", render: (e) => formatMoney(e.amount) },
               {
                 label: "Comprobante",
                 render: (e) =>
@@ -1618,7 +1698,7 @@ export function Expenses() {
                     className="text-link danger-text"
                     onClick={() => setVoiding(e)}
                   >
-                    Anular
+                    {ot("Anular")}
                   </button>
                 ),
               },
@@ -1698,12 +1778,12 @@ export function Expenses() {
         />
       )}
       {budget && (
-        <FormModal
-          title={"Presupuesto · " + budget.name}
+        <FormModal english={en}
+          title={ot("Presupuesto · ") + budget.name}
           fields={[
             requiredNumber(
               "monthlyBudget",
-              "Presupuesto mensual",
+              ot("Presupuesto mensual"),
               Number(budget.monthlyBudget),
             ),
           ]}
@@ -1714,9 +1794,10 @@ export function Expenses() {
         />
       )}
       {voiding && (
-        <ConfirmModal
-          title="Anular gasto"
-          description="El gasto queda conservado en la bitácora y sale de los totales."
+        <ConfirmModal english={en}
+          title={ot("Anular gasto")}
+          description={ot("El gasto queda conservado en la bitácora y sale de los totales.")}
+          confirmLabel={ot("Confirmar")}
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
             await post("/expenses/" + voiding.id + "/void", { reason });
@@ -1725,7 +1806,7 @@ export function Expenses() {
           }}
         />
       )}
-    </>
+    </OperationsPresentation>
   );
 }
 
@@ -1735,6 +1816,8 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   offline_conflict: "Venta sin conexión",
   receivable: "Por cobrar",
   credit_reminder: "Créditos por cobrar",
+  gv_cash_open_night: "Caja GV abierta de noche",
+  gv_day_no_close: "Día de GV sin cierre",
   cash_difference: "Diferencia de caja",
   return_waste: "Merma por devolución",
   expense_budget: "Presupuesto de gastos",
@@ -1749,6 +1832,7 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   overstock: "Exceso de stock",
   unusual_discount: "Descuento inusual",
   sale_void_request: "Solicitud de anulación",
+  zero_cost_sale: "Venta sin costo",
 };
 const alertTypeLabel = (type: string) =>
   ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " ");
@@ -1830,7 +1914,7 @@ export function Cash() {
     );
   };
   return (
-    <div className="cash-page">
+    <div className="cash-page fusion-cash-turnos">
       <Heading
         title="Una caja que siempre cuadra"
         caption="Abre el día con claridad. Ciérralo con tranquilidad."
@@ -2123,6 +2207,7 @@ export function Cash() {
               {
                 label: "Efectivo esperado",
                 render: (s) => {
+                  if (!canSeeExpected) return "—";
                   const expected = s.expectedCash ?? s.expected?.cash;
                   return expected == null ? "—" : formatMoney(expected);
                 },
@@ -2135,6 +2220,7 @@ export function Cash() {
               {
                 label: "Diferencias por método",
                 render: (s) =>
+                  canSeeExpected &&
                   s.closedAt &&
                   [
                     s.differenceCash,
@@ -2440,6 +2526,8 @@ function DiscardOfflineSale({
 }
 
 export function Customers() {
+  const en = useLanguage() === "en";
+  const ot = (text: string) => operacionesText(en, text);
   const user = useStore((state) => state.user)!;
   const client = useQueryClient();
   const query = useQuery({
@@ -2455,18 +2543,18 @@ export function Customers() {
   // no es un correo válido para el navegador; la API lo valida al guardar.
   const fullCustomer = seesCustomerPii(user.permissions);
   const fields: Field[] = [
-    { key: "name", label: "Nombre", required: true },
-    { key: "phone", label: "Teléfono" },
+    { key: "name", label: ot("Nombre"), required: true },
+    { key: "phone", label: ot("Teléfono") },
     {
       key: "email",
-      label: "Correo",
+      label: ot("Correo"),
       ...(fullCustomer ? { type: "email" } : {}),
     },
-    { key: "legalId", label: "Cédula / RNC" },
+    { key: "legalId", label: ot("Cédula / RNC") },
     ...(can(useStore.getState().user!.permissions, "sale:manage")
-      ? [requiredNumber("creditLimit", "Límite de crédito (RD$)", 0)]
+      ? [requiredNumber("creditLimit", ot("Límite de crédito (RD$)"), 0)]
       : []),
-    { key: "notes", label: "Notas", type: "textarea" },
+    { key: "notes", label: ot("Notas"), type: "textarea" },
   ];
   const rows = (query.data || []).filter((c: any) =>
     // P5: sin acceso completo la búsqueda no usa el teléfono, para
@@ -2483,7 +2571,7 @@ export function Customers() {
       >
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
-          Nuevo cliente
+          {ot("Nuevo cliente")}
         </Button>
       </Heading>
       <section
@@ -2501,19 +2589,25 @@ export function Customers() {
           <Filter
             value={search}
             onChange={setSearch}
-            placeholder="Buscar nombre o teléfono"
+            placeholder={ot("Buscar nombre o teléfono")}
           />
         </div>
-        <QueryState query={query}>
-          <DataTable
+        <QueryState english={en} query={query}>
+          <DataTable english={en}
             cards
-            rows={rows}
-            empty="No encontramos clientes"
-            emptyDescription="Revisa la búsqueda o registra una persona con Nuevo cliente."
+            rows={(query.data || []).filter((c: any) =>
+              // P5: sin acceso completo la búsqueda no usa el teléfono, para
+              // no servir de oráculo de los dígitos ocultos.
+              (c.name + " " + (fullCustomer ? c.phone : ""))
+                .toLowerCase()
+                .includes(search.toLowerCase()),
+            )}
+            empty={ot("No encontramos clientes")}
+            emptyDescription={ot("Revisa la búsqueda o registra una persona con Nuevo cliente.")}
             columns={[
-              { label: "Cliente", render: (c) => <strong>{c.name}</strong> },
+              { label: ot("Cliente"), render: (c) => <strong>{c.name}</strong> },
               {
-                label: "Contacto",
+                label: ot("Contacto"),
                 render: (c) => (
                   <span>
                     {customerPrivateDisplay(c.phone, fullCustomer)}
@@ -2522,7 +2616,7 @@ export function Customers() {
                 ),
               },
               {
-                label: "Cédula / RNC",
+                label: ot("Cédula / RNC"),
                 // P5 + SEC-05: la API ya envía el dato enmascarado a la caja;
                 // la vista lo acorta igual («•••123») con el mismo criterio
                 // de acceso que la API (fullCustomer).
@@ -2530,33 +2624,34 @@ export function Customers() {
               },
               ...(fullCustomer
                 ? [
-                    { label: "Compras", render: (c: any) => c.purchases },
+                    { label: ot("Compras"), render: (c: any) => c.purchases },
                     {
-                      label: "Total gastado",
+                      label: ot("Total gastado"),
+                      className: "operations-money",
                       render: (c: any) => formatMoney(c.totalSpent),
                     },
                     {
-                      label: "Última compra",
+                      label: ot("Última compra"),
                       render: (c: any) =>
                         c.lastPurchase
-                          ? dateLabel(c.lastPurchase)
-                          : "Aún sin compras",
+                          ? dateLabel(c.lastPurchase, en ? "en-US" : "es-DO")
+                          : ot("Aún sin compras"),
                     },
                   ]
                 : []),
               {
-                label: "Acción",
+                label: ot("Acción"),
                 render: (c) => (
                   <div className="table-actions">
                     <button className="text-link" onClick={() => setEditing(c)}>
-                      Editar
+                      {ot("Editar")}
                     </button>
                     {can(user.permissions, "customers:erase") && (
                       <button
                         className="text-link danger-text"
                         onClick={() => setAnonymizing(c)}
                       >
-                        Anonimizar
+                        {ot("Anonimizar")}
                       </button>
                     )}
                   </div>
@@ -2567,8 +2662,8 @@ export function Customers() {
         </QueryState>
       </section>
       {create && (
-        <FormModal
-          title="Nuevo cliente"
+        <FormModal english={en}
+          title={ot("Nuevo cliente")}
           fields={fields}
           notice={<CustomerPrivacyNotice />}
           onClose={() => setCreate(false)}
@@ -2576,8 +2671,8 @@ export function Customers() {
         />
       )}
       {editing && (
-        <FormModal
-          title="Editar cliente"
+        <FormModal english={en}
+          title={ot("Editar cliente")}
           fields={fields}
           notice={<CustomerPrivacyNotice />}
           // P5: «Editar» tampoco muestra teléfono ni cédula/RNC completos.
@@ -2611,6 +2706,8 @@ export function Customers() {
 }
 
 export function Promotions() {
+  const ot = useOperationsText();
+  const en = useLanguage() === "en";
   const query = useQuery({
     queryKey: ["clearance"],
     queryFn: () => api("/promotions/clearance-candidates"),
@@ -2628,50 +2725,48 @@ export function Promotions() {
     [offer, setOffer] = useState<any>(null),
     [create, setCreate] = useState(false);
   return (
-    <>
+    <PremiumWorkspace area="promotions">
       <Heading
-        title="Dale una nueva oportunidad"
-        caption="Libera espacio, recupera capital y sorprende a tus clientes."
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={ot("Dale una nueva oportunidad")}
+        caption={ot("Libera espacio, recupera capital y sorprende a tus clientes.")}
       >
         <Button onClick={() => setCreate(true)}>
           <Plus size={17} />
-          Nueva promoción
-        </Button>
+          {ot("Nueva promoción")}</Button>
       </Heading>
       <div className="clearance-intro">
         <div className="clearance-symbol">
           <Sparkles size={27} />
         </div>
         <div>
-          <h2>El momento perfecto para una oferta</h2>
+          <h2>{ot("El momento perfecto para una oferta")}</h2>
           <p>
             Prioriza productos sin rotación o próximos a vencer. El descuento
             sugerido conserva al menos 15% de margen según el costo actual.
           </p>
         </div>
-        <Badge tone="pink">{query.data?.length || 0} oportunidades</Badge>
+        <Badge tone="pink">{query.data?.length || 0} {ot("oportunidades")}</Badge>
       </div>
       <div className="tabs outside">
         <button
           className={tab === "clearance" ? "active" : ""}
           onClick={() => setTab("clearance")}
         >
-          Candidatos a liquidación
-        </button>
+          {ot("Candidatos a liquidación")}</button>
         <button
           className={tab === "promos" ? "active" : ""}
           onClick={() => setTab("promos")}
         >
-          Mis promociones
-        </button>
+          {ot("Mis promociones")}</button>
       </div>
       {tab === "clearance" ? (
-        <QueryState query={query}>
+        <QueryState english={en} query={query}>
           <div className="clearance-grid">
             {query.data?.map((c: any) => (
               <article className="panel clearance-card" key={c.variantId}>
                 <div className="clearance-top">
-                  <img src={c.imageUrl} alt={c.name} />
+                  <img src={c.imageUrl || "/products/accessories.svg"} alt={c.name} onError={(event) => handleCatalogImageError(event.currentTarget)} />
                   <div>
                     <Badge
                       tone={
@@ -2681,8 +2776,8 @@ export function Promotions() {
                       }
                     >
                       {c.daysToExpiry !== null
-                        ? `${c.daysToExpiry} días para vencer`
-                        : `${c.daysIdle} días sin venta`}
+                        ? (en ? `${c.daysToExpiry} days to expiry` : `${c.daysToExpiry} días para vencer`)
+                        : (en ? `${c.daysIdle} days without sales` : `${c.daysIdle} días sin venta`)}
                     </Badge>
                     <h3>{c.name}</h3>
                     <small>
@@ -2699,18 +2794,18 @@ export function Promotions() {
                 <div className="clearance-metrics">
                   <div>
                     <span>Stock</span>
-                    <strong>{c.stock} unidades</strong>
+                    <strong>{c.stock} {ot("unidades")}</strong>
                   </div>
                   <div>
-                    <span>Capital inmovilizado</span>
+                    <span>{ot("Capital inmovilizado")}</span>
                     <strong>{formatMoney(c.capital)}</strong>
                   </div>
                   <div>
-                    <span>Margen actual</span>
+                    <span>{ot("Margen actual")}</span>
                     <strong>{c.margin}%</strong>
                   </div>
                   <div>
-                    <span>Descuento sugerido</span>
+                    <span>{ot("Descuento sugerido")}</span>
                     <strong className="violet-text">
                       {c.suggestedDiscount}%
                     </strong>
@@ -2733,33 +2828,33 @@ export function Promotions() {
           </div>
           {!query.data?.length && (
             <Empty
-              title="Tu inventario está en movimiento"
-              description="No hay candidatos según tus umbrales actuales."
+              title={ot("Tu inventario está en movimiento")}
+              description={ot("No hay candidatos según tus umbrales actuales.")}
             />
           )}
         </QueryState>
       ) : (
         <div className="panel">
-          <QueryState query={promos}>
-            <DataTable
+          <QueryState english={en} query={promos}>
+            <DataTable english={en}
               rows={promos.data || []}
               columns={[
                 {
-                  label: "Promoción",
+                  label: ot("Promoción"),
                   render: (p) => <strong>{p.name}</strong>,
                 },
-                { label: "Tipo", render: (p) => p.type },
+                { label: ot("Tipo"), render: (p) => p.type },
                 {
-                  label: "Valor",
+                  label: ot("Valor"),
                   render: (p) => p.value + (p.type === "percent" ? "%" : ""),
                 },
                 {
-                  label: "Vigencia",
+                  label: ot("Vigencia"),
                   render: (p) =>
-                    dateLabel(p.startsAt) + " – " + dateLabel(p.endsAt),
+                    dateLabel(p.startsAt, en ? "en-US" : "es-DO") + " – " + dateLabel(p.endsAt, en ? "en-US" : "es-DO"),
                 },
                 {
-                  label: "Estado",
+                  label: ot("Estado"),
                   render: (p) => (
                     <Badge tone={p.active ? "success" : "neutral"}>
                       {p.active ? "Activa" : "Inactiva"}
@@ -2767,7 +2862,7 @@ export function Promotions() {
                   ),
                 },
                 {
-                  label: "Acción",
+                  label: ot("Acción"),
                   render: (p) => (
                     <button
                       className="text-link"
@@ -2784,7 +2879,7 @@ export function Promotions() {
                         }
                       }}
                     >
-                      {p.active ? "Desactivar" : "Activar"}
+                      {p.active ? ot("Desactivar") : ot("Activar")}
                     </button>
                   ),
                 },
@@ -2794,12 +2889,12 @@ export function Promotions() {
         </div>
       )}
       {offer && (
-        <FormModal
+        <FormModal english={en}
           title={"Crear oferta · " + offer.name}
           fields={[
             {
               key: "name",
-              label: "Nombre de la oferta",
+              label: ot("Nombre de la oferta"),
               initial: "Oferta · " + offer.name,
               required: true,
             },
@@ -2814,7 +2909,7 @@ export function Promotions() {
             },
             {
               key: "endsAt",
-              label: "Fecha de finalización",
+              label: ot("Fecha de finalización"),
               type: "date",
               initial: new Date(
                 Date.now() +
@@ -2840,28 +2935,28 @@ export function Promotions() {
         />
       )}
       {create && (
-        <FormModal
-          title="Nueva promoción"
+        <FormModal english={en}
+          title={ot("Nueva promoción")}
           fields={[
-            { key: "name", label: "Nombre", required: true },
+            { key: "name", label: ot("Nombre"), required: true },
             {
               key: "type",
-              label: "Tipo",
+              label: ot("Tipo"),
               type: "select",
               initial: "percent",
               required: true,
               options: [
-                { label: "Descuento porcentual", value: "percent" },
-                { label: "Descuento fijo por unidad", value: "amount" },
-                { label: "Precio especial", value: "special_price" },
+                { label: ot("Descuento porcentual"), value: "percent" },
+                { label: ot("Descuento fijo por unidad"), value: "amount" },
+                { label: ot("Precio especial"), value: "special_price" },
                 { label: "2 × 1", value: "nxm" },
-                { label: "Segundo a mitad de precio", value: "second_half" },
+                { label: ot("Segundo a mitad de precio"), value: "second_half" },
               ],
             },
             requiredNumber("value", "Porcentaje, descuento o precio", 15),
             {
               key: "categoryId",
-              label: "Categoría",
+              label: ot("Categoría"),
               type: "select",
               required: true,
               options: cats.data?.map((c: any) => ({
@@ -2871,12 +2966,12 @@ export function Promotions() {
             },
             {
               key: "startsAt",
-              label: "Inicio",
+              label: ot("Inicio"),
               type: "date",
               initial: today(),
               required: true,
             },
-            { key: "endsAt", label: "Fin", type: "date", required: true },
+            { key: "endsAt", label: ot("Fin"), type: "date", required: true },
           ]}
           onClose={() => setCreate(false)}
           onSubmit={(data) => {
@@ -2895,7 +2990,7 @@ export function Promotions() {
           }}
         />
       )}
-    </>
+    </PremiumWorkspace>
   );
 }
 
@@ -3012,15 +3107,45 @@ export function groupReports(
   }
   return [...out].filter(([, list]) => list.length);
 }
+function ReportGuide({ name }: { name: string }) {
+  const en = useLanguage() === "en";
+  const [open, setOpen] = useState(false);
+  const guide = useQuery({
+    queryKey: ["reporte-guia", name],
+    queryFn: () =>
+      api<{ queEs: string; paraQueSirve: string; comoSeLee: string }>(
+        `/reportes/${encodeURIComponent(name)}/guia`,
+      ),
+    enabled: open,
+  });
+  return (
+    <details onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary>{en ? "About this report and how to read it" : "¿Qué es y cómo se lee?"}</summary>
+      {guide.isError && <p>{en ? "Unable to load the explanation." : "No pudimos cargar la explicación."}</p>}
+      {guide.data && (
+        <>
+          {en && <p className="muted">This explanation is provided by the server in Spanish.</p>}
+          <p>{guide.data.queEs}</p>
+          <p>{guide.data.paraQueSirve}</p>
+          <p>{guide.data.comoSeLee}</p>
+        </>
+      )}
+    </details>
+  );
+}
 export function Reports() {
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user);
   // Los 40 reportes de la dueña (orden 18-oct) vienen del servidor, ya
   // filtrados por permiso (los de margen solo con profit:read).
   const extra = useQuery({
     queryKey: ["reportes-40"],
     queryFn: () =>
-      api<{ name: string; title: string; group: string }[]>("/reportes"),
+      api<
+        { name: string; title: string; group: string; exportable?: boolean }[]
+      >("/reportes"),
   });
+  const [busy, setBusy] = useState<ExportFormat | null>(null);
   const allReports: string[][] = [
     ...reportList,
     ...(extra.data ?? []).map((r) => [r.name, r.title]),
@@ -3062,13 +3187,18 @@ export function Reports() {
       };
     });
   return (
-    <>
+    <PremiumWorkspace area="reports">
+      <div className="report-premium-heading">
+      <ReportEmblem />
       <Heading
-        title="Reportes"
-        caption="Transforma tus datos en decisiones para el próximo paso."
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={en ? "Reports" : "Reportes"}
+        caption={en ? "Explore your store records and make informed decisions." : "Transforma tus datos en decisiones para el pr\u00f3ximo paso."}
       />
-      <div className="reports-layout lumina-reports">
-        <aside className="panel report-menu" aria-label="Explorar reportes">
+      </div>
+      <div className="reports-layout">
+        <aside className="panel report-menu">
+          <h2 className="report-explorer-title">{en ? "Report explorer" : "Explorador de reportes"}</h2>
           {groupReports(
             allReports
               .filter(
@@ -3088,7 +3218,7 @@ export function Reports() {
                   aria-expanded={open}
                   onClick={() => setOpenGroup(open ? null : group)}
                 >
-                  {group}
+                  {reportLabel(group, en)}
                   <span className="report-group-count">{list.length}</span>
                   <ChevronRight
                     size={14}
@@ -3099,17 +3229,18 @@ export function Reports() {
                   list.map(({ id, name }) => (
                     <button
                       key={id}
-                      type="button"
-                      onClick={() => {
-                        setReport(id);
-                        setOpenGroup(group);
-                        setPage(1);
-                      }}
+                      onClick={() =>
+                        withTransition(() => {
+                          setReport(id);
+                          setOpenGroup(group);
+                          setPage(1);
+                        })
+                      }
                       className={report === id ? "active" : ""}
                       aria-current={report === id ? "page" : undefined}
                     >
                       <FileText size={17} />
-                      {name}
+                      {reportLabel(name, en)}
                       <ChevronRight size={14} />
                     </button>
                   ))}
@@ -3125,38 +3256,59 @@ export function Reports() {
           <section className="panel report-workspace">
             <div className="panel-heading report-workspace-heading">
               <div>
-                <h2>{allReports.find((r) => r[0] === report)?.[1]}</h2>
-                <p>Información registrada en tu tienda.</p>
+                <h2>{reportLabel(allReports.find((r) => r[0] === report)?.[1] ?? "", en)}</h2>
+                <p>{en ? "Records from your store." : "Informaci\u00f3n registrada en tu tienda."}</p>
               </div>
-              <div className="table-actions report-export-actions">
-                {["xlsx", "pdf"].map((format) => (
-                  <Button
-                    variant="secondary"
-                    key={format}
-                    disabled={inverted}
-                    onClick={() =>
-                      download(
-                        `/reports/${report}?from=${from}&to=${to}&format=${format}`,
-                        `${report}.${format}`,
-                      ).catch((error) =>
-                        toast(
-                          error.message !== DOWNLOAD_FAILED
-                            ? error.message
-                            : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo.",
-                          true,
-                        ),
-                      )
-                    }
-                  >
-                    <Download size={16} />
-                    {format === "xlsx" ? "Excel" : "PDF"}
-                  </Button>
-                ))}
+              <div className="table-actions">
+                {can(user?.permissions ?? [], "reports:read") &&
+                  (["xlsx", "pdf"] as const).map((format) => (
+                    <Button
+                      variant="secondary"
+                      key={format}
+                      disabled={inverted || busy !== null}
+                      onClick={async () => {
+                        const nuevo = extra.data?.find(
+                          (r) => r.name === report,
+                        )?.exportable;
+                        setBusy(format);
+                        try {
+                          await download(
+                            nuevo
+                              ? exportPath(report, from, to, format)
+                              : `/reports/${report}?from=${from}&to=${to}&format=${format}`,
+                            nuevo
+                              ? exportFileName(report, format)
+                              : `${report}.${format}`,
+                          );
+                        } catch (error: any) {
+                          // 400 trae el motivo (p. ej. límite de 20,000 filas).
+                          toast(
+                            error.message !== DOWNLOAD_FAILED
+                              ? error.message
+                              : (en ? "Unable to download the report. Check your dates and connection, then try again." : "No pudimos descargar el reporte. Revisa las fechas y tu conexión e inténtalo de nuevo."),
+                            true,
+                          );
+                        } finally {
+                          setBusy(null);
+                        }
+                      }}
+                    >
+                      <Download size={16} />
+                      {busy === format
+                        ? (en ? "Preparing\u2026" : "Preparando\u2026")
+                        : format === "xlsx"
+                          ? (en ? "Download Excel" : "Descargar Excel")
+                          : (en ? "Download PDF" : "Descargar PDF")}
+                    </Button>
+                  ))}
               </div>
             </div>
-            <div className="date-filters report-filters">
+            {extra.data?.find((r) => r.name === report)?.exportable && (
+              <ReportGuide name={report} />
+            )}
+            <div className="date-filters">
               <label className="field">
-                <span>Desde</span>
+                <span>{en ? "From" : "Desde"}</span>
                 <input
                   type="date"
                   value={from}
@@ -3168,7 +3320,7 @@ export function Reports() {
                 />
               </label>
               <label className="field">
-                <span>Hasta</span>
+                <span>{en ? "To" : "Hasta"}</span>
                 <input
                   type="date"
                   value={to}
@@ -3185,26 +3337,30 @@ export function Reports() {
                 <Badge tone="violet">{total} registros</Badge>
               )}
             </div>
+            {report.startsWith("ventas-mes-") && (
+              <p className="muted">
+                {en ? "Compares the month of the To date; the From date does not change the result." : "Compara el mes de la fecha «Hasta»; la fecha «Desde» no cambia el resultado."}
+              </p>
+            )}
             {pages > 1 && (
               <div className="pagination">
                 <span>
-                  Mostrando {(page - 1) * limit + 1}–
-                  {(page - 1) * limit + rows.length} de {total}. Excel (hasta
-                  50,000 filas) y PDF (hasta 10,000) incluyen todo el período.
+                  {en ? "Showing" : "Mostrando"} {(page - 1) * limit + 1}–
+                  {(page - 1) * limit + rows.length} {en ? "of" : "de"} {total}. {en ? "Exports include the whole period, subject to the report’s row limit." : "Las exportaciones incluyen todo el período, sujeto al límite de filas del reporte."}
                 </span>
                 <Button
                   variant="ghost"
                   disabled={page === 1 || query.isFetching}
                   onClick={() => setPage(page - 1)}
                 >
-                  Anteriores
+                  {en ? "Previous" : "Anteriores"}
                 </Button>
                 <Button
                   variant="ghost"
                   disabled={page >= pages || query.isFetching}
                   onClick={() => setPage(page + 1)}
                 >
-                  Siguientes
+                  {en ? "Next" : "Siguientes"}
                 </Button>
               </div>
             )}
@@ -3226,12 +3382,14 @@ export function Reports() {
           </section>
         )}
       </div>
-    </>
+    </PremiumWorkspace>
   );
 }
 
 export function Alerts({ go }: { go?: (page: string) => void }) {
+  const en = useLanguage() === "en";
   const [status, setStatus] = useState("new");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const query = useQuery({
     queryKey: ["alerts", status],
     queryFn: () => api("/alerts?status=" + status),
@@ -3240,25 +3398,27 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
   const rows = (query.data || []).filter(
     (a: any) => status === "all" || a.status === status,
   );
+  const selected = rows.find((a: any) => a.id === selectedId);
   return (
-    <>
+    <PremiumWorkspace area="alerts">
       <Heading
-        title="Lo importante, a tiempo"
-        caption="Un centro de atención para mantener tu tienda un paso adelante."
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={en ? "What matters, on time" : "Lo importante, a tiempo"}
+        caption={en ? "An attention center to keep your store one step ahead." : "Un centro de atención para mantener tu tienda un paso adelante."}
       >
         <Button variant="secondary" onClick={() => query.refetch()}>
           <RefreshCw size={17} />
-          Actualizar
+          {en ? "Refresh" : "Actualizar"}
         </Button>
       </Heading>
       <div className="panel">
         <div className="table-toolbar">
           <div className="tabs">
             {[
-              ["new", "Nuevas"],
-              ["seen", "Vistas"],
-              ["resolved", "Resueltas"],
-              ["all", "Todas"],
+              ["new", en ? "New" : "Nuevas"],
+              ["seen", en ? "Seen" : "Vistas"],
+              ["resolved", en ? "Resolved" : "Resueltas"],
+              ["all", en ? "All" : "Todas"],
             ].map(([id, label]) => (
               <button
                 className={status === id ? "active" : ""}
@@ -3269,9 +3429,10 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
               </button>
             ))}
           </div>
-          <Badge tone="warning">{rows.length} alertas</Badge>
+          <Badge tone="warning">{rows.length} {en ? (rows.length === 1 ? "alert" : "alerts") : (rows.length === 1 ? "alerta" : "alertas")}</Badge>
         </div>
-        <QueryState query={query}>
+        <QueryState english={en} query={query}>
+          <div className="alerts-workspace-layout">
           <div className="alerts-list">
             {rows.map((a: any) => (
               <div className="alert-row" key={a.id}>
@@ -3281,13 +3442,13 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                   <AlertTriangle size={22} />
                 </div>
                 <div>
-                  <strong>{a.message}</strong>
+                  <button className="alert-detail-trigger" aria-expanded={selectedId === a.id} onClick={() => setSelectedId(selectedId === a.id ? null : a.id)}><strong>{a.message}</strong></button>
                   <p>
-                    {dateLabel(a.createdAt)} · {alertTypeLabel(a.type)}
+                    {dateLabel(a.createdAt, en ? "en-US" : "es-DO")} · {alertTypeLabel(a.type)}
                   </p>
                 </div>
                 <Badge tone={a.severity === "high" ? "danger" : "warning"}>
-                  {a.severity === "high" ? "Prioritaria" : "Atención"}
+                  {a.severity === "high" ? (en ? "High" : "Prioritaria") : (en ? "Attention" : "Atención")}
                 </Badge>
                 <div className="table-actions">
                   {a.type === "sale_void_request" && go && (
@@ -3295,7 +3456,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                       className="text-link"
                       onClick={() => go("void-requests")}
                     >
-                      Revisar solicitud
+                      {en ? "Review request" : "Revisar solicitud"}
                     </button>
                   )}
                   {a.type !== "sale_void_request" &&
@@ -3312,7 +3473,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                           await client.invalidateQueries();
                         }}
                       >
-                        Marcar vista
+                        {en ? "Mark as seen" : "Marcar vista"}
                       </button>
                     )}
                   {a.type !== "sale_void_request" &&
@@ -3328,7 +3489,7 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
                           await client.invalidateQueries();
                         }}
                       >
-                        Resolver
+                        {en ? "Resolve" : "Resolver"}
                       </button>
                     )}
                 </div>
@@ -3336,14 +3497,24 @@ export function Alerts({ go }: { go?: (page: string) => void }) {
             ))}
             {!rows.length && (
               <Empty
-                title="Todo en orden por aquí"
-                description="Las alertas aparecerán cuando tu tienda necesite atención."
+                title={en ? "Everything is in order" : "Todo en orden por aquí"}
+                description={en ? "Alerts will appear when your store needs attention." : "Las alertas aparecerán cuando tu tienda necesite atención."}
               />
             )}
           </div>
+          <aside className="alert-detail panel" aria-live="polite">
+            {selected ? <>
+              <h2>{selected.message}</h2>
+              <dl><dt>{en ? "Date" : "Fecha"}</dt><dd>{dateLabel(selected.createdAt, en ? "en-US" : "es-DO")}</dd>
+              <dt>{en ? "Category" : "Categoría"}</dt><dd>{alertTypeLabel(selected.type)}</dd>
+              <dt>{en ? "Priority" : "Prioridad"}</dt><dd>{selected.severity === "high" ? (en ? "High" : "Prioritaria") : (en ? "Attention" : "Atención")}</dd></dl>
+              <Button variant="secondary" onClick={() => setSelectedId(null)}>{en ? "Close details" : "Cerrar detalle"}</Button>
+            </> : <><h2>{en ? "Alert details" : "Detalle de alerta"}</h2><p>{en ? "Select an alert to review its information. Actions remain next to each record." : "Selecciona una alerta para revisar su información. Las acciones permanecen junto a cada registro."}</p></>}
+          </aside>
+          </div>
         </QueryState>
       </div>
-    </>
+    </PremiumWorkspace>
   );
 }
 
@@ -3353,6 +3524,8 @@ const saleMoney = (s: any, value: unknown) =>
   s.hiddenUntilClose ? HIDDEN_AMOUNT : formatMoney(value as any);
 
 export function SalesHistory() {
+  const en = useLanguage() === "en";
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const user = useStore((s) => s.user)!;
   const [selected, setSelected] = useState<any>(null),
     [voiding, setVoiding] = useState<any>(null),
@@ -3361,8 +3534,16 @@ export function SalesHistory() {
     [installment, setInstallment] = useState<any>(null),
     [rejecting, setRejecting] = useState<any>(null),
     [correctingTransfer, setCorrectingTransfer] = useState<any>(null),
+    [unverifying, setUnverifying] = useState<any>(null),
+    [moving, setMoving] = useState<any>(null),
     [search, setSearch] = useState(""),
     [saleDate, setSaleDate] = useState("");
+  // Cajas para elegir destino al mover un cobro: solo se pide con el diálogo abierto.
+  const cashSessionsForMove = useQuery<any[]>({
+    queryKey: ["cash-sessions-move"],
+    queryFn: () => api("/cash-sessions"),
+    enabled: !!moving,
+  });
   const params = new URLSearchParams();
   if (search.trim()) params.set("q", search.trim());
   if (saleDate) params.set("date", saleDate);
@@ -3378,187 +3559,269 @@ export function SalesHistory() {
   const session = sessions.data?.find(
     (s: any) => !s.closedAt && s.userId === user.id,
   );
+  const preview = query.data?.find((sale: any) => sale.id === previewId);
   return (
-    <>
+    <section className="sales-fusion">
       <Heading
-        title="Cada venta tiene una historia"
-        caption="Consulta recibos, pagos y movimientos sin perder el detalle."
+        eyebrow={
+          en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"
+        }
+        title={
+          en ? "Every sale tells a story" : "Cada venta tiene una historia"
+        }
+        caption={
+          en
+            ? "Search, filter and review every sale in detail."
+            : "Consulta, filtra y revisa el detalle de tus ventas."
+        }
       />
-      <div className="panel">
-        <div className="table-toolbar">
-          <Filter
-            value={search}
-            onChange={setSearch}
-            placeholder="Buscar número de venta"
-          />
-          <label className="table-search">
-            <span>Fecha</span>
-            <input
-              type="date"
-              value={saleDate}
-              onChange={(event) => setSaleDate(event.target.value)}
-              aria-label="Buscar ventas de una fecha"
+      {!query.isPending && !query.isError && (
+        <SalesFusionStats rows={query.data || []} />
+      )}
+      <div className="sales-fusion-layout">
+        <div className="panel sales-fusion-list">
+          <div className="table-toolbar">
+            <Filter
+              value={search}
+              onChange={setSearch}
+              placeholder={en ? "Search sale number" : "Buscar número de venta"}
             />
-          </label>
-        </div>
-        <QueryState query={query}>
-          <DataTable
-            cards
-            rows={query.data || []}
-            columns={[
-              {
-                label: "Venta n.º",
-                render: (s) => <strong>{s.number}</strong>,
-              },
-              { label: "Cliente", render: (s) => s.customerName ?? "—" },
-              { label: "Fecha", render: (s) => dateLabel(s.createdAt) },
-              {
-                label: "Estado",
-                render: (s) => (
-                  <>
-                    <Badge tone={s.status === "voided" ? "danger" : "success"}>
-                      {s.status === "voided" ? "Anulada" : "Completada"}
-                    </Badge>
-                    {s.voidRequest && (
-                      <small>
-                        {" "}
-                        · Solicitud{" "}
-                        {
-                          (
-                            {
-                              pending: "pendiente",
-                              approved: "aprobada",
-                              rejected: "rechazada",
-                              cancelled: "cancelada",
-                            } as Record<string, string>
-                          )[s.voidRequest.status]
-                        }
-                      </small>
-                    )}
-                  </>
-                ),
-              },
-              { label: "Total", render: (s) => saleMoney(s, s.total) },
-              {
-                label: "Saldo pendiente",
-                render: (s) => saleMoney(s, s.creditBalance ?? 0),
-              },
-              {
-                label: "Pagos",
-                render: (s) =>
-                  s.hiddenUntilClose
-                    ? "Se ve al cerrar tu caja"
-                    : s.payments
-                    .map(
-                      (p: any) =>
-                        paymentOptions.find((o) => o.value === p.method)?.label,
-                    )
-                    .join(" + "),
-              },
-              {
-                label: "Acciones",
-                render: (s) => (
-                  <div className="table-actions">
+            <label className="table-search">
+              <span>{en ? "Date" : "Fecha"}</span>
+              <input
+                type="date"
+                value={saleDate}
+                onChange={(event) => setSaleDate(event.target.value)}
+                aria-label={
+                  en ? "Search sales by date" : "Buscar ventas de una fecha"
+                }
+              />
+            </label>
+          </div>
+          <QueryState query={query}>
+            <DataTable
+              rows={query.data || []}
+              columns={[
+                {
+                  label: en ? "Sale no." : "Venta n.º",
+                  render: (s) => (
                     <button
-                      onClick={() => setSelected(s)}
-                      aria-label={"Ver " + s.number}
+                      type="button"
+                      className="sales-fusion-number"
+                      aria-pressed={previewId === s.id}
+                      onClick={() => setPreviewId(s.id)}
                     >
-                      <Eye size={18} />
+                      {s.number}
                     </button>
-                    <button
-                      onClick={() =>
-                        download(
-                          "/sales/" + s.id + "/receipt.pdf",
-                          s.number + ".pdf",
-                        ).catch((e) => toast(e.message, true))
-                      }
-                      aria-label={"PDF de " + s.number}
-                    >
-                      <Download size={18} />
-                    </button>
-                    {can(user.permissions, "*") &&
-                      s.status === "completed" &&
-                      Number(s.creditBalance) > 0 && (
-                        <button
-                          className="text-link"
-                          onClick={() => {
-                            if (!session) {
-                              toast(
-                                "Abre tu caja para registrar abonos.",
-                                true,
-                              );
-                              return;
-                            }
-                            setInstallment({
-                              ...s,
-                              offlineUuid: crypto.randomUUID(),
-                            });
-                          }}
-                        >
-                          Registrar abono
-                        </button>
-                      )}
-                    {!can(user.permissions, "*") &&
-                      s.sellerId === user.id &&
-                      s.status === "completed" &&
-                      s.voidRequest?.status !== "pending" && (
-                        <button
-                          className="text-link"
-                          onClick={() =>
-                            setRequestingVoid({
-                              ...s,
-                              operationId: crypto.randomUUID(),
-                            })
+                  ),
+                },
+                {
+                  label: en ? "Customer" : "Cliente",
+                  render: (s) => s.customerName ?? "—",
+                },
+                {
+                  label: en ? "Date" : "Fecha",
+                  render: (s) =>
+                    new Date(s.createdAt).toLocaleDateString(
+                      en ? "en-US" : "es-DO",
+                      {
+                        timeZone: "America/Santo_Domingo",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      },
+                    ),
+                },
+                {
+                  label: en ? "Status" : "Estado",
+                  render: (s) => (
+                    <>
+                      <Badge
+                        tone={s.status === "voided" ? "danger" : "success"}
+                      >
+                        {s.status === "voided"
+                          ? en
+                            ? "Voided"
+                            : "Anulada"
+                          : en
+                            ? "Completed"
+                            : "Completada"}
+                      </Badge>
+                      {s.voidRequest && (
+                        <small>
+                          {" "}
+                          · {en ? "Request" : "Solicitud"}{" "}
+                          {
+                            (
+                              {
+                                pending: en ? "pending" : "pendiente",
+                                approved: en ? "approved" : "aprobada",
+                                rejected: en ? "rejected" : "rechazada",
+                                cancelled: en ? "cancelled" : "cancelada",
+                              } as Record<string, string>
+                            )[s.voidRequest.status]
                           }
-                        >
-                          Solicitar anulación
-                        </button>
+                        </small>
                       )}
-                    {can(user.permissions, "sale:manage") &&
-                      s.status === "completed" && (
-                        <button
-                          className="text-link"
-                          onClick={() => {
-                            if (!session) {
-                              toast(
-                                "Abre tu caja para procesar devoluciones.",
-                                true,
-                              );
-                              return;
+                    </>
+                  ),
+                },
+                { label: "Total", render: (s) => saleMoney(s, s.total) },
+                {
+                  label: en ? "Outstanding balance" : "Saldo pendiente",
+                  render: (s) => saleMoney(s, s.creditBalance ?? 0),
+                },
+                {
+                  label: en ? "Payments" : "Pagos",
+                  render: (s) =>
+                    s.hiddenUntilClose
+                      ? en
+                        ? "Visible after closing your register"
+                        : "Se ve al cerrar tu caja"
+                      : s.payments
+                          .map((p: any) =>
+                            en
+                              ? ((
+                                  {
+                                    cash: "Cash",
+                                    card: "Card",
+                                    transfer: "Transfer",
+                                  } as Record<string, string>
+                                )[p.method] ?? p.method)
+                              : paymentOptions.find((o) => o.value === p.method)
+                                  ?.label,
+                          )
+                          .join(" + "),
+                },
+                {
+                  label: en ? "Actions" : "Acciones",
+                  render: (s) => (
+                    <div className="table-actions">
+                      <button
+                        onClick={() => setSelected(s)}
+                        aria-label={(en ? "View " : "Ver ") + s.number}
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          download(
+                            "/sales/" + s.id + "/receipt.pdf",
+                            s.number + ".pdf",
+                          ).catch((e) => toast(e.message, true))
+                        }
+                        aria-label={(en ? "PDF for " : "PDF de ") + s.number}
+                      >
+                        <Download size={18} />
+                      </button>
+                      <button
+                        onClick={() =>
+                          printPdf("/sales/" + s.id + "/receipt.pdf").catch(
+                            (e) => toast(e.message, true),
+                          )
+                        }
+                        aria-label={
+                          (en ? "Reprint " : "Reimprimir ") + s.number
+                        }
+                        title={en ? "Reprint" : "Reimprimir"}
+                      >
+                        <Printer size={18} />
+                      </button>
+                      {can(user.permissions, "*") &&
+                        s.status === "completed" &&
+                        Number(s.creditBalance) > 0 && (
+                          <button
+                            className="text-link"
+                            onClick={() => {
+                              if (!session) {
+                                toast(
+                                  en
+                                    ? "Open your register to record payments."
+                                    : "Abre tu caja para registrar abonos.",
+                                  true,
+                                );
+                                return;
+                              }
+                              setInstallment({
+                                ...s,
+                                offlineUuid: crypto.randomUUID(),
+                              });
+                            }}
+                          >
+                            {en ? "Record payment" : "Registrar abono"}
+                          </button>
+                        )}
+                      {!can(user.permissions, "*") &&
+                        s.sellerId === user.id &&
+                        s.status === "completed" &&
+                        s.voidRequest?.status !== "pending" && (
+                          <button
+                            className="text-link"
+                            onClick={() =>
+                              setRequestingVoid({
+                                ...s,
+                                operationId: crypto.randomUUID(),
+                              })
                             }
-                            // Un UUID por formulario: si la respuesta se pierde y
-                            // se vuelve a guardar, la API devuelve la misma
-                            // devolución en vez de repetirla (R9-A01).
-                            setReturning({
-                              ...s,
-                              operationId: crypto.randomUUID(),
-                            });
-                          }}
-                        >
-                          Devolver
-                        </button>
-                      )}
-                    {can(user.permissions, "*") &&
-                      s.status === "completed" &&
-                      !s.returns?.length &&
-                      !s.payments?.some(
-                        (p: any) =>
-                          p.entryType === "installment" &&
-                          p.status !== "rejected",
-                      ) && (
-                        <button
-                          className="text-link danger-text"
-                          onClick={() => setVoiding(s)}
-                        >
-                          Anular
-                        </button>
-                      )}
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </QueryState>
+                          >
+                            {en ? "Request void" : "Solicitar anulación"}
+                          </button>
+                        )}
+                      {can(user.permissions, "sale:manage") &&
+                        s.status === "completed" && (
+                          <button
+                            className="text-link"
+                            onClick={() => {
+                              if (!session) {
+                                toast(
+                                  en
+                                    ? "Open your register to process returns."
+                                    : "Abre tu caja para procesar devoluciones.",
+                                  true,
+                                );
+                                return;
+                              }
+                              // Un UUID por formulario: si la respuesta se pierde y
+                              // se vuelve a guardar, la API devuelve la misma
+                              // devolución en vez de repetirla (R9-A01).
+                              setReturning({
+                                ...s,
+                                operationId: crypto.randomUUID(),
+                              });
+                            }}
+                          >
+                            {en ? "Return" : "Devolver"}
+                          </button>
+                        )}
+                      {can(user.permissions, "*") &&
+                        s.status === "completed" &&
+                        !s.returns?.length &&
+                        !s.payments?.some(
+                          (p: any) =>
+                            p.entryType === "installment" &&
+                            p.status !== "rejected",
+                        ) && (
+                          <button
+                            className="text-link danger-text"
+                            onClick={() => setVoiding(s)}
+                          >
+                            {en ? "Void" : "Anular"}
+                          </button>
+                        )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </QueryState>
+        </div>
+        <SalesFusionPreview
+          number={preview?.number}
+          total={preview ? saleMoney(preview, preview.total) : undefined}
+          status={preview?.status}
+          customer={preview?.customerName}
+          onOpen={() => preview && setSelected(preview)}
+        />
       </div>
       <Modal
         open={!!selected}
@@ -3579,17 +3842,37 @@ export function SalesHistory() {
                 }}
               />
             )}
+            {can(user.permissions, "*") && selected.status === "completed" && (
+              <SaleCostPanel
+                key={"cost-" + selected.id}
+                sale={selected}
+                onSaved={() => {
+                  setSelected(null);
+                  void client.invalidateQueries({ queryKey: ["sales"] });
+                  toast("Costo corregido. La ganancia se recalculó.");
+                }}
+              />
+            )}
             {can(user.permissions, "sale:manage") && (
               <div className="panel">
-                <h3>Envío del mensajero</h3>
+                <h3>{en ? "Courier delivery" : "Envío del mensajero"}</h3>
                 <p>
-                  Separado del total de la factura y de la caja.{" "}
-                  {selected.courierPaidAt ? "Pagado." : "Pendiente de pago."}
+                  {en
+                    ? "Separate from the invoice total and register."
+                    : "Separado del total de la factura y de la caja."}{" "}
+                  {selected.courierPaidAt
+                    ? en
+                      ? "Paid."
+                      : "Pagado."
+                    : en
+                      ? "Payment pending."
+                      : "Pendiente de pago."}
                 </p>
                 {can(user.permissions, "*") &&
                 editableNow(selected) &&
                 !selected.courierPaidAt ? (
                   <CourierFeeEditor
+                    english={en}
                     key={selected.id}
                     saleId={selected.id}
                     initialFee={String(selected.courierFee ?? 0)}
@@ -3604,7 +3887,10 @@ export function SalesHistory() {
                     }}
                   />
                 ) : (
-                  <p>Envío: {formatMoney(Number(selected.courierFee ?? 0))}</p>
+                  <p>
+                    {en ? "Delivery:" : "Envío:"}{" "}
+                    {formatMoney(Number(selected.courierFee ?? 0))}
+                  </p>
                 )}
               </div>
             )}
@@ -3620,19 +3906,25 @@ export function SalesHistory() {
                     ).catch((e) => toast(e.message, true))
                   }
                 >
-                  Imprimir nota {r.number}
+                  {en ? "Print credit note" : "Imprimir nota"} {r.number}
                 </Button>
               ))}
             <DataTable
               rows={selected.items}
               columns={[
-                { label: "Producto", render: (i) => i.variant.product.name },
                 {
-                  label: "Variante",
+                  label: en ? "Product" : "Producto",
+                  render: (i) => i.variant.product.name,
+                },
+                {
+                  label: en ? "Variant" : "Variante",
                   render: (i) => attrLabel(i.variant.attributes),
                 },
-                { label: "Cantidad", render: (i) => i.qty },
-                { label: "Devuelta", render: (i) => i.returnedQty },
+                { label: en ? "Quantity" : "Cantidad", render: (i) => i.qty },
+                {
+                  label: en ? "Returned" : "Devuelta",
+                  render: (i) => i.returnedQty,
+                },
                 {
                   label: "Total",
                   render: (i) => saleMoney(selected, i.lineTotal),
@@ -3646,7 +3938,7 @@ export function SalesHistory() {
                 Descuento: {saleMoney(selected, selected.discountTotal)} · Motivo:{" "}
                 {selected.discountReason}
                 {selected.discountApprovedName
-                  ? ` · Autorizó: ${selected.discountApprovedName}`
+                  ? ` · ${en ? "Approved by:" : "Autorizó:"} ${selected.discountApprovedName}`
                   : ""}
               </p>
             )}
@@ -3673,13 +3965,52 @@ export function SalesHistory() {
                           setCorrectingTransfer(p);
                         }}
                       >
-                        Corregir banco y referencia
+                        {en
+                          ? "Correct bank and reference"
+                          : "Corregir banco y referencia"}
+                      </button>
+                    )}
+                  {p.method === "transfer" &&
+                    p.status === "ok" &&
+                    p.entryType === "sale" &&
+                    can(user.permissions, "*") && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setSelected(null);
+                          setUnverifying(p);
+                        }}
+                      >
+                        {en
+                          ? "Undo transfer verification"
+                          : "Des-verificar transferencia"}
+                      </button>
+                    )}
+                  {p.cashSessionId &&
+                    p.status !== "rejected" &&
+                    can(user.permissions, "*") && (
+                      <button
+                        className="text-link"
+                        onClick={() => {
+                          setSelected(null);
+                          setMoving(p);
+                        }}
+                      >
+                        {en
+                          ? "Move payment to another register"
+                          : "Mover cobro a otra caja"}
                       </button>
                     )}
                   {p.entryType === "installment" &&
                     can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
-                        {p.hasProof ? "Cambiar foto" : "Subir foto"}
+                        {p.hasProof
+                          ? en
+                            ? "Change photo"
+                            : "Cambiar foto"
+                          : en
+                            ? "Upload photo"
+                            : "Subir foto"}
                         <input
                           type="file"
                           className="sr-only"
@@ -3692,7 +4023,11 @@ export function SalesHistory() {
                               await uploadProof(p.id, file);
                               setSelected(null);
                               await client.invalidateQueries();
-                              toast("Foto de la evidencia guardada.");
+                              toast(
+                                en
+                                  ? "Payment evidence photo saved."
+                                  : "Foto de la evidencia guardada.",
+                              );
                             } catch (err: any) {
                               toast(err.message, true);
                             }
@@ -3710,10 +4045,16 @@ export function SalesHistory() {
                     }
                   >
                     {p.status === "ok"
-                      ? "Verificado"
+                      ? en
+                        ? "Verified"
+                        : "Verificado"
                       : p.status === "rejected"
-                        ? "Rechazada"
-                        : "Pendiente de verificar"}
+                        ? en
+                          ? "Rejected"
+                          : "Rechazada"
+                        : en
+                          ? "Pending verification"
+                          : "Pendiente de verificar"}
                   </Badge>
                   {p.method === "transfer" &&
                     p.status === "pending_verification" &&
@@ -3725,13 +4066,17 @@ export function SalesHistory() {
                             await post("/payments/" + p.id + "/verify", {});
                             setSelected(null);
                             await client.invalidateQueries();
-                            toast("Transferencia verificada.");
+                            toast(
+                              en
+                                ? "Transfer verified."
+                                : "Transferencia verificada.",
+                            );
                           } catch (e: any) {
                             toast(e.message, true);
                           }
                         }}
                       >
-                        Verificar
+                        {en ? "Verify" : "Verificar"}
                       </button>
                     )}
                   {/* Un abono por transferencia que no llegó se rechaza: si no,
@@ -3748,7 +4093,7 @@ export function SalesHistory() {
                           setRejecting(p);
                         }}
                       >
-                        Rechazar
+                        {en ? "Reject" : "Rechazar"}
                       </button>
                     )}
                 </div>
@@ -3760,39 +4105,60 @@ export function SalesHistory() {
       </Modal>
       {voiding && (
         <ConfirmModal
-          title={"Anular " + voiding.number}
-          description="Solo un administrador puede hacerlo. La venta se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
-          confirmLabel="Sí, anular venta"
+          english={en}
+          title={(en ? "Void " : "Anular ") + voiding.number}
+          description={
+            en
+              ? "Only an administrator can do this. The sale is retained with its reason and responsible user, inventory is reversed, and it no longer counts toward sales. An open register is required only if this sale’s register has already closed and the sale included cash: the refund comes from your own register, which must be open with sufficient cash."
+              : "Solo un administrador puede hacerlo. La venta se conserva con el motivo y el usuario responsable, se revierte el inventario y deja de contar en ventas. No necesitas abrir caja, salvo en un caso: si la caja de esta venta ya cerró y la venta tuvo efectivo, el reembolso sale de tu propia caja, que debe estar abierta y con efectivo suficiente."
+          }
+          confirmLabel={en ? "Yes, void sale" : "Sí, anular venta"}
           onClose={() => setVoiding(null)}
           onConfirm={async (reason) => {
             await post("/sales/" + voiding.id + "/void", {
               reason,
             });
             await client.invalidateQueries();
-            toast("Venta anulada.");
+            toast(en ? "Sale voided." : "Venta anulada.");
           }}
         />
       )}
       {requestingVoid && (
         <FormModal
-          title={"Solicitar anulación · " + requestingVoid.number}
+          english={en}
+          title={
+            (en ? "Request void · " : "Solicitar anulación · ") +
+            requestingVoid.number
+          }
           fields={[
             {
               key: "reasonCode",
-              label: "Tipo de motivo",
+              label: en ? "Reason type" : "Tipo de motivo",
               type: "select",
               required: true,
               options: [
-                { value: "customer_request", label: "Solicitud del cliente" },
-                { value: "duplicate", label: "Venta duplicada" },
-                { value: "payment_error", label: "Error de pago" },
-                { value: "item_error", label: "Error de artículo" },
-                { value: "other", label: "Otro" },
+                {
+                  value: "customer_request",
+                  label: en ? "Customer request" : "Solicitud del cliente",
+                },
+                {
+                  value: "duplicate",
+                  label: en ? "Duplicate sale" : "Venta duplicada",
+                },
+                {
+                  value: "payment_error",
+                  label: en ? "Payment error" : "Error de pago",
+                },
+                {
+                  value: "item_error",
+                  label: en ? "Item error" : "Error de artículo",
+                },
+                { value: "other", label: en ? "Other" : "Otro" },
               ],
             },
             {
               key: "reason",
-              label: "Explica el motivo",
+              label: en ? "Explain the reason" : "Explica el motivo",
               type: "textarea",
               required: true,
             },
@@ -3809,30 +4175,56 @@ export function SalesHistory() {
       )}
       {rejecting && (
         <ConfirmModal
-          title={"Rechazar transferencia de " + formatMoney(rejecting.amount)}
+          english={en}
+          title={
+            (en ? "Reject transfer of " : "Rechazar transferencia de ") +
+            formatMoney(rejecting.amount)
+          }
           description={
             rejecting.entryType === "sale"
-              ? "Úsalo cuando el dinero no llegó al banco. La mercancía ya se entregó: el importe pasa a cuenta por cobrar del cliente y deja de contar en la caja; cuando pague, registra un abono."
-              : "Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
+              ? en
+                ? "Use when the money did not reach the bank. The goods were already delivered: the amount becomes a customer receivable and no longer counts in the register; record a payment when it is received."
+                : "Úsalo cuando el dinero no llegó al banco. La mercancía ya se entregó: el importe pasa a cuenta por cobrar del cliente y deja de contar en la caja; cuando pague, registra un abono."
+              : en
+                ? "Use when the money did not reach the bank. This payment does not reduce the debt or enter the register; if the customer pays again, record a new payment."
+                : "Úsalo cuando el dinero no llegó al banco. El abono no descuenta la deuda ni entra a la caja; si el cliente vuelve a pagar, registra un abono nuevo."
           }
+          confirmLabel={en ? "Confirm" : "Confirmar"}
           onClose={() => setRejecting(null)}
           onConfirm={async (reason) => {
             await post("/payments/" + rejecting.id + "/reject", { reason });
             await client.invalidateQueries();
-            toast("Transferencia rechazada.");
+            toast(en ? "Transfer rejected." : "Transferencia rechazada.");
           }}
         />
       )}
       {correctingTransfer && (
         <FormModal
-          title="Corregir referencia de transferencia"
-          notice="La corrección queda en la bitácora. El importe y el estado del pago no cambian."
+          english={en}
+          title={
+            en
+              ? "Correct transfer reference"
+              : "Corregir referencia de transferencia"
+          }
+          notice={
+            en
+              ? "The correction is recorded in the audit log. The payment amount and status do not change."
+              : "La corrección queda en la bitácora. El importe y el estado del pago no cambian."
+          }
           fields={[
-            { key: "bank", label: "Banco correcto", required: true },
-            { key: "reference", label: "Referencia correcta", required: true },
+            {
+              key: "bank",
+              label: en ? "Correct bank" : "Banco correcto",
+              required: true,
+            },
+            {
+              key: "reference",
+              label: en ? "Correct reference" : "Referencia correcta",
+              required: true,
+            },
             {
               key: "reason",
-              label: "Motivo de la corrección",
+              label: en ? "Reason for correction" : "Motivo de la corrección",
               type: "textarea",
               required: true,
             },
@@ -3857,13 +4249,85 @@ export function SalesHistory() {
           }}
         />
       )}
+      {unverifying && (
+        <FormModal
+          english={en}
+          title={
+            en ? "Undo transfer verification" : "Des-verificar transferencia"
+          }
+          notice={
+            en
+              ? "The transfer returns to pending verification and no longer counts as collected. This is recorded in the audit log."
+              : "La transferencia vuelve a «por verificar» y deja de contar como cobrada. Queda en la bitácora."
+          }
+          fields={[
+            {
+              key: "reason",
+              label: en ? "Reason" : "Motivo",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          onClose={() => setUnverifying(null)}
+          onSubmit={async (data) => {
+            await post("/payments/" + unverifying.id + "/unverify", {
+              reason: data.reason,
+            });
+            setUnverifying(null);
+            await client.invalidateQueries();
+          }}
+        />
+      )}
+      {moving && (
+        <FormModal
+          english={en}
+          title={
+            en ? "Move payment to another register" : "Mover cobro a otra caja"
+          }
+          notice={
+            en
+              ? "The payment moves to another register. The sale, debt and inventory do not change. This is recorded in the audit log."
+              : "El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
+          }
+          fields={[
+            {
+              key: "cashSessionId",
+              label: en ? "Destination register" : "Caja destino",
+              type: "select",
+              required: true,
+              options: (cashSessionsForMove.data || [])
+                .filter((s: any) => s.id !== moving.cashSessionId)
+                .map((s: any) => ({
+                  label: `${s.registerName ?? (en ? "Register" : "Caja")} · ${s.closedAt ? (en ? "closed" : "cerrada") : en ? "open" : "abierta"} · ${new Date(s.openedAt).toLocaleString(en ? "en-US" : "es-DO")}`,
+                  value: s.id,
+                })),
+            },
+            {
+              key: "reason",
+              label: en ? "Reason" : "Motivo",
+              type: "textarea",
+              required: true,
+            },
+          ]}
+          onClose={() => setMoving(null)}
+          onSubmit={async (data) => {
+            await post("/payments/" + moving.id + "/move-cash-session", {
+              cashSessionId: data.cashSessionId,
+              reason: data.reason,
+            });
+            setMoving(null);
+            await client.invalidateQueries();
+          }}
+        />
+      )}
       {returning && (
         <FormModal
-          title={"Devolución · " + returning.number}
+          english={en}
+          title={(en ? "Return · " : "Devolución · ") + returning.number}
           fields={[
             {
               key: "saleItemId",
-              label: "Artículo a devolver",
+              label: en ? "Item to return" : "Artículo a devolver",
               type: "select",
               required: true,
               options: returning.items
@@ -3880,35 +4344,59 @@ export function SalesHistory() {
             // mínimo de 0.001, el navegador rechazaba devolver 1 unidad
             // («valores válidos: 0.991 y 1.001») (R9-dinero-3-ui).
             {
-              ...requiredNumber("qty", "Cantidad", 1),
+              ...requiredNumber("qty", en ? "Quantity" : "Cantidad", 1),
               min: 0.001,
               step: "0.001",
             },
             {
               key: "reason",
-              label: "Motivo",
+              label: en ? "Reason" : "Motivo",
               type: "textarea",
               required: true,
             },
             {
               key: "refundMethod",
-              label: "Método de reembolso",
+              label: en ? "Refund method" : "Método de reembolso",
               type: "select",
               required: true,
               initial: "cash",
               options: [
-                ...paymentOptions,
-                { label: "Nota de crédito", value: "credit_note" },
+                ...paymentOptions.map((o) => ({
+                  ...o,
+                  label: en
+                    ? (
+                        {
+                          cash: "Cash",
+                          card: "Card",
+                          transfer: "Transfer",
+                        } as Record<string, string>
+                      )[o.value]
+                    : o.label,
+                })),
+                {
+                  label: en ? "Credit note" : "Nota de crédito",
+                  value: "credit_note",
+                },
               ],
             },
             {
               key: "restock",
-              label: "Reingresar al stock vendible",
+              label: en
+                ? "Return to sellable stock"
+                : "Reingresar al stock vendible",
               type: "checkbox",
               initial: true,
             },
-            { key: "opened", label: "Producto abierto", type: "checkbox" },
-            { key: "damaged", label: "Producto dañado", type: "checkbox" },
+            {
+              key: "opened",
+              label: en ? "Opened product" : "Producto abierto",
+              type: "checkbox",
+            },
+            {
+              key: "damaged",
+              label: en ? "Damaged product" : "Producto dañado",
+              type: "checkbox",
+            },
           ]}
           onClose={() => setReturning(null)}
           onSubmit={(data) =>
@@ -3933,26 +4421,58 @@ export function SalesHistory() {
       )}
       {installment && (
         <FormModal
+          english={en}
           title={
-            "Registrar pago de crédito / contraentrega · " + installment.number
+            (en
+              ? "Record credit / cash-on-delivery payment · "
+              : "Registrar pago de crédito / contraentrega · ") +
+            installment.number
           }
           fields={[
             {
-              ...requiredNumber("amount", "Monto del abono"),
+              ...requiredNumber(
+                "amount",
+                en ? "Payment amount" : "Monto del abono",
+              ),
               max: Number(installment.creditBalance),
             },
             {
               key: "method",
-              label: "Método",
+              label: en ? "Method" : "Método",
               type: "select",
               required: true,
               initial: "cash",
-              options: paymentOptions,
+              options: paymentOptions.map((o) => ({
+                ...o,
+                label: en
+                  ? (
+                      {
+                        cash: "Cash",
+                        card: "Card",
+                        transfer: "Transfer",
+                      } as Record<string, string>
+                    )[o.value]
+                  : o.label,
+              })),
             },
-            { key: "bank", label: "Banco (transferencia)" },
-            { key: "reference", label: "Referencia (transferencia)" },
-            { key: "cardLast4", label: "Últimos 4 dígitos (tarjeta)" },
-            { key: "approvalCode", label: "Aprobación (tarjeta)" },
+            {
+              key: "bank",
+              label: en ? "Bank (transfer)" : "Banco (transferencia)",
+            },
+            {
+              key: "reference",
+              label: en ? "Reference (transfer)" : "Referencia (transferencia)",
+            },
+            {
+              key: "cardLast4",
+              label: en
+                ? "Last 4 digits (card)"
+                : "Últimos 4 dígitos (tarjeta)",
+            },
+            {
+              key: "approvalCode",
+              label: en ? "Approval (card)" : "Aprobación (tarjeta)",
+            },
           ]}
           onClose={() => setInstallment(null)}
           onSubmit={(data) =>
@@ -3970,13 +4490,14 @@ export function SalesHistory() {
           }
         />
       )}
-    </>
+    </section>
   );
 }
 
 // Avisos de facturas por Telegram: estado de la cola y prueba de conexión.
 // El token y el chat sólo viven en las variables del servidor.
 function TelegramNotices() {
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const admin = can(user.permissions, "*");
   const client = useQueryClient();
@@ -4011,34 +4532,32 @@ function TelegramNotices() {
   return (
     <section className="telegram-card" aria-labelledby="telegram-title">
       <div className="panel-heading">
-        <h3 id="telegram-title">Avisos de facturas por Telegram</h3>
+        <h3 id="telegram-title">{en ? "Invoice notices via Telegram" : "Avisos de facturas por Telegram"}</h3>
         {data && (
           <Badge tone={data.enabled ? "success" : "neutral"}>
-            {data.enabled ? "Activados" : "Desactivados"}
+            {data.enabled ? (en ? "Enabled" : "Activados") : (en ? "Disabled" : "Desactivados")}
           </Badge>
         )}
       </div>
       <p>
-        Cada factura, anulación, devolución, cobro y cierre de caja llega al
-        grupo de Telegram de la administración. Sin cédula, teléfono, correo ni
-        dirección del cliente.
+        {en ? "Every invoice, void, return, collection and register closing is sent to the management Telegram group. No customer ID, phone, email or address is included." : "Cada factura, anulación, devolución, cobro y cierre de caja llega al grupo de Telegram de la administración. Sin cédula, teléfono, correo ni dirección del cliente."}
       </p>
       {data?.enabled ? (
         <p>
-          Enviados: <strong>{data.sent}</strong> · Pendientes:{" "}
-          <strong>{data.pending}</strong> · Fallidos:{" "}
+          {en ? "Sent:" : "Enviados:"} <strong>{data.sent}</strong> · {en ? "Pending:" : "Pendientes:"}{" "}
+          <strong>{data.pending}</strong> · {en ? "Failed:" : "Fallidos:"}{" "}
           <strong>{data.failed}</strong>
           {data.lastError && (
             <>
               <br />
-              <small>Último error: {data.lastError.message}</small>
+              <small>{en ? "Last error:" : "Último error:"} {data.lastError.message}</small>
             </>
           )}
         </p>
       ) : (
         <ol>
-          <li>En Telegram, crea el bot con @BotFather (/newbot).</li>
-          <li>Agrega el bot al grupo privado de la administración.</li>
+          <li>{en ? "In Telegram, create the bot with @BotFather (/newbot)." : "En Telegram, crea el bot con @BotFather (/newbot)."}</li>
+          <li>{en ? "Add the bot to the private management group." : "Agrega el bot al grupo privado de la administración."}</li>
           <li>
             {productTenancyRequired(import.meta.env.VITE_PRODUCT_TENANCY)
               ? "Pide a soporte de Norexos que active los avisos por Telegram para tu empresa."
@@ -4048,7 +4567,7 @@ function TelegramNotices() {
       )}
       {admin && (
         <Button variant="secondary" onClick={test} disabled={sending}>
-          {sending ? "Enviando…" : "Enviar mensaje de prueba"}
+          {sending ? (en ? "Sending…" : "Enviando…") : (en ? "Send test message" : "Enviar mensaje de prueba")}
         </Button>
       )}
     </section>
@@ -4205,7 +4724,38 @@ function ResetPassword({
   );
 }
 const CONFIG_MODE_KEY = "nexora-config-mode";
+// Modo visual por equipo (localStorage): la caja de este equipo no cambia.
+function VisualModeSwitch() {
+  const [on, setOn] = useState(() => readVisual() === "impacto");
+  return (
+    <div className="visual-switch">
+      <h2>Modo visual: Impacto</h2>
+      <p>
+        Más movimiento y profundidad en la entrada, el resumen, los reportes y
+        la administración de este equipo. El punto de venta no cambia y nada se
+        mueve si el equipo pide «reducir movimiento».
+      </p>
+      <label className="check-field">
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(e) => {
+            setVisual(e.target.checked ? "impacto" : "estandar");
+            setOn(e.target.checked);
+          }}
+        />
+        <span>Activar el modo Impacto en este equipo</span>
+      </label>
+      <p>
+        <a href="#demo">Abrir la demostración</a> (datos de ejemplo, no son de
+        tu negocio).
+      </p>
+    </div>
+  );
+}
 export function Configuration() {
+  const ot = useOperationsText();
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const query = useQuery({
     queryKey: ["settings", user.branchId],
@@ -4257,22 +4807,22 @@ export function Configuration() {
       <Equipment />
     ) : (
       <Empty
-        title="Configuración del administrador"
-        description="Pide al administrador que realice estos cambios."
+        title={ot("Configuración del administrador")}
+        description={ot("Pide al administrador que realice estos cambios.")}
       />
     );
   const fields: Field[] = [
-    { key: "name", label: "Nombre del negocio", required: true },
+    { key: "name", label: ot("Nombre del negocio"), required: true },
     { key: "legalId", label: "RNC" },
-    { key: "address", label: "Dirección" },
-    { key: "phone", label: "Teléfono" },
+    { key: "address", label: ot("Dirección") },
+    { key: "phone", label: ot("Teléfono") },
     // Encabezado de lo impreso (tienda).
     { key: "branchName", label: "Sucursal" },
     { key: "receiptFooter", label: "Mensaje al pie del ticket (opcional)" },
     { key: "phone2", label: "Teléfono 2 / WhatsApp" },
     {
       key: "autoPrintReceipt",
-      label: "Imprimir el recibo automáticamente al cobrar",
+      label: ot("Imprimir el recibo automáticamente al cobrar"),
       type: "checkbox",
     },
     ...(product
@@ -4287,23 +4837,23 @@ export function Configuration() {
       : []),
     {
       key: "usdRate",
-      label: "Tasa del dólar (RD$ por US$)",
-      help: "Vacío: no se cuentan dólares.",
+      label: ot("Tasa del dólar (RD$ por US$)"),
+      help: ot("Vacío: no se cuentan dólares."),
     },
     {
       key: "eurRate",
-      label: "Tasa del euro (RD$ por €)",
-      help: "Vacío: el cuadre no muestra euros.",
+      label: ot("Tasa del euro (RD$ por €)"),
+      help: ot("Vacío: el cuadre no muestra euros."),
     },
     {
       key: "transferAccounts",
-      label: "Cuentas de banco para transferencias (una por línea)",
+      label: ot("Cuentas de banco para transferencias (una por línea)"),
       type: "textarea",
       help: "Ej.: Banco Principal ···3620. La caja elige de esta lista.",
     },
     {
       key: "cardTerminals",
-      label: "Terminales de tarjeta (uno por línea)",
+      label: ot("Terminales de tarjeta (uno por línea)"),
       type: "textarea",
       help: "Ej.: Verifone mostrador. Vacío: la caja no pregunta.",
     },
@@ -4316,7 +4866,7 @@ export function Configuration() {
     requiredNumber("cashDifferenceLimit", "Alerta de diferencia en caja"),
     {
       key: "receiptWidth",
-      label: "Ancho de ticket",
+      label: ot("Ancho de ticket"),
       type: "select",
       options: [
         { label: "80 mm", value: "80" },
@@ -4351,13 +4901,19 @@ export function Configuration() {
     {
       key: "allowNegativeStock",
       label:
-        "Permitir stock negativo en productos sin lote obligatorio (con advertencia)",
+        ot("Permitir stock negativo en productos sin lote obligatorio (con advertencia)"),
       type: "checkbox",
     },
     {
       key: "allowOfflineSales",
-      label: "Permitir ventas sin conexión (riesgo entre varias cajas)",
+      label: ot("Permitir ventas sin conexión (riesgo entre varias cajas)"),
       help: "Desactivado evita vender la misma última unidad desde dos equipos sin conexión: dos laptops offline no pueden reservarla entre sí. Actívalo sólo si aceptas revisar conflictos al reconectar.",
+      type: "checkbox",
+    },
+    {
+      key: "blockZeroCostSales",
+      label: ot("No vender productos sin costo"),
+      help: "Activado, la caja rechaza un producto con costo 0 hasta que administración lo complete (los servicios sí se venden). Revisa antes Inventario › Productos sin costo.",
       type: "checkbox",
     },
     requiredNumber(
@@ -4377,13 +4933,13 @@ export function Configuration() {
     ),
     {
       key: "allowCreditSales",
-      label: "Habilitar ventas a crédito con cliente y vencimiento",
+      label: ot("Habilitar ventas a crédito con cliente y vencimiento"),
       type: "checkbox",
       help: "Con esto apagado, todo crédito de un cajero pide PIN, sin importar el monto.",
     },
     {
       key: "ncfMode",
-      label: "Preparación de NCF",
+      label: ot("Preparación de NCF"),
       type: "select",
       initial: "disabled",
       options: [
@@ -4397,7 +4953,7 @@ export function Configuration() {
     },
     {
       key: "taxIncluded",
-      label: "Precios con ITBIS incluido",
+      label: ot("Precios con ITBIS incluido"),
       type: "checkbox",
     },
   ];
@@ -4443,6 +4999,7 @@ export function Configuration() {
     dailySummaryEnabled: query.data?.dailySummaryEnabled === true,
     requireCustomer: query.data?.requireCustomer === true,
     allowOfflineSales: query.data?.allowOfflineSales === true,
+    blockZeroCostSales: query.data?.blockZeroCostSales === true,
     usdRate: query.data?.usdRate ?? "",
     eurRate: query.data?.eurRate ?? "",
     transferAccounts: (query.data?.transferAccounts ?? []).join("\n"),
@@ -4450,22 +5007,20 @@ export function Configuration() {
     ncfOn: (query.data?.ncfMode ?? "disabled") !== "disabled",
   };
   return (
-    <>
-      <div className={`lumina-settings lumina-settings-${tab}`}>
-        <Heading
-          title="Configuración"
-          caption="Define cómo trabaja tu tienda, desde los impuestos hasta los permisos."
-        />
-        <div
-          className="tabs outside"
-          role="group"
-          aria-label="Secciones de configuración"
-        >
+    <PremiumWorkspace area="configuration">
+      <Heading
+        eyebrow={en ? "YOUR BUSINESS, WITH CLARITY" : "TU NEGOCIO, CON CLARIDAD"}
+        title={ot("A la medida de tu negocio")}
+        caption={ot("Define cómo trabaja tu tienda, desde los impuestos hasta los permisos.")}
+      />
+      <div className="settings-workspace-layout">
+      <div className="tabs outside">
         {[
           ["business", "Negocio y reglas"],
           ["users", "Usuarios y permisos"],
           ["audit", "Bitácora"],
           ["equipment", "Equipos"],
+          ["appearance", "Apariencia"],
         ].map(([id, label]) => (
           <button
             type="button"
@@ -4474,7 +5029,7 @@ export function Configuration() {
             onClick={() => setTab(id)}
             key={id}
           >
-            {label}
+            {ot(label)}
           </button>
         ))}
         </div>
@@ -4506,18 +5061,20 @@ export function Configuration() {
         <div className="panel lumina-settings-content">
         {tab === "equipment" ? (
           <Equipment />
+        ) : tab === "appearance" ? (
+          <VisualModeSwitch />
         ) : tab === "business" ? (
-          <QueryState query={query}>
+          <QueryState english={en} query={query}>
             <div className="settings-summary">
               <div>
-                <Badge tone="violet">República Dominicana · RD$</Badge>
+                <Badge tone="violet">{ot("República Dominicana · RD$")}</Badge>
                 <h2>{query.data?.name}</h2>
                 <p>
-                  {query.data?.address || "Configura la dirección de tu tienda"}
+                  {query.data?.address || ot("Configura la dirección de tu tienda")}
                 </p>
                 <p>
-                  ITBIS 18% {query.data?.taxIncluded ? "incluido" : "adicional"}{" "}
-                  · Ticket {query.data?.receiptWidth} mm
+                  ITBIS 18% {query.data?.taxIncluded ? (en ? "included" : "incluido") : (en ? "additional" : "adicional")}{" "}
+                  · {en ? "Receipt" : "Ticket"} {query.data?.receiptWidth} mm
                 </p>
                 <p>
                   {query.data?.ncfMode === "sequences"
@@ -4530,17 +5087,16 @@ export function Configuration() {
                 onClick={() => setEditing(true)}
               >
                 <Pencil size={16} />
-                Editar configuración
-              </Button>
+                {ot("Editar configuración")}</Button>
             </div>
             {!basic && (
             <div className="settings-rules">
               {[
-                ["Descuento vendedor", query.data?.sellerDiscountLimit + "%"],
-                ["Sin rotación", query.data?.idleDays + " días"],
-                ["Por vencer", query.data?.expiryDays + " días"],
-                ["Margen bajo", query.data?.lowMargin + "%"],
-                ["Devolución", query.data?.returnDays + " días"],
+                [ot("Descuento vendedor"), query.data?.sellerDiscountLimit + "%"],
+                [ot("Sin rotación"), query.data?.idleDays + (en ? " days" : " días")],
+                [ot("Por vencer"), query.data?.expiryDays + (en ? " days" : " días")],
+                [ot("Margen bajo"), query.data?.lowMargin + "%"],
+                [ot("Devolución"), query.data?.returnDays + (en ? " days" : " días")],
               ].map(([label, value]) => (
                 <div key={label}>
                   <span>{label}</span>
@@ -4552,16 +5108,11 @@ export function Configuration() {
             {!basic && (Number(query.data?.creditApprovalThreshold) === 0 ||
               Number(query.data?.receivableShiftLimit) === 0) && (
               <p className="cod-hint" role="note">
-                Algún tope de crédito está en 0: esto significa pedir siempre el
-                PIN de gerente para ese control. Si no buscas ese resultado,
-                escribe un monto alto, por ejemplo RD$ 1,000,000.
-              </p>
+                {ot("Algún tope de crédito está en 0: esto significa pedir siempre el PIN de gerente para ese control. Si no buscas ese resultado, escribe un monto alto, por ejemplo RD$ 1,000,000.")}</p>
             )}
             {!basic && query.data?.allowCreditSales !== true && (
               <p className="cod-hint" role="note">
-                Las ventas a crédito están deshabilitadas: todo crédito de un
-                cajero pide PIN de gerente.
-              </p>
+                {ot("Las ventas a crédito están deshabilitadas: todo crédito de un cajero pide PIN de gerente.")}</p>
             )}
             {query.data?.usdRateHeld?.rate && (
               <div className="cod-hint" role="alert">
@@ -4617,6 +5168,7 @@ export function Configuration() {
                 <TelegramNotices />
                 {/* El producto no tiene respaldo a Drive por empresa (sin /backups). */}
                 {!product && <DriveBackupCard />}
+                <AiUsageCard />
                 <IncentiveRates />
                 <CashierSurveySummary />
               </>
@@ -4631,43 +5183,40 @@ export function Configuration() {
                 onClick={() => setNewUser(true)}
               >
                 <Plus size={17} />
-                Crear usuario
-              </Button>
+                {ot("Crear usuario")}</Button>
             </div>
-            <QueryState query={users}>
-              <DataTable
+            <QueryState english={en} query={users}>
+              <DataTable english={en}
                 rows={users.data || []}
                 columns={[
-                  { label: "Nombre", render: (u) => <strong>{u.name}</strong> },
+                  { label: ot("Nombre"), render: (u) => <strong>{u.name}</strong> },
                   {
-                    label: "Usuario",
+                    label: ot("Usuario"),
                     render: (u) => u.username || "Pendiente",
                   },
                   {
-                    label: "Rol",
+                    label: ot("Rol"),
                     render: (u) => <Badge tone="violet">{u.role.name}</Badge>,
                   },
                   {
-                    label: "Estado",
-                    render: (u) => (u.active ? "Activo" : "Inactivo"),
+                    label: ot("Estado"),
+                    render: (u) => (u.active ? ot("Activo") : ot("Inactivo")),
                   },
                   {
-                    label: "Acción",
+                    label: ot("Acción"),
                     render: (u) => (
                       <div className="inline-actions">
                         <button
                           className="text-link"
                           onClick={() => setUserEdit(u)}
                         >
-                          Editar
-                        </button>
+                          {ot("Editar")}</button>
                         {u.id !== user.id && (
                           <button
                             className="text-link"
                             onClick={() => setPasswordReset(u)}
                           >
-                            Restablecer contraseña
-                          </button>
+                            {ot("Restablecer contraseña")}</button>
                         )}
                         {u.id !== user.id && (
                           <button
@@ -4685,7 +5234,7 @@ export function Configuration() {
                               }
                             }}
                           >
-                            {u.active ? "Desactivar" : "Activar"}
+                            {u.active ? ot("Desactivar") : ot("Activar")}
                           </button>
                         )}
                       </div>
@@ -4695,7 +5244,7 @@ export function Configuration() {
               />
             </QueryState>
             <div className="panel-heading">
-              <h2>Permisos por rol</h2>
+              <h2>{ot("Permisos por rol")}</h2>
             </div>
             <div className="roles-list">
               {roles.data?.map((r: any) => (
@@ -4708,19 +5257,19 @@ export function Configuration() {
             </div>
           </>
         ) : (
-          <QueryState query={logs}>
-            <DataTable
+          <QueryState english={en} query={logs}>
+            <DataTable english={en}
               rows={logs.data || []}
               columns={[
                 {
-                  label: "Fecha",
+                  label: ot("Fecha"),
                   render: (l) =>
                     new Date(l.createdAt).toLocaleString("es-DO", {
                       timeZone: "America/Santo_Domingo",
                     }),
                 },
                 {
-                  label: "Usuario",
+                  label: ot("Usuario"),
                   render: (l) =>
                     users.data?.find((u: any) => u.id === l.userId)?.name ||
                     l.userId,
@@ -4743,7 +5292,7 @@ export function Configuration() {
                 },
                 { label: "Entidad", render: (l) => l.entity },
                 {
-                  label: "Referencia",
+                  label: ot("Referencia"),
                   render: (l) => <small>{l.entityId}</small>,
                 },
               ]}
@@ -4795,8 +5344,8 @@ export function Configuration() {
         />
       )}
       {newUser && (
-        <FormModal
-          title="Crear usuario"
+        <FormModal english={en}
+          title={ot("Crear usuario")}
           fields={(values) => {
             const cashier =
               roles.data?.find((role: any) => role.id === values.roleId)
@@ -4804,7 +5353,7 @@ export function Configuration() {
             return [
               {
                 key: "roleId",
-                label: "Rol",
+                label: ot("Rol"),
                 type: "select",
                 required: true,
                 resetFieldsOnChange: ["password"],
@@ -4813,10 +5362,10 @@ export function Configuration() {
                   value: r.id,
                 })),
               },
-              { key: "name", label: "Nombre", required: true },
+              { key: "name", label: ot("Nombre"), required: true },
               {
                 key: "username",
-                label: "Usuario para entrar",
+                label: ot("Usuario para entrar"),
                 required: true,
               },
               {
@@ -4837,7 +5386,7 @@ export function Configuration() {
               },
               {
                 key: "pin",
-                label: "PIN de 6 dígitos",
+                label: ot("PIN de 6 dígitos"),
                 type: "password",
                 required: true,
               },
@@ -4848,13 +5397,13 @@ export function Configuration() {
         />
       )}
       {userEdit && (
-        <FormModal
+        <FormModal english={en}
           title={"Editar usuario · " + userEdit.name}
           fields={[
-            { key: "name", label: "Nombre", required: true },
+            { key: "name", label: ot("Nombre"), required: true },
             {
               key: "username",
-              label: "Usuario para entrar",
+              label: ot("Usuario para entrar"),
               required: true,
             },
             {
@@ -4882,12 +5431,12 @@ export function Configuration() {
         />
       )}
       {roleEdit && (
-        <FormModal
+        <FormModal english={en}
           title={"Permisos · " + roleEdit.name}
           fields={[
             {
               key: "permissions",
-              label: "Permisos separados por coma",
+              label: ot("Permisos separados por coma"),
               type: "textarea",
               initial: roleEdit.permissions.join(", "),
               required: true,
@@ -4909,7 +5458,7 @@ export function Configuration() {
           }
         />
       )}
-    </>
+    </PremiumWorkspace>
   );
 }
 

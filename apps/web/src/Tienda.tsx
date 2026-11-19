@@ -1,5 +1,8 @@
+import { useLanguage } from "./inicioLanguage";
+import { storeSettingsText } from "./storeSettingsLanguage";
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
 // de los reportes, contraentregas pendientes y ajustes de caja/cajero.
+import { filterCredits } from "./codPendingSearch";
 import { useEffect, useRef, useState } from "react";
 import { OWNER_WORD } from "./productTenancy";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -329,7 +332,15 @@ export function CloseCashModal({
     </label>
   );
   return (
-    <Modal open onClose={onClose} title="Cuadre y cierre de caja">
+    <Modal
+      open
+      onClose={onClose}
+      title="Cuadre y cierre de caja"
+      hasData={
+        Object.values(counts).some((v) => v !== "") ||
+        Object.values(form).some((v) => v !== "")
+      }
+    >
       <form onSubmit={submit} className="close-cash">
         {waiting && (
           <p className="close-pending-warning" role="alert">
@@ -643,7 +654,9 @@ export function CodPending({ session }: { session: any }) {
     refetchInterval: 30000,
   });
   const [collecting, setCollecting] = useState<any>(null);
+  const [search, setSearch] = useState("");
   const rows = query.data ?? [];
+  const shown = filterCredits(rows, search);
   // B-01: la API manda null en los importes de la caja abierta (hiddenUntilClose).
   const totalPending = rows.reduce((a, r) => a + (Number(r.pending) || 0), 0);
   const money = (r: any, v: unknown) =>
@@ -715,10 +728,32 @@ export function CodPending({ session }: { session: any }) {
               cobrar: <strong>{formatMoney(totalPending)}</strong>
             </p>
           )}
+          {rows.length > 0 && (
+            <label className="field">
+              <span>Buscar por cliente, factura o teléfono</span>
+              <input
+                type="search"
+                value={search}
+                autoComplete="off"
+                placeholder="Ej.: María, FS-0000123 o 809"
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+          )}
+          {search.trim() && rows.length > 0 && (
+            <p className="cod-hint" role="status">
+              {shown.length} de {rows.length} en los resultados cargados
+            </p>
+          )}
           <QueryState query={query}>
-            {rows.length ? (
+            {rows.length && !shown.length ? (
+              <Empty
+                title="No hay coincidencias"
+                description="Prueba con otro nombre, número de factura o teléfono."
+              />
+            ) : rows.length ? (
               <div className="cod-list">
-                {rows.map((r) => (
+                {shown.map((r) => (
                   <div className="cod-row" key={r.saleId}>
                     <div>
                       <strong>{r.number}</strong>{" "}
@@ -1288,6 +1323,8 @@ function CodCollect({
 
 /** Ajustes de la tienda: logo, número/nombre de cada caja y de cada cajero. */
 export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
+  const english = useLanguage() === "en";
+  const st = (text: string) => storeSettingsText(english, text);
   const client = useQueryClient();
   const terminals = useQuery({
     queryKey: ["terminals"],
@@ -1308,7 +1345,7 @@ export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
   const upload = async (file: File | undefined) => {
     if (!file) return;
     if (file.size > 200 * 1024) {
-      toast("El logo debe pesar como máximo 200 KB.", true);
+      toast(st("El logo debe pesar como máximo 200 KB."), true);
       return;
     }
     const body = new FormData();
@@ -1316,7 +1353,7 @@ export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
     try {
       await api("/settings/logo", { method: "POST", body });
       await client.invalidateQueries({ queryKey: ["settings"] });
-      toast("Logo guardado.");
+      toast(st("Logo guardado."));
     } catch (e: any) {
       toast(e.message, true);
     }
@@ -1327,13 +1364,13 @@ export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
     <div className="store-settings">
       <div className="store-logo">
         {config.data?.logo ? (
-          <img src={config.data.logo} alt="Logo del negocio" />
+          <img src={config.data.logo} alt={st("Logo del negocio")} />
         ) : (
-          <span>Sin logo</span>
+          <span>{st("Sin logo")}</span>
         )}
         <label className="button secondary">
           <Upload size={16} />
-          Subir logo (hasta 200 KB)
+          {st("Subir logo (hasta 200 KB)")}
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
@@ -1343,7 +1380,7 @@ export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
         </label>
       </div>
       {!logoOnly && <>
-      <h3>Cajas (número y nombre en el cuadre)</h3>
+      <h3>{st("Cajas (número y nombre en el cuadre)")}</h3>
       <div className="store-list">
         {(terminals.data ?? [])
           .filter((t) => !t.revokedAt)
@@ -1354,15 +1391,15 @@ export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
                   {t.registerNumber ? t.registerNumber + " · " : ""}
                   {t.registerName || t.name}
                 </strong>
-                <small>Equipo: {t.name}</small>
+                <small>{st("Equipo: ")}{t.name}</small>
               </span>
               <Button variant="secondary" onClick={() => setRegister(t)}>
-                Editar caja
+                {st("Editar caja")}
               </Button>
             </div>
           ))}
       </div>
-      <h3>Cajeros (número en el cuadre y los reportes)</h3>
+      <h3>{st("Cajeros (número en el cuadre y los reportes)")}</h3>
       <div className="store-list">
         {(users.data ?? []).map((u) => (
           <div key={u.id}>
@@ -1374,7 +1411,7 @@ export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
               <small>{u.email}</small>
             </span>
             <Button variant="secondary" onClick={() => setCashier(u)}>
-              No. de cajero
+              {st("No. de cajero")}
             </Button>
           </div>
         ))}
@@ -1382,10 +1419,11 @@ export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
       </>}
       {register && (
         <FormModal
-          title={"Caja · " + register.name}
+          english={english}
+          title={st("Caja · ") + register.name}
           fields={[
-            { key: "registerNumber", label: "Número de caja (ej. 4012)" },
-            { key: "registerName", label: "Nombre de caja" },
+            { key: "registerNumber", label: st("Número de caja (ej. 4012)") },
+            { key: "registerName", label: st("Nombre de caja") },
           ]}
           initial={{
             registerNumber: register.registerNumber ?? "",
@@ -1406,9 +1444,10 @@ export function StoreSettings({ logoOnly = false }: { logoOnly?: boolean }) {
       )}
       {cashier && (
         <FormModal
-          title={"Cajero · " + cashier.name}
+          english={english}
+          title={st("Cajero · ") + cashier.name}
           fields={[
-            { key: "cashierNumber", label: "Número de cajero (ej. 1031)" },
+            { key: "cashierNumber", label: st("Número de cajero (ej. 1031)") },
           ]}
           initial={{ cashierNumber: cashier.cashierNumber ?? "" }}
           onClose={() => setCashier(null)}

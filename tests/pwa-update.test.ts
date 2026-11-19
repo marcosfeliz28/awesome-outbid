@@ -74,7 +74,7 @@ describe("PWA · actualización sin cortar ventas", () => {
     expect(vite).toContain("clientsClaim: true");
     expect(vite).not.toMatch(/skipWaiting:\s*true/);
     const main = read("apps/web/src/main.tsx");
-    expect(main).toContain("startPwaUpdates();");
+    expect(main).toContain("startPwaUpdates(flushEmptyDraftBeforeReload);");
     expect(main).not.toContain("registerSW(");
     const module = read("apps/web/src/pwaUpdate.ts");
     // La única forma de aplicar (updateSW) comprueba antes el carrito.
@@ -84,8 +84,10 @@ describe("PWA · actualización sin cortar ventas", () => {
     );
     expect(apply).toContain("cartItems() > 0) return;");
     // Recarga también si la versión la encontró la revisión de cada hora.
-    expect(apply).toContain('addEventListener("controllerchange"');
-    expect(module.match(/updateSW\(true\)/g)).toHaveLength(1);
+    expect(module).toMatch(/addEventListener\(\s*"controllerchange"/);
+    expect(module).toContain("onNeedReload: requestSafeReload");
+    expect(apply).toContain("if (workInProgress()) return;");
+    expect(module.match(/updateSW\(false\)/g)).toHaveLength(1);
     expect(module).toContain('role", "status"');
     expect(module).toContain('aria-live", "polite"');
     expect(module).toContain("canApplyPwaUpdate(");

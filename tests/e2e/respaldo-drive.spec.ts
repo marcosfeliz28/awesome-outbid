@@ -22,7 +22,9 @@ async function openSettings(page: Page, width: number) {
   await page
     .getByRole("button", { name: "Configuración", exact: true })
     .click();
-  const card = page.locator("section.drive-card");
+  const card = page.locator(
+    "section.drive-card[aria-labelledby='drive-title']",
+  );
   await expect(
     card.getByRole("heading", { name: "Respaldo diario a Google Drive" }),
   ).toBeVisible();
@@ -32,12 +34,14 @@ async function noOverflow(page: Page, width: number) {
   await page.evaluate(() => document.fonts.ready);
   const overflow = await page.evaluate(() => ({
     page: document.documentElement.scrollWidth - window.innerWidth,
-    clipped: [...document.querySelectorAll("section.drive-card *")].filter(
-      (el) => {
-        const r = el.getBoundingClientRect();
-        return r.width > 0 && r.right > window.innerWidth + 1;
-      },
-    ).length,
+    clipped: [
+      ...document.querySelectorAll(
+        "section.drive-card[aria-labelledby='drive-title'] *",
+      ),
+    ].filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.right > window.innerWidth + 1;
+    }).length,
   }));
   expect(overflow.page, "scrollWidth @" + width).toBeLessThanOrEqual(1);
   expect(overflow.clipped, "recortes @" + width).toBe(0);
@@ -198,7 +202,9 @@ test("Respaldo a Drive @1280: «Conectar con Google» abre Google y a la vuelta 
   await card.getByRole("button", { name: "Conectar con Google" }).click();
   await expect(page.getByText(/Google Drive quedó conectado/)).toBeVisible();
   await expect(page).toHaveURL(/\/#settings$/);
-  const after = page.locator("section.drive-card");
+  const after = page.locator(
+    "section.drive-card[aria-labelledby='drive-title']",
+  );
   await expect(after.getByText("Conectado", { exact: true })).toBeVisible();
   await expect(
     after.getByText("Todavía no hay ningún respaldo."),
@@ -228,5 +234,7 @@ test("Respaldo a Drive: gerencia no ve la tarjeta", async ({ page }) => {
     await settings.click();
     await expect(page.locator(".main-content .loading")).toHaveCount(0);
   }
-  await expect(page.locator("section.drive-card")).toHaveCount(0);
+  await expect(
+    page.locator("section.drive-card[aria-labelledby='drive-title']"),
+  ).toHaveCount(0);
 });

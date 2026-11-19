@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$ExistingInstallDir,
   [Parameter(Mandatory = $true)][ValidateNotNullOrEmpty()][string]$InstallerSession,
   [Parameter(Mandatory = $true)][ValidatePattern("^\d+$")][string]$ExpectedPostgresMajor

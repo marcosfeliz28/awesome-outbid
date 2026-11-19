@@ -23,7 +23,13 @@ Complemento de `LICENCIAS_Y_AFIRMACIONES.md` (parte A, «Imágenes, íconos y ma
 
 El resto de librerías que van dentro del JavaScript compilado (React, Radix, Recharts, TanStack Query, Dexie, Sentry, ZXing, Workbox, etc.) se listan con su licencia y su texto completo en `apps/web/public/licencias.txt`, que genera `node scripts/licencias-web.mjs` (comprueba que esté al día con `--check`). La app lo enlaza desde el menú lateral, «Acerca de Nexora POS».
 
+## Fotos de productos (`apps/web/public/products/fotos/*.webp`)
+
+145 fotos de suplementos (17-nov-2026), una por producto, nombradas por SKU. Las buscaron ChatGPT nube y ChatGPT PC en páginas públicas de marcas y tiendas (fuente por foto en `docs/fotos/lote-*/fotos.csv` y `manifest.csv` de sus ramas); Claude nube comprobó producto, marca y presentación contra el sistema y las redujo a 800 px. Las subió Claude nube por orden de Marcos (17-nov). Son fotos de envase del fabricante para mostrar el producto que se vende.
+
 ## No verificado
+
+- Permiso de reutilización de las fotos de productos: ninguna fuente lo confirma por escrito.
 
 - Autoría original del archivo `fitstore.ico` (ver arriba) y la herramienta con la que se exportó.
 - Que ninguna ilustración SVG se haya inspirado en un diseño concreto de terceros: por su contenido (formas básicas y degradados) no se identificó ninguno.

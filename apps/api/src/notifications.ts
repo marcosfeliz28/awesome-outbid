@@ -695,7 +695,7 @@ export async function renderEvent(
       branchId: sale.branchId,
       text: ownerCash
         ? text +
-          `\nEfectivo recibido por ${ownerWord()} (fuera de gaveta) · aprobó con PIN: ${approver ?? "—"}`
+          `\nEfectivo recibido por ${ownerWord()} (fuera de gaveta) · aprobó con PIN: ${cleanText(approver ?? "—", 40)}`
         : text,
     };
   }

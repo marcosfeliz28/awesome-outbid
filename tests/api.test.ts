@@ -2260,8 +2260,7 @@ describe("Alertas de negocio y consistencia contable", () => {
     ).toBeLessThanOrEqual(0.02);
     expect(
       Math.abs(
-        report.rows.reduce((sum, r) => sum + r.Utilidad, 0) -
-          dashboard.grossProfit, // A1: una sola fórmula, sin restar ITBIS
+        report.rows.reduce((sum, r) => sum + r.Utilidad, 0) - dashboard.profit,
       ),
     ).toBeLessThanOrEqual(0.02);
   });
@@ -12188,6 +12187,10 @@ describe("Auditoría final de dinero · D-02, D-03 y D-05", () => {
       Object.fromEntries(byPayment.rows.map((r: any) => [r.Método, r.Ventas])),
     ).toEqual({ Efectivo: 100, Tarjeta: 300, Transferencia: 100 });
     const sales = await ok("/reports/sales" + range, undefined, ownerToken);
+    // El estado fiscal sale en español, no con la clave de la base.
+    expect(new Set(sales.rows.map((r: any) => r.Estado_fiscal))).toEqual(
+      new Set(["Sin emitir"]),
+    );
     expect(total(sales.rows, "Total") - total(sales.rows, "Devoluciones")).toBe(
       500,
     );

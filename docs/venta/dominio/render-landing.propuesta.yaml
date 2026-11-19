@@ -1,0 +1,39 @@
+# PROPUESTA, no es el Blueprint. No se aplica nada con este archivo.
+# Servicio adicional para servir la landing estática (apps/landing) desde
+# norexos.ai. Para adoptarlo: copiar el bloque a render.yaml y actualizar en el
+# MISMO cambio tests/cloud-deploy.test.ts (que hoy fija los servicios del
+# piloto). Orden 95 parte C. Verificar los nombres de campo contra la
+# documentación vigente de Render antes de aplicar.
+#
+# Por qué un sitio estático: la landing son archivos HTML/CSS sin servidor
+# (apps/landing/index.html, landing.css, precios.html). Un sitio estático de
+# Render no consume plan de cómputo y sirve con CDN. No toca la API ni la base.
+services:
+  - type: web
+    name: nexora-landing
+    runtime: static
+    # Sin compilación: se publica la carpeta tal cual.
+    buildCommand: echo "landing estática, sin compilación"
+    staticPublishPath: ./apps/landing
+    autoDeployTrigger: off
+    domains:
+      - norexos.ai
+      - www.norexos.ai
+    routes:
+      # Que la landing no responda a rutas del POS.
+      - type: rewrite
+        source: /precios
+        destination: /precios.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+# La app (POS) iría en app.norexos.ai: se agrega ese dominio al servicio
+# nexora-pos-web y se cambia WEB_ORIGIN de la API a https://app.norexos.ai en
+# el mismo paso (docs/DEPLOY-RENDER.md). Eso NO va aquí.

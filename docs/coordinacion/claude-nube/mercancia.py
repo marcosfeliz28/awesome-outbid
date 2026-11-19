@@ -173,12 +173,12 @@ def resumen(e):
         q = e.get("detalle") or ""
     else:
         q = "%s %s %+g en %s (%g→%g)" % (e["sku"], e["producto"][:40], e["cant"], e["almacen"], e["antes"], e["despues"])
-    return "%s [%s] %s · orden: «%s»" % (e["cuando_rd"], e["tipo"], q, e["orden"])
+    return "%s [%s] %s · orden: «%s»" % (e.get("cuando_rd", ""), e["tipo"], q, e["orden"])
 
 
 def dia(a):
     f = a.fecha or (datetime.datetime.now(RD) - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-    hoy = [e for e in leer() if e["cuando_rd"].startswith(f)]
+    hoy = [e for e in leer() if e.get("cuando_rd", "").startswith(f)]
     print("Cambios de mercancía del %s: %d" % (f, len(hoy)))
     for e in hoy: print(" ", resumen(e))
 

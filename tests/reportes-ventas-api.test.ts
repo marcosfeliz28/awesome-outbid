@@ -37,6 +37,7 @@ async function ok(path: string, as: string, data?: unknown) {
 
 // Día de negocio de hoy (Santo Domingo, UTC-4).
 const today = new Date(Date.now() - 4 * 3600000).toISOString().slice(0, 10);
+const todayEs = today.split("-").reverse().join("/");
 const NAMES = [
   "ventas-por-hora",
   "ventas-por-dia-semana",
@@ -209,7 +210,7 @@ describe("Reportes · Ventas", () => {
   });
 
   it("ticket promedio: el día y el mes suben 3 facturas y 5000", () => {
-    const day = (rows: any[]) => rows.find((r) => r.Período === today) ?? {};
+    const day = (rows: any[]) => rows.find((r) => r.Período === todayEs) ?? {};
     const month = (rows: any[]) => rows.find((r) => r.Tipo === "Mes") ?? {};
     for (const pick of [day, month]) {
       expect(

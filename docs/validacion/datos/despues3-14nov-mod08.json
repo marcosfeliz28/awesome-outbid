@@ -1,0 +1,589 @@
+{
+  "base": "1d118b16e779ab41827d60daee0e59295747f643",
+  "date": "2026-11-14",
+  "windowsAppsUseLightTheme": 0,
+  "windowsSystemUsesLightTheme": 0,
+  "browser": "153.0.8010.12",
+  "runs": [
+    {
+      "width": 1366,
+      "label": "MOD-08-sistema-oscuro-sin-guardado",
+      "frames": [
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f00.png",
+          "time": 1794660444.809596
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f01.png",
+          "time": 1794660444.836709
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f02.png",
+          "time": 1794660444.872271
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f03.png",
+          "time": 1794660444.886962
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f04.png",
+          "time": 1794660444.916765
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f05.png",
+          "time": 1794660444.928348
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f06.png",
+          "time": 1794660444.939515
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f07.png",
+          "time": 1794660444.968366
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f08.png",
+          "time": 1794660444.98369
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f09.png",
+          "time": 1794660445.000977
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f10.png",
+          "time": 1794660445.018385
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f11.png",
+          "time": 1794660445.029536
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f12.png",
+          "time": 1794660445.039198
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f13.png",
+          "time": 1794660445.062327
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f14.png",
+          "time": 1794660445.072267
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f15.png",
+          "time": 1794660445.104518
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f16.png",
+          "time": 1794660445.119208
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f17.png",
+          "time": 1794660445.136947
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f18.png",
+          "time": 1794660445.147776
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f19.png",
+          "time": 1794660445.164178
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f20.png",
+          "time": 1794660445.179277
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f21.png",
+          "time": 1794660445.190133
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f22.png",
+          "time": 1794660445.212724
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f23.png",
+          "time": 1794660445.227815
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f24.png",
+          "time": 1794660445.240725
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-1366-f25.png",
+          "time": 1794660445.255197
+        }
+      ],
+      "trace": [
+        {
+          "t": 20.099999994039536,
+          "theme": null,
+          "bg": "rgb(248, 249, 252)",
+          "children": 0
+        },
+        {
+          "t": 26,
+          "theme": null,
+          "bg": "rgb(248, 249, 252)",
+          "children": 0
+        },
+        {
+          "t": 42.8999999910593,
+          "theme": null,
+          "bg": "rgb(248, 249, 252)",
+          "children": 0
+        },
+        {
+          "t": 61.79999999701977,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 0
+        },
+        {
+          "t": 74.8999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 96.69999998807907,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 116.3999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 129.8999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 201.8999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 212.69999998807907,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 241.59999999403954,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 245.8999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 286.69999998807907,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 309.8999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 331.8999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 335.79999999701977,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 347,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 362.5,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 374.69999998807907,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 392.09999999403954,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 411.09999999403954,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 426.09999999403954,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 441.8999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 459,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 476.3999999910593,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 492,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "startTime": 36
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 88
+        }
+      ],
+      "stored": null,
+      "theme": "dark",
+      "matchesDark": true,
+      "manual": {
+        "manualLightOverDarkSystem": {
+          "stored": "light",
+          "theme": "light",
+          "matchesDark": true
+        },
+        "manualDarkOverLightSystem": {
+          "stored": "dark",
+          "theme": "dark",
+          "matchesDark": false
+        }
+      }
+    },
+    {
+      "width": 390,
+      "label": "MOD-08-sistema-oscuro-sin-guardado",
+      "frames": [
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f00.png",
+          "time": 1794660487.691768
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f01.png",
+          "time": 1794660487.720209
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f02.png",
+          "time": 1794660487.733613
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f03.png",
+          "time": 1794660487.760556
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f04.png",
+          "time": 1794660487.768223
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f05.png",
+          "time": 1794660487.800243
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f06.png",
+          "time": 1794660487.818109
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f07.png",
+          "time": 1794660487.824947
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f08.png",
+          "time": 1794660487.840636
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f09.png",
+          "time": 1794660487.864396
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f10.png",
+          "time": 1794660487.880979
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f11.png",
+          "time": 1794660487.890165
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f12.png",
+          "time": 1794660487.916667
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f13.png",
+          "time": 1794660487.930078
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f14.png",
+          "time": 1794660487.935669
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f15.png",
+          "time": 1794660487.954144
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f16.png",
+          "time": 1794660487.984595
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f17.png",
+          "time": 1794660487.988784
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f18.png",
+          "time": 1794660488.007237
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f19.png",
+          "time": 1794660488.020792
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f20.png",
+          "time": 1794660488.039451
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f21.png",
+          "time": 1794660488.053536
+        },
+        {
+          "file": "MOD-08-sistema-oscuro-sin-guardado-390-f22.png",
+          "time": 1794660488.074062
+        }
+      ],
+      "trace": [
+        {
+          "t": 53.400000005960464,
+          "theme": null,
+          "bg": "rgb(248, 249, 252)",
+          "children": 0
+        },
+        {
+          "t": 64.5,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 0
+        },
+        {
+          "t": 91.70000000298023,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 94.5,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 109.40000000596046,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 131.90000000596046,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 142.40000000596046,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 191.6000000089407,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 213.20000000298023,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 216.90000000596046,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 233,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 252.5,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 263,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 300.5,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 303.40000000596046,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 308.70000000298023,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 325.70000000298023,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 356,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 359.20000000298023,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 377.20000000298023,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 394.6000000089407,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 409.40000000596046,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 426.29999999701977,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 443.29999999701977,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 459.90000000596046,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 476.90000000596046,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        },
+        {
+          "t": 492.70000000298023,
+          "theme": "dark",
+          "bg": "rgb(11, 15, 25)",
+          "children": 1
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "startTime": 72
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 100
+        }
+      ],
+      "stored": null,
+      "theme": "dark",
+      "matchesDark": true,
+      "manual": {
+        "manualLightOverDarkSystem": {
+          "stored": "light",
+          "theme": "light",
+          "matchesDark": true
+        },
+        "manualDarkOverLightSystem": {
+          "stored": "dark",
+          "theme": "dark",
+          "matchesDark": false
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+[
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 18,
+    "texto": "2. Si no hay caja abierta se ve el título «Una caja que siempre cuadra» y el botón **«Abrir caja»** (`apps/web/src/Management.tsx:1670-1677`), o en el centro **«Abrir mi caja»** con el texto «Tu día empieza con una caja abierta» (`:1740-1744`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 20,
+    "texto": "4. Si el fondo es **menor** que lo sugerido aparece **«Nota si el fondo es menor que el sugerido»** y es obligatoria; no pide PIN (`apps/web/src/Management.tsx:2029-2039`; `apps/api/src/cash.ts:868-885`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 23,
+    "texto": "7. Si la caja quedó abierta en **otro equipo**: «Tu caja está abierta en «…». Para cobrar aquí, trasládala a este equipo o ciérrala en el otro.» con el botón **«Trasladar caja aquí»** y la ventana «Trasladar caja a este equipo» (botón **«Trasladar caja»**; pide PIN de gerente según el caso) (`apps/web/src/realtime.tsx:629-668`; API `apps/api/src/cash.ts:1061-1111`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 41,
+    "texto": "- Si el producto tiene **una sola variante**, entra directo (`:425-430`). Si tiene varias, abre la ventana con el nombre del producto y «Elige la combinación para esta venta.» (`:1284-1314`) y se pulsa la variante (talla, color, sabor)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 107,
+    "texto": "- Si el precio o una promoción cambió en otro equipo: «Los precios cambiaron: …. El total ya está actualizado: revisa los pagos y finaliza otra vez.» (`POS.tsx:2276-2277`, `:2303-2327`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_CAJA_POS.md",
+    "linea": 155,
+    "texto": "- Si tarjeta, efectivo o dólares **no cuadran** y quien cierra es cajera (o gerente cerrando SU caja, salvo `*`): no cierra sin el **PIN de otra persona con permiso** y una **justificación del descuadre** (mín. 10 letras). El mensaje no dice cuánto falta ni sobra (`cash.ts:1248-1300`). Mensajes: «El total de tarjeta no coincide con el sistema…», «La caja no cuadra con el sistema. Vuelve a contar…» (`:1268-1274`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 42,
+    "texto": "- No se puede cobrar más que el saldo: «El cobro supera el saldo pendiente.» (`sales.ts:4353-4366`). Se puede cobrar una parte y el resto después; el crédito se cierra cuando el saldo llega a cero (`apps/web/src/Tienda.tsx:1218-1219`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 73,
+    "texto": "5. Si el envío del mensajero explica la diferencia: «Usar RD$ X como envío» o «Editar envío» (`:300-336`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 80,
+    "texto": "- Si era un abono: baja el saldo, cierra el crédito si llega a cero y acredita incentivos (`:2775-2790`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 81,
+    "texto": "- Si la caja ya cerró: **recalcula el cuadre** y deja auditoría `verified_after_close` (`:2792-2806`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_COBROS_Y_TRANSFERENCIAS.md",
+    "linea": 89,
+    "texto": "- Solo se rechaza una `pending_verification` (`sales.ts:2911`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_MERCANCIA.md",
+    "linea": 25,
+    "texto": "- Si el código no existe, se ofrece **«Crear producto rápido»**: Nombre, Categoría, Código de barras, Precio de venta… (`:1444-1500`). Un código repetido en dos productos no elige ninguno en silencio (`:99-109`)."
+  },
+  {
+    "archivo": "docs/sistema/FLUJO_MERCANCIA.md",
+    "linea": 58,
+    "texto": "2. Solo `*` (administración) ve **«Traspasar mercancía»**: «El movimiento resta del origen y suma al destino en una sola operación.» Se elige el producto, se pulsa **«Traspasar»** y se llena la ventana **«Traspasar · producto»**: **Desde**, **Hasta**, **Cantidad** (3 decimales), «Lote (si aplica)», **Motivo** (mín. 3 letras) (`:113-205`)."
+  },
+  {
+    "archivo": "docs/sistema/ROLES_Y_PERMISOS.md",
+    "linea": 63,
+    "texto": "- Solo cobra créditos **en efectivo** (`apps/api/src/sales.ts:4190-4195`). Pide anulaciones; no las ejecuta."
+  },
+  {
+    "archivo": "docs/sistema/ROLES_Y_PERMISOS.md",
+    "linea": 70,
+    "texto": "- Solo «GV Makeup Studio» (cursos, citas, interesadas, por verificar sin poder verificar, reportes). Sin acceso a configuración, usuarios, costos, inventario ni datos de MacGen. No carga el catálogo de la caja (`apps/web/src/realtime.tsx:147-153`)."
+  }
+]

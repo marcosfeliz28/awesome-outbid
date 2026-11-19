@@ -9,10 +9,10 @@
 }
 .drive-card h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: max(var(--fs-min), calc(15px * var(--fs-scale)));
 }
 .drive-card p {
-  font-size: 12px;
+  font-size: max(var(--fs-min), calc(12px * var(--fs-scale)));
   margin: 8px 0 12px;
 }
 .drive-card .drive-state p {
@@ -28,7 +28,7 @@
 .drive-card .drive-code {
   overflow-wrap: anywhere;
   word-break: break-word;
-  font-size: 11px;
+  font-size: max(var(--fs-min), calc(11px * var(--fs-scale)));
   padding: 1px 4px;
   border-radius: 4px;
   background: var(--surface-soft);

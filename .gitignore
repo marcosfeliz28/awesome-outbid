@@ -29,3 +29,5 @@ apps/web/src-tauri/capabilities/product-remote.json
 # Taller: configuración local de plugins y estado de OMC (no se versiona)
 .mcp.json
 .omc/
+/.mcp.json
+graphify-out/

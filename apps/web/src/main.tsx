@@ -5,10 +5,25 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { startPwaUpdates } from "./pwaUpdate";
-import { keepCartDraft } from "./cartDraft";
+import { keepCartDraft, flushEmptyDraftBeforeReload } from "./cartDraft";
 import "./styles.css";
+import "../../../packages/ui/src/tokens.css";
+import "../../../packages/ui/src/nx-primitivos.css";
+import "./impacto.css";
+import { readVisual } from "./impacto";
+import { applyTheme, followSystemTheme, initialTheme } from "./theme";
+import { useStore } from "./api";
+// Modo visual por equipo: estándar salvo que el administrador encienda Impacto.
+document.documentElement.dataset.visual = readVisual();
+// MOD-08: el tema se pinta antes del primer dibujo y sigue al equipo si la
+// persona no eligió uno.
+applyTheme(initialTheme());
+followSystemTheme((theme) => {
+  applyTheme(theme);
+  useStore.setState({ theme });
+});
 // M7: la versión nueva de la PWA no recarga con una venta en curso.
-startPwaUpdates();
+startPwaUpdates(flushEmptyDraftBeforeReload);
 // 05-A3/M1: el carrito en curso sobrevive a F5 y a la recarga de una versión
 // nueva aplicada con el carrito vacío.
 keepCartDraft();

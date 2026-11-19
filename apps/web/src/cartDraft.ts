@@ -16,6 +16,7 @@ export type CartDraft = {
   globalDiscount: number;
   wholesale: boolean;
   savedAt: number;
+  revision?: string;
   // 05-N3: el cobro que se estaba enviando (su offlineUuid). Si la recarga
   // llega justo después de cobrar, la venta no se vuelve a ofrecer y, si el
   // carrito vuelve, el cobro reutiliza el mismo offlineUuid: la API devuelve
@@ -51,6 +52,64 @@ let sealed = false;
 // cola (temporizador o instante libre del navegador) y es de una generación
 // anterior se descarta aunque llegue después del borrado.
 let generation = 0;
+// Sólo esta pestaña puede drenar su propia transición a vacío. Inicio vacío
+// no debe borrar el borrador que conserva otra pestaña del mismo usuario.
+let emptyDraftOwner: string | null = null;
+let knownRevision: string | null = null;
+const revisionOf = (draft: CartDraft) =>
+  draft.revision ?? `legacy:${draft.savedAt}`;
+async function deleteKnownDraft(
+  userId: string,
+  expected = knownRevision,
+): Promise<boolean> {
+  return localDB.transaction("rw", localDB.cache, async () => {
+    const row = await localDB.cache.get(draftKey(userId));
+    if (!row) return true;
+    if (!expected || revisionOf(row.data as CartDraft) !== expected)
+      return false;
+    await localDB.cache.delete(draftKey(userId));
+    return true;
+  });
+}
+let lastWrite: Promise<unknown> = Promise.resolve();
+
+/** Barrera durable para la recarga PWA; un fallo de almacenamiento la bloquea. */
+export async function flushEmptyDraftBeforeReload(): Promise<boolean> {
+  // PWA se suscribe antes que keepCartDraft: dejar terminar todos los listeners.
+  await Promise.resolve();
+  const userId = useStore.getState().user?.id ?? null;
+  const currentGeneration = generation;
+  if (restoring || attempt || useStore.getState().cart.length) return false;
+  if (!emptyDraftOwner) return true;
+  if (!userId || emptyDraftOwner !== userId || owner !== userId) return false;
+  cancelPending();
+  try {
+    await lastWrite;
+    if (
+      generation !== currentGeneration ||
+      owner !== userId ||
+      useStore.getState().user?.id !== userId ||
+      useStore.getState().cart.length ||
+      restoring ||
+      attempt
+    )
+      return false;
+    if (!(await deleteKnownDraft(userId))) return false;
+    if (
+      generation !== currentGeneration ||
+      owner !== userId ||
+      useStore.getState().user?.id !== userId ||
+      useStore.getState().cart.length ||
+      restoring ||
+      attempt
+    )
+      return false;
+    emptyDraftOwner = null;
+    return true;
+  } catch {
+    return false;
+  }
+}
 let idleHandle: number | undefined;
 const cancelPending = () => {
   clearTimeout(timer);
@@ -62,17 +121,21 @@ const cancelPending = () => {
 function write(userId: string, state = useStore.getState()) {
   // Vendido y sellado: un carrito con artículos ya no se guarda.
   if (sealed && state.cart.length) return Promise.resolve();
+  if (attempt && !state.cart.length) return Promise.resolve(false);
   const data: CartDraft = {
     items: state.cart.map(leanItem),
     customerId: state.customerId,
     globalDiscount: state.globalDiscount,
     wholesale: useWholesale.getState().on,
     savedAt: Date.now(),
+    revision: crypto.randomUUID(),
     ...(attempt ? { attempt } : {}),
   };
+  if (state.cart.length && owner === userId) knownRevision = data.revision!;
   const saving: Promise<unknown> = state.cart.length
     ? localDB.cache.put({ key: draftKey(userId), data })
-    : localDB.cache.delete(draftKey(userId));
+    : deleteKnownDraft(userId);
+  lastWrite = saving;
   return saving.catch(() => {
     /* Sin IndexedDB (modo privado): el carrito sigue en memoria. */
   });
@@ -104,18 +167,21 @@ export async function discardCartDraft() {
   attempt = null;
   sealed = true;
   if (!userId) return;
-  await localDB.cache.delete(draftKey(userId)).catch(() => {
+  await deleteKnownDraft(userId).catch(() => {
     /* Sin IndexedDB: no hay borrador que borrar. */
   });
 }
 
 /**
  * 05-N2: la sesión se cierra por inactividad con un carrito a medias. Cerrar
- * la sesión borra la tabla `cache` (G9), borrador incluido; aquí se vuelve a
- * dejar el del propio usuario para que lo encuentre al volver a entrar (sólo
- * lo recupera él, y caduca a las 12 h).
+ * la sesión borra la tabla `cache` (G9); el borrador del propio usuario se
+ * conserva en la misma transacción del borrado, para que lo encuentre al
+ * volver a entrar aunque la página se recargue enseguida (sólo lo recupera
+ * él, y caduca a las 12 h).
  */
-export async function keepDraftThrough(close: () => Promise<void>) {
+export async function keepDraftThrough(
+  close: (keep: { key: string; data: any }[]) => Promise<void>,
+) {
   const userId = useStore.getState().user?.id;
   if (userId && useStore.getState().cart.length && !sealed) {
     cancelPending();
@@ -124,7 +190,7 @@ export async function keepDraftThrough(close: () => Promise<void>) {
   const saved = userId
     ? await localDB.cache.get(draftKey(userId)).catch(() => undefined)
     : undefined;
-  await close();
+  await close(saved ? [saved] : []);
   if (saved) {
     await localDB.cache.put(saved).catch(() => {});
     // El formulario puede aparecer antes de terminar la limpieza de caché.
@@ -140,16 +206,22 @@ let restoring = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 async function restore(userId: string) {
+  const restoreGeneration = generation;
+  const isCurrent = () =>
+    generation === restoreGeneration &&
+    owner === userId &&
+    useStore.getState().user?.id === userId;
   restoring = true;
   try {
     const saved = await localDB.cache
       .get(draftKey(userId))
       .catch(() => undefined);
+    if (!isCurrent()) return;
     const draft = saved?.data as CartDraft | undefined;
     // 05-N3b: un carrito de hace más de 12 h es de otro turno, no una venta
     // en curso: se descarta.
     if (draft && draftExpired(draft.savedAt, Date.now())) {
-      await localDB.cache.delete(draftKey(userId)).catch(() => {});
+      await deleteKnownDraft(userId, revisionOf(draft)).catch(() => {});
       return;
     }
     // 05-N3: el cobro de ese carrito ya quedó guardado en este equipo (venta
@@ -158,12 +230,14 @@ async function restore(userId: string) {
       draft?.attempt?.uuid &&
       (await localDB.sales.get(draft.attempt.uuid).catch(() => undefined))
     ) {
-      await localDB.cache.delete(draftKey(userId)).catch(() => {});
+      if (isCurrent())
+        await deleteKnownDraft(userId, revisionOf(draft)).catch(() => {});
       return;
     }
     // Otra persona entró mientras se leía, o ya se escaneó algo nuevo.
-    if (owner !== userId || !draft?.items?.length) return;
+    if (!isCurrent() || !draft?.items?.length) return;
     if (useStore.getState().cart.length) return;
+    knownRevision = revisionOf(draft);
     attempt = draft.attempt ?? null;
     sealed = false;
     useStore.setState({
@@ -179,7 +253,7 @@ async function restore(userId: string) {
         (units === 1 ? " artículo)." : " artículos)."),
     );
   } finally {
-    restoring = false;
+    if (isCurrent()) restoring = false;
   }
 }
 
@@ -190,6 +264,8 @@ export function keepCartDraft() {
     if (userId !== owner) {
       const before = owner;
       owner = userId;
+      emptyDraftOwner = null;
+      knownRevision = null;
       generation++;
       cancelPending();
       attempt = null;
@@ -206,6 +282,7 @@ export function keepCartDraft() {
       return;
     }
     if (!userId || restoring) return;
+    if (previous.cart.length && !state.cart.length) emptyDraftOwner = userId;
     // El carrito vendido ya está vacío: se acabó el sello.
     if (sealed && !state.cart.length) {
       sealed = false;

@@ -1,3 +1,8 @@
+import { usePremiumWorkspace } from "./PremiumWorkspace";
+import { useLanguage } from "./inicioLanguage";
+import { operationalAuxText } from "./operationalAuxLanguage";
+import { Truck } from "lucide-react";
+import "./operationalAux.css";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@fitstore/ui";
@@ -16,14 +21,17 @@ type Payout = {
   total: string;
   sales: { invoice: string; courierName: string; fee: string }[];
 };
-const dateText = (date: string) =>
-  new Date(date).toLocaleString("es-DO", {
+const dateText = (date: string, english = false) =>
+  new Date(date).toLocaleString(english ? "en-US" : "es-DO", {
     timeZone: "America/Santo_Domingo",
     dateStyle: "short",
     timeStyle: "short",
   });
 
 export function CourierPayouts() {
+  usePremiumWorkspace();
+  const english = useLanguage() === "en";
+  const t = (text: string) => operationalAuxText(english, text);
   const user = useStore((state) => state.user)!;
   const admin = can(user.permissions, "*");
   const client = useQueryClient();
@@ -51,7 +59,9 @@ export function CourierPayouts() {
     enabled: admin,
   });
   if (!admin)
-    return <p role="alert">Esta pantalla es solo para administración.</p>;
+    return (
+      <p role="alert">{t("Esta pantalla es solo para administración.")}</p>
+    );
   const rows = pending.data?.rows ?? [];
   const picked = rows.filter((row) => selected.has(row.id));
   const selectedCents = picked.reduce(
@@ -122,20 +132,24 @@ export function CourierPayouts() {
     }
   };
   return (
-    <section className="transfer-reconciliation courier-page">
+    <section className="transfer-reconciliation courier-page operational-aux operational-aux-courier norexos-premium-workspace">
       <div className="page-heading">
+        <span className="operational-aux-emblem" aria-hidden="true">
+          <Truck size={34} strokeWidth={1.6} />
+        </span>
         <div>
-          <div className="eyebrow">ADMINISTRACIÓN</div>
-          <h1>Envíos del mensajero</h1>
+          <div className="eyebrow">{t("ADMINISTRACIÓN")}</div>
+          <h1>{t("Envíos del mensajero")}</h1>
           <p>
-            Consulta cuánto se debe y registra los envíos pagados. Este registro
-            no mueve la caja.
+            {t(
+              "Consulta cuánto se debe y registra los envíos pagados. Este registro no mueve la caja.",
+            )}
           </p>
         </div>
       </div>
       <div className="panel reconciliation-toolbar">
         <label className="field">
-          <span>Desde</span>
+          <span>{t("Desde")}</span>
           <input
             type="date"
             value={from}
@@ -146,7 +160,7 @@ export function CourierPayouts() {
           />
         </label>
         <label className="field">
-          <span>Hasta</span>
+          <span>{t("Hasta")}</span>
           <input
             type="date"
             value={to}
@@ -157,7 +171,7 @@ export function CourierPayouts() {
           />
         </label>
         <Button variant="secondary" onClick={exportCsv} disabled={!rows.length}>
-          Exportar CSV
+          {t("Exportar CSV")}
         </Button>
       </div>
       {message && (
@@ -170,12 +184,14 @@ export function CourierPayouts() {
           {error}
         </p>
       )}
-      <QueryState query={pending}>
+      <QueryState english={english} query={pending}>
         <div className="panel">
-          <h2>Pendientes</h2>
+          <h2>{t("Pendientes")}</h2>
           <p>
-            <strong>Total a pagar:</strong>{" "}
-            {formatMoney(Number(pending.data?.total ?? 0))}
+            <strong>{t("Total a pagar:")}</strong>{" "}
+            <span className="operational-aux-money">
+              {formatMoney(Number(pending.data?.total ?? 0))}
+            </span>
           </p>
           {rows.length ? (
             <div className="reconciliation-list">
@@ -186,30 +202,38 @@ export function CourierPayouts() {
                     checked={selected.has(row.id)}
                     disabled={busy}
                     onChange={() => toggle(row.id)}
-                    aria-label={`Seleccionar envío de ${row.invoice}`}
+                    aria-label={`${t("Seleccionar envío de ")}${row.invoice}`}
                   />
                   <span className="reconciliation-details">
                     <strong>
-                      {row.invoice} · {formatMoney(Number(row.courierFee))}
+                      {row.invoice} ·{" "}
+                      <span className="operational-aux-money">
+                        {formatMoney(Number(row.courierFee))}
+                      </span>
                     </strong>
                     <span>
-                      {dateText(row.date)} · {row.customer || "Sin cliente"}
+                      {dateText(row.date, english)} ·{" "}
+                      {row.customer || t("Sin cliente")}
                     </span>
-                    <span>Mensajero: {row.courierName}</span>
+                    <span>
+                      {t("Mensajero:")} {row.courierName}
+                    </span>
                   </span>
                 </label>
               ))}
             </div>
           ) : (
-            <p>No hay envíos pendientes en este período.</p>
+            <p>{t("No hay envíos pendientes en este período.")}</p>
           )}
           <div className="reconciliation-totals">
             <p>
-              <strong>Seleccionados:</strong> {picked.length} ·{" "}
-              {formatMoney(selectedCents / 100)}
+              <strong>{t("Seleccionados:")}</strong> {picked.length} ·{" "}
+              <span className="operational-aux-money">
+                {formatMoney(selectedCents / 100)}
+              </span>
             </p>
             <label className="field">
-              <span>Nota del pago (opcional)</span>
+              <span>{t("Nota del pago (opcional)")}</span>
               <input
                 maxLength={500}
                 value={note}
@@ -220,14 +244,14 @@ export function CourierPayouts() {
               disabled={!picked.length || busy}
               onClick={() => void pay()}
             >
-              {busy ? "Registrando…" : "Marcar como pagado"}
+              {busy ? t("Registrando…") : t("Marcar como pagado")}
             </Button>
           </div>
         </div>
       </QueryState>
-      <QueryState query={history}>
+      <QueryState english={english} query={history}>
         <div className="panel">
-          <h2>Historial de pagados</h2>
+          <h2>{t("Historial de pagados")}</h2>
           {history.data?.length ? (
             <div className="reconciliation-list">
               {history.data.map((payout) => (
@@ -237,26 +261,38 @@ export function CourierPayouts() {
                 >
                   <div className="reconciliation-details">
                     <strong>
-                      {dateText(payout.date)} ·{" "}
-                      {formatMoney(Number(payout.total))}
+                      {dateText(payout.date, english)} ·{" "}
+                      <span className="operational-aux-money">
+                        {formatMoney(Number(payout.total))}
+                      </span>
                     </strong>
-                    <span>Registró: {payout.paidBy}</span>
                     <span>
-                      Facturas:{" "}
-                      {payout.sales
-                        .map(
-                          (sale) =>
-                            `${sale.invoice} (${sale.courierName}: ${formatMoney(Number(sale.fee))})`,
-                        )
-                        .join(", ")}
+                      {t("Registró:")} {payout.paidBy}
                     </span>
-                    {payout.note && <span>Nota: {payout.note}</span>}
+                    <span>
+                      {t("Facturas:")}{" "}
+                      {payout.sales.map((sale, index) => (
+                        <span key={`${sale.invoice}:${index}`}>
+                          {index > 0 ? ", " : ""}
+                          {sale.invoice} ({sale.courierName}:{" "}
+                          <span className="operational-aux-money">
+                            {formatMoney(Number(sale.fee))}
+                          </span>
+                          )
+                        </span>
+                      ))}
+                    </span>
+                    {payout.note && (
+                      <span>
+                        {t("Nota:")} {payout.note}
+                      </span>
+                    )}
                   </div>
                 </article>
               ))}
             </div>
           ) : (
-            <p>No hay pagos registrados en este período.</p>
+            <p>{t("No hay pagos registrados en este período.")}</p>
           )}
         </div>
       </QueryState>

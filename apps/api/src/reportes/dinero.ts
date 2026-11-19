@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { canViewCashExpected, denied, type Actor } from "../common";
+import { saleNotGvSql } from "../gv-scope";
 import {
   local,
   num,
@@ -11,8 +12,9 @@ import {
 } from "./base";
 
 // Grupo «Dinero» de los 40 reportes (orden 18-oct). Sin costo ni margen.
+// GV es otra empresa: sus ventas no se suman con Macgen (dueña, 18-nov).
 const sold = (actor: Actor, range: Range) =>
-  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
+  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()} AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
 const returned = (actor: Actor, range: Range) =>
   Prisma.sql`r."branchId" = ${actor.branchId} AND r."createdAt" >= ${utc(range.gte)} AND r."createdAt" <= ${utc(range.lte)}`;
 const month = (column: Prisma.Sql) =>
@@ -129,17 +131,19 @@ export const dinero: Record<string, ReportDef> = {
     title: "Entradas por cuenta de banco y terminal",
     group: "Dinero",
     // Orden de la dueña (20-oct): por dónde entró el dinero cada día. Cuenta
-    // cobros de venta y abonos (lo que de verdad llegó). Una transferencia sin
-    // verificar va en su propia fila «por verificar»: todavía no es dinero.
+    // cobros de venta y abonos (lo que de verdad llegó), no lo pendiente.
+    // A6 (auditoría 19-nov): una transferencia aún sin verificar no se sabe si
+    // llegó: va en su propia fila con Estado «Por verificar».
     async run(db, actor, range) {
       await openCashGuard(db, actor);
       const rows: any[] = await db.$queryRaw`
         SELECT to_char(${local(Prisma.sql`p."createdAt"`)}, 'YYYY-MM-DD') AS dia, p.method,
                p.status = 'pending_verification' AS pending,
                COALESCE(NULLIF(TRIM(p.bank), ''), 'Sin indicar') AS cuenta,
+               (p.method = 'transfer' AND p.status <> 'ok') AS unverified,
                SUM(p.amount) AS amount, COUNT(*) AS n
           FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId"
-          WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed'
+          WHERE s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()}
             AND p."createdAt" >= ${utc(range.gte)} AND p."createdAt" <= ${utc(range.lte)}
             AND p.method IN ('cash', 'card', 'transfer') AND p.status <> 'rejected'
           GROUP BY 1, 2, 3, 4`;
@@ -154,6 +158,7 @@ export const dinero: Record<string, ReportDef> = {
           Forma:
             (label[r.method] ?? r.method) + (r.pending ? " por verificar" : ""),
           "Cuenta / terminal": r.method === "cash" ? "Caja" : r.cuenta,
+          Estado: r.unverified ? "Por verificar" : "Llegó",
           Cobros: Number(r.n),
           Monto: num(r.amount),
         }))
@@ -163,7 +168,8 @@ export const dinero: Record<string, ReportDef> = {
             a.Forma.localeCompare(b.Forma) ||
             String(a["Cuenta / terminal"]).localeCompare(
               String(b["Cuenta / terminal"]),
-            ),
+            ) ||
+            a.Estado.localeCompare(b.Estado),
         );
     },
   },
@@ -171,7 +177,7 @@ export const dinero: Record<string, ReportDef> = {
     title: "Formas de pago por mes",
     group: "Dinero",
     // D-05 como «by-payment»: lo cobrado de las facturas del mes (transferencia
-    // rechazada = crédito, N-4) menos lo devuelto en el mes: el reembolso con su
+    // rechazada = crédito, N-4) menos lo devuelto de esas facturas (opción A): el reembolso con su
     // método y lo que redujo la deuda con el crédito/contraentrega de la venta.
     async run(db, actor, range) {
       await openCashGuard(db, actor);
@@ -180,14 +186,14 @@ export const dinero: Record<string, ReportDef> = {
           FROM "Payment" p JOIN "Sale" s ON s.id = p."saleId"
           WHERE ${sold(actor, range)} AND p."entryType" <> 'installment' GROUP BY 1, 2
         UNION ALL
-        SELECT ${month(Prisma.sql`r."createdAt"`)}, r."refundMethod", -SUM(r."refundAmount")
+        SELECT ${month(Prisma.sql`s."createdAt"`)}, r."refundMethod", -SUM(r."refundAmount")
           FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId"
-          WHERE ${returned(actor, range)} AND s.status = 'completed' AND r."refundAmount" > 0 GROUP BY 1, 2
+          WHERE ${sold(actor, range)} AND r."refundAmount" > 0 GROUP BY 1, 2
         UNION ALL
         SELECT mes, method, -SUM(debt) FROM (
-          SELECT ${month(Prisma.sql`r."createdAt"`)} AS mes, COALESCE((SELECT p.method FROM "Payment" p WHERE p."saleId" = r."saleId" AND p."entryType" <> 'installment' AND p.method IN ('credit', 'cod') LIMIT 1), 'credit') AS method, r.total - r."refundAmount" AS debt
+          SELECT ${month(Prisma.sql`s."createdAt"`)} AS mes, COALESCE((SELECT p.method FROM "Payment" p WHERE p."saleId" = r."saleId" AND p."entryType" <> 'installment' AND p.method IN ('credit', 'cod') LIMIT 1), 'credit') AS method, r.total - r."refundAmount" AS debt
             FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId"
-            WHERE ${returned(actor, range)} AND s.status = 'completed' AND r.total > r."refundAmount") x
+            WHERE ${sold(actor, range)} AND r.total > r."refundAmount") x
           GROUP BY 1, 2`;
       return mix(rows, ["Mes"]).sort((a, b) =>
         String(a.Mes).localeCompare(String(b.Mes)),
@@ -221,13 +227,13 @@ export const dinero: Record<string, ReportDef> = {
   "descuentos-cajera": {
     title: "Descuentos dados por cajera",
     group: "Dinero",
-    // % sobre su venta neta del período (facturas menos devoluciones, D-05).
+    // % sobre su venta neta del período (facturas menos sus devoluciones, opción A).
     async run(db, actor, range) {
       const rows: any[] = await db.$queryRaw`
         WITH v AS (SELECT s."sellerId" AS uid, COUNT(*) FILTER (WHERE s."discountTotal" > 0) AS n, SUM(s."discountTotal") AS disc, COUNT(*) FILTER (WHERE s."discountTotal" > 0 AND s."discountApprovedBy" = s."sellerId") AS own, SUM(s.total) AS sales
           FROM "Sale" s WHERE ${sold(actor, range)} GROUP BY 1),
         d AS (SELECT s."sellerId" AS uid, SUM(r.total) AS ret
-          FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${returned(actor, range)} AND s.status = 'completed' GROUP BY 1)
+          FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${sold(actor, range)} GROUP BY 1)
         SELECT COALESCE(u.name, v.uid::text) AS name, v.n, v.disc, v.own, v.sales - COALESCE(d.ret, 0) AS net
           FROM v LEFT JOIN d ON d.uid = v.uid LEFT JOIN "User" u ON u.id = v.uid
           WHERE v.n > 0 ORDER BY v.disc DESC`;
@@ -247,7 +253,7 @@ export const dinero: Record<string, ReportDef> = {
     async run(db, actor, range) {
       const rows: any[] = await db.$queryRaw`
         WITH v AS (SELECT s.wholesale, COUNT(*) AS n, SUM(s.total) AS sales FROM "Sale" s WHERE ${sold(actor, range)} GROUP BY 1),
-        d AS (SELECT s.wholesale, SUM(r.total) AS ret FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${returned(actor, range)} AND s.status = 'completed' GROUP BY 1)
+        d AS (SELECT s.wholesale, SUM(r.total) AS ret FROM "SaleReturn" r JOIN "Sale" s ON s.id = r."saleId" WHERE ${sold(actor, range)} GROUP BY 1)
         SELECT w.wholesale, COALESCE(v.n, 0) AS n, COALESCE(v.sales, 0) AS sales, COALESCE(d.ret, 0) AS ret
           FROM (VALUES (true), (false)) w(wholesale) LEFT JOIN v ON v.wholesale = w.wholesale LEFT JOIN d ON d.wholesale = w.wholesale`;
       const all = rows.reduce((a, r) => a + Number(r.sales) - Number(r.ret), 0);

@@ -58,6 +58,11 @@ function sanitizeRequest<T extends { request?: { url?: string } }>(
   return event;
 }
 
+/** Avisa que una pantalla falló al dibujarse. Solo lleva el nombre de la pantalla. */
+export function captureUiError(page: string) {
+  Sentry.captureMessage("ui-render-error: " + page.split("?")[0], "error");
+}
+
 /**
  * Trace only the operational milestones needed to diagnose POS reliability.
  * Names are fixed and intentionally exclude IDs, user/customer/product data,

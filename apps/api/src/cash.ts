@@ -227,15 +227,35 @@ export function cashCloseRequiresNote(
     ? Math.max(...values) > differenceLimit
     : values.some((value) => value > 0);
 }
+// Cierres hechos con la regla «las transferencias las suma el sistema»
+// (commit 02a834e4 del 14-oct; se toma desde el 16-oct por margen de
+// despliegue): los nuevos llevan la marca; los demás se reconocen por fecha.
+const AUTO_TRANSFER_SINCE = new Date("2026-10-16T04:00:00.000Z");
+export function transferCountedBySystem(session: any) {
+  if ((session.closeDetails as any)?.transferBySystem === true) return true;
+  return (
+    !!session.closedAt && new Date(session.closedAt) >= AUTO_TRANSFER_SINCE
+  );
+}
 // Recalcula lo esperado de una caja ya cerrada (venta offline sincronizada o
 // transferencia verificada después del cierre) y guarda las diferencias.
 export async function refreshClosedCash(tx: any, session: any) {
   const expected = await cashExpected(tx, session);
-  const differences = closeDifferences(session, expected);
+  // A2 (auditoría 19-nov): desde el 14-oct la transferencia «contada» la pone
+  // el sistema al cerrar (= esperada), no la cajera. Si después se verifica un
+  // abono o se rechaza una transferencia, lo contado sigue a lo esperado para
+  // no inventar un faltante/sobrante de transferencia. Los cierres anteriores
+  // pudieron traer una cifra escrita por la cajera: ésos no se pisan.
+  const autoTransfer = transferCountedBySystem(session);
+  const differences = closeDifferences(
+    autoTransfer ? { ...session, countedTransfer: expected.transfer } : session,
+    expected,
+  );
   const details = (session.closeDetails as any) ?? {};
   await tx.cashSession.update({
     where: { id: session.id },
     data: {
+      ...(autoTransfer ? { countedTransfer: expected.transfer } : {}),
       // Los cierres anteriores al pago en dólares no esperaban US$: no se
       // les inventa un descuadre al recalcular.
       ...(details.expectedUsd !== undefined || expected.usd
@@ -259,6 +279,33 @@ export async function refreshClosedCash(tx: any, session: any) {
     },
   });
   return differences;
+}
+// A3 (auditoría 19-nov): abrir con menos fondo del que dejó el último cierre
+// no se bloquea (solo pide nota, dueña 15-oct), pero deja una alerta alta con
+// el faltante, quién abrió y la nota para que gerencia lo revise.
+export async function openingShortfallAlert(
+  tx: any,
+  actor: Actor,
+  session: { id: string; branchId: string; openingAmount: unknown },
+  shortfall: { suggested: number },
+  note: string | undefined,
+) {
+  const missing = d(shortfall.suggested).minus(session.openingAmount as any);
+  await tx.alert.upsert({
+    where: { key: "opening-shortfall:" + session.id },
+    create: {
+      key: "opening-shortfall:" + session.id,
+      type: "opening_shortfall",
+      severity: "high",
+      entityId: session.id,
+      branchId: session.branchId,
+      message:
+        `Fondo de apertura menor: ${actor.name} abrió con RD$ ${formatAmount(Number(session.openingAmount))}; ` +
+        `el último cierre dejó RD$ ${formatAmount(shortfall.suggested)} (faltan RD$ ${formatAmount(Number(missing))}). ` +
+        `Nota: ${note ?? ""}`,
+    },
+    update: {},
+  });
 }
 // #6 (revisión 25-oct): algo cambió una caja ya cerrada (método corregido,
 // venta sin conexión registrada o anulación después del cierre). Lo pide con
@@ -1007,7 +1054,8 @@ export class CashController {
     // D-03: el fondo que se declara al abrir no puede ser menor que lo que el
     // último cierre de este equipo dejó en la gaveta sin que quede explicado.
     // Menor exige solo una nota (sin PIN, orden de la dueña 15-oct); la
-    // diferencia queda en la bitácora. Igual o mayor abre como siempre.
+    // diferencia queda en la bitácora y en una alerta alta (A3). Igual o
+    // mayor abre como siempre.
     let shortfall: {
       suggested: number;
       fromSessionId: string;
@@ -1077,6 +1125,8 @@ export class CashController {
               approvedBy: shortfall.approvedBy,
             },
           );
+        if (shortfall)
+          await openingShortfallAlert(tx, actor, row, shortfall, openingNote);
         return row;
       });
     } catch (error: any) {
@@ -1375,6 +1425,8 @@ export class CashController {
           eurRate: settings?.eurRate ?? null,
           // Decisión 38: quién cerró la caja (puede no ser su dueño).
           closedBy: { id: actor.id, name: actor.name },
+          // A2: la transferencia contada la puso el sistema, no la cajera.
+          transferBySystem: true,
         },
       };
       const differences = closeDifferences(data, expected);

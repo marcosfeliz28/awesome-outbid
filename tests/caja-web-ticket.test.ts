@@ -1,5 +1,6 @@
 // Auditoría 03 (textos que ve el cliente) y 05-A1/M8: el recibo térmico de la
 // caja. Render real del componente, sin navegador.
+import { CustomerPrivacyNotice } from "../apps/web/src/CustomerPrivacyNotice";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
@@ -171,10 +172,9 @@ describe("03 · textos del recibo no fiscal", () => {
 describe("03-A1 · aviso de privacidad en la web", () => {
   it("el formulario de cliente (caja y Clientes) muestra el aviso con el enlace «Privacidad»", () => {
     const helpers = readFileSync("apps/web/src/helpers.tsx", "utf8");
-    const notice = helpers.slice(
-      helpers.indexOf("export function CustomerPrivacyNotice"),
-      helpers.indexOf("export function FormModal"),
-    );
+    expect(helpers).toContain('export { CustomerPrivacyNotice } from "./CustomerPrivacyNotice"');
+    // Inspect rendered notice rather than assuming its source remains inline in helpers.
+    const notice = renderToStaticMarkup(createElement(CustomerPrivacyNotice));
     expect(notice).toContain("son opcionales");
     expect(notice).toContain('href="/privacidad.html"');
     expect(notice).toMatch(/>\s*Privacidad\s*</);

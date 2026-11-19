@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import { json as jsonBodyParser } from "express";
 import { createAppModule } from "./app";
 import { validateSecret } from "./security";
+import { corsOrigin } from "./cors-origin";
 import { trustedProxies } from "./rate-limit";
 import { ApiExceptionFilter } from "./common";
 import { captureApiException, initializeApiMonitoring } from "./monitoring";
@@ -42,6 +43,18 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set("trust proxy", trustedProxies());
   app.setGlobalPrefix("api");
   app.use(helmet());
+  // La importación de GV (sólo «*») trae el Excel completo en JSON: su propio
+  // límite, por debajo del de Nginx (5 MB). El resto sigue en 100 kb.
+  app.use("/api/gv/import", jsonBodyParser({ limit: "4mb" }));
+  // Pagos y cierre de caja de GV traen la foto del voucher (máx. 2 MB) en base64.
+  app.use(
+    [
+      "/api/gv/payments",
+      "/api/gv/cash/close",
+      /^\/api\/gv\/appointments\/[^/]+\/payments$/,
+    ],
+    jsonBodyParser({ limit: "4mb" }),
+  );
   app.use(jsonBodyParser({ limit: "100kb" }));
   app.use(cookieParser());
   const license = localLicense();
@@ -64,7 +77,7 @@ async function bootstrap() {
     timer.unref();
   }
   app.enableCors({
-    origin: webOrigin || "http://localhost:5173",
+    origin: corsOrigin(webOrigin, process.env.NODE_ENV),
     credentials: true,
     // Paginación de GET /alerts y /credit-notes (cursor de la página siguiente).
     exposedHeaders: ["X-Next-Cursor"],
@@ -85,7 +98,15 @@ async function bootstrap() {
     SwaggerModule.setup("api/docs", app, document);
   }
   app.enableShutdownHooks();
-  await app.listen(Number(process.env.PORT || 3001), "0.0.0.0");
+  // Producción (Render) y el instalador de Windows necesitan "0.0.0.0" para
+  // que el proxy/servicio del sistema alcance la API; no cambiar el default.
+  // API_HOST es solo para copias de prueba locales (10-nov, aviso de Claude
+  // PC): fijarla a "127.0.0.1" evita que otro equipo de la misma red LAN
+  // alcance la copia mientras se hacen pruebas de seguridad.
+  await app.listen(
+    Number(process.env.PORT || 3001),
+    process.env.API_HOST?.trim() || "0.0.0.0",
+  );
 }
 bootstrap().catch((error) => {
   captureApiException(error, "startup");

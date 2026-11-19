@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 . (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts\FitStore.Common.ps1")
 $root = Join-Path ([IO.Path]::GetTempPath()) ("nexora-backup-acl-" + [Guid]::NewGuid().ToString("N"))

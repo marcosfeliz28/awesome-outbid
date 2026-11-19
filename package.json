@@ -16,6 +16,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "db:local": "node scripts/local-db.mjs",
     "verify": "node scripts/verify.mjs",
+    "docs:citas": "node scripts/citas-reanclar.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "ia:eval": "vitest run tests/assistant-eval-postgres.test.ts",
     "ia:eval:vivo": "node scripts/ia-eval-vivo.mjs",

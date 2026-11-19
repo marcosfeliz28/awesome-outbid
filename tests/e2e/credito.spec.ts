@@ -4,7 +4,7 @@
 // graves o críticas, como accesibilidad.spec.ts.
 import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
-import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
+import { test, expect, fillOpeningFund } from "./apoyo";
 
 const AXE_SCRIPT = process.env.NEXORA_AXE_SCRIPT;
 const VIEWPORTS = [
@@ -148,9 +148,13 @@ test("Crédito: ventana de cobro con el camino claro, venta sin pago y cobro mix
   await expect(
     page.getByText("Selecciona o crea el cliente antes de cobrar."),
   ).toBeVisible();
+  // Cerrar el selector sin elegir no abre el cobro.
   await page.keyboard.press("Escape");
-  await selectNamedCustomer(page);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // C1: al elegir el cliente desde ese aviso, el cobro se abre solo, sin
+  // pulsar «Cobrar» otra vez.
   await page.getByRole("button", { name: /Cobrar/ }).click();
+  await page.locator(".customer-list button").first().click();
   const dialog = page.getByRole("dialog");
   // «Nota de crédito» explica que no sirve para vender sin pago.
   await expect(dialog.getByRole("status")).toContainText(

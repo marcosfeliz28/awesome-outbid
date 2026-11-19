@@ -38,7 +38,9 @@ function deriveKey(passphrase, salt, { log2N, r, p }) {
   );
 }
 
-function parseHeader(header) {
+// Los mismos límites que decodeHeader() en apps/api/src/drive-backup-core.ts
+// (el script no puede importar TypeScript). Si cambian allí, cambian aquí.
+export function parseHeader(header) {
   if (header.length < HEADER || header.toString("latin1", 0, 4) !== "NXBK")
     throw new Error("No es un respaldo cifrado de Nexora (falta «NXBK»).");
   if (header[4] !== 1)
@@ -48,11 +50,11 @@ function parseHeader(header) {
   const chunk = header.readUInt32BE(9);
   if (
     params.log2N < 14 ||
-    params.log2N > 20 ||
+    params.log2N > 16 ||
     params.r < 1 ||
-    params.r > 16 ||
+    params.r > 8 ||
     params.p < 1 ||
-    params.p > 4 ||
+    params.p > 2 ||
     chunk < 4096 ||
     chunk > 16 * 1024 * 1024
   )

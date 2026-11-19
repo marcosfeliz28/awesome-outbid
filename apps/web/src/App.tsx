@@ -1,13 +1,19 @@
+import { t, useLanguage, setLanguage } from "./inicioLanguage";
+import { AppearanceControls } from "./AppearanceControls";
 import {
   DeviceGate,
   PlanLimitNotice,
   useRealtime,
   registerTerminal,
+  gvOnly,
   storedTerminalCredentials,
   rememberCompany,
 } from "./realtime";
 import type { AssistantRequest } from "./dashboardQuestions";
 import { supportBannerText, supportExpiresAt } from "./supportSession";
+import { applyTheme } from "./theme";
+import { PageErrorBoundary } from "./PageErrorBoundary";
+import { Gv } from "./Gv";
 import { PasswordChangeFields } from "./PasswordChangeFields";
 import {
   isCashierPasswordRole,
@@ -15,7 +21,8 @@ import {
   friendlyPasswordChangeError,
   type PasswordPolicy,
 } from "./passwordChange";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { watchTables } from "./mobileTables";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -70,6 +77,7 @@ import {
   useStore,
   post,
   localDB,
+  forgetSessionData,
   saveSession,
   refreshSession,
   syncSales,
@@ -91,6 +99,8 @@ import { CourierPayouts } from "./CourierPayouts";
 import { McpAuthorize } from "./McpAuthorize";
 import { SupportAccessBanner } from "./SupportAccess";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
+import { withTransition } from "./impacto";
+import { Demo } from "./Demo";
 
 const Assistant = lazy(() =>
   import("./Assistant").then(({ Assistant }) => ({ default: Assistant })),
@@ -206,8 +216,8 @@ function About({ open, onClose }: { open: boolean; onClose: () => void }) {
         </p>
         <p className="about-fiscal">
           <strong>Documento no fiscal.</strong> Los recibos, notas y reportes de
-          Norexos son documentos internos y no sustituyen un comprobante
-          fiscal (NCF/e-CF).
+          Norexos son documentos internos y no sustituyen un comprobante fiscal
+          (NCF/e-CF).
         </p>
         <h3>Privacidad</h3>
         <p className="about-privacy">
@@ -334,6 +344,7 @@ const navigation = [
     icon: IncentivesIcon,
     permission: "sale:manage",
   },
+  { id: "gv", label: "GV Makeup Studio", icon: Brush, permission: "gv:read" },
 ];
 const PRODUCT_TENANCY_REQUIRED = productTenancyRequired(
   import.meta.env.VITE_PRODUCT_TENANCY,
@@ -989,6 +1000,7 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
 }
 
 function Shell() {
+  const language = useLanguage();
   const { user, token, online, theme, setTheme, setOnline } = useStore();
   const businessSettings = useQuery<{ name?: string; branchName?: string }>({
     queryKey: ["settings", user?.branchId],
@@ -1003,6 +1015,11 @@ function Shell() {
   });
   const alertCount =
     alertBell.data?.filter((a) => a.status === "new").length ?? 0;
+  const tablesOff = useRef<() => void>(undefined);
+  const mainRef = useCallback((el: HTMLElement | null) => {
+    tablesOff.current?.();
+    tablesOff.current = el ? watchTables(el) : undefined;
+  }, []);
   const [ready, setReady] = useState(false),
     [page, setPage] = useState(location.hash.slice(1) || "dashboard"),
     [menu, setMenu] = useState(false),
@@ -1044,6 +1061,10 @@ function Shell() {
   };
   const client = useQueryClient();
   const mobile = useMediaQuery(MOBILE_MENU);
+  const modalKeyEvents = useRef(new WeakSet<KeyboardEvent>());
+  const menuWasOpen = useRef(false);
+  const accountButton = useRef<HTMLButtonElement>(null);
+  const accountPanel = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null),
     sidebar = useRef<HTMLElement>(null),
     stayActive = useRef(() => {});
@@ -1051,12 +1072,18 @@ function Shell() {
     (n) =>
       user &&
       (!["onboarding", "billing"].includes(n.id) || PRODUCT_TENANCY_REQUIRED) &&
+      // GV es un negocio interno de la tienda: no aparece en el producto.
+      (n.id !== "gv" || !PRODUCT_TENANCY_REQUIRED) &&
       can(user.permissions, n.permission),
   );
   const route = page.split("?")[0];
   const routeAllowed =
     allowed.some((item) => item.id === route) ||
     (route === "settings" && !!user && can(user.permissions, "sale:manage")) ||
+    // El desglose del mes se abre desde el panel anual; lo ve quien tiene reportes.
+    (route === "month-report" && !!user && can(user.permissions, "reports:read")) ||
+    // Demostración (datos de ejemplo) solo para el administrador.
+    (route === "demo" && !!user && can(user.permissions, "*")) ||
     (route === "styles" && SHOW_STYLE_GUIDE);
   const safePage = routeAllowed ? route : allowed[0]?.id || "products";
   const onboarding = useQuery<OnboardingStatus>({
@@ -1065,12 +1092,16 @@ function Shell() {
     enabled: PRODUCT_TENANCY_REQUIRED && !!user && can(user.permissions, "*"),
   });
   useRealtime();
-  const go = (id: string) => {
-    location.hash = id;
-    setPage(id);
-    setMenu(false);
-    setCommands(false);
-  };
+  const go = (id: string) =>
+    withTransition(
+      () => {
+        location.hash = id;
+        setPage(id);
+        setMenu(false);
+        setCommands(false);
+      },
+      id === "pos" || page === "pos",
+    );
   useEffect(() => {
     if (
       user &&
@@ -1081,12 +1112,56 @@ function Shell() {
       go("onboarding");
   }, [user?.id, page, onboarding.data?.available, onboarding.data?.dismissed]);
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    applyTheme(theme);
   }, [theme]);
+  // Snapshot in capture phase: Radix can remove the dialog before window bubbling.
+  useEffect(() => {
+    const rememberModalEvent = (event: KeyboardEvent) => {
+      if (document.querySelector('[role="dialog"][data-state="open"]'))
+        modalKeyEvents.current.add(event);
+    };
+    window.addEventListener("keydown", rememberModalEvent, true);
+    return () => window.removeEventListener("keydown", rememberModalEvent, true);
+  }, []);
+  useEffect(() => {
+    if (!account) return;
+    accountPanel.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    const closeAccount = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || modalKeyEvents.current.has(event) || document.querySelector('[role="dialog"][data-state="open"]')) return;
+      setAccount(false);
+      accountButton.current?.focus();
+    };
+    window.addEventListener("keydown", closeAccount);
+    return () => window.removeEventListener("keydown", closeAccount);
+  }, [account]);
+  useEffect(() => {
+    if (!mobile || !menu) return;
+    const containTab = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || modalKeyEvents.current.has(event) || document.querySelector('[role="dialog"][data-state="open"]')) return;
+      const controls = Array.from(sidebar.current?.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex="0"]',
+      ) ?? []).filter((element) => element.getClientRects().length > 0);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && (document.activeElement === first || !sidebar.current?.contains(document.activeElement))) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !sidebar.current?.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    window.addEventListener("keydown", containTab);
+    return () => window.removeEventListener("keydown", containTab);
+  }, [mobile, menu]);
   // G12: al abrir el menú en celular, el foco entra en él.
   useEffect(() => {
-    if (mobile && menu)
+    if (mobile && menu) {
+      menuWasOpen.current = true;
       sidebar.current?.querySelector<HTMLElement>(".nav-item")?.focus();
+    } else if (menuWasOpen.current) {
+      menuWasOpen.current = false;
+      // Restore after React removes inert from the main shell.
+      menuButton.current?.focus();
+    }
   }, [mobile, menu]);
   useEffect(() => {
     (async () => {
@@ -1182,7 +1257,8 @@ function Shell() {
     if (syncing || !online) return;
     setSyncing(true);
     try {
-      await registerTerminal();
+      if (!gvOnly(useStore.getState().user?.permissions))
+        await registerTerminal();
       await syncMerchandise();
       const result = await syncSales();
       if (result.synced) toast(`${result.synced} ventas sincronizadas.`);
@@ -1210,7 +1286,7 @@ function Shell() {
         e.preventDefault();
         setCommands(true);
       }
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !modalKeyEvents.current.has(e) && !document.querySelector('[role="dialog"][data-state="open"]')) {
         setCommands(false);
         setMenu(false);
         // El foco vuelve al botón que abrió el menú (G12).
@@ -1371,6 +1447,8 @@ function Shell() {
     "courier-payouts": <CourierPayouts />,
     merchandise: <Merchandise assistantAvailable={assistantAvailable} />,
     incentives: <IncentivesPage />,
+    gv: <Gv />,
+    ...(can(user.permissions, "*") ? { demo: <Demo /> } : {}),
   };
   return (
     <div className={`app-shell ${safePage === "pos" ? "pos-shell" : ""}`}>
@@ -1387,7 +1465,7 @@ function Shell() {
       {menu && (
         <button
           className="sidebar-backdrop"
-          aria-label="Cerrar menú"
+          aria-label={t("Cerrar menú")}
           onClick={() => {
             setMenu(false);
             menuButton.current?.focus();
@@ -1398,15 +1476,16 @@ function Shell() {
         user.role !== "seller" &&
         safePage !== "merchandise" &&
         safePage !== "pos" && (
-          <nav className="goods-mobile-bar">
+          <nav className="goods-mobile-bar" inert={mobile && menu}>
             <Button onClick={() => go("merchandise")}>
-              <Truck size={24} /> Mercancía
+              <Truck size={24} /> {t("Mercancía")}
             </Button>
           </nav>
         )}
       {/* G12: en celular, el menú cerrado queda fuera del orden de tabulación
           y del lector de pantalla. */}
       <aside
+        lang={language}
         ref={sidebar}
         id="admin-navigation"
         className={`sidebar ${menu ? "open" : ""}`}
@@ -1436,17 +1515,18 @@ function Shell() {
           </div>
           <ChevronDown size={15} />
         </div>
-        <div className="nav-caption">TU NEGOCIO</div>
+        <div className="nav-caption">{t("TU NEGOCIO")}</div>
         <nav aria-label="Navegación del negocio">
           {allowed.map((n) => (
             <button
               key={n.id}
+              aria-label={t(n.label)}
               className={`nav-item ${safePage === n.id ? "active" : ""}`}
               aria-current={safePage === n.id ? "page" : undefined}
               onClick={() => go(n.id)}
             >
               <n.icon size={19} />
-              <span>{n.label}</span>
+              <span>{t(n.label)}</span>
               {safePage === n.id && <span className="nav-dot" />}
             </button>
           ))}
@@ -1455,13 +1535,13 @@ function Shell() {
           <DesktopPrinterControls />
           <div className="help-card">
             <div className="help-symbol">✦</div>
-            <strong>Ayuda para trabajar</strong>
+            <strong>{t("Ayuda para trabajar")}</strong>
             <p>
-              Consulta los pasos de venta
-              <br />y los atajos de tu caja.
+              {t("Consulta los pasos de venta")}
+              <br />{t("y los atajos de tu caja.")}
             </p>
             <button onClick={() => setHelp(true)}>
-              Ver ayuda <ArrowUpRight size={15} />
+              {t("Ver ayuda")} <ArrowUpRight size={15} />
             </button>
           </div>
           {can(user.permissions, "sale:manage") && (
@@ -1471,7 +1551,7 @@ function Shell() {
               onClick={() => go("settings")}
             >
               <Settings size={19} />
-              Configuración
+              {t("Configuración")}
             </button>
           )}
           <button
@@ -1482,18 +1562,23 @@ function Shell() {
             }}
           >
             <Info size={19} />
-            Acerca de
+            {t("Acerca de")}
           </button>
           {SHOW_STYLE_GUIDE && (
             <button className="nav-item" onClick={() => go("styles")}>
               <Palette size={19} />
-              Guía de estilos
+              {t("Guía de estilos")}
             </button>
           )}
         </div>
       </aside>
-      <div className="main-shell">
-        <header className="topbar">
+      <div className="main-shell" inert={mobile && menu}>
+        {page === "dashboard" && <div className="fusion-preferences" lang={language}>
+          <label>{language === "en" ? "Language" : "Idioma"} <select aria-label={language === "en" ? "Interface language" : "Idioma de la interfaz"} value={language} onChange={(e) => setLanguage(e.target.value === "en" ? "en" : "es")}><option value="es">Español</option><option value="en">English</option></select></label>
+          {page === "dashboard" && <AppearanceControls language={language} />}
+          <small role="status">{language === "en" ? "English covers Overview and main navigation. Other pages, store data and server messages retain their original language." : "Traducción disponible: Inicio y navegación principal. Las demás pantallas, datos de tienda y mensajes del servidor conservan su idioma original."}</small>
+        </div>}
+        <header className="topbar" lang={language}>
           <div className="topbar-left">
             <button
               ref={menuButton}
@@ -1501,24 +1586,30 @@ function Shell() {
               aria-expanded={mobile ? menu : undefined}
               aria-controls="admin-navigation"
               onClick={() => setMenu(true)}
-              aria-label="Abrir menú"
+              aria-label={t("Abrir menú")}
             >
               <Menu />
             </button>
             <span className="breadcrumb">
               <span className="breadcrumb-root">
-                Mi tienda <span>/</span>
+                {t("Mi tienda")} <span>/</span>
               </span>
               <strong>
-                {current?.label ||
-                  (safePage === "styles" ? "Guía de estilos" : "Configuración")}
+                {(current?.label ? t(current.label) : "") ||
+                  (safePage === "month-report"
+                    ? (language === "en" ? "Monthly report" : "Informe mensual")
+                    : safePage === "styles"
+                    ? t("Guía de estilos")
+                    : safePage === "demo"
+                      ? t("Demostración")
+                      : t("Configuración"))}
               </strong>
             </span>
           </div>
           <div className="topbar-right">
             <button className="global-search" onClick={() => setCommands(true)}>
               <Search size={17} />
-              <span>Buscar en Norexos</span>
+              <span>{t("Buscar en Norexos")}</span>
               <kbd>⌘ K</kbd>
             </button>
             <button
@@ -1526,10 +1617,10 @@ function Shell() {
               onClick={synchronize}
               title={
                 pending
-                  ? `${pending} ventas pendientes`
+                  ? `${pending} ${language === "en" ? "pending sales" : "ventas pendientes"}`
                   : online
-                    ? "Conectado"
-                    : "Sin conexión"
+                    ? t("Conectado")
+                    : t("Sin conexión")
               }
             >
               {syncing ? (
@@ -1541,10 +1632,8 @@ function Shell() {
               )}
               <span>
                 {syncing
-                  ? "Sincronizando"
-                  : online
-                    ? "En línea"
-                    : "Sin conexión"}
+                  ? t("Sincronizando")
+                  : t(online ? "En línea" : "Sin conexión")}
                 {pending ? ` · ${pending}` : ""}
               </span>
             </button>
@@ -1581,30 +1670,30 @@ function Shell() {
               <button
                 className="icon-button notification-bell"
                 onClick={() => go("alerts")}
-                aria-label={`Ver alertas${alertCount ? ": " + alertCount + " nuevas" : ""}`}
+                aria-label={`${language === "en" ? "View alerts" : "Ver alertas"}${alertCount ? ": " + alertCount + (language === "en" ? " new" : " nuevas") : ""}`}
               >
                 <Bell size={20} />
-                {alertCount > 0 && <i title={`${alertCount} alertas nuevas`} />}
+                {alertCount > 0 && <i title={`${alertCount} ${language === "en" ? "new alerts" : "alertas nuevas"}`} />}
               </button>
             )}
             <div className="topbar-separator" />
-            <button className="account" onClick={() => setAccount(!account)}>
+            <button ref={accountButton} className="account" aria-expanded={account} aria-controls="account-actions" onClick={() => setAccount(!account)}>
               <span className="avatar">{initials}</span>
               <div>
                 <strong>{user.name}</strong>
                 <small>
                   {{
-                    admin: "Administradora",
-                    manager: "Gerente",
-                    seller: "Vendedora",
-                    warehouse: "Almacén",
+                    admin: t("Administradora"),
+                    manager: t("Gerente"),
+                    seller: t("Vendedora"),
+                    warehouse: t("Almacén"),
                   }[user.role] || user.role}
                 </small>
               </div>
               <ChevronDown size={15} />
             </button>
             {account && (
-              <div className="account-menu">
+              <div ref={accountPanel} id="account-actions" className="account-menu">
                 {can(user.permissions, "sale:write") && (
                   <button
                     onClick={async () => {
@@ -1625,7 +1714,7 @@ function Shell() {
                       }
                     }}
                   >
-                    Cambiar de usuario con PIN
+                    {t("Cambiar de usuario con PIN")}
                   </button>
                 )}
                 <button
@@ -1635,7 +1724,7 @@ function Shell() {
                   }}
                 >
                   <KeyRound size={16} />
-                  Cambiar mi contraseña
+                  {t("Cambiar mi contraseña")}
                 </button>
                 <button
                   onClick={async () => {
@@ -1648,7 +1737,7 @@ function Shell() {
                   }}
                 >
                   <LogOut size={16} />
-                  Cerrar sesión
+                  {t("Cerrar sesión")}
                 </button>
               </div>
             )}
@@ -1668,6 +1757,7 @@ function Shell() {
           </Suspense>
         )}
         <main
+          ref={mainRef}
           id="main-content"
           tabIndex={-1}
           className={`main-content ${safePage === "pos" ? "pos-content" : ""}`}
@@ -1691,25 +1781,31 @@ function Shell() {
               go("settings");
             }}
           />
-          <Suspense fallback={<Loading />}>
-            {pages[safePage] || <Dashboard go={go} />}
-          </Suspense>
+          <PageErrorBoundary
+            key={safePage}
+            page={page}
+            onRetry={() => void client.resetQueries()}
+          >
+            <Suspense fallback={<Loading />}>
+              {pages[safePage] || <Dashboard go={go} />}
+            </Suspense>
+          </PageErrorBoundary>
         </main>
-        <footer className="app-footer">
-          <span>Norexos · Tu negocio, en movimiento.</span>
-          <span>RD$ · ITBIS incluido · Documento interno</span>
+        <footer className="app-footer" lang={language}>
+          <span>{t("Norexos · Tu negocio, en movimiento.")}</span>
+          <span>{t("RD$ · ITBIS incluido · Documento interno")}</span>
         </footer>
       </div>
       <Modal
         open={commands}
         onClose={() => setCommands(false)}
-        title="¿A dónde quieres ir?"
+        title={t("¿A dónde quieres ir?")}
       >
         <label className="field">
           <input
             autoFocus
-            aria-label="Buscar pantalla"
-            placeholder="Buscar pantalla…"
+            aria-label={t("Buscar pantalla")}
+            placeholder={t("Buscar pantalla…")}
             value={commandQuery}
             onChange={(e) => setCommandQuery(e.target.value)}
           />
@@ -1717,12 +1813,13 @@ function Shell() {
         <div className="command-list">
           {allowed
             .filter((n) =>
-              n.label.toLowerCase().includes(commandQuery.toLowerCase()),
+              n.label.toLowerCase().includes(commandQuery.toLowerCase()) ||
+              t(n.label).toLowerCase().includes(commandQuery.toLowerCase()),
             )
             .map((n) => (
               <button onClick={() => go(n.id)} key={n.id}>
                 <n.icon size={20} />
-                {n.label}
+                {t(n.label)}
                 <ArrowUpRight size={16} />
               </button>
             ))}
@@ -1832,6 +1929,21 @@ function Shell() {
           onSubmit={async (e) => {
             e.preventDefault();
             try {
+              // GV-01: una cuenta sólo de GV no hereda datos de Macgen de este
+              // equipo. Con ventas o entradas sin enviar no se cambia.
+              const toGv =
+                staff.find((s) => s.id === switchId)?.role?.name === "gv";
+              if (
+                toGv &&
+                ((await localDB.sales.count()) ||
+                  (await localDB.merchandise.count()))
+              ) {
+                toast(
+                  "Hay ventas o entradas de mercancía sin enviar en este equipo: sincronízalas antes de pasar a GV.",
+                  true,
+                );
+                return;
+              }
               const result = await post("/auth/pin", {
                 userId: switchId,
                 pin,
@@ -1839,6 +1951,8 @@ function Shell() {
               // 05-M1: el carrito de quien sale queda guardado a su nombre
               // (cartDraft.ts) y la nueva persona ve el suyo.
               client.clear();
+              if (!can(result.user.permissions, "catalog:read"))
+                await forgetSessionData();
               await saveSession(result.user, result.accessToken);
               setSwitchUser(false);
               setPin("");

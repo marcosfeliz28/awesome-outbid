@@ -71,7 +71,7 @@ describe("G9 · cierre de sesión", () => {
       api.indexOf("export async function endSession"),
       api.indexOf("export async function forgetSessionData"),
     );
-    expect(end).toContain("forgetSessionData(revoked)");
+    expect(end).toContain("forgetSessionData(revoked, keep)");
     expect(forget).toContain("localDB.cache.clear()");
     expect(forget).toContain("caches.delete");
   });

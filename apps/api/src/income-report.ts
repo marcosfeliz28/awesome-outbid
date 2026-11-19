@@ -18,6 +18,7 @@ import {
 } from "./common";
 import { groupIncomeDays } from "./income-day";
 import { tenantUnique } from "./tenant-context";
+import { saleIsGvSql, saleNotGvSql } from "./gv-scope";
 
 type QueryInput = {
   from?: string;
@@ -80,7 +81,12 @@ export function incomeOptions(query: QueryInput) {
     end: new Date(to + "T23:59:59.999-04:00"),
   };
 }
-type Opt = ReturnType<typeof incomeOptions> & { excludeTest?: boolean };
+type Opt = ReturnType<typeof incomeOptions> & {
+  excludeTest?: boolean;
+  // GV es otra empresa: fuera por omisión; "only" da su total aparte y
+  // "include" sólo sirve para comparar con el arqueo de la caja.
+  gv?: "exclude" | "only" | "include";
+};
 function scopeSql(opt: Opt, kind: "sale" | "payment" | "return") {
   if (opt.scope === "all") return Prisma.empty;
   if (opt.scope === "session")
@@ -102,6 +108,10 @@ function eventsSql(actor: Actor, opt: Opt) {
   const saleScope = scopeSql(opt, "sale");
   const paymentScope = scopeSql(opt, "payment");
   const returnScope = scopeSql(opt, "return");
+  const gvFilter =
+    opt.gv === "include"
+      ? Prisma.empty
+      : Prisma.sql`AND ${opt.gv === "only" ? saleIsGvSql() : saleNotGvSql()}`;
   const testFilter = opt.excludeTest
     ? Prisma.sql`AND COALESCE(cs."registerId",'') !~* '^(qa|test|prueba)[-_]'`
     : Prisma.empty;
@@ -112,7 +122,7 @@ function eventsSql(actor: Actor, opt: Opt) {
       NULL::text AS bank, NULL::text AS reference, s."cashSessionId"::text AS "cashSessionId"
     FROM "Sale" s LEFT JOIN "CashSession" cs ON cs.id=s."cashSessionId"
     WHERE s."branchId"=${actor.branchId} AND s.status='completed'
-      AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)} ${saleScope} ${testFilter}
+      AND s."createdAt">=${utc(opt.start)} AND s."createdAt"<=${utc(opt.end)} ${saleScope} ${testFilter} ${gvFilter}
     UNION ALL
     SELECT p.id::text, ${paymentTime}, ${paymentDate},
       CASE WHEN p.status='pending_verification' THEN 'pending_transfer'
@@ -128,7 +138,7 @@ function eventsSql(actor: Actor, opt: Opt) {
       AND p."entryType" IN ('sale','installment')
       AND p.method IN ('cash','card','transfer','cod','credit')
       AND (p."entryType"='sale' OR p.status IN ('ok','pending_verification'))
-      AND ${paymentTime}>=${utc(opt.start)} AND ${paymentTime}<=${utc(opt.end)} ${paymentScope} ${testFilter}
+      AND ${paymentTime}>=${utc(opt.start)} AND ${paymentTime}<=${utc(opt.end)} ${paymentScope} ${testFilter} ${gvFilter}
     UNION ALL
     SELECT r.id::text, r."createdAt", ${returnDate}, 'return_total',
       -r.total, r.number, r."refundMethod", NULL::text, NULL::text,
@@ -136,7 +146,7 @@ function eventsSql(actor: Actor, opt: Opt) {
     FROM "SaleReturn" r JOIN "Sale" s ON s.id=r."saleId"
       LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
     WHERE r."branchId"=${actor.branchId} AND s.status='completed'
-      AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)} ${returnScope} ${testFilter}
+      AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)} ${returnScope} ${testFilter} ${gvFilter}
     UNION ALL
     SELECT r.id::text, r."createdAt", ${returnDate}, 'return_'||r."refundMethod",
       -r."refundAmount", r.number, r."refundMethod", NULL::text, NULL::text,
@@ -145,7 +155,7 @@ function eventsSql(actor: Actor, opt: Opt) {
       LEFT JOIN "CashSession" cs ON cs.id=COALESCE(r."cashSessionId",s."cashSessionId")
     WHERE r."branchId"=${actor.branchId} AND s.status='completed' AND r."refundAmount">0
       AND r."refundMethod" IN ('cash','card','transfer')
-      AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)} ${returnScope} ${testFilter}`;
+      AND r."createdAt">=${utc(opt.start)} AND r."createdAt"<=${utc(opt.end)} ${returnScope} ${testFilter} ${gvFilter}`;
 }
 const fields = [
   "day",
@@ -235,11 +245,7 @@ export class IncomeReportController {
       if (batch.length < 500) break;
     }
   }
-  private async reconciliation(
-    actor: Actor,
-    opt: Opt,
-    rows: ReturnType<typeof groupIncomeDays>,
-  ) {
+  private async reconciliation(actor: Actor, opt: Opt) {
     if (opt.scope !== "session") return null;
     const session = await this.db.cashSession.findFirst({
       where: { id: opt.scopeId, branchId: actor.branchId },
@@ -254,7 +260,9 @@ export class IncomeReportController {
         message:
           "Esta caja está abierta o abarca más de un día; el cierre no se compara con un solo día.",
       };
-    const row = rows.find((r) => r.day === businessDate(session.openedAt));
+    // El arqueo de la caja vio también las ventas GV cobradas en ella.
+    const all = await incomeSummary(this.db, actor, { ...opt, gv: "include" });
+    const row = all.find((r) => r.day === businessDate(session.openedAt));
     if (!row)
       return {
         comparable: false,
@@ -348,11 +356,20 @@ export class IncomeReportController {
       const details = query.day
         ? await this.detail(actor, opt, (page - 1) * 100, 100, query.day)
         : [];
-      const reconciliation = await this.reconciliation(actor, opt, rows);
+      const reconciliation = await this.reconciliation(actor, opt);
+      const gvRows = await incomeSummary(this.db, actor, {
+        ...opt,
+        gv: "only",
+      });
+      const gv = {
+        total: Number(gvRows.reduce((a, r) => a + r.sold, 0).toFixed(2)),
+        moneyIn: Number(gvRows.reduce((a, r) => a + r.moneyIn, 0).toFixed(2)),
+      };
       return res.json({
         rows,
         totals,
         reconciliation,
+        gv,
         detail: details.map((e) => ({ ...e, amount: Number(e.amount) })),
         detailTotal: total,
         page,

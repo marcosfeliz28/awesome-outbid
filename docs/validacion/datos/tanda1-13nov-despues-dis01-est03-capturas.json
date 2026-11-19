@@ -1,0 +1,139 @@
+{
+  "base": "7244c21ad26eb217b47fdc0e930ea14b3c4cc5bc",
+  "count": 19,
+  "images": [
+    {
+      "file": "DIS-01-despues-cargando-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 210287,
+      "sha256": "eb03ab954b53cd8e49c471a5758dae889174295c394dcb061324720cc7f8e3ae"
+    },
+    {
+      "file": "DIS-01-despues-cargando-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 48685,
+      "sha256": "63c00508a81df943ed448d3399b66e2abbdc836caa19a34aa8bf4e56f642e257"
+    },
+    {
+      "file": "DIS-01-despues-cargando-hoy-inferior-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 183878,
+      "sha256": "c12544316502ac6f336baf909383aaaaef4b8ccb47baa07d34730d668a5e2dbd"
+    },
+    {
+      "file": "DIS-01-despues-cargando-hoy-inferior-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 61586,
+      "sha256": "4c881c4357a10057a65d521a02247ff3b7a7f7bd999b24ad864013123047c1c7"
+    },
+    {
+      "file": "DIS-01-despues-fallida-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 214476,
+      "sha256": "6f2d420669b4a4ad5b061a5692f8619cd911562e6c360a767b549f766863dd1b"
+    },
+    {
+      "file": "DIS-01-despues-fallida-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 50345,
+      "sha256": "a185911cc5acc1053dba0eefc770af855894d5666d0112824f9e75a74c05eb6c"
+    },
+    {
+      "file": "DIS-01-despues-fallida-hoy-inferior-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 187447,
+      "sha256": "ca776fe9498f537dfce66a8e7f7dc0df6ce1704ebb9b48bcac0b3ca0b41b09a8"
+    },
+    {
+      "file": "DIS-01-despues-fallida-hoy-inferior-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 61586,
+      "sha256": "4c881c4357a10057a65d521a02247ff3b7a7f7bd999b24ad864013123047c1c7"
+    },
+    {
+      "file": "DIS-01-despues-respuesta-valida-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 212587,
+      "sha256": "91121662e0e190086e4c238fab13de9d50aea7ef2b47ea09819a04faadbdd8b2"
+    },
+    {
+      "file": "DIS-01-despues-respuesta-valida-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 51403,
+      "sha256": "7eff790cba3b6d50bcf33686d6d4fb4cafde16e38abfb9a8ac5d2c5c56ac331f"
+    },
+    {
+      "file": "EST-03-despues-aviso-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 72768,
+      "sha256": "3cfa82e40852dba0413aa19565c6e4c42a72189b62ce50072df9971c6f7a7526"
+    },
+    {
+      "file": "EST-03-despues-aviso-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 19287,
+      "sha256": "65ee39e2189c5e8387b0dad25ea1c5af11b9ac0c0ace518fc1374cbaca044d5f"
+    },
+    {
+      "file": "EST-03-despues-carrito-antes-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 158354,
+      "sha256": "5844f706e11b230be612314b72cd64e9c1ccfd71b8f8d6f242a63e2ea055dcea"
+    },
+    {
+      "file": "EST-03-despues-carrito-antes-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 62288,
+      "sha256": "b3d76d2d447f2b2c3124bbe7fd3fdc1bcd53332861d5d3b978458a90dc2480dd"
+    },
+    {
+      "file": "EST-03-despues-menu-con-aviso-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 44267,
+      "sha256": "4241f256c79ab7e8a1326e4da2d31cfd8d93496b06650924324ad9760d482e98"
+    },
+    {
+      "file": "EST-03-despues-reintentar-sin-fallo-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 72999,
+      "sha256": "fa01f566ad078f4eed568aef9090851f04e8716679743a83e9696468dd8507ee"
+    },
+    {
+      "file": "EST-03-despues-reintentar-sin-fallo-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 19620,
+      "sha256": "eea92dbcf9da9cb77f2ce5f7468129fe0f4fdf6f1e1e64183d830dc804e42eea"
+    },
+    {
+      "file": "EST-03-despues-volver-caja-1366.png",
+      "width": 1366,
+      "height": 900,
+      "bytes": 237685,
+      "sha256": "b9db099976431bc78d2924a34991c43a71158bb311f728084f15accf5b01bd46"
+    },
+    {
+      "file": "EST-03-despues-volver-caja-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 59328,
+      "sha256": "e21fbc043a1ee5fdce3c45ea50bc7008eb461735629b910d116a0722b59da7af"
+    }
+  ]
+}

@@ -232,7 +232,46 @@ const FIELD_NAMES: Record<string, string> = {
   maxStock: "stock máximo",
   attributes: "atributos",
   mapping: "columnas",
+  login: "usuario",
+  username: "usuario",
+  currentPassword: "contraseña actual",
+  newPassword: "contraseña nueva",
+  confirmPassword: "confirmación de la contraseña",
 };
+// A5 (auditoría 19-nov): campos de inicio de sesión vacíos se piden con una
+// frase directa en vez de «login debe tener al menos 1 caracteres».
+const REQUIRED_TEXT: Record<string, string> = {
+  login: "Escribe tu usuario",
+  username: "Escribe tu usuario",
+  password: "Escribe tu contraseña",
+  currentPassword: "Escribe tu contraseña actual",
+};
+const plural = (n: unknown, one: string, many: string) =>
+  `${n} ${Number(n) === 1 ? one : many}`;
+// Una frase de validación por problema. Las que ya son oraciones completas
+// (empiezan con mayúscula, p. ej. «Escribe tu usuario.») van solas; las demás
+// llevan delante el nombre del campo («cantidad debe ser un número»).
+function issueText(issue: any): { own: boolean; text: string } {
+  const field = issue.path.length === 1 ? issue.path[0] : undefined;
+  const empty =
+    (issue.code === "invalid_type" &&
+      (issue.received === "undefined" || issue.received === "null")) ||
+    (issue.code === "too_small" &&
+      issue.type === "string" &&
+      Number(issue.minimum) === 1);
+  if (empty && typeof field === "string" && REQUIRED_TEXT[field])
+    return { own: true, text: REQUIRED_TEXT[field] };
+  const message = String(issue.message ?? "");
+  if (/^[A-ZÁÉÍÓÚÑ¿¡]/.test(message))
+    return { own: true, text: message.replace(/\.$/, "") };
+  return { own: false, text: fieldLabel(issue.path) + " " + message };
+}
+export function validationMessage(issues: any[]) {
+  const parts = issues.slice(0, 5).map(issueText);
+  return parts.every((p) => p.own)
+    ? parts.map((p) => p.text).join(". ") + "."
+    : "Revisa los campos: " + parts.map((p) => p.text).join("; ") + ".";
+}
 export function fieldLabel(path: (string | number)[]) {
   const parts: string[] = [];
   for (const p of path) {
@@ -260,9 +299,11 @@ z.setErrorMap((issue, ctx) => {
       return {
         message:
           issue.type === "string"
-            ? `debe tener al menos ${issue.minimum} caracteres`
+            ? Number(issue.minimum) === 1
+              ? "es obligatorio"
+              : `debe tener al menos ${plural(issue.minimum, "carácter", "caracteres")}`
             : issue.type === "array"
-              ? `debe tener al menos ${issue.minimum} elemento(s)`
+              ? `debe tener al menos ${plural(issue.minimum, "elemento", "elementos")}`
               : issue.inclusive
                 ? `debe ser mayor o igual a ${issue.minimum}`
                 : `debe ser mayor que ${issue.minimum}`,
@@ -271,9 +312,9 @@ z.setErrorMap((issue, ctx) => {
       return {
         message:
           issue.type === "string"
-            ? `admite como máximo ${issue.maximum} caracteres`
+            ? `admite como máximo ${plural(issue.maximum, "carácter", "caracteres")}`
             : issue.type === "array"
-              ? `admite como máximo ${issue.maximum} elementos`
+              ? `admite como máximo ${plural(issue.maximum, "elemento", "elementos")}`
               : `debe ser como máximo ${issue.maximum}`,
       };
     case "invalid_string":
@@ -607,6 +648,10 @@ export function safe<T>(value: T, actor: Actor): T {
     "inventoryRetail",
     "daily",
     "top",
+    "categories",
+    "topByCategory",
+    "byUnits",
+    "byAmount",
     "sellers",
     "from",
     "to",
@@ -910,13 +955,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
         code = String((response as any).code);
     } else if (isZodError(exception)) {
       status = 400;
-      message =
-        "Revisa los campos: " +
-        exception.issues
-          .slice(0, 5)
-          .map((i) => fieldLabel(i.path) + " " + i.message)
-          .join("; ") +
-        ".";
+      message = validationMessage(exception.issues);
     } else if (exception?.code === "P2002") {
       status = 409;
       message = "Ya existe un registro con esos datos.";

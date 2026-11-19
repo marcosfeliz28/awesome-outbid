@@ -1,3 +1,7 @@
+import "./fusion-caja-higgsfield.css";
+import { CajaVisualPreferences } from "./CajaVisualPreferences";
+import { t, useLanguage } from "./inicioLanguage";
+import { refreshAfterSale } from "./postSaleRefresh";
 import {
   memo,
   useCallback,
@@ -35,6 +39,7 @@ import {
   Volume2,
   VolumeX,
   MessageCircleQuestion,
+  Mic,
 } from "lucide-react";
 import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import {
@@ -203,6 +208,7 @@ const isEditable = (el: Element | null) =>
   el instanceof HTMLSelectElement ||
   (el instanceof HTMLElement && el.isContentEditable);
 export function POS({ go }: { go: (page: string) => void }) {
+  const language = useLanguage();
   const {
     cart,
     add,
@@ -233,6 +239,7 @@ export function POS({ go }: { go: (page: string) => void }) {
       legalId: "",
     }),
     [camera, setCamera] = useState(false),
+    [listening, setListening] = useState(false),
     // 05-M2: el aviso «elige el cliente» va dentro de la ventana del cliente;
     // como aviso flotante tapaba su título.
     [pickerHint, setPickerHint] = useState(""),
@@ -245,6 +252,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     );
   const search = useRef<HTMLInputElement>(null);
   const cartList = useRef<HTMLDivElement>(null);
+  const recognition = useRef<any>(null);
   // 05-N1: el error de un escaneo se quita al abrir cualquier ventana, al
   // teclear en el buscador y al salir de la caja.
   const windowOpen =
@@ -522,6 +530,8 @@ export function POS({ go }: { go: (page: string) => void }) {
       },
     );
   };
+  // C1: si «Cobrar» abrió el selector de cliente, al elegirlo sigue al cobro.
+  const resumeCharge = useRef(false);
   const charge = () => {
     // 05-N1: un error de escaneo no se queda sobre la ventana de cobro.
     clearPersistentErrors();
@@ -534,6 +544,7 @@ export function POS({ go }: { go: (page: string) => void }) {
     if (!customerId && walkIn) setCustomer(walkIn.id);
     // Si la lista aún no trae «Consumidor final», la API lo pone sola.
     else if (!customerId && config.data?.requireCustomer !== false) {
+      resumeCharge.current = true;
       setPickerHint("Selecciona o crea el cliente antes de cobrar.");
       setClientPicker(true);
       return;
@@ -553,6 +564,11 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
     setCheckout(true);
   };
+  useEffect(() => {
+    if (!resumeCharge.current || clientPicker) return;
+    resumeCharge.current = false;
+    if (customerId) charge();
+  }, [clientPicker, customerId]);
   useEffect(() => {
     const box = cartList.current;
     const row = lastAdded
@@ -861,6 +877,62 @@ export function POS({ go }: { go: (page: string) => void }) {
     );
   };
   const enter = () => enterText(q);
+  // Búsqueda por voz: dicta el nombre del producto y queda escrito en el
+  // buscador, con las mismas sugerencias por palabras sueltas de siempre
+  // (el micrófono solo llena el cuadro; no agrega nada solo). Botón oculto
+  // si el navegador no tiene reconocimiento de voz (Web Speech API).
+  const voiceSearchSupported =
+    typeof window !== "undefined" &&
+    !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  const startVoiceSearch = () => {
+    // recognition.current, no el estado listening: listening se pone en
+    // true dentro de onstart (asíncrono), así que un doble clic rápido
+    // (pantalla táctil) lo vería en false dos veces y arrancaría dos
+    // reconocimientos a la vez, dejando el micrófono abierto sin que nadie
+    // lo pueda apagar. recognition.current se asigna de una vez, antes de
+    // iniciar, así que ya corta el segundo clic.
+    if (recognition.current) {
+      recognition.current.stop();
+      return;
+    }
+    const Recognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (!Recognition) return;
+    const r = new Recognition();
+    recognition.current = r;
+    r.lang = "es-DO";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    r.onstart = () => setListening(true);
+    r.onend = () => {
+      recognition.current = null;
+      setListening(false);
+    };
+    r.onerror = (e: any) => {
+      // "aborted": el propio botón lo detuvo (clic de apagar); no es un
+      // error, no avisar nada. "not-allowed"/"service-not-allowed": sin
+      // permiso de micrófono, distinto de "no te entendí" (nunca escuchó).
+      if (e?.error === "aborted") return;
+      if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+        say(
+          "Sin permiso de micrófono: dalo en el navegador e intenta otra vez.",
+          true,
+        );
+        return;
+      }
+      say("No se entendió, intenta de nuevo o escribe el nombre.", true);
+    };
+    r.onresult = (e: any) => {
+      const text = e.results?.[0]?.[0]?.transcript as string | undefined;
+      if (text) {
+        setQ(text);
+        requestAnimationFrame(() => search.current?.focus());
+      }
+    };
+    r.start();
+  };
+  useEffect(() => () => recognition.current?.stop(), []);
   // Cuando termina la descarga se procesa la cola, en orden.
   // useLayoutEffect: corre antes de que el navegador entregue otra tecla, así
   // un Enter justo al llegar el catálogo no agrega el producto dos veces.
@@ -901,21 +973,22 @@ export function POS({ go }: { go: (page: string) => void }) {
     }
   }, [waitingCatalog]);
   return (
-    <div className="pos-layout">
+    <div className="pos-layout fusion-caja-integrada" lang={language}>
+      <CajaVisualPreferences language={language} />
       <section className="pos-catalog">
         <a className="pos-skip-to-cart" href="#pos-cart">
-          Ir al carrito y cobrar
+          {t("Ir al carrito y cobrar")}
         </a>
         <div className="pos-topbar">
           <h1>
-            Punto de venta <span className="title-dot" />
+            {t("Punto de venta")} <span className="title-dot" />
           </h1>
           <div className="pos-search">
             <Search size={20} aria-hidden="true" />
             <input
               ref={search}
-              aria-label="Buscar productos"
-              placeholder="Código o nombre del producto"
+              aria-label={t("Buscar productos")}
+              placeholder={t("Código o nombre del producto")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
@@ -924,6 +997,20 @@ export function POS({ go }: { go: (page: string) => void }) {
                 enter();
               }}
             />
+            {voiceSearchSupported && (
+              <button
+                type="button"
+                className={"pos-mic" + (listening ? " listening" : "")}
+                aria-label={
+                  listening ? "Escuchando…" : "Buscar por voz"
+                }
+                aria-pressed={listening}
+                title={listening ? "Escuchando…" : "Buscar por voz"}
+                onClick={startVoiceSearch}
+              >
+                <Mic size={18} />
+              </button>
+            )}
             <kbd>F2</kbd>
           </div>
           <div className="heading-actions">
@@ -933,11 +1020,11 @@ export function POS({ go }: { go: (page: string) => void }) {
               onClick={() => setQuestions(true)}
             >
               <MessageCircleQuestion size={16} />
-              Preguntas
+              {t("Preguntas")}
             </Button>
             <Button variant="secondary" onClick={() => setHeld(true)}>
               <Pause size={16} />
-              En espera
+              {t("En espera")}
             </Button>
             <Button
               variant="secondary"
@@ -970,7 +1057,7 @@ export function POS({ go }: { go: (page: string) => void }) {
             className={category === "all" ? "active" : ""}
             aria-pressed={category === "all"}
           >
-            Todos los productos
+            {t("Todos los productos")}
           </button>
           {categories.data
             // Sólo categorías con productos a la venta: las vacías no estorban.
@@ -1027,17 +1114,17 @@ export function POS({ go }: { go: (page: string) => void }) {
       >
         <div className="cart-heading">
           <div>
-            <h2>Venta actual</h2>
+            <h2>{t("Venta actual")}</h2>
             <span>
               <span className="live-dot" />
               {!session
-                ? "Caja sin abrir"
+                ? t("Caja sin abrir")
                 : elsewhere
-                  ? "Caja abierta en otro equipo"
-                  : "Caja abierta"}
+                  ? t("Caja abierta en otro equipo")
+                  : t("Caja abierta")}
             </span>
           </div>
-          <Badge tone="violet">{units} artículos</Badge>
+          <Badge tone="violet">{units} {language === "en" ? (units === 1 ? "item" : "items") : (units === 1 ? "artículo" : "artículos")}</Badge>
         </div>
         <button
           className="customer-selector"
@@ -1052,9 +1139,9 @@ export function POS({ go }: { go: (page: string) => void }) {
           <div>
             <strong>
               {customers.data?.find((c: any) => c.id === customerId)?.name ||
-                "Selecciona el cliente"}
+                t("Selecciona el cliente")}
             </strong>
-            <small>Elegir cliente · F4</small>
+            <small>{t("Elegir cliente")} · F4</small>
           </div>
           <ChevronRight size={16} />
         </button>
@@ -1108,7 +1195,11 @@ export function POS({ go }: { go: (page: string) => void }) {
                               !i.product.category.requiresLot)
                           )
                             updateQty(i.variant.id, i.qty + 1);
-                          else toast("Stock insuficiente.", true);
+                          else
+                            toast(
+                              `Stock insuficiente: de ${i.product.name} solo quedan ${available(i.variant.stock, i.product)}.`,
+                              true,
+                            );
                         }}
                       >
                         <Plus size={12} />
@@ -1138,6 +1229,11 @@ export function POS({ go }: { go: (page: string) => void }) {
                         }}
                       />
                       %
+                      {!can(user!.permissions, "sale:manage") && (
+                        <small>
+                          hasta {config.data?.sellerDiscountLimit ?? 10} % sin PIN
+                        </small>
+                      )}
                     </label>
                     <label className="line-discount">
                       <span>RD$</span>
@@ -1182,18 +1278,18 @@ export function POS({ go }: { go: (page: string) => void }) {
           ) : (
             <div className="cart-empty-state">
               <EmptyIllustration kind="carrito" />
-              <strong>Carrito vacío</strong>
-              <span>Escanea o busca un artículo</span>
+              <strong>{t("Carrito vacío")}</strong>
+              <span>{t("Escanea o busca un artículo")}</span>
             </div>
           )}
         </div>
         <div className="cart-summary">
           <div>
-            <span>Subtotal</span>
+            <span>{t("Subtotal")}</span>
             <strong>{formatMoney(subtotal)}</strong>
           </div>
           <div>
-            <label htmlFor="global-discount">Descuento global</label>
+            <label htmlFor="global-discount">{t("Descuento global")}</label>
             <span className="discount-input">
               <input
                 id="global-discount"
@@ -1216,12 +1312,12 @@ export function POS({ go }: { go: (page: string) => void }) {
           </div>
           <div>
             <span>
-              ITBIS {config.data?.taxIncluded !== false ? "incluido" : ""}
+              ITBIS {config.data?.taxIncluded !== false ? t("incluido") : ""}
             </span>
             <strong>{formatMoney(tax)}</strong>
           </div>
           <div className="cart-total" aria-live="polite">
-            <span>Total a cobrar</span>
+            <span>{t("Total a cobrar")}</span>
             <strong>{formatMoney(total)}</strong>
           </div>
           {!session && (
@@ -1238,25 +1334,25 @@ export function POS({ go }: { go: (page: string) => void }) {
             aria-label={`Cobrar ${formatMoney(total)}`}
           >
             <CreditCard size={20} />
-            <span>Cobrar</span>
+            <span>{t("Cobrar")}</span>
             <kbd>F12</kbd>
           </Button>
           <div className="cart-bottom-actions">
             <button disabled={!cart.length} onClick={() => saveHeld()}>
               <Pause size={14} />
-              En espera
+              {t("En espera")}
             </button>
             <button disabled={!cart.length} onClick={() => saveHeld("quote")}>
               <FileText size={14} />
-              Cotizar
+              {t("Cotizar")}
             </button>
             <button disabled={!cart.length} onClick={clearWithUndo}>
               <Trash2 size={14} />
-              Limpiar
+              {t("Limpiar")}
             </button>
           </div>
           <small className="cart-security">
-            Cada venta se registra con tu usuario.
+            {t("Cada venta se registra con tu usuario.")}
           </small>
         </div>
       </aside>
@@ -1267,7 +1363,7 @@ export function POS({ go }: { go: (page: string) => void }) {
           type="button"
           className="pos-mobile-cart"
           onClick={showCart}
-          aria-label={`Ver carrito (${units} artículos)`}
+          aria-label={`${language === "en" ? "View cart" : "Ver carrito"} (${units} ${language === "en" ? (units === 1 ? "item" : "items") : (units === 1 ? "artículo" : "artículos")})`}
         >
           <ShoppingCart size={20} aria-hidden="true" />
           <span>{units}</span>
@@ -1282,11 +1378,11 @@ export function POS({ go }: { go: (page: string) => void }) {
           <CreditCard size={20} />
           {cart.length ? (
             <>
-              <span>Cobrar · {formatMoney(total)}</span>
+              <span>{t("Cobrar")} · {formatMoney(total)}</span>
               <kbd>F12</kbd>
             </>
           ) : (
-            <span>Carrito vacío · Busca un artículo</span>
+            <span>{t("Carrito vacío · Busca un artículo")}</span>
           )}
         </Button>
       </div>
@@ -2312,7 +2408,7 @@ function Checkout({
           toast(String(error?.message ?? error), true),
         );
       clearCart();
-      await client.invalidateQueries();
+      refreshAfterSale(client);
     } catch (e: any) {
       // Un precio o una promoción cambiaron en otro equipo: antes la única
       // salida era quitar y volver a agregar la línea. Se leen catálogo,
@@ -2497,7 +2593,27 @@ function Checkout({
     );
   }
   return (
-    <Modal open title="Todo listo para cobrar" onClose={onClose}>
+    <Modal
+      open
+      title="Todo listo para cobrar"
+      onClose={onClose}
+      hasData={
+        payments.length > 0 ||
+        amount !== String(total) ||
+        pin !== "" ||
+        discountReason !== "" ||
+        courier.on ||
+        creditNoteCode !== "" ||
+        recipientLegalId !== "" ||
+        Boolean(
+          details.bank ||
+            details.terminal ||
+            details.reference ||
+            details.cardLast4 ||
+            details.approvalCode,
+        )
+      }
+    >
       <div className="payment-total">
         <span>Total de esta venta</span>
         <h2>{formatMoney(total)}</h2>

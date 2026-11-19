@@ -47,6 +47,7 @@ import {
   RECEIVABLE_SHIFT_LIMIT,
   businessDate,
   daysSince,
+  isService,
 } from "@fitstore/shared";
 import {
   Actor,
@@ -168,7 +169,13 @@ const nulled = (row: any, keys: string[]) =>
     Object.entries(row).map(([k, v]) => [k, keys.includes(k) ? null : v]),
   );
 export const hideSaleAmounts = (dto: any) => ({
-  ...nulled(dto, ["subtotal", "discountTotal", "taxTotal", "total", "creditBalance"]),
+  ...nulled(dto, [
+    "subtotal",
+    "discountTotal",
+    "taxTotal",
+    "total",
+    "creditBalance",
+  ]),
   items: dto.items.map((i: any) =>
     nulled(i, ["unitPrice", "discount", "tax", "lineTotal", "unitCost"]),
   ),
@@ -491,6 +498,10 @@ export function usdCashPayments<
 >(payments: T[], configuredRate: unknown, offline = false): T[] {
   return payments.map((p) => {
     if (p.currency !== "USD") return p;
+    if (p.method !== "cash")
+      bad(
+        "Un pago en dólares sólo puede ser en efectivo: cambia el método a efectivo o cobra en pesos.",
+      );
     if (!(Number(configuredRate) > 0))
       bad(
         "No hay tasa del dólar en Configuración: no se puede cobrar en dólares. Pide a la administración que registre la tasa del día.",
@@ -634,6 +645,8 @@ import {
 // valor por defecto de Prisma (5 s) una devolución bajo carga fallaba con
 // P2028 mientras la venta, con 20 s, terminaba (prueba de carga R5).
 export const MONEY_TRANSACTION = { timeout: 20000 };
+export const NO_COST_MESSAGE =
+  "Este producto no tiene costo: pídele a la administración que lo complete";
 @Controller()
 export class SalesController {
   constructor(@Inject(Database) private db: Database) {}
@@ -1005,6 +1018,28 @@ export class SalesController {
             promotionName,
           };
         });
+        // Venta sin costo (dueña, 8-nov): un costo 0 inflaba la ganancia del
+        // tablero. Los servicios no llevan inventario ni costo. Una venta sin
+        // conexión ya se cobró: entra y queda marcada para corregir su costo.
+        const noCost = [
+          ...new Set(
+            lines.flatMap(({ variant, kit }) =>
+              (kit.length
+                ? kit.map((c) => variants.get(c.componentVariantId)!)
+                : [variant]
+              )
+                .filter(
+                  (v) => !isService(v.product) && !d(v.costAvg ?? 0).gt(0),
+                )
+                .map((v) => v.product.name as string),
+            ),
+          ),
+        ];
+        // Bandera de Configuración, apagada hasta que se carguen los costos.
+        const blockNoCost =
+          noCost.length > 0 && config?.blockZeroCostSales === true;
+        if (blockNoCost && !offline)
+          bad(`${NO_COST_MESSAGE}. Producto: ${noCost.join(", ")}.`);
         const total = money(
           lines.reduce((a, l) => a.plus(l.totals.total), d(0)),
         );
@@ -1354,6 +1389,30 @@ export class SalesController {
             where: { id: sale.id },
             data: { costTotal: money(booked) },
           });
+        if (blockNoCost) {
+          await tx.alert.create({
+            data: {
+              key: "zero-cost-sale:" + sale.id,
+              type: "zero_cost_sale",
+              severity: "high",
+              entityId: sale.id,
+              branchId: actor.branchId,
+              message: `La factura ${sale.number} (sin conexión) entró con productos sin costo: ${noCost.join(", ")}. Corrige el costo en la factura para que la ganancia sea real.`,
+            },
+          });
+          await audit(
+            tx,
+            actor,
+            "sale_zero_cost_accepted",
+            "sale",
+            sale.id,
+            undefined,
+            {
+              number: sale.number,
+              products: noCost,
+            },
+          );
+        }
         if (capturedAt && capturedAt < new Date())
           await audit(
             tx,
@@ -2271,6 +2330,304 @@ export class SalesController {
     }, MONEY_TRANSACTION);
   }
 
+  // Recálculo de costos (dueña, 8-nov), solo lectura: ventas vigentes con
+  // líneas a costo 0 de variantes que ya tienen costo, con el costo actual de
+  // la variante como propuesta. Margen = (total − costo) / total, sin restar
+  // ITBIS. Aplicar es aparte (POST sales/:id/items/:itemId/cost, con PIN).
+  @Get("reports/cost-recalc")
+  @Permit("profit:read")
+  async costRecalc(
+    @Query() query: Record<string, string>,
+    @CurrentUser() actor: Actor,
+  ) {
+    if (actor.role === "seller") denied();
+    // Fecha real (2026-13-45 no): un Date inválido llegaba a Prisma como 500.
+    const day = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .refine((v) => {
+        const t = new Date(v + "T12:00:00Z");
+        return !isNaN(t.getTime()) && t.toISOString().slice(0, 10) === v;
+      }, "fecha no válida");
+    const q = parse(
+      z.object({
+        variantId: uuid.optional(),
+        from: day.optional(),
+        to: day.optional(),
+      }),
+      query,
+    );
+    // Santo Domingo no cambia de hora: UTC−4 todo el año.
+    const at = (day: string, time: string) => new Date(`${day}T${time}-04:00`);
+    const items = await this.db.saleItem.findMany({
+      where: {
+        unitCost: { lte: 0 },
+        ...(q.variantId ? { variantId: q.variantId } : {}),
+        variant: { costAvg: { gt: 0 }, product: { unit: { not: "servicio" } } },
+        sale: {
+          branchId: actor.branchId,
+          status: "completed",
+          createdAt: {
+            ...(q.from ? { gte: at(q.from, "00:00:00") } : {}),
+            ...(q.to ? { lte: at(q.to, "23:59:59.999") } : {}),
+          },
+        },
+      },
+      include: {
+        sale: { include: { _count: { select: { returns: true } } } },
+        variant: { include: { product: { select: { name: true } } } },
+      },
+      orderBy: [{ sale: { createdAt: "asc" } }, { id: "asc" }],
+    });
+    const margin = (total: number, cost: number) =>
+      total > 0 ? money(d(total).minus(cost).div(total).times(100)) : null;
+    const sales = new Map<string, any>();
+    for (const i of items) {
+      const allocations = Array.isArray(i.stockAllocations)
+        ? (i.stockAllocations as any[])
+        : [];
+      const applicable =
+        d(i.returnedQty).lte(0) &&
+        allocations.length <= 1 &&
+        !allocations.some((a) => a?.variantId && a.variantId !== i.variantId);
+      const proposed = d(i.variant.costAvg);
+      const delta = applicable
+        ? d(money(proposed.times(i.qty))).minus(
+            money(d(i.unitCost).times(i.qty)),
+          )
+        : d(0);
+      const row = sales.get(i.saleId) ?? {
+        saleId: i.saleId,
+        number: i.sale.number,
+        createdAt: i.sale.createdAt,
+        total: Number(i.sale.total),
+        costTotal: Number(i.sale.costTotal),
+        // La utilidad de la fila no descuenta devoluciones: se avisa aquí.
+        hasReturns: i.sale._count.returns > 0,
+        delta: d(0),
+        lines: [] as any[],
+      };
+      row.delta = row.delta.plus(delta);
+      row.lines.push({
+        itemId: i.id,
+        variantId: i.variantId,
+        sku: i.variant.sku,
+        name: i.variant.product.name,
+        qty: Number(i.qty),
+        unitCost: Number(i.unitCost),
+        proposedUnitCost: Number(proposed),
+        costChange: Number(money(delta)),
+        // Combos y líneas con devolución no se corrigen con la vía auditada.
+        applicable,
+      });
+      sales.set(i.saleId, row);
+    }
+    const rows = [...sales.values()].map(({ delta, ...r }) => {
+      const after = money(d(r.costTotal).plus(delta));
+      return {
+        ...r,
+        costTotalAfter: after,
+        profit: Number(money(d(r.total).minus(r.costTotal))),
+        profitAfter: Number(money(d(r.total).minus(after))),
+        margin: margin(r.total, r.costTotal),
+        marginAfter: margin(r.total, after),
+      };
+    });
+    const sum = (key: string) =>
+      money(rows.reduce((a, r: any) => a.plus(r[key]), d(0)));
+    const total = sum("total"),
+      costTotal = sum("costTotal"),
+      costTotalAfter = sum("costTotalAfter");
+    return {
+      sales: rows,
+      totals: {
+        invoices: rows.length,
+        total,
+        costTotal,
+        costTotalAfter,
+        profit: Number(money(d(total).minus(costTotal))),
+        profitAfter: Number(money(d(total).minus(costTotalAfter))),
+        margin: margin(total, costTotal),
+        marginAfter: margin(total, costTotalAfter),
+      },
+    };
+  }
+
+  // Corrección del costo de una línea ya vendida (dueña, 8-nov): solo
+  // administración con PIN de gerencia y motivo. Cambia el costo (y con él la
+  // ganancia de los reportes); nunca totales, pagos ni el efectivo de la caja.
+  @Post("sales/:id/items/:itemId/cost")
+  @HttpCode(200)
+  @RequireTerminal()
+  @Permit("*")
+  async correctItemCost(
+    @Param("id") id: string,
+    @Param("itemId") itemIdParam: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const saleId = parse(uuid, id);
+    const itemId = parse(uuid, itemIdParam);
+    const data = parse(
+      z.object({
+        unitCost: moneyAmount(1000000),
+        // El costo que el administrador vio: si cambió, no se reescribe.
+        expectedUnitCost: z.number().nonnegative().max(1000000),
+        operationId: uuid,
+        confirmAbovePrice: z.boolean().optional(),
+        reason: z.string().trim().min(8).max(500),
+        managerPin: z.string().regex(/^\d{4,6}$/),
+      }),
+      body,
+    );
+    const approvedBy = await managerPinApproval(
+      this.db,
+      actor,
+      data.managerPin,
+    );
+    return moneyDb(this.db).$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"item-cost:" + data.operationId}))::text AS locked`;
+      // Reintento de la misma operación: devuelve lo ya hecho, sin repetir.
+      const done = await tx.auditLog.findFirst({
+        where: {
+          action: "sale_item_cost_corrected",
+          branchId: actor.branchId,
+          after: { path: ["operationId"], equals: data.operationId },
+        },
+      });
+      if (done) {
+        const prior = done.after as any;
+        if (done.entityId !== saleId || prior.itemId !== itemId)
+          conflict("Este identificador de operación ya se usó en otra línea.");
+        return {
+          number: prior.number,
+          itemId,
+          unitCostBefore: Number((done.before as any)?.unitCost ?? 0),
+          unitCost: Number(prior.unitCost),
+          costTotal: Number(prior.costTotal),
+          profitChange: Number(prior.profitChange),
+        };
+      }
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${saleId}::uuid AND "branchId"=${actor.branchId} FOR UPDATE`;
+      const sale = await tx.sale.findFirst({
+        where: { id: saleId, branchId: actor.branchId },
+        include: { items: true },
+      });
+      if (!sale) bad("Venta no encontrada.");
+      if (sale.status !== "completed")
+        bad("Solo se corrige el costo de una venta vigente.");
+      const item = sale.items.find((i) => i.id === itemId);
+      if (!item) bad("Línea no encontrada en esta venta.");
+      const allocations = Array.isArray(item.stockAllocations)
+        ? (item.stockAllocations as any[])
+        : [];
+      // shortcut: un combo reparte su costo entre componentes; se corrige el
+      // costo del componente y se vuelve a facturar si hace falta.
+      if (
+        allocations.length > 1 ||
+        allocations.some((a) => a?.variantId && a.variantId !== item.variantId)
+      )
+        bad("El costo de un combo no se corrige desde aquí.");
+      // Una devolución ya guardó su propio costo; cambiar la venta lo descuadra.
+      if (d(item.returnedQty).gt(0))
+        bad(
+          "Esta línea tiene devoluciones: su costo no se corrige desde aquí.",
+        );
+      const before = d(item.unitCost);
+      const after = d(data.unitCost);
+      // No se reescribe a gusto una línea ya costeada (regla de la dueña).
+      if (!before.eq(money(data.expectedUnitCost)))
+        conflict(
+          "El costo de esta línea cambió desde que lo viste. Vuelve a abrir la factura.",
+        );
+      if (before.eq(after)) bad("El costo nuevo es igual al actual.");
+      const price = d(item.unitPrice);
+      if (price.gt(0) && after.gt(price.times(5)))
+        bad("El costo es más de 5 veces el precio de venta: revisa el número.");
+      if (after.gt(price) && data.confirmAbovePrice !== true)
+        bad(
+          "El costo es mayor que el precio de venta. Confírmalo para guardarlo.",
+        );
+      const delta = d(money(after.times(item.qty))).minus(
+        money(before.times(item.qty)),
+      );
+      const costTotal = money(d(sale.costTotal).plus(delta));
+      await tx.saleItem.update({
+        where: { id: item.id },
+        data: {
+          unitCost: money(after),
+          stockAllocations: json(
+            allocations.map((a) => ({ ...a, unitCost: Number(money(after)) })),
+          ),
+        },
+      });
+      await tx.sale.update({ where: { id: sale.id }, data: { costTotal } });
+      // El kárdex de la salida queda con el mismo costo que la factura, salvo
+      // que otra línea (o un combo) de la venta saque la misma variante: sus
+      // movimientos no se distinguen y se dejan como están.
+      const shared = sale.items.some(
+        (o) =>
+          o.id !== item.id &&
+          ((o.variantId === item.variantId && o.lotId === item.lotId) ||
+            (Array.isArray(o.stockAllocations) &&
+              (o.stockAllocations as any[]).some(
+                (a) => a?.variantId === item.variantId,
+              ))),
+      );
+      if (!shared)
+        await tx.inventoryMovement.updateMany({
+          where: {
+            refId: sale.id,
+            type: "sale",
+            variantId: item.variantId,
+            lotId: item.lotId,
+          },
+          data: { unitCost: money(after) },
+        });
+      // Los servicios llevan costo 0 a propósito: no mantienen el aviso abierto.
+      const pending = await tx.saleItem.count({
+        where: {
+          saleId: sale.id,
+          unitCost: { lte: 0 },
+          variant: { product: { unit: { not: "servicio" } } },
+        },
+      });
+      if (!pending)
+        await tx.alert.updateMany({
+          where: { key: "zero-cost-sale:" + sale.id },
+          data: { status: "resolved" },
+        });
+      await audit(
+        tx,
+        actor,
+        "sale_item_cost_corrected",
+        "sale",
+        sale.id,
+        { itemId: item.id, unitCost: before, costTotal: sale.costTotal },
+        {
+          number: sale.number,
+          itemId: item.id,
+          variantId: item.variantId,
+          qty: item.qty,
+          unitCost: money(after),
+          costTotal,
+          profitChange: money(delta.negated()),
+          approvedBy,
+          reason: data.reason,
+          operationId: data.operationId,
+        },
+      );
+      return {
+        number: sale.number,
+        itemId: item.id,
+        unitCostBefore: Number(before),
+        unitCost: Number(money(after)),
+        costTotal: Number(costTotal),
+        profitChange: Number(money(delta.negated())),
+      };
+    }, MONEY_TRANSACTION);
+  }
+
   // Orden de la dueña (23-oct): corregir el método de un pago mal marcado al
   // cobrar (p. ej. efectivo que era contraentrega), aunque la caja ya cerró.
   // Mismo monto, misma venta, sin tocar inventario ni vendedora; la caja de
@@ -2303,8 +2660,16 @@ export class SalesController {
       const sale = await editableSale(tx, saleId, actor);
       const payments = await tx.payment.findMany({ where: { saleId } });
       const payment = payments.find((p) => p.id === paymentId);
-      if (!payment || payment.entryType !== "sale")
+      if (
+        !payment ||
+        (payment.entryType !== "sale" && payment.entryType !== "installment")
+      )
         bad("Pago no encontrado en esta venta.");
+      // 29-oct: también un COBRO (abono o contraentrega cobrada) mal marcado,
+      // p. ej. efectivo que fue transferencia (FS-328). Un cobro solo se mueve
+      // entre efectivo, tarjeta y transferencia: nunca pasa a crédito ni a
+      // contraentrega, que son deuda.
+      const collection = payment.entryType === "installment";
       if (payment.method === data.method)
         return { number: sale.number, method: payment.method };
       if (
@@ -2317,22 +2682,39 @@ export class SalesController {
         );
       if (payment.status === "rejected")
         bad("Este pago fue rechazado; no se puede corregir.");
-      if (
-        payments.some(
-          (p) => p.entryType === "installment" && p.status !== "rejected",
+      if (collection) {
+        if (
+          !["cash", "card"].includes(payment.method) ||
+          !["cash", "card", "transfer"].includes(data.method)
         )
-      )
-        bad("La venta ya tiene cobros registrados; no se puede corregir.");
-      if (await tx.saleReturn.count({ where: { saleId } }))
-        bad("La venta tiene devoluciones; no se puede corregir.");
+          bad(
+            "Un cobro solo se corrige entre efectivo, tarjeta y transferencia, y solo si hoy está en efectivo o tarjeta. Una transferencia se rechaza o se corrige con su banco y referencia.",
+          );
+        if (payment.status !== "ok")
+          bad("Este cobro no está aplicado; no se puede corregir.");
+      } else {
+        if (
+          payments.some(
+            (p) => p.entryType === "installment" && p.status !== "rejected",
+          )
+        )
+          bad("La venta ya tiene cobros registrados; no se puede corregir.");
+        if (await tx.saleReturn.count({ where: { saleId } }))
+          bad("La venta tiene devoluciones; no se puede corregir.");
+      }
       const settings = await tx.settings.findUnique({
         where: tenantUnique("id", actor.branchId),
       });
       const config = settings?.data as any;
       const amount = d(payment.amount);
-      const balanceChange = d(receivable(data.method) ? amount : 0).minus(
-        receivable(payment.method) ? amount : 0,
-      );
+      // Un cobro en efectivo/tarjeta ya descontó la deuda; una transferencia
+      // solo la descuenta al verificarse. Al pasar a transferencia la deuda
+      // vuelve hasta que se verifique (si no, se descontaría dos veces).
+      const balanceChange = collection
+        ? d(data.method === "transfer" ? amount : 0)
+        : d(receivable(data.method) ? amount : 0).minus(
+            receivable(payment.method) ? amount : 0,
+          );
       const balance = money(d(sale.creditBalance).plus(balanceChange));
       await tx.payment.update({
         where: { id: payment.id },
@@ -2358,6 +2740,10 @@ export class SalesController {
         where: { id: saleId },
         data: {
           creditBalance: balance,
+          // Si el saldo vuelve a ser deuda, la cuenta deja de estar cerrada.
+          ...(collection && Number(balance) > 0
+            ? { creditClosedAt: null, creditClosedById: null }
+            : {}),
           // Revisión 25-oct #9: con saldo pendiente el incentivo llega al
           // cobrar, como en una venta a crédito o contraentrega. No se apaga:
           // así devoluciones y anulaciones descuentan lo acreditado de verdad.
@@ -2433,6 +2819,7 @@ export class SalesController {
         {
           number: sale.number,
           paymentId: payment.id,
+          entryType: payment.entryType,
           method: data.method,
           amount: payment.amount,
           creditBalance: balance,
@@ -2622,17 +3009,17 @@ export class SalesController {
         voidedBy: actor.id,
       },
     });
-    // T2: con la caja de la venta todavía abierta, la venta deja de contar en
-    // el esperado; si ya salió ese efectivo (retiro, vale) quedaría negativo.
-    // La caja sigue bloqueada, así que ningún retiro se cuela entre medias.
-    // Sin cifras en el mensaje (arqueo ciego).
+    // La venta anulada ya no cuenta en el esperado de su caja; si esa caja
+    // sigue abierta y el efectivo ya salió (retiro, vale), quedaría negativo.
+    // La caja está bloqueada: ningún retiro se cuela entre medias. Sin cifras
+    // en el mensaje (arqueo ciego).
     if (
       originalCash &&
       !originalCash.closedAt &&
-      (await cashExpected(tx, originalCash)).cash < 0
+      d((await cashExpected(tx, originalCash)).cash).lt(0)
     )
       bad(
-        "No se puede anular: el efectivo de esta venta ya salió de la caja abierta. Anúlala después de cerrar la caja o registra primero la entrada que lo repone.",
+        "No se puede anular: la caja ya entregó ese efectivo. Pide a un gerente que lo reponga en la caja (entrada) y vuelve a anular, o anula después del cierre.",
       );
     // T2: una transferencia por verificar de una venta anulada no se puede
     // verificar ni rechazar (la venta ya no está completada): se cierra aquí.
@@ -2903,6 +3290,240 @@ export class SalesController {
       });
       return { ok: true };
     });
+  }
+  // 29-oct (caso FS-288): una transferencia de VENTA que se verificó contra el
+  // depósito equivocado vuelve a «por verificar». Solo administración, con
+  // motivo; vuelve la alerta y, si la caja ya cerró, se recalcula y se avisa.
+  // Un abono verificado ya descontó la deuda: no se revierte aquí.
+  @Post("payments/:id/unverify")
+  @RequireTerminal()
+  @Permit("*")
+  async unverify(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(z.object({ reason }), body);
+    const paymentId = parse(uuid, id);
+    return this.db.$transaction(async (tx) => {
+      const found = await tx.payment.findFirstOrThrow({
+        where: {
+          id: paymentId,
+          method: "transfer",
+          sale: { branchId: actor.branchId },
+        },
+      });
+      // Mismo orden de bloqueo que verificar: caja, venta, pago.
+      if (found.cashSessionId)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${found.cashSessionId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${paymentId}::uuid FOR UPDATE`;
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+      });
+      if (payment.entryType !== "sale")
+        bad(
+          "Un abono verificado ya descontó la deuda; no se devuelve a «por verificar» desde aquí.",
+        );
+      if (payment.status !== "ok")
+        bad(
+          "Solo se devuelve a «por verificar» una transferencia ya verificada.",
+        );
+      const sale = await tx.sale.findUniqueOrThrow({
+        where: { id: payment.saleId },
+      });
+      if (sale.status !== "completed") bad("La venta ya no está completada.");
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: { status: "pending_verification" },
+      });
+      await tx.alert.upsert({
+        where: tenantUnique("key", "transfer:" + paymentId),
+        create: {
+          key: "transfer:" + paymentId,
+          type: "transfer_pending",
+          severity: "high",
+          entityId: sale.id,
+          branchId: actor.branchId,
+          message:
+            `Transferencia de ${sale.number} por RD$ ${formatAmount(Number(payment.amount))} sin verificar · ` +
+            `${payment.bank ?? ""} · ref. ${payment.reference ?? ""}`,
+        },
+        update: { status: "new" },
+      });
+      let differences: unknown = null;
+      if (payment.cashSessionId) {
+        const cash = await tx.cashSession.findUniqueOrThrow({
+          where: { id: payment.cashSessionId },
+        });
+        if (cash.closedAt) {
+          differences = await refreshClosedCash(tx, cash);
+          await closedCashChanged(tx, actor, cash, {
+            ref: "unverify:" + paymentId,
+            what: `en la venta ${sale.number}, una transferencia de RD$ ${formatAmount(Number(payment.amount))} volvió a «por verificar»`,
+            reason: data.reason,
+            differences,
+          });
+        }
+      }
+      await audit(
+        tx,
+        actor,
+        "payment_unverified",
+        "payment",
+        paymentId,
+        { status: "ok" },
+        {
+          number: sale.number,
+          status: "pending_verification",
+          cashSessionId: payment.cashSessionId,
+          differences,
+          reason: data.reason,
+        },
+      );
+      return { ok: true, number: sale.number, differences };
+    }, MONEY_TRANSACTION);
+  }
+  // 29-oct (caso FS-304): un cobro se registró en una caja que no era (p. ej.
+  // una caja temporal) y debe contar en otra. Solo administración, con motivo.
+  // Se recalculan las dos cajas si alguna ya cerró y queda aviso y bitácora.
+  // No toca la venta, su deuda ni el inventario: solo a qué caja pertenece.
+  @Post("payments/:id/move-cash-session")
+  @RequireTerminal()
+  @Permit("*")
+  async moveCashSession(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const data = parse(z.object({ cashSessionId: uuid, reason }), body);
+    const paymentId = parse(uuid, id);
+    return moneyDb(this.db).$transaction(async (tx) => {
+      const found = await tx.payment.findFirstOrThrow({
+        where: { id: paymentId, sale: { branchId: actor.branchId } },
+      });
+      // 19-nov (caso FS-0000706): el efectivo marcado «Recibido por la dueña»
+      // (fuera de toda caja) se puede pasar a la caja que de verdad lo recibió.
+      const ownerCash =
+        !found.cashSessionId &&
+        found.method === "cash" &&
+        found.entryType === "installment" &&
+        !!found.reference?.startsWith(OWNER_CASH_MARK);
+      if (!found.cashSessionId && !ownerCash)
+        bad("Este cobro no está en ninguna caja; no hay de dónde moverlo.");
+      if (found.cashSessionId === data.cashSessionId)
+        bad("El cobro ya está en esa caja.");
+      // Bloqueo en orden fijo (por id) para no cruzarse con otra operación.
+      const ids = [found.cashSessionId, data.cashSessionId]
+        .filter((v): v is string => !!v)
+        .sort();
+      for (const sessionId of ids)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sessionId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Sale" WHERE id=${found.saleId}::uuid FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Payment" WHERE id=${paymentId}::uuid FOR UPDATE`;
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+      });
+      if (payment.cashSessionId !== found.cashSessionId)
+        conflict("El cobro cambió de caja. Actualiza la venta.");
+      if (payment.status === "rejected")
+        bad("Este cobro fue rechazado; no se mueve.");
+      // Se vuelve a comprobar con el cobro ya bloqueado: otra operación pudo
+      // cambiar su método o referencia entre la primera lectura y el bloqueo.
+      if (
+        ownerCash &&
+        !(
+          payment.method === "cash" &&
+          payment.status === "ok" &&
+          !!payment.reference?.startsWith(OWNER_CASH_MARK)
+        )
+      )
+        conflict("El cobro cambió. Actualiza la venta.");
+      const sale = await tx.sale.findUniqueOrThrow({
+        where: { id: payment.saleId },
+        select: { number: true, status: true },
+      });
+      if (sale.status !== "completed") bad("La venta ya no está completada.");
+      const from = payment.cashSessionId
+        ? await tx.cashSession.findUniqueOrThrow({
+            where: { id: payment.cashSessionId },
+          })
+        : null;
+      const to = await tx.cashSession.findFirst({
+        where: { id: data.cashSessionId, branchId: actor.branchId },
+      });
+      if (!to) bad("Esa caja no existe en esta sucursal.");
+      // Si era efectivo de la dueña, deja de serlo: se quita la marca (lo que
+      // la seguía queda) y cuenta como recibido por quien tenía esa caja.
+      const rest = ownerCash
+        ? (payment.reference ?? "")
+            .slice(OWNER_CASH_MARK.length)
+            .replace(/^\s*·\s*/, "")
+            .trim()
+        : "";
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          cashSessionId: to.id,
+          ...(ownerCash
+            ? { reference: rest || null, receivedById: to.userId }
+            : {}),
+        },
+      });
+      const out: Record<string, unknown> = {};
+      for (const [side, session] of [
+        ["from", from],
+        ["to", to],
+      ] as const) {
+        if (!session || !session.closedAt) continue;
+        const fresh = await tx.cashSession.findUniqueOrThrow({
+          where: { id: session.id },
+        });
+        const differences = await refreshClosedCash(tx, fresh);
+        out[side] = differences;
+        await closedCashChanged(tx, actor, fresh, {
+          ref: "move:" + paymentId,
+          what:
+            side === "from"
+              ? `el cobro de RD$ ${formatAmount(Number(payment.amount))} de la venta ${sale.number} salió de esta caja`
+              : `el cobro de RD$ ${formatAmount(Number(payment.amount))} de la venta ${sale.number} entró a esta caja`,
+          reason: data.reason,
+          differences,
+        });
+      }
+      await audit(
+        tx,
+        actor,
+        "payment_cash_session_moved",
+        "payment",
+        paymentId,
+        {
+          cashSessionId: from?.id ?? null,
+          ...(ownerCash
+            ? {
+                reference: payment.reference,
+                receivedById: payment.receivedById,
+              }
+            : {}),
+        },
+        {
+          number: sale.number,
+          method: payment.method,
+          amount: payment.amount,
+          cashSessionId: to.id,
+          ...(ownerCash ? { fromOwnerCash: true } : {}),
+          differences: out,
+          reason: data.reason,
+        },
+      );
+      return {
+        ok: true,
+        number: sale.number,
+        from: from?.id ?? null,
+        to: to.id,
+        differences: out,
+      };
+    }, MONEY_TRANSACTION);
   }
   // 3aa: corrige únicamente los datos de conciliación de una transferencia.
   // La referencia que vio la administradora es un requisito de concurrencia:

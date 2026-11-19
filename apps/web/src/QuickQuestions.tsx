@@ -1,3 +1,5 @@
+import { useLanguage } from "./inicioLanguage";
+import { configRatesSurveyText, type ConfigRatesSurveyKey } from "./configRatesSurveyLanguage";
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, MessageCircleQuestion, Sparkles } from "lucide-react";
@@ -62,9 +64,7 @@ function Sales({
     <QueryState query={query}>
       {query.data && (
         <div className="cart-summary">
-          {query.data.hiddenUntilClose
-            ? blind(query.data)
-            : show(query.data)}
+          {query.data.hiddenUntilClose ? blind(query.data) : show(query.data)}
         </div>
       )}
     </QueryState>
@@ -528,7 +528,7 @@ export const QUICK_QUESTIONS: Question[] = [
     group: "Cómo se hace",
     text: "¿Cómo cierro la caja?",
     answer: help(
-      "Ve a Caja y pulsa cerrar. Cuenta el efectivo sin ver el esperado y escríbelo, igual la tarjeta y la transferencia. Si hay diferencia, explica por qué; si te piden PIN, llama a gerencia. Imprime el cuadre.",
+      "Ve a Caja y pulsa «Cerrar y arquear». Cuenta el efectivo sin ver el esperado y escríbelo; escribe también la «Tarjeta declarada». Las transferencias las suma el sistema. Si hay diferencia, explica por qué; si te piden PIN, llama a gerencia. Pulsa «Cerrar caja e imprimir cuadre».",
     ),
   },
   {
@@ -544,7 +544,7 @@ export const QUICK_QUESTIONS: Question[] = [
     group: "Cómo se hace",
     text: "¿Cómo vendo a crédito?",
     answer: help(
-      "Elige el cliente (no sirve «Cliente de mostrador»). Al cobrar toca «Crédito». Si el sistema pide aprobación, llama a gerencia para su PIN. El crédito no es dinero cobrado.",
+      "Elige primero el cliente (F4): sin cliente no se puede vender a crédito. Al cobrar toca «Crédito». Si el sistema pide aprobación, llama a gerencia para su PIN. El crédito no es dinero cobrado.",
     ),
   },
   {
@@ -552,7 +552,7 @@ export const QUICK_QUESTIONS: Question[] = [
     group: "Cómo se hace",
     text: "¿Cómo pido una anulación?",
     answer: help(
-      "En Ventas busca la factura y usa «Solicitud de anulación» con el motivo. Gerencia la revisa y la aprueba o la rechaza. No cambies la factura a mano.",
+      "En Ventas busca tu factura y pulsa «Solicitar anulación». Elige el tipo de motivo y explícalo. Administración la aprueba o la rechaza. No cambies la factura a mano ni repitas la venta mientras espera.",
     ),
   },
   {
@@ -736,6 +736,8 @@ export function QuickQuestions({
 
 /** Resumen de la encuesta para la administración (Configuración). */
 export function CashierSurveySummary() {
+  const english = useLanguage() === "en";
+  const t = (key: ConfigRatesSurveyKey) => configRatesSurveyText(english, key);
   const query = useQuery({
     queryKey: ["survey-summary"],
     queryFn: () =>
@@ -752,20 +754,20 @@ export function CashierSurveySummary() {
         }[];
       }>("/survey/summary"),
   });
-  const label = (k: string) => (k === "true" ? "Sí" : k === "false" ? "No" : k);
+  const label = (k: string) => (k === "true" ? t("Sí") : k === "false" ? t("No") : k);
   return (
     <section aria-labelledby="survey-summary-title">
       <div className="panel-heading">
-        <h3 id="survey-summary-title">Encuesta de la caja</h3>
+        <h3 id="survey-summary-title">{t("Encuesta de la caja")}</h3>
       </div>
-      <QueryState query={query}>
-        <p>{query.data?.responses ?? 0} personas respondieron.</p>
+      <QueryState english={english} query={query}>
+        <p>{query.data?.responses ?? 0} {t("personas respondieron.")}</p>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>PREGUNTA</th>
-                <th>RESPUESTAS</th>
+                <th>{t("PREGUNTA")}</th>
+                <th>{t("RESPUESTAS")}</th>
               </tr>
             </thead>
             <tbody>
@@ -779,7 +781,7 @@ export function CashierSurveySummary() {
                             {t.name}: {t.text}
                           </div>
                         ))
-                      : (q.average !== null ? `Promedio ${q.average} · ` : "") +
+                      : (q.average !== null ? `${t("Promedio ")}${q.average} · ` : "") +
                         Object.entries(q.counts)
                           .map(([k, n]) => `${label(k)}: ${n}`)
                           .join(" · ")}

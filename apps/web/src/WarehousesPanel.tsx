@@ -1,3 +1,4 @@
+import { useLanguage } from "./inicioLanguage";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, TableFrame } from "@fitstore/ui";
@@ -14,6 +15,7 @@ export function WarehousesPanel({
   rows: any[];
   warehouseId: string;
 }) {
+  const en = useLanguage() === "en";
   const user = useStore((s) => s.user)!;
   const client = useQueryClient();
   const warehouses = useQuery<Warehouse[]>({
@@ -75,7 +77,11 @@ export function WarehousesPanel({
       }
     } catch (e) {
       toast(
-        e instanceof Error ? e.message : "No se pudo cargar el archivo.",
+        e instanceof Error
+          ? e.message
+          : en
+            ? "The file could not be uploaded."
+            : "No se pudo cargar el archivo.",
         true,
       );
       setPreview(null);
@@ -105,7 +111,9 @@ export function WarehousesPanel({
               <th>{storeName}</th>
               <th>{homeName}</th>
               <th>Total</th>
-              {can(user.permissions, "profit:read") && <th>Valor a costo</th>}
+              {can(user.permissions, "profit:read") && (
+                <th>{en ? "Value at cost" : "Valor a costo"}</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -207,12 +215,13 @@ export function WarehousesPanel({
           </div>
           {transfer && (
             <FormModal
-              title={`Traspasar · ${transfer.product.name}`}
+              english={en}
+              title={`${en ? "Transfer" : "Traspasar"} · ${transfer.product.name}`}
               onClose={() => setTransfer(null)}
               fields={[
                 {
                   key: "fromId",
-                  label: "Desde",
+                  label: en ? "From" : "Desde",
                   type: "select",
                   required: true,
                   initial: defaultFrom,
@@ -223,7 +232,7 @@ export function WarehousesPanel({
                 },
                 {
                   key: "toId",
-                  label: "Hasta",
+                  label: en ? "To" : "Hasta",
                   type: "select",
                   required: true,
                   initial: defaultTo,
@@ -234,7 +243,7 @@ export function WarehousesPanel({
                 },
                 {
                   key: "qty",
-                  label: "Cantidad",
+                  label: en ? "Quantity" : "Cantidad",
                   type: "number",
                   required: true,
                   min: 0.001,
@@ -242,7 +251,7 @@ export function WarehousesPanel({
                 },
                 {
                   key: "lotId",
-                  label: "Lote (si aplica)",
+                  label: en ? "Batch (if applicable)" : "Lote (si aplica)",
                   type: "select",
                   options: transfer.lots.map((l: any) => ({
                     label: l.lotNumber,
@@ -251,7 +260,7 @@ export function WarehousesPanel({
                 },
                 {
                   key: "reason",
-                  label: "Motivo",
+                  label: en ? "Reason" : "Motivo",
                   required: true,
                   type: "textarea",
                 },
@@ -318,7 +327,8 @@ export function WarehousesPanel({
           {preview && (
             <div role="status">
               <p>
-                {preview.rows} filas · {preview.blocking.length} problemas
+                {preview.rows} {en ? "rows" : "filas"} ·{" "}
+                {preview.blocking.length} {en ? "issues" : "problemas"}
               </p>
               {preview.changes?.length > 0 && (
                 <TableFrame label={`Cambios del levantamiento de ${homeName}`}>
@@ -348,7 +358,7 @@ export function WarehousesPanel({
               )}
               {preview.blocking.map((b: any, i: number) => (
                 <p key={i}>
-                  Fila {b.row}: {b.message}
+                  {en ? "Row" : "Fila"} {b.row}: {b.message}
                 </p>
               ))}
               {preview.canApply && (
@@ -370,19 +380,23 @@ export function WarehousesPanel({
         <table>
           <thead>
             <tr>
-              <th>Fecha</th>
-              <th>Desde</th>
-              <th>Hasta</th>
-              <th>Producto</th>
-              <th>Cantidad</th>
-              <th>Motivo</th>
+              <th>{en ? "Date" : "Fecha"}</th>
+              <th>{en ? "From" : "Desde"}</th>
+              <th>{en ? "To" : "Hasta"}</th>
+              <th>{en ? "Product" : "Producto"}</th>
+              <th>{en ? "Quantity" : "Cantidad"}</th>
+              <th>{en ? "Reason" : "Motivo"}</th>
             </tr>
           </thead>
           <tbody>
             {(transfers.data || []).flatMap((t) =>
               t.lines.map((l: any) => (
                 <tr key={l.id}>
-                  <td>{dateLabel(t.createdAt)}</td>
+                  <td>
+                    {en
+                      ? new Date(t.createdAt).toLocaleString("en-US")
+                      : dateLabel(t.createdAt)}
+                  </td>
                   <td>{t.from.name}</td>
                   <td>{t.to.name}</td>
                   <td>{l.variant.product.name}</td>

@@ -1,0 +1,1002 @@
+{
+  "date": "2026-11-14",
+  "sourceCommit": "1d118b16e779ab41827d60daee0e59295747f643",
+  "unalteredImageBytes": true,
+  "nativeCaptureNote": "Las capturas nativas se recibieron como JPEG; su extensión se ajustó a .jpg sin recodificar ni retocar.",
+  "total": 110,
+  "web": 93,
+  "nativeVm": 17,
+  "bytes": 12912373,
+  "files": [
+    {
+      "file": "../capturas/despues3-14nov/COM-08-admin-telefono-digitos-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 137737,
+      "sha256": "c99a516a27d52b9781ea4a94876fa188a52c0d952eb1ee215269c7126186a185"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-admin-telefono-digitos-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 64850,
+      "sha256": "65f931005c4a6d080357cc0b3d5149bafff5d4d42d8695575b1c1dac80c90da0"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-admin-telefono-guiones-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 137872,
+      "sha256": "9f2f1225a4a1d5dd4cfae20c11eb79a21314daea8534fc00f852b442a64af8a9"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-admin-telefono-guiones-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 64925,
+      "sha256": "8cb5f983742920763c63d05793bb8aa4be354889456c15c772da60c11adde9ca"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-factura-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 153904,
+      "sha256": "30006c9e4177e7a6667ccd1ac862f9bafe0b2867b81c9409b36df8271a352acd"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-factura-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 59281,
+      "sha256": "ef3a0e061e84a44de4f0fc5b8b0a801a20d75d2661a985a8a9e77ff0907a2a72"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-limpiar-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 225272,
+      "sha256": "b49f9643c8645884c035db56a9e99152926a3605f0aa36050eb32b88793fd2e4"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-limpiar-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 70221,
+      "sha256": "5c8fd394f87cd85d8b714c7b82adebb8263801fe119abbb91d3004f12a658474"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-nombre-acento-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 153837,
+      "sha256": "804b6b778e51cda33815e3a6479821f388a6838a8b80fbc8c098813a1ab15e6e"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-nombre-acento-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 59420,
+      "sha256": "d745b32fad07058f6311394b443bb4ce963f617fab500c231f2d23ae4a77383c"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-nombre-sin-acento-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 153739,
+      "sha256": "427fd1bef0641e4c8a45d3308748c8279677b0af08ba9246fa626a08ca7f494b"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-nombre-sin-acento-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 59215,
+      "sha256": "f040e9a6e8d003250fbe29649f2319a91848d5efabff18bd92a67f9544fc5a89"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-sin-coincidencias-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 112516,
+      "sha256": "fd79c8b00d576889146f57a7c5a347fd2b4511c16eee45a74960c829b637dcb4"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-sin-coincidencias-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 42856,
+      "sha256": "1bd577bae52056c79b41b66e12dcd7d19eea3ac2f334c1286d4949a619c34d98"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-telefono-completo-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 113043,
+      "sha256": "b63156b49e5909c7e0aa5e9603bc80cea0e7ddfa6fa367df097371fb3ca54ab0"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-telefono-completo-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 43450,
+      "sha256": "5c694ad0c113eea2fdab1b7cf349bb0c967bf782e0ca455f5b05808ee911b292"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-telefono-sufijo-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 152795,
+      "sha256": "c7edcd7a1c3647fe7669195ddfdbe68eca7be826b72b049e4a0bff6a57b1bc8c"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedor-telefono-sufijo-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 58182,
+      "sha256": "7786f277ad876f1daa821166b6741a2828eb7c609b01ea1f5f7079607a48fc47"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedora-lista-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 211702,
+      "sha256": "6e8af20a87cf708109d26e0a5240a7dbb16d25f265990c4309b3d4bb9d9bd62a"
+    },
+    {
+      "file": "../capturas/despues3-14nov/COM-08-vendedora-lista-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 63962,
+      "sha256": "f1465cae9308ab674be5ebaa355ab56a05f7ba57a5f6479b92351b953cf9e99b"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-cargando-franja-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 210287,
+      "sha256": "eb03ab954b53cd8e49c471a5758dae889174295c394dcb061324720cc7f8e3ae"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-cargando-franja-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 48685,
+      "sha256": "63c00508a81df943ed448d3399b66e2abbdc836caa19a34aa8bf4e56f642e257"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-cargando-tres-dias-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 170641,
+      "sha256": "79dff69895be4a494fc451aa2d6ab8c3e46d622e9a67c40e35a0569ff018ae80"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-cargando-tres-dias-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 48703,
+      "sha256": "a6a434672c25a6fb889f1da54e1ac4dfe64b732601cb58f62a1776ba9c3fc5c3"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-control-valido-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 178133,
+      "sha256": "4042d9bf0c17979829e48023d7ed84690a6f6df4d964a9e1857d8bb45a03f3c0"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-control-valido-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 59562,
+      "sha256": "920aa15572786806063bc26b69b96d05a3af38238ae469bc12808b6a9c0b0255"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-fallida-franja-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 214480,
+      "sha256": "5924f38e8e19076f48878987dd91b7c357173792c8b1e2c31fad4e712ec40685"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-fallida-franja-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 50345,
+      "sha256": "a185911cc5acc1053dba0eefc770af855894d5666d0112824f9e75a74c05eb6c"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-fallida-tres-dias-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 183020,
+      "sha256": "3919abefe3784ed32bd27934a5eb7e057f5256cd4239921e6b62e6fc6bf9fd42"
+    },
+    {
+      "file": "../capturas/despues3-14nov/DIS-01-fallida-tres-dias-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 58940,
+      "sha256": "f5976326df0721bfd10af7e25d8d96470ee3453785ad22e721c52f4aa8d98525"
+    },
+    {
+      "file": "../capturas/despues3-14nov/EST-03-aviso-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 79576,
+      "sha256": "280f0197c13a1e058a19eb0ed566d76f0d85b5a85c836d4d7cafcbfe011e77fe"
+    },
+    {
+      "file": "../capturas/despues3-14nov/EST-03-aviso-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 19287,
+      "sha256": "65ee39e2189c5e8387b0dad25ea1c5af11b9ac0c0ace518fc1374cbaca044d5f"
+    },
+    {
+      "file": "../capturas/despues3-14nov/EST-03-carrito-antes-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 155632,
+      "sha256": "de995418409112803a8be08d1e2b716248f9ec21981511762319979076be87db"
+    },
+    {
+      "file": "../capturas/despues3-14nov/EST-03-carrito-antes-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 52628,
+      "sha256": "221af92ae11d7e17f7deb1cb79eaa8dbb72141ac8db691feb755a158079899b8"
+    },
+    {
+      "file": "../capturas/despues3-14nov/EST-03-carrito-despues-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 233051,
+      "sha256": "1508ff004635fc9ffa51f0b31e50572144b608af0eb266bcf3c8a533019a6c45"
+    },
+    {
+      "file": "../capturas/despues3-14nov/EST-03-carrito-despues-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 58874,
+      "sha256": "9f209730e83895c3ad40cede3a4dc6882b6fe27a6d1e0701c77fcf7e5853d346"
+    },
+    {
+      "file": "../capturas/despues3-14nov/EST-03-despues-reintentar-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 79807,
+      "sha256": "1036256e71235a4c764a00e66b99c7293793af2c0066e827f356ddc1c74928c1"
+    },
+    {
+      "file": "../capturas/despues3-14nov/EST-03-despues-reintentar-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 19620,
+      "sha256": "eea92dbcf9da9cb77f2ce5f7468129fe0f4fdf6f1e1e64183d830dc804e42eea"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-eleccion-clara-sistema-oscuro-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 210511,
+      "sha256": "6885098e59f68a144d4e32b1d51c75bb578677c070cdc58395e47e3b36364aa6"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-eleccion-clara-sistema-oscuro-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 50577,
+      "sha256": "08d78692aa0df739e160622a0ceb6d764cb9eab5b027dc9e7d3a824df2338c7e"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-eleccion-oscura-sistema-claro-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 210125,
+      "sha256": "32ab1c01b1fbb68c80300564a4d071a84b7171651738a1726d3045f9e363fa5b"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-eleccion-oscura-sistema-claro-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 51901,
+      "sha256": "fe50c3d6cc52d233c0849c571968066a167ffd486675ba7ae74dcbb91ddbb432"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-estable-1366.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 210125,
+      "sha256": "32ab1c01b1fbb68c80300564a4d071a84b7171651738a1726d3045f9e363fa5b"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-estable-390.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 51911,
+      "sha256": "8c84deb5953da906c8a696a7c510fec5ccd7f4bb752b1730acf2906df7bdf630"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f00.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 314953,
+      "sha256": "f00f03ef7a4ceb6e3af5b167f3090426c131b4e2463929c45a85bc209b9de672"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f01.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 21703,
+      "sha256": "7f3d6c158103dda2766bbaa2742895444bdd12a2fa5e91d470452447631ca4d1"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f02.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 21704,
+      "sha256": "ab0ee9f987b6ee3f1a0e360c3f90ffdf594ccb7547dfa96971e3355114bb2b52"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f03.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 24227,
+      "sha256": "ccd02a49619faeeb5702c9f51b9cc101400a9748bf6ce9620e4ad0f822e5683f"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f04.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 24480,
+      "sha256": "5c75f7fc93a65b14e0a047d8a139053d37d71e81840fcc84426cffd2a456f40f"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f05.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 104515,
+      "sha256": "d0570f185854309f7f330734038db9826f22939760c02e0b7d06a356e8104cf0"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f06.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 104841,
+      "sha256": "f4e2f65175c608b61f38132cd70e4e90c12daf76a6b441d1bdbb5a08597af105"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f07.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 104809,
+      "sha256": "cdb95156a9e01c0732707e834d7a41a8a284d84f2f520a8f703d1419b5cb4941"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f08.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 104954,
+      "sha256": "65081ac23b84b684b52873e9e4116e3654acb208fbe0b79fc300c18d399fbf22"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f09.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 104859,
+      "sha256": "cc8691c377945a8fb179a82ec8a75842c41e1d7bd76879775f8b414ebfbff73c"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f10.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 104912,
+      "sha256": "c9f17ff1897699502175b5fa3166eea83caac82e6f4efe3057e0121884330918"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f11.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 296237,
+      "sha256": "e36db6111d46d8ca375b6e26c9b6f31ffe22f1d9f052ad1952f01c019bac51d6"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f12.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 301269,
+      "sha256": "ba62ce944d8253baeea246dd345e8a146c90fe34d747ce017592107ebc56cac4"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f13.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 309354,
+      "sha256": "bbaa8253f14ac301a843a5b7fd4fcbe057068d7024ceaa084281252f4b9e8940"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f14.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 309473,
+      "sha256": "6be50e50a45520e626e3055889bc9887ee1015f881fca2a5a086f895fc466211"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f15.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 309672,
+      "sha256": "60879786a7fb51b15552bd9d17e743f5cd85e1304c0288d5a1d9b10683b16b51"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f16.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 309364,
+      "sha256": "0067424b89af940901f0ff1d4b77207f068d8e185b9e1d551088c0fe5d937ea0"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f17.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 314344,
+      "sha256": "1e807e6eaa1fea10a48574eea31ff8a5f9e7d879f9c9ba63067ffacf76363ebd"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f18.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 314812,
+      "sha256": "9a6ef6dfcc2a850cd4770fc045bc5eee5f13092814acee15b6716e384f07c3b3"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f19.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 321131,
+      "sha256": "55a0d7de19e25981fc9e7d582a291e50d592371c91fd3ea0f3c9f55f8994a07a"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f20.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 321694,
+      "sha256": "d1f0fcb843fb2452a02f19523ddebb0c2b8ae6121033ba9c9624527ddf40e299"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f21.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 321829,
+      "sha256": "6de17861c8d9d112368d6e0eeaa5851f640b49b98fe8a132b217749064f37e51"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f22.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 321854,
+      "sha256": "91b3d410b044e1c26f1ebe8922ff45f41b72ec381038a90e019789e73dfd0fca"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f23.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 322185,
+      "sha256": "78d8a2a8d348d318074f2ba8602133f5ce4d2c488d5e1d22c1e86b2cef2c7ff0"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f24.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 321838,
+      "sha256": "542014266b4473f5ade2bf9fea3bf6fde6a1042abd575e6baf6912167373e5fa"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-1366-f25.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 1366,
+      "height": 900,
+      "bytes": 321278,
+      "sha256": "682dcfa4642f01fed535574b61c0a4ca55a55a8b907cc429939301181e70c410"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f00.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 8212,
+      "sha256": "21619f8da7d95a4b10755033a53ec4c9834a9ed5e880823ef79415fb9945d6b9"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f01.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 11957,
+      "sha256": "037da7195d9afac739472884f98b26b207a405f6e17f7f8da39ab81ceb6fde05"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f02.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 12163,
+      "sha256": "f4844c78dcd7ebc7fdc9a6bb994de6b2054c67e224e75d4701a2a7e157d4cea2"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f03.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 36013,
+      "sha256": "a1b1d1a67dcea1e4d75aefefcabcfccf2c77f0d4266661bc7edb67ef18ab2661"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f04.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 36336,
+      "sha256": "210c3e0d782aea3da8450be82b77294b3fbaa9ff060cd881f3c7f6a58ed42da8"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f05.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 36340,
+      "sha256": "439dad2f87e1552150d893674a5a869b47d90a740323efc13b61ee7a44560559"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f06.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 36376,
+      "sha256": "fcd4ef836fa4569bdb290b72530eabad13f76dd6a853634a28028fda329fdb3d"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f07.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 101407,
+      "sha256": "727b4667c2edf8deed7733ac327274ffb7c4fe84450c2fc29537afa3b5db2b07"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f08.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 105367,
+      "sha256": "10e7408ab883f8b6d45eb56fd2a8578dc2d84cec502d2e7dbcfbc0facdb0f031"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f09.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 67309,
+      "sha256": "dd20cc55878974da2547ff66044c68e455fa81c596dfcb85026080b833d204fe"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f10.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 67503,
+      "sha256": "5f2b645b276256089495bf82d22cf8fe4cba4e8b09afc40a43eed03a05cff46f"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f11.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 67590,
+      "sha256": "4adb449521ce3179893f3b0c3cb0c683c2d28d63027ed7571205ccb9ca83a7da"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f12.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 67435,
+      "sha256": "b3eb975cab53b927919f8a46c040f46cb5df0f676c941f1ddf47508be6ba9a48"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f13.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 71052,
+      "sha256": "66736d219a69d5044fef33e6d6582af32a4f235ad36d605d683fd8b87f6df7da"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f14.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 71633,
+      "sha256": "edd60b9f6cb2634e9d59d8a173fb55241b2c0cc6facce6e7060a1b5ce1c7ab4c"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f15.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 76831,
+      "sha256": "71a575528ab1fb76f28f18b33b5a1dc93e836921734ffc875d44adee9cb6b1c4"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f16.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 77292,
+      "sha256": "b9d1e8348a4c8a4fdf8aeca2bfdd41da902792db69a8ef5119359eb867a6ecf1"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f17.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 77499,
+      "sha256": "b61cc0cd84cbde1065b2cf8e18e656005d9de00b57262dd2eebc133140014a4c"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f18.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 77324,
+      "sha256": "9e73c1457ecfe2bd44a81b8ee732cc5c90138ea5821ef4703bacd9b34780fbda"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f19.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 77544,
+      "sha256": "0a26c7d22d26c765c783e481c8105a6360a125188e90a1b8bffa2f2c770e0d1c"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f20.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 77495,
+      "sha256": "490013b8ed080b47e5dfdebeb256cc1dc67e772e26ba570b82bc975b79273600"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f21.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 76884,
+      "sha256": "cf2afccd1b0219cf840498ab4977cbb30a14ec00104741b2e0597397609ce853"
+    },
+    {
+      "file": "../capturas/despues3-14nov/MOD-08-sistema-oscuro-sin-guardado-390-f22.png",
+      "kind": "web",
+      "format": "PNG",
+      "width": 390,
+      "height": 844,
+      "bytes": 76472,
+      "sha256": "a74b818c2d0f337f3bfe8401e4b9ae27bf2e3f1a7a584e66130b17417ff4d753"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-01-antes-arranque.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 642,
+      "height": 501,
+      "bytes": 23963,
+      "sha256": "18f0f199ff50fe7dda40c583e24bc056c1b84e10ac69bae2b115f856d54fd2e0"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-02-prompt-dvd-y-pxe.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 36011,
+      "sha256": "5c64160fb354ab613788db0f469cee2025f5edf0dbc15e65c5c008fba23e9135"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-03-carga-desde-dvd.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 35575,
+      "sha256": "21fc19aac9e9c27be2334382394dbfc103056b63688d642fa934a27e91de7941"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-04-setup-arrancado.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 64144,
+      "sha256": "3408fe4c916092062c25fce11a7b07404c27c261e7da935c4b2da2532cdafe76"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-05-informe-actualizacion-no-disponible.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 72604,
+      "sha256": "551f908c1d784a981e5d9d575731df0519d740694e6b9dea18c06d4aad783c54"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-10-install-now.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 51159,
+      "sha256": "bdb6d9e51fd4fe5444232f10800ef9a31b618aac29f44a7cd5f56fb844b331c0"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-11-sin-clave-producto.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 74067,
+      "sha256": "96bd4a1008588caefae3351b53467832a50ada0da6c96ef436e78c0186e13f11"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-12-edicion-pro.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 68936,
+      "sha256": "e5ee50e9f4d17d506a5b9e0d4409ae2e0ab2084126bae2077d23ce6ce422c6d1"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-13-tipo-instalacion.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 73307,
+      "sha256": "67a8e66092688f340a406c782ad29e737a1810ce01140df070efb76c51838791"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-14-disco-vacio-80gb.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 63650,
+      "sha256": "c888b6a24a9a3e8d4d47f1a8e13d3a8c91de6565eb4fb27966d60f6f8911852c"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-15-copiando-instalacion.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 54928,
+      "sha256": "2eb6eeea47033125d73a9c86d729bf7597ea661821badc9102990daadb8cec39"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-16-fin-copia-windows.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 642,
+      "height": 501,
+      "bytes": 17401,
+      "sha256": "475895efe2a75d519b4ad7fbd653e5829f9ec75f49e6551087d9cbac8afb05c6"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-17-primer-arranque-getting-ready.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 37906,
+      "sha256": "36ffc6e34a6853a1c5beb3a1f81fb7f5d53e55c4e8134630a6e4f9620ec5702d"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-18-oobe-region.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 56477,
+      "sha256": "d244fb83cd2a0765076ad2515a40e9f52576151ccfdd7af2ff9f1fa6acfb4dd9"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-19-oobe-tipo-cuenta.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 65262,
+      "sha256": "069b258e5f2b79cea037523bba95624ea10e19758abd08bf6fa25452a5d64e3e"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-20-oobe-cuenta.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 1026,
+      "height": 869,
+      "bytes": 80772,
+      "sha256": "3672e8037a8c0124ba78d68f74319357fa5ead5301d19c56d3cadb6ecc3979a2"
+    },
+    {
+      "file": "../capturas/despues3-14nov/WIN10-21-vm-guardada.jpg",
+      "kind": "native-vm",
+      "format": "JPEG",
+      "width": 642,
+      "height": 501,
+      "bytes": 24686,
+      "sha256": "19c816f814b775f7286d6e5ea46742b0697d36482df275be6bce36ad2b19c755"
+    }
+  ]
+}

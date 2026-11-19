@@ -1,12 +1,14 @@
 import { Prisma } from "@prisma/client";
 import type { Actor } from "../common";
+import { saleNotGvSql } from "../gv-scope";
 import { local, num, pct, utc, type Range, type ReportDef } from "./base";
 
 // Venta neta (D-05, como dashboard/breakdown): cada línea vendida en el
 // período menos la parte devuelta de esa línea. Así todos los reportes del
 // grupo cuadran entre sí (la suma por hora = por cajera = por categoría).
+// GV es otra empresa: sus ventas no se suman con Macgen (dueña, 18-nov).
 const where = (actor: Actor, range: Range) =>
-  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
+  Prisma.sql`s."branchId" = ${actor.branchId} AND s.status = 'completed' AND ${saleNotGvSql()} AND s."createdAt" >= ${utc(range.gte)} AND s."createdAt" <= ${utc(range.lte)}`;
 const NET = Prisma.sql`i."lineTotal" * (1 - i."returnedQty" / i.qty)`;
 const UNITS = Prisma.sql`(i.qty - i."returnedQty")`;
 // Una fila por factura: hora, cajera, cliente, unidades y venta neta.
@@ -122,7 +124,9 @@ export const ventas: Record<string, ReportDef> = {
         await db.$queryRaw`${sales(actor, range)} SELECT month, day, COUNT(*)::int AS invoices, SUM(net) AS net FROM (SELECT to_char(${AT}, 'YYYY-MM') AS month, to_char(${AT}, 'YYYY-MM-DD') AS day, net FROM f) x GROUP BY GROUPING SETS ((month), (month, day)) ORDER BY month, day NULLS LAST`;
       return rows.map((r) => ({
         Tipo: r.day ? "Día" : "Mes",
-        Período: r.day ?? monthName(r.month),
+        Período: r.day
+          ? r.day.split("-").reverse().join("/")
+          : monthName(r.month),
         Facturas: r.invoices,
         "Ventas netas": num(r.net),
         "Ticket promedio": ticket(r.net, r.invoices),

@@ -1,0 +1,327 @@
+/* High 4K concepts 02–04: presentation only, existing actions and guards stay intact. */
+.operational-aux {
+  --oa-accent: #08734f;
+  --oa-deep: #064732;
+  --oa-gold: #997328;
+  --oa-surface: #f7fbf8;
+  --oa-ink: #18372b;
+  --oa-soft: #e7f1e9;
+  --oa-line: #927b47;
+  --oa-shadow: 0 10px 24px #163c2114, inset 0 1px 0 #fff;
+  color: var(--oa-ink);
+  min-width: 0;
+  container-type: inline-size;
+}
+:root[data-theme="dark"] .operational-aux {
+  --oa-accent: #3ccf94;
+  --oa-deep: #053f2c;
+  --oa-gold: #edcf84;
+  --oa-surface: #071d16;
+  --oa-ink: #f4f4e8;
+  --oa-soft: #102c22;
+  --oa-line: #a68f55;
+  --oa-shadow: 0 12px 26px #0005, inset 0 1px 0 #fff2;
+}
+:root[data-accent="blue"] .operational-aux {
+  --oa-accent: #176baa;
+  --oa-deep: #123c61;
+  --oa-soft: #e5eff8;
+}
+:root[data-theme="dark"][data-accent="blue"] .operational-aux {
+  --oa-accent: #7cbfff;
+  --oa-deep: #103656;
+  --oa-surface: #091c2b;
+  --oa-soft: #102c45;
+}
+:root[data-theme="dark"][data-overview-surface="black"] .operational-aux {
+  --oa-surface: #080c0b;
+  --oa-soft: #111b18;
+}
+.operational-aux > .page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+  padding: 22px;
+  margin-bottom: 20px;
+  border: 1px solid var(--oa-line);
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      ellipse at 85% 0%,
+      color-mix(in srgb, var(--oa-accent) 15%, transparent),
+      transparent 65%
+    ),
+    var(--oa-surface);
+  box-shadow: var(--oa-shadow);
+}
+.operational-aux > .page-heading > div {
+  min-width: 0;
+}
+.operational-aux .page-heading h1 {
+  color: var(--oa-ink);
+  font-size: clamp(25px, 3.1cqw, 38px);
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  margin: 5px 0 10px;
+}
+.operational-aux .page-heading p {
+  color: var(--oa-ink);
+  line-height: 1.6;
+  max-width: 80ch;
+  margin: 0;
+}
+.operational-aux .eyebrow {
+  color: var(--oa-accent);
+  letter-spacing: 0.16em;
+  font-size: 11px;
+  font-weight: 800;
+}
+.operational-aux-emblem {
+  display: grid;
+  place-items: center;
+  flex: 0 0 68px;
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  color: #3e2b0a;
+  border: 1px solid #c49a3b;
+  background: linear-gradient(145deg, #fff0b5, #d8aa45 60%, #af7c21);
+  box-shadow:
+    inset 0 2px 0 #fff9,
+    0 7px 0 #624419,
+    0 11px 18px #0003;
+}
+.operational-aux .panel {
+  color: var(--oa-ink);
+  background: var(--oa-surface);
+  border: 1px solid var(--oa-line);
+  border-radius: 18px;
+  box-shadow: var(--oa-shadow);
+  padding: 20px;
+  min-width: 0;
+}
+.operational-aux .reconciliation-toolbar {
+  padding: 18px 20px;
+  gap: 16px;
+}
+.operational-aux :is(input, select, textarea) {
+  color: var(--oa-ink);
+  background: var(--oa-surface);
+  border-color: var(--oa-line);
+  min-height: 44px;
+  max-width: 100%;
+  box-shadow: inset 0 2px 5px #0001;
+}
+.operational-aux :is(.field, .reconciliation-details) {
+  min-width: 0;
+}
+.operational-aux .field > span {
+  color: var(--oa-ink);
+  font-weight: 650;
+}
+.operational-aux :is(button, summary) {
+  min-height: 44px;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease;
+}
+.operational-aux button {
+  min-width: 44px;
+  white-space: normal;
+}
+.operational-aux button:not(:disabled):active {
+  transform: translateY(1px);
+}
+.operational-aux :is(button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--oa-accent);
+  outline-offset: 3px;
+}
+.operational-aux .button {
+  border-radius: 11px;
+  font-weight: 750;
+  box-shadow:
+    inset 0 1px 0 #fff5,
+    0 3px 0 #0002;
+}
+.operational-aux .button.primary {
+  background: linear-gradient(#f6dfa1, #ddb34f);
+  border: 1px solid #aa7f26;
+  color: #302308;
+}
+.operational-aux .button.secondary {
+  color: var(--oa-ink);
+  background: linear-gradient(145deg, var(--oa-soft), var(--oa-surface));
+  border-color: var(--oa-line);
+}
+.operational-aux .reconciliation-list {
+  gap: 12px;
+}
+.operational-aux .reconciliation-row {
+  background: linear-gradient(115deg, var(--oa-soft), var(--oa-surface));
+  border: 1px solid color-mix(in srgb, var(--oa-line) 65%, transparent);
+  border-radius: 12px;
+  padding: 16px;
+}
+.operational-aux .reconciliation-details {
+  gap: 8px;
+}
+.operational-aux .reconciliation-details :is(strong, span) {
+  color: var(--oa-ink);
+  line-height: 1.5;
+}
+.operational-aux .reconciliation-details > strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+}
+.operational-aux :is(.reconciliation-select input, .courier-pick > input) {
+  accent-color: var(--oa-accent);
+  min-height: 22px;
+  flex-shrink: 0;
+}
+.operational-aux .reconciliation-row:has(input:checked) {
+  border-color: var(--oa-gold);
+  box-shadow:
+    inset 3px 0 0 var(--oa-gold),
+    0 3px 10px #0001;
+}
+.operational-aux .reconciliation-totals {
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--oa-soft);
+  border: 1px solid var(--oa-line);
+  gap: 18px;
+}
+.operational-aux .reconciliation-totals > p {
+  font-variant-numeric: tabular-nums;
+  line-height: 1.65;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.operational-aux .reconciliation-totals > .field {
+  flex: 1;
+}
+.operational-aux .void-request-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+.operational-aux .void-request-card {
+  min-width: 0;
+  padding: 22px;
+  background: linear-gradient(145deg, var(--oa-soft), var(--oa-surface));
+  border: 1px solid var(--oa-line);
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 #fff2;
+  overflow-wrap: anywhere;
+}
+.operational-aux .void-request-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.operational-aux .void-request-head h2 {
+  font-size: 19px;
+  color: var(--oa-ink);
+}
+.operational-aux .void-request-card h3 {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--oa-line);
+  padding-bottom: 9px;
+  color: var(--oa-ink);
+}
+.operational-aux .void-request-card p {
+  line-height: 1.6;
+}
+.operational-aux .void-request-card ul {
+  padding-left: 20px;
+  line-height: 1.65;
+}
+.operational-aux .void-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 12px;
+}
+.operational-aux .reconciliation-error,
+.operational-aux .danger-text {
+  color: var(--danger-text);
+}
+.operational-aux .reconciliation-ok {
+  color: var(--positive-text);
+}
+@media (hover: hover) and (pointer: fine) {
+  .operational-aux button:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 5px 12px #0003,
+      inset 0 1px 0 #fff4;
+  }
+}
+@media (max-width: 760px) {
+  .operational-aux > .page-heading {
+    padding: 16px;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .operational-aux-emblem {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+  .operational-aux-emblem svg {
+    width: 27px;
+    height: 27px;
+  }
+  .operational-aux .panel {
+    padding: 16px;
+  }
+  .operational-aux .void-request-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .operational-aux .void-request-card {
+    padding: 16px;
+  }
+  .operational-aux .reconciliation-toolbar > .field {
+    flex: 1 1 100%;
+  }
+  .operational-aux .reconciliation-totals {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
+  .operational-aux .reconciliation-totals .field {
+    min-width: 0;
+  }
+  .operational-aux .void-request-actions > button {
+    flex: 1 1 130px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .operational-aux :is(button, summary) {
+    transition: none;
+  }
+  .operational-aux button:not(:disabled):is(:hover, :active) {
+    transform: none;
+  }
+}
+
+/* Keep cents together. Exceptional values scroll inside their own inline box. */
+.operational-aux .operational-aux-money {
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-variant-numeric: tabular-nums;
+  vertical-align: bottom;
+}

@@ -15,6 +15,7 @@ import {
   CartItem,
   loadCatalog,
   localDB,
+  noteLiveStock,
   post,
   Product,
   refreshCart,
@@ -180,11 +181,16 @@ export async function registerTerminal() {
     throw e;
   }
 }
+// GV-15: una cuenta sólo de GV no usa la caja ni la mercancía de Macgen: sin
+// registro de equipo, sin aviso de «equipo no aprobado» y sin existencias en
+// tiempo real.
+export const gvOnly = (permissions: string[] = []) =>
+  permissions.length > 0 && permissions.every((p) => p.startsWith("gv:"));
 export function useRealtime() {
   const { user, online } = useStore();
   const client = useQueryClient();
   useEffect(() => {
-    if (!user || !online) return;
+    if (!user || !online || gvOnly(user.permissions)) return;
     let stopped = false;
     let controller: AbortController | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -216,6 +222,7 @@ export function useRealtime() {
         );
         void client.invalidateQueries();
       } else if (type === "stock.changed") {
+        noteLiveStock(data.variantId, data.qtyOnHand);
         const known = client
           .getQueryData<Product[]>(["catalog"])
           ?.some((p) => p.variants.some((v) => v.id === data.variantId));
@@ -524,7 +531,7 @@ export function DeviceGate() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   // Sin cupo en el plan, el PIN tampoco lo aprobaría: avisa PlanLimitNotice.
-  if (!user || planLimit || (!revoked && terminal?.status !== "pending"))
+  if (!user || planLimit || gvOnly(user.permissions) || (!revoked && terminal?.status !== "pending"))
     return null;
   if (revoked)
     return (

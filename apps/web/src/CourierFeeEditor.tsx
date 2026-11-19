@@ -10,12 +10,14 @@ export function CourierFeeEditor({
   initialName,
   onSaved,
   disabled = false,
+  english = false,
 }: {
   saleId: string;
   initialFee: string;
   initialName?: string | null;
   onSaved: (fee: string, name: string) => void;
   disabled?: boolean;
+  english?: boolean;
 }) {
   const [fee, setFee] = useState(initialFee);
   const [name, setName] = useState(initialName || (PRODUCT_MODE ? "" : DEFAULT_COURIER));
@@ -55,7 +57,7 @@ export function CourierFeeEditor({
   return (
     <div className="courier-fee-editor">
       <label className="field">
-        <span>Envío (RD$)</span>
+        <span>{english ? "Delivery (RD$)" : "Envío (RD$)"}</span>
         <input
           ref={input}
           type="text"
@@ -66,7 +68,12 @@ export function CourierFeeEditor({
           maxLength={8}
         />
       </label>
-      <div className="courier-presets" aria-label="Importes rápidos de envío">
+      <div
+        className="courier-presets"
+        aria-label={
+          english ? "Quick delivery amounts" : "Importes rápidos de envío"
+        }
+      >
         {courierPresets.map((value) => (
           <button
             type="button"
@@ -82,11 +89,11 @@ export function CourierFeeEditor({
           disabled={disabled || busy}
           onClick={() => input.current?.focus()}
         >
-          Otro
+          {english ? "Other" : "Otro"}
         </button>
       </div>
       <label className="field">
-        <span>Mensajero</span>
+        <span>{english ? "Courier" : "Mensajero"}</span>
         <input
           value={name}
           maxLength={100}
@@ -95,12 +102,16 @@ export function CourierFeeEditor({
         />
       </label>
       <label className="field">
-        <span>Motivo</span>
+        <span>{english ? "Reason" : "Motivo"}</span>
         <input
           value={reason}
           maxLength={200}
           disabled={disabled || busy}
-          placeholder="Ej.: el mensajero cobró 300"
+          placeholder={
+            english
+              ? "E.g.: courier charged 300"
+              : "Ej.: el mensajero cobró 300"
+          }
           onChange={(event) => setReason(event.target.value)}
         />
       </label>
@@ -110,7 +121,13 @@ export function CourierFeeEditor({
         </p>
       )}
       <Button disabled={disabled || busy} onClick={() => void save()}>
-        {busy ? "Guardando…" : "Guardar envío"}
+        {busy
+          ? english
+            ? "Saving…"
+            : "Guardando…"
+          : english
+            ? "Save delivery"
+            : "Guardar envío"}
       </Button>
     </div>
   );

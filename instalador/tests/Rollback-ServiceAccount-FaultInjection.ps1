@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $source = Join-Path $PSScriptRoot '../scripts/Rollback-FitStoreUpdate.ps1'
 $tokens = $null; $errors = $null

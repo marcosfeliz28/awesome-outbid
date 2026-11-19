@@ -1,0 +1,56 @@
+{
+  "Incentives": {
+    "sha256": "8b69790253f25f7d53ff4b5927f9531ce542cf31b10485f4c9e9f4a23625b470",
+    "edits": [
+      {
+        "before": "import { useLanguage } from \"./inicioLanguage\";\nimport { useOperationsText } from \"./operationsLanguage\";\nimport { PremiumWorkspace } from \"./PremiumWorkspace\";\nimport \"./premiumOperations.css\";\n",
+        "after": "import { configRatesSurveyText, type ConfigRatesSurveyKey } from \"./configRatesSurveyLanguage\";\nimport { useLanguage } from \"./inicioLanguage\";\nimport { useOperationsText } from \"./operationsLanguage\";\nimport { PremiumWorkspace } from \"./PremiumWorkspace\";\nimport \"./premiumOperations.css\";\n"
+      },
+      {
+        "before": "// ---------------------------------------------------------------------------\n// Tarifas por categoría (Configuración, administración)\n\nexport function IncentiveRates() {\n  const client = useQueryClient();\n  const query = useQuery({\n    queryKey: [\"incentive-rates\"],\n    queryFn: () => api<Rate[]>(\"/incentives/rates\"),\n",
+        "after": "// ---------------------------------------------------------------------------\n// Tarifas por categoría (Configuración, administración)\n\nexport function IncentiveRates() {\n  const english = useLanguage() === \"en\";\n  const t = (key: ConfigRatesSurveyKey) => configRatesSurveyText(english, key);\n  const client = useQueryClient();\n  const query = useQuery({\n    queryKey: [\"incentive-rates\"],\n    queryFn: () => api<Rate[]>(\"/incentives/rates\"),\n"
+      },
+      {
+        "before": "      categoryId: r.categoryId,\n      amount: Number(draft[r.categoryId] ?? r.amount),\n    }));\n    if (rates.some((r) => !Number.isFinite(r.amount) || r.amount < 0)) {\n      toast(\"Cada tarifa debe ser un monto de 0 o más.\", true);\n      return;\n    }\n    setBusy(true);\n    try {\n",
+        "after": "      categoryId: r.categoryId,\n      amount: Number(draft[r.categoryId] ?? r.amount),\n    }));\n    if (rates.some((r) => !Number.isFinite(r.amount) || r.amount < 0)) {\n      toast(t(\"Cada tarifa debe ser un monto de 0 o más.\"), true);\n      return;\n    }\n    setBusy(true);\n    try {\n"
+      },
+      {
+        "before": "        method: \"PUT\",\n        body: JSON.stringify({ rates }),\n      });\n      await client.invalidateQueries({ queryKey: [\"incentive-rates\"] });\n      toast(\"Tarifas de incentivos guardadas.\");\n    } catch (error: any) {\n      toast(error.message, true);\n    } finally {\n      setBusy(false);\n",
+        "after": "        method: \"PUT\",\n        body: JSON.stringify({ rates }),\n      });\n      await client.invalidateQueries({ queryKey: [\"incentive-rates\"] });\n      toast(t(\"Tarifas de incentivos guardadas.\"));\n    } catch (error: any) {\n      toast(error.message, true);\n    } finally {\n      setBusy(false);\n"
+      },
+      {
+        "before": "      className=\"incentive-rates\"\n      aria-labelledby=\"incentive-rates-title\"\n    >\n      <div className=\"panel-heading\">\n        <h3 id=\"incentive-rates-title\">Incentivos por categoría</h3>\n      </div>\n      <p>\n        Lo que gana la cajera por cada unidad vendida. «Venta al por mayor» paga\n        la mitad. Cambiar una tarifa no altera lo ya ganado: cada venta guarda\n        la tarifa vigente al cobrar.\n      </p>\n      <QueryState query={query}>\n        <form onSubmit={save}>\n          <div className=\"table-wrap\">\n            <table>\n              <thead>\n                <tr>\n                  <th>CATEGORÍA</th>\n                  <th>RD$ POR UNIDAD</th>\n                </tr>\n              </thead>\n              <tbody>\n                {(query.data ?? []).map((r) => (\n                  <tr key={r.categoryId}>\n                    <td>\n                      {r.name}{\" \"}\n                      {r.isDefault && <Badge tone=\"neutral\">Por defecto</Badge>}\n                    </td>\n                    <td>\n                      <input\n                        type=\"number\"\n                        min=\"0\"\n                        step=\"0.01\"\n                        inputMode=\"decimal\"\n                        aria-label={\"Incentivo por unidad de \" + r.name}\n                        value={draft[r.categoryId] ?? \"\"}\n                        onChange={(e) =>\n                          setDraft({ ...draft, [r.categoryId]: e.target.value })\n                        }\n",
+        "after": "      className=\"incentive-rates\"\n      aria-labelledby=\"incentive-rates-title\"\n    >\n      <div className=\"panel-heading\">\n        <h3 id=\"incentive-rates-title\">{t(\"Incentivos por categoría\")}</h3>\n      </div>\n      <p>\n        {t(\"Lo que gana la cajera por cada unidad vendida. «Venta al por mayor» paga la mitad. Cambiar una tarifa no altera lo ya ganado: cada venta guarda la tarifa vigente al cobrar.\")}\n      </p>\n      <QueryState english={english} query={query}>\n        <form onSubmit={save}>\n          <div className=\"table-wrap\">\n            <table>\n              <thead>\n                <tr>\n                  <th>{t(\"CATEGORÍA\")}</th>\n                  <th>{t(\"RD$ POR UNIDAD\")}</th>\n                </tr>\n              </thead>\n              <tbody>\n                {(query.data ?? []).map((r) => (\n                  <tr key={r.categoryId}>\n                    <td>\n                      {r.name}{\" \"}\n                      {r.isDefault && <Badge tone=\"neutral\">{t(\"Por defecto\")}</Badge>}\n                    </td>\n                    <td>\n                      <input\n                        type=\"number\"\n                        min=\"0\"\n                        step=\"0.01\"\n                        inputMode=\"decimal\"\n                        aria-label={t(\"Incentivo por unidad de \") + r.name}\n                        value={draft[r.categoryId] ?? \"\"}\n                        onChange={(e) =>\n                          setDraft({ ...draft, [r.categoryId]: e.target.value })\n                        }\n"
+      },
+      {
+        "before": "              </tbody>\n            </table>\n          </div>\n          <Button disabled={busy}>\n            {busy ? \"Guardando…\" : \"Guardar tarifas\"}\n          </Button>\n        </form>\n      </QueryState>\n    </section>\n",
+        "after": "              </tbody>\n            </table>\n          </div>\n          <Button disabled={busy}>\n            {busy ? t(\"Guardando…\") : t(\"Guardar tarifas\")}\n          </Button>\n        </form>\n      </QueryState>\n    </section>\n"
+      },
+      {
+        "before": "|| \"sin tarifas\"",
+        "after": "|| ot(\"sin tarifas\")"
+      }
+    ]
+  },
+  "QuickQuestions": {
+    "sha256": "a994526c012000a5585637981e3af0afbf6149c6264b6be5d27b2ba1bb5df435",
+    "edits": [
+      {
+        "before": "import { useEffect, useState, type ReactNode } from \"react\";\nimport { useQuery, useQueryClient } from \"@tanstack/react-query\";\nimport { ChevronRight, MessageCircleQuestion } from \"lucide-react\";\nimport { Button, Modal } from \"@fitstore/ui\";\n",
+        "after": "import { useLanguage } from \"./inicioLanguage\";\nimport { configRatesSurveyText, type ConfigRatesSurveyKey } from \"./configRatesSurveyLanguage\";\nimport { useEffect, useState, type ReactNode } from \"react\";\nimport { useQuery, useQueryClient } from \"@tanstack/react-query\";\nimport { ChevronRight, MessageCircleQuestion } from \"lucide-react\";\nimport { Button, Modal } from \"@fitstore/ui\";\n"
+      },
+      {
+        "before": "}\n\n/** Resumen de la encuesta para la administración (Configuración). */\nexport function CashierSurveySummary() {\n  const query = useQuery({\n    queryKey: [\"survey-summary\"],\n    queryFn: () =>\n      api<{\n",
+        "after": "}\n\n/** Resumen de la encuesta para la administración (Configuración). */\nexport function CashierSurveySummary() {\n  const english = useLanguage() === \"en\";\n  const t = (key: ConfigRatesSurveyKey) => configRatesSurveyText(english, key);\n  const query = useQuery({\n    queryKey: [\"survey-summary\"],\n    queryFn: () =>\n      api<{\n"
+      },
+      {
+        "before": "          texts: { name: string; text: string }[];\n        }[];\n      }>(\"/survey/summary\"),\n  });\n  const label = (k: string) => (k === \"true\" ? \"Sí\" : k === \"false\" ? \"No\" : k);\n  return (\n    <section aria-labelledby=\"survey-summary-title\">\n      <div className=\"panel-heading\">\n        <h3 id=\"survey-summary-title\">Encuesta de la caja</h3>\n      </div>\n      <QueryState query={query}>\n        <p>{query.data?.responses ?? 0} personas respondieron.</p>\n        <div className=\"table-wrap\">\n          <table>\n            <thead>\n              <tr>\n                <th>PREGUNTA</th>\n                <th>RESPUESTAS</th>\n              </tr>\n            </thead>\n            <tbody>\n              {query.data?.questions.map((q) => (\n",
+        "after": "          texts: { name: string; text: string }[];\n        }[];\n      }>(\"/survey/summary\"),\n  });\n  const label = (k: string) => (k === \"true\" ? t(\"Sí\") : k === \"false\" ? t(\"No\") : k);\n  return (\n    <section aria-labelledby=\"survey-summary-title\">\n      <div className=\"panel-heading\">\n        <h3 id=\"survey-summary-title\">{t(\"Encuesta de la caja\")}</h3>\n      </div>\n      <QueryState english={english} query={query}>\n        <p>{query.data?.responses ?? 0} {t(\"personas respondieron.\")}</p>\n        <div className=\"table-wrap\">\n          <table>\n            <thead>\n              <tr>\n                <th>{t(\"PREGUNTA\")}</th>\n                <th>{t(\"RESPUESTAS\")}</th>\n              </tr>\n            </thead>\n            <tbody>\n              {query.data?.questions.map((q) => (\n"
+      },
+      {
+        "before": "                          <div key={i}>\n                            {t.name}: {t.text}\n                          </div>\n                        ))\n                      : (q.average !== null ? `Promedio ${q.average} · ` : \"\") +\n                        Object.entries(q.counts)\n                          .map(([k, n]) => `${label(k)}: ${n}`)\n                          .join(\" · \")}\n                  </td>\n",
+        "after": "                          <div key={i}>\n                            {t.name}: {t.text}\n                          </div>\n                        ))\n                      : (q.average !== null ? `${t(\"Promedio \")}${q.average} · ` : \"\") +\n                        Object.entries(q.counts)\n                          .map(([k, n]) => `${label(k)}: ${n}`)\n                          .join(\" · \")}\n                  </td>\n"
+      }
+    ]
+  }
+}

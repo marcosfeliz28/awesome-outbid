@@ -102,6 +102,8 @@ const configSchema = z.object({
   // En varias cajas desconectadas no existe una autoridad común que pueda
   // reservar la última unidad. Por seguridad se exige una decisión explícita.
   allowOfflineSales: z.boolean().default(false),
+  // Venta sin costo (8-nov): apagado hasta que la dueña cargue los costos.
+  blockZeroCostSales: z.boolean().default(false),
   allowCreditSales: z.boolean().default(false),
   // Producto: consentimiento expreso por sucursal; nunca se activa por tener
   // las claves globales de correo e IA.
@@ -918,6 +920,7 @@ export class AdminController {
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
       dailySummaryEnabled: data.dailySummaryEnabled === true,
+      blockZeroCostSales: data.blockZeroCostSales === true,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
       requireCustomer: customerRequired(data.requireCustomer),
@@ -937,6 +940,10 @@ export class AdminController {
       typeof body === "object" &&
       body !== null &&
       Object.prototype.hasOwnProperty.call(body, "dailySummaryEnabled");
+    const hasBlockZeroCost =
+      typeof body === "object" &&
+      body !== null &&
+      Object.prototype.hasOwnProperty.call(body, "blockZeroCostSales");
     const { logo, ...config } = parse(configSchema, body);
     if (logo) checkLogo(logo);
     return this.db.$transaction(async (tx) => {
@@ -976,6 +983,9 @@ export class AdminController {
         dailySummaryEnabled: hasDailySummary
           ? config.dailySummaryEnabled === true
           : previous?.dailySummaryEnabled === true,
+        blockZeroCostSales: hasBlockZeroCost
+          ? config.blockZeroCostSales
+          : previous?.blockZeroCostSales === true,
         // Una PWA anterior no envía el límite: no se afloja ni se endurece.
         cashMovementApprovalLimit:
           config.cashMovementApprovalLimit ?? cashMovementLimit(previous),
@@ -1153,9 +1163,13 @@ export class AdminController {
     });
     // SEC-03: la lista del cambio con PIN no expone a quien tiene más
     // permisos (gerencia, administración) a una vendedora o cajera.
-    return users
-      .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions))
-      .map(({ role, ...u }) => ({ ...u, role: { name: role.name } }));
+    return (
+      users
+        // Las usuarias de GV no usan la caja de Macgen.
+        .filter((u) => u.role.name !== "gv")
+        .filter((u) => canSwitchUserTo(actor.permissions, u.role.permissions))
+        .map(({ role, ...u }) => ({ ...u, role: { name: role.name } }))
+    );
   }
   @Get("users") @Permit("*") users(@CurrentUser() actor: Actor) {
     return this.db.user.findMany({
@@ -1477,7 +1491,11 @@ export class AdminController {
   }
   @Get("audit-log") @Permit("*") auditLog(@CurrentUser() actor: Actor) {
     return this.db.auditLog.findMany({
-      where: { branchId: actor.branchId },
+      // La actividad de GV no desplaza los eventos de Macgen de esta lista.
+      where: {
+        branchId: actor.branchId,
+        NOT: { action: { startsWith: "gv_" } },
+      },
       orderBy: { createdAt: "desc" },
       take: 300,
     });

@@ -1,4 +1,5 @@
 import Dexie, { type Table } from "dexie";
+import { THEME_KEY, initialTheme, type Theme } from "./theme";
 import { create } from "zustand";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SaleInput } from "@fitstore/shared";
@@ -99,7 +100,7 @@ export const useStore = create<{
   customerId: string | null;
   globalDiscount: number;
   online: boolean;
-  theme: string;
+  theme: Theme;
   setSession: (user: User, token: string | null) => void;
   clearSession: () => void;
   add: (variant: Variant, product: Product) => void;
@@ -118,7 +119,7 @@ export const useStore = create<{
   customerId: null,
   globalDiscount: 0,
   online: navigator.onLine,
-  theme: localStorage.getItem("fitstore-theme") || "light",
+  theme: initialTheme(),
   setSession: (user, token) => set({ user, token }),
   clearSession: () =>
     set({
@@ -162,7 +163,7 @@ export const useStore = create<{
   toggleTheme: () =>
     set((state) => {
       const theme = state.theme === "light" ? "dark" : "light";
-      localStorage.setItem("fitstore-theme", theme);
+      localStorage.setItem(THEME_KEY, theme);
       return { theme };
     }),
 }));
@@ -305,7 +306,9 @@ export async function saveSession(
 // el usuario anterior. Si el servidor no responde, la sesión guardada queda
 // vencida para pedir la contraseña e intentarlo otra vez al abrir
 // (R9-offline-5).
-export async function endSession() {
+// keep: registros de `cache` que deben sobrevivir al cierre (el borrador del
+// carrito al bloquear por inactividad, 05-N2).
+export async function endSession(keep: { key: string; data: any }[] = []) {
   let revoked = true;
   try {
     await api("/auth/logout", { method: "POST", body: "{}", timeout: 8000 });
@@ -313,7 +316,7 @@ export async function endSession() {
     revoked = !isNetworkError(e);
   }
   useStore.getState().clearSession();
-  await forgetSessionData(revoked);
+  await forgetSessionData(revoked, keep);
 }
 // Privacidad al salir (G9). Se borra lo que el servidor puede volver a dar al
 // iniciar sesión: la tabla `cache` completa (catálogo, clientes, caja,
@@ -330,9 +333,15 @@ export async function endSession() {
 //   revocar la cookie de renovación (R9-offline-5).
 // - localStorage: el tema y la identidad de este equipo, que no son datos de
 //   clientes ni de la sesión.
-export async function forgetSessionData(revoked = true) {
+export async function forgetSessionData(
+  revoked = true,
+  keep: { key: string; data: any }[] = [],
+) {
   await localDB.transaction("rw", localDB.cache, async () => {
     await localDB.cache.clear();
+    // En la misma transacción que el borrado: una recarga justo después de
+    // bloquear la pantalla ya no encuentra la tabla vacía sin el borrador.
+    if (keep.length) await localDB.cache.bulkPut(keep);
     if (!revoked)
       await localDB.cache.put({ key: "session", data: { expiresAt: 0 } });
   });
@@ -457,10 +466,32 @@ async function fetchCatalog() {
     if (stable || attempt === 3) return [...byId.values()];
   }
 }
+// Último stock recibido en tiempo real por variante, con su orden de llegada.
+// Una descarga del catálogo que empezó antes de ese aviso trae un stock leído
+// antes y lo pisaba: dos cajas vendían a la vez y una se quedaba con el valor
+// viejo, sin otro aviso que lo corrigiera.
+const liveStock = new Map<string, { stock: number; seq: number }>();
+let liveSeq = 0;
+export function noteLiveStock(variantId: string, stock: number) {
+  liveStock.set(variantId, { stock, seq: ++liveSeq });
+}
 export async function loadCatalog() {
   const user = useStore.getState().user;
   if (!user) throw new Error("Inicia sesión.");
   const key = "catalog:" + user.branchId;
+  // Se aplica justo antes de devolver: guardar la copia local tarda y un aviso
+  // puede llegar mientras tanto.
+  const started = liveSeq;
+  const withLive = (products: Product[]) =>
+    products.map((p) => ({
+      ...p,
+      variants: p.variants.map((v) => {
+        const live = liveStock.get(v.id);
+        return live && live.seq > started
+          ? { ...v, stock: String(live.stock) }
+          : v;
+      }),
+    }));
   if (isOnline()) {
     let unavailable = false;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -469,7 +500,7 @@ export async function loadCatalog() {
         const products = await fetchCatalog();
         // Si llegó stock.changed durante el GET, este resultado ya es viejo.
         if (revision !== currentCatalogRevision()) continue;
-        const cached = products.map((p) => ({
+        const cached = withLive(products).map((p) => ({
           ...p,
           variants: p.variants.map(({ costAvg: removed, lots, ...v }) => {
             void removed;
@@ -484,7 +515,7 @@ export async function loadCatalog() {
         }));
         if (stillSignedIn(user.id) && revision === currentCatalogRevision())
           await localDB.cache.put({ key, data: cached });
-        return products;
+        return withLive(products);
       } catch (e) {
         // Sin respuesta del servidor se vende con la copia local (R9-offline-1).
         if (!isNetworkError(e)) throw e;
@@ -496,7 +527,7 @@ export async function loadCatalog() {
   }
   const cached = await localDB.cache.get(key);
   if (!cached) throw new Error("Conéctate una vez para descargar el catálogo.");
-  return cached.data as Product[];
+  return withLive(cached.data as Product[]);
 }
 // Lo vendido sin conexión se descuenta del catálogo de la pantalla y del de
 // este equipo: sin esto la caja volvía a vender las mismas unidades y la
@@ -593,14 +624,30 @@ export async function syncSales() {
   return total;
 }
 export const DOWNLOAD_FAILED = "No se pudo descargar el archivo.";
-export async function download(path: string, filename: string) {
-  const response = await fetch("/api" + path, {
-    headers: { Authorization: "Bearer " + useStore.getState().token },
-    credentials: "include",
-  });
-  if (response.status === 401) {
+const DOWNLOAD_TIMEOUT_MS = 120_000; // shortcut: tope fijo de encabezados; un respaldo grande podría necesitar más
+export async function download(
+  path: string,
+  filename: string,
+  retry = true,
+  timeoutMs = DOWNLOAD_TIMEOUT_MS,
+) {
+  // El tope cubre solo los encabezados: al llegar la respuesta se suelta, para
+  // que un archivo grande que se transmite despacio no se corte a mitad.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response;
+  try {
+    response = await fetch("/api" + path, {
+      headers: { Authorization: "Bearer " + useStore.getState().token },
+      credentials: "include",
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+  if (response.status === 401 && retry) {
     await refreshSession();
-    return download(path, filename);
+    return download(path, filename, false, timeoutMs);
   }
   if (!response.ok) {
     // Un 400 dice qué cambiar (por ejemplo, un período que supera el máximo
@@ -618,6 +665,55 @@ export async function download(path: string, filename: string) {
   a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// Para reimprimir: abre el PDF en una pestaña nueva en vez de forzar la
+// descarga a disco, para no obligar a buscarlo luego en Descargas. La
+// pestaña abre primero en blanco (clic síncrono, evita el bloqueador de
+// ventanas emergentes) y se navega al blob una vez descargado. Mismo tope de
+// encabezados y de un solo reintento tras refrescar sesión que download().
+export async function printPdf(
+  path: string,
+  retry = true,
+  timeoutMs = DOWNLOAD_TIMEOUT_MS,
+) {
+  const win = window.open("", "_blank");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response;
+  try {
+    response = await fetch("/api" + path, {
+      headers: { Authorization: "Bearer " + useStore.getState().token },
+      credentials: "include",
+      signal: controller.signal,
+    });
+  } catch (e) {
+    win?.close();
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+  if (response.status === 401 && retry) {
+    await refreshSession();
+    return printPdf(path, false, timeoutMs);
+  }
+  if (!response.ok) {
+    win?.close();
+    const body =
+      response.status === 400 ? await response.json().catch(() => null) : null;
+    throw new Error(
+      typeof body?.message === "string" ? body.message : DOWNLOAD_FAILED,
+    );
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  if (!win) {
+    // Bloqueado por el navegador: igual se puede ver/imprimir en esta pestaña.
+    window.location.href = url;
+    return;
+  }
+  win.location.href = url;
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 let goodsSync: Promise<void> | null = null;

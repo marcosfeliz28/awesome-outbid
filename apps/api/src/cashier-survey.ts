@@ -38,7 +38,7 @@ export class CashierSurveyController {
   }
 
   @Get("summary")
-  @Permit("*")
+  @Permit("reports:read")
   async summary(@CurrentUser() actor: Actor) {
     const rows = await this.db.cashierSurvey.findMany({
       where: { branchId: actor.branchId },

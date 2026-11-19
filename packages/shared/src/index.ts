@@ -334,8 +334,9 @@ export const lineTotals = (
   const gross = d(qty).times(price);
   if (discountAmount < 0 || discountAmount > gross.toNumber())
     throw new Error("El descuento por monto supera el importe de la línea.");
+  // El descuento por línea nunca pasa de 100 %: el total no sale negativo.
   const discount = Decimal.max(
-    gross.times(discountPercent).div(100),
+    gross.times(Math.min(discountPercent, 100)).div(100),
     discountAmount,
   );
   const amount = gross.minus(discount);
@@ -854,11 +855,21 @@ export const permissions: Record<string, string[]> = {
     "customers:erase",
     "promotions:write",
     "alerts:write",
+    "gv:read",
+    "gv:write",
+    "gv:reports",
+    // Verificar o rechazar transferencias de GV: gerencia, no el rol gv.
+    "gv:verify",
   ],
   seller: ["catalog:read", "sale:write", "cash:write", "customers:write"],
   warehouse: ["catalog:read", "inventory:write", "purchase:write"],
   // SOP-01: solo catálogo y existencias, sin costos (safe), clientes, ventas ni reportes.
   support: ["catalog:read"],
+  // GV Makeup Studio (dueña, 25-oct): sólo cursos, inscripciones y pagos de GV.
+  gv: ["gv:read", "gv:write", "gv:reports"],
+  // Gerente de seguimiento de GV (dueña, 6-nov): ve, reporta y verifica
+  // transferencias; no cobra, no abre caja, no ve MacGen.
+  gerente_gv: ["gv:read", "gv:reports", "gv:verify"],
 };
 export const can = (grants: string[], permission: string) =>
   grants.includes("*") || grants.includes(permission);

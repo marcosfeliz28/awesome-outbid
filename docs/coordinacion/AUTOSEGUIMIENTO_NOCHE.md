@@ -1,0 +1,2 @@
+# Autoseguimiento de la noche (Nexora 1)
+Revisión cada 15 min (rutinas :01, :16, :31, :46) hasta ver `DEEPSEEK-TERMINADO` en `PROGRESO_DEEPSEEK_NOCHE.md` (rama `claude-pc/cola2-26oct` o `nexora-cloud`). En cada ronda: `git fetch`; `LISTA: deepseek/*` o de ChatGPT; auditar el diff; mezclar en `producto-nexora` solo con 3 CI verdes y sin dinero/mercancía/migraciones/CI/instalador; desplegar solo web/API del producto; la tienda no se toca sin cajas cerradas y OK de la dueña. Al ver `DEEPSEEK-TERMINADO`: recibir, resumir a la dueña y desactivar las 4 rutinas.

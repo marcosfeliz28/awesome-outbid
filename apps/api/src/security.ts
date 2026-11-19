@@ -222,9 +222,12 @@ export async function verifyAttempt(
             };
           budgetRows.push(budgetRow);
         }
+        // Un cambio o restablecimiento de contraseña borra las filas de la
+        // cuenta sin este candado: si desaparece en medio, ya está en cero
+        // (updateMany) o se vuelve a crear (upsert), nunca un P2025 (404).
         if (row.lockedUntil)
-          await tx.authAttempt.update({
-            where: tenantUnique("key", key),
+          await tx.authAttempt.updateMany({
+            where: { key },
             data: {
               failedAttempts: 0,
               lockedUntil: null,
@@ -233,8 +236,8 @@ export async function verifyAttempt(
           });
         const matched = await verify(tx);
         if (matched) {
-          await tx.authAttempt.update({
-            where: tenantUnique("key", key),
+          await tx.authAttempt.updateMany({
+            where: { key },
             data: {
               failedAttempts: 0,
               lockedUntil: null,
@@ -260,16 +263,18 @@ export async function verifyAttempt(
             !start || now.getTime() - start.getTime() >= budget.windowMs;
           const failedAttempts = fresh ? 1 : current.failedAttempts + 1;
           const windowStartedAt = fresh ? now : start;
-          await tx.authAttempt.update({
+          const data = {
+            failedAttempts,
+            windowStartedAt,
+            lockedUntil:
+              failedAttempts >= budget.max
+                ? new Date(windowStartedAt.getTime() + budget.windowMs)
+                : null,
+          };
+          await tx.authAttempt.upsert({
             where: tenantUnique("key", budget.key),
-            data: {
-              failedAttempts,
-              windowStartedAt,
-              lockedUntil:
-                failedAttempts >= budget.max
-                  ? new Date(windowStartedAt.getTime() + budget.windowMs)
-                  : null,
-            },
+            create: { key: budget.key, ...data },
+            update: data,
           });
           if (failedAttempts === budget.max)
             await hooks.onLocked?.(tx, budget.scope);

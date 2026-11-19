@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 // D-B7 (auditoría 06 v2): el código y las migraciones asumen que la sesión de
 // PostgreSQL trabaja en UTC (las columnas son `timestamp` sin zona y Prisma las
 // escribe en UTC). Render fija TimeZone=UTC en la conexión (with-cloud-env.mjs),
@@ -38,12 +40,12 @@ export const timeZoneWarning = (name: string) =>
  * impide el arranque: es un diagnóstico.
  */
 export async function checkDatabaseTimeZone(
-  db: { $queryRawUnsafe: (query: string) => Promise<unknown> },
+  db: { $queryRaw: (query: Prisma.Sql) => Promise<unknown> },
   warn: (message: string) => void = console.warn,
 ): Promise<string | null> {
   try {
-    const rows = (await db.$queryRawUnsafe(
-      "SELECT current_setting('TimeZone') AS tz",
+    const rows = (await db.$queryRaw(
+      Prisma.sql`SELECT current_setting('TimeZone') AS tz`,
     )) as { tz?: unknown }[];
     const name = rows?.[0]?.tz;
     if (typeof name !== "string") return null;

@@ -1,0 +1,65 @@
+{
+  "base": "1d118b16e779ab41827d60daee0e59295747f643",
+  "date": "2026-11-14",
+  "cases": [
+    {
+      "width": 1366,
+      "requests": [
+        {
+          "url": "/api/dashboard/summary?from=2026-11-01&to=2026-11-14",
+          "time": 1794659974696,
+          "timeMsFromRetry": -67
+        }
+      ],
+      "responses": [
+        {
+          "url": "/api/dashboard/summary?from=2026-11-01&to=2026-11-14",
+          "status": 200,
+          "time": 1794659974699,
+          "timeMsFromRetry": -64
+        }
+      ],
+      "retry": {
+        "time": 1794659974763,
+        "newSummaryRequests": 0,
+        "alertRemains": true,
+        "summaryVisible": false,
+        "rootChildren": 2
+      },
+      "beforeCart": "Venta actual\nCaja abierta\n1 artículos\nAdriana Torres\nElegir cliente · F4\nVenta al por mayor\nBandas Resistance\nLila\n1\n%\nRD$\nRD$ 300.00\nSubtotal\nRD$ 300.00\nDescuento global\n%\n−RD$ 0.00\nITBIS incluido\nRD$ 45.76\nTotal a cobrar\nRD$ 300.00\nCobrar\nF12\nEn espera\nCotizar\nLimpiar\nCada venta se registra con tu usuario.",
+      "afterCart": "Venta actual\nCaja abierta\n1 artículos\nAdriana Torres\nElegir cliente · F4\nVenta al por mayor\nBandas Resistance\nLila\n1\n%\nRD$\nRD$ 300.00\nSubtotal\nRD$ 300.00\nDescuento global\n%\n−RD$ 0.00\nITBIS incluido\nRD$ 45.76\nTotal a cobrar\nRD$ 300.00\nCobrar\nF12\nEn espera\nCotizar\nLimpiar\nCada venta se registra con tu usuario.",
+      "cartIdentical": true,
+      "returnHash": "#pos"
+    },
+    {
+      "width": 390,
+      "requests": [
+        {
+          "url": "/api/dashboard/summary?from=2026-11-01&to=2026-11-14",
+          "time": 1794660606910,
+          "timeMsFromRetry": -38
+        }
+      ],
+      "responses": [
+        {
+          "url": "/api/dashboard/summary?from=2026-11-01&to=2026-11-14",
+          "status": 200,
+          "time": 1794660606914,
+          "timeMsFromRetry": -34
+        }
+      ],
+      "retry": {
+        "time": 1794660606948,
+        "newSummaryRequests": 0,
+        "alertRemains": true,
+        "summaryVisible": false,
+        "rootChildren": 1
+      },
+      "beforeCart": "Venta actual\nCaja abierta\n1 artículos\nAdriana Torres\nElegir cliente · F4\nVenta al por mayor\nBandas Resistance\nLila\n1\n%\nRD$\nRD$ 300.00\nSubtotal\nRD$ 300.00\nDescuento global\n%\n−RD$ 0.00\nITBIS incluido\nRD$ 45.76\nTotal a cobrar\nRD$ 300.00\nEn espera\nCotizar\nLimpiar\nCada venta se registra con tu usuario.",
+      "afterCart": "Venta actual\nCaja abierta\n1 artículos\nAdriana Torres\nElegir cliente · F4\nVenta al por mayor\nBandas Resistance\nLila\n1\n%\nRD$\nRD$ 300.00\nSubtotal\nRD$ 300.00\nDescuento global\n%\n−RD$ 0.00\nITBIS incluido\nRD$ 45.76\nTotal a cobrar\nRD$ 300.00\nEn espera\nCotizar\nLimpiar\nCada venta se registra con tu usuario.",
+      "cartIdentical": true,
+      "returnHash": "#pos",
+      "setupNote": "Avisos transitorios cerrados por su boton antes de capturar"
+    }
+  ]
+}

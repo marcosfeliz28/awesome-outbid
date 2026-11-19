@@ -1,0 +1,216 @@
+{
+  "AiUsage.tsx": {
+    "sha256": "82e251b507bfe931ab92ed99c041621cf02c5ca300b46ae30884bb366e824970",
+    "edits": [
+      {
+        "before": "import \"./aiUsage.css\";",
+        "after": "import \"./aiUsage.css\";\nimport { useLanguage } from \"./inicioLanguage\";"
+      },
+      {
+        "before": "export const usd = (n: number | null) =>\n  n == null ? \"sin precio\" : \"US$\" + n.toFixed(4);",
+        "after": "export const usd = (n: number | null, en = false) =>\n  n == null ? (en ? \"unpriced\" : \"sin precio\") : \"US$\" + n.toFixed(4);"
+      },
+      {
+        "before": "function Rows({ title, lines }: { title: string; lines: Line[] }) {",
+        "after": "function Rows({ title, lines }: { title: string; lines: Line[] }) {\n  const en = useLanguage() === \"en\";"
+      },
+      {
+        "before": "{l.calls} llamadas · {l.inputTokens + l.outputTokens} tokens ·{\" \"}\n              {usd(l.costUsd)}",
+        "after": "{l.calls} {en ? \"calls\" : \"llamadas\"} · {l.inputTokens + l.outputTokens} tokens ·{\" \"}\n              {usd(l.costUsd, en)}"
+      },
+      {
+        "before": "function AiUsagePanel() {",
+        "after": "function AiUsagePanel() {\n  const en = useLanguage() === \"en\";"
+      },
+      {
+        "before": ">Uso y costo de IA<",
+        "after": ">{en ? \"AI usage and cost\" : \"Uso y costo de IA\"}<"
+      },
+      {
+        "before": ">Cargando…<",
+        "after": ">{en ? \"Loading…\" : \"Cargando…\"}<"
+      },
+      {
+        "before": ">No se pudo cargar el uso de IA.<",
+        "after": ">{en ? \"AI usage could not be loaded.\" : \"No se pudo cargar el uso de IA.\"}<"
+      },
+      {
+        "before": "Del {d.from} al {d.to}:{\" \"}",
+        "after": "{en ? \"From\" : \"Del\"} {d.from} {en ? \"to\" : \"al\"} {d.to}:{\" \"}"
+      },
+      {
+        "before": "`${d.total.calls} llamadas, ${usd(d.total.costUsd)}`",
+        "after": "`${d.total.calls} ${en ? \"calls\" : \"llamadas\"}, ${usd(d.total.costUsd, en)}`"
+      },
+      {
+        "before": ": \"sin uso\"}",
+        "after": ": en ? \"no usage\" : \"sin uso\"}"
+      },
+      {
+        "before": ". «sin precio» = falta cargar el precio del modelo.",
+        "after": "{en ? \". “unpriced” = the model price has not been entered.\" : \". «sin precio» = falta cargar el precio del modelo.\"}"
+      },
+      {
+        "before": "title=\"Por función\"",
+        "after": "title={en ? \"By feature\" : \"Por función\"}"
+      },
+      {
+        "before": "title=\"Por usuario\"",
+        "after": "title={en ? \"By user\" : \"Por usuario\"}"
+      },
+      {
+        "before": "title=\"Por día\"",
+        "after": "title={en ? \"By day\" : \"Por día\"}"
+      }
+    ]
+  },
+  "DriveBackup.tsx": {
+    "sha256": "915079ad87d8d2de74b47ae7b58a202c9e0dd88c086cca239d896725003c1320",
+    "edits": [
+      {
+        "before": "import \"./driveBackup.css\";",
+        "after": "import \"./driveBackup.css\";\nimport { useLanguage } from \"./inicioLanguage\";"
+      },
+      {
+        "before": "const when = (value: string) =>\n  new Intl.DateTimeFormat(\"es-DO\", {",
+        "after": "const when = (value: string, en = false) =>\n  new Intl.DateTimeFormat(en ? \"en-US\" : \"es-DO\", {"
+      },
+      {
+        "before": "function DriveBackupPanel() {",
+        "after": "function DriveBackupPanel() {\n  const en = useLanguage() === \"en\";"
+      },
+      {
+        "before": "\"No configurado\"] as const)",
+        "after": "(en ? \"Not configured\" : \"No configurado\")] as const)"
+      },
+      {
+        "before": "\"Respaldando…\"] as const)",
+        "after": "(en ? \"Backing up\\u2026\" : \"Respaldando…\")] as const)"
+      },
+      {
+        "before": "\"Hay que reconectar\"] as const)",
+        "after": "(en ? \"Reconnect required\" : \"Hay que reconectar\")] as const)"
+      },
+      {
+        "before": "\"Sin conectar\"] as const)",
+        "after": "(en ? \"Not connected\" : \"Sin conectar\")] as const)"
+      },
+      {
+        "before": "\"Último intento falló\"] as const)",
+        "after": "(en ? \"Last attempt failed\" : \"Último intento falló\")] as const)"
+      },
+      {
+        "before": "\"Conectado\"] as const)",
+        "after": "(en ? \"Connected\" : \"Conectado\")] as const)"
+      },
+      {
+        "before": ">Respaldo diario a Google Drive<",
+        "after": ">{en ? \"Daily Google Drive backup\" : \"Respaldo diario a Google Drive\"}<"
+      },
+      {
+        "before": ">Detalle para el técnico<",
+        "after": ">{en ? \"Technical details\" : \"Detalle para el técnico\"}<"
+      },
+      {
+        "before": ">Respaldando ahora…<",
+        "after": ">{en ? \"Backing up now…\" : \"Respaldando ahora…\"}<"
+      },
+      {
+        "before": ">Todavía no hay ningún respaldo.<",
+        "after": ">{en ? \"No backups yet.\" : \"Todavía no hay ningún respaldo.\"}<"
+      },
+      {
+        "before": "Cada madrugada (3:30) se guarda una copia completa y cifrada de la base\n        de datos en tu Google Drive, en la carpeta «Nexora POS respaldos». Se\n        guardan los últimos 365 días y una copia de cada mes durante 10 años.",
+        "after": "{en ? \"Every morning at 3:30, a full encrypted database copy is saved to your Google Drive in the “Nexora POS respaldos” folder. The last 365 days and one monthly copy for 10 years are retained.\" : \"Cada madrugada (3:30) se guarda una copia completa y cifrada de la base\\n        de datos en tu Google Drive, en la carpeta «Nexora POS respaldos». Se\\n        guardan los últimos 365 días y una copia de cada mes durante 10 años.\"}"
+      },
+      {
+        "before": "No se pudo leer el estado del respaldo. Recarga la página.",
+        "after": "{en ? \"The backup status could not be loaded. Reload the page.\" : \"No se pudo leer el estado del respaldo. Recarga la página.\"}"
+      },
+      {
+        "before": "Falta configurarlo en el servidor. Pide a quien instaló Norexos que\n            siga la guía «Respaldo diario a Google Drive»\n            (docs/RESPALDO_DRIVE.md).",
+        "after": "{en ? \"Server setup is required. Ask the Norexos installer to follow the daily Google Drive backup guide (docs/RESPALDO_DRIVE.md).\" : \"Falta configurarlo en el servidor. Pide a quien instaló Norexos que\\n            siga la guía «Respaldo diario a Google Drive»\\n            (docs/RESPALDO_DRIVE.md).\"}"
+      },
+      {
+        "before": "<p>Falta: {data.missing.join(\", \")}.</p>",
+        "after": "<p>{en ? \"Missing:\" : \"Falta:\"} {data.missing.join(\", \")}.</p>"
+      },
+      {
+        "before": "Dirección de regreso para Google:",
+        "after": "{en ? \"Google redirect URI:\" : \"Dirección de regreso para Google:\"}"
+      },
+      {
+        "before": "Google retiró el permiso para guardar los respaldos. Pulsa\n              «Conectar con Google» otra vez.",
+        "after": "{en ? \"Google revoked backup permission. Select “Connect with Google” again.\" : \"Google retiró el permiso para guardar los respaldos. Pulsa\\n              «Conectar con Google» otra vez.\"}"
+      },
+      {
+        "before": "Cuenta de Google:",
+        "after": "{en ? \"Google account:\" : \"Cuenta de Google:\"}"
+      },
+      {
+        "before": "Tarda unos minutos; puedes\n              seguir trabajando.",
+        "after": "{en ? \"This takes a few minutes; you can continue working.\" : \"Tarda unos minutos; puedes\\n              seguir trabajando.\"}"
+      },
+      {
+        "before": "Último respaldo bueno:",
+        "after": "{en ? \"Last successful backup:\" : \"Último respaldo bueno:\"}"
+      },
+      {
+        "before": "when(data.lastSuccess.at)",
+        "after": "when(data.lastSuccess.at, en)"
+      },
+      {
+        "before": "when(data.lastRun.at)",
+        "after": "when(data.lastRun.at, en)"
+      },
+      {
+        "before": "when(data.nextRunAt)",
+        "after": "when(data.nextRunAt, en)"
+      },
+      {
+        "before": "El último intento ({when(data.lastRun.at, en)}) falló:{\" \"}",
+        "after": "{en ? \"The last attempt\" : \"El último intento\"} ({when(data.lastRun.at, en)}) {en ? \"failed:\" : \"falló:\"}{\" \"}"
+      },
+      {
+        "before": "Próximo respaldo automático:",
+        "after": "{en ? \"Next automatic backup:\" : \"Próximo respaldo automático:\"}"
+      },
+      {
+        "before": "\"Si falla varias veces seguidas, te avisamos por Telegram.\"",
+        "after": "(en ? \"Repeated failures will be reported via Telegram.\" : \"Si falla varias veces seguidas, te avisamos por Telegram.\")"
+      },
+      {
+        "before": "\"Consejo: activa los avisos por Telegram para enterarte si un respaldo falla.\"",
+        "after": "(en ? \"Tip: enable Telegram alerts to be notified if a backup fails.\" : \"Consejo: activa los avisos por Telegram para enterarte si un respaldo falla.\")"
+      },
+      {
+        "before": "{busy === \"connect\" ? \"Abriendo Google…\" : \"Conectar con Google\"}",
+        "after": "{busy === \"connect\" ? (en ? \"Opening Google…\" : \"Abriendo Google…\") : (en ? \"Connect with Google\" : \"Conectar con Google\")}"
+      },
+      {
+        "before": "? \"Respaldando…\"\n                  : \"Respaldar ahora\"",
+        "after": "? (en ? \"Backing up…\" : \"Respaldando…\")\n                  : (en ? \"Back up now\" : \"Respaldar ahora\")"
+      },
+      {
+        "before": "\n                Desconectar\n",
+        "after": "\n                {en ? \"Disconnect\" : \"Desconectar\"}\n"
+      },
+      {
+        "before": "title=\"¿Desconectar Google Drive?\"",
+        "after": "title={en ? \"Disconnect Google Drive?\" : \"¿Desconectar Google Drive?\"}\n          closeLabel={en ? \"Close\" : \"Cerrar\"}"
+      },
+      {
+        "before": "Se dejarán de hacer respaldos diarios. Las copias que ya están en tu\n            Google Drive no se borran.",
+        "after": "{en ? \"Daily backups will stop. Existing copies in your Google Drive will not be deleted.\" : \"Se dejarán de hacer respaldos diarios. Las copias que ya están en tu\\n            Google Drive no se borran.\"}"
+      },
+      {
+        "before": "{busy === \"disconnect\" ? \"Desconectando…\" : \"Sí, desconectar\"}",
+        "after": "{busy === \"disconnect\" ? (en ? \"Disconnecting…\" : \"Desconectando…\") : (en ? \"Yes, disconnect\" : \"Sí, desconectar\")}"
+      },
+      {
+        "before": "\n              Cancelar\n",
+        "after": "\n              {en ? \"Cancel\" : \"Cancelar\"}\n"
+      }
+    ]
+  }
+}

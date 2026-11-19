@@ -1,0 +1,226 @@
+{
+  "base": "1d118b16e779ab41827d60daee0e59295747f643",
+  "date": "2026-11-14",
+  "cases": [
+    {
+      "width": 1366,
+      "role": "vendedor",
+      "totalCredits": 15,
+      "pendingTotal": 4500,
+      "searchLabel": "Buscar por cliente, factura o teléfono",
+      "cases": [
+        {
+          "name": "nombre-acento",
+          "query": "María Jiménez",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000858 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nMaría Jiménez · •••••••006 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "nombre-sin-acento",
+          "query": "maria jimenez",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000858 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nMaría Jiménez · •••••••006 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "factura",
+          "query": "FS-0000861",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000861 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nValentina Ramos · •••••••007 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "telefono-sufijo",
+          "query": "0-0-7",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000861 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nValentina Ramos · •••••••007 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "telefono-completo",
+          "query": "1-809-555-0007",
+          "expected": 0,
+          "count": 0,
+          "status": "0 de 15 en los resultados cargados",
+          "emptyVisible": true,
+          "newListRequests": 0,
+          "firstRow": null
+        },
+        {
+          "name": "sin-coincidencias",
+          "query": "zzzinexistente",
+          "expected": 0,
+          "count": 0,
+          "status": "0 de 15 en los resultados cargados",
+          "emptyVisible": true,
+          "newListRequests": 0,
+          "firstRow": null
+        },
+        {
+          "name": "limpiar",
+          "query": "",
+          "expected": 15,
+          "count": 15,
+          "status": null,
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000847 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:22 a. m.\nLleva 1 día sin cobrar\nAdriana Torres · •••••••010 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        }
+      ],
+      "searchInputType": "search"
+    },
+    {
+      "width": 1366,
+      "role": "admin",
+      "totalCredits": 15,
+      "pendingTotal": 4500,
+      "searchLabel": "Buscar por cliente, factura o teléfono",
+      "cases": [
+        {
+          "name": "telefono-guiones",
+          "query": "1-809-555-0007",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000861 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nValentina Ramos · 18095550007 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "telefono-digitos",
+          "query": "18095550007",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000861 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nValentina Ramos · 18095550007 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        }
+      ],
+      "searchInputType": "search"
+    },
+    {
+      "width": 390,
+      "role": "vendedor",
+      "totalCredits": 15,
+      "pendingTotal": 4500,
+      "searchLabel": "Buscar por cliente, factura o teléfono",
+      "cases": [
+        {
+          "name": "nombre-acento",
+          "query": "María Jiménez",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000858 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nMaría Jiménez · •••••••006 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "nombre-sin-acento",
+          "query": "maria jimenez",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000858 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nMaría Jiménez · •••••••006 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "factura",
+          "query": "FS-0000861",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000861 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nValentina Ramos · •••••••007 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "telefono-sufijo",
+          "query": "0-0-7",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000861 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nValentina Ramos · •••••••007 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "telefono-completo",
+          "query": "1-809-555-0007",
+          "expected": 0,
+          "count": 0,
+          "status": "0 de 15 en los resultados cargados",
+          "emptyVisible": true,
+          "newListRequests": 0,
+          "firstRow": null
+        },
+        {
+          "name": "sin-coincidencias",
+          "query": "zzzinexistente",
+          "expected": 0,
+          "count": 0,
+          "status": "0 de 15 en los resultados cargados",
+          "emptyVisible": true,
+          "newListRequests": 0,
+          "firstRow": null
+        },
+        {
+          "name": "limpiar",
+          "query": "",
+          "expected": 15,
+          "count": 15,
+          "status": null,
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000847 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:22 a. m.\nLleva 1 día sin cobrar\nAdriana Torres · •••••••010 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        }
+      ],
+      "searchInputType": "search"
+    },
+    {
+      "width": 390,
+      "role": "admin",
+      "totalCredits": 15,
+      "pendingTotal": 4500,
+      "searchLabel": "Buscar por cliente, factura o teléfono",
+      "cases": [
+        {
+          "name": "telefono-guiones",
+          "query": "1-809-555-0007",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000861 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nValentina Ramos · 18095550007 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        },
+        {
+          "name": "telefono-digitos",
+          "query": "18095550007",
+          "expected": 1,
+          "count": 1,
+          "status": "1 de 15 en los resultados cargados",
+          "emptyVisible": false,
+          "newListRequests": 0,
+          "firstRow": "FS-0000861 Abierto Crédito\nDía de la venta: 13/11/2026, 7:18:23 a. m.\nLleva 1 día sin cobrar\nValentina Ramos · 18095550007 · Vendió Valeria Rivera\nTotal RD$ 300.00 · Cobrado RD$ 0.00 · Pendiente RD$ 300.00\nRD$ 300.00\nRegistrar cobro"
+        }
+      ],
+      "searchInputType": "search"
+    }
+  ]
+}

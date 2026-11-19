@@ -9,6 +9,7 @@ import { can } from "@fitstore/shared";
 import { api, post, useStore } from "./api";
 import { toast } from "./helpers";
 import "./driveBackup.css";
+import { useLanguage } from "./inicioLanguage";
 
 export type DriveBackupStatus = {
   configured: boolean;
@@ -60,8 +61,8 @@ export const DRIVE_RESULT: Record<string, [string, boolean]> = {
   ],
 };
 
-const when = (value: string) =>
-  new Intl.DateTimeFormat("es-DO", {
+const when = (value: string, en = false) =>
+  new Intl.DateTimeFormat(en ? "en-US" : "es-DO", {
     timeZone: "America/Santo_Domingo",
     day: "numeric",
     month: "long",
@@ -82,6 +83,7 @@ export function DriveBackupCard() {
 }
 
 function DriveBackupPanel() {
+  const en = useLanguage() === "en";
   const client = useQueryClient();
   const [busy, setBusy] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -154,47 +156,43 @@ function DriveBackupPanel() {
   const badge = !data
     ? null
     : !data.configured
-      ? (["neutral", "No configurado"] as const)
+      ? (["neutral", (en ? "Not configured" : "No configurado")] as const)
       : data.running
-        ? (["violet", "Respaldando…"] as const)
+        ? (["violet", (en ? "Backing up\u2026" : "Respaldando…")] as const)
         : data.needsReconnect
-          ? (["danger", "Hay que reconectar"] as const)
+          ? (["danger", (en ? "Reconnect required" : "Hay que reconectar")] as const)
           : !data.connected
-            ? (["neutral", "Sin conectar"] as const)
+            ? (["neutral", (en ? "Not connected" : "Sin conectar")] as const)
             : data.lastRun?.status === "failed"
-              ? (["danger", "Último intento falló"] as const)
-              : (["success", "Conectado"] as const);
+              ? (["danger", (en ? "Last attempt failed" : "Último intento falló")] as const)
+              : (["success", (en ? "Connected" : "Conectado")] as const);
 
   return (
     <section className="drive-card" aria-labelledby="drive-title">
       <div className="panel-heading">
-        <h3 id="drive-title">Respaldo diario a Google Drive</h3>
+        <h3 id="drive-title">{en ? "Daily Google Drive backup" : "Respaldo diario a Google Drive"}</h3>
         {badge && <Badge tone={badge[0]}>{badge[1]}</Badge>}
       </div>
       <p>
-        Cada madrugada (3:30) se guarda una copia completa y cifrada de la base
-        de datos en tu Google Drive, en la carpeta «Nexora POS respaldos». Se
-        guardan los últimos 365 días y una copia de cada mes durante 10 años.
+        {en ? "Every morning at 3:30, a full encrypted database copy is saved to your Google Drive in the “Nexora POS respaldos” folder. The last 365 days and one monthly copy for 10 years are retained." : "Cada madrugada (3:30) se guarda una copia completa y cifrada de la base\n        de datos en tu Google Drive, en la carpeta «Nexora POS respaldos». Se\n        guardan los últimos 365 días y una copia de cada mes durante 10 años."}
       </p>
       {status.isError && (
         <p className="drive-error" role="alert">
-          No se pudo leer el estado del respaldo. Recarga la página.
+          {en ? "The backup status could not be loaded. Reload the page." : "No se pudo leer el estado del respaldo. Recarga la página."}
         </p>
       )}
       {data && !data.configured && (
         <>
           <p>
-            Falta configurarlo en el servidor. Pide a quien instaló Norexos que
-            siga la guía «Respaldo diario a Google Drive»
-            (docs/RESPALDO_DRIVE.md).
+            {en ? "Server setup is required. Ask the Norexos installer to follow the daily Google Drive backup guide (docs/RESPALDO_DRIVE.md)." : "Falta configurarlo en el servidor. Pide a quien instaló Norexos que\n            siga la guía «Respaldo diario a Google Drive»\n            (docs/RESPALDO_DRIVE.md)."}
           </p>
           {/* 05-N10: los nombres de variables y la dirección de regreso son
               para el técnico; plegados, no ocupan la pantalla de la dueña. */}
           <details className="drive-details">
-            <summary>Detalle para el técnico</summary>
-            <p>Falta: {data.missing.join(", ")}.</p>
+            <summary>{en ? "Technical details" : "Detalle para el técnico"}</summary>
+            <p>{en ? "Missing:" : "Falta:"} {data.missing.join(", ")}.</p>
             <p>
-              Dirección de regreso para Google:{" "}
+              {en ? "Google redirect URI:" : "Dirección de regreso para Google:"}{" "}
               <code className="drive-code">{data.redirectUri}</code>
             </p>
           </details>
@@ -204,35 +202,33 @@ function DriveBackupPanel() {
         <div className="drive-state" aria-live="polite">
           {data.needsReconnect && (
             <p className="drive-error" role="alert">
-              Google retiró el permiso para guardar los respaldos. Pulsa
-              «Conectar con Google» otra vez.
+              {en ? "Google revoked backup permission. Select “Connect with Google” again." : "Google retiró el permiso para guardar los respaldos. Pulsa\n              «Conectar con Google» otra vez."}
             </p>
           )}
           {data.connected && data.account && (
             <p>
-              Cuenta de Google: <strong>{data.account}</strong>
+              {en ? "Google account:" : "Cuenta de Google:"} <strong>{data.account}</strong>
             </p>
           )}
           {data.running && (
             <p>
-              <strong>Respaldando ahora…</strong> Tarda unos minutos; puedes
-              seguir trabajando.
+              <strong>{en ? "Backing up now…" : "Respaldando ahora…"}</strong> {en ? "This takes a few minutes; you can continue working." : "Tarda unos minutos; puedes\n              seguir trabajando."}
             </p>
           )}
           {data.lastSuccess ? (
             <p>
-              Último respaldo bueno:{" "}
-              <strong>{when(data.lastSuccess.at)}</strong>
+              {en ? "Last successful backup:" : "Último respaldo bueno:"}{" "}
+              <strong>{when(data.lastSuccess.at, en)}</strong>
               {data.lastSuccess.size
                 ? ` · ${sizeLabel(data.lastSuccess.size)}`
                 : ""}
             </p>
           ) : (
-            data.connected && <p>Todavía no hay ningún respaldo.</p>
+            data.connected && <p>{en ? "No backups yet." : "Todavía no hay ningún respaldo."}</p>
           )}
           {data.lastRun?.status === "failed" && (
             <p className="drive-error">
-              El último intento ({when(data.lastRun.at)}) falló:{" "}
+              {en ? "The last attempt" : "El último intento"} ({when(data.lastRun.at, en)}) {en ? "failed:" : "falló:"}{" "}
               {data.lastRun.error}
             </p>
           )}
@@ -240,13 +236,13 @@ function DriveBackupPanel() {
             <p className="drive-warning">{data.lastRun.error}</p>
           )}
           {data.connected && data.nextRunAt && !data.running && (
-            <p>Próximo respaldo automático: {when(data.nextRunAt)}</p>
+            <p>{en ? "Next automatic backup:" : "Próximo respaldo automático:"} {when(data.nextRunAt, en)}</p>
           )}
           {data.connected && (
             <p>
               {data.telegramAlerts
-                ? "Si falla varias veces seguidas, te avisamos por Telegram."
-                : "Consejo: activa los avisos por Telegram para enterarte si un respaldo falla."}
+                ? (en ? "Repeated failures will be reported via Telegram." : "Si falla varias veces seguidas, te avisamos por Telegram.")
+                : (en ? "Tip: enable Telegram alerts to be notified if a backup fails." : "Consejo: activa los avisos por Telegram para enterarte si un respaldo falla.")}
             </p>
           )}
         </div>
@@ -255,21 +251,21 @@ function DriveBackupPanel() {
         <div className="drive-actions">
           {!data.connected ? (
             <Button onClick={connect} disabled={!!busy}>
-              {busy === "connect" ? "Abriendo Google…" : "Conectar con Google"}
+              {busy === "connect" ? (en ? "Opening Google…" : "Abriendo Google…") : (en ? "Connect with Google" : "Conectar con Google")}
             </Button>
           ) : (
             <>
               <Button onClick={runNow} disabled={!!busy || data.running}>
                 {busy === "run" || data.running
-                  ? "Respaldando…"
-                  : "Respaldar ahora"}
+                  ? (en ? "Backing up…" : "Respaldando…")
+                  : (en ? "Back up now" : "Respaldar ahora")}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setConfirming(true)}
                 disabled={!!busy}
               >
-                Desconectar
+                {en ? "Disconnect" : "Desconectar"}
               </Button>
             </>
           )}
@@ -278,12 +274,12 @@ function DriveBackupPanel() {
       {confirming && (
         <Modal
           open
-          title="¿Desconectar Google Drive?"
+          title={en ? "Disconnect Google Drive?" : "¿Desconectar Google Drive?"}
+          closeLabel={en ? "Close" : "Cerrar"}
           onClose={() => setConfirming(false)}
         >
           <p>
-            Se dejarán de hacer respaldos diarios. Las copias que ya están en tu
-            Google Drive no se borran.
+            {en ? "Daily backups will stop. Existing copies in your Google Drive will not be deleted." : "Se dejarán de hacer respaldos diarios. Las copias que ya están en tu\n            Google Drive no se borran."}
           </p>
           <div className="drive-actions">
             <Button
@@ -291,10 +287,10 @@ function DriveBackupPanel() {
               onClick={disconnect}
               disabled={busy === "disconnect"}
             >
-              {busy === "disconnect" ? "Desconectando…" : "Sí, desconectar"}
+              {busy === "disconnect" ? (en ? "Disconnecting…" : "Desconectando…") : (en ? "Yes, disconnect" : "Sí, desconectar")}
             </Button>
             <Button variant="secondary" onClick={() => setConfirming(false)}>
-              Cancelar
+              {en ? "Cancel" : "Cancelar"}
             </Button>
           </div>
         </Modal>

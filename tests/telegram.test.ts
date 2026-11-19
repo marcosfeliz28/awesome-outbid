@@ -103,6 +103,9 @@ async function startApi(env: Record<string, string | undefined>) {
   const childEnv: Record<string, string> = {};
   for (const [k, v] of Object.entries({
     ...process.env,
+    // La retención (primera vuelta 60 s después de arrancar) borraría los
+    // avisos sembrados de la prueba de purga: aquí sólo purga el trabajador.
+    NEXORA_RETENTION: "off",
     ...env,
     PORT: String(port),
   }))
@@ -768,7 +771,10 @@ describe("Telegram · avisos de facturas", () => {
         `INSERT INTO "NotificationOutbox"
            (id, "eventType", "refId", payload, status, "nextAttemptAt", "createdAt", "sentAt")
          VALUES ($1::uuid, 'qa.purge', $1, $2::jsonb, $3,
-           timezone('UTC', now()), timezone('UTC', now()) - interval '40 days',
+           timezone('UTC', now()),
+           -- Un pendiente de más de 30 días es «noticia vieja» y la retención
+           -- lo borra (V2-06): el pendiente de la prueba es de hoy.
+           timezone('UTC', now()) - CASE WHEN $4::int IS NULL THEN interval '0' ELSE interval '40 days' END,
            CASE WHEN $4::int IS NULL THEN NULL
                 ELSE timezone('UTC', now()) - $4::int * interval '1 day' END)`,
         id,

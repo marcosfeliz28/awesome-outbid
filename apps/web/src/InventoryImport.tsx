@@ -10,6 +10,7 @@ import { Badge, Button, Modal } from "@fitstore/ui";
 import { api } from "./api";
 import { toast } from "./helpers";
 import "./inventoryImport.css";
+import { useLanguage } from "./inicioLanguage";
 
 type Problem = { row?: number; message: string };
 type Change = {
@@ -101,19 +102,22 @@ export function changesCsv(changes: Change[]) {
 const MAX_BYTES = 5 * 1024 * 1024;
 
 export function InventoryImportButton() {
+  const english = useLanguage() === "en";
   const [open, setOpen] = useState(false);
   return (
     <>
       <Button variant="secondary" onClick={() => setOpen(true)}>
         <Upload size={16} />
-        Importar inventario
+        {english ? "Import inventory" : "Importar inventario"}
       </Button>
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Importar inventario"
+        title={english ? "Import inventory" : "Importar inventario"}
+        closeLabel={english ? "Close" : "Cerrar"}
         wide
       >
+        {english && <p>The import review is currently displayed in Spanish. Review it before uploading.</p>}
         {open && <InventoryImport onDone={() => setOpen(false)} />}
       </Modal>
     </>

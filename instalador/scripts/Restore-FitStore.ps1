@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$InstallDir,
   [string]$Respaldo,
   [switch]$Confirmar

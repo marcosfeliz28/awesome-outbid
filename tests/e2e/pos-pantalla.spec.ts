@@ -53,10 +53,13 @@ for (const [width, height] of [
     await page.setViewportSize({ width, height });
     await login(page);
     await open(page, "pos");
+    const search = page.getByLabel("Buscar productos");
     const card = page.locator(".product-card").first();
     const charge = page
       .locator(".cart-summary .charge-button:not(.pos-mobile-charge)")
       .first();
+    await expect(search).toBeVisible();
+    expect((await search.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(120);
     await expect(card).toBeVisible();
     await expect(charge).toBeVisible();
     // Un nombre largo sin espacios y una categoría enorme no deben ensanchar.
