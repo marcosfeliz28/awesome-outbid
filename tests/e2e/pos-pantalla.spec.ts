@@ -41,6 +41,29 @@ const inside = (page: Page, selector: string) =>
     );
   }, selector);
 
+for (const [width, height] of [[1366, 768], [390, 844]]) {
+  test(`CC-27: idioma de sesión desde la cuenta sin desplazar Caja a ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await login(page);
+    await open(page, "pos");
+    const account = page.locator('button[aria-controls="account-actions"]');
+    await expect(page.locator(".fusion-preferences")).toHaveCount(0);
+    await account.click();
+    const menu = page.locator("#account-actions");
+    const spanish = menu.getByRole("combobox", { name: "Idioma de la interfaz" });
+    await expect(spanish).toBeFocused();
+    await spanish.selectOption("en");
+    const english = menu.getByRole("combobox", { name: "Interface language" });
+    await expect(english).toHaveValue("en");
+    await english.selectOption("es");
+    await expect(spanish).toHaveValue("es");
+    await spanish.press("Escape");
+    await expect(account).toBeFocused();
+    await expect(menu).toHaveCount(0);
+    expect(await overflow(page)).toEqual({ page: 0, main: 0 });
+  });
+}
+
 for (const [width, height] of [
   [1280, 720],
   [1366, 768],

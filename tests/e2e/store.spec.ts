@@ -648,8 +648,11 @@ test("Configuración › Negocio y reglas: tarjeta de avisos por Telegram", asyn
   await expect(card.getByText("Desactivados")).toBeVisible();
   await expect(card.getByText(/@BotFather/)).toBeVisible();
   await expect(
-    card.getByText(/TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID/),
+    card.getByText("Pide a soporte activar los avisos de facturas.", {
+      exact: true,
+    }),
   ).toBeVisible();
+  await expect(card.getByText(/TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID/)).toBeHidden();
   await card.getByRole("button", { name: "Enviar mensaje de prueba" }).click();
   await expect(page.getByText(/no están activados/)).toBeVisible();
   const overflow = await page.evaluate(

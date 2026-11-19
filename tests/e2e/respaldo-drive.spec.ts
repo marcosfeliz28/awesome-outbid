@@ -74,7 +74,12 @@ for (const width of [1280, 390])
     await expect(
       card.getByText("No configurado", { exact: true }),
     ).toBeVisible();
-    await expect(card.getByText(/docs\/RESPALDO_DRIVE\.md/)).toBeVisible();
+    await expect(
+      card.getByText("Respaldo no configurado. Pide a soporte activarlo.", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(card.getByText(/docs\/RESPALDO_DRIVE\.md/)).toBeHidden();
     // 05-N10: los nombres de variables del servidor van plegados.
     await expect(card.getByText(/GOOGLE_OAUTH_CLIENT_ID/)).toBeHidden();
     await card.getByText("Detalle para el técnico").click();

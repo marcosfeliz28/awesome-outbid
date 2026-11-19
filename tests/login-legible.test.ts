@@ -45,6 +45,9 @@ describe("CC-27 · idioma siempre disponible", () => {
     expect(app).toContain('className="login-language"');
     expect(app).toContain('aria-label={\n              language === "en" ? "Interface language" : "Idioma de la interfaz"');
     expect(app).toContain('<div className="fusion-preferences" lang={language}>');
-    expect(app).not.toContain('{page === "dashboard" && <div className="fusion-preferences"');
+    expect(app).toContain('{page !== "dashboard" && <SessionLanguageSelect language={language} />}');
+    expect(app).toMatch(/id="account-actions" className="account-menu">\s*\{page !== "dashboard" && <SessionLanguageSelect/);
+    expect(app).toContain('<option value="es">Español</option>');
+    expect(app).toContain('<option value="en">English</option>');
   });
 });

@@ -654,6 +654,22 @@ function ChangeOwnPassword({ onClose }: { onClose: () => void }) {
   );
 }
 
+function SessionLanguageSelect({ language }: { language: ReturnType<typeof useLanguage> }) {
+  return (
+    <label className="session-language">
+      {language === "en" ? "Language" : "Idioma"}
+      <select
+        aria-label={language === "en" ? "Interface language" : "Idioma de la interfaz"}
+        value={language}
+        onChange={(e) => setLanguage(e.target.value === "en" ? "en" : "es")}
+      >
+        <option value="es">Español</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+  );
+}
+
 function Shell() {
   const language = useLanguage();
   const { user, online, theme, toggleTheme, setOnline } = useStore();
@@ -730,7 +746,7 @@ function Shell() {
   }, []);
   useEffect(() => {
     if (!account) return;
-    accountPanel.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    accountPanel.current?.querySelector<HTMLElement>("select, button")?.focus();
     const closeAccount = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || modalKeyEvents.current.has(event) || document.querySelector('[role="dialog"][data-state="open"]')) return;
       setAccount(false);
@@ -1158,11 +1174,13 @@ function Shell() {
         </div>
       </aside>
       <div className="main-shell" inert={mobile && menu}>
-        <div className="fusion-preferences" lang={language}>
-          <label>{language === "en" ? "Language" : "Idioma"} <select aria-label={language === "en" ? "Interface language" : "Idioma de la interfaz"} value={language} onChange={(e) => setLanguage(e.target.value === "en" ? "en" : "es")}><option value="es">Español</option><option value="en">English</option></select></label>
-          {page === "dashboard" && <AppearanceControls language={language} />}
-          <small role="status">{language === "en" ? "English covers Overview and main navigation. Other pages, store data and server messages retain their original language." : "Traducción disponible: Inicio y navegación principal. Las demás pantallas, datos de tienda y mensajes del servidor conservan su idioma original."}</small>
-        </div>
+        {page === "dashboard" && (
+          <div className="fusion-preferences" lang={language}>
+            <SessionLanguageSelect language={language} />
+            <AppearanceControls language={language} />
+            <small role="status">{language === "en" ? "English covers Overview and main navigation. Other pages, store data and server messages retain their original language." : "Traducción disponible: Inicio y navegación principal. Las demás pantallas, datos de tienda y mensajes del servidor conservan su idioma original."}</small>
+          </div>
+        )}
         <header className="topbar" lang={language}>
           <div className="topbar-left">
             <button
@@ -1264,6 +1282,7 @@ function Shell() {
             </button>
             {account && (
               <div ref={accountPanel} id="account-actions" className="account-menu">
+                {page !== "dashboard" && <SessionLanguageSelect language={language} />}
                 {can(user.permissions, "sale:write") && (
                   <button
                     onClick={async () => {

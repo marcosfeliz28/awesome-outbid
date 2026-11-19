@@ -17,11 +17,11 @@ describe("Inicio integrado: preservación", () => {
   it("ofrece idioma en toda la sesión pero limita la apariencia a Inicio y conserva el diálogo legal", () => {
     const source = readFileSync("apps/web/src/App.tsx", "utf8");
     expect(source).toMatch(
-      /<div className="main-shell"[^>]*>\s*<div className="fusion-preferences" lang=\{language\}>\s*<label>[^\n]*<select\b/,
+      /<div className="main-shell"[^>]*>\s*\{page === "dashboard" && \(\s*<div className="fusion-preferences" lang=\{language\}>\s*<SessionLanguageSelect language=\{language\} \/>\s*<AppearanceControls language=\{language\} \/>/,
     );
     expect(source.match(/<AppearanceControls\b/g)).toHaveLength(1);
-    expect(source).toContain(
-      '{page === "dashboard" && <AppearanceControls language={language} />}',
+    expect(source).toMatch(
+      /id="account-actions" className="account-menu">\s*\{page !== "dashboard" && <SessionLanguageSelect language=\{language\} \/>\}/,
     );
     expect(source).toContain('title="Acerca de Norexos"');
     const css = readFileSync(
@@ -104,8 +104,8 @@ describe("Inicio integrado: preservación", () => {
     expect(shell).toContain(
       "Other pages, store data and server messages retain their original language.",
     );
-    expect(shell).toContain(
-      'page === "dashboard" && <AppearanceControls language={language} />',
+    expect(shell).toMatch(
+      /\{page === "dashboard" && \(\s*<div className="fusion-preferences" lang=\{language\}>\s*<SessionLanguageSelect language=\{language\} \/>\s*<AppearanceControls language=\{language\} \/>/,
     );
   });
   it("conserva byte a byte el Dashboard base salvo wrapper y pintura", () => {
