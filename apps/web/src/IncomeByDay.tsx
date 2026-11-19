@@ -178,7 +178,16 @@ export function IncomeByDay() {
                   }
                 >
                   {scope === "session"
-                    ? `${item.registerId} · ${new Date(item.openedAt).toLocaleDateString(en ? "en-US" : "es-DO")}`
+                    ? // P5/P19: nombre de la caja y de quien abrió, fecha en hora de RD.
+                      [
+                        item.registerName || text("Caja"),
+                        item.userName,
+                        new Date(item.openedAt).toLocaleDateString(en ? "en-US" : "es-DO", {
+                          timeZone: "America/Santo_Domingo",
+                        }),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
                     : item.name}
                 </option>
               ))}
