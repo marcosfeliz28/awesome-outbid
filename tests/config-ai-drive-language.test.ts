@@ -41,4 +41,11 @@ describe("Configuration AI/Drive UI language, no connection side effects", () =>
       "follow the daily Google Drive backup guide (docs/RESPALDO_DRIVE.md)",
     );
   });
+  it("does not expose deployment variables in the Telegram setup instructions", () => {
+    const source = read("Management.tsx");
+    expect(source).toContain(
+      '"Pide a soporte activar los avisos de facturas."',
+    );
+    expect(source).not.toContain("set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID");
+  });
 });

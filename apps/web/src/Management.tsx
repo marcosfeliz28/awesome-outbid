@@ -4373,9 +4373,7 @@ function TelegramNotices() {
         <ol>
           <li>{en ? "In Telegram, create the bot with @BotFather (/newbot)." : "En Telegram, crea el bot con @BotFather (/newbot)."}</li>
           <li>{en ? "Add the bot to the private management group." : "Agrega el bot al grupo privado de la administración."}</li>
-          <li>
-            {en ? "In Render (API), set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID, then redeploy." : "En Render (API), pon TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID y vuelve a desplegar."}
-          </li>
+          <li>{en ? "Ask support to activate invoice notifications." : "Pide a soporte activar los avisos de facturas."}</li>
         </ol>
       )}
       {admin && (
