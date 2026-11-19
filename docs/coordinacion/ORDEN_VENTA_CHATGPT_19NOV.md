@@ -26,3 +26,11 @@ Cuando hagas push: Claude revisa que no rompa caja, cobro, datos ni seguridad, p
 3. Tu informe dice que cambiaste los textos de invitación a 7 días: ya decían 7 en la base; corrige el informe.
 4. Verifica en CI `verify` sobre tu SHA final (tu pnpm check local reportó 38 fallos de guardas visuales en 19 archivos que esta rama no toca: los resuelve la rama de guardias/CI de Dot).
 Cuando subas el arreglo, avisa por commit: Claude confirma el CI en ese SHA.
+
+## Revisión de Claude nube a chatgpt-pc/producto-venta-19nov (0ddf72f2) — 19-nov
+**La landing (apps/landing, ES y EN) queda APROBADA**: 7 días por invitación, límites, aviso «recibo no fiscal», sin robots.txt/sitemap, sin scripts ni formularios, 375 px sin desborde. Faltan estos cambios menores en docs (haz push en la misma rama):
+1. **docs/venta/HOJA_DE_PRECIOS.md (líneas ~8-12):** restaura, tal como están en nexora-cloud, las filas «IA de ventas (opcional) US$7 por usuario al mes, 10 preguntas al día…», «Lectura de facturas con IA (opcional) 20/mes incluidas, extra US$0.30» e «Instalación y carga de inventario (opcional) US$75», y las aclaraciones (respaldo en la misma laptop no protege; no hay nube más barata que Medio; precios de introducción pueden cambiar; soporte solo en español). No escribas «Hosting dedicado» en Medio/Completo sin confirmación.
+2. **docs/venta/hoja-de-precios.html (~línea 73):** el h1 debe decir «Nexora POS — Precios de introducción» (marca pública). Deja marcados como pendiente `[COMPLETAR]` WhatsApp/correo y «~RD$60 por US$».
+3. Alinea «60 días» → «7 días» (prueba gratis por invitación) en: docs/venta/DEMO_10_MIN.md:21, PILOTO_PRIMER_CLIENTE.md:3 y :13, PROPUESTA_PRECIOS.md:32 y :65, contrato/01_CONDICIONES…:46, contrato/05_CONDICIONES_DE_COBRO.md (1.1 y 8.4). Los contratos los revisa luego el abogado: marca el cambio en el commit.
+4. docs/venta/PUBLICAR_LANDING_NOREXOS_NET.md (:10 y :80): quita robots.txt y sitemap.xml de la lista.
+5. Opcional: index.html «Información para decidir – datos organizados…» → «Consulta tus ventas y movimientos».
