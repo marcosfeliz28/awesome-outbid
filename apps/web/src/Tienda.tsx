@@ -621,6 +621,8 @@ export function CodPending({ session }: { session: any }) {
   const shown = filterCredits(rows, search);
   // B-01: la API manda null en los importes de la caja abierta (hiddenUntilClose).
   const totalPending = rows.reduce((a, r) => a + (Number(r.pending) || 0), 0);
+  // P11 (auditoría 19-nov): el total no cuenta los ocultos; se dice cuántos.
+  const hiddenCount = rows.filter((r) => r.hiddenUntilClose).length;
   const money = (r: any, v: unknown) =>
     r.hiddenUntilClose ? "—" : formatMoney(v as any);
   return (
@@ -688,6 +690,8 @@ export function CodPending({ session }: { session: any }) {
             <p className="cod-hint">
               {rows.length} {rows.length === 1 ? "crédito" : "créditos"} · Por
               cobrar: <strong>{formatMoney(totalPending)}</strong>
+              {hiddenCount > 0 &&
+                ` (sin contar ${hiddenCount} de cajas abiertas)`}
             </p>
           )}
           {rows.length > 0 && (

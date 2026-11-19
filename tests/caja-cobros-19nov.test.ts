@@ -228,3 +228,13 @@ describe("P8 · cierre de caja: el cuadre que no carga no parece un cierre falli
     expect(tienda).toContain("disabled={busy || closedWithoutCuadre}");
   });
 });
+
+describe("P11 · Créditos pendientes: el total avisa los montos ocultos", () => {
+  it("dice cuántos créditos de cajas abiertas no suman", () => {
+    const tienda = source("Tienda.tsx");
+    expect(tienda).toContain(
+      "const hiddenCount = rows.filter((r) => r.hiddenUntilClose).length;",
+    );
+    expect(tienda).toContain("(sin contar ${hiddenCount} de cajas abiertas)");
+  });
+});
