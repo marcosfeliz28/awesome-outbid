@@ -491,3 +491,47 @@ describe("M1 (parcial) · la cajera que entra desde un equipo no aprobado deja a
     expect(alerts).toEqual([seller.id]);
   });
 });
+
+describe("A2 (propuesta, apagada) · tope de equipos aprobados solos por hora", () => {
+  const register = async (env: string | undefined, approvedLastHour: number) => {
+    const { RealtimeController } = await import("../apps/api/src/realtime");
+    const created: any[] = [];
+    const tx: any = {
+      $queryRaw: async () => [],
+      terminal: {
+        findUnique: async () => null,
+        count: async () => approvedLastHour,
+        create: async (a: any) => (created.push(a.data), { ...a.data }),
+      },
+      cashSession: { findFirst: async () => null },
+      authSession: { update: async () => undefined },
+      auditLog: { create: async () => undefined },
+    };
+    const db: any = { $transaction: (fn: any) => fn(tx) };
+    const previous = process.env.TERMINAL_AUTO_APPROVE_PER_HOUR;
+    if (env === undefined) delete process.env.TERMINAL_AUTO_APPROVE_PER_HOUR;
+    else process.env.TERMINAL_AUTO_APPROVE_PER_HOUR = env;
+    try {
+      await new RealtimeController(db).register(
+        {
+          id: "55555555-5555-4555-8555-555555555555",
+          name: "Equipo",
+          secret: "s".repeat(20),
+        },
+        { ...actor, permissions: ["*"], sessionId: "s1" },
+      );
+    } finally {
+      if (previous === undefined)
+        delete process.env.TERMINAL_AUTO_APPROVE_PER_HOUR;
+      else process.env.TERMINAL_AUTO_APPROVE_PER_HOUR = previous;
+    }
+    return created[0];
+  };
+  it("sin la variable (por defecto) la administración sigue aprobando sola", async () => {
+    expect((await register(undefined, 500)).approvedAt).toBeInstanceOf(Date);
+  });
+  it("con TERMINAL_AUTO_APPROVE_PER_HOUR=3, el cuarto equipo de la hora queda pendiente", async () => {
+    expect((await register("3", 2)).approvedAt).toBeInstanceOf(Date);
+    expect((await register("3", 3)).approvedAt).toBeUndefined();
+  });
+});
