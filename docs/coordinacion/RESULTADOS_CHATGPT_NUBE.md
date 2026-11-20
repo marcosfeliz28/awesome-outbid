@@ -1,5 +1,14 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-20 · reconstrucción de diseño y reportes sobre DD-06
+
+- **Base:** `nexora-cloud` `1f19e4f99588ddcd5fe2da4ae038f31d25a83e13`; se preservó `dashboardCategoryShares.ts` de Dot y no se creó `dashboardPercentages.ts`.
+- **Presentación:** Reportes ES/EN, columna Factura, moneda `RD$`, rango aplicado, estado de error, etiquetas de alertas, `Servicio` en Caja, protección de Cobrar sin caja, responsive de GV/Inventario y tablero con porcentajes negativos en cero y etiqueta de ganancia con/sin ITBIS.
+- **Reversión:** se conservaron todos los `base_sha256`; los cambios se registraron como ediciones en los JSON de diseño. No se modificó `docs/sistema/*`.
+- **Dinero retenido:** corrección de pagos, traslado de efectivo de la dueña a una caja abierta y confirmación/PIN de dólares están aislados en el commit posterior y en `PRESERVACION_DINERO_PENDIENTE.json`; no deben mezclarse sin aceptación de Marcos.
+- **Regresión y autoauditoría:** el caso de categorías `[8, 3, -2]` falló antes (`89, 33, -22`) y pasa después (`73, 27, 0`). Pasaron 208 pruebas del bloque de presentación y 75 del bloque retenido, TypeScript web y `git diff --check`. Sin API, base de datos, `docs/sistema`, montos, caja ciega, Render o despliegue.
+- **Publicación/CI:** pendiente del único push del SHA final reconstruido.
+
 ## 2026-11-19 · P2 · últimos siete días reales
 
 - **Base y duplicación:** se incorporó `origin/nexora-cloud` `ac7ee042c6c66909eeee06259c9a59ae46415e49` mediante merge limpio. P2 seguía pendiente y no estaba en el historial de la rama.
