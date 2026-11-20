@@ -11,6 +11,10 @@ describe("Caja Fusión: pintura reversible", () => {
       ),
     );
     let source = readFileSync("apps/web/src/POS.tsx", "utf8");
+    for (const edit of [...(record.commercial_product_changes ?? [])].reverse()) {
+      expect(source.split(edit.after)).toHaveLength(2);
+      source = source.replace(edit.after, () => edit.before);
+    }
     for (const edit of [...record.changes].reverse()) {
       expect(source).toContain(edit.after);
       source = source.replace(edit.after, edit.before);

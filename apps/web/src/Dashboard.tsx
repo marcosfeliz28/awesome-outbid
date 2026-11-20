@@ -1,3 +1,4 @@
+import { dashboardCategoryShares } from "./dashboardCategoryShares";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -181,6 +182,9 @@ export function Dashboard({
     refetchInterval: 15000,
   });
   const data = query.data;
+  const categoryShares = dashboardCategoryShares(
+    data?.category?.map((category: { total: number }) => category.total) ?? [],
+  );
   const showProfit = can(user.permissions, "profit:read");
   const metric = [
     {
@@ -698,12 +702,8 @@ export function Dashboard({
                 />
               )}
             </div>
-            {data?.category?.map((c: any) => {
-              const total = data.category.reduce(
-                  (a: number, i: any) => a + i.total,
-                  0,
-                ),
-                percent = total ? (c.total / total) * 100 : 0;
+            {data?.category?.map((c: any, index: number) => {
+              const { exact: percent, rounded } = categoryShares[index];
               return (
                 <div className="category-row" key={c.name}>
                   <div>
@@ -711,7 +711,7 @@ export function Dashboard({
                       <i style={{ background: c.color }} />
                       {c.name}
                     </span>
-                    <strong>{percent.toFixed(0)}%</strong>
+                    <strong>{rounded}%</strong>
                   </div>
                   <div className="progress-track">
                     <div

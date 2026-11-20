@@ -1,3 +1,4 @@
+import { posStockLabel } from "./posStockLabel";
 import "./fusion-caja-higgsfield.css";
 import { CajaVisualPreferences } from "./CajaVisualPreferences";
 import { t, useLanguage } from "./inicioLanguage";
@@ -1633,6 +1634,7 @@ const ProductGrid = memo(function ProductGrid({
   allowNegativeStock: boolean;
   onAdd: (product: Product) => void;
 }) {
+  const language = useLanguage();
   return (
     <div className="product-grid">
       {products.map((p) => {
@@ -1690,7 +1692,7 @@ const ProductGrid = memo(function ProductGrid({
                     Math.min(...p.variants.map((v) => Number(v.price))),
                   )}
                 </strong>
-                <span>{stock} en stock</span>
+                <span>{posStockLabel(stock, isService(p), language)}</span>
               </div>
             </div>
           </button>

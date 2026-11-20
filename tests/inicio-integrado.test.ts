@@ -149,6 +149,22 @@ describe("Inicio integrado: preservación", () => {
           before: "      </QueryState>\n    </>\n  );\n}",
           after: "      </QueryState>\n    </div>\n  );\n}",
         },
+        {
+          before: "",
+          after: "import { dashboardCategoryShares } from \"./dashboardCategoryShares\";\n",
+        },
+        {
+          before: "  const data = query.data;\n  const showProfit = can(user.permissions, \"profit:read\");",
+          after: "  const data = query.data;\n  const categoryShares = dashboardCategoryShares(\n    data?.category?.map((category: { total: number }) => category.total) ?? [],\n  );\n  const showProfit = can(user.permissions, \"profit:read\");",
+        },
+        {
+          before: "            {data?.category?.map((c: any) => {\n              const total = data.category.reduce(\n                  (a: number, i: any) => a + i.total,\n                  0,\n                ),\n                percent = total ? (c.total / total) * 100 : 0;\n",
+          after: "            {data?.category?.map((c: any, index: number) => {\n              const { exact: percent, rounded } = categoryShares[index];\n",
+        },
+        {
+          before: "<strong>{percent.toFixed(0)}%</strong>",
+          after: "<strong>{rounded}%</strong>",
+        },
       ];
       for (const edit of [...productReversible].reverse()) {
         expect(source.split(edit.after)).toHaveLength(2);

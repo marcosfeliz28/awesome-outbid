@@ -117,7 +117,11 @@ import { readVisual, setVisual, withTransition } from "./impacto";
 import { InventoryImportButton } from "./InventoryImport";
 import { NcfSequenceSettings } from "./NcfSequenceSettings";
 import { BranchSettings } from "./BranchSettings";
-import { formatReportCell, isReportMoneyColumn } from "./report-format";
+import {
+  formatReportCell,
+  isReportMoneyColumn,
+  reportDisplayRows,
+} from "./report-format";
 import { EmptyIllustration } from "./EmptyIllustration";
 import {
   applyPendingSaleReprice,
@@ -3187,10 +3191,11 @@ export function Reports() {
     enabled: report !== "income-by-day" && report !== "formal" && !inverted,
   });
   const rows = query.data?.rows || [];
+  const displayRows = reportDisplayRows(report, rows);
   const total: number = query.data?.total ?? rows.length;
   const limit: number = query.data?.limit ?? (rows.length || 1);
   const pages = Math.max(1, Math.ceil(total / limit));
-  const columns = Object.keys(rows[0] || {})
+  const columns = Object.keys(displayRows[0] || {})
     .filter((k) => k !== "class")
     .map((key) => {
       const money = isReportMoneyColumn(key);
@@ -3391,7 +3396,7 @@ export function Reports() {
             ) : (
               <QueryState query={query}>
                 <DataTable
-                  rows={rows}
+                  rows={displayRows}
                   columns={columns}
                   empty="No hay datos para este período"
                   emptyIllustration="reportes"
