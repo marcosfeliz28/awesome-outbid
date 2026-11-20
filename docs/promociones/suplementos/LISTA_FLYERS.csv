@@ -1,0 +1,88 @@
+flyer,sku,producto,precio_antes,precio_liquidacion,descuento_pct,foto,existencia
+1,1198,Animal 100% Whey Protein - Vanilla,3900,3530,9,fotos/INV-1198.webp,2
+1,1085,C4 Original Pre-Workout - Icy Blue Razz / 60 servicios,2100,1180,44,fotos/INV-1085.webp,4
+1,1203,Dollys Milk,1500,945,37,,1
+1,1131,Lipo-6 Hardcore - Nutrex,1800,1180,34,fotos/INV-1131.webp,3
+1,1126,Lipo-6 Hers Ultra Concentrate - Nutrex,1800,1180,34,fotos/INV-1126.webp,1
+1,1132,Lipo-6 Intense Ultra Concentrate - Nutrex,1980,1180,40,fotos/INV-1132.webp,8
+1,1201,Muscle Milk Genuine - Cookies & Crème / 30.9 oz (875 g),2200,1530,30,fotos/INV-1201.webp,2
+1,1221,SAL DEL HIMALAYA - PRESENTACIÓN NO INDICADA,2000,1180,41,fotos/INV-1221.webp,4
+1,1109,Vita Multi-Vitamin - JYM Supplement Science,2400,1930,20,fotos/INV-1109.webp,5
+1,1136,Creatine 3000 Capsules - ALLMAX - 120 cápsulas,1200,590,51,fotos/INV-1136.webp,1
+2,1175,Vegan Protein - Alpha - Vanilla Milkshake,2500,1650,34,fotos/INV-1175.webp,3
+2,1086,One More Rep - BPI Sports - Fruit Punch / 25 servicios,1500,945,37,fotos/INV-1086.webp,1
+2,1106,Amino X - BSN - Blue Raz / 30 servicios,1850,1355,27,fotos/INV-1106.webp,2
+2,1112,Plant Amino Power - BioSteel - Berry Fusion / 30 servicios,1100,590,46,fotos/INV-1112.webp,2
+2,1111,Plant Amino Power - BioSteel - Citrus Twist / 30 servicios,1100,590,46,fotos/INV-1111.webp,2
+2,1042,Selenium - Bronson Basics - 200 mcg / 250 tabletas vegetarianas,1500,945,37,fotos/INV-1042.webp,5
+2,1211,Vitamin K2+D3 - Bronson Basics - Envase blanco / 60 cápsulas,1600,825,48,fotos/INV-1211.webp,1
+2,1074,Forskolin - Cadane Organic - 60 cápsulas,1800,1120,38,fotos/INV-1074.webp,8
+2,1031,Kids Chewables Magnesium - California Gold Nutrition - Sabor cherry,1700,825,51,fotos/INV-1031.webp,2
+2,1032,Kids DHA Chewables - California Gold Nutrition - DHA de bacalao ártico,1550,770,50,fotos/INV-1032.webp,3
+3,1008,Oil of Oregano - Carlyle - 4000 mg equivalentes / 150 softgels,1500,875,42,fotos/INV-1008.webp,4
+3,1061,Turmeric Curcumin Complex - Carlyle - 1000 mg por servicio / 180 cápsulas,1500,590,61,fotos/INV-1061.webp,4
+3,1185,Super Mass Gainer - Dymatize - Gourmet Vanilla / 6 lb,3900,2475,37,fotos/INV-1185.webp,3
+3,1184,Super Mass Gainer - Dymatize - Rich Chocolate / 6 lb,3900,2475,37,fotos/INV-1184.webp,1
+3,1072,TUDCA - EVLution Nutrition - 250 mg por cápsula / 30 servicios,2100,1650,21,fotos/INV-1072.webp,3
+3,1060,"CLA - Force Factor - 1,000 mg / 90 softgels",1500,885,41,fotos/INV-1060.webp,8
+3,1040,DHEA - Force Factor - 50 mg / 100 cápsulas vegetales,1500,1060,29,fotos/INV-1040.webp,2
+3,1019,Mens Multi+Test Essentials - GAT Sport - 60 tabletas,1700,1060,38,fotos/INV-1019.webp,3
+3,1021,ZM-Complex - Gaspari Nutrition - 90 cápsulas / 30 servicios,1500,1180,21,fotos/INV-1021.webp,1
+3,1063,Ashwagandha - Horbäach - 450 mg extracto 10:1 / 120 cápsulas,1750,825,53,fotos/INV-1063.webp,6
+4,1064,Betaine Hydrochloride - Horbäach - 1200 mg por servicio / 180 cápsulas,1550,1180,24,fotos/INV-1064.webp,4
+4,1010,Chromium Picolinate - Horbäach - 1000 mcg / 240 tabletas,1500,945,37,fotos/INV-1010.webp,3
+4,1102,The Jinx Hydra BCAA+ - JINX! - Blue Raspberry / 300 g,1300,825,37,fotos/INV-1102.webp,2
+4,1212,JYM Plus Pre-Workout - JYM Supplement Science - Fruit Punch Blast,2100,1530,27,fotos/INV-1212.webp,8
+4,1067,Horny Goat Weed - KAYA - 1000 mg+ por servicio / 60 cápsulas,1500,945,37,fotos/INV-1067.webp,5
+4,1115,Klean B-Complex - Klean Athlete - 60 cápsulas vegetarianas,1450,850,41,fotos/INV-1115.webp,13
+4,1120,Klean Calcium (Citrate) - Klean Athlete - 120 cápsulas,1600,1180,26,fotos/INV-1120.webp,2
+4,1122,Klean Creatine - Klean Athlete - 315 g / polvo,2300,1530,33,fotos/INV-1122-v2.webp,5
+4,1123,Klean Essential Aminos + HMB - Klean Athlete - Orange Cream / 30 servicios,2950,2525,14,fotos/INV-1123.webp,1
+4,1124,Klean Isolate - Klean Athlete - Natural Vanilla / 516 g,2890,2240,22,fotos/INV-1124.webp,1
+5,1116,Klean Multivitamin - Klean Athlete - 60 tabletas,2350,1415,40,fotos/INV-1116.webp,11
+5,1117,Klean Zinc - Klean Athlete - Natural Orange / 100 tabletas masticables,1550,785,49,fotos/INV-1117.webp,1
+5,1001,D3 K2 Walnut Oil Drops - Lecrano - 60 ml,1500,610,59,fotos/INV-1001.webp,19
+5,1183,Carnivor Mass - MuscleMeds - Vanilla Caramel / 5.83 lb,4100,3415,17,fotos/INV-1183.webp,3
+5,1134,Feast Mode - MuscleMeds - 90 cápsulas,1950,1415,27,fotos/INV-1134.webp,1
+5,1186,100% Mass Gainer - MuscleTech - Vanilla Milkshake / 5.15 lb,3000,2710,10,fotos/INV-1186.webp,2
+5,1125,Platinum Multi Vitamin - MuscleTech - 90 tabletas,1500,945,37,fotos/INV-1125.webp,15
+5,1036,Flush-Free Niacin - NOW - 250 mg / 90 cápsulas vegetales,1500,1060,29,fotos/INV-1036.webp,1
+5,1033,GABA - NOW - 500 mg / 100 cápsulas vegetales,1700,945,44,fotos/INV-1033.webp,5
+5,1038,Glycine - NOW - 1000 mg / 100 cápsulas vegetales,1500,1180,21,fotos/INV-1038.webp,3
+6,1204,Niacin - NOW - 500 mg / 250 tabletas,1500,1060,29,fotos/INV-1204.webp,1
+6,1034,Potassium Citrate - NOW - 99 mg / 180 cápsulas vegetales,1500,945,37,fotos/INV-1034.webp,3
+6,1035,Potassium plus Iodine - NOW - 180 tabletas,1500,945,37,fotos/INV-1035.webp,1
+6,1028,100 Billion Probiotic - Natures Peak - 60 cápsulas,1700,1060,38,fotos/INV-1028.webp,10
+6,1015,Anabol Hardcore - Nutrex - 60 liqui-caps,1800,1415,21,fotos/INV-1015.webp,4
+6,1017,Anabol Nighttime - Nutrex - 60 cápsulas,1800,1600,11,fotos/INV-1017.webp,2
+6,1016,Anabol Ripped - Nutrex - 60 liqui-caps,1800,1415,21,fotos/INV-1016.webp,1
+6,1066,Caffeine 200 - Nutrex - 200 mg / 60 cápsulas,1600,530,67,fotos/INV-1066.webp,1
+6,1083,EAA+ Hydration - Nutrex - Strawberry Watermelon / 30 servicios,1750,945,46,fotos/INV-1083.webp,5
+6,1127,Lipo-6 Diuretic - Nutrex - 80 cápsulas,1600,1180,26,fotos/INV-1127.webp,1
+7,1129,Lipo-6 Nighttime - Nutrex - 30 cápsulas,1300,1050,19,fotos/INV-1129.webp,6
+7,1065,Melatonin - Nutrex - 100 tabletas,1100,355,68,fotos/INV-1065.webp,5
+7,1089,Outrage UltraStim Pre-Workout - Nutrex - Lemon Lime,1400,945,32,fotos/INV-1089.webp,2
+7,1002,Tribulus 1400 - Nutrex - 90 cápsulas,1500,1000,33,fotos/INV-1002.webp,6
+7,1058,URO Vaginal Probiotic - O Positiv - Cápsulas,1750,1410,19,fotos/INV-1058.webp,9
+7,1003,Opti-Men - Optimum Nutrition - 150 tabletas / 50 servicios,2450,1180,52,fotos/INV-1003.webp,2
+7,1005,Opti-Men - Optimum Nutrition - 240 tabletas / 80 servicios,2900,1650,43,fotos/INV-1005.webp,9
+7,1004,Opti-Men - Optimum Nutrition - 90 tabletas / 30 servicios,1950,1475,24,fotos/INV-1004.webp,2
+7,1149,Platinum HydroWhey - Optimum Nutrition - Velocity Vanilla,5100,4500,12,fotos/INV-1149.webp,2
+7,1030,Magnesium Glycinate - Pro Performance Nutrition - 60 cápsulas,1600,355,78,,7
+8,1043,Boron (glycinate) - Pure Encapsulations - 60 cápsulas,1500,1180,21,fotos/INV-1043.webp,4
+8,1044,Copper (glycinate) - Pure Encapsulations - 60 cápsulas,1550,945,39,fotos/INV-1044.webp,1
+8,1048,Berberine - Puritans Pride - 500 mg / 60 cápsulas vegetales,1500,945,37,fotos/INV-1048.webp,1
+8,1046,GABA - Puritans Pride - 750 mg / 90 cápsulas,1700,920,46,fotos/INV-1046.webp,1
+8,1009,Garlic Oil - Puritans Pride - 5000 mg,1500,1060,29,fotos/INV-1009.webp,1
+8,1057,Glucosamine Chondroitin Complex - Puritans Pride - 60 caplets,1400,480,66,fotos/INV-1057.webp,5
+8,1024,High Potency Selenium - Puritans Pride - 200 mcg / 250 tabletas,1500,660,56,fotos/INV-1024.webp,4
+8,1045,L-Theanine - Puritans Pride - 200 mg por servicio / 60 cápsulas,1450,945,35,fotos/INV-1045.webp,2
+8,1047,Soy Lecithin - Puritans Pride - 520 mg / 100 softgels,1500,765,49,fotos/INV-1047.webp,1
+8,1056,Timed Release B-12 - Puritans Pride - 1000 mcg / 100 caplets,1500,765,49,fotos/INV-1056.webp,2
+9,1050,Turmeric - Puritans Pride - 800 mg / 100 cápsulas,1500,590,61,fotos/INV-1050.webp,8
+9,1053,"Ultra Mega Biotin - Puritans Pride - 10,000 mcg / 100 softgels",1500,825,45,fotos/INV-1053.webp,6
+9,1051,Vitamin E - Puritans Pride - 450 mg / 50 softgels,1500,1180,21,fotos/INV-1051.webp,2
+9,1094,EAA Plus - RAW Nutrition - Watermelon Grape / 30 servicios,1600,945,41,fotos/INV-1094.webp,6
+9,1137,Collagen Peptides - Rule One - Vanilla Creme / 20 servicios / 230 g,1550,1295,16,fotos/INV-1137.webp,2
+9,1099,PhedraCut Advanced - USN - 60 cápsulas,1500,825,45,fotos/INV-1099.webp,4
+9,1073,15 Day Colon Detox - dr.bo. - 30 cápsulas,1450,945,35,fotos/INV-1073.webp,6

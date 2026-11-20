@@ -1,21 +1,21 @@
-# Orden para ChatGPT (PC y NUBE): promoción «Liquidación total» (20-nov-2026)
+# Orden para ChatGPT (PC y NUBE): «Liquidación total», FASE 1 SUPLEMENTOS (20-nov-2026)
 
-> **FASE 1 (orden de Marcos): solo SUPLEMENTOS** (criterio: 43 días exactos sin venta; `LIQUIDACION_SUPLEMENTOS_43D.xlsx`). Las demás categorías esperan su orden.
+Orden de Marcos: promoción para sacar los productos que llevan 43 días sin una sola venta. **Margen de liquidación 15 %** (cumple la regla; ya no hay excepción). Empezamos solo con **Suplementos**: 87 productos, 9 flyers de 10 productos (el último con 7). Las demás categorías esperan su orden.
 
-Orden de Marcos: «todos los productos que llevan un mes (o más) sin venderse: oferta de liquidación total, donde solo se gana el 10 %». Lista: `docs/promociones/LIQUIDACION_20NOV.xlsx` (hoja «Liquidación»: 486 productos; **456 con descuento posible**, 30 NO aplican porque su precio normal ya es ≤ costo + 10 %).
-
-## Reglas fijas
-1. **Precio de oferta = costo / 0.90, redondeado hacia arriba a múltiplos de 5** (margen (precio−costo)/precio = 10 %, sin restar ITBIS; es una excepción puesta por la dueña a la regla del 15 %). Los precios de la hoja ya están calculados; no los recalcules.
-2. **No se cambia ningún precio en el sistema.** La caja aplica el descuento (regla de CLAUDE.md). El mecanismo en caja lo prepara Norexos 1; ChatGPT solo diseña y escribe.
-3. No tocar datos del negocio (existencias, costos, nombres). No desplegar: eso lo hace Norexos 1.
-4. Solo productos de la hoja con «Aplica = si». Los marcados «NO» no se anuncian con descuento.
-5. GV no entra (es otra empresa y no tiene existencias en esta lista).
-6. Vigencia: la define la dueña (propuesta: hasta agotar existencias, con fecha de cierre a confirmar). No inventes fechas.
+## Materiales (ya preparados por Norexos 2)
+- `docs/promociones/suplementos/LISTA_FLYERS.csv`: flyer, SKU, producto, **precio antes**, **precio liquidación**, descuento %, foto, existencia.
+- `docs/promociones/suplementos/fotos/`: fotos reales de los productos (85 de 87; los SKU 1203 y 1030 no tienen foto: pon solo el nombre).
+- `docs/promociones/LIQUIDACION_SUPLEMENTOS_15PCT.xlsx`: la misma lista con costo.
 
 ## Entregables
-**ChatGPT PC (diseño):** pieza principal «LIQUIDACIÓN TOTAL» (cuadrada 1080×1080 y vertical 1080×1920, español; versión en inglés opcional), una por categoría: Suplementos, Maquillaje, Fajas, Tenis. Usa las fotos reales del sistema (`apps/web/public/products/fotos/...`) y, para efectos de producto, Higgsfield (Highlight) si Marcos lo aprueba (gasto de créditos: pregunta antes). Sin precios inventados: usa solo la columna «Precio oferta».
-**ChatGPT NUBE (textos y lista):** texto de WhatsApp/Instagram por categoría (corto, con 5–10 productos estrella por categoría y su precio normal tachado/oferta), mensaje para las vendedoras (cómo cobrar: «Liquidación», sin descuentos extra, sin mezclar con otras ofertas), hoja imprimible para tienda (SKU, producto, precio oferta) por categoría.
-Conteo al entregar: «recibí 486 filas; diseñadas/redactadas A, no aplican B (30), necesitan decisión C; A+B+C = 486».
+1. **9 flyers** (1080×1080 y 1080×1920), uno por cada grupo de la columna `flyer`: título «LIQUIDACIÓN TOTAL», cada producto con su foto, nombre corto, **precio antes tachado y precio liquidación grande**, y el % de descuento. Español. Inglés opcional.
+2. **1 video corto** (15–20 s, vertical) que recorra los flyers, con música libre de derechos.
+3. **Texto de WhatsApp/Instagram** por flyer (corto) y un mensaje para las vendedoras: «Se cobra el precio de liquidación; no se acumula con otros descuentos».
 
-## Para Norexos 1 (software)
-Regla de oferta en caja (sin cambiar precios): lista de SKU con precio de oferta, vigencia, no acumulable, con motivo «Liquidación total» en el recibo y reporte aparte de lo vendido en liquidación.
+## Reglas
+- **Precios: solo los de `LISTA_FLYERS.csv`.** No recalcules ni redondees; no inventes descuentos, fechas ni cantidades.
+- No se cambia ningún precio en el sistema: la caja aplica la oferta (Norexos 1 / Norexos 2 la cargan).
+- No tocar datos del negocio ni desplegar. Solo `docs/`.
+- Vigencia: la define la dueña (aún sin fecha). No pongas fecha de fin en los flyers; di «hasta agotar existencias».
+- Fotos solo de la carpeta indicada (son de la tienda). Si usan Higgsfield, avisen antes del gasto de créditos.
+- Conteo al entregar: «recibí 87 productos; diseñados A, sin foto B (2), necesitan decisión C; A+B+C = 87».
