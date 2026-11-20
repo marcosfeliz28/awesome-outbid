@@ -1,0 +1,66 @@
+{
+  "Management": [
+    {
+      "before": "",
+      "after": "import { SalePaymentReplacement } from \"./SalePaymentsEditor\";\nimport { cashSessionMoveKind, openMoveDestinations } from \"./paymentCashMove\";\n"
+    },
+    {
+      "before": "",
+      "after": "    [replacingPayments, setReplacingPayments] = useState<any>(null),\n"
+    },
+    {
+      "before": "",
+      "after": "            {can(user.permissions, \"*\") &&\n              selected.status === \"completed\" && (\n                <Button\n                  variant=\"secondary\"\n                  onClick={() => {\n                    setReplacingPayments({\n                      sale: selected,\n                      operationId: crypto.randomUUID(),\n                    });\n                    setSelected(null);\n                  }}\n                >\n                  {en ? \"Correct payment methods\" : \"Corregir formas de pago\"}\n                </Button>\n              )}\n"
+    },
+    {
+      "before": "                  {p.cashSessionId &&\n                    p.status !== \"rejected\" &&\n                    can(user.permissions, \"*\") && (\n                      <button\n                        className=\"text-link\"\n                        onClick={() => {\n                          setSelected(null);\n                          setMoving(p);\n                        }}\n                      >\n                        {en\n",
+      "after": "                  {cashSessionMoveKind(p) && can(user.permissions, \"*\") && (\n                    <button\n                      className=\"text-link\"\n                      onClick={() => {\n                        setSelected(null);\n                        setMoving(p);\n                      }}\n                    >\n                      {cashSessionMoveKind(p) === \"owner-cash\"\n                        ? en\n                          ? \"Move owner's cash to an open register\"\n                          : \"Pasar efectivo de la dueña a una caja abierta\"\n                        : en\n"
+    },
+    {
+      "before": "                      </button>\n                    )}\n                  {p.entryType === \"installment\" &&",
+      "after": "                    </button>\n                  )}\n                  {p.entryType === \"installment\" &&"
+    },
+    {
+      "before": "",
+      "after": "      {can(user.permissions, \"*\") && replacingPayments && (\n        <SalePaymentReplacement\n          sale={replacingPayments.sale}\n          operationId={replacingPayments.operationId}\n          english={en}\n          onClose={() => setReplacingPayments(null)}\n          onSaved={() => {\n            void client.invalidateQueries({ queryKey: [\"sales\"] });\n          }}\n        />\n      )}\n"
+    },
+    {
+      "before": "            en ? \"Move payment to another register\" : \"Mover cobro a otra caja\"\n",
+      "after": "            cashSessionMoveKind(moving) === \"owner-cash\"\n              ? en\n                ? \"Move owner's cash to an open register\"\n                : \"Pasar efectivo de la dueña a una caja abierta\"\n              : en\n                ? \"Move payment to another register\"\n                : \"Mover cobro a otra caja\"\n"
+    },
+    {
+      "before": "            en\n              ? \"The payment moves to another register. The sale, debt and inventory do not change. This is recorded in the audit log.\"\n              : \"El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora.\"\n",
+      "after": "            cashSessionMoveKind(moving) === \"owner-cash\"\n              ? en\n                ? \"Choose the open register that actually received this cash. The change is recorded in the audit log.\"\n                : \"Elige la caja abierta que recibió este efectivo. El cambio queda en la bitácora.\"\n              : en\n                ? \"The payment moves to another register. The sale, debt and inventory do not change. This is recorded in the audit log.\"\n                : \"El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora.\"\n"
+    },
+    {
+      "before": "              options: (cashSessionsForMove.data || [])\n",
+      "after": "              options: (cashSessionMoveKind(moving) === \"owner-cash\"\n                ? openMoveDestinations(cashSessionsForMove.data || [])\n                : cashSessionsForMove.data || []\n              )\n"
+    }
+  ],
+  "POS": [
+    {
+      "before": "",
+      "after": "import {\n  isLargeForeignConfirmationError,\n  largeForeignRetryInput,\n} from \"./largeForeignConfirmation\";\n"
+    },
+    {
+      "before": "",
+      "after": "  const [largeForeignFor, setLargeForeignFor] = useState<string | null>(null);\n  const confirmingLargeForeign = largeForeignFor === pinRequest;\n"
+    },
+    {
+      "before": "    const input: SaleInput = {\n",
+      "after": "    const baseInput: SaleInput = {\n"
+    },
+    {
+      "before": "",
+      "after": "    const input: SaleInput = confirmingLargeForeign\n      ? largeForeignRetryInput(baseInput, pin)\n      : baseInput;\n"
+    },
+    {
+      "before": "      if (/precios o promociones cambiaron/i.test(e.message))\n",
+      "after": "      if (isLargeForeignConfirmationError(e)) {\n        setLargeForeignFor(pinRequest);\n        if (!can(user!.permissions, \"sale:manage\")) {\n          setServerPinFor(pinRequest);\n          setServerPinMessage(e.message);\n        }\n        setError(\n          e.message +\n            (can(user!.permissions, \"sale:manage\")\n              ? \" Confirma el monto para reenviar el mismo cobro.\"\n              : \" Escribe el PIN de un gerente y confirma el monto.\"),\n        );\n      } else if (/precios o promociones cambiaron/i.test(e.message))\n"
+    },
+    {
+      "before": "        {busy ? \"Registrando…\" : \"Finalizar venta\"}\n",
+      "after": "        {busy\n          ? \"Registrando…\"\n          : confirmingLargeForeign\n            ? \"Sí, el monto en dólares es correcto\"\n            : \"Finalizar venta\"}\n"
+    }
+  ]
+}

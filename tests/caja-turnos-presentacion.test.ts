@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, it, expect } from "vitest";
 import { reverseIt003 } from "./it003-preservation";
+import { reversePendingMoney } from "./pantallas-dinero-preservation";
 describe("Caja y turnos: presentación aislada", () => {
   it("conserva Management completo byte por byte al revertir import y clase", () => {
     const record = JSON.parse(
@@ -10,8 +11,11 @@ describe("Caja y turnos: presentación aislada", () => {
         "utf8",
       ),
     );
-    let source = reverseIt003(
-      readFileSync("apps/web/src/Management.tsx", "utf8"),
+    let source = reversePendingMoney(
+      reverseIt003(
+        readFileSync("apps/web/src/Management.tsx", "utf8"),
+        "Management",
+      ),
       "Management",
     );
     for (const edit of [...record.changes].reverse()) {

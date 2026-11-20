@@ -88,6 +88,8 @@ import { PurchaseEditor, ReceiptEditor, ReceiptHistory } from "./Purchases";
 import { WarehousesPanel } from "./WarehousesPanel";
 import { CourierFeeEditor } from "./CourierFeeEditor";
 import { SaleEditPanel, editableNow } from "./SaleEditPanel";
+import { SalePaymentReplacement } from "./SalePaymentsEditor";
+import { cashSessionMoveKind, openMoveDestinations } from "./paymentCashMove";
 import { SaleCostPanel, WithoutCostCard } from "./ZeroCost";
 import { IncomeByDay } from "./IncomeByDay";
 import { FormalReports } from "./FormalReports";
@@ -3369,6 +3371,7 @@ export function SalesHistory() {
     [correctingTransfer, setCorrectingTransfer] = useState<any>(null),
     [unverifying, setUnverifying] = useState<any>(null),
     [moving, setMoving] = useState<any>(null),
+    [replacingPayments, setReplacingPayments] = useState<any>(null),
     [search, setSearch] = useState(""),
     [saleDate, setSaleDate] = useState("");
   // Cajas para elegir destino al mover un cobro: solo se pide con el diálogo abierto.
@@ -3764,6 +3767,21 @@ export function SalesHistory() {
                 },
               ]}
             />
+            {can(user.permissions, "*") &&
+              selected.status === "completed" && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setReplacingPayments({
+                      sale: selected,
+                      operationId: crypto.randomUUID(),
+                    });
+                    setSelected(null);
+                  }}
+                >
+                  {en ? "Correct payment methods" : "Corregir formas de pago"}
+                </Button>
+              )}
             <h3>{en ? "Recorded payments" : "Pagos registrados"}</h3>
             {selected.hiddenUntilClose && (
               <p>
@@ -3841,21 +3859,23 @@ export function SalesHistory() {
                           : "Des-verificar transferencia"}
                       </button>
                     )}
-                  {p.cashSessionId &&
-                    p.status !== "rejected" &&
-                    can(user.permissions, "*") && (
-                      <button
-                        className="text-link"
-                        onClick={() => {
-                          setSelected(null);
-                          setMoving(p);
-                        }}
-                      >
-                        {en
+                  {cashSessionMoveKind(p) && can(user.permissions, "*") && (
+                    <button
+                      className="text-link"
+                      onClick={() => {
+                        setSelected(null);
+                        setMoving(p);
+                      }}
+                    >
+                      {cashSessionMoveKind(p) === "owner-cash"
+                        ? en
+                          ? "Move owner's cash to an open register"
+                          : "Pasar efectivo de la dueña a una caja abierta"
+                        : en
                           ? "Move payment to another register"
                           : "Mover cobro a otra caja"}
-                      </button>
-                    )}
+                    </button>
+                  )}
                   {p.entryType === "installment" &&
                     can(user.permissions, "*") && (
                       <label className="text-link proof-upload">
@@ -3958,6 +3978,17 @@ export function SalesHistory() {
           </>
         )}
       </Modal>
+      {can(user.permissions, "*") && replacingPayments && (
+        <SalePaymentReplacement
+          sale={replacingPayments.sale}
+          operationId={replacingPayments.operationId}
+          english={en}
+          onClose={() => setReplacingPayments(null)}
+          onSaved={() => {
+            void client.invalidateQueries({ queryKey: ["sales"] });
+          }}
+        />
+      )}
       {voiding && (
         <ConfirmModal
           english={en}
@@ -4137,12 +4168,22 @@ export function SalesHistory() {
         <FormModal
           english={en}
           title={
-            en ? "Move payment to another register" : "Mover cobro a otra caja"
+            cashSessionMoveKind(moving) === "owner-cash"
+              ? en
+                ? "Move owner's cash to an open register"
+                : "Pasar efectivo de la dueña a una caja abierta"
+              : en
+                ? "Move payment to another register"
+                : "Mover cobro a otra caja"
           }
           notice={
-            en
-              ? "The payment moves to another register. The sale, debt and inventory do not change. This is recorded in the audit log."
-              : "El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
+            cashSessionMoveKind(moving) === "owner-cash"
+              ? en
+                ? "Choose the open register that actually received this cash. The change is recorded in the audit log."
+                : "Elige la caja abierta que recibió este efectivo. El cambio queda en la bitácora."
+              : en
+                ? "The payment moves to another register. The sale, debt and inventory do not change. This is recorded in the audit log."
+                : "El cobro cambia de caja. La venta, la deuda y el inventario no cambian. Queda en la bitácora."
           }
           fields={[
             {
@@ -4150,7 +4191,10 @@ export function SalesHistory() {
               label: en ? "Destination register" : "Caja destino",
               type: "select",
               required: true,
-              options: (cashSessionsForMove.data || [])
+              options: (cashSessionMoveKind(moving) === "owner-cash"
+                ? openMoveDestinations(cashSessionsForMove.data || [])
+                : cashSessionsForMove.data || []
+              )
                 .filter((s: any) => s.id !== moving.cashSessionId)
                 .map((s: any) => ({
                   label: `${s.registerName ?? (en ? "Register" : "Caja")} · ${s.closedAt ? (en ? "closed" : "cerrada") : en ? "open" : "abierta"} · ${new Date(s.openedAt).toLocaleString(en ? "en-US" : "es-DO")}`,
