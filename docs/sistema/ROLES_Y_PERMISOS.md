@@ -4,11 +4,11 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 
 ## 1. Cómo funciona
 
-- Cada usuario tiene **un rol** y el rol tiene una **lista de permisos** (`apps/api/prisma/schema.prisma`, modelos `Role` y `User`). El permiso `*` da acceso a todo. La regla: `can(grants, p)` = tiene `*` o tiene `p` (`packages/shared/src/index.ts:795-796`).
+- Cada usuario tiene **un rol** y el rol tiene una **lista de permisos** (`apps/api/prisma/schema.prisma`, modelos `Role` y `User`). El permiso `*` da acceso a todo. La regla: `can(grants, p)` = tiene `*` o tiene `p` (`packages/shared/src/index.ts:843-844`).
 - La web esconde las pantallas sin permiso y la API revisa el permiso en cada ruta con `@Permit("…")` (`apps/api/src/common.ts:80-81`). Varias reglas de dinero se revisan en el servidor aunque la web las oculte.
-- Los roles que trae el sistema (valores de fábrica, `packages/shared/src/index.ts:764-791`; se crean al sembrar `apps/api/prisma/seed.ts:431-435`; el rol `gv` lo crea la migración `202610260901_gv`, ver `docs/coordinacion/MODULO-GV.md:72`):
-- Cada usuario tiene **un rol** y el rol tiene una **lista de permisos** (`apps/api/prisma/schema.prisma`, modelos `Role` y `User`). El permiso `*` da acceso a todo. La regla: `can(grants, p)` = tiene `*` o tiene `p` (`packages/shared/src/index.ts:795-796`).
-- Los roles que trae el sistema (valores de fábrica, `packages/shared/src/index.ts:764-791`; se crean al sembrar `apps/api/prisma/seed.ts:431-435`; el rol `gv` lo crea la migración `202610260901_gv`, ver `docs/coordinacion/MODULO-GV.md:72`; el rol `gerente_gv` lo crea la migración `202611060001_gv_gerente_rol`):
+- Los roles que trae el sistema (valores de fábrica, `packages/shared/src/index.ts:812-839`; se crean al sembrar `apps/api/prisma/seed.ts:431-435`; el rol `gv` lo crea la migración `202610260901_gv`, ver `docs/coordinacion/MODULO-GV.md:72`):
+- Cada usuario tiene **un rol** y el rol tiene una **lista de permisos** (`apps/api/prisma/schema.prisma`, modelos `Role` y `User`). El permiso `*` da acceso a todo. La regla: `can(grants, p)` = tiene `*` o tiene `p` (`packages/shared/src/index.ts:843-844`).
+- Los roles que trae el sistema (valores de fábrica, `packages/shared/src/index.ts:812-839`; se crean al sembrar `apps/api/prisma/seed.ts:431-435`; el rol `gv` lo crea la migración `202610260901_gv`, ver `docs/coordinacion/MODULO-GV.md:72`; el rol `gerente_gv` lo crea la migración `202611060001_gv_gerente_rol`):
 
 | Rol (nombre en la base) | Quién es                      | Permisos de fábrica                                                                                                                                                                                                                                                                            |
 | ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -29,8 +29,8 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 | `catalog:write`                                     | Crear/editar productos, variantes, importar Excel, kits.                                                                                                                                                                                                                                                                 | `apps/api/src/catalog.ts:196`, `:237`, `:378`, `:408`, `:432`, `:496`, `:588`, `:652`                                                                          |
 | `inventory:write`                                   | Pantallas «Mercancía» e «Inventario»; ajustes y conteos.                                                                                                                                                                                                                                                                 | `App.tsx:209`, `:240`; `apps/api/src/merchandise.ts:161-344`; `apps/api/src/inventory.ts:718`, `:1487-1496`                                                    |
 | `purchase:write`                                    | «Compras», órdenes, recepciones, proveedores, pagos a proveedor.                                                                                                                                                                                                                                                         | `App.tsx:258`; `apps/api/src/inventory.ts:1050-1137`; `apps/api/src/admin.ts:575-595`                                                                           |
-| `sale:write`                                        | Vender (Punto de venta), ver Ventas, pedir anulaciones, ventas en espera, cobrar créditos en efectivo.                                                                                                                                                                                                                   | `App.tsx:221-228`; `apps/api/src/sales.ts:1532`, `:4181-4183`; `apps/api/src/admin.ts:774-838`                                                                 |
-| `sale:manage`                                       | **Gerencia de ventas**: devoluciones, aprobar conteos, ver esperados de caja, ver datos completos de clientes, cobrar crédito con tarjeta/transferencia, ver lista de transferencias pendientes, tasas de incentivos, **ser quien aprueba con PIN**; ver «Configuración» e «Incentivos».                                 | `App.tsx:290`, `:1024-1031`; `sales.ts:3662`, `:2638-2640`, `:4423`; `inventory.ts:1657-1659`; `common.ts:70-72`, `:276-281`; `security.ts:148-149`            |
+| `sale:write`                                        | Vender (Punto de venta), ver Ventas, pedir anulaciones, ventas en espera, cobrar créditos en efectivo.                                                                                                                                                                                                                   | `App.tsx:221-228`; `apps/api/src/sales.ts:1657`, `:4181-4183`; `apps/api/src/admin.ts:774-838`                                                                 |
+| `sale:manage`                                       | **Gerencia de ventas**: devoluciones, aprobar conteos, ver esperados de caja, ver datos completos de clientes, cobrar crédito con tarjeta/transferencia, ver lista de transferencias pendientes, tasas de incentivos, **ser quien aprueba con PIN**; ver «Configuración» e «Incentivos».                                 | `App.tsx:290`, `:1024-1031`; `sales.ts:4056`, `:2638-2640`, `:4423`; `inventory.ts:1657-1659`; `common.ts:70-72`, `:276-281`; `security.ts:148-149`            |
 | `cash:write`                                        | Pantalla «Caja»: abrir, mover, trasladar y cerrar.                                                                                                                                                                                                                                                                       | `App.tsx:262`; `apps/api/src/cash.ts:883-1158`                                                                                                                 |
 | `expense:write`                                     | «Gastos».                                                                                                                                                                                                                                                                                                                | `App.tsx:265`; `apps/api/src/admin.ts:656-750`                                                                                                                 |
 | `customers:write`                                   | «Clientes»: crear/editar.                                                                                                                                                                                                                                                                                                | `App.tsx:271`; `apps/api/src/admin.ts:257-302`                                                                                                                 |
@@ -68,7 +68,7 @@ Rama `cola-n26` (= `nexora-cloud`). Citas `archivo:línea`.
 - **Contraseña de 6 números** y obligación de cambiarla al entrar (`apps/api/src/password-policy.ts:11-13`; `Management.tsx:5035-5038`). Cualquier otro rol usa contraseña fuerte (12 o más caracteres con mayúscula, minúscula, número y símbolo, `password-policy.ts:66-72`).
 - Caja ciega: no ve los montos esperados de su caja (`common.ts:70-72`, `apps/web/src/managementMessages.ts:41-44`).
 - Necesita el **PIN de gerente** para: descuentos sobre el límite, crédito/contraentrega sobre los topes, nota de crédito sin código, salidas de efectivo sobre RD$ 1,000 del turno, cerrar con descuadre, vale de caja, trasladar la caja a otro equipo, descartar una venta sin conexión en conflicto, y registrar efectivo que «ya tiene la dueña» (ver §5).
-- Solo cobra créditos **en efectivo** (`apps/api/src/sales.ts:4642-4647`). Pide anulaciones; no las ejecuta.
+- Solo cobra créditos **en efectivo** (`apps/api/src/sales.ts:5036-5041`). Pide anulaciones; no las ejecuta.
 - No puede cambiar de usuario con PIN hacia alguien con más permisos (`apps/api/src/common.ts:97-98`).
 
 ### Almacén (`warehouse`)
@@ -85,14 +85,14 @@ Lista de lo que la API exige `@Permit("*")` (verificado en el código; no se enu
 
 | Acción | Ruta / pantalla | Cita |
 | --- | --- | --- |
-| Anular una venta | `POST /sales/:id/void` · botón «Anular» | `apps/api/src/sales.ts:2384-2387` |
-| Corregir el costo de una línea vendida (con PIN y motivo) | `POST /sales/:id/items/:itemId/cost` · Ventas › ojo › «Costo pendiente» | `sales.ts:2376` |
-| Aprobar / rechazar solicitud de anulación | `POST /void-requests/:id/approve` y `/reject` | `sales.ts:2057-2116` |
-| Verificar / rechazar transferencia de venta | `POST /payments/:id/verify` y `/reject` | `sales.ts:2974-2976`, `:2885-2888` |
-| Corregir banco y referencia | `POST /payments/:id/correct-transfer` | `sales.ts:2955-2958` |
-| Corregir método de pago (7 días) | `POST /sales/:id/payments/:paymentId/correct-method` | `sales.ts:2552` |
-| Cambiar vendedora / marcar «al por mayor» | `POST /sales/:id/seller`, `/mark-wholesale` | `sales.ts:2117-2170` |
-| Registrar abono / cobro de mensajero / cobro por persona / estado de cuenta | `/sales/:id/installments`, `/cod-collections`, `/credit-accounts…` | `sales.ts:3966-3995`, `:3633-3857` |
+| Anular una venta | `POST /sales/:id/void` · botón «Anular» | `apps/api/src/sales.ts:2383-2386` |
+| Corregir el costo de una línea vendida (con PIN y motivo) | `POST /sales/:id/items/:itemId/cost` · Ventas › ojo › «Costo pendiente» | `sales.ts:2501` |
+| Aprobar / rechazar solicitud de anulación | `POST /void-requests/:id/approve` y `/reject` | `sales.ts:2182-2241` |
+| Verificar / rechazar transferencia de venta | `POST /payments/:id/verify` y `/reject` | `sales.ts:3368-3370`, `:2885-2888` |
+| Corregir banco y referencia | `POST /payments/:id/correct-transfer` | `sales.ts:2813-2816` |
+| Corregir método de pago (7 días) | `POST /sales/:id/payments/:paymentId/correct-method` | `sales.ts:2677` |
+| Cambiar vendedora / marcar «al por mayor» | `POST /sales/:id/seller`, `/mark-wholesale` | `sales.ts:2185-2238` |
+| Registrar abono / cobro de mensajero / cobro por persona / estado de cuenta | `/sales/:id/installments`, `/cod-collections`, `/credit-accounts…` | `sales.ts:3958-3987`, `:3633-3857` |
 | «Conciliar transferencias» y «Envíos del mensajero» (pantallas) | menú | `App.tsx:234-244` |
 | Traspasar Casa↔Tienda y «Levantamiento inicial de Casa» | `/inventory/transfers`, `/inventory-import/casa/*` | `warehouses.ts:112-114`; `inventory-import.ts:314-348` |
 | Configuración (guardar), logo, cajas | `PUT /settings`, `/settings/logo`, `/terminals/:id/register` | `admin.ts:875-976` |
@@ -114,15 +114,15 @@ Nota (pendiente de comprobar en vivo): el botón «Configuración» lo ve un ger
 
 | Situación                                                                                                                              | Cita                                                                    |
 | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Descuento mayor al «Descuento máximo del vendedor (%)» (10 % de fábrica)                                                               | `POS.tsx:1963-1968`; `sales.ts:632-716`                                 |
+| Descuento mayor al «Descuento máximo del vendedor (%)» (10 % de fábrica)                                                               | `POS.tsx:1963-1968`; `sales.ts:719-803`                                 |
 | Crédito/contraentrega sobre el umbral (RD$ 1,000), deuda del cliente, tope del turno (RD$ 3,000) o ventas a crédito deshabilitadas     | `packages/shared/src/index.ts:408-449`                                  |
-| Pagar con nota de crédito sin escribir su código impreso                                                                               | `POS.tsx:1969-1981`; `sales.ts:703-705`                                 |
+| Pagar con nota de crédito sin escribir su código impreso                                                                               | `POS.tsx:1969-1981`; `sales.ts:781-783`                                 |
 | Salida de efectivo del turno sobre el límite (RD$ 1,000 de fábrica)                                                                    | `apps/api/src/cash.ts:1024-1062`, `:1060`                                |
 | Cerrar la caja con descuadre de tarjeta, efectivo o dólares (cajera, o gerente cerrando SU caja); desde el 2.º intento fallido siempre | `cash.ts:1299-1351`                                                     |
 | Cerrar con «Vale de caja» (PIN de **otro** gerente)                                                                                    | `cash.ts:1188-1214`                                                     |
 | Trasladar la caja a otro equipo                                                                                                        | `cash.ts:1110-1124`                                                     |
-| Devolver efectivo desde la caja abierta de otra persona (PIN de su dueña o de otro gerente)                                            | `sales.ts:3252-3266`                                                    |
-| «Este efectivo ya lo tiene la dueña» al cobrar un crédito                                                                              | `sales.ts:4657-4672`                                                    |
+| Devolver efectivo desde la caja abierta de otra persona (PIN de su dueña o de otro gerente)                                            | `sales.ts:3203-3217`                                                    |
+| «Este efectivo ya lo tiene la dueña» al cobrar un crédito                                                                              | `sales.ts:5051-5066`                                                    |
 | Descartar una venta sin conexión en conflicto (cajera)                                                                                 | `apps/web/src/Management.tsx:2278-2403`                                 |
 | Aprobar un equipo nuevo con PIN desde el propio equipo                                                                                 | `apps/api/src/realtime.ts:282-283`; `apps/web/src/realtime.tsx:517-520` |
 | Cambiar de usuario con PIN (PIN del usuario al que se cambia; solo a usuarios con permisos iguales o menores)                          | `apps/api/src/auth.ts:839-874`; `common.ts:96-97`                       |
@@ -130,7 +130,7 @@ Nota (pendiente de comprobar en vivo): el botón «Configuración» lo ve un ger
 ## 6. Equipos (terminales)
 
 - Un equipo nuevo de vendedor/almacén **espera aprobación** de un gerente: «Este equipo necesita aprobación. Puedes consultar, pero para vender o mover mercancía un gerente debe aprobarlo» (`apps/web/src/realtime.tsx:517-520`). Se aprueba con PIN en el mismo equipo o desde Configuración › **Equipos** (`apps/api/src/realtime.ts:276-283`; modelo `Terminal`, campo `approvedAt`).
-- Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1532`, `cash.ts:884`).
+- Las rutas que mueven dinero o inventario exigen equipo registrado y aprobado (`@RequireTerminal`, `apps/api/src/common.ts` y `sales.ts:1657`, `cash.ts:884`).
 - La caja se asigna al equipo con nombre y número visibles en el cuadre (ej. «4012 · GPRO STORE RD») y cada cajero tiene un «No. de cajero» (ej. 1031) (`apps/web/src/Tienda.tsx:1377-1444`; `schema.prisma` `Terminal.registerNumber`, `User.cashierNumber`).
 - Una sesión se cierra por inactividad según «sessionTimeoutMinutes» (30 min por defecto) (`apps/api/src/auth.ts:358-360`; `apps/api/src/admin.ts:97`).
 

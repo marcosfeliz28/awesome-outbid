@@ -594,6 +594,10 @@ export const saleSchema = z.object({
   // «Crédito» o «Contraentrega» (dueña, 19-oct): sólo estadística; las dos van
   // con el método `cod` y las mismas reglas. Opcional: la huella offline no cambia.
   receivableKind: z.enum(["credit", "cod"]).optional(),
+  // Tope preventivo del cobro en dólares (largeForeignPayment): la caja
+  // confirma un pago en US$ muy por encima del total. No entra en la huella
+  // offline (se quita como managerPin).
+  confirmLargeForeign: z.boolean().optional(),
   payments: z
     .array(
       z
@@ -647,6 +651,50 @@ export type SaleInput = z.infer<typeof saleSchema>;
 /** Equivalente en pesos de un pago en dólares, al centavo. */
 export const usdToDop = (amountUsd: Decimal.Value, rate: Decimal.Value) =>
   money(d(amountUsd).times(rate));
+/**
+ * Tope preventivo del cobro en dólares (caso FS-0000730, 19-nov: US$ 2,360
+ * tecleados en vez de US$ 40). Si un pago en US$, en pesos, supera 3 veces el
+ * total de la venta y el vuelto pasa de RD$ 5,000, la caja debe confirmarlo
+ * (`confirmLargeForeign`) y, la cajera, con el PIN de un gerente.
+ */
+export const LARGE_FOREIGN_FACTOR = 3;
+export const LARGE_FOREIGN_MIN_CHANGE = 5000;
+export function largeForeignPayment(
+  total: number,
+  payments: {
+    amount: number;
+    currency?: string;
+    amountUsd?: number;
+    usdRate?: number;
+  }[],
+) {
+  const paid = payments.reduce((a, p) => a.plus(p.amount), d(0));
+  const change = money(Decimal.max(0, paid.minus(total)));
+  if (!(change > LARGE_FOREIGN_MIN_CHANGE)) return null;
+  const usd = payments.find(
+    (p) =>
+      p.currency === "USD" &&
+      d(p.amount).gt(d(total).times(LARGE_FOREIGN_FACTOR)),
+  );
+  if (!usd) return null;
+  return {
+    amountUsd: usd.amountUsd ?? 0,
+    usdRate: usd.usdRate ?? 0,
+    amount: usd.amount,
+    total,
+    change,
+  };
+}
+export const largeForeignMessage = (
+  hit: NonNullable<ReturnType<typeof largeForeignPayment>>,
+  needsPin: boolean,
+) =>
+  `Revisa el monto en dólares: US$ ${formatAmount(hit.amountUsd)} a RD$ ${hit.usdRate} son ` +
+  `${formatMoney(hit.amount)}, más de ${LARGE_FOREIGN_FACTOR} veces el total de la venta ` +
+  `(${formatMoney(hit.total)}); el vuelto sería ${formatMoney(hit.change)}. ` +
+  (needsPin
+    ? "Si el monto es correcto, confirma el cobro en dólares y pide el PIN de un gerente."
+    : "Si el monto es correcto, confirma el cobro en dólares.");
 
 // ── Cuadre de caja de la tienda (docs/tienda/CUADRE_REPORTES_FACTURA.md) ──
 

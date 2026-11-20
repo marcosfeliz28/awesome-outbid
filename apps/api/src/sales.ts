@@ -28,6 +28,8 @@ import {
   lineTotals,
   paymentTotals,
   usdToDop,
+  largeForeignPayment,
+  largeForeignMessage,
   money,
   formatMoney,
   formatAmount,
@@ -518,6 +520,91 @@ export function usdCashPayments<
     return { ...p, amount, usdRate: rate };
   });
 }
+// Pagos nuevos de POST /sales/:id/payments/replace (caso FS-0000730). `amount`
+// es lo aplicado a la venta en pesos; en dólares, lo entregado en pesos sale de
+// US$ × tasa y el vuelto es la diferencia. Sólo el efectivo da vuelto y la
+// suma de lo aplicado debe ser exactamente el total de la venta.
+export const replacementPayment = z.object({
+  method: z.enum(["cash", "card", "transfer"]),
+  amount: moneyAmount(),
+  currency: z.enum(["DOP", "USD"]).default("DOP"),
+  amountUsd: moneyAmount(1000000).optional(),
+  usdRate: z.number().positive().max(10000).optional(),
+  tendered: moneyAmount().optional(),
+  change: moneyAmount(100000000, true).optional(),
+  cashSessionId: uuid.optional(),
+  bank: z.string().trim().max(100).optional(),
+  reference: z.string().trim().max(100).optional(),
+  approvalCode: z.string().trim().max(100).optional(),
+  cardLast4: z
+    .string()
+    .regex(/^\d{4}$/)
+    .optional(),
+  cardBrand: z.string().trim().max(40).optional(),
+  cardType: z.enum(["credit", "debit"]).optional(),
+});
+export function normalizeReplacementPayments(
+  total: number,
+  payments: z.infer<typeof replacementPayment>[],
+  allowedRates: number[],
+) {
+  const rows = payments.map((p, i) => {
+    const n = `Pago ${i + 1}: `;
+    if (p.currency === "USD") {
+      if (p.method !== "cash")
+        bad(n + "un pago en dólares sólo puede ser en efectivo.");
+      if (p.amountUsd === undefined || p.usdRate === undefined)
+        bad(n + "el pago en dólares necesita los US$ recibidos y la tasa.");
+      const rate = d(p.usdRate).toDecimalPlaces(4).toNumber();
+      if (!allowedRates.some((r) => Math.abs(r - rate) < 0.00005))
+        bad(
+          `${n}la tasa RD$ ${rate} no es la de la venta ni la de Configuración (` +
+            (allowedRates.map((r) => "RD$ " + r).join(", ") || "sin tasa") +
+            ").",
+        );
+      const tendered = usdToDop(p.amountUsd, rate);
+      if (p.tendered !== undefined && Math.abs(p.tendered - tendered) > 0.001)
+        bad(
+          `${n}US$ ${p.amountUsd} a RD$ ${rate} son RD$ ${formatAmount(tendered)}, no RD$ ${formatAmount(p.tendered)}.`,
+        );
+      if (p.amount > tendered)
+        bad(
+          `${n}lo aplicado (RD$ ${formatAmount(p.amount)}) supera lo recibido en dólares (RD$ ${formatAmount(tendered)}).`,
+        );
+      const change = money(d(tendered).minus(p.amount));
+      if (p.change !== undefined && Math.abs(p.change - change) > 0.001)
+        bad(`${n}el vuelto es RD$ ${formatAmount(change)}.`);
+      return { ...p, amountUsd: p.amountUsd, usdRate: rate, tendered, change };
+    }
+    if (p.amountUsd !== undefined || p.usdRate !== undefined)
+      bad(n + "un pago en pesos no lleva US$ ni tasa.");
+    if (p.method !== "cash") {
+      if (
+        (p.tendered !== undefined && p.tendered !== p.amount) ||
+        (p.change !== undefined && p.change !== 0)
+      )
+        bad(n + "los pagos distintos de efectivo no dan vuelto.");
+      if (p.method === "card" && !p.approvalCode && !p.reference)
+        bad(n + "indica la aprobación o referencia de la tarjeta.");
+      if (p.method === "transfer" && (!p.bank || !p.reference))
+        bad(n + "indica banco y referencia de la transferencia.");
+      return { ...p, tendered: p.amount, change: 0 };
+    }
+    const tendered = p.tendered ?? p.amount;
+    if (tendered < p.amount)
+      bad(n + "lo entregado no puede ser menor que lo aplicado.");
+    const change = money(d(tendered).minus(p.amount));
+    if (p.change !== undefined && Math.abs(p.change - change) > 0.001)
+      bad(`${n}el vuelto es RD$ ${formatAmount(change)}.`);
+    return { ...p, tendered, change };
+  });
+  const sum = money(rows.reduce((a, r) => a.plus(r.amount), d(0)));
+  if (Math.abs(sum - total) > 0.001)
+    bad(
+      `Los pagos aplican RD$ ${formatAmount(sum)} y la venta es de RD$ ${formatAmount(total)}: deben coincidir al centavo.`,
+    );
+  return rows;
+}
 // Decisión 38: una caja es de un usuario; nadie opera con la de otra persona.
 const OTHER_CASH =
   "Esta caja es de otra persona. Cada usuario vende y mueve dinero sólo en su propia caja; abre la tuya.";
@@ -753,8 +840,13 @@ export class SalesController {
       input.items.some(
         (item) => item.discountPercent > 0 || (item.discountAmount ?? 0) > 0,
       );
-    const { managerPin: ignored, ...fingerprint } = input;
+    const {
+      managerPin: ignored,
+      confirmLargeForeign: ignoredConfirm,
+      ...fingerprint
+    } = input;
     void ignored;
+    void ignoredConfirm;
     const originalRequestHash = createHash("sha256")
       .update(JSON.stringify(fingerprint))
       .digest("hex");
@@ -763,9 +855,13 @@ export class SalesController {
       offline,
       requestsDiscount,
     );
-    const { managerPin: normalizedPin, ...normalizedFingerprint } =
-      normalizedInput;
+    const {
+      managerPin: normalizedPin,
+      confirmLargeForeign: normalizedConfirm,
+      ...normalizedFingerprint
+    } = normalizedInput;
     void normalizedPin;
+    void normalizedConfirm;
     const requestHash = createHash("sha256")
       .update(JSON.stringify(normalizedFingerprint))
       .digest("hex");
@@ -807,6 +903,16 @@ export class SalesController {
         );
     }
     const approvedBy = await this.approve(actor, input);
+    // Tope preventivo del cobro en dólares (caso FS-0000730): la cajera que
+    // confirma un pago en US$ muy grande lo hace con el PIN de un gerente. El
+    // PIN se comprueba aquí (fuera de la transacción, como approve); si el
+    // tope aplica se decide abajo, con el total ya calculado.
+    const manages = can(actor.permissions, "sale:manage");
+    const largeForeignBy =
+      input.confirmLargeForeign === true && !manages && input.managerPin
+        ? (approvedBy ??
+          (await managerPinApproval(this.db, actor, input.managerPin)))
+        : null;
     const result = await moneyDb(this.db).$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.offlineUuid}))::text AS locked`;
@@ -1027,6 +1133,15 @@ export class SalesController {
           bad(e.message);
         }
         if (payment.pending > 0) bad("Falta completar el pago de la factura.");
+        // La revisión de gerencia de una venta ya entregada no se frena aquí.
+        const largeForeign = reviewed
+          ? null
+          : largeForeignPayment(total, input.payments);
+        if (
+          largeForeign &&
+          (input.confirmLargeForeign !== true || (!manages && !largeForeignBy))
+        )
+          conflict(largeForeignMessage(largeForeign, !manages));
         for (const p of input.payments) {
           if (p.creditNoteId && p.method !== "credit_note")
             bad("La nota de crédito sólo se usa con su método de pago.");
@@ -1388,6 +1503,16 @@ export class SalesController {
             update: { message, status: "new" },
           });
         }
+        if (largeForeign)
+          await audit(
+            tx,
+            actor,
+            "large_foreign_confirmed",
+            "sale",
+            sale.id,
+            undefined,
+            { ...largeForeign, approvedBy: largeForeignBy ?? actor.id },
+          );
         if ((credit || cod) && approvedBy)
           await audit(
             tx,
@@ -2789,6 +2914,275 @@ export class SalesController {
       };
     }, MONEY_TRANSACTION);
     return result;
+  }
+
+  // 20-nov (caso FS-0000730, caja de Wendy ya cerrada): se tecleó US$ 2,360
+  // en vez de US$ 40 y la tarjeta no quedó en la factura. Reemplaza TODOS los
+  // pagos de una venta completada por un conjunto validado (suma de lo
+  // aplicado = total). Solo administración, con motivo; si toca una caja
+  // cerrada exige `ownerConfirmed` y recalcula su cierre con aviso y
+  // bitácora (antes/después). No toca artículos, inventario ni incentivos.
+  @Post("sales/:id/payments/replace")
+  @RequireTerminal()
+  @Permit("*")
+  async replacePayments(
+    @Param("id") id: string,
+    @Body() body: unknown,
+    @CurrentUser() actor: Actor,
+  ) {
+    const saleId = parse(uuid, id);
+    const data = parse(
+      z.object({
+        payments: z.array(replacementPayment).min(1).max(10),
+        reason,
+        ownerConfirmed: z.boolean().optional(),
+        // Las transferencias tienen su flujo (corregir, verificar, rechazar).
+        allowTransfer: z.boolean().optional(),
+        operationId: uuid.optional(),
+      }),
+      body,
+    );
+    return moneyDb(this.db).$transaction(async (tx) => {
+      if (data.operationId) {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"op:" + data.operationId}))::text AS locked`;
+        const done = await tx.auditLog.findFirst({
+          where: {
+            action: "sale_payments_replaced",
+            after: { path: ["operationId"], equals: data.operationId },
+          },
+          select: { entityId: true },
+        });
+        if (done)
+          conflict(
+            done.entityId === saleId
+              ? "Esta corrección ya se aplicó (misma clave de operación). Actualiza la venta."
+              : "La clave de la operación ya corresponde a otra venta.",
+          );
+      }
+      // Orden fijo de bloqueos: cajas (por id) antes que venta, como al
+      // corregir el método o mover de caja.
+      const peek = await tx.sale.findFirst({
+        where: { id: saleId, branchId: actor.branchId },
+        select: {
+          cashSessionId: true,
+          payments: { select: { cashSessionId: true } },
+        },
+      });
+      if (!peek) bad("Venta no encontrada.");
+      const sessionIds = (rows: { cashSessionId: string | null }[]) => [
+        ...new Set(
+          [
+            ...rows.map((p) => p.cashSessionId),
+            ...data.payments.map((p) => p.cashSessionId),
+            peek.cashSessionId,
+          ].filter((v): v is string => !!v),
+        ),
+      ];
+      const ids = sessionIds(peek.payments).sort();
+      for (const sessionId of ids)
+        await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sessionId}::uuid FOR UPDATE`;
+      const sale = await editableSale(tx, saleId, actor);
+      await tx.$queryRaw`SELECT id FROM "Payment" WHERE "saleId"=${saleId}::uuid FOR UPDATE`;
+      const old = await tx.payment.findMany({
+        where: { saleId },
+        orderBy: { createdAt: "asc" },
+      });
+      if (sessionIds(old).sort().join() !== ids.join())
+        conflict("Los pagos de la venta cambiaron. Actualiza la venta.");
+      if (old.some((p) => p.entryType !== "sale"))
+        bad(
+          "La venta tiene cobros (abonos o contraentrega cobrada); sus pagos no se reemplazan por aquí.",
+        );
+      if (old.some((p) => !["cash", "card", "transfer"].includes(p.method)))
+        bad(
+          "La venta tiene crédito, contraentrega o nota de crédito; sus pagos no se reemplazan por aquí.",
+        );
+      if (old.some((p) => p.status === "rejected"))
+        bad("La venta tiene un pago rechazado; no se reemplazan sus pagos.");
+      if (Number(sale.creditBalance) !== 0)
+        bad("La venta tiene saldo por cobrar; no se reemplazan sus pagos.");
+      if (await tx.saleReturn.count({ where: { saleId } }))
+        bad("La venta tiene devoluciones; no se reemplazan sus pagos.");
+      if (
+        !data.allowTransfer &&
+        [...old, ...data.payments].some((p) => p.method === "transfer")
+      )
+        bad(
+          "Las transferencias tienen su flujo propio (corregir, verificar o rechazar). Para incluirlas aquí envía allowTransfer: true.",
+        );
+      const settings = await tx.settings.findUnique({
+        where: { id: actor.branchId },
+      });
+      const config = settings?.data as any;
+      // Tasas válidas: las de los pagos en US$ de la venta y la de hoy.
+      const rates = [
+        ...old.filter((p) => p.usdRate).map((p) => Number(p.usdRate)),
+        ...(Number(config?.usdRate) > 0
+          ? [d(Number(config.usdRate)).toDecimalPlaces(4).toNumber()]
+          : []),
+      ];
+      const rows = normalizeReplacementPayments(
+        Number(sale.total),
+        data.payments,
+        [...new Set(rates)],
+      );
+      const sessions = await tx.cashSession.findMany({
+        where: { id: { in: ids } },
+      });
+      if (ids.length !== sessions.length) bad("Esa caja no existe.");
+      for (const s of sessions) {
+        if (s.branchId !== actor.branchId)
+          bad("Esa caja no existe en esta sucursal.");
+        if (!s.closedAt && s.userId !== actor.id)
+          bad(
+            "Una caja de esta venta está abierta y es de otra persona: espera a que la cierre.",
+          );
+      }
+      const closed = sessions.filter((s) => s.closedAt);
+      if (closed.length && data.ownerConfirmed !== true)
+        bad(
+          "La venta toca una caja cerrada: confirma con la dueña y envía ownerConfirmed: true.",
+        );
+      for (const r of rows)
+        if (r.method === "cash" && !(r.cashSessionId ?? sale.cashSessionId))
+          bad("El efectivo debe quedar en una caja: indica cashSessionId.");
+      const shape = (p: any) =>
+        [
+          p.method,
+          p.currency ?? "DOP",
+          money(p.amount),
+          money(p.tendered),
+          money(p.change),
+          p.amountUsd == null ? "" : money(p.amountUsd),
+          p.cashSessionId ?? sale.cashSessionId ?? "",
+        ].join("|");
+      if (old.map(shape).sort().join() === rows.map(shape).sort().join())
+        bad("Los pagos ya son esos; no hay nada que cambiar.");
+      const snapshot = (s: any) => ({
+        expectedCash: s.expectedCash,
+        countedCash: s.countedCash,
+        differenceCash: s.differenceCash,
+        expectedCard: s.expectedCard,
+        countedCard: s.countedCard,
+        differenceCard: s.differenceCard,
+        expectedTransfer: s.expectedTransfer,
+        differenceTransfer: s.differenceTransfer,
+        expectedUsd: (s.closeDetails as any)?.expectedUsd ?? null,
+        countedUsd: (s.closeDetails as any)?.countedUsd ?? null,
+        differenceUsd: (s.closeDetails as any)?.differenceUsd ?? null,
+      });
+      const before = closed.map((s) => ({ id: s.id, ...snapshot(s) }));
+      const fee = config?.cardFeePercent ?? 2.5;
+      const created: any[] = [];
+      for (const [i, r] of rows.entries()) {
+        const fields = {
+          method: r.method,
+          currency: r.currency,
+          amountUsd: r.currency === "USD" ? r.amountUsd : null,
+          usdRate: r.currency === "USD" ? r.usdRate : null,
+          amount: r.amount,
+          tendered: r.tendered,
+          change: r.change,
+          cashSessionId: r.cashSessionId ?? sale.cashSessionId ?? null,
+          bank: r.method === "transfer" ? r.bank : null,
+          reference: r.reference || null,
+          approvalCode: r.method === "card" ? r.approvalCode || null : null,
+          cardLast4: r.method === "card" ? r.cardLast4 || null : null,
+          cardBrand: r.method === "card" ? r.cardBrand || null : null,
+          cardType: r.method === "card" ? r.cardType || null : null,
+          feeAmount:
+            r.method === "card" ? money(d(r.amount).times(fee).div(100)) : 0,
+          status: r.method === "transfer" ? "pending_verification" : "ok",
+        };
+        // Se reutilizan los pagos existentes en orden; los que sobran se
+        // borran (quedan completos en la bitácora) y los que faltan se crean.
+        const row = old[i]
+          ? await tx.payment.update({ where: { id: old[i].id }, data: fields })
+          : await tx.payment.create({ data: { ...fields, saleId } });
+        created.push(row);
+        if (r.method === "transfer")
+          await tx.alert.upsert({
+            where: { key: "transfer:" + row.id },
+            create: {
+              key: "transfer:" + row.id,
+              type: "transfer_pending",
+              severity: "high",
+              entityId: saleId,
+              branchId: actor.branchId,
+              message:
+                `Transferencia de ${sale.number} por RD$ ${formatAmount(r.amount)} sin verificar · ` +
+                `${r.bank} · ref. ${r.reference}`,
+            },
+            update: {},
+          });
+      }
+      for (const p of old.slice(rows.length))
+        await tx.payment.delete({ where: { id: p.id } });
+      for (const [i, p] of old.entries())
+        if (
+          p.method === "transfer" &&
+          (i >= rows.length || rows[i].method !== "transfer")
+        )
+          await resolveTransferAlert(tx, p.id);
+      const describe = (list: any[]) =>
+        list
+          .map((p) =>
+            p.currency === "USD"
+              ? `efectivo US$ ${formatAmount(Number(p.amountUsd))} (RD$ ${formatAmount(Number(p.amount))})`
+              : `${p.method} RD$ ${formatAmount(Number(p.amount))}`,
+          )
+          .join(" + ");
+      const after: any[] = [];
+      for (const s of closed) {
+        const fresh = await tx.cashSession.findUniqueOrThrow({
+          where: { id: s.id },
+        });
+        const differences = await refreshClosedCash(tx, fresh);
+        await closedCashChanged(tx, actor, fresh, {
+          ref: "replace:" + saleId,
+          what: `en la venta ${sale.number} los pagos ${describe(old)} pasaron a ${describe(created)}`,
+          reason: data.reason,
+          differences,
+        });
+        after.push({
+          id: s.id,
+          ...snapshot(
+            await tx.cashSession.findUniqueOrThrow({ where: { id: s.id } }),
+          ),
+        });
+      }
+      const result = {
+        ok: true,
+        number: sale.number,
+        total: Number(sale.total),
+        payments: json(created.map(paymentSummary)),
+        cashSessions: json(
+          closed.map((s, i) => ({
+            id: s.id,
+            before: before[i],
+            after: after[i],
+          })),
+        ),
+      };
+      await audit(
+        tx,
+        actor,
+        "sale_payments_replaced",
+        "sale",
+        saleId,
+        { payments: json(old), cashSessions: json(before) },
+        {
+          operationId: data.operationId ?? null,
+          number: sale.number,
+          total: sale.total,
+          payments: json(created),
+          cashSessions: json(after),
+          ownerConfirmed: data.ownerConfirmed === true,
+          reason: data.reason,
+        },
+      );
+      return result;
+    }, MONEY_TRANSACTION);
   }
 
   @Post("sales/:id/void")
