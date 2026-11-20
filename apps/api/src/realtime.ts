@@ -33,6 +33,7 @@ import {
   ACTIVITY_WRITE_INTERVAL_MS,
   TERMINAL_ONLINE_MS,
   sessionActivityGraceMs,
+  sessionTimeoutMinutesFor,
 } from "./session-activity";
 const terminalStatus = (t: {
   revokedAt: Date | null;
@@ -148,14 +149,19 @@ const bump = (key: string, delta: number) => {
   return next;
 };
 
-// Propuesta A2 (auditoría 19-nov), apagada: tope de equipos que una cuenta de
-// gerencia aprueba sola por hora; el resto queda pendiente. Solo se activa si
-// TERMINAL_AUTO_APPROVE_PER_HOUR tiene un número (decisión de la dueña).
+// A2 (auditoría 19-nov; decisión 7 de la dueña, 20-nov): una cuenta de
+// gerencia aprueba sola como mucho 5 equipos por hora en cada sucursal (las
+// pruebas de auditoría crearon 133 seguidos). Los demás quedan pendientes de
+// aprobación manual y la dueña recibe un aviso. TERMINAL_AUTO_APPROVE_PER_HOUR
+// cambia el número; 0 = ninguna alta automática (no hay «sin tope»).
+export const TERMINAL_AUTO_APPROVE_DEFAULT = 5;
 export function autoApproveLimit(env = process.env) {
-  const n = Number(env.TERMINAL_AUTO_APPROVE_PER_HOUR);
-  return Number.isInteger(n) && n > 0 ? n : null;
+  const raw = env.TERMINAL_AUTO_APPROVE_PER_HOUR;
+  const n = Number(raw);
+  return raw !== undefined && raw.trim() !== "" && Number.isInteger(n) && n >= 0
+    ? n
+    : TERMINAL_AUTO_APPROVE_DEFAULT;
 }
-
 @Controller()
 export class RealtimeController {
   private hub: RealtimeHub;
@@ -179,17 +185,24 @@ export class RealtimeController {
     const limit = autoApproveLimit();
     return this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${data.id}))::text`;
-      const manager =
-        isManager &&
-        (limit === null ||
-          (await tx.terminal.count({
-            where: {
-              createdBy: actor.id,
-              approvedBy: actor.id,
-              approvedAt: { gte: new Date(Date.now() - 3600000) },
-            },
-          })) < limit);
       const existing = await tx.terminal.findUnique({ where: { id: data.id } });
+      // Solo cuenta un alta nueva (o el reclamo de un equipo sin secreto): un
+      // equipo ya registrado que vuelve a entrar no gasta cupo.
+      const claims = !existing || !existing.secretHash;
+      let overLimit = false;
+      if (isManager && claims) {
+        // Un alta a la vez por sucursal: dos registros simultáneos no pasan
+        // ambos por debajo del tope.
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${"terminal-auto:" + actor.branchId}))::text`;
+        // Aprobado solo = quien lo creó es quien lo aprobó, en esta sucursal.
+        const [row] = await tx.$queryRaw<{ n: number }[]>`
+          SELECT count(*)::int AS n FROM "Terminal"
+          WHERE "branchId" = ${actor.branchId}
+            AND "approvedBy" IS NOT NULL AND "approvedBy" = "createdBy"
+            AND "approvedAt" >= ${new Date(Date.now() - 3600000)}`;
+        overLimit = Number(row?.n ?? 0) >= limit;
+      }
+      const manager = isManager && !overLimit;
       if (existing) {
         if (existing.branchId !== actor.branchId || existing.revokedAt)
           bad("Equipo revocado o de otra sucursal.");
@@ -258,6 +271,27 @@ export class RealtimeController {
         where: { id: actor.sessionId },
         data: { terminalId: terminal.id },
       });
+      // Decisión 7: pasado el tope, el equipo queda pendiente y la dueña lo
+      // sabe (un aviso por sucursal y hora, con el último equipo).
+      if (overLimit) {
+        const hour = new Date().toISOString().slice(0, 13);
+        const message =
+          `Se pasó el tope de ${limit} equipos aprobados solos por hora: ` +
+          `«${terminal.name}» (de ${actor.name}) quedó pendiente de aprobación. ` +
+          "Si no lo reconoces, revócalo en Configuración › Equipos.";
+        await tx.alert.upsert({
+          where: { key: `terminal-auto-limit:${actor.branchId}:${hour}` },
+          create: {
+            key: `terminal-auto-limit:${actor.branchId}:${hour}`,
+            type: "terminal_auto_limit",
+            severity: "high",
+            entityId: terminal.id,
+            branchId: actor.branchId,
+            message,
+          },
+          update: { status: "new", entityId: terminal.id, message },
+        });
+      }
       if (!existing || legacyClaim)
         await audit(
           tx,
@@ -549,7 +583,7 @@ export class RealtimeController {
           where: { id: actor.branchId },
         });
         const timeoutMs =
-          Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000;
+          sessionTimeoutMinutesFor(actor.permissions, settings?.data) * 60000;
         if (
           !session ||
           !user?.active ||

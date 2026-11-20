@@ -364,7 +364,7 @@ describe("Sesiones y equipos (API real)", () => {
     });
   });
 
-  it("A10 · sin sessionTimeoutMinutes en Ajustes la sesión inactiva vence a los 30 minutos", async () => {
+  it("A10 · sin sessionTimeoutMinutes en Ajustes la cajera vence a los 60 minutos (decisión 6, 20-nov)", async () => {
     const stored = await db.settings.findUniqueOrThrow({
       where: { id: "main" },
     });
@@ -381,7 +381,7 @@ describe("Sesiones y equipos (API real)", () => {
         password: CASHIER_PASSWORD,
       });
       expect(login.status, JSON.stringify(login.body)).toBe(201);
-      expect(login.body.user.sessionTimeoutMinutes).toBe(30);
+      expect(login.body.user.sessionTimeoutMinutes).toBe(60);
     } finally {
       await db.settings.update({
         where: { id: "main" },

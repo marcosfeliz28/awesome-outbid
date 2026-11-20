@@ -101,6 +101,10 @@ const configSchema = z.object({
   allowOfflineSales: z.boolean().default(false),
   // Venta sin costo (8-nov): apagado hasta que la dueña cargue los costos.
   blockZeroCostSales: z.boolean().default(false),
+  // Decisión 3 (20-nov): caja ciega (la cajera no ve lo esperado mientras
+  // cuenta y cierra). Encendida por defecto; solo la dueña la apaga. Sin la
+  // clave se conserva el valor guardado.
+  blindCashCount: z.boolean().optional(),
   allowCreditSales: z.boolean().default(false),
   creditApprovalThreshold: amount.default(1000),
   // Salidas de efectivo del turno que una cajera registra sin PIN de gerente
@@ -867,6 +871,7 @@ export class AdminController {
       ...data,
       allowOfflineSales: data.allowOfflineSales === true,
       blockZeroCostSales: data.blockZeroCostSales === true,
+      blindCashCount: data.blindCashCount !== false,
       cashMovementApprovalLimit: cashMovementLimit(data),
       receivableShiftLimit: receivableShiftLimit(data),
       requireCustomer: true,
@@ -904,6 +909,8 @@ export class AdminController {
         blockZeroCostSales: hasBlockZeroCost
           ? config.blockZeroCostSales
           : previous?.blockZeroCostSales === true,
+        blindCashCount:
+          config.blindCashCount ?? previous?.blindCashCount !== false,
         // Una PWA anterior no envía el límite: no se afloja ni se endurece.
         cashMovementApprovalLimit:
           config.cashMovementApprovalLimit ?? cashMovementLimit(previous),

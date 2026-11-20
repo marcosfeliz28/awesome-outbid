@@ -725,6 +725,53 @@ import {
 export const MONEY_TRANSACTION = { timeout: 20000 };
 export const NO_COST_MESSAGE =
   "Este producto no tiene costo: pídele a la administración que lo complete";
+// Decisión 4 (dueña, 20-nov): margen mínimo de una venta con descuento de
+// quien no es gerencia. Regla de la dueña: (precio − costo) ÷ precio, sin
+// restar ITBIS (precio = lo cobrado de la línea, con ITBIS), con el costo
+// promedio. No bloquea ni pide PIN: la venta se cobra y queda un aviso.
+export const LOW_MARGIN_MIN = 15;
+type MarginLine = {
+  name: string;
+  qty: number;
+  unitPrice: number;
+  charged: number;
+  cost: number;
+  missingCost: boolean;
+  discounted: boolean;
+};
+export function lowMarginDiscount(lines: MarginLine[]) {
+  const pct = (charged: number, cost: number) =>
+    charged > 0
+      ? d(charged)
+          .minus(cost)
+          .div(charged)
+          .times(100)
+          .toDecimalPlaces(2)
+          .toNumber()
+      : null;
+  const rows = lines.map((l) => ({ ...l, margin: pct(l.charged, l.cost) }));
+  const low = rows.filter(
+    (l) =>
+      l.discounted &&
+      (l.missingCost || l.margin === null || l.margin < LOW_MARGIN_MIN),
+  );
+  const charged = lines.reduce((a, l) => a.plus(l.charged), d(0)).toNumber();
+  const cost = lines.reduce((a, l) => a.plus(l.cost), d(0)).toNumber();
+  const margin = pct(charged, cost);
+  const saleLow =
+    rows.some((l) => l.discounted) &&
+    (rows.some((l) => l.missingCost) ||
+      margin === null ||
+      margin < LOW_MARGIN_MIN);
+  return {
+    // Líneas a mostrar: las bajas; si solo la venta queda baja, las que
+    // llevan descuento.
+    low: low.length ? low : saleLow ? rows.filter((l) => l.discounted) : [],
+    saleLow,
+    margin,
+    flagged: saleLow || low.length > 0,
+  };
+}
 @Controller()
 export class SalesController {
   constructor(@Inject(Database) private db: Database) {}
@@ -1436,15 +1483,87 @@ export class SalesController {
             where: { id: sale.id },
             data: { costTotal: money(booked) },
           });
-        if (blockNoCost) {
+        // Decisión 4 (20-nov): descuento de quien no es gerencia que deja la
+        // venta o una línea por debajo del 15 % (o sin costo): aviso a la
+        // dueña y gerencia, y bitácora. No cambia precios ni frena el cobro.
+        if (requestsDiscount && !manages) {
+          const check = lowMarginDiscount(
+            lines.map(({ item, variant, totals, kit, cost }) => ({
+              name: variant.product.name as string,
+              qty: Number(item.qty),
+              unitPrice: Number(variant.price),
+              charged: Number(totals.total),
+              cost: Number(money(cost.times(item.qty))),
+              missingCost: (kit.length
+                ? kit.map((c) => variants.get(c.componentVariantId)!)
+                : [variant]
+              ).some((v) => !isService(v.product) && !d(v.costAvg ?? 0).gt(0)),
+              discounted:
+                item.discountPercent > 0 ||
+                (item.discountAmount ?? 0) > 0 ||
+                input.globalDiscount > 0,
+            })),
+          );
+          if (check.flagged) {
+            const detail = check.low
+              .map(
+                (l) =>
+                  `${l.name}: precio ${formatMoney(l.unitPrice)}, cobrado ${formatMoney(l.charged)} por ${l.qty}, costo ${l.missingCost ? "sin costo" : formatMoney(l.cost)}, margen ${l.missingCost || l.margin === null ? "sin calcular" : l.margin + " %"}`,
+              )
+              .join("; ");
+            const message =
+              `Descuento por debajo del margen mínimo (${LOW_MARGIN_MIN} %): factura ${sale.number} de ${actor.name}. ` +
+              (detail ? detail + ". " : "") +
+              `Margen de la venta: ${check.margin === null ? "sin calcular" : check.margin + " %"}` +
+              (input.discountReason
+                ? ` · Motivo: ${input.discountReason}`
+                : "") +
+              ".";
+            await tx.alert.upsert({
+              where: { key: "low-margin:" + sale.id },
+              create: {
+                key: "low-margin:" + sale.id,
+                type: "low_margin_discount",
+                severity: "high",
+                entityId: sale.id,
+                branchId: actor.branchId,
+                message: message.slice(0, 2000),
+              },
+              update: {},
+            });
+            await audit(
+              tx,
+              actor,
+              "sale_low_margin_discount",
+              "sale",
+              sale.id,
+              undefined,
+              {
+                number: sale.number,
+                sellerId: actor.id,
+                sellerName: actor.name,
+                minMargin: LOW_MARGIN_MIN,
+                saleMargin: check.margin,
+                lines: check.low,
+                discountReason: input.discountReason ?? null,
+              },
+            );
+          }
+        }
+        // Decisión 1 (20-nov, D13): una venta sin conexión con productos sin
+        // costo SIEMPRE entra (el dinero ya se cobró) y queda para revisión
+        // de gerencia con su aviso propio, aunque el bloqueo esté apagado.
+        // Antes solo dejaba aviso con el bloqueo encendido. La misma clave la
+        // cierra la corrección del costo (POST sales/:id/items/:itemId/cost).
+        if (offline && noCost.length) {
           await tx.alert.create({
             data: {
               key: "zero-cost-sale:" + sale.id,
-              type: "zero_cost_sale",
+              type: "offline_zero_cost_sale",
               severity: "high",
               entityId: sale.id,
               branchId: actor.branchId,
-              message: `La factura ${sale.number} (sin conexión) entró con productos sin costo: ${noCost.join(", ")}. Corrige el costo en la factura para que la ganancia sea real.`,
+              message: `La factura ${sale.number} (sin conexión, de ${actor.name}) entró con productos sin costo: ${noCost.join(", ")}. Revísala y corrige el costo en la factura para que la ganancia sea real.`,
             },
           });
           await audit(
@@ -2487,8 +2606,44 @@ export class SalesController {
     const total = sum("total"),
       costTotal = sum("costTotal"),
       costTotalAfter = sum("costTotalAfter");
+    // Decisión 1 (20-nov): ventas marcadas para revisión por entrar sin costo
+    // (sin conexión), aún sin corregir; aparecen aunque el producto siga sin
+    // costo (arriba solo salen las que ya tienen costo propuesto).
+    const flaggedAlerts = await this.db.alert.findMany({
+      where: {
+        branchId: actor.branchId,
+        type: { in: ["offline_zero_cost_sale", "zero_cost_sale"] },
+        status: { not: "resolved" },
+      },
+      select: { entityId: true, message: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+    });
+    const flaggedSales = flaggedAlerts.length
+      ? await this.db.sale.findMany({
+          where: {
+            id: { in: flaggedAlerts.map((a) => a.entityId!).filter(Boolean) },
+            branchId: actor.branchId,
+          },
+          select: { id: true, number: true, createdAt: true, total: true },
+        })
+      : [];
+    const pendingNoCost = flaggedAlerts.flatMap((a) => {
+      const sale = flaggedSales.find((s) => s.id === a.entityId);
+      return sale
+        ? [
+            {
+              saleId: sale.id,
+              number: sale.number,
+              createdAt: sale.createdAt,
+              total: Number(sale.total),
+              message: a.message,
+            },
+          ]
+        : [];
+    });
     return {
       sales: rows,
+      pendingNoCost,
       totals: {
         invoices: rows.length,
         total,

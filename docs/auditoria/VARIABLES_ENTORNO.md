@@ -25,6 +25,7 @@ Borrador sin verificar. Columna 3: solo indica si la línea de lectura tiene `||
 | `NEXORA_IA_MODEL` | `apps/api/src/assistant.ts:1299` | sí |
 | `NEXORA_RETENTION` | `apps/api/src/retention.ts:218` | no |
 | `NEXORA_VENTAS_CAJA_CIEGA` | `apps/api/src/sales.ts:149` | no |
+| `TERMINAL_AUTO_APPROVE_PER_HOUR` | `apps/api/src/realtime.ts:158` | no (sin valor = 5 por hora y sucursal; 0 = ninguna alta automática) |
 | `NODE_ENV` | `apps/api/src/auth.ts:406` | no |
 | `NOTIFY_EMAIL_FROM` | `apps/api/src/registration.ts:64` | no |
 | `PATH` | `apps/api/src/drive-backup.ts:533` | sí |

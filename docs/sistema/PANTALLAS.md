@@ -66,7 +66,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1115-1145`):
 
 - **Etiqueta:** «Solicitudes de anulación». **Permiso:** `sale:write`. **Componente:** `apps/web/src/VoidRequests.tsx:21`.
 - **Qué hace:** lista (filtro Pendientes/Todas/Aprobadas/Rechazadas/Canceladas, `:45-54`). La administración ve «Aprobar y anular» y «Rechazar» (`:123-136`); la cajera solo puede cancelar su propia solicitud (`:137-155`).
-- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2252`, `POST void-requests/:id/approve`).
+- **Flujo:** cajera pide en Ventas → «Solicitar anulación» → administración abre esta pantalla → «Aprobar y anular» (aprobar: `apps/api/src/sales.ts:2371`, `POST void-requests/:id/approve`).
 
 ## Conciliar transferencias
 
@@ -104,11 +104,11 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1115-1145`):
 
 ## Gastos
 
-- **Etiqueta:** «Gastos». **Permiso:** `expense:write`. **Componente:** `Expenses`, `apps/web/src/Management.tsx:1482`. Título: «Tus gastos, sin sorpresas» (`:1395`). Botón «Registrar gasto» (`:1400`), presupuesto mensual por categoría (`:1404-1430`). API: `apps/api/src/admin.ts:656-750`.
+- **Etiqueta:** «Gastos». **Permiso:** `expense:write`. **Componente:** `Expenses`, `apps/web/src/Management.tsx:1482`. Título: «Tus gastos, sin sorpresas» (`:1395`). Botón «Registrar gasto» (`:1400`), presupuesto mensual por categoría (`:1404-1430`). API: `apps/api/src/admin.ts:660-754`.
 
 ## Clientes
 
-- **Etiqueta:** «Clientes». **Permiso:** `customers:write`. **Componente:** `Customers`, `apps/web/src/Management.tsx:2405`. Título: «Personas que vuelven a elegirte» (`:2304`). Botón «Nuevo cliente». Teléfono, cédula y correo completos solo para `sale:manage` o `customers:erase` (el resto los ve enmascarados) (`apps/api/src/common.ts:324-329`). Anonimizar un cliente requiere `customers:erase` (`apps/api/src/admin.ts:358-359`).
+- **Etiqueta:** «Clientes». **Permiso:** `customers:write`. **Componente:** `Customers`, `apps/web/src/Management.tsx:2405`. Título: «Personas que vuelven a elegirte» (`:2304`). Botón «Nuevo cliente». Teléfono, cédula y correo completos solo para `sale:manage` o `customers:erase` (el resto los ve enmascarados) (`apps/api/src/common.ts:333-338`). Anonimizar un cliente requiere `customers:erase` (`apps/api/src/admin.ts:362-363`).
 
 ## Promociones
 
@@ -126,7 +126,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1115-1145`):
 
 ## Alertas
 
-- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3220`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1574-1594`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:525`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:929-932`).
+- **Etiqueta:** «Alertas». **Permiso:** `alerts:write`. **Componente:** `Alerts`, `apps/web/src/Management.tsx:3220`. Título: «Lo importante, a tiempo» (`:3026`). Pestañas «Nuevas», «Vistas», «Resueltas», «Todas» (`:3037-3043`). Tipos que genera el motor: transferencia sin verificar (`apps/api/src/sales.ts:1693-1713`), vale de caja (`apps/api/src/cash.ts` cierre), descuadre de caja, margen bajo (`apps/api/src/alerts.ts:535`), etc. Reglas editables solo por `*` (`apps/api/src/alerts.ts:939-942`).
 
 ## Incentivos
 
@@ -147,7 +147,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1115-1145`):
   - **Bitácora:** registro de acciones (`:4312-4335`).
   - **Equipos:** aprobar o revocar equipos (`:4171`).
   - **Apariencia** (solo `*`): «Activar el modo Impacto en este equipo» (más movimiento y profundidad fuera del POS; se guarda en el navegador de ese equipo, viene apagado) y enlace «Abrir la demostración» (`#demo`, datos de ejemplo fijos, sin API). Ver `docs/diseno/DIRECCION_VISUAL_IMPACTO.md`.
-- **Ojo:** guardar la configuración (`PUT /settings`) y administrar usuarios/roles exigen `*` en la API (`apps/api/src/admin.ts:875-876`, `:1024`, `:1056`, `:1296-1300`), aunque el botón de Configuración lo vea un gerente (`sale:manage`). DUDOSO: qué ve exactamente un gerente que no es `*` al abrir cada pestaña; no se probó.
+- **Ojo:** guardar la configuración (`PUT /settings`) y administrar usuarios/roles exigen `*` en la API (`apps/api/src/admin.ts:880-881`, `:1024`, `:1056`, `:1296-1300`), aunque el botón de Configuración lo vea un gerente (`sale:manage`). DUDOSO: qué ve exactamente un gerente que no es `*` al abrir cada pestaña; no se probó.
 
 ## Usuarios
 

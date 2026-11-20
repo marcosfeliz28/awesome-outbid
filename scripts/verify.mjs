@@ -242,6 +242,11 @@ async function main() {
     ...process.env,
     FITSTORE_API_URL: target.api,
     FITSTORE_API_PROXY: target.proxy,
+    // Decisión 7 (20-nov): la API aprueba sola 5 equipos por hora y sucursal;
+    // las pruebas registran decenas seguidos con la misma cuenta. Solo en la
+    // API de pruebas que verifica este script (nunca una ajena, Q-01).
+    TERMINAL_AUTO_APPROVE_PER_HOUR:
+      process.env.TERMINAL_AUTO_APPROVE_PER_HOUR ?? "100000",
   };
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"])
     process.on(signal, () => stopAll().then(() => process.exit(1)));

@@ -336,7 +336,9 @@ describe("GV · moneda del pago (decisiones de la dueña, 31-oct)", () => {
     expect(ok.success).toBe(true);
   });
 
-  it("USD exige tasa; DOP no la necesita", () => {
+  // Decisión 2 (20-nov): la tasa la pone el servidor (Configuración), no la
+  // pantalla; un pago en US$ sin tasa ya no es un error del formulario.
+  it("USD ya no exige tasa en el formulario (la toma de Configuración); DOP tampoco", () => {
     const usdSinTasa = gvPaymentInput({}).safeParse({
       date: "2026-10-03",
       amount: 100,
@@ -344,7 +346,7 @@ describe("GV · moneda del pago (decisiones de la dueña, 31-oct)", () => {
       method: "efectivo",
       currency: "USD",
     });
-    expect(usdSinTasa.success).toBe(false);
+    expect(usdSinTasa.success).toBe(true);
     const usdConTasa = gvPaymentInput({}).safeParse({
       date: "2026-10-03",
       amount: 100,

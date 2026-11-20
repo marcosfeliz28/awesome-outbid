@@ -179,6 +179,7 @@ export default defineConfig({
       "tests/pago-usd-reemplazo.test.ts",
       "tests/pago-usd-reemplazo-postgres.test.ts",
       "tests/seguridad-19nov.test.ts",
+      "tests/decisiones-20nov-postgres.test.ts",
     ],
   },
 });

@@ -85,6 +85,15 @@ export const MANUAL_ALERT_TYPES = [
   // Pagos de una venta reemplazados en una caja abierta y baja el efectivo
   // esperado (POST /sales/:id/payments/replace, 20-nov).
   "cash_payments_replaced",
+  // Decisión 1 (20-nov): venta sin conexión sincronizada con productos sin
+  // costo; entra y queda para revisión de gerencia (sales.ts).
+  "offline_zero_cost_sale",
+  // Decisión 4 (20-nov): descuento que deja la venta o una línea por debajo
+  // del 15 % de margen (o sin costo); la venta se cobra normal (sales.ts).
+  "low_margin_discount",
+  // Decisión 7 (20-nov): más altas automáticas de equipos por hora que el
+  // tope; el equipo queda pendiente (realtime.ts).
+  "terminal_auto_limit",
 ];
 // Avisos que sólo ve la dueña («*»).
 export const OWNER_ONLY_ALERT_TYPES = [
@@ -100,6 +109,7 @@ export const OWNER_ONLY_ALERT_TYPES = [
   // la gerencia no debe poder marcarlas como resueltas antes que la dueña.
   "login_unapproved_device",
   "account_locked",
+  "terminal_auto_limit",
 ];
 // N-5 (auditoría 01 v2): los avisos de descuento inusual nacen al registrar la
 // venta, con la misma clave y el mismo mensaje que la evaluación periódica,

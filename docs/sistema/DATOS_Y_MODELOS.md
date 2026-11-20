@@ -33,7 +33,7 @@ Convenciones: dinero en `Decimal(14,2)` (centavos exactos, nunca decimales flota
 | `InventoryCount`                     | Conteo físico (`items` JSON).                                                       | `status`: `pending` → `applied`                                                                                                                                                                                 | `:661`         |
 | `Promotion`                          | Oferta automática que aplica la caja (no cambia el precio).                         | `type`: `percent`, `amount`, `special_price`, `nxm`, `second_half`; `scope` (variante, producto, categoría o marca), `startsAt`/`endsAt`, `isClearance`                                                         | `:750`         |
 
-**Tipos de movimiento de kardex** (`InventoryMovement.type`) que escribe el código: `sale` (venta; `apps/api/src/sales.ts:1341`), `void` (anulación; `sales.ts:3358`), `return` y `return_waste` (devolución al stock o a merma; `sales.ts:4123`, `:3250`), `purchase` (recepción de compra; `apps/api/src/inventory.ts:1380`), `count` (conteo aplicado; `inventory.ts:452`, `:1648`), `adjustment`/`waste`/`supplier_return` (ajustes manuales; `inventory.ts:909`, tipos en `Management.tsx:1144`), `transfer_out` y `transfer_in` (`apps/api/src/warehouses.ts:326-358`). Las entradas y salidas de la pantalla «Mercancía» las guarda `apps/api/src/merchandise.ts:346` con el motivo elegido. DUDOSO: no se enumeró cada literal de `type`; confirmar con `grep -rn "stockChange(" apps/api/src` antes de citar uno nuevo.
+**Tipos de movimiento de kardex** (`InventoryMovement.type`) que escribe el código: `sale` (venta; `apps/api/src/sales.ts:1388`), `void` (anulación; `sales.ts:3513`), `return` y `return_waste` (devolución al stock o a merma; `sales.ts:4278`, `:3250`), `purchase` (recepción de compra; `apps/api/src/inventory.ts:1380`), `count` (conteo aplicado; `inventory.ts:452`, `:1648`), `adjustment`/`waste`/`supplier_return` (ajustes manuales; `inventory.ts:909`, tipos en `Management.tsx:1144`), `transfer_out` y `transfer_in` (`apps/api/src/warehouses.ts:326-358`). Las entradas y salidas de la pantalla «Mercancía» las guarda `apps/api/src/merchandise.ts:346` con el motivo elegido. DUDOSO: no se enumeró cada literal de `type`; confirmar con `grep -rn "stockChange(" apps/api/src` antes de citar uno nuevo.
 
 ## 3. Clientes y ventas
 
@@ -64,12 +64,12 @@ Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emit
   - **`pending_verification`** — **transferencia que nadie ha comprobado en el banco** (venta o abono).
   - **`rejected`** — transferencia que no llegó; no cuenta en caja ni descuenta deuda.
   - **`pending`** — deuda por cobrar (el pago `cod`/`credit` de una venta a crédito).
-    Fuente: `apps/api/src/sales.ts:1398-1404`, `:2263-2270`, `:4424-4429`.
+    Fuente: `apps/api/src/sales.ts:1445-1451`, `:2263-2270`, `:4424-4429`.
 - **`entryType`** (de dónde viene el pago):
   - **`sale`** — pago hecho **al vender**.
-  - **`installment`** — **abono o cobro posterior** de un crédito/contraentrega (`sales.ts:4641`).
-    Un abono `pending_verification` no descuenta `Sale.creditBalance` hasta verificarse (`sales.ts:4737-4747`, `:2775-2790`).
-- Otros campos: `amount` (lo **aplicado** a la venta, ya sin cambio), `tendered` (lo **entregado** por el cliente), `change` (vuelto en pesos), `bank` (cuenta o terminal), `reference`, `cardBrand`/`cardLast4`/`approvalCode`/`cardType`, `feeAmount` (comisión de tarjeta: `cardFeePercent`, 2.5 % si no hay configuración, `sales.ts:1559-1565`), `proofUrl` (foto de evidencia), `receivedById` (quién recibió un cobro), `currency`/`amountUsd`/`usdRate` (dólares), `cashSessionId` (a qué caja pertenece), `creditNoteId`.
+  - **`installment`** — **abono o cobro posterior** de un crédito/contraentrega (`sales.ts:4796`).
+    Un abono `pending_verification` no descuenta `Sale.creditBalance` hasta verificarse (`sales.ts:4892-4902`, `:2775-2790`).
+- Otros campos: `amount` (lo **aplicado** a la venta, ya sin cambio), `tendered` (lo **entregado** por el cliente), `change` (vuelto en pesos), `bank` (cuenta o terminal), `reference`, `cardBrand`/`cardLast4`/`approvalCode`/`cardType`, `feeAmount` (comisión de tarjeta: `cardFeePercent`, 2.5 % si no hay configuración, `sales.ts:1678-1684`), `proofUrl` (foto de evidencia), `receivedById` (quién recibió un cobro), `currency`/`amountUsd`/`usdRate` (dólares), `cashSessionId` (a qué caja pertenece), `creditNoteId`.
 
 ## 5. Caja
 
@@ -78,7 +78,7 @@ Estado de fiscal: `fiscalStatus` empieza en `"not_issued"`; el sistema **no emit
 | `CashSession`  | **Una caja** (de apertura a cierre) de **una persona**. | `userId`, `registerId` (equipo), `openingAmount`, `openedAt`, `closedAt` (nulo = abierta), `expectedCash/Card/Transfer`, `countedCash/Card/Transfer`, `differenceCash/Card/Transfer`, `difference`, `notes`, `closeDetails` (JSON del cuadre: denominaciones, vales, dólares, `delivered`/`left`, lote del verifón, aprobadores) | `:673` |
 | `CashMovement` | Entrada o salida de efectivo durante el turno.          | `type`: `in` o `out`, `amount`, `reason`, `operationId`                                                                                                                                                                                                                                                                          | `:704` |
 
-Reglas: una persona solo puede tener **una caja abierta** (índice único parcial, `apps/api/src/cash.ts:941-968`); el esperado se calcula, no se guarda hasta el cierre (`cash.ts:55-113`); las transferencias del cierre las suma el sistema (`cash.ts:1263`).
+Reglas: una persona solo puede tener **una caja abierta** (índice único parcial, `apps/api/src/cash.ts:942-969`); el esperado se calcula, no se guarda hasta el cierre (`cash.ts:56-114`); las transferencias del cierre las suma el sistema (`cash.ts:1264`).
 
 ## 6. Compras
 
@@ -111,7 +111,7 @@ Reglas: una persona solo puede tener **una caja abierta** (índice único parcia
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `GvCourse`      | Curso: `type` (automaquillaje, brazilian, personalizado, otro), `date`, `price`, `capacity`, `active`.                                                                                                                                                                                                                                                                                                                             | `:1061` |
 | `GvEnrollment`  | Inscripción: `clientName`, `phone`, `instagram`, `agreedPrice`, `status` (`activa`, `no_asistio`, `personalizado`, `cancelada`, `reembolsada`), `attended`, `boughtBrushSet`, `refundAmount`/`refundDate`.                                                                                                                                                                                                                         | `:1081` |
-| `GvPayment`     | Pago de GV (de una inscripción **o** de una cita): `concept` (separo, completo, restante, segundo, tercero, otro), `method` (efectivo, transferencia, tarjeta), `bank`, `reference`, `verified`/`verifiedBy`, `rejectedAt`/`rejectReason`. **Efectivo y tarjeta nacen verificados; transferencia nace por verificar.** El pendiente **no se guarda: se calcula** (total − pagado verificado) (`apps/api/src/gv-money.ts:374-396`). | `:1109` |
+| `GvPayment`     | Pago de GV (de una inscripción **o** de una cita): `concept` (separo, completo, restante, segundo, tercero, otro), `method` (efectivo, transferencia, tarjeta), `bank`, `reference`, `verified`/`verifiedBy`, `rejectedAt`/`rejectReason`. **Efectivo y tarjeta nacen verificados; transferencia nace por verificar.** El pendiente **no se guarda: se calcula** (total − pagado verificado) (`apps/api/src/gv-money.ts:369-391`). | `:1109` |
 | `GvAppointment` | Cita de maquillaje: `service`, `artists[]`, `afterHours`, `total`, `tip`, `status` (`agendada`, `realizada`, `cancelada`, `reembolsada`), datos de boda (`weddingQuote`, `venue`, `people`).                                                                                                                                                                                                                                       | `:1149` |
 | `GvLead`        | Interesada (prospecto): `interest`, `action`, `status` (`por_contactar`, `contactada`, `inscrita`, `descartada`).                                                                                                                                                                                                                                                                                                                  | `:1180` |
 
@@ -130,7 +130,7 @@ PurchaseOrder >─< PurchaseItem · GoodsReceipt · Supplier
 
 ## 10. Cosas que se calculan (no se guardan como están)
 
-- **Total esperado de caja** (`cashExpected`, `apps/api/src/cash.ts:55-113`).
+- **Total esperado de caja** (`cashExpected`, `apps/api/src/cash.ts:56-114`).
 - **Deuda de un cliente** = suma de `creditBalance` de sus ventas completadas (`apps/api/src/sales.ts:352` `customerOpenDebt`).
 - **Margen** = `(precio − costo) / precio × 100` sin restar ITBIS (`packages/shared/src/index.ts:488-491`).
 - **Pendiente de GV**, ver §8.

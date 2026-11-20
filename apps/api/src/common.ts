@@ -29,6 +29,7 @@ import {
 import {
   ACTIVITY_WRITE_INTERVAL_MS,
   sessionActivityGraceMs,
+  sessionTimeoutMinutesFor,
 } from "./session-activity";
 import { clientIp } from "./rate-limit";
 import { checkDatabaseTimeZone } from "./database-timezone";
@@ -63,6 +64,9 @@ export type Actor = {
   role: string;
   permissions: string[];
   branchId: string;
+  // Decisión 3 (20-nov): Configuración › «Caja ciega» (`blindCashCount`, por
+  // defecto encendida). Solo `false` (la dueña la apagó) la quita.
+  cashBlind?: boolean;
 };
 export type ActorRequest = Request & { actor: Actor };
 // Una misma política protege todos los caminos que pueden revelar el arqueo:
@@ -71,6 +75,11 @@ export type ActorRequest = Request & { actor: Actor };
 export const canViewCashExpected = (actor: Actor) =>
   can(actor.permissions, "profit:read") ||
   can(actor.permissions, "sale:manage");
+// Decisión 3 (20-nov): mientras la caja está abierta (contar y cerrar) quien
+// no es gerencia no ve lo esperado, salvo que la dueña apague la caja ciega
+// (`blindCashCount: false`). Ya cerrada, lo que ve la cajera no cambia.
+export const seesOpenCashExpected = (actor: Actor) =>
+  canViewCashExpected(actor) || actor.cashBlind === false;
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext) =>
     ctx.switchToHttp().getRequest<ActorRequest>().actor,
@@ -719,7 +728,7 @@ export class AuthGuard implements CanActivate {
       });
       const now = Date.now();
       const timeout =
-        Number((settings?.data as any)?.sessionTimeoutMinutes ?? 30) * 60000;
+        sessionTimeoutMinutesFor(user.role.permissions, settings?.data) * 60000;
       const cutoff = new Date(now - timeout - sessionActivityGraceMs(timeout));
       const session = await this.db.authSession.findUnique({
         where: { id: payload.sid },
@@ -775,6 +784,7 @@ export class AuthGuard implements CanActivate {
         role: user.role.name,
         permissions: user.role.permissions,
         branchId: user.branchId,
+        cashBlind: (settings?.data as any)?.blindCashCount !== false,
       };
     } catch (error) {
       // Un fallo de la base (pool lleno, tiempo agotado, conexión) no dice

@@ -171,9 +171,30 @@ describe("AuthGuard · actividad de sesión y equipo como mucho una vez por minu
     timeoutMinutes?: number;
     terminalIdleMs?: number;
     terminalUser?: string;
+    // Decisión 6 (20-nov): el plazo depende del rol. Estas pruebas miden el
+    // mecanismo con un rol que usa el ajuste general (almacén).
+    permissions?: string[];
   }) {
     const writes = { session: 0, terminal: 0 };
     const db = database({
+      user: {
+        findUnique: async () => ({
+          id: USER_ID,
+          active: true,
+          mustChangePassword: false,
+          authVersion: 1,
+          branchId: "main",
+          name: "Persona",
+          email: "persona@example.test",
+          role: {
+            name: "custom",
+            permissions: opts.permissions ?? [
+              "catalog:read",
+              "inventory:write",
+            ],
+          },
+        }),
+      },
       settings: {
         findUnique: async () =>
           opts.timeoutMinutes
@@ -248,6 +269,33 @@ describe("AuthGuard · actividad de sesión y equipo como mucho una vez por minu
     const expired = tracked({ idleMs: 31 * 60_000 + 1_000 });
     await expect(run(expired.db)).rejects.toMatchObject({ status: 401 });
     expect(expired.writes.session).toBe(0);
+  });
+
+  it("decisión 6: la cajera vence a los 60 minutos aunque el ajuste diga otra cosa", async () => {
+    const seller = ["sale:write", "cash:write"];
+    const ok = tracked({
+      idleMs: 59 * 60_000,
+      timeoutMinutes: 1,
+      permissions: seller,
+    });
+    await expect(run(ok.db)).resolves.toBe(true);
+    const expired = tracked({
+      idleMs: 61 * 60_000 + 1_000,
+      timeoutMinutes: 480,
+      permissions: seller,
+    });
+    await expect(run(expired.db)).rejects.toMatchObject({ status: 401 });
+  });
+
+  it("decisión 6: gerencia y dueña no vencen por inactividad (hasta la vida del token de 7 días)", async () => {
+    for (const permissions of [["*"], ["sale:write", "sale:manage"]]) {
+      const idle = tracked({
+        idleMs: 3 * 24 * 3600_000,
+        timeoutMinutes: 1,
+        permissions,
+      });
+      await expect(run(idle.db)).resolves.toBe(true);
+    }
   });
 
   it("con plazos cortos (1 min) escribe en cada petición y caduca exacto", async () => {

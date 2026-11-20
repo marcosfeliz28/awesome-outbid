@@ -41,7 +41,10 @@ import type { Request, Response } from "express";
 import { can } from "@fitstore/shared";
 import { Actor, CurrentUser, Database, Permit, Public, audit } from "./common";
 import { weakSecretReason } from "./secret-strength";
-import { sessionActivityGraceMs } from "./session-activity";
+import {
+  sessionActivityGraceMs,
+  sessionTimeoutMinutesFor,
+} from "./session-activity";
 import {
   ALERT_AFTER_FAILURES,
   FRESH_SUCCESS_MS,
@@ -1223,7 +1226,7 @@ export class DriveBackupService {
       where: { id: user.branchId },
     });
     const timeoutMs =
-      Number((branchSettings?.data as any)?.sessionTimeoutMinutes ?? 30) *
+      sessionTimeoutMinutesFor(user.role.permissions, branchSettings?.data) *
       60000;
     if (
       Date.now() - session.lastActivityAt.getTime() >

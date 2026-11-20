@@ -277,7 +277,11 @@ describe("venta sin costo", () => {
     const alert = await db.alert.findUnique({
       where: { key: "zero-cost-sale:" + saved.id },
     });
-    expect(alert).toMatchObject({ type: "zero_cost_sale", status: "new" });
+    // Decisión 1 (20-nov): aviso propio que ve gerencia, no solo la dueña.
+    expect(alert).toMatchObject({
+      type: "offline_zero_cost_sale",
+      status: "new",
+    });
     expect(
       await db.auditLog.count({
         where: { action: "sale_zero_cost_accepted", entityId: saved.id },

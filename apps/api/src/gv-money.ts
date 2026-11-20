@@ -222,17 +222,12 @@ export const cardDetails = (
       message: "es obligatoria con tarjeta (aprobación, lote o voucher)",
     });
 };
+// Decisión 2 (20-nov): la tasa ya no la escribe quien cobra; el servidor usa
+// la de Configuración (gvConfiguredRate). `rate` se acepta por compatibilidad.
 export const usdRate = (
-  p: { currency?: string; rate?: number | null },
-  ctx: z.RefinementCtx,
-) => {
-  if (p.currency === "USD" && !p.rate)
-    ctx.addIssue({
-      code: "custom",
-      path: ["rate"],
-      message: "es obligatoria en US$ (pesos por dólar)",
-    });
-};
+  _p: { currency?: string; rate?: number | null },
+  _ctx: z.RefinementCtx,
+) => undefined;
 // H-01 (sólo efectivo en US$), igual que en las ventas: sin esto un pago en
 // dólares por transferencia o tarjeta entraba a GV.
 export const usdCashOnly = (
@@ -445,35 +440,72 @@ export async function lockGvOwner(
   return row;
 }
 
-/** Alta de un pago con bloqueo, idempotencia y tope de saldo. */
-/** Esperado de una caja GV por método, en pesos (pagos no anulados ni rechazados). */
+/**
+ * Esperado de una caja GV por método (pagos no anulados ni rechazados).
+ * Decisión 2 (20-nov): los billetes en US$ van aparte en `usd` (dólares, sin
+ * convertir), como en la caja principal. `legacyUsd` los suma al efectivo en
+ * pesos (su equivalente), como se cerraba antes, para recalcular esos cierres.
+ */
 export async function gvCajaEsperado(
   tx: any,
   sessionId: string,
+  legacyUsd = false,
 ): Promise<{
   efectivo: string;
   tarjeta: string;
   transferencia: string;
+  usd: string;
+  usdCount: number;
   count: number;
   cards: number;
 }> {
   const rows = await tx.gvPayment.findMany({
     where: { cashSessionId: sessionId, rejectedAt: null },
-    select: { method: true, amount: true, amountDop: true },
+    select: { method: true, amount: true, amountDop: true, currency: true },
   });
   const out = { efectivo: d(0), tarjeta: d(0), transferencia: d(0) };
-  for (const r of rows)
+  let usd = d(0),
+    usdCount = 0;
+  for (const r of rows) {
+    if (r.currency === "USD" && !legacyUsd) {
+      usd = usd.plus(d(r.amount));
+      usdCount++;
+      continue;
+    }
     out[r.method as keyof typeof out] = out[r.method as keyof typeof out].plus(
       d(r.amountDop ?? r.amount),
     );
+  }
   return {
     efectivo: out.efectivo.toFixed(2),
     tarjeta: out.tarjeta.toFixed(2),
     transferencia: out.transferencia.toFixed(2),
+    usd: usd.toFixed(2),
+    usdCount,
     count: rows.length,
     cards: rows.filter((r: any) => r.method === "tarjeta").length,
   };
 }
+
+/**
+ * Decisión 2 (20-nov): la tasa de un cobro de GV en dólares (o en pesos sobre
+ * un curso en US$) es la de Configuración (`usdRate`) al momento del cobro, no
+ * la que escribe quien cobra. Sin tasa en Configuración no se cobra.
+ */
+export async function gvConfiguredRate(tx: any, branchId: string) {
+  const settings = await tx.settings.findUnique({
+    where: { id: branchId },
+    select: { data: true },
+  });
+  const rate = Number((settings?.data as any)?.usdRate);
+  if (!(rate > 0))
+    bad(
+      "No hay tasa del dólar en Configuración: no se puede cobrar en dólares. Pide a la administración que registre la tasa del día.",
+    );
+  return d(rate).toDecimalPlaces(4).toNumber();
+}
+
+/** Alta de un pago con bloqueo, idempotencia y tope de saldo. */
 
 export async function createGvPayment(
   tx: any,
@@ -524,10 +556,11 @@ export async function createGvPayment(
   const moneda =
     kind === "enrollment" ? monedaDeCurso(owner.course?.name) : "RD$";
   const usd = data.currency === "USD";
-  if (moneda === "US$" && !usd && !data.rate)
-    bad(
-      "Este curso se cobra en US$: indica la tasa (pesos por dólar) del pago.",
-    );
+  // Decisión 2 (20-nov): la tasa es la de Configuración al cobrar; la que
+  // mande la pantalla no cuenta (queda en la bitácora si era otra).
+  const clientRate = data.rate ?? null;
+  if (usd || moneda === "US$")
+    data = { ...data, rate: await gvConfiguredRate(tx, actor.branchId) };
   // Equivalente en pesos con la tasa de este pago (en pesos, el mismo monto).
   const amountDop = usd
     ? d(data.amount)
@@ -605,6 +638,7 @@ export async function createGvPayment(
   await audit(tx, actor, "gv_payment_create", "gv_payment", row.id, undefined, {
     ...row,
     ...(cash ? {} : { cashlessReason }),
+    ...(clientRate !== null && clientRate !== data.rate ? { clientRate } : {}),
     ...(proofFile
       ? { proof: `(${proofFile.contentType}, ${proofFile.size} bytes)` }
       : {}),

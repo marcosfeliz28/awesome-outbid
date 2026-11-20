@@ -36,3 +36,28 @@ export const sessionActivityGraceMs = (timeoutMs: number) =>
  * la renuevan como mucho una vez por minuto.
  */
 export const TERMINAL_ONLINE_MS = ACTIVITY_WRITE_INTERVAL_MS + 30_000;
+
+/** Decisión 6 (20-nov): inactividad de la cajera/vendedora. */
+export const SELLER_IDLE_MINUTES = 60;
+/**
+ * Gerencia y dueña no salen por inactividad: su plazo es la vida del token de
+ * renovación (7 días, auth.ts), que no cambia.
+ */
+export const MANAGER_IDLE_MINUTES = 7 * 24 * 60;
+
+/**
+ * Minutos de inactividad que vencen la sesión según el rol (decisión 6,
+ * 20-nov): gerencia y dueña (`sale:manage` / `*`) nunca por inactividad;
+ * quien vende sin gerencia (`sale:write`), 60; los demás roles, el ajuste
+ * `sessionTimeoutMinutes` de Configuración (30 si no hay), como antes.
+ */
+export function sessionTimeoutMinutesFor(
+  permissions: string[] | undefined,
+  settingsData: unknown,
+): number {
+  const grants = permissions ?? [];
+  if (grants.includes("*") || grants.includes("sale:manage"))
+    return MANAGER_IDLE_MINUTES;
+  if (grants.includes("sale:write")) return SELLER_IDLE_MINUTES;
+  return Number((settingsData as any)?.sessionTimeoutMinutes ?? 30);
+}

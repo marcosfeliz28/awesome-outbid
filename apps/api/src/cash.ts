@@ -37,6 +37,7 @@ import {
   bad,
   denied,
   canViewCashExpected,
+  seesOpenCashExpected,
 } from "./common";
 import { cashLock, terminalName, terminalNames } from "./sales";
 import { STORE_REPORTS, storeReport, sendStoreReport } from "./reports";
@@ -806,7 +807,7 @@ export class CashController {
   @Get()
   @Permit("cash:write")
   async sessions(@CurrentUser() actor: Actor) {
-    const showExpected = canViewCashExpected(actor);
+    const showExpected = seesOpenCashExpected(actor);
     const scope = {
       branchId: actor.branchId,
       ...(can(actor.permissions, "sale:manage") ? {} : { userId: actor.id }),
@@ -1460,7 +1461,7 @@ export class CashController {
             message: cashDifferenceMessage(row) + usdNote,
           },
         });
-      const showExpected = canViewCashExpected(actor);
+      const showExpected = seesOpenCashExpected(actor);
       return showExpected
         ? { ...row, differences }
         : { id: row.id, closedAt: row.closedAt };
@@ -1565,10 +1566,10 @@ export class CashController {
   @Permit("cash:write")
   async cuadre(@Param("id") id: string, @CurrentUser() actor: Actor) {
     const session = await this.ownSession(actor, id);
-    if (!session.closedAt && !canViewCashExpected(actor))
+    if (!session.closedAt && !seesOpenCashExpected(actor))
       bad("Cierra la caja para consultar el cuadre.");
     const report = await buildCuadre(this.db, actor, session);
-    const showExpected = canViewCashExpected(actor);
+    const showExpected = seesOpenCashExpected(actor);
     if (showExpected) return report;
     const publicForeign = (currency: any) => {
       const { expected, difference, ...visible } = currency;
@@ -1603,7 +1604,7 @@ export class CashController {
   ) {
     if (!STORE_REPORTS.includes(name)) bad("Reporte no disponible.");
     const session = await this.ownSession(actor, id);
-    if (!session.closedAt && !canViewCashExpected(actor))
+    if (!session.closedAt && !seesOpenCashExpected(actor))
       bad("Cierra la caja para consultar sus reportes.");
     const report = await storeReport(this.db, actor, name, {
       cashSessionId: session.id,

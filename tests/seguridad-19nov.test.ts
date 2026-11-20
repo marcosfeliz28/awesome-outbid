@@ -358,9 +358,7 @@ describe("M4 · zod sin la vulnerabilidad GHSA-mrhx-c7xc-m3w5", () => {
     const [major, minor, patch] = requireApi("zod/package.json")
       .version.split(".")
       .map(Number);
-    expect(major * 1e6 + minor * 1e3 + patch).toBeGreaterThanOrEqual(
-      4006006,
-    );
+    expect(major * 1e6 + minor * 1e3 + patch).toBeGreaterThanOrEqual(4006006);
   });
   it("un PATCH no devuelve a su valor de alta los campos que no llegan", async () => {
     const { parsePatch } = await import("../apps/api/src/common");
@@ -434,9 +432,13 @@ describe("VE-001/VE-003 · el servidor valida el usuario vacío o con espacios",
     );
     const controller = new AuthController(db, {} as any, {} as any);
     try {
-      await controller.login(body, { headers: {}, ip: "10.0.0.9" } as any, {
-        cookie: () => undefined,
-      } as any);
+      await controller.login(
+        body,
+        { headers: {}, ip: "10.0.0.9" } as any,
+        {
+          cookie: () => undefined,
+        } as any,
+      );
       return { message: "sin error", touched };
     } catch (error: any) {
       return { message: validationMessage(error.issues ?? []), touched };
@@ -458,9 +460,8 @@ describe("VE-001/VE-003 · el servidor valida el usuario vacío o con espacios",
 
 describe("M1 (parcial) · la cajera que entra desde un equipo no aprobado deja aviso", () => {
   it("login de seller sin equipo aprobado llama al aviso", async () => {
-    const { AuthController, passwordHash } = await import(
-      "../apps/api/src/auth"
-    );
+    const { AuthController, passwordHash } =
+      await import("../apps/api/src/auth");
     const seller = {
       id: actor.id,
       name: "Cajera A",
@@ -474,9 +475,13 @@ describe("M1 (parcial) · la cajera que entra desde un equipo no aprobado deja a
       user: { findFirst: async () => seller },
       auditLog: { create: async () => undefined },
     };
-    const c = new AuthController(db, {} as any, {
-      rememberAuthIdentity: () => undefined,
-    } as any) as any;
+    const c = new AuthController(
+      db,
+      {} as any,
+      {
+        rememberAuthIdentity: () => undefined,
+      } as any,
+    ) as any;
     c.approvedTerminal = async () => null;
     c.limitPublicCredentials = () => ({ normalized: "x" });
     c.passwordAttempt = async () => undefined;
@@ -492,17 +497,31 @@ describe("M1 (parcial) · la cajera que entra desde un equipo no aprobado deja a
   });
 });
 
-describe("A2 (propuesta, apagada) · tope de equipos aprobados solos por hora", () => {
-  const register = async (env: string | undefined, approvedLastHour: number) => {
+describe("A2 · tope de equipos aprobados solos por hora (decisión 7, 20-nov)", () => {
+  const register = async (
+    env: string | undefined,
+    approvedLastHour: number,
+    permissions = ["*"],
+  ) => {
     const { RealtimeController } = await import("../apps/api/src/realtime");
     const created: any[] = [];
+    const alerts: any[] = [];
+    const counts: string[] = [];
     const tx: any = {
-      $queryRaw: async () => [],
+      // Candados y el conteo por sucursal (approvedBy = createdBy, última hora).
+      $queryRaw: async (sql: TemplateStringsArray, ...values: unknown[]) => {
+        const text = sql.join("?");
+        if (/count\(\*\)/.test(text)) {
+          counts.push(String(values[0]));
+          return [{ n: approvedLastHour }];
+        }
+        return [];
+      },
       terminal: {
         findUnique: async () => null,
-        count: async () => approvedLastHour,
         create: async (a: any) => (created.push(a.data), { ...a.data }),
       },
+      alert: { upsert: async (a: any) => (alerts.push(a), a.create) },
       cashSession: { findFirst: async () => null },
       authSession: { update: async () => undefined },
       auditLog: { create: async () => undefined },
@@ -518,20 +537,48 @@ describe("A2 (propuesta, apagada) · tope de equipos aprobados solos por hora", 
           name: "Equipo",
           secret: "s".repeat(20),
         },
-        { ...actor, permissions: ["*"], sessionId: "s1" },
+        { ...actor, permissions, sessionId: "s1" },
       );
     } finally {
       if (previous === undefined)
         delete process.env.TERMINAL_AUTO_APPROVE_PER_HOUR;
       else process.env.TERMINAL_AUTO_APPROVE_PER_HOUR = previous;
     }
-    return created[0];
+    return { terminal: created[0], alerts, counts };
   };
-  it("sin la variable (por defecto) la administración sigue aprobando sola", async () => {
-    expect((await register(undefined, 500)).approvedAt).toBeInstanceOf(Date);
+  it("sin la variable el tope es 5 por hora y por sucursal; el sexto queda pendiente con aviso a la dueña", async () => {
+    const fifth = await register(undefined, 4);
+    expect(fifth.terminal.approvedAt).toBeInstanceOf(Date);
+    expect(fifth.alerts).toEqual([]);
+    expect(fifth.counts).toEqual([actor.branchId]);
+    const sixth = await register(undefined, 5);
+    expect(sixth.terminal.approvedAt).toBeUndefined();
+    expect(sixth.alerts).toHaveLength(1);
+    expect(sixth.alerts[0].create).toMatchObject({
+      type: "terminal_auto_limit",
+      severity: "high",
+      branchId: actor.branchId,
+    });
+    const { OWNER_ONLY_ALERT_TYPES } = await import("../apps/api/src/alerts");
+    expect(OWNER_ONLY_ALERT_TYPES).toContain("terminal_auto_limit");
   });
   it("con TERMINAL_AUTO_APPROVE_PER_HOUR=3, el cuarto equipo de la hora queda pendiente", async () => {
-    expect((await register("3", 2)).approvedAt).toBeInstanceOf(Date);
-    expect((await register("3", 3)).approvedAt).toBeUndefined();
+    expect((await register("3", 2)).terminal.approvedAt).toBeInstanceOf(Date);
+    expect((await register("3", 3)).terminal.approvedAt).toBeUndefined();
+  });
+  it("0 = ninguna alta automática; un valor no válido vuelve al tope de 5", async () => {
+    const { autoApproveLimit } = await import("../apps/api/src/realtime");
+    expect(autoApproveLimit({})).toBe(5);
+    expect(autoApproveLimit({ TERMINAL_AUTO_APPROVE_PER_HOUR: "0" })).toBe(0);
+    expect(autoApproveLimit({ TERMINAL_AUTO_APPROVE_PER_HOUR: "-1" })).toBe(5);
+    expect(autoApproveLimit({ TERMINAL_AUTO_APPROVE_PER_HOUR: "x" })).toBe(5);
+    expect(autoApproveLimit({ TERMINAL_AUTO_APPROVE_PER_HOUR: "" })).toBe(5);
+    expect((await register("0", 0)).terminal.approvedAt).toBeUndefined();
+  });
+  it("el equipo de una cajera sigue pendiente y no gasta cupo ni avisa", async () => {
+    const r = await register(undefined, 0, ["sale:write", "cash:write"]);
+    expect(r.terminal.approvedAt).toBeUndefined();
+    expect(r.counts).toEqual([]);
+    expect(r.alerts).toEqual([]);
   });
 });

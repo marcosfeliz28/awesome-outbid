@@ -40,7 +40,10 @@ import {
   passwordSchemaForRole,
   temporaryPasswordExpired,
 } from "./password-policy";
-import { sessionActivityGraceMs } from "./session-activity";
+import {
+  sessionActivityGraceMs,
+  sessionTimeoutMinutesFor,
+} from "./session-activity";
 import { enqueue, escapeHtml, telegramSettings } from "./notifications";
 import {
   REQUEST_RATE_LIMITS,
@@ -355,8 +358,9 @@ export class AuthController implements OnModuleInit {
     const settings = await this.db.settings.findUnique({
       where: { id: user.branchId },
     });
-    const sessionTimeoutMinutes = Number(
-      (settings?.data as any)?.sessionTimeoutMinutes ?? 30,
+    const sessionTimeoutMinutes = sessionTimeoutMinutesFor(
+      user.role?.permissions,
+      settings?.data,
     );
     const session = await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "User" WHERE id=${user.id}::uuid FOR UPDATE`;

@@ -73,7 +73,11 @@ export async function refreshClosedGvCash(
   if (!sessionId) return null;
   const s = await tx.gvCashSession.findUnique({ where: { id: sessionId } });
   if (!s?.closedAt) return null;
-  const e = await gvCajaEsperado(tx, s.id);
+  // Decisión 2: un cierre de antes (sin US$ aparte) se recalcula como se
+  // cerró, con los dólares en pesos dentro del efectivo.
+  const details = (s.closeDetails ?? null) as Record<string, any> | null;
+  const separate = details?.usdSeparate === true;
+  const e = await gvCajaEsperado(tx, s.id, !separate);
   const expectedCash = d(s.openingAmount).plus(e.efectivo);
   const difference = d(s.countedCash ?? 0)
     .minus(expectedCash)
@@ -86,6 +90,15 @@ export async function refreshClosedGvCash(
       expectedCard: fix(e.tarjeta),
       expectedTransfer: fix(e.transferencia),
       difference: fix(difference),
+      ...(separate
+        ? {
+            closeDetails: {
+              ...details,
+              expectedUsd: fix(e.usd),
+              differenceUsd: fix(d(details!.countedUsd ?? 0).minus(e.usd)),
+            },
+          }
+        : {}),
     },
   });
   await audit(tx, actor, "gv_cash_refreshed", "gv_cash", s.id, s, {
@@ -115,12 +128,16 @@ export class GvCajaController {
       payments: e.count,
       cardPayments: e.cards,
       overdue: businessDate(s.openedAt) < businessDate(new Date()),
-      ...(can(actor.permissions, "gv:verify")
+      usdPayments: e.usdCount,
+      // Decisión 3: caja ciega salvo gerencia de GV o si la dueña la apagó.
+      ...(can(actor.permissions, "gv:verify") || actor.cashBlind === false
         ? {
             expected: {
               efectivo: fix(d(s.openingAmount).plus(e.efectivo)),
               tarjeta: fix(e.tarjeta),
               transferencia: fix(e.transferencia),
+              // Decisión 2: dólares aparte, en US$ (no se suman a los pesos).
+              usd: fix(e.usd),
             },
           }
         : {}),
@@ -193,6 +210,10 @@ export class GvCajaController {
         countedCash: gvMoney(true),
         countedCard: gvMoney(true),
         countedTransfer: gvMoney(true),
+        // Decisión 2 (20-nov): billetes en US$ contados aparte, en dólares.
+        // Una pantalla anterior que no lo manda cierra como antes (US$ dentro
+        // del efectivo en pesos) y queda marcado en el cierre.
+        countedUsd: gvMoney(true).optional(),
         notes: z.string().trim().max(500).default(""),
         // Foto del cierre de lote del terminal (data URL): obligatoria si hubo tarjeta.
         batchProof: z.string().max(GV_PROOF_DATA_MAX).optional(),
@@ -205,7 +226,8 @@ export class GvCajaController {
         where: { branchId: actor.branchId, closedAt: null },
       });
       if (!s) bad("No hay una caja de GV abierta.");
-      const e = await gvCajaEsperado(tx, s.id);
+      const separate = data.countedUsd !== undefined;
+      const e = await gvCajaEsperado(tx, s.id, !separate);
       if (e.cards > 0 && !data.batchProof)
         bad(
           "Adjunta la foto del cierre de lote del terminal (hubo pagos con tarjeta).",
@@ -218,14 +240,18 @@ export class GvCajaController {
         cash: d(data.countedCash).minus(expectedCash),
         card: d(data.countedCard).minus(e.tarjeta),
         transfer: d(data.countedTransfer).minus(e.transferencia),
+        usd: separate ? d(data.countedUsd!).minus(e.usd) : d(0),
       };
+      // La diferencia total es en pesos; la de US$ va aparte, sin sumarla.
       const difference = diffs.cash.plus(diffs.card).plus(diffs.transfer);
+      const usdOff = !diffs.usd.isZero();
       // D16 (auditoría 19-nov): un cierre con diferencia lleva justificación,
       // como en la caja de MacGen. Sin montos en el mensaje (arqueo ciego).
       if (
         (!diffs.cash.isZero() ||
           !diffs.card.isZero() ||
-          !diffs.transfer.isZero()) &&
+          !diffs.transfer.isZero() ||
+          usdOff) &&
         data.notes.length < 3
       )
         bad(
@@ -244,6 +270,14 @@ export class GvCajaController {
           countedTransfer: data.countedTransfer,
           difference: fix(difference),
           notes: data.notes,
+          closeDetails: separate
+            ? {
+                usdSeparate: true,
+                expectedUsd: fix(e.usd),
+                countedUsd: fix(data.countedUsd),
+                differenceUsd: fix(diffs.usd),
+              }
+            : { usdSeparate: false },
         },
       });
       if (batch)
@@ -269,12 +303,14 @@ export class GvCajaController {
         card: fix(diffs.card),
         transfer: fix(diffs.transfer),
         total: fix(difference),
+        ...(separate ? { usd: fix(diffs.usd) } : {}),
       };
       // Descuadre: asiento propio para que la dueña lo vea.
       if (
         !diffs.cash.isZero() ||
         !diffs.card.isZero() ||
-        !diffs.transfer.isZero()
+        !diffs.transfer.isZero() ||
+        usdOff
       )
         await audit(
           tx,
@@ -292,6 +328,7 @@ export class GvCajaController {
           method: true,
           amountDop: true,
           amount: true,
+          currency: true,
         },
         orderBy: { createdAt: "asc" },
       });

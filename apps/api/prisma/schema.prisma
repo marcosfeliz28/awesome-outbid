@@ -1176,6 +1176,9 @@ model GvCashSession {
   countedTransfer  Decimal?    @db.Decimal(14, 2)
   difference       Decimal?    @db.Decimal(14, 2)
   notes            String      @default("")
+  // Decisión 2 (20-nov): US$ esperado, contado y diferencia del cierre, aparte
+  // de los pesos. Nulo en los cierres anteriores (US$ contados en pesos).
+  closeDetails     Json?
   payments         GvPayment[]
   // Foto del cierre de lote del terminal (obligatoria si hubo pagos con tarjeta).
   proof            GvProof?

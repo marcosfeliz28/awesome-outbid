@@ -36,6 +36,9 @@ jobs:
       DATABASE_URL: postgresql://fitstore:fitstore_ci@localhost:5434/fitstore
       JWT_SECRET: fitstore-ci-secret-for-isolated-tests-only-2026
       SEED_DEMO_PASSWORD: FitStore-Demo-2026!
+      # Decisión 7 (20-nov): en producción el tope es 5 altas automáticas de
+      # equipos por hora y sucursal; las pruebas registran decenas seguidos.
+      TERMINAL_AUTO_APPROVE_PER_HOUR: "100000"
       BACKUP_TEST_ADMIN_URL: postgresql://fitstore:fitstore_ci@localhost:5434/postgres
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

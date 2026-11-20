@@ -159,6 +159,8 @@ describe("GV · caja propia", () => {
       efectivo: "1500.00",
       tarjeta: "300.00",
       transferencia: "0.00",
+      // Decisión 2 (20-nov): los US$ van aparte (aquí no hubo).
+      usd: "0.00",
     });
     // Hubo tarjeta: sin la foto del cierre de lote no cierra; sin declarar un método tampoco.
     const noBatch = await request("/gv/cash/close", gv, {

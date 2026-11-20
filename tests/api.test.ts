@@ -1958,7 +1958,11 @@ describe("Seguridad, offline y funciones completadas", () => {
         token,
         "PUT",
       );
-      const u = await newUser();
+      // Decisión 6 (20-nov): el ajuste general vale para los roles sin venta
+      // (almacén); la cajera tiene 60 fijos (gerencia: tests/auth-guard.test.ts).
+      const seller = await (await loginRaw(await newUser())).json();
+      expect(seller.user.sessionTimeoutMinutes).toBe(60);
+      const u = await newUser("warehouse");
       const r = await loginRaw(u);
       const logged = await r.json();
       expect(logged.user.sessionTimeoutMinutes).toBe(1);
