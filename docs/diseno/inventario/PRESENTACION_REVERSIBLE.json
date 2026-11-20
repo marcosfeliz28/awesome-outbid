@@ -281,6 +281,10 @@
     {
       "before": "<DataTable\n                rows={counts.data || []}",
       "after": "<DataTable\n                english={inventoryLanguage === \"en\"}\n                rows={counts.data || []}"
+    },
+    {
+      "before": "                    <div className=\"table-actions\">\n",
+      "after": "                    <div className=\"table-actions inventory-row-actions\">\n"
     }
   ]
 }

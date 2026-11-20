@@ -124,6 +124,26 @@
     {
       "before": "aria-label={`Ver carrito (${units} artículos)`}",
       "after": "aria-label={`${language === \"en\" ? \"View cart\" : \"Ver carrito\"} (${units} ${language === \"en\" ? (units === 1 ? \"item\" : \"items\") : (units === 1 ? \"artículo\" : \"artículos\")})`}"
+    },
+    {
+      "before": "import { t, useLanguage } from \"./inicioLanguage\";\n",
+      "after": "import { t, useLanguage } from \"./inicioLanguage\";\nimport { posChargeDisabled } from \"./posChargeState\";\n"
+    },
+    {
+      "before": ": `${filtered.length} productos para descubrir`}",
+      "after": ": `${filtered.length} ${t(\"productos para descubrir\")}`}"
+    },
+    {
+      "before": "Abre tu caja para comenzar <ArrowLeft size={14} />",
+      "after": "{t(\"Abre tu caja para comenzar\")} <ArrowLeft size={14} />"
+    },
+    {
+      "before": "className=\"charge-button\"\n            disabled={!cart.length}\n            onClick={charge}",
+      "after": "className=\"charge-button\"\n            disabled={posChargeDisabled(cart.length, !!session, elsewhere)}\n            onClick={charge}"
+    },
+    {
+      "before": "className=\"charge-button pos-mobile-charge\"\n          disabled={!cart.length}\n          onClick={charge}",
+      "after": "className=\"charge-button pos-mobile-charge\"\n          disabled={posChargeDisabled(cart.length, !!session, elsewhere)}\n          onClick={charge}"
     }
   ]
 }

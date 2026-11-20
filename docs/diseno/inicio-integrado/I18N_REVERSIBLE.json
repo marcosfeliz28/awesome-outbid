@@ -478,5 +478,17 @@
   {
     "before": "            })}\n            <div className=\"insight-note\">",
     "after": "            })}\n            {data?.gv?.count > 0 && (\n              <div className=\"category-row\">\n                <div>\n                  <span>{t(\"GV (aparte, no suma)\")}</span>\n                  <strong>{formatMoney(data.gv.total)}</strong>\n                </div>\n              </div>\n            )}\n            <div className=\"insight-note\">"
+  },
+  {
+    "before": "import { kpiStripVisible } from \"./kpiStripModel\";\n",
+    "after": "import { kpiStripVisible } from \"./kpiStripModel\";\nimport { grossProfitLabel } from \"./dashboardProfitLabel\";\n"
+  },
+  {
+    "before": "  const showProfit = can(user.permissions, \"profit:read\");\n",
+    "after": "  const showProfit = can(user.permissions, \"profit:read\");\n  const settings = useQuery<any>({\n    queryKey: [\"settings\", user.branchId],\n    queryFn: () => api(\"/settings\"),\n    enabled: showProfit,\n  });\n"
+  },
+  {
+    "before": "      label: showProfit ? t(\"Ganancia bruta\") : t(\"Inventario a la venta\"),",
+    "after": "      label: showProfit\n        ? grossProfitLabel(settings.data?.taxIncluded !== false, language)\n        : t(\"Inventario a la venta\"),"
   }
 ]

@@ -1,5 +1,10 @@
 import { ReportEmblem } from "./ReportVisuals";
-import { reportLabel } from "./reportPresentationCopy";
+import {
+  reportCellTextForLanguage,
+  reportColumnIsMoney,
+  reportLabel,
+} from "./reportPresentationCopy";
+import { reportAppliedRange } from "./reportDateRange";
 import { PremiumWorkspace } from "./PremiumWorkspace";
 import { operacionesText, customerAnonymizationText } from "./operacionesLanguage";
 import { OperationsPresentation } from "./OperationsPresentation";
@@ -13,6 +18,7 @@ import { useLanguage } from "./inicioLanguage";
 import { cashText } from "./cashLanguage";
 import { inventoryText } from "./inventoryLanguage";
 import { useInventoryAppearance } from "./inventoryAppearance";
+import { alertTypeLabel } from "./alertTypeLabel";
 import { InventoryProduct } from "./InventoryProduct";
 import { InventoryAlerts } from "./InventoryAlerts";
 import { InventoryMovements } from "./InventoryMovements";
@@ -50,7 +56,6 @@ import { Button, Badge, Modal, Empty } from "@fitstore/ui";
 import {
   formatMoney,
   can,
-  reportCellText,
   reportColumnVisible,
   reportDisplayRows,
 } from "@fitstore/shared";
@@ -1031,7 +1036,7 @@ export function Inventory() {
                 {
                   label: translateInventory("Acciones"),
                   render: (v) => (
-                    <div className="table-actions">
+                    <div className="table-actions inventory-row-actions">
                       <button
                         className="text-link"
                         onClick={() =>
@@ -1675,36 +1680,6 @@ export function Expenses() {
     </OperationsPresentation>
   );
 }
-
-// 05-B2: el tipo de alerta en español (antes «offline conflict», «low
-// stock»…). Un tipo nuevo sin etiqueta se muestra legible igual.
-const ALERT_TYPE_LABEL: Record<string, string> = {
-  offline_conflict: "Venta sin conexión",
-  receivable: "Por cobrar",
-  credit_reminder: "Créditos por cobrar",
-  gv_cash_open_night: "Caja GV abierta de noche",
-  gv_day_no_close: "Día de GV sin cierre",
-  opening_shortfall: "Fondo de apertura menor",
-  cash_difference: "Diferencia de caja",
-  return_waste: "Merma por devolución",
-  expense_budget: "Presupuesto de gastos",
-  expired: "Vencido",
-  expiring: "Por vencer",
-  low_margin: "Margen bajo",
-  low_sales: "Ventas bajas",
-  low_stock: "Stock bajo",
-  negative_stock: "Stock negativo",
-  no_movement: "Sin movimiento",
-  out_of_stock: "Agotado",
-  overstock: "Exceso de stock",
-  unusual_discount: "Descuento inusual",
-  sale_void_request: "Solicitud de anulación",
-  zero_cost_sale: "Venta sin costo",
-};
-const alertTypeLabel = (type: string, english = false) =>
-  type === "opening_shortfall" && english
-    ? "Opening fund shortfall"
-    : (ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " "));
 
 export function Cash() {
   const user = useStore((s) => s.user)!;
@@ -3005,13 +2980,15 @@ export function Reports() {
     // Los listados largos (ventas, kardex, devoluciones) llegan por páginas
     // con su total; Excel y PDF traen el período completo.
     [page, setPage] = useState(1);
+  const appliedRange = reportAppliedRange(from, to, today());
   const query = useQuery({
     queryKey: ["report", report, from, to, page],
     queryFn: () => api(`/reports/${report}?from=${from}&to=${to}&page=${page}`),
     enabled: report !== "income-by-day" && report !== "formal",
   });
   const rows = query.data?.rows || [];
-  const displayRows = reportDisplayRows(report, rows);
+  // La API conserva códigos internos; solo la presentación los localiza.
+  const displayRows = en ? rows : reportDisplayRows(report, rows);
   const total: number = query.data?.total ?? rows.length;
   const limit: number = query.data?.limit ?? (rows.length || 1);
   const pages = Math.max(1, Math.ceil(total / limit));
@@ -3020,7 +2997,13 @@ export function Reports() {
     .map((key) => ({
       label: reportLabel(key.replace(/_/g, " "), en),
       render: (row: any) => {
-        const value = reportCellText(report, key, row[key]);
+        const value = reportCellTextForLanguage(report, key, row[key], en);
+        if (
+          reportColumnIsMoney(report, key) &&
+          value !== "" &&
+          Number.isFinite(Number(value))
+        )
+          return formatMoney(Number(value));
         return typeof value === "number"
           ? value.toLocaleString(en ? "en-US" : "es-DO", {
               maximumFractionDigits: 2,
@@ -3041,6 +3024,19 @@ export function Reports() {
       <div className="reports-layout">
         <aside className="panel report-menu">
           <h2 className="report-explorer-title">{en ? "Report explorer" : "Explorador de reportes"}</h2>
+          {extra.isError && (
+            <div className="error-panel report-catalog-error" role="alert">
+              <AlertTriangle />
+              <p>
+                {en
+                  ? "We could not load the complete report list. Retry to see every available report."
+                  : "No pudimos cargar la lista completa de reportes. Reintenta para ver todos los reportes disponibles."}
+              </p>
+              <Button variant="secondary" onClick={() => extra.refetch()}>
+                {en ? "Retry" : "Reintentar"}
+              </Button>
+            </div>
+          )}
           {groupReports(
             allReports
               .filter(
@@ -3174,6 +3170,12 @@ export function Reports() {
               </label>
               <Badge tone="violet">{total} {en ? "records" : "registros"}</Badge>
             </div>
+            {appliedRange.usedDefaultFrom && (
+              <p className="muted" role="status">
+                {en ? "Applied range" : "Rango aplicado"}: {appliedRange.from} –{" "}
+                {appliedRange.to}
+              </p>
+            )}
             {report.startsWith("ventas-mes-") && (
               <p className="muted">
                 {en ? "Compares the month of the To date; the From date does not change the result." : "Compara el mes de la fecha «Hasta»; la fecha «Desde» no cambia el resultado."}

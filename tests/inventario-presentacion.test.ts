@@ -58,3 +58,37 @@ it("distingue disabled sin cambiar el atributo ni las acciones", () => {
   );
   expect(css).toMatch(/button:disabled\s*\{[^}]*cursor: not-allowed/);
 });
+
+describe("A10 · presentación responsive de GV e Inventario", () => {
+  it("GV-17 muestra una pista de desplazamiento en sus tablas móviles", () => {
+    const css = read("apps/web/src/gv.css");
+
+    expect(css).toMatch(
+      /@media \(max-width: 640px\)[\s\S]*\.gv-reports \.table-wrap::after\s*\{[^}]*content:\s*"Desliza ↔"/,
+    );
+    expect(css).toMatch(
+      /\.gv-reports \.table-wrap\s*\{[^}]*overflow-x:\s*auto[^}]*scrollbar-width:\s*auto/,
+    );
+  });
+
+  it("GV-18 reserva espacio inferior para que la barra móvil no tape contenido", () => {
+    const css = read("apps/web/src/gv.css");
+
+    expect(css).toMatch(
+      /@media \(max-width: 640px\)[\s\S]*\.gv-page\s*\{[^}]*padding-bottom:\s*calc\(96px \+ env\(safe-area-inset-bottom\)\)/,
+    );
+  });
+
+  it("INV-011 mantiene juntas y visibles las tres acciones a 390 px", () => {
+    const source = read("apps/web/src/Management.tsx");
+    const css = read("apps/web/src/styles.css");
+
+    expect(source).toContain('className="table-actions inventory-row-actions"');
+    expect(css).toMatch(
+      /\.fusion-inventory \.table-actions\.inventory-row-actions\s*\{[^}]*flex-wrap:\s*nowrap[^}]*min-width:\s*max-content/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 600px\)[\s\S]*\.fusion-inventory \.table-actions\.inventory-row-actions\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/,
+    );
+  });
+});

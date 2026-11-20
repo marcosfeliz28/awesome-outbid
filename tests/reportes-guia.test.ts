@@ -2,6 +2,7 @@
 // cada columna que devuelve tiene nombre amigable y significado. Las columnas se
 // leen del propio código: el reporte corre contra una base falsa que devuelve
 // una fila de ejemplo, así que sus encabezados salen tal cual los escribió.
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { REPORTES } from "../apps/api/src/reportes";
 import { GUIA_INFORMES, GUIA_REPORTES } from "../apps/api/src/reportes/guia";
@@ -157,5 +158,74 @@ describe("guía de inventario (auditoría 2-nov)", () => {
     const g: any = GUIA_REPORTES["perdidas-conteo"];
     expect(g.comoSeLee).toMatch(/Solo la «Salida real» es dinero perdido/);
     expect(g.comoSeLee).toMatch(/no se suma como pérdida/);
+  });
+});
+
+describe("contrato documental del diseño de reportes del 20-nov", () => {
+  const read = (path: string) =>
+    readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  const salidas = ["Pantalla", "Excel", "PDF", "CSV"];
+
+  it("fija tokens, tipografía, cabecera, números, fechas, página y estados", () => {
+    const spec = read("docs/auditoria-ui/REPORTES_ESPECIFICACION_20NOV.md");
+    for (const required of [
+      "#6d28d9",
+      "--fs-min",
+      "14 px",
+      "America/Santo_Domingo",
+      "RD$ 1,500.00",
+      "A4",
+      "nombre del negocio",
+      "logo",
+      "vacío",
+      "cargando",
+      "error",
+      "Reintentar",
+    ]) {
+      expect(spec, required).toContain(required);
+    }
+  });
+
+  it("mantiene una fila pendiente por cada reporte registrado y salida", () => {
+    const matrix = read("docs/auditoria-ui/REPORTES_DISENO_20NOV.md");
+    const rows = matrix
+      .split("\n")
+      .filter((line) => line.startsWith("| R40-"))
+      .map((line) =>
+        line
+          .slice(1, -1)
+          .split("|")
+          .map((cell) => cell.trim()),
+      );
+
+    expect(rows).toHaveLength(Object.keys(REPORTES).length * salidas.length);
+    for (const report of Object.keys(REPORTES)) {
+      for (const output of salidas) {
+        const row = rows.find(
+          (cells) => cells[1] === report && cells[3] === output,
+        );
+        expect(row, `${report}/${output}`).toBeDefined();
+        expect(row).toContain("PENDIENTE");
+      }
+    }
+  });
+
+  it("no declara OK ni falla sin una evidencia enlazada", () => {
+    const matrix = read("docs/auditoria-ui/REPORTES_DISENO_20NOV.md");
+    const rows = matrix
+      .split("\n")
+      .filter((line) => /^\| (?:R40|ESP)-/.test(line));
+    for (const row of rows) {
+      const cells = row
+        .slice(1, -1)
+        .split("|")
+        .map((cell) => cell.trim());
+      const status = cells.at(-2);
+      const evidence = cells.at(-3);
+      if (status === "OK" || status === "FALLA") {
+        expect(evidence).not.toBe("—");
+        expect(evidence).not.toBe("PENDIENTE");
+      }
+    }
   });
 });

@@ -2,6 +2,7 @@ import "./fusion-caja-higgsfield.css";
 import { CajaVisualPreferences } from "./CajaVisualPreferences";
 import { t, useLanguage } from "./inicioLanguage";
 import { posStockLabel } from "./posStockLabel";
+import { posChargeDisabled } from "./posChargeState";
 import { refreshAfterSale } from "./postSaleRefresh";
 import { whatsAppRecipient } from "./whatsAppRecipient";
 import {
@@ -1077,7 +1078,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                 ? `Mostrando ${MAX_CARDS} de ${filtered.length} · escribe para encontrar el resto`
                 : filtered.length === 1
                   ? "1 producto encontrado"
-                  : `${filtered.length} productos para descubrir`}
+                  : `${filtered.length} ${t("productos para descubrir")}`}
           </span>
           <span>
             <span className="live-dot" />
@@ -1315,14 +1316,14 @@ export function POS({ go }: { go: (page: string) => void }) {
           </div>
           {!session && (
             <button className="open-cash-link" onClick={() => go("cash")}>
-              Abre tu caja para comenzar <ArrowLeft size={14} />
+              {t("Abre tu caja para comenzar")} <ArrowLeft size={14} />
             </button>
           )}
           {elsewhere && <CashElsewhere session={session} compact />}
           <Button
             variant="success"
             className="charge-button"
-            disabled={!cart.length}
+            disabled={posChargeDisabled(cart.length, !!session, elsewhere)}
             onClick={charge}
             aria-label={`Cobrar ${formatMoney(total)}`}
           >
@@ -1364,7 +1365,7 @@ export function POS({ go }: { go: (page: string) => void }) {
         <Button
           variant="success"
           className="charge-button pos-mobile-charge"
-          disabled={!cart.length}
+          disabled={posChargeDisabled(cart.length, !!session, elsewhere)}
           onClick={charge}
           aria-label={`Cobrar ${formatMoney(total)}`}
         >

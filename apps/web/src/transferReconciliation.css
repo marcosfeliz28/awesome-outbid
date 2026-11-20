@@ -119,11 +119,33 @@
   accent-color: var(--primary);
 }
 @media (max-width: 600px) {
+  /* CC-20: el rótulo Fecha conserva espacio propio junto al calendario. */
+  .sales-fusion .table-toolbar .table-search {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+  .sales-fusion .table-toolbar .table-search > span {
+    white-space: nowrap;
+  }
+  .transfer-reconciliation,
+  .reconciliation-bank {
+    width: 100%;
+    min-width: 0;
+  }
   .reconciliation-row {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    width: 100%;
+    box-sizing: border-box;
   }
   .reconciliation-row > button {
-    margin-left: 56px;
+    grid-column: 2;
+    margin-left: 0;
+    justify-self: start;
   }
   .reconciliation-totals {
     display: grid;

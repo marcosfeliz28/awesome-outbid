@@ -297,6 +297,26 @@
     {
       "before": "query.data?.returnDays + \" días\"",
       "after": "query.data?.returnDays + (en ? \" days\" : \" días\")"
+    },
+    {
+      "before": "import { ReportEmblem } from \"./ReportVisuals\";\nimport { reportLabel } from \"./reportPresentationCopy\";",
+      "after": "import { ReportEmblem } from \"./ReportVisuals\";\nimport {\n  reportCellTextForLanguage,\n  reportColumnIsMoney,\n  reportLabel,\n} from \"./reportPresentationCopy\";\nimport { reportAppliedRange } from \"./reportDateRange\";"
+    },
+    {
+      "before": "                    <div className=\"table-actions\">\n",
+      "after": "                    <div className=\"table-actions inventory-row-actions\">\n"
+    },
+    {
+      "before": "    [page, setPage] = useState(1);\n  const query = useQuery({",
+      "after": "    [page, setPage] = useState(1);\n  const appliedRange = reportAppliedRange(from, to, today());\n  const query = useQuery({"
+    },
+    {
+      "before": "          <h2 className=\"report-explorer-title\">{en ? \"Report explorer\" : \"Explorador de reportes\"}</h2>\n",
+      "after": "          <h2 className=\"report-explorer-title\">{en ? \"Report explorer\" : \"Explorador de reportes\"}</h2>\n          {extra.isError && (\n            <div className=\"error-panel report-catalog-error\" role=\"alert\">\n              <AlertTriangle />\n              <p>\n                {en\n                  ? \"We could not load the complete report list. Retry to see every available report.\"\n                  : \"No pudimos cargar la lista completa de reportes. Reintenta para ver todos los reportes disponibles.\"}\n              </p>\n              <Button variant=\"secondary\" onClick={() => extra.refetch()}>\n                {en ? \"Retry\" : \"Reintentar\"}\n              </Button>\n            </div>\n          )}\n"
+    },
+    {
+      "before": "              <Badge tone=\"violet\">{total} {en ? \"records\" : \"registros\"}</Badge>\n            </div>\n",
+      "after": "              <Badge tone=\"violet\">{total} {en ? \"records\" : \"registros\"}</Badge>\n            </div>\n            {appliedRange.usedDefaultFrom && (\n              <p className=\"muted\" role=\"status\">\n                {en ? \"Applied range\" : \"Rango aplicado\"}: {appliedRange.from} –{\" \"}\n                {appliedRange.to}\n              </p>\n            )}\n"
     }
   ]
 }
