@@ -143,3 +143,5 @@ Aplicado en Tienda: Soft Focus 200/250/350 → 4/2/4; Stay Golden 01 → 4; L.A.
 - Falta la confirmación de la dueña para aplicar FS-328, FS-288 (volver a por verificar) y FS-304 (mover el cobro con tarjeta a la caja de Wendy) con las 3 verificaciones.
 
 - **Fotos aproximadas de tenis (18-nov-2026):** 10 modelos con stock usan foto web aproximada (Nike Free Negro, Free Crema, NB 530 Crema y Rosado, Asics Gris y Verde, P6000 Blanco Negro y Azul, Ocloud Negro y Blanco, Asics Gris Plateado, NB 1906R Gris y Azul, P6000 Blanco y Negro Azul, NB 740 Gris). La dueña dice que se queden así; si ve uno distinto en tienda, cambiar por foto de la empleada (hoja `docs/fotos/tenis-web/`).
+
+- **Buzón Dot en Drive (20-nov-2026, norexos2804@gmail.com):** carpeta «Dot – Buzón» (id 1KdoEsMa5PiLobMvuSQQ0qykWKN9PpWvq) con PARA_DOT (1L4uWbIAK_bDw0s-lfvec0b3uQnhSHssU), DE_DOT (1JntwLvUYCaR-bVcL8e6icZUguKr0fiiV) y ESTADO (1qLqGBRB4DTgvTvnAQKnDxJlyntQUie_O). Falta compartirla con la cuenta de Dot. Revisar DE_DOT y ESTADO cuando Marcos avise.
