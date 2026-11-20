@@ -35,3 +35,17 @@ it("el instalador muestra Norexos en lo que ve la persona", () => {
   }
   expect(sobrantes).toEqual([]);
 });
+
+it("CI publica el mismo nombre que produce el instalador", () => {
+  const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
+  const build = readFileSync("instalador/build.ps1", "utf8");
+  const nsis = readFileSync("instalador/installer/FitStore.nsi", "utf8");
+
+  expect(build).toContain('"Norexos-Setup-$version.exe"');
+  expect(nsis).toContain("Norexos-Setup-${VERSION}.exe");
+  expect(workflow).toContain('$name = "Norexos-Setup-$version.exe"');
+  expect(workflow).toContain(
+    "name: Norexos-Setup-${{ steps.exe.outputs.version }}",
+  );
+  expect(workflow).not.toContain("Nexora-POS-Setup-");
+});
