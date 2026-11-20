@@ -655,7 +655,9 @@ export const usdToDop = (amountUsd: Decimal.Value, rate: Decimal.Value) =>
  * Tope preventivo del cobro en dólares (caso FS-0000730, 19-nov: US$ 2,360
  * tecleados en vez de US$ 40). Si un pago en US$, en pesos, supera 3 veces el
  * total de la venta y el vuelto pasa de RD$ 5,000, la caja debe confirmarlo
- * (`confirmLargeForeign`) y, la cajera, con el PIN de un gerente.
+ * (`confirmLargeForeign`) y, la cajera, con el PIN de un gerente. Los pagos en
+ * US$ se suman. La API solo lo aplica con LARGE_FOREIGN_GUARD=on (apagado
+ * hasta que la caja tenga el botón de confirmación).
  */
 export const LARGE_FOREIGN_FACTOR = 3;
 export const LARGE_FOREIGN_MIN_CHANGE = 5000;
@@ -671,16 +673,14 @@ export function largeForeignPayment(
   const paid = payments.reduce((a, p) => a.plus(p.amount), d(0));
   const change = money(Decimal.max(0, paid.minus(total)));
   if (!(change > LARGE_FOREIGN_MIN_CHANGE)) return null;
-  const usd = payments.find(
-    (p) =>
-      p.currency === "USD" &&
-      d(p.amount).gt(d(total).times(LARGE_FOREIGN_FACTOR)),
-  );
-  if (!usd) return null;
+  // Se suman todos los pagos en US$: partir el monto no evita el tope.
+  const usd = payments.filter((p) => p.currency === "USD");
+  const amount = money(usd.reduce((a, p) => a.plus(p.amount), d(0)));
+  if (!d(amount).gt(d(total).times(LARGE_FOREIGN_FACTOR))) return null;
   return {
-    amountUsd: usd.amountUsd ?? 0,
-    usdRate: usd.usdRate ?? 0,
-    amount: usd.amount,
+    amountUsd: money(usd.reduce((a, p) => a.plus(p.amountUsd ?? 0), d(0))),
+    usdRate: usd[0].usdRate ?? 0,
+    amount,
     total,
     change,
   };

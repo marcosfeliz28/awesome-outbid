@@ -82,12 +82,16 @@ export const MANUAL_ALERT_TYPES = [
   "zero_cost_sale",
   // Caja abierta con menos fondo que el último cierre (cash.ts, A3 19-nov).
   "opening_shortfall",
+  // Pagos de una venta reemplazados en una caja abierta y baja el efectivo
+  // esperado (POST /sales/:id/payments/replace, 20-nov).
+  "cash_payments_replaced",
 ];
 // Avisos que sólo ve la dueña («*»).
 export const OWNER_ONLY_ALERT_TYPES = [
   "sale_void_request",
   "usd_rate_offline",
   "cash_after_close",
+  "cash_payments_replaced",
   "card_batch_missing",
   "gv_cash_open_night",
   "gv_day_no_close",

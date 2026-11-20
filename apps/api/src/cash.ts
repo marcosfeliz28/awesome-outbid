@@ -322,7 +322,8 @@ export async function closedCashChanged(
   const message =
     `Caja cerrada de ${cashier?.name ?? "otra persona"} cambiada por ${actor.name}: ${change.what}. ` +
     `Justificación: ${change.reason}. Diferencia ahora: efectivo RD$ ${formatAmount(Number(diff.cash ?? 0))}, ` +
-    `tarjeta RD$ ${formatAmount(Number(diff.card ?? 0))}, transferencia RD$ ${formatAmount(Number(diff.transfer ?? 0))}.`;
+    `tarjeta RD$ ${formatAmount(Number(diff.card ?? 0))}, transferencia RD$ ${formatAmount(Number(diff.transfer ?? 0))}, ` +
+    `dólares US$ ${formatAmount(Number(diff.usd ?? 0))}.`;
   await tx.alert.upsert({
     where: { key: `cash-after-close:${session.id}:${change.ref}` },
     create: {

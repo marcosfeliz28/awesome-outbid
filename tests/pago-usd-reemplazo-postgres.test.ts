@@ -25,6 +25,7 @@ const run = promisify(execFile);
 const DB_NAME = "nexora_pago_usd_reemplazo";
 const RATE = 60.457;
 const MANAGER_PIN = "864209";
+const SALE_AT = new Date(Date.now() - 2 * 3600000);
 const port = () =>
   new Promise<number>((done, fail) => {
     const server = createServer();
@@ -113,6 +114,8 @@ const fs730 = async (
       sellerId,
       customerId,
       cashSessionId: sessionId,
+      // Cobrada antes del cierre (la caja cerró hace 1 h).
+      createdAt: SALE_AT,
       subtotal: 3500,
       discountTotal: 0,
       taxTotal: 533.9,
@@ -354,6 +357,13 @@ describe("POST /sales/:id/payments/replace · caso FS-0000730 en caja cerrada", 
     expect(alert?.message).toContain("US$ 2,360.00");
     expect(alert?.message).toContain("US$ 40.00");
     expect(alert?.message).toContain("FS-0000730");
+    // La alerta trae también la diferencia en dólares (ya 0 tras corregir).
+    expect(alert?.message).toContain("dólares US$ 0.00");
+    // La tarjeta nueva queda con la fecha de la venta (informes por día).
+    const card = await db.payment.findFirstOrThrow({
+      where: { saleId, method: "card" },
+    });
+    expect(card.createdAt.toISOString()).toBe(SALE_AT.toISOString());
     const log = await db.auditLog.findFirstOrThrow({
       where: { action: "sale_payments_replaced", entityId: saleId },
     });
@@ -403,6 +413,46 @@ describe("POST /sales/:id/payments/replace · reglas", () => {
     expect(expected.cash).toBe(8941.72);
     expect(expected.card).toBe(1140);
     expect(expected.usd).toBe(40);
+  });
+  it("caja abierta propia: si baja el efectivo esperado queda un aviso", async () => {
+    const sid = await cashSession(owner.id, false);
+    const saleId = await fs730(sid, owner.id);
+    // La venta queda pagada en pesos (RD$ 3,500 en efectivo)…
+    await sales.replacePayments(
+      saleId,
+      {
+        payments: [{ method: "cash", amount: 3500 }],
+        reason: "Primero: efectivo en pesos",
+      },
+      owner,
+    );
+    // …y luego pasa a tarjeta: el efectivo esperado baja RD$ 3,500.
+    const result: any = await sales.replacePayments(
+      saleId,
+      {
+        payments: [{ method: "card", amount: 3500, approvalCode: "77" }],
+        reason: "Era tarjeta, no efectivo",
+      },
+      owner,
+    );
+    const row = result.openCashSessions[0];
+    expect(row.expectedCashBefore - row.expectedCash).toBe(3500);
+    const alert = await db.alert.findUnique({
+      where: { key: `cash-payments-replaced:${sid}:${saleId}` },
+    });
+    expect(alert?.type).toBe("cash_payments_replaced");
+    expect(alert?.message).toContain("bajó");
+    expect(alert?.message).toContain("Era tarjeta");
+  });
+  it("pago nuevo en una caja que no es de la venta: 400", async () => {
+    const sid = await cashSession(wendy.id, true);
+    const saleId = await fs730(sid, wendy.id);
+    const foreign = await cashSession(wendy.id, true);
+    const body: any = correct();
+    body.payments[1].cashSessionId = foreign;
+    expect(await message(sales.replacePayments(saleId, body, owner))).toMatch(
+      /solo pueden ir a una caja de esta venta/,
+    );
   });
   it("caja abierta de otra persona: 400", async () => {
     const ana = await cashier();
@@ -472,7 +522,40 @@ describe("POST /sales/:id/payments/replace · reglas", () => {
   });
 });
 
-describe("POST /sales · tope preventivo del cobro en dólares", () => {
+describe("POST /sales · tope preventivo apagado por defecto", () => {
+  it("sin LARGE_FOREIGN_GUARD, US$ 2,360 sobre RD$ 3,500 pasa como antes", async () => {
+    delete process.env.LARGE_FOREIGN_GUARD;
+    const ana = await cashier();
+    const sid = await cashSession(ana.id, false);
+    const ok: any = await sales.sale(
+      {
+        offlineUuid: randomUUID(),
+        customerId,
+        cashSessionId: sid,
+        items: [{ variantId, qty: 1 }],
+        payments: [
+          {
+            method: "cash",
+            currency: "USD",
+            amountUsd: 2360,
+            usdRate: RATE,
+            amount: 142678.52,
+          },
+        ],
+      },
+      ana,
+    );
+    expect(n(ok.total)).toBe(3500);
+  });
+});
+
+describe("POST /sales · tope preventivo del cobro en dólares (LARGE_FOREIGN_GUARD=on)", () => {
+  beforeAll(() => {
+    process.env.LARGE_FOREIGN_GUARD = "on";
+  });
+  afterAll(() => {
+    delete process.env.LARGE_FOREIGN_GUARD;
+  });
   const sell = (actor: any, sid: string, payments: any[], extra = {}) =>
     sales.sale(
       {
@@ -533,6 +616,40 @@ describe("POST /sales · tope preventivo del cobro en dólares", () => {
         cardLast4: "1234",
       },
     ]);
+    expect(n(ok.total)).toBe(3500);
+  });
+  it("partir el monto en dos pagos en US$ no evita el tope", async () => {
+    const ana = await cashier();
+    const sid = await cashSession(ana.id, false);
+    // US$ 150 = RD$ 9,068.55 (menos de 3 × 3,500 cada uno; juntos 18,137.10).
+    const half = {
+      method: "cash",
+      currency: "USD",
+      amountUsd: 150,
+      usdRate: RATE,
+      amount: 9068.55,
+    };
+    expect(await message(sell(ana, sid, [half, half]))).toMatch(
+      /^Revisa el monto en dólares: US\$ 300\.00 .*RD\$ 18,137\.10/,
+    );
+  });
+  it("el PIN solo se comprueba si el tope aplica", async () => {
+    const ana = await cashier();
+    const sid = await cashSession(ana.id, false);
+    const ok: any = await sell(
+      ana,
+      sid,
+      [
+        {
+          method: "cash",
+          currency: "USD",
+          amountUsd: 60,
+          usdRate: RATE,
+          amount: 3627.42,
+        },
+      ],
+      { confirmLargeForeign: true, managerPin: "000000" },
+    );
     expect(n(ok.total)).toBe(3500);
   });
   it("gerencia: basta con confirmar", async () => {

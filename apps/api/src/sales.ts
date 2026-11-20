@@ -605,6 +605,10 @@ export function normalizeReplacementPayments(
     );
   return rows;
 }
+// Tope preventivo del cobro en dólares: APAGADO hasta que la caja tenga el
+// botón de confirmación y el PIN (Dot). Única lectura del ajuste.
+export const largeForeignGuardEnabled = () =>
+  process.env.LARGE_FOREIGN_GUARD === "on";
 // Decisión 38: una caja es de un usuario; nadie opera con la de otra persona.
 const OTHER_CASH =
   "Esta caja es de otra persona. Cada usuario vende y mueve dinero sólo en su propia caja; abre la tuya.";
@@ -903,16 +907,9 @@ export class SalesController {
         );
     }
     const approvedBy = await this.approve(actor, input);
-    // Tope preventivo del cobro en dólares (caso FS-0000730): la cajera que
-    // confirma un pago en US$ muy grande lo hace con el PIN de un gerente. El
-    // PIN se comprueba aquí (fuera de la transacción, como approve); si el
-    // tope aplica se decide abajo, con el total ya calculado.
+    // Tope preventivo del cobro en dólares (caso FS-0000730); quién lo aprobó.
     const manages = can(actor.permissions, "sale:manage");
-    const largeForeignBy =
-      input.confirmLargeForeign === true && !manages && input.managerPin
-        ? (approvedBy ??
-          (await managerPinApproval(this.db, actor, input.managerPin)))
-        : null;
+    let largeForeignBy: string | null = null;
     const result = await moneyDb(this.db).$transaction(
       async (tx) => {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${input.offlineUuid}))::text AS locked`;
@@ -1133,15 +1130,25 @@ export class SalesController {
           bad(e.message);
         }
         if (payment.pending > 0) bad("Falta completar el pago de la factura.");
-        // La revisión de gerencia de una venta ya entregada no se frena aquí.
-        const largeForeign = reviewed
-          ? null
-          : largeForeignPayment(total, input.payments);
-        if (
-          largeForeign &&
-          (input.confirmLargeForeign !== true || (!manages && !largeForeignBy))
-        )
-          conflict(largeForeignMessage(largeForeign, !manages));
+        // Apagado salvo LARGE_FOREIGN_GUARD=on. Frena también la venta sin
+        // conexión que sincroniza la cajera (queda en conflicto para
+        // revisión); solo la revisión de gerencia de una venta ya entregada
+        // no se frena. El PIN se comprueba solo si el tope aplica.
+        const largeForeign =
+          reviewed || !largeForeignGuardEnabled()
+            ? null
+            : largeForeignPayment(total, input.payments);
+        if (largeForeign) {
+          if (
+            input.confirmLargeForeign !== true ||
+            (!manages && !input.managerPin)
+          )
+            conflict(largeForeignMessage(largeForeign, !manages));
+          if (!manages)
+            largeForeignBy =
+              approvedBy ??
+              (await managerPinApproval(this.db, actor, input.managerPin!));
+        }
         for (const p of input.payments) {
           if (p.creditNoteId && p.method !== "credit_note")
             bad("La nota de crédito sólo se usa con su método de pago.");
@@ -2969,16 +2976,25 @@ export class SalesController {
         },
       });
       if (!peek) bad("Venta no encontrada.");
-      const sessionIds = (rows: { cashSessionId: string | null }[]) => [
-        ...new Set(
-          [
-            ...rows.map((p) => p.cashSessionId),
-            ...data.payments.map((p) => p.cashSessionId),
-            peek.cashSessionId,
-          ].filter((v): v is string => !!v),
-        ),
-      ];
-      const ids = sessionIds(peek.payments).sort();
+      // Las cajas de la venta: las de sus pagos y la de la venta. Los pagos
+      // nuevos solo pueden ir a una de ellas.
+      const sessionIds = (
+        rows: { cashSessionId: string | null }[],
+        saleSession: string | null,
+      ) =>
+        [
+          ...new Set(
+            [...rows.map((p) => p.cashSessionId), saleSession].filter(
+              (v): v is string => !!v,
+            ),
+          ),
+        ].sort();
+      const ids = sessionIds(peek.payments, peek.cashSessionId);
+      for (const p of data.payments)
+        if (p.cashSessionId && !ids.includes(p.cashSessionId))
+          bad(
+            "Los pagos nuevos solo pueden ir a una caja de esta venta (la de la venta o la de sus pagos).",
+          );
       for (const sessionId of ids)
         await tx.$queryRaw`SELECT id FROM "CashSession" WHERE id=${sessionId}::uuid FOR UPDATE`;
       const sale = await editableSale(tx, saleId, actor);
@@ -2987,7 +3003,9 @@ export class SalesController {
         where: { saleId },
         orderBy: { createdAt: "asc" },
       });
-      if (sessionIds(old).sort().join() !== ids.join())
+      // Con la venta y sus pagos ya bloqueados: si cambiaron sus cajas (otra
+      // operación entre la lectura y el bloqueo), no se sigue.
+      if (sessionIds(old, sale.cashSessionId).join() !== ids.join())
         conflict("Los pagos de la venta cambiaron. Actualiza la venta.");
       if (old.some((p) => p.entryType !== "sale"))
         bad(
@@ -3072,6 +3090,10 @@ export class SalesController {
         differenceUsd: (s.closeDetails as any)?.differenceUsd ?? null,
       });
       const before = closed.map((s) => ({ id: s.id, ...snapshot(s) }));
+      const open = sessions.filter((s) => !s.closedAt);
+      const openBefore = new Map<string, number>();
+      for (const s of open)
+        openBefore.set(s.id, (await cashExpected(tx, s)).cash);
       const fee = config?.cardFeePercent ?? 2.5;
       const created: any[] = [];
       for (const [i, r] of rows.entries()) {
@@ -3098,7 +3120,10 @@ export class SalesController {
         // borran (quedan completos en la bitácora) y los que faltan se crean.
         const row = old[i]
           ? await tx.payment.update({ where: { id: old[i].id }, data: fields })
-          : await tx.payment.create({ data: { ...fields, saleId } });
+          : // Con la fecha de la venta: los informes por día la ponen allí.
+            await tx.payment.create({
+              data: { ...fields, saleId, createdAt: sale.createdAt },
+            });
         created.push(row);
         if (r.method === "transfer")
           await tx.alert.upsert({
@@ -3151,10 +3176,36 @@ export class SalesController {
           ),
         });
       }
+      // Caja abierta: si baja el efectivo esperado queda un aviso para la
+      // dueña, además de la bitácora.
+      const openCash: any[] = [];
+      for (const s of open) {
+        const was = openBefore.get(s.id)!;
+        const now = (await cashExpected(tx, s)).cash;
+        openCash.push({ id: s.id, expectedCashBefore: was, expectedCash: now });
+        if (now < was) {
+          const message =
+            `Caja abierta de ${actor.name}: en la venta ${sale.number} los pagos ${describe(old)} pasaron a ${describe(created)}; ` +
+            `el efectivo esperado bajó de RD$ ${formatAmount(was)} a RD$ ${formatAmount(now)}. Justificación: ${data.reason}.`;
+          await tx.alert.upsert({
+            where: { key: `cash-payments-replaced:${s.id}:${saleId}` },
+            create: {
+              key: `cash-payments-replaced:${s.id}:${saleId}`,
+              type: "cash_payments_replaced",
+              severity: "high",
+              entityId: s.id,
+              branchId: s.branchId,
+              message,
+            },
+            update: { message, status: "new" },
+          });
+        }
+      }
       const result = {
         ok: true,
         number: sale.number,
         total: Number(sale.total),
+        openCashSessions: openCash,
         payments: json(created.map(paymentSummary)),
         cashSessions: json(
           closed.map((s, i) => ({
@@ -3177,6 +3228,7 @@ export class SalesController {
           total: sale.total,
           payments: json(created),
           cashSessions: json(after),
+          openCashSessions: openCash,
           ownerConfirmed: data.ownerConfirmed === true,
           reason: data.reason,
         },

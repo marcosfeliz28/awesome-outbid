@@ -7,6 +7,7 @@ import {
 } from "../packages/shared/src/index";
 import { AuthGuard } from "../apps/api/src/common";
 import {
+  largeForeignGuardEnabled,
   normalizeReplacementPayments,
   replacementPayment,
   SalesController,
@@ -58,6 +59,22 @@ describe("tope preventivo del cobro en dólares", () => {
   });
   it("un billete de US$ 20 por una venta pequeña no se frena (vuelto < RD$ 5,000)", () => {
     expect(largeForeignPayment(300, [usd(20)])).toBeNull();
+  });
+  it("suma todos los pagos en US$: dos de US$ 150 sobre RD$ 3,500 se frenan", () => {
+    const hit = largeForeignPayment(3500, [usd(150), usd(150)]);
+    expect(hit).toMatchObject({ amountUsd: 300, amount: 18137.1 });
+    expect(largeForeignPayment(3500, [usd(150)])).toBeNull();
+  });
+  it("el ajuste LARGE_FOREIGN_GUARD está apagado salvo «on»", () => {
+    const before = process.env.LARGE_FOREIGN_GUARD;
+    delete process.env.LARGE_FOREIGN_GUARD;
+    expect(largeForeignGuardEnabled()).toBe(false);
+    process.env.LARGE_FOREIGN_GUARD = "1";
+    expect(largeForeignGuardEnabled()).toBe(false);
+    process.env.LARGE_FOREIGN_GUARD = "on";
+    expect(largeForeignGuardEnabled()).toBe(true);
+    if (before === undefined) delete process.env.LARGE_FOREIGN_GUARD;
+    else process.env.LARGE_FOREIGN_GUARD = before;
   });
   it("mucho efectivo en pesos no es un pago en dólares", () => {
     expect(
