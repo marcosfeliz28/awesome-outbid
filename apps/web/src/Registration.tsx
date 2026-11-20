@@ -11,6 +11,21 @@ const privacyVersion = String(import.meta.env.VITE_PRODUCT_PRIVACY_VERSION ?? ""
 const legalAvailable = termsUrl.startsWith("https://") && privacyUrl.startsWith("https://")
   && Boolean(termsVersion && privacyVersion);
 
+const publicPlans = [
+  ["Autoservicio", "RD$ 1,250"],
+  ["Básico", "RD$ 2,000"],
+  ["Pro", "RD$ 4,000"],
+  ["Premium", "RD$ 7,000"],
+] as const;
+
+function PlanSummary() {
+  return <section aria-label="Planes mensuales disponibles">
+    <h2>Planes mensuales</h2>
+    <ul>{publicPlans.map(([name, price]) => <li key={name}><strong>{name}</strong>: {price} al mes</li>)}</ul>
+    <p>Podrás elegir el plan que corresponda; crear o activar una cuenta no realiza un cobro.</p>
+  </section>;
+}
+
 export function Registration() {
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -58,6 +73,7 @@ export function Registration() {
       <a href="/">← Entrar</a>
       <h1>Prueba Norexos durante 7 días</h1>
       <p>Tendrás 7 días de prueba para conocer Norexos. Crea tu empresa. Confirma el correo antes de entrar y vender.</p>
+      <PlanSummary />
       <label className="field"><span>Nombre del negocio</span><input required maxLength={120} value={businessName} onChange={e => setBusinessName(e.target.value)} /></label>
       <label className="field"><span>Tu nombre</span><input required maxLength={120} value={ownerName} onChange={e => setOwnerName(e.target.value)} /></label>
       <label className="field"><span>Correo electrónico</span><input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
@@ -125,6 +141,7 @@ export function AcceptInvitation() {
   return <main className="product-registration"><form onSubmit={submit}>
     <h1>Activa tu cuenta de Norexos</h1>
     <p>Elige tu contraseña y tu PIN de gerente.</p>
+    <PlanSummary />
     {!message && <>
       <label className="field"><span>Contraseña</span><input required type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} /><small>12 caracteres; incluye mayúscula, minúscula, número y símbolo.</small></label>
       <label className="field"><span>PIN de gerente</span><input required type="password" inputMode="numeric" pattern="[0-9]{6}" minLength={6} maxLength={6} autoComplete="new-password" value={managerPin} onChange={e => setManagerPin(e.target.value)} /><small>6 números no consecutivos. Guárdalo en privado.</small></label>

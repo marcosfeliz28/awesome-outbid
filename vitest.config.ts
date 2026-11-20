@@ -92,6 +92,7 @@ export default defineConfig({
       "tests/product-cuentas-postgres.test.ts",
       "tests/product-cuentas.test.ts",
       "tests/product-platform-presentation.test.ts",
+      "tests/product-four-plans-presentation.test.ts",
       "tests/tenant-status-banner-ui.test.ts",
       "tests/branch-settings-ui.test.ts",
       "tests/product-billing-postgres.test.ts",
