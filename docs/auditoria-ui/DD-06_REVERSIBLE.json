@@ -1,0 +1,18 @@
+[
+  {
+    "before": "",
+    "after": "import { dashboardCategoryShares } from \"./dashboardCategoryShares\";\n"
+  },
+  {
+    "before": "",
+    "after": "  const categories: { name: string; color: string; total: number }[] =\n    data?.category ?? [];\n  const categoryShares = dashboardCategoryShares(categories.map((c) => c.total));\n"
+  },
+  {
+    "before": "            {data?.category?.map((c: any) => {\n              const total = data.category.reduce(\n                  (a: number, i: any) => a + i.total,\n                  0,\n                ),\n                percent = total ? (c.total / total) * 100 : 0,\n                color = dashboardCategoryColor(c.name, c.color);\n",
+    "after": "            {categories.map((c, index) => {\n              const { percent, label } = categoryShares[index];\n              const color = dashboardCategoryColor(c.name, c.color);\n"
+  },
+  {
+    "before": "                    <strong>{percent.toFixed(0)}%</strong>\n",
+    "after": "                    <strong>{label}%</strong>\n"
+  }
+]
