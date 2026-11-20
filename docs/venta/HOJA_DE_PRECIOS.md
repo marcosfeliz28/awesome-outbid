@@ -17,7 +17,7 @@ Precios en US$, aprobados por la dueña (7-nov-2026) como **precios de introducc
 
 ## Aclaraciones
 
-- Norexos **no emite NCF ni e-CF**. Los recibos son documento no fiscal.
+- Nexora POS **no emite NCF ni e-CF**. Los recibos son documento no fiscal.
 - La IA de ventas está apagada hasta que la dueña ponga la clave del proveedor; el precio aplica cuando se active.
 - Instalado: el respaldo en la misma laptop no te protege si se daña o se pierde; la copia en USB es responsabilidad del cliente.
 - No hay plan de nube más barato que Medio por ahora.
