@@ -245,6 +245,23 @@ describe("Decisión 1 · venta sin conexión sincronizada con productos sin cost
     expect(report.pendingNoCost.map((r: any) => r.number)).toContain(
       sale.number,
     );
+    // Un aviso viejo `zero_cost_sale` (solo de la dueña) no le sale a gerencia.
+    await db.alert.update({
+      where: { key: "zero-cost-sale:" + sale.id },
+      data: { type: "zero_cost_sale" },
+    });
+    expect(
+      ((await sales.costRecalc({}, manager)) as any).pendingNoCost,
+    ).toEqual([]);
+    expect(
+      ((await sales.costRecalc({}, owner)) as any).pendingNoCost.map(
+        (r: any) => r.number,
+      ),
+    ).toContain(sale.number);
+    await db.alert.update({
+      where: { key: "zero-cost-sale:" + sale.id },
+      data: { type: "offline_zero_cost_sale" },
+    });
   });
 
   it("en línea (POST /sales) con el bloqueo encendido sigue rechazándose", async () => {
@@ -445,20 +462,44 @@ describe("Decisión 2 · caja de GV: tasa de Configuración y dólares aparte", 
       },
       gvCashier,
     );
-    expect(closed.differences).toEqual({
-      cash: "0.00",
-      card: "0.00",
-      transfer: "0.00",
-      total: "0.00",
-      usd: "0.00",
-    });
+    // Caja ciega: la cajera de GV no recibe esperado ni diferencias (ni en
+    // US$) al cerrar ni en la lista de cierres; el cierre sí los guarda.
+    expect(closed.differences).toBeUndefined();
+    expect(closed.session.expectedCash).toBeUndefined();
+    expect(closed.session.difference).toBeUndefined();
     expect(closed.session.closeDetails).toEqual({
+      usdSeparate: true,
+      countedUsd: "100.00",
+    });
+    const mine = (await gvCaja.list(gvCashier)).find(
+      (c: any) => c.id === closed.session.id,
+    );
+    expect(mine).toBeTruthy();
+    expect(mine.expectedCash).toBeUndefined();
+    expect(mine.closeDetails).toEqual({
+      usdSeparate: true,
+      countedUsd: "100.00",
+    });
+    const row = await db.gvCashSession.findUniqueOrThrow({
+      where: { id: closed.session.id },
+    });
+    expect(row.closeDetails).toEqual({
       usdSeparate: true,
       expectedUsd: "100.00",
       countedUsd: "100.00",
       differenceUsd: "0.00",
     });
-    expect(n(closed.session.expectedCash)).toBe(7000);
+    expect(n(row.expectedCash)).toBe(7000);
+    expect(n(row.difference)).toBe(0);
+    // Quien verifica GV ve todo en la lista.
+    const full = (
+      await gvCaja.list({
+        ...gvCashier,
+        permissions: ["gv:reports", "gv:verify"],
+      })
+    ).find((c: any) => c.id === closed.session.id);
+    expect(n(full.expectedCash)).toBe(7000);
+    expect(full.closeDetails.expectedUsd).toBe("100.00");
   });
 });
 

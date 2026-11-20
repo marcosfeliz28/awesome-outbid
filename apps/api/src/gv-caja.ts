@@ -32,6 +32,35 @@ import {
 
 const fix = (v: unknown) => d(v as any).toFixed(2);
 
+// Decisión 3 (20-nov): caja ciega en GV, como en la caja principal
+// (cash.ts): lo esperado y las diferencias solo con `gv:verify` o si la dueña
+// apagó la caja ciega (`blindCashCount: false`).
+export const seesGvExpected = (actor: Actor) =>
+  can(actor.permissions, "gv:verify") || actor.cashBlind === false;
+/** Un cierre de GV sin esperado ni diferencias (pesos y US$). */
+export function blindGvSession<T extends Record<string, any>>(row: T) {
+  const {
+    expectedCash: _cash,
+    expectedCard: _card,
+    expectedTransfer: _transfer,
+    difference: _difference,
+    closeDetails,
+    ...rest
+  } = row;
+  void [_cash, _card, _transfer, _difference];
+  return {
+    ...rest,
+    closeDetails:
+      closeDetails && typeof closeDetails === "object"
+        ? Object.fromEntries(
+            Object.entries(closeDetails).filter(
+              ([key]) => !/^(expected|difference)/.test(key),
+            ),
+          )
+        : (closeDetails ?? null),
+  };
+}
+
 /** Resuelve los avisos de la caja `sessionId` y de los días con pagos en ella. */
 export async function resolveGvCashAlerts(
   tx: any,
@@ -130,7 +159,7 @@ export class GvCajaController {
       overdue: businessDate(s.openedAt) < businessDate(new Date()),
       usdPayments: e.usdCount,
       // Decisión 3: caja ciega salvo gerencia de GV o si la dueña la apagó.
-      ...(can(actor.permissions, "gv:verify") || actor.cashBlind === false
+      ...(seesGvExpected(actor)
         ? {
             expected: {
               efectivo: fix(d(s.openingAmount).plus(e.efectivo)),
@@ -153,7 +182,8 @@ export class GvCajaController {
       orderBy: { openedAt: "desc" },
       take: 60,
     });
-    return rows.map(gvProofFields);
+    const sees = seesGvExpected(actor);
+    return rows.map((row) => gvProofFields(sees ? row : blindGvSession(row)));
   }
 
   // Foto del cierre de lote: solo quien revisa los informes de GV.
@@ -332,7 +362,10 @@ export class GvCajaController {
         },
         orderBy: { createdAt: "asc" },
       });
-      return { session: row, differences, receipts };
+      // Caja ciega: la cajera de GV no recibe esperado ni diferencias.
+      return seesGvExpected(actor)
+        ? { session: row, differences, receipts }
+        : { session: blindGvSession(row), receipts };
     });
   }
 }

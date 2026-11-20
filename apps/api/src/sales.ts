@@ -2612,7 +2612,12 @@ export class SalesController {
     const flaggedAlerts = await this.db.alert.findMany({
       where: {
         branchId: actor.branchId,
-        type: { in: ["offline_zero_cost_sale", "zero_cost_sale"] },
+        // `zero_cost_sale` (avisos de antes) es solo de la dueña.
+        type: {
+          in: can(actor.permissions, "*")
+            ? ["offline_zero_cost_sale", "zero_cost_sale"]
+            : ["offline_zero_cost_sale"],
+        },
         status: { not: "resolved" },
       },
       select: { entityId: true, message: true, createdAt: true },

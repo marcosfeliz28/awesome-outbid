@@ -208,12 +208,18 @@ describe("GV · caja propia", () => {
     );
     expect(photo.status).toBe(200);
     expect(photo.headers.get("content-type")).toContain("image/png");
-    expect(closed.differences).toEqual({
-      cash: "-100.00",
-      card: "0.00",
-      transfer: "0.00",
-      total: "-100.00",
-    });
+    // Caja ciega (decisión 3, 20-nov): la cajera de GV no recibe esperado ni
+    // diferencias al cerrar ni en la lista; gerencia (admin) sí.
+    expect(closed.differences).toBeUndefined();
+    expect(closed.session.expectedCash).toBeUndefined();
+    expect(closed.session.difference).toBeUndefined();
+    expect(Number(listed.difference)).toBe(-100);
+    const mine = (await ok("/gv/cash", gv)).find(
+      (c: any) => c.id === closed.session.id,
+    );
+    expect(mine).toBeTruthy();
+    expect(mine.expectedCash).toBeUndefined();
+    expect(mine.difference).toBeUndefined();
     expect(closed.receipts).toHaveLength(2);
     expect((await ok("/gv/cash/current", gv)).open).toBe(false); // sin caja abierta
     expect(
