@@ -1,6 +1,6 @@
 # Orden para ChatGPT (PC y NUBE): promoción «Liquidación total» (20-nov-2026)
 
-> **FASE 1 (orden de Marcos): solo SUPLEMENTOS** (121 productos, `LIQUIDACION_SUPLEMENTOS_20NOV.xlsx`). Las demás categorías esperan su orden.
+> **FASE 1 (orden de Marcos): solo SUPLEMENTOS** (criterio: 43 días exactos sin venta; `LIQUIDACION_SUPLEMENTOS_43D.xlsx`). Las demás categorías esperan su orden.
 
 Orden de Marcos: «todos los productos que llevan un mes (o más) sin venderse: oferta de liquidación total, donde solo se gana el 10 %». Lista: `docs/promociones/LIQUIDACION_20NOV.xlsx` (hoja «Liquidación»: 486 productos; **456 con descuento posible**, 30 NO aplican porque su precio normal ya es ≤ costo + 10 %).
 
