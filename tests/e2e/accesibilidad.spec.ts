@@ -8,7 +8,7 @@
 // críticas.
 import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
-import { test, expect } from "./apoyo";
+import { test, expect, shortIdleSession } from "./apoyo";
 
 const AXE_SCRIPT = process.env.NEXORA_AXE_SCRIPT;
 
@@ -451,7 +451,9 @@ test("G12: un aviso de error dura más de 8 s y no se cierra con el ratón encim
 
 test("G12: aviso 60 s antes del cierre por inactividad con «Seguir conectado»", async ({
   page,
+  context,
 }) => {
+  await shortIdleSession(context);
   await page.clock.install();
   await login(page);
   const warning = page.getByRole("dialog", { name: "¿Sigues ahí?" });

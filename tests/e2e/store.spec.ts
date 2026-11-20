@@ -5,6 +5,7 @@ import {
   screenshotPath,
   selectNamedCustomer,
   fillOpeningFund,
+  shortIdleSession,
 } from "./apoyo";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
@@ -2103,6 +2104,7 @@ test("R9-offline-5: el cierre por inactividad revoca la sesión y al recargar se
   context,
   request,
 }) => {
+  await shortIdleSession(context);
   await page.clock.install();
   await login(page);
   const refresh = (await context.cookies()).find(
@@ -2131,6 +2133,7 @@ test("R9-offline-5: el cierre por inactividad revoca la sesión y al recargar se
 test("R9-offline-5: una pestaña sin uso no cierra la sesión de otra pestaña activa del mismo equipo", async ({
   context,
 }) => {
+  await shortIdleSession(context);
   await context.clock.install();
   const active = await context.newPage();
   await login(active);

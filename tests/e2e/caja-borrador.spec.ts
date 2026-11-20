@@ -2,7 +2,13 @@
 // inactividad con un carrito abandonado y borrador del carrito. Cada escenario
 // crea sus productos con códigos al azar y los desactiva al final. Los plazos
 // se miden con el reloj de la prueba, sin fechas fijas.
-import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
+import {
+  test,
+  expect,
+  selectNamedCustomer,
+  fillOpeningFund,
+  shortIdleSession,
+} from "./apoyo";
 
 const OWNER = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 const HOUR = 3600000;
@@ -199,9 +205,11 @@ test("N1: un error de escaneo no queda sobre el cobro, caduca solo y se va al te
 
 test("N2: un carrito abandonado no evita el bloqueo por inactividad y se conserva al volver", async ({
   page,
+  context,
   request,
 }) => {
   test.setTimeout(90000);
+  await shortIdleSession(context);
   await page.clock.install();
   // Al bloquear, el cierre limpia también las cachés del navegador. Aquí eso
   // no termina nunca, como en un equipo lento: la recarga para volver a entrar

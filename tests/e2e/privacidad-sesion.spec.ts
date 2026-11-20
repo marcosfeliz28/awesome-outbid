@@ -1,6 +1,12 @@
 // G9 · Privacidad al cerrar sesión: el navegador no se queda con clientes ni
 // catálogo de la sesión, pero una venta sin sincronizar nunca se pierde.
-import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
+import {
+  test,
+  expect,
+  selectNamedCustomer,
+  fillOpeningFund,
+  shortIdleSession,
+} from "./apoyo";
 
 const ADMIN = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 
@@ -154,7 +160,9 @@ test("G9: al cerrar sesión no quedan clientes, catálogo ni respuestas de la AP
 
 test("G9: el cierre por inactividad también borra clientes y catálogo del navegador", async ({
   page,
+  context,
 }) => {
+  await shortIdleSession(context);
   await page.clock.install();
   await login(page);
   await ensureCash(page);

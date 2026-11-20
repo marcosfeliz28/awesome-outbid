@@ -229,3 +229,33 @@ export async function fillOpeningFund(page: any, amount: string) {
   const pin = page.getByLabel(/PIN de gerente si el fondo es menor/);
   if (await pin.isVisible()) await pin.fill("234567");
 }
+
+// --- Plazo de inactividad corto ---------------------------------------------
+// Decisión 6 (20-nov): gerencia y dueña ya no salen por inactividad (la API
+// devuelve 10080 minutos en `user.sessionTimeoutMinutes`); la cajera sale a
+// los 60. Las pruebas del cierre por inactividad entran como administración y
+// miden el comportamiento de la página (aviso, cierre, borrado de cachés y
+// revocación), que depende solo de ese plazo: aquí se fija en `minutes` en
+// cada respuesta de inicio o renovación de sesión, sin tocar la cookie. Se
+// registra en el contexto para que una ruta posterior (p. ej. cortar el
+// internet) tenga prioridad.
+export async function shortIdleSession(
+  context: import("@playwright/test").BrowserContext,
+  minutes = 30,
+) {
+  await context.route(
+    (url) =>
+      /^\/api\/auth\/(login|refresh|change-password)$/.test(url.pathname),
+    async (route) => {
+      const response = await route.fetch();
+      let json: any;
+      try {
+        json = await response.json();
+      } catch {
+        return route.fulfill({ response });
+      }
+      if (json?.user) json.user.sessionTimeoutMinutes = minutes;
+      await route.fulfill({ response, json });
+    },
+  );
+}

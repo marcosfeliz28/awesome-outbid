@@ -4,7 +4,13 @@
 // carrito visible en 1366×768 y en el celular; avisos que no se pisan; cierre
 // por inactividad con trabajo pendiente; conflicto de una venta sin conexión.
 // Cada escenario crea sus productos con códigos al azar y los desactiva al final.
-import { test, expect, selectNamedCustomer, fillOpeningFund } from "./apoyo";
+import {
+  test,
+  expect,
+  selectNamedCustomer,
+  fillOpeningFund,
+  shortIdleSession,
+} from "./apoyo";
 
 const OWNER = { email: "admin@fitstore.demo", password: "FitStore-Demo-2026!" };
 const LEGEND = "DOCUMENTO NO FISCAL – NO ES COMPROBANTE FISCAL";
@@ -473,6 +479,7 @@ test("A3: sin internet y con artículos en el carrito, la inactividad no cierra 
   context,
   request,
 }) => {
+  await shortIdleSession(context);
   await page.clock.install();
   const { headers } = await ownerApi(request);
   const sku = code("2");
