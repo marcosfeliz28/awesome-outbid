@@ -45,6 +45,22 @@
     {
       "before": "              requestRef: `APP-${new Date().toISOString()}`,\n            });\n            await client.invalidateQueries({ queryKey: [\"customers\"] });\n            toast(\"Cliente anonimizado.\");\n          }}\n        />\n      )}\n",
       "after": "              requestRef: `APP-${new Date().toISOString()}`,\n            });\n            await client.invalidateQueries({ queryKey: [\"customers\"] });\n            toast(ot(\"Cliente anonimizado.\"));\n          }}\n        />\n      )}\n"
+    },
+    {
+      "before": "import { formatReportCell, isReportMoneyColumn } from \"./report-format\";",
+      "after": "import {\n  formatReportCell,\n  isReportMoneyColumn,\n  reportDisplayRows,\n} from \"./report-format\";"
+    },
+    {
+      "before": "  const rows = query.data?.rows || [];\n  const total: number = query.data?.total ?? rows.length;",
+      "after": "  const rows = query.data?.rows || [];\n  const displayRows = reportDisplayRows(report, rows);\n  const total: number = query.data?.total ?? rows.length;"
+    },
+    {
+      "before": "Object.keys(rows[0] || {})",
+      "after": "Object.keys(displayRows[0] || {})"
+    },
+    {
+      "before": "                  rows={rows}\n                  columns={columns}",
+      "after": "                  rows={displayRows}\n                  columns={columns}"
     }
   ]
 }

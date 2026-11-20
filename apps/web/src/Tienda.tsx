@@ -1,3 +1,4 @@
+import { cashPrintLabel } from "./cashPrintLanguage";
 import { useLanguage } from "./inicioLanguage";
 import { storeSettingsText } from "./storeSettingsLanguage";
 // Pantallas de la tienda: cierre por denominaciones, impresión del cuadre y
@@ -540,6 +541,7 @@ export function SessionPrintButtons({
   session: any;
   onPrint: (p: Printing) => void;
 }) {
+  const language = useLanguage();
   const open = async (kind: PrintKind) => {
     try {
       onPrint(await loadSessionPrint(kind, session.id));
@@ -552,14 +554,14 @@ export function SessionPrintButtons({
       {session.closedAt && (
         <Button variant="secondary" onClick={() => open("cuadre")}>
           <Printer size={15} />
-          Cuadre
+          {cashPrintLabel("Cuadre", language)}
         </Button>
       )}
       <Button variant="ghost" onClick={() => open("daily")}>
-        Venta diaria
+        {cashPrintLabel("Venta diaria", language)}
       </Button>
       <Button variant="ghost" onClick={() => open("method")}>
-        Por forma de pago
+        {cashPrintLabel("Por forma de pago", language)}
       </Button>
     </div>
   );
@@ -567,6 +569,7 @@ export function SessionPrintButtons({
 
 /** Reportes de la sucursal por fecha y usuario (requiere reports:read). */
 export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
+  const language = useLanguage();
   const user = useStore((s) => s.user)!;
   const [date, setDate] = useState(today()),
     [userId, setUserId] = useState("");
@@ -616,11 +619,11 @@ export function DayReports({ onPrint }: { onPrint: (p: Printing) => void }) {
       )}
       <Button variant="secondary" onClick={() => open("daily")}>
         <Printer size={15} />
-        Venta diaria del día
+        {cashPrintLabel("Venta diaria del día", language)}
       </Button>
       <Button variant="secondary" onClick={() => open("method")}>
         <Printer size={15} />
-        Por forma de pago del día
+        {cashPrintLabel("Por forma de pago del día", language)}
       </Button>
     </div>
   );

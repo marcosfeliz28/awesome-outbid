@@ -17,6 +17,7 @@ export default defineConfig({
       "tests/change-requests-validacion.test.ts",
       "tests/change-requests-migracion.test.ts",
       "tests/visual-fase1-gemini.test.ts",
+      "tests/commercial-screens-presentation.test.ts",
       "tests/assistant-n01.test.ts",
       "tests/assistant-n04.test.ts",
       "tests/support-n05.test.ts",

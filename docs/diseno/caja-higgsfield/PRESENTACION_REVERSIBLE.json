@@ -125,5 +125,19 @@
       "before": "aria-label={`Ver carrito (${units} artículos)`}",
       "after": "aria-label={`${language === \"en\" ? \"View cart\" : \"Ver carrito\"} (${units} ${language === \"en\" ? (units === 1 ? \"item\" : \"items\") : (units === 1 ? \"artículo\" : \"artículos\")})`}"
     }
+  ],
+  "commercial_product_changes": [
+    {
+      "before": "",
+      "after": "import { posStockLabel } from \"./posStockLabel\";\n"
+    },
+    {
+      "before": "  onAdd: (product: Product) => void;\n}) {\n  return (",
+      "after": "  onAdd: (product: Product) => void;\n}) {\n  const language = useLanguage();\n  return ("
+    },
+    {
+      "before": "<span>{stock} en stock</span>",
+      "after": "<span>{posStockLabel(stock, isService(p), language)}</span>"
+    }
   ]
 }
