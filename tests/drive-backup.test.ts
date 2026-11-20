@@ -724,9 +724,12 @@ describe("Respaldo a Google Drive · permisos y conexión", () => {
         "base64url",
       ).toString(),
     );
+    // Drive es solo de la dueña («*»). Decisión 6 (20-nov): gerencia y dueña
+    // no salen por inactividad antes de la vida del token de renovación
+    // (MANAGER_IDLE_MINUTES = 7 días); pasado ese plazo, la sesión sí venció.
     await db.authSession.update({
       where: { id: claims.s },
-      data: { lastActivityAt: new Date(Date.now() - 24 * 3600_000) },
+      data: { lastActivityAt: new Date(Date.now() - 8 * 24 * 3600_000) },
     });
     try {
       const r = await call(api.base, "/backups/google/callback" + back.search, {
