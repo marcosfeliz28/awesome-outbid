@@ -11,7 +11,19 @@ const periodEdits = JSON.parse(
   ),
 ) as Edit[];
 
+const percentageEdits = JSON.parse(
+  readFileSync("docs/auditoria-ui/DD-06_REVERSIBLE.json", "utf8"),
+) as Edit[];
+
 export function reverseDd05(source: string) {
+  for (const edit of [...percentageEdits].reverse()) {
+    const occurrences = source.split(edit.after).length - 1;
+    if (occurrences !== 1)
+      throw new Error(
+        `DD-06: se esperaba una coincidencia reversible y hubo ${occurrences}`,
+      );
+    source = source.replace(edit.after, () => edit.before);
+  }
   for (const edit of [...periodEdits].reverse()) {
     const occurrences = source.split(edit.after).length - 1;
     if (occurrences !== 1)

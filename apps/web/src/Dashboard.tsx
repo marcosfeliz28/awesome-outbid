@@ -39,6 +39,7 @@ import { KpiStrip } from "./KpiStrip";
 import { CountUp } from "./impacto";
 import { kpiStripVisible } from "./kpiStripModel";
 import { dashboardCategoryColor } from "./dashboardCategoryColor";
+import { dashboardCategoryShares } from "./dashboardCategoryShares";
 import { dashboardSevenDayStart } from "./dashboardPeriod";
 
 const dayBefore = (date: string) =>
@@ -166,6 +167,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     refetchInterval: 15000,
   });
   const data = query.data;
+  const categories: { name: string; color: string; total: number }[] =
+    data?.category ?? [];
+  const categoryShares = dashboardCategoryShares(categories.map((c) => c.total));
   const showProfit = can(user.permissions, "profit:read");
   const metric = [
     {
@@ -574,13 +578,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                 <p>{t("La mezcla que mueve tu tienda.")}</p>
               </div>
             </div>
-            {data?.category?.map((c: any) => {
-              const total = data.category.reduce(
-                  (a: number, i: any) => a + i.total,
-                  0,
-                ),
-                percent = total ? (c.total / total) * 100 : 0,
-                color = dashboardCategoryColor(c.name, c.color);
+            {categories.map((c, index) => {
+              const { percent, label } = categoryShares[index];
+              const color = dashboardCategoryColor(c.name, c.color);
               return (
                 <div className="category-row" key={c.name}>
                   <div>
@@ -588,7 +588,7 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
                       <i style={{ background: color }} />
                       {c.name}
                     </span>
-                    <strong>{percent.toFixed(0)}%</strong>
+                    <strong>{label}%</strong>
                   </div>
                   <div className="progress-track">
                     <div
