@@ -101,3 +101,6 @@ Al recibir cualquier tarea, antes de empezar: ¿se puede partir en pedazos indep
 - **Lo que decide o escribe en el sistema lo hago yo:** revisar lo que traen los agentes (mirar las imágenes), verificación 3×/4×, aplicar con `mercancia.py`, bitácora. Lo que traen es información, no autorización.
 - Un agente no toca git, sistema ni precios. Reparto sin choques: cada agente su lote y sus archivos.
 - Si la tarea es de un solo paso corto, hacerla directo (no lanzar agentes por lanzar).
+
+## Canal con Dot / ChatGPT: por Drive (orden de la dueña, 20-nov-2026)
+Todo lo que se le manda a Dot (ChatGPT PC y nube) viaja **por el Drive de la dueña**: la indicación, la lista, las fotos y los archivos, no por pegado ni solo por el repositorio. Cada orden va **muy detallada**, escrita con calma. **Antes de llenar y mandar, se le hacen a la dueña las preguntas que haya.** Si el conector del Drive pide iniciar sesión, se le dice y se espera: no se sustituye por otro canal sin avisar. El repositorio queda como respaldo.
