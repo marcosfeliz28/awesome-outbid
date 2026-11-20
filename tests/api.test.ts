@@ -8976,9 +8976,9 @@ describe("Tienda · 4 cajas a la vez", () => {
     await enroll(phone, "QA celular mercancía");
 
     const scarce = await product("Escaso", 100, 10);
-    const own = await Promise.all(
-      cajas.map((c) => product("Caja " + c.k, 200, 50)),
-    );
+    // El inventario inicial es preparación, no parte de la concurrencia bajo prueba.
+    const own: Awaited<ReturnType<typeof product>>[] = [];
+    for (const c of cajas) own.push(await product("Caja " + c.k, 200, 50));
     // Las 4 cajas abiertas a la vez, cada una con su fondo.
     const opened = await Promise.all(
       cajas.map((c) =>
