@@ -1,5 +1,15 @@
 # Resultados de ChatGPT NUBE
 
+## 2026-11-20 · alertas nuevas con nombres legibles
+
+- **Base y duplicación:** `origin/nexora-cloud` `25d3bf38c8373428170a4567bfbd0fa9d577953b` publicó por primera vez los tipos reales `offline_zero_cost_sale`, `low_margin_discount` y `terminal_auto_limit`. La tarea de etiquetas seguía asignada a ChatGPT NUBE y no estaba resuelta en esa base.
+- **Cambio:** `Management.tsx` muestra «Venta sin costo sincronizada», «Margen menor a 15 %» y «Equipos de más» en español, y «Synced sale without cost», «Margin below 15%» y «Too many devices» en inglés. Los tipos desconocidos conservan el fallback existente.
+- **Regresión rojo→verde:** la prueba nueva falló en sus seis casos antes de implementar las etiquetas. Después, el foco conjunto aprobó **2 archivos / 7 pruebas**, incluida `opening_shortfall`.
+- **Guardas y documentación:** `IT-003_REVERSIBLE.json` restaura byte por byte el bloque histórico antes de las comprobaciones protegidas. `pnpm docs:citas` revisó **567 citas**, sin movimientos ni pérdidas; las pruebas documentales pasaron 7/7.
+- **Autoauditoría:** el diff funcional se limita a nombres visibles y su mapa inglés. No cambia cuándo nace una alerta, umbrales, cálculos, permisos, API, base, dinero, Render, producción ni credenciales.
+- **Control local final:** `pnpm check` terminó con código 0: typecheck y ESLint pasaron; **172 archivos / 1,404 pruebas** pasaron, un archivo y diez pruebas quedaron omitidos por condiciones existentes; los builds web y API pasaron.
+- **Publicación/CI:** rama `chatgpt-nube/alertas-20nov`; pendientes el único push y `verify`, `windows-installer` y `render-images` sobre el SHA final.
+
 ## 2026-11-19 · P2 · últimos siete días reales
 
 - **Base y duplicación:** se incorporó `origin/nexora-cloud` `ac7ee042c6c66909eeee06259c9a59ae46415e49` mediante merge limpio. P2 seguía pendiente y no estaba en el historial de la rama.

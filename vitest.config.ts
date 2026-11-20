@@ -170,6 +170,7 @@ export default defineConfig({
       "tests/uc07-users-mobile.test.ts",
       "tests/pos-service-stock-label.test.ts",
       "tests/opening-shortfall-label.test.ts",
+      "tests/alert-labels-decisions-20nov.test.ts",
       "tests/inventory-adjustment-operation-id.test.ts",
       "tests/config-rates-survey-language.test.ts",
       "tests/auditoria-lote-a.test.ts",

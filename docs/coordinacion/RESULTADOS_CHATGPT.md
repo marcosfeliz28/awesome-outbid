@@ -2,6 +2,13 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-20 · ChatGPT NUBE · etiquetas de tres alertas publicadas
+
+- Base `origin/nexora-cloud` `25d3bf38c8373428170a4567bfbd0fa9d577953b`; rama propia `chatgpt-nube/alertas-20nov`.
+- Los tipos reales `offline_zero_cost_sale`, `low_margin_discount` y `terminal_auto_limit` ahora se presentan como «Venta sin costo sincronizada», «Margen menor a 15 %» y «Equipos de más», con equivalentes en inglés. Antes caían al código interno.
+- Regresión: 6/6 casos fallaron antes y el foco quedó verde con 7/7, incluida la etiqueta existente de apertura. Se actualizó la reversión IT-003 y se reanclaron 567 citas sin pérdidas.
+- Autoauditoría: solo diccionarios de presentación; no cambia la generación de alertas, porcentajes, permisos, API, base, dinero ni datos. `pnpm check` aprobó typecheck, lint, 172 archivos/1,404 pruebas, los builds web/API y dejó 10 pruebas omitidas por condiciones existentes. Los tres CI quedan pendientes del SHA final.
+
 ## 2026-11-19 · ChatGPT NUBE · P2 en Resumen
 
 - `Últimos 7 días` ahora usa el día final y las seis fechas civiles anteriores; antes usaba el lunes de la semana y podía consultar solo 1–6 días. El mismo rango alimenta Resumen y la exportación.

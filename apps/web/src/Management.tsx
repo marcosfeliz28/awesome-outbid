@@ -1685,6 +1685,9 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   gv_cash_open_night: "Caja GV abierta de noche",
   gv_day_no_close: "Día de GV sin cierre",
   opening_shortfall: "Fondo de apertura menor",
+  offline_zero_cost_sale: "Venta sin costo sincronizada",
+  low_margin_discount: "Margen menor a 15 %",
+  terminal_auto_limit: "Equipos de más",
   cash_difference: "Diferencia de caja",
   return_waste: "Merma por devolución",
   expense_budget: "Presupuesto de gastos",
@@ -1701,10 +1704,15 @@ const ALERT_TYPE_LABEL: Record<string, string> = {
   sale_void_request: "Solicitud de anulación",
   zero_cost_sale: "Venta sin costo",
 };
+const ALERT_TYPE_LABEL_ENGLISH: Record<string, string> = {
+  opening_shortfall: "Opening fund shortfall",
+  offline_zero_cost_sale: "Synced sale without cost",
+  low_margin_discount: "Margin below 15%",
+  terminal_auto_limit: "Too many devices",
+};
 const alertTypeLabel = (type: string, english = false) =>
-  type === "opening_shortfall" && english
-    ? "Opening fund shortfall"
-    : (ALERT_TYPE_LABEL[type] ?? type.replaceAll("_", " "));
+  (english ? ALERT_TYPE_LABEL_ENGLISH[type] : ALERT_TYPE_LABEL[type]) ??
+  type.replaceAll("_", " ");
 
 export function Cash() {
   const user = useStore((s) => s.user)!;

@@ -7,7 +7,8 @@ describe("Producto protegido · nombre de alerta de apertura", () => {
     expect(source).toContain(
       'opening_shortfall: "Fondo de apertura menor",',
     );
-    expect(source).toContain('type === "opening_shortfall" && english');
-    expect(source).toContain('"Opening fund shortfall"');
+    expect(source).toContain(
+      'opening_shortfall: "Opening fund shortfall",',
+    );
   });
 });
