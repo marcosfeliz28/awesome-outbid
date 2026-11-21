@@ -88,7 +88,7 @@ it("transferencia: dueño envía prueba, sólo operador separado aprueba, una ve
     app.setGlobalPrefix("api"); app.useGlobalFilters(new ApiExceptionFilter()); await app.init();
     const http = supertest(app.getHttpServer());
     const register = async (companyCode: string) => {
-      const body = { businessName: companyCode, ownerName: "Dueña ficticia", email: `${companyCode}@example.invalid`, password: "ClaveSegura-2026!", managerPin: "869253", businessType: "retail", companyCode, termsAccepted: true, privacyAccepted: true, termsVersion: "terms-test-1", privacyVersion: "privacy-test-1" };
+      const body = { businessName: companyCode, ownerName: "Dueña ficticia", email: `${companyCode}@example.invalid`, password: "ClaveSegura-2026!", managerPin: "869253", businessType: "retail", companyCode, termsAccepted: true, privacyAccepted: true, termsVersion: "terms-test-1", privacyVersion: "privacy-test-1", formElapsedMs: 5000 };
       expect((await http.post("/api/auth/register").send(body)).status).toBe(201);
       const token = html.match(/#token=([a-f0-9]{64})/)?.[1];
       expect((await http.post("/api/auth/verify-email").send({ token })).status).toBe(201);

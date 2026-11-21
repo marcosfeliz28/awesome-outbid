@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
 const html = readFileSync("apps/web/public/venta/index.html", "utf8");
+// El script vive en un archivo propio (la CSP script-src 'self' bloquea los scripts en línea).
+const js = readFileSync("apps/web/public/venta/revelado.js", "utf8");
 
 it("el revelado usa solo transform/opacity, 180 ms y respeta movimiento reducido", () => {
   expect(html).toMatch(/\.reveal\s*\{[^}]*opacity:\s*0[^}]*transform/);
@@ -11,6 +13,6 @@ it("el revelado usa solo transform/opacity, 180 ms y respeta movimiento reducido
   expect(html).toMatch(
     /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.reveal\s*\{[^}]*transition:\s*none/,
   );
-  expect(html).toMatch(/IntersectionObserver/);
+  expect(js).toMatch(/IntersectionObserver/);
   expect(html).not.toMatch(/transition:[^;]*(width|height|margin|top|left)/);
 });

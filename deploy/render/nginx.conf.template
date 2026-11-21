@@ -70,6 +70,17 @@ server {
     gzip_min_length 1024;
     gzip_types text/plain text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml;
 
+    # A3: toda ruta o archivo inexistente responde 404 con la página propia
+    # (antes: el HTML de la SPA con 200, o la página por defecto de Nginx).
+    # Las respuestas de la API no pasan por aquí (proxy_intercept_errors off).
+    error_page 404 /404.html;
+
+    location = /404.html {
+        internal;
+        add_header Cache-Control "no-store" always;
+        include /etc/nginx/snippets/nexora-security-headers.conf;
+    }
+
     # Liveness sólo de Nginx: Render lo usa como healthCheckPath de la web y no
     # debe fallar mientras la API se redespliega (reiniciaría la web en bucle).
     location = /healthz {
@@ -288,10 +299,17 @@ server {
         try_files $uri =404;
     }
 
-    # Rutas de la SPA (sin extensión): fallback a index.html, que se sirve por
-    # redirección interna con su Cache-Control no-store. Antes, un directorio
-    # estático con su index.html (/venta/) caía al login de la app.
+    # Rutas por ruta (pathname) de la SPA: la app navega con #hash, así que
+    # sólo estas llegan al servidor (enlaces de correo, invitación y OAuth de
+    # MCP). Se sirven con index.html por redirección interna, con su
+    # Cache-Control no-store. Si la app agrega otra ruta sin #, va aquí.
+    location ~ ^/(registro|confirmar-correo|aceptar-invitacion|mcp/autorizar)/?$ {
+        rewrite ^ /index.html last;
+    }
+
+    # Raíz (index.html) y directorios estáticos con su index.html (/venta/).
+    # Cualquier otra ruta: 404 con /404.html, no la SPA.
     location / {
-        try_files $uri $uri/index.html /index.html;
+        try_files $uri $uri/index.html =404;
     }
 }

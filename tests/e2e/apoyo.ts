@@ -222,6 +222,12 @@ export async function selectNamedCustomer(page: any) {
     .first();
   await expect(named).toBeVisible();
   await named.click();
+  // Al cerrarse, el diálogo devuelve el foco al botón del cliente (Radix lo
+  // hace en un setTimeout tras desmontar). Si la prueba sigue antes, ese foco
+  // tardío cae después de enfocar «Buscar productos» y el Enter del escaneo
+  // vuelve a abrir el selector (R9-dinero-5-pos en CI). Se espera a que pase.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".customer-selector")).toBeFocused();
 }
 
 /**

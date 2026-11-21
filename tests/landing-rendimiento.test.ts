@@ -7,7 +7,7 @@ const html = readFileSync("apps/web/public/venta/index.html", "utf8");
 
 it("el script de WhatsApp no bloquea el render", () => {
   expect(html).toMatch(
-    /<script src="whatsapp\.js"[^>]*\bdefer\b[^>]*><\/script>/,
+    /<script src="\/venta\/whatsapp\.js"[^>]*\bdefer\b[^>]*><\/script>/,
   );
 });
 

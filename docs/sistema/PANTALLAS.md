@@ -1,6 +1,6 @@
 # Pantallas del menú
 
-Rama `cola-n26` (= `nexora-cloud`). El menú lateral sale de la lista `navigation` en `apps/web/src/App.tsx:257-346`; cada persona solo ve las pantallas cuyo permiso tiene (`apps/web/src/App.tsx:1083-1085`, `:1000-1011`). Si entra a una que no le toca, el sistema lo manda a la primera que sí puede ver (`apps/web/src/App.tsx:1240-1247`). El componente de cada pantalla se asigna en `apps/web/src/App.tsx:1438-1461`.
+Rama `cola-n26` (= `nexora-cloud`). El menú lateral sale de la lista `navigation` en `apps/web/src/App.tsx:268-357`; cada persona solo ve las pantallas cuyo permiso tiene (`apps/web/src/App.tsx:1094-1096`, `:1000-1011`). Si entra a una que no le toca, el sistema lo manda a la primera que sí puede ver (`apps/web/src/App.tsx:1251-1258`). El componente de cada pantalla se asigna en `apps/web/src/App.tsx:1449-1472`.
 
 Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES_Y_PERMISOS.md`.
 
@@ -28,14 +28,14 @@ Permiso `*` = administración (dueña). Los permisos están explicados en `ROLES
 | 18  | **GV Makeup Studio**         | `gv:read`                                               | `Gv` (`apps/web/src/Gv.tsx:137`)                                         | 282                |
 | 19  | **Preguntar a Norexos**      | `reports:read` o cajera, con `ANTHROPIC_API_KEY` y plan | `AssistantPage` (`apps/web/src/AssistantPanel.tsx`) — ver `IA_VENTAS.md` | —                  |
 
-Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1563-1593`):
+Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1574-1604`):
 
-- **Ver ayuda** (tarjeta «Ayuda para trabajar»): abre «Tu tienda, en movimiento» con los atajos (`apps/web/src/App.tsx:1563-1565`, `:1230-1262`).
-- **Configuración**: solo si tiene `sale:manage` (`apps/web/src/App.tsx:1568-1575`). Componente `Configuration` (`apps/web/src/Management.tsx:4659`). Aquí viven «Usuarios y permisos», «Bitácora» y «Equipos».
-- **Acerca de** (`apps/web/src/App.tsx:1578-1586`): versión, aviso de privacidad, licencias.
-- **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1592-1597`); no es de uso diario.
-- Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1833-1859`, atajo `:797`).
-- F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:1321`).
+- **Ver ayuda** (tarjeta «Ayuda para trabajar»): abre «Tu tienda, en movimiento» con los atajos (`apps/web/src/App.tsx:1574-1576`, `:1230-1262`).
+- **Configuración**: solo si tiene `sale:manage` (`apps/web/src/App.tsx:1579-1586`). Componente `Configuration` (`apps/web/src/Management.tsx:4659`). Aquí viven «Usuarios y permisos», «Bitácora» y «Equipos».
+- **Acerca de** (`apps/web/src/App.tsx:1589-1597`): versión, aviso de privacidad, licencias.
+- **Guía de estilos**: solo si `SHOW_STYLE_GUIDE` (`apps/web/src/App.tsx:1603-1608`); no es de uso diario.
+- Ctrl+K abre «¿A dónde quieres ir?» para saltar de pantalla (`apps/web/src/App.tsx:1844-1870`, atajo `:797`).
+- F9 lleva a Mercancía, F7 y F10 a Productos (`apps/web/src/App.tsx:1332`).
 
 **No existe** en este menú: «Primeros pasos» ni «Plan y facturación» (solo en `producto-nexora`, ver `RESPUESTAS_A_TALLER.md` pregunta 9). Tampoco existe un ítem llamado «Gestión» ni uno llamado «Usuarios»: la gestión de usuarios es la pestaña «Usuarios y permisos» dentro de Configuración (`apps/web/src/Management.tsx:5045`). NO ENCONTRADO como etiqueta de menú.
 
@@ -151,7 +151,7 @@ Fuera de la lista (abajo del menú, `apps/web/src/App.tsx:1563-1593`):
 
 ## Usuarios
 
-No es un ítem de menú. Se administra en Configuración › «Usuarios y permisos» (ver arriba y `ROLES_Y_PERMISOS.md`). Cada persona puede además «Cambiar mi contraseña» y «Cerrar sesión» desde su cuenta, y cambiar de usuario con PIN (`apps/web/src/App.tsx:1143`, `:1171`, `:1184`).
+No es un ítem de menú. Se administra en Configuración › «Usuarios y permisos» (ver arriba y `ROLES_Y_PERMISOS.md`). Cada persona puede además «Cambiar mi contraseña» y «Cerrar sesión» desde su cuenta, y cambiar de usuario con PIN (`apps/web/src/App.tsx:1154`, `:1171`, `:1184`).
 
 ## Desglose del mes («Ver detalle del mes», `#month-report?from=&to=`)
 

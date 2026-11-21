@@ -24,17 +24,20 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // React aparte: si no, Rollup lo mete en «charts» (Recharts depende
+          // de él) y el login vuelve a precargar los gráficos.
+          if (/\/node_modules\/(?:react|react-dom|scheduler)\//.test(id))
+            return "react";
           if (
             id.includes("/recharts/") ||
             id.includes("/victory-vendor/") ||
             id.includes("/d3-")
           )
             return "charts";
-          if (
-            id.includes("/src/IncomeByDay.tsx") ||
-            id.includes("/src/FormalReports.tsx") ||
-            /\/(?:exceljs|xlsx|jspdf|pdfmake)\//.test(id)
-          )
+          // A4: antes IncomeByDay/FormalReports iban aquí y arrastraban
+          // React y código común, así que el login precargaba todo el chunk.
+          // Ahora van con su pantalla (Management, perezosa).
+          if (/\/(?:exceljs|xlsx|jspdf|pdfmake)\//.test(id))
             return "document-export";
         },
       },

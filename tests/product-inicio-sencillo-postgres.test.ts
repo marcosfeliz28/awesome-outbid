@@ -70,7 +70,7 @@ it("empresa nueva: Configuración guarda sin tocar campos, el asistente queda ma
     const created = await http.post("/api/auth/register").send({
       businessName: "Colmado Nuevo", ownerName: "Dueña", email, password, managerPin: "869253",
       businessType: "retail", companyCode, termsAccepted: true, privacyAccepted: true,
-      termsVersion: "terms-test-1", privacyVersion: "privacy-test-1",
+      termsVersion: "terms-test-1", privacyVersion: "privacy-test-1", formElapsedMs: 5000,
     });
     expect(created.status, JSON.stringify(created.body)).toBe(201);
     const token = html.match(/#token=([a-f0-9]{64})/)?.[1];

@@ -36,6 +36,9 @@ export function Registration() {
   const [companyCode, setCompanyCode] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  // Anti-spam: campo trampa oculto y momento en que se abrió el formulario.
+  const [website, setWebsite] = useState("");
+  const [openedAt] = useState(() => Date.now());
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -53,6 +56,7 @@ export function Registration() {
       const result = await api<{ message: string }>("/auth/register", { method: "POST", body: JSON.stringify({
         businessName, ownerName, email, password, managerPin, businessType, companyCode: slug,
         termsAccepted, privacyAccepted, termsVersion, privacyVersion,
+        website, formElapsedMs: Date.now() - openedAt,
       }) });
       setMessage(result.message);
       setPassword("");
@@ -80,6 +84,10 @@ export function Registration() {
       <label className="field"><span>Contraseña</span><input required type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} /><small>12 caracteres; incluye mayúscula, minúscula, número y símbolo.</small></label>
       <label className="field"><span>PIN de gerente</span><input required type="password" inputMode="numeric" pattern="[0-9]{6}" minLength={6} maxLength={6} autoComplete="new-password" value={managerPin} onChange={e => setManagerPin(e.target.value)} /><small>6 números no consecutivos. Lo usarás para autorizaciones; guárdalo en privado.</small></label>
       <label className="field"><span>Tipo de negocio</span><select value={businessType} onChange={e => setBusinessType(e.target.value)}><option value="general">General</option><option value="retail">Tienda</option><option value="beauty">Belleza</option><option value="fitness">Fitness</option><option value="services">Servicios</option></select></label>
+      {/* Campo trampa: fuera de la pantalla y del tabulador; una persona no lo ve ni lo llena. */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
+        <label>Sitio web<input tabIndex={-1} autoComplete="off" name="website" value={website} onChange={e => setWebsite(e.target.value)} /></label>
+      </div>
       <label className="field"><span>Código de empresa</span><input required autoComplete="organization" placeholder="mi-tienda" value={companyCode} onChange={e => setCompanyCode(e.target.value)} /><small>Lo usarás junto a tu correo para entrar.</small></label>
       {legalAvailable ? <>
         <label className="field"><input required type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} /> Acepto los <a href={termsUrl}>términos de servicio</a> (versión {termsVersion}).</label>

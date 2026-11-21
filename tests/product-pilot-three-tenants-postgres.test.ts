@@ -108,7 +108,7 @@ it("tres empresas se registran y trabajan sin compartir catálogo, caja ni venta
         businessName: `Empresa ficticia ${index + 1}`, ownerName: `Dueña ficticia ${index + 1}`,
         email, password, managerPin: "869253", businessType: "retail", companyCode: slug,
         termsAccepted: true, privacyAccepted: true,
-        termsVersion: "terms-test-1", privacyVersion: "privacy-test-1",
+        termsVersion: "terms-test-1", privacyVersion: "privacy-test-1", formElapsedMs: 5000,
       });
       expect(registration.status, `${slug}: ${JSON.stringify(registration.body)}`).toBe(201);
       const emailToken = mailHtml.match(/#token=([a-f0-9]{64})/)?.[1];
