@@ -22,7 +22,14 @@ const registration = z.object({
   privacyAccepted: z.literal(true),
   termsVersion: z.string().trim().min(1).max(80),
   privacyVersion: z.string().trim().min(1).max(80),
+  // Anti-spam (A5): campo trampa oculto (una persona lo deja vacío) y
+  // milisegundos desde que se abrió el formulario. Opcionales en el esquema
+  // para que el registro cerrado siga respondiendo 404 y no 400.
+  website: z.string().max(200).optional(),
+  formElapsedMs: z.number().int().min(0).max(7 * 86400000).optional(),
 }).strict();
+/** Menos que esto desde que se abrió el formulario no lo llena una persona. */
+export const REGISTRATION_MIN_FILL_MS = 3000;
 const tokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
 const resendSchema = z.object({
   companyCode: registration.shape.companyCode,
@@ -142,6 +149,10 @@ export class RegistrationService implements OnModuleDestroy {
     if (input.termsVersion !== legal.termsVersion || input.privacyVersion !== legal.privacyVersion)
       throw new HttpException("Los documentos cambiaron. Vuelve a leerlos y acepta la versión actual.", 409);
     mailConfiguration(); // Fallar cerrado antes de guardar una cuenta sin salida de correo.
+    // Campo trampa lleno: misma respuesta que un alta correcta, sin crear nada.
+    if (input.website?.trim()) return { message: "Cuenta creada. Confirma tu correo para entrar." };
+    if (input.formElapsedMs === undefined || input.formElapsedMs < REGISTRATION_MIN_FILL_MS)
+      throw new HttpException("No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.", 400);
     const email = input.email.toLowerCase();
     const token = verificationToken();
     const passwordHash = await hash(input.password, 12);

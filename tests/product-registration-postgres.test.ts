@@ -54,6 +54,41 @@ it("no acepta borradores sin aprobación ni versiones legales caducadas", async 
   }
 });
 
+it("anti-spam: el campo trampa responde como éxito sin crear nada y un envío en menos de 3 s se rechaza", async () => {
+  const keys = ["PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PRODUCT_LEGAL_APPROVED", "PRODUCT_TERMS_VERSION", "PRODUCT_PRIVACY_VERSION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL"];
+  const old = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  const service = new RegistrationService();
+  // Sin base de datos: si alguno de los dos casos intentara crear la empresa, fallaría aquí.
+  const create = vi.spyOn(service.db, "$transaction").mockRejectedValue(new Error("no debe crear"));
+  const input = {
+    businessName: "Negocio ficticio", ownerName: "Dueña ficticia", email: "bot@example.invalid",
+    password: "ClaveSegura-2026!", managerPin: "869253", businessType: "retail",
+    companyCode: "bot-test", termsAccepted: true, privacyAccepted: true,
+    termsVersion: "terms-test-1", privacyVersion: "privacy-test-1",
+  } as const;
+  try {
+    Object.assign(process.env, {
+      PRODUCT_TENANCY: "required", PRODUCT_PUBLIC_REGISTRATION: "enabled", PRODUCT_LEGAL_APPROVED: "confirmed",
+      PRODUCT_TERMS_VERSION: input.termsVersion, PRODUCT_PRIVACY_VERSION: input.privacyVersion,
+      RESEND_API_KEY: "re_test", NOTIFY_EMAIL_FROM: "Norexos <hola@example.invalid>", APP_PUBLIC_URL: "http://localhost:5173",
+    });
+    await expect(service.register({ ...input, website: "https://spam.example", formElapsedMs: 9000 }))
+      .resolves.toEqual({ message: "Cuenta creada. Confirma tu correo para entrar." });
+    await expect(service.register({ ...input, formElapsedMs: 800 })).rejects.toMatchObject({ status: 400 });
+    await expect(service.register(input)).rejects.toMatchObject({ status: 400 });
+    expect(create).not.toHaveBeenCalled();
+    // Cerrado sigue siendo 404 aunque falten los campos nuevos (job verify-product).
+    process.env.PRODUCT_PUBLIC_REGISTRATION = "disabled";
+    await expect(service.register(input)).rejects.toMatchObject({ status: 404 });
+  } finally {
+    create.mockRestore();
+    await service.onModuleDestroy();
+    for (const key of keys) {
+      if (old[key] === undefined) delete process.env[key]; else process.env[key] = old[key];
+    }
+  }
+});
+
 it("registra empresa aislada y exige confirmar el correo una sola vez antes de entrar", async () => {
   const directory = await mkdtemp(join(tmpdir(), "nexora-registration-"));
   const pgPort = await port();
@@ -100,7 +135,7 @@ it("registra empresa aislada y exige confirmar el correo una sola vez antes de e
     // Modo producto, correo configurado, pero todavía sin aprobación legal:
     // el alta pública permanece cerrada por defecto y no deja Tenant.
     delete process.env.PRODUCT_PUBLIC_REGISTRATION;
-    const accepted = { ...input, termsAccepted: true, privacyAccepted: true, termsVersion: "terms-test-1", privacyVersion: "privacy-test-1" };
+    const accepted = { ...input, termsAccepted: true, privacyAccepted: true, termsVersion: "terms-test-1", privacyVersion: "privacy-test-1", formElapsedMs: 5000 };
     const closed = await http.post("/api/auth/register").send({ ...accepted, companyCode: "closed-store" });
     expect(closed.status).toBe(404);
     client = db.getPgClient("registration_qa", "127.0.0.1");
