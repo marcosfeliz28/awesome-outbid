@@ -143,6 +143,9 @@ test.describe("PC-02: asistente de una empresa nueva", () => {
     await page.getByLabel("Código de empresa").fill(slug);
     await page.getByRole("checkbox", { name: /Acepto los términos de servicio/ }).check();
     await page.getByRole("checkbox", { name: /Acepto la política de privacidad/ }).check();
+    // Anti-spam (A5): la API rechaza un formulario enviado en menos de 3 s
+    // desde que se abrió. Una persona tarda más; el robot de la prueba no.
+    await page.waitForTimeout(3100);
     await page.getByRole("button", { name: "Crear empresa" }).click();
     await expect(page.getByRole("status")).toBeVisible();
     const token = mailHtml.match(/#token=([a-f0-9]{64})/)?.[1];
