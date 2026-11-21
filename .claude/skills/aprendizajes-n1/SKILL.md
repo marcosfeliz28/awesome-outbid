@@ -81,3 +81,7 @@ description: Lecciones operativas de Norexos 1 (cómo hacer las cosas rápido y 
 - 19-nov: tras actualizar dependencias en una rama, `CI=true pnpm install --frozen-lockfile` + `pnpm db:generate` antes de correr pruebas locales (si no, tipos viejos dan decenas de fallas falsas).
 - 19-nov: los revisores personalizados (money-guard/security-reviewer) los bloquea el hook de Review Council si el checkout difiere de origin/main; se usan agentes generales (opus) con el mismo brief, solo lectura, y se dice al dueño.
 - 19-nov: un JSON de API no se traduce: las pruebas de dinero leen códigos (cash, return). El español va solo en etiquetas de pantalla/Excel/PDF.
+
+- 21-nov: la API del producto es **srv-dbema1nb9u1s73a77jn0** (termina en 77jn0; la web es srv-dbem9lvb9u1s73a76l0g). Con el ID viejo Render da 404.
+- 21-nov: tras «worker restarted» revisar si quedó un paso a medias (p. ej. API live y web sin desplegar) en vez de contestar «sin acción»; se perdieron 2,5 h con la web del producto.
+- 21-nov: mezcla que choca solo en docs/sistema por citas: tomar el lado de la rama base (`git checkout --ours`) y `node scripts/citas-reanclar.mjs`, luego `--revisar` debe dar 0 movidas.
