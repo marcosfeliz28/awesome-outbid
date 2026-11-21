@@ -47,7 +47,7 @@ export function Billing() {
     finally { setBusy(false); }
   };
   return <main className="onboarding">
-    <header><h1>Plan y facturación</h1><p>Elige un plan mensual. No guardamos tarjetas ni activamos transferencias sin verificarlas.</p></header>
+    <header><h1>Plan y facturación</h1><p>Elige entre Autoservicio, Básico, Pro y Premium. Los precios se cargan desde Norexos. No guardamos tarjetas ni activamos transferencias sin verificarlas.</p></header>
     {error && <p role="alert" className="form-error">{error}</p>}
     {message && <p role="status">{message}</p>}
     <label htmlFor="billing-plan">Plan mensual</label>

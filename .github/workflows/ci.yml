@@ -226,7 +226,7 @@ jobs:
           $version = (Get-Content -LiteralPath instalador/VERSION -Raw).Trim()
           powershell -NoProfile -ExecutionPolicy Bypass -File instalador/build.ps1 -SinInstalarNSIS
           if ($LASTEXITCODE -ne 0) { throw "La compilación del instalador falló ($LASTEXITCODE)." }
-          $name = "Nexora-POS-Setup-$version.exe"
+          $name = "Norexos-Setup-$version.exe"
           $hash = (Get-FileHash -LiteralPath "instalador/dist/$name" -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash *$name" | Set-Content -LiteralPath "instalador/dist/$name.sha256.txt" -Encoding ascii
           "SHA-256 de ${name}: $hash"
@@ -234,10 +234,10 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: steps.exe.outcome == 'success'
         with:
-          name: Nexora-POS-Setup-${{ steps.exe.outputs.version }}
+          name: Norexos-Setup-${{ steps.exe.outputs.version }}
           path: |
-            instalador/dist/Nexora-POS-Setup-${{ steps.exe.outputs.version }}.exe
-            instalador/dist/Nexora-POS-Setup-${{ steps.exe.outputs.version }}.exe.sha256.txt
+            instalador/dist/Norexos-Setup-${{ steps.exe.outputs.version }}.exe
+            instalador/dist/Norexos-Setup-${{ steps.exe.outputs.version }}.exe.sha256.txt
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
