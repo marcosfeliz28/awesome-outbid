@@ -1,4 +1,4 @@
-/* global document, window, localStorage, IntersectionObserver */
+/* global document, localStorage */
 // Idioma de la portada. La elección se guarda solo en este navegador.
 (function () {
   var textos = document.querySelectorAll("[data-es][data-en]");
@@ -19,7 +19,7 @@
       var idioma = b.getAttribute("data-idioma");
       try {
         localStorage.setItem("norexos-idioma", idioma);
-      } catch (e) {
+      } catch {
         /* sin almacenamiento: solo cambia en esta carga */
       }
       aplicar(idioma);
@@ -28,7 +28,7 @@
   var guardado = null;
   try {
     guardado = localStorage.getItem("norexos-idioma");
-  } catch (e) {
+  } catch {
     guardado = null;
   }
   if (guardado === "en" || guardado === "es") aplicar(guardado);

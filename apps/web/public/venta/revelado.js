@@ -1,4 +1,4 @@
-/* global document, window, localStorage, IntersectionObserver */
+/* global document, window, IntersectionObserver */
 // Revelado de secciones al hacer scroll (una vez). Sin JavaScript o con movimiento reducido,
 // todo el contenido ya es visible.
 (function () {
