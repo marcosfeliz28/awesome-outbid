@@ -1639,6 +1639,14 @@ export class InventoryController {
       }),
       body,
     );
+    // Dinero-12 (tienda): la misma variante dos veces nunca se podría aplicar
+    // (la segunda línea ve el stock ya cambiado). Con lote, cada lote de la
+    // variante va una sola vez.
+    if (
+      new Set(data.items.map((i) => i.variantId + ":" + (i.lotId ?? ""))).size !==
+      data.items.length
+    )
+      bad("Hay productos repetidos en el conteo: cuenta cada uno una sola vez.");
     const warehouse = data.warehouseId
       ? await this.db.warehouse.findFirst({
           where: {

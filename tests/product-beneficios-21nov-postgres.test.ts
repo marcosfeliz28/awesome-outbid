@@ -280,4 +280,19 @@ describe("Dinero-12 · conteo de inventario ciego", () => {
     expect(foreign.status, JSON.stringify(foreign.body)).toBe(200);
     expect(foreign.body).toEqual([]);
   });
+
+  it("rechaza la misma variante repetida y no guarda nada", async () => {
+    const v = await variant(10, 20, "Conteo repetido");
+    const before = await t.q(`SELECT count(*)::int AS n FROM "InventoryCount"`);
+    const r = await as(cashier, "post", "/inventory/counts", {
+      items: [
+        { variantId: v, counted: 3 },
+        { variantId: v, counted: 4 },
+      ],
+    });
+    expect(r.status, JSON.stringify(r.body)).toBe(400);
+    expect(r.body.message).toMatch(/repetid/);
+    const after = await t.q(`SELECT count(*)::int AS n FROM "InventoryCount"`);
+    expect(after[0].n).toBe(before[0].n);
+  });
 });

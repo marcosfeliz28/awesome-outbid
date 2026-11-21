@@ -47,7 +47,7 @@ Permiso `inventory:write` (`apps/web/src/App.tsx:310`).
 - Selector **«Almacén»**: Todos / Tienda / Casa (`Management.tsx:996-1004`). Pestañas **«Stock actual»** y **«Conteos físicos»** (`:858-870`). Columnas: Producto / Variante, Precio, Costo (solo `profit:read`), «En Tienda» o «En Casa», Total, «Lote en Tienda», Vencimiento, Acciones (`:880-945`).
 - **«Ajustar»** (`:946-950`, ventana `:1018-1090`): Almacén, **«Cantidad (+ entrada / − salida)»**, Tipo (**Ajuste**, **Merma**, **Devolución a proveedor**), Proveedor y referencia (solo devolución), «Lote de salida», «Lote de entrada», «Vencimiento de entrada», **«Motivo»** obligatorio. API `POST /inventory/adjustments`, permiso `inventory:write` (`apps/api/src/inventory.ts:736-819`). No deja negativo: «Stock insuficiente en …» (`inventory.ts:809`); pide lote/vencimiento donde corresponde (`:748-755`). Acepta una clave opcional `operationId`: si llega repetida (reenvío, doble clic) devuelve la variante sin mover existencias otra vez, y la misma clave con otros datos da error (`apps/api/src/inventory.ts:601-628`). La pantalla todavía no la manda (`Management.tsx` está protegido por el diseño de Dot).
 - **«Contar»** (`:951`, ventana `:1092-1130`): Almacén y **«Cantidad contada»**. Crea un **conteo físico pendiente** (`POST /inventory/counts`, `inventory:write`, `apps/api/src/inventory.ts:1624-1678`). Un conteo **no cambia la existencia hasta aprobarlo**.
-- **Aprobar un conteo**: pestaña «Conteos físicos» › estado «Pendiente» › **«Aprobar ajuste»** (solo `sale:manage`) → «Conteo aprobado y aplicado.» (`Management.tsx:2099-2124`; API `POST /inventory/counts/:id/apply`, `apps/api/src/inventory.ts:1699-1769`). Si el stock cambió desde el conteo: «El stock cambió. Repite el conteo.» (`inventory.ts:1781`); los productos con lote se ajustan desde su lote (`:1597`).
+- **Aprobar un conteo**: pestaña «Conteos físicos» › estado «Pendiente» › **«Aprobar ajuste»** (solo `sale:manage`) → «Conteo aprobado y aplicado.» (`Management.tsx:2099-2124`; API `POST /inventory/counts/:id/apply`, `apps/api/src/inventory.ts:1707-1777`). Si el stock cambió desde el conteo: «El stock cambió. Repite el conteo.» (`inventory.ts:1789`); los productos con lote se ajustan desde su lote (`:1597`).
 - **Kardex** (ojo): movimientos de la variante (`Management.tsx:895-914`, API `GET /inventory/movements`, `inventory.ts:717`).
 - **Compras**: ver §5.
 
@@ -95,7 +95,7 @@ Fuente: `.claude/skills/mercancia/SKILL.md`, `CLAUDE.md` punto 6. Resumen:
 | ------------------------------------- | ------------------------------ | ------------------------------------------------- |
 | Entradas/salidas (pantalla Mercancía) | `inventory:write`, no `seller` | `apps/api/src/merchandise.ts:161-163`, `:343-345` |
 | Ajustar / Contar                      | `inventory:write`              | `apps/api/src/inventory.ts:736-738`, `:1495-1496` |
-| Aprobar conteo                        | `sale:manage`                  | `inventory.ts:1699-1701`                          |
+| Aprobar conteo                        | `sale:manage`                  | `inventory.ts:1707-1709`                          |
 | Traspasar Casa↔Tienda                 | `*`                            | `apps/api/src/warehouses.ts:157-159`              |
 | Levantamiento de Casa                 | `inventory:import` (solo `*`)  | `apps/api/src/inventory-import.ts:48`, `:314-348` |
 | Órdenes de compra y recepciones       | `purchase:write`               | `inventory.ts:1081-1168`                           |
