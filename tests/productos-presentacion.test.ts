@@ -3,13 +3,17 @@ import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { reverseIt003 } from "./it003-preservation";
+import { reversePendingMoney } from "./pantallas-dinero-preservation";
 const view = readFileSync("apps/web/src/CatalogPresentation.tsx", "utf8");
 const css = readFileSync("apps/web/src/catalogPresentation.css", "utf8");
 const management = readFileSync("apps/web/src/Management.tsx", "utf8");
 describe("Productos: presentación sin mutaciones", () => {
   it("wrapper reversible: conserva código de negocio byte por byte", () => {
     const record = JSON.parse(readFileSync("docs/diseno/productos-higgsfield/PRESENTACION_REVERSIBLE.json", "utf8"));
-    let restored = reverseIt003(management, "Management");
+    let restored = reversePendingMoney(
+      reverseIt003(management, "Management"),
+      "Management",
+    );
     for (const edit of [...record.changes].reverse()) {
       expect(restored.split(edit.after).length).toBe(2);
       restored = restored.replace(edit.after, edit.before);

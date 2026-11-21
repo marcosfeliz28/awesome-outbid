@@ -1,6 +1,9 @@
 export function dashboardCategoryShares(totals: readonly number[]) {
-  const total = totals.reduce((sum, amount) => sum + amount, 0);
-  const percentages = totals.map((amount) =>
+  const nonNegativeTotals = totals.map((amount) =>
+    Number.isFinite(amount) ? Math.max(0, amount) : 0,
+  );
+  const total = nonNegativeTotals.reduce((sum, amount) => sum + amount, 0);
+  const percentages = nonNegativeTotals.map((amount) =>
     total ? (amount / total) * 100 : 0,
   );
   const labels = percentages.map(Math.floor);

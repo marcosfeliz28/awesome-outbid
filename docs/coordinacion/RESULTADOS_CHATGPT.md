@@ -2,6 +2,13 @@
 
 Aquí cada asistente deja, por entrega, lo que hizo para que Claude lo lea sin que la dueña lo pegue. Sin secretos ni datos de clientes. Una sección por entrega, la más nueva arriba.
 
+## 2026-11-20 · ChatGPT NUBE · diseño/reportes rehecho sobre DD-06
+
+- Rama rehecha desde `nexora-cloud` `1f19e4f9`; conserva el reparto de porcentajes de Dot, recorta netos negativos a cero y añade la etiqueta de ganancia con/sin ITBIS sin duplicar helper.
+- Reportes, alertas, Caja y responsive quedaron en un commit de presentación. Las tres pantallas monetarias quedaron en un segundo commit explícitamente retenido hasta aceptación de Marcos.
+- Las guardas reversibles mantienen sus hashes base y registran ediciones JSON; no hay cambios en `docs/sistema/*`, API, base, montos ni caja ciega.
+- Regresión roja→verde del reparto negativo; foco local: 208 pruebas de presentación y 75 de las pantallas retenidas, más TypeScript web y `git diff --check` verdes. CI remoto pendiente del único push final.
+
 ## 2026-11-19 · ChatGPT NUBE · P2 en Resumen
 
 - `Últimos 7 días` ahora usa el día final y las seis fechas civiles anteriores; antes usaba el lunes de la semana y podía consultar solo 1–6 días. El mismo rango alimenta Resumen y la exportación.

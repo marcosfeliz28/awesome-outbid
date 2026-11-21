@@ -82,6 +82,17 @@ describe("Inicio integrado: preservación", () => {
     expect(monthLabel(1)).toBe("enero");
     expect(invoiceLabel(1)).toBe("1 factura");
   });
+  it("IT-008 · la caja traduce descubrimiento y apertura al inglés", () => {
+    expect(translate("productos para descubrir", "en")).toBe(
+      "products to explore",
+    );
+    expect(translate("Abre tu caja para comenzar", "en")).toBe(
+      "Open your register to get started",
+    );
+    const pos = readFileSync("apps/web/src/POS.tsx", "utf8");
+    expect(pos).toContain('t("productos para descubrir")');
+    expect(pos).toContain('t("Abre tu caja para comenzar")');
+  });
   it("limita el acento a verde/azul y anuncia cobertura sin alterar negocio", () => {
     expect(resolveAccent("blue")).toBe("blue");
     for (const value of [null, "green", "red", "", "BLUE"])

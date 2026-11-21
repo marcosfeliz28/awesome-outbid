@@ -41,6 +41,7 @@ import { kpiStripVisible } from "./kpiStripModel";
 import { dashboardCategoryColor } from "./dashboardCategoryColor";
 import { dashboardCategoryShares } from "./dashboardCategoryShares";
 import { dashboardSevenDayStart } from "./dashboardPeriod";
+import { grossProfitLabel } from "./dashboardProfitLabel";
 
 const dayBefore = (date: string) =>
   new Date(Date.parse(date + "T12:00:00Z") - 86400000)
@@ -171,6 +172,11 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
     data?.category ?? [];
   const categoryShares = dashboardCategoryShares(categories.map((c) => c.total));
   const showProfit = can(user.permissions, "profit:read");
+  const settings = useQuery<any>({
+    queryKey: ["settings", user.branchId],
+    queryFn: () => api("/settings"),
+    enabled: showProfit,
+  });
   const metric = [
     {
       label: t("Ventas del período"),
@@ -181,7 +187,9 @@ export function Dashboard({ go }: { go: (page: string) => void }) {
       trend: data?.trend,
     },
     {
-      label: showProfit ? t("Ganancia bruta") : t("Inventario a la venta"),
+      label: showProfit
+        ? grossProfitLabel(settings.data?.taxIncluded !== false, language)
+        : t("Inventario a la venta"),
       value: formatMoney(
         showProfit ? (data?.profit ?? 0) : (data?.inventoryRetail ?? 0),
       ),

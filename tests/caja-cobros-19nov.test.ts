@@ -3,6 +3,136 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  buildCorrectMethodPayload,
+  needsCashDestination,
+  openCashSessions,
+} from "../apps/web/src/SaleEditPanel";
+import {
+  cashSessionMoveKind,
+  openMoveDestinations,
+} from "../apps/web/src/paymentCashMove";
+
+const cardWithoutRegister = {
+  id: "payment-1",
+  method: "card",
+  cashSessionId: null,
+};
+
+describe("A3 · presentación para corregir el método de pago", () => {
+  it("ofrece únicamente cajas abiertas", () => {
+    expect(
+      openCashSessions([
+        { id: "open-1", openedAt: "2026-11-20T08:00:00Z", closedAt: null },
+        {
+          id: "closed-1",
+          openedAt: "2026-11-19T08:00:00Z",
+          closedAt: "2026-11-19T17:00:00Z",
+        },
+        { id: "open-2", openedAt: "2026-11-20T09:00:00Z" },
+      ]).map((session) => session.id),
+    ).toEqual(["open-1", "open-2"]);
+  });
+
+  it("pide destino al cambiar tarjeta sin caja a efectivo", () => {
+    expect(needsCashDestination(cardWithoutRegister, "cash")).toBe(true);
+    expect(needsCashDestination(cardWithoutRegister, "transfer")).toBe(false);
+    expect(
+      needsCashDestination(
+        { ...cardWithoutRegister, cashSessionId: "register-1" },
+        "cash",
+      ),
+    ).toBe(false);
+  });
+
+  it("envía la caja elegida sin marcar efectivo de la dueña", () => {
+    expect(
+      buildCorrectMethodPayload({
+        payment: cardWithoutRegister,
+        method: "cash",
+        cashSessionId: "register-1",
+        ownerConfirmed: true,
+      }),
+    ).toEqual({ method: "cash", cashSessionId: "register-1" });
+  });
+
+  it("envía ownerConfirmed solo cuando no se elige caja", () => {
+    expect(
+      buildCorrectMethodPayload({
+        payment: cardWithoutRegister,
+        method: "cash",
+        ownerConfirmed: true,
+      }),
+    ).toEqual({ method: "cash", ownerConfirmed: true });
+  });
+
+  it("conserva los campos de transferencia sin campos de efectivo", () => {
+    expect(
+      buildCorrectMethodPayload({
+        payment: cardWithoutRegister,
+        method: "transfer",
+        bank: "Popular",
+        reference: "ABC-123",
+        cashSessionId: "register-1",
+        ownerConfirmed: true,
+      }),
+    ).toEqual({
+      method: "transfer",
+      bank: "Popular",
+      reference: "ABC-123",
+    });
+  });
+});
+
+describe("A4 · mover efectivo recibido por la dueña", () => {
+  const ownerCash = {
+    method: "cash",
+    cashSessionId: null,
+    entryType: "installment",
+    status: "ok",
+    reference: "Recibido por la dueña · mensajero",
+  };
+
+  it("habilita el efectivo de la dueña y conserva el movimiento ya existente", () => {
+    expect(cashSessionMoveKind(ownerCash)).toBe("owner-cash");
+    expect(
+      cashSessionMoveKind({
+        ...ownerCash,
+        cashSessionId: "register-1",
+        reference: null,
+      }),
+    ).toBe("registered");
+  });
+
+  it("acepta la semántica ownerConfirmed cuando la respuesta la incluye", () => {
+    expect(
+      cashSessionMoveKind({
+        ...ownerCash,
+        reference: null,
+        ownerConfirmed: true,
+      }),
+    ).toBe("owner-cash");
+  });
+
+  it.each([
+    ["tarjeta sin caja", { ...ownerCash, method: "card" }],
+    ["efectivo ordinario sin caja", { ...ownerCash, reference: null }],
+    ["pago de venta", { ...ownerCash, entryType: "sale" }],
+    ["cobro rechazado", { ...ownerCash, status: "rejected" }],
+  ])("no ofrece el botón para %s", (_label, payment) => {
+    expect(cashSessionMoveKind(payment)).toBeNull();
+  });
+
+  it("ofrece solo cajas abiertas como destino del efectivo de la dueña", () => {
+    expect(
+      openMoveDestinations([
+        { id: "open-1", closedAt: null },
+        { id: "closed-1", closedAt: "2026-11-19T18:00:00Z" },
+        { id: "open-2" },
+      ]).map((session) => session.id),
+    ).toEqual(["open-1", "open-2"]);
+  });
+});
 
 // Hallazgo 4: el cuadre cuenta los cobros de venta por la caja del pago.
 function cuadreDb(opts: { sales: any[]; salePayments: any[] }) {

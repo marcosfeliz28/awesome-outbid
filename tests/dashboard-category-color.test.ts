@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { dashboardCategoryColor } from "../apps/web/src/dashboardCategoryColor";
 import { dashboardCategoryShares } from "../apps/web/src/dashboardCategoryShares";
+import { grossProfitLabel } from "../apps/web/src/dashboardProfitLabel";
 
 describe("DD-05 · categorías de GV distinguibles", () => {
   it("da a cada línea de GV un color propio distinto al rosa de Fajas", () => {
@@ -35,11 +36,11 @@ describe("DD-06 · porcentajes visibles por categoría", () => {
     expect(labels([5, 5, 190])).toEqual([3, 2, 95]);
   });
 
-  it("conserva el orden, las proporciones reales y los importes netos negativos", () => {
+  it("conserva el orden y excluye importes netos negativos", () => {
     const shares = dashboardCategoryShares([8, 3, -2]);
-    expect(shares.map(({ label }) => label)).toEqual([89, 33, -22]);
-    expect(shares[0].percent).toBeCloseTo(88.8888889);
-    expect(shares[2].percent).toBeCloseTo(-22.2222222);
+    expect(shares.map(({ label }) => label)).toEqual([73, 27, 0]);
+    expect(shares[0].percent).toBeCloseTo(72.7272727);
+    expect(shares[2].percent).toBe(0);
   });
 
   it("no inventa participaciones cuando no hay una base de comparación", () => {
@@ -48,11 +49,20 @@ describe("DD-06 · porcentajes visibles por categoría", () => {
       Array.from({ length: 3 }, () => ({ label: 0, percent: 0 })),
     );
     expect(dashboardCategoryShares([15, -15])).toEqual([
-      { label: 0, percent: 0 },
+      { label: 100, percent: 100 },
       { label: 0, percent: 0 },
     ]);
     expect(
       dashboardCategoryShares([0, 25, 0]).map(({ label }) => label),
     ).toEqual([0, 100, 0]);
+  });
+});
+
+describe("DD-07 · alcance visible de la ganancia bruta", () => {
+  it("aclara el tratamiento del ITBIS en ambos idiomas", () => {
+    expect(grossProfitLabel(true, "es")).toBe("Ganancia bruta (con ITBIS)");
+    expect(grossProfitLabel(false, "es")).toBe("Ganancia bruta (sin ITBIS)");
+    expect(grossProfitLabel(true, "en")).toBe("Gross profit (tax included)");
+    expect(grossProfitLabel(false, "en")).toBe("Gross profit (tax excluded)");
   });
 });

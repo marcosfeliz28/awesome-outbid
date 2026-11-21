@@ -264,8 +264,9 @@ describe("05-M8 y B3 · ticket con variante y textos sin nombres propios", () =>
 describe("05-B2, B11 y B13 · textos y avisos baratos", () => {
   it("B2: los tipos de alerta se muestran en español", () => {
     const management = readFileSync("apps/web/src/Management.tsx", "utf8");
-    expect(management).toContain('offline_conflict: "Venta sin conexión"');
-    expect(management).toContain('low_stock: "Stock bajo"');
+    const labels = readFileSync("apps/web/src/alertTypeLabel.ts", "utf8");
+    expect(labels).toContain('offline_conflict: "Venta sin conexión"');
+    expect(labels).toContain('low_stock: "Stock bajo"');
     expect(management).toContain("{alertTypeLabel(a.type, en)}");
     expect(management).not.toContain('{a.type.replaceAll("_", " ")}');
   });

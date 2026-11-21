@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { describe, it, expect } from "vitest";
 import { reverseProductoServicio } from "./producto-servicio-preservation";
 import { reverseProductoPosRecibo } from "./producto-pos-recibo-preservation";
+import { reversePendingMoney } from "./pantallas-dinero-preservation";
 
 describe("Caja Fusión: pintura reversible", () => {
   it("preserva byte por byte POS, incluyendo handlers, cálculos, stock y carrito", () => {
@@ -12,8 +13,11 @@ describe("Caja Fusión: pintura reversible", () => {
         "utf8",
       ),
     );
-    let source = reverseProductoServicio(
-      reverseProductoPosRecibo(readFileSync("apps/web/src/POS.tsx", "utf8")),
+    let source = reversePendingMoney(
+      reverseProductoServicio(
+        reverseProductoPosRecibo(readFileSync("apps/web/src/POS.tsx", "utf8")),
+      ),
+      "POS",
     );
     for (const edit of [...record.changes].reverse()) {
       expect(source).toContain(edit.after);

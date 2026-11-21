@@ -56,11 +56,34 @@
   gap: 12px;
 }
 @media (max-width: 640px) {
+  .gv-page {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
   .gv-form.form-grid {
     grid-template-columns: 1fr;
   }
   .gv-cards {
     grid-template-columns: 1fr;
+  }
+  .gv-reports .table-wrap {
+    overflow-x: auto;
+    scrollbar-width: auto;
+    padding-bottom: 28px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gv-reports .table-wrap::after {
+    content: "Desliza ↔";
+    position: sticky;
+    left: 8px;
+    display: block;
+    width: max-content;
+    margin: 6px 0 -22px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    color: var(--muted);
+    background: var(--surface);
+    font-size: 0.875rem;
+    pointer-events: none;
   }
 }
 .gv-page .panel {

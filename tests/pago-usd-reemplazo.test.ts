@@ -12,6 +12,14 @@ import {
   replacementPayment,
   SalesController,
 } from "../apps/api/src/sales";
+import {
+  isLargeForeignConfirmationError,
+  largeForeignRetryInput,
+} from "../apps/web/src/largeForeignConfirmation";
+import {
+  cashSessionComparisons,
+  serializePaymentReplacement,
+} from "../apps/web/src/salePaymentReplacement";
 
 // Caso FS-0000730 (19-nov, caja de Wendy): se tecleó US$ 2,360 en vez de
 // US$ 40 en una venta de RD$ 3,500 y la tarjeta de RD$ 1,140 no quedó.
@@ -33,6 +41,39 @@ const usd = (amountUsd: number) => ({
 const p = (x: unknown) => replacementPayment.parse(x);
 
 describe("tope preventivo del cobro en dólares", () => {
+  it("la caja reconoce solo el 409 específico y conserva el intento al confirmar", () => {
+    expect(
+      isLargeForeignConfirmationError({
+        status: 409,
+        message:
+          "Revisa el monto en dólares: US$ 2,360.00 a RD$ 60.457 son RD$ 142,678.52.",
+      }),
+    ).toBe(true);
+    expect(
+      isLargeForeignConfirmationError({ status: 409, message: "La venta cambió." }),
+    ).toBe(false);
+    expect(
+      isLargeForeignConfirmationError({
+        status: 400,
+        message: "Revisa el monto en dólares: confirma.",
+      }),
+    ).toBe(false);
+
+    const original = {
+      offlineUuid: "4a3d66ce-8801-4f4d-9de1-138a939d9015",
+      payments: [{ method: "cash", amount: 1000, currency: "USD" }],
+    };
+    expect(largeForeignRetryInput(original, "246813")).toEqual({
+      ...original,
+      confirmLargeForeign: true,
+      managerPin: "246813",
+    });
+    expect(largeForeignRetryInput(original, "")).toEqual({
+      ...original,
+      confirmLargeForeign: true,
+    });
+    expect(original).not.toHaveProperty("confirmLargeForeign");
+  });
   it("US$ 2,360 sobre RD$ 3,500 pide confirmación con un mensaje claro", () => {
     const hit = largeForeignPayment(3500, [usd(2360)]);
     expect(hit).toEqual({
@@ -262,5 +303,151 @@ describe("POST /sales/:id/payments/replace · permisos", () => {
     await expect(guard.canActivate(ctx)).rejects.toMatchObject({
       status: 403,
     });
+  });
+});
+
+describe("interfaz administrativa para reemplazar pagos", () => {
+  const operationId = "8f2b1c1e-5c1a-4a43-9d37-3a5b0c1d2e3f";
+
+  it("serializa los valores capturados sin calcular montos ni cambiar operationId", () => {
+    const draft = {
+      operationId,
+      reason: "  Corregir combinación registrada  ",
+      ownerConfirmed: true,
+      payments: [
+        {
+          method: "cash" as const,
+          amount: "2360.00",
+          currency: "USD" as const,
+          amountUsd: "40",
+          usdRate: "60.457",
+          cashSessionId: "0b6c9a8e-1f2d-4e3c-8b7a-6d5e4f3a2b1c",
+        },
+        {
+          method: "card" as const,
+          amount: "1140",
+          currency: "DOP" as const,
+          approvalCode: "  APR-406574  ",
+          reference: " REF-1 ",
+          cardLast4: "4242",
+          cardBrand: "Visa",
+          cardType: "credit" as const,
+        },
+        {
+          method: "transfer" as const,
+          amount: "500",
+          currency: "DOP" as const,
+          bank: "  Banco Demo  ",
+          reference: " TX-9 ",
+        },
+      ],
+    };
+
+    expect(serializePaymentReplacement(draft)).toEqual({
+      operationId,
+      reason: "Corregir combinación registrada",
+      ownerConfirmed: true,
+      allowTransfer: true,
+      payments: [
+        {
+          method: "cash",
+          amount: 2360,
+          currency: "USD",
+          amountUsd: 40,
+          usdRate: 60.457,
+          cashSessionId: "0b6c9a8e-1f2d-4e3c-8b7a-6d5e4f3a2b1c",
+        },
+        {
+          method: "card",
+          amount: 1140,
+          currency: "DOP",
+          approvalCode: "APR-406574",
+          reference: "REF-1",
+          cardLast4: "4242",
+          cardBrand: "Visa",
+          cardType: "credit",
+        },
+        {
+          method: "transfer",
+          amount: 500,
+          currency: "DOP",
+          bank: "Banco Demo",
+          reference: "TX-9",
+        },
+      ],
+    });
+    expect(draft.operationId).toBe(operationId);
+    expect(draft.payments[0]).not.toHaveProperty("tendered");
+    expect(draft.payments[0]).not.toHaveProperty("change");
+  });
+
+  it("presenta cajas cerradas y abiertas como comparación antes/después", () => {
+    const comparisons = cashSessionComparisons(
+      {
+        cashSessions: [
+          {
+            id: "closed-1",
+            before: {
+              expectedCash: 1000,
+              countedCash: 900,
+              differenceCash: -100,
+              expectedUsd: 40,
+            },
+            after: {
+              expectedCash: 1200,
+              countedCash: 900,
+              differenceCash: -300,
+              expectedUsd: 20,
+            },
+          },
+        ],
+        openCashSessions: [
+          {
+            id: "open-1",
+            expectedCashBefore: 500,
+            expectedCash: 700,
+          },
+        ],
+      },
+      false,
+    );
+
+    expect(comparisons).toHaveLength(2);
+    expect(comparisons[0]).toMatchObject({
+      id: "closed-1",
+      kindLabel: "Caja cerrada",
+    });
+    expect(comparisons[0].rows).toEqual(
+      expect.arrayContaining([
+        {
+          key: "expectedCash",
+          label: "Efectivo esperado",
+          before: 1000,
+          after: 1200,
+          currency: "DOP",
+        },
+        {
+          key: "expectedUsd",
+          label: "US$ esperado",
+          before: 40,
+          after: 20,
+          currency: "USD",
+        },
+      ]),
+    );
+    expect(comparisons[1]).toEqual({
+      id: "open-1",
+      kindLabel: "Caja abierta",
+      rows: [
+        {
+          key: "expectedCash",
+          label: "Efectivo esperado",
+          before: 500,
+          after: 700,
+          currency: "DOP",
+        },
+      ],
+    });
+    expect(cashSessionComparisons({ cashSessions: [] }, true)).toEqual([]);
   });
 });

@@ -2,6 +2,11 @@ import "./fusion-caja-higgsfield.css";
 import { CajaVisualPreferences } from "./CajaVisualPreferences";
 import { t, useLanguage } from "./inicioLanguage";
 import { posStockLabel } from "./posStockLabel";
+import { posChargeDisabled } from "./posChargeState";
+import {
+  isLargeForeignConfirmationError,
+  largeForeignRetryInput,
+} from "./largeForeignConfirmation";
 import { refreshAfterSale } from "./postSaleRefresh";
 import { whatsAppRecipient } from "./whatsAppRecipient";
 import {
@@ -1077,7 +1082,7 @@ export function POS({ go }: { go: (page: string) => void }) {
                 ? `Mostrando ${MAX_CARDS} de ${filtered.length} · escribe para encontrar el resto`
                 : filtered.length === 1
                   ? "1 producto encontrado"
-                  : `${filtered.length} productos para descubrir`}
+                  : `${filtered.length} ${t("productos para descubrir")}`}
           </span>
           <span>
             <span className="live-dot" />
@@ -1315,14 +1320,14 @@ export function POS({ go }: { go: (page: string) => void }) {
           </div>
           {!session && (
             <button className="open-cash-link" onClick={() => go("cash")}>
-              Abre tu caja para comenzar <ArrowLeft size={14} />
+              {t("Abre tu caja para comenzar")} <ArrowLeft size={14} />
             </button>
           )}
           {elsewhere && <CashElsewhere session={session} compact />}
           <Button
             variant="success"
             className="charge-button"
-            disabled={!cart.length}
+            disabled={posChargeDisabled(cart.length, !!session, elsewhere)}
             onClick={charge}
             aria-label={`Cobrar ${formatMoney(total)}`}
           >
@@ -1364,7 +1369,7 @@ export function POS({ go }: { go: (page: string) => void }) {
         <Button
           variant="success"
           className="charge-button pos-mobile-charge"
-          disabled={!cart.length}
+          disabled={posChargeDisabled(cart.length, !!session, elsewhere)}
           onClick={charge}
           aria-label={`Cobrar ${formatMoney(total)}`}
         >
@@ -1956,6 +1961,8 @@ function Checkout({
   const pinRequest = attempt + JSON.stringify(payments);
   const [serverPinFor, setServerPinFor] = useState<string | null>(null);
   const [serverPinMessage, setServerPinMessage] = useState("");
+  const [largeForeignFor, setLargeForeignFor] = useState<string | null>(null);
+  const confirmingLargeForeign = largeForeignFor === pinRequest;
   const serverAskedPin = serverPinFor === pinRequest;
   const localCreditReason = receivableApprovalReason(
     payments,
@@ -2148,7 +2155,7 @@ function Checkout({
     }
     setBusy(true);
     setError("");
-    const input: SaleInput = {
+    const baseInput: SaleInput = {
       offlineUuid: uuid.current,
       capturedAt:
         captured.current ?? (captured.current = new Date().toISOString()),
@@ -2177,6 +2184,9 @@ function Checkout({
           }
         : {}),
     };
+    const input: SaleInput = confirmingLargeForeign
+      ? largeForeignRetryInput(baseInput, pin)
+      : baseInput;
     // El ticket lleva el descuento de cada línea para que cuadre con el total
     // cobrado (R9-caja-9).
     // 05-M8: con la variante (talla, color, sabor, tono): dos «Shaker
@@ -2372,7 +2382,19 @@ function Checkout({
       // salida era quitar y volver a agregar la línea. Se leen catálogo,
       // promociones y ajustes, el carrito toma los precios nuevos y se dice
       // cuáles cambiaron; el cobro ya muestra el total nuevo (R9-offline-3).
-      if (/precios o promociones cambiaron/i.test(e.message))
+      if (isLargeForeignConfirmationError(e)) {
+        setLargeForeignFor(pinRequest);
+        if (!can(user!.permissions, "sale:manage")) {
+          setServerPinFor(pinRequest);
+          setServerPinMessage(e.message);
+        }
+        setError(
+          e.message +
+            (can(user!.permissions, "sale:manage")
+              ? " Confirma el monto para reenviar el mismo cobro."
+              : " Escribe el PIN de un gerente y confirma el monto."),
+        );
+      } else if (/precios o promociones cambiaron/i.test(e.message))
         setError(await reprice().catch(() => e.message));
       // M-2: la deuda del cliente supera el umbral (o cambió mientras se
       // cobraba): se muestra el campo del PIN para reintentar.
@@ -3056,7 +3078,11 @@ function Checkout({
         onClick={finish}
       >
         <Check size={19} />
-        {busy ? "Registrando…" : "Finalizar venta"}
+        {busy
+          ? "Registrando…"
+          : confirmingLargeForeign
+            ? "Sí, el monto en dólares es correcto"
+            : "Finalizar venta"}
       </Button>
       {finishHint && (
         <p className="finish-hint" role="status">
