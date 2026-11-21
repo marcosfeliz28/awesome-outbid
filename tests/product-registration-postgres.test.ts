@@ -54,11 +54,11 @@ it("no acepta borradores sin aprobación ni versiones legales caducadas", async 
   }
 });
 
-it("anti-spam: el campo trampa responde como éxito sin crear nada y un envío en menos de 3 s se rechaza", async () => {
+it("anti-spam: el campo trampa responde como éxito sin crear nada, un envío en menos de 3 s se rechaza y sin el dato se tolera", async () => {
   const keys = ["PRODUCT_TENANCY", "PRODUCT_PUBLIC_REGISTRATION", "PRODUCT_LEGAL_APPROVED", "PRODUCT_TERMS_VERSION", "PRODUCT_PRIVACY_VERSION", "RESEND_API_KEY", "NOTIFY_EMAIL_FROM", "APP_PUBLIC_URL"];
   const old = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   const service = new RegistrationService();
-  // Sin base de datos: si alguno de los dos casos intentara crear la empresa, fallaría aquí.
+  // Sin base de datos: $transaction simulado; así se ve si un caso llega a crear la empresa.
   const create = vi.spyOn(service.db, "$transaction").mockRejectedValue(new Error("no debe crear"));
   const input = {
     businessName: "Negocio ficticio", ownerName: "Dueña ficticia", email: "bot@example.invalid",
@@ -75,8 +75,10 @@ it("anti-spam: el campo trampa responde como éxito sin crear nada y un envío e
     await expect(service.register({ ...input, website: "https://spam.example", formElapsedMs: 9000 }))
       .resolves.toEqual({ message: "Cuenta creada. Confirma tu correo para entrar." });
     await expect(service.register({ ...input, formElapsedMs: 800 })).rejects.toMatchObject({ status: 400 });
-    await expect(service.register(input)).rejects.toMatchObject({ status: 400 });
     expect(create).not.toHaveBeenCalled();
+    // Sin formElapsedMs (web vieja) no se rechaza: llega a crear la empresa.
+    await expect(service.register(input)).rejects.toThrow("no debe crear");
+    expect(create).toHaveBeenCalledTimes(1);
     // Cerrado sigue siendo 404 aunque falten los campos nuevos (job verify-product).
     process.env.PRODUCT_PUBLIC_REGISTRATION = "disabled";
     await expect(service.register(input)).rejects.toMatchObject({ status: 404 });

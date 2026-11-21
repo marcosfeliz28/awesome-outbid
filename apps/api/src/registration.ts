@@ -151,7 +151,9 @@ export class RegistrationService implements OnModuleDestroy {
     mailConfiguration(); // Fallar cerrado antes de guardar una cuenta sin salida de correo.
     // Campo trampa lleno: misma respuesta que un alta correcta, sin crear nada.
     if (input.website?.trim()) return { message: "Cuenta creada. Confirma tu correo para entrar." };
-    if (input.formElapsedMs === undefined || input.formElapsedMs < REGISTRATION_MIN_FILL_MS)
+    // Sin el dato (pestaña con una versión vieja de la web) se tolera; solo se
+    // rechaza un envío que declara menos del mínimo.
+    if (input.formElapsedMs !== undefined && input.formElapsedMs < REGISTRATION_MIN_FILL_MS)
       throw new HttpException("No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.", 400);
     const email = input.email.toLowerCase();
     const token = verificationToken();

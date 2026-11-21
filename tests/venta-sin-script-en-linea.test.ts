@@ -15,9 +15,9 @@ it("/venta/index.html no tiene <script> en línea ni manejadores on*", () => {
   expect(html).not.toMatch(/\son[a-z]+\s*=/i);
 });
 
-it("cada script referenciado existe junto a la portada", () => {
+it("cada script usa ruta absoluta /venta/ y existe (con /venta sin barra, una ruta relativa pediría el .js en la raíz)", () => {
   for (const [, src] of html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/gi)) {
-    expect(src).not.toMatch(/^(https?:)?\/\//);
-    expect(existsSync(`apps/web/public/venta/${src}`)).toBe(true);
+    expect(src).toMatch(/^\/venta\/[\w.-]+\.js$/);
+    expect(existsSync(`apps/web/public${src}`)).toBe(true);
   }
 });
