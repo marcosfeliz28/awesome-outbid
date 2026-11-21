@@ -88,7 +88,10 @@ describe("3z · PDF formal", () => {
     ).toBeGreaterThan(1);
     expect(buffer.length).toBeGreaterThan(3000);
     const pdf = buffer.toString("latin1");
-    const decoded = [...pdf.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)]
+    // pdfkit escribe «stream\n<datos>\nendstream». Con «\r?» un flujo
+    // comprimido que terminaba en el byte 0x0D perdía ese byte, no se podía
+    // inflar y la prueba fallaba según la hora (las fechas cambian los bytes).
+    const decoded = [...pdf.matchAll(/stream\n([\s\S]*?)\nendstream/g)]
       .map((match) => {
         try {
           return inflateSync(Buffer.from(match[1], "latin1")).toString(
