@@ -91,8 +91,11 @@ import { retryDelayMs, retryMessage } from "./pendingSales";
 import { Toasts, toast } from "./helpers";
 import { inactivityWaits } from "./cartDraftPolicy";
 import { keepDraftThrough } from "./cartDraft";
-import { Dashboard } from "./Dashboard";
-import { MonthReport } from "./MonthReport";
+// A4: los estilos de Inicio siguen en el CSS principal (mismo orden que
+// antes de cargar Dashboard de forma perezosa), para no cambiar el diseño.
+import "./ExecutiveDashboard.css";
+import "./fusion-inicio-integrado.css";
+import "./fusion-higgsfield.css";
 import { VoidRequests } from "./VoidRequests";
 import { TransferReconciliation } from "./TransferReconciliation";
 import { CourierPayouts } from "./CourierPayouts";
@@ -100,12 +103,20 @@ import { McpAuthorize } from "./McpAuthorize";
 import { SupportAccessBanner } from "./SupportAccess";
 import { IncentivesIcon, IncentivesPage } from "./Incentives";
 import { withTransition } from "./impacto";
-import { Demo } from "./Demo";
 
 const Assistant = lazy(() =>
   import("./Assistant").then(({ Assistant }) => ({ default: Assistant })),
 );
 const POS = lazy(() => import("./POS").then(({ POS }) => ({ default: POS })));
+// A4: Inicio, Reporte del mes y Demo usan Recharts (~115 KB gzip); se cargan
+// al abrirlos para no precargar los gráficos con el login.
+const Dashboard = lazy(() =>
+  import("./Dashboard").then(({ Dashboard }) => ({ default: Dashboard })),
+);
+const MonthReport = lazy(() =>
+  import("./MonthReport").then(({ MonthReport }) => ({ default: MonthReport })),
+);
+const Demo = lazy(() => import("./Demo").then(({ Demo }) => ({ default: Demo })));
 // El build del producto (VITE_PRODUCT_TENANCY=required) no incluye GV.
 const Gv =
   import.meta.env.VITE_PRODUCT_TENANCY === "required"
