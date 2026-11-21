@@ -203,9 +203,25 @@ export function alertForActor<T extends { type?: string; message?: string }>(
   alert: T,
   actor: Actor,
 ): T {
-  return alert.type === "cash_difference" && !canViewCashExpected(actor)
-    ? { ...alert, message: CASH_DIFFERENCE_PRIVATE_MESSAGE }
-    : alert;
+  if (alert.type === "cash_difference" && !canViewCashExpected(actor))
+    return { ...alert, message: CASH_DIFFERENCE_PRIVATE_MESSAGE };
+  // Decisión 4: costo y margen solo para quien ve ganancias (profit:read).
+  if (
+    alert.type === "low_margin_discount" &&
+    !can(actor.permissions, "profit:read")
+  ) {
+    const head =
+      /^Descuento por debajo del margen mínimo \(\d+ %\): factura \S+ de .+?\. /.exec(
+        alert.message ?? "",
+      )?.[0];
+    return {
+      ...alert,
+      message:
+        (head ?? "Descuento por debajo del margen mínimo. ") +
+        "El detalle lo ve quien revisa ganancias.",
+    };
+  }
+  return alert;
 }
 
 /** Una evaluación se reutiliza este tiempo si ninguna escritura la invalidó. */

@@ -9,7 +9,7 @@ import { createTenantWithOwner } from "../apps/api/src/registration";
 let t: Awaited<ReturnType<typeof startProductApp>>;
 let other: string;
 type Seat = { auth: string; userId: string };
-let cashier: Seat, manager: Seat, otherOwner: Seat;
+let cashier: Seat, manager: Seat, otherOwner: Seat, supervisor: Seat;
 let category: string, customerId: string;
 
 async function seat(
@@ -153,6 +153,8 @@ beforeAll(async () => {
     "alerts:write",
   ]);
   otherOwner = await seat(other, "Dueña otra empresa", ["*"]);
+  // Ve avisos pero no ganancias: sin costo ni margen en el mensaje.
+  supervisor = await seat(TENANT, "Supervisora prueba", ["alerts:write"]);
   category = randomUUID();
   await t.q(
     `INSERT INTO "Category" (id,"tenantId",name,"updatedAt") VALUES ($1::uuid,$2::uuid,'Fajas',now())`,
@@ -213,6 +215,31 @@ describe("Decisión 4 · descuento de cajera bajo el 15 % de margen", () => {
     expect(seen.body).toContainEqual(
       expect.objectContaining({ entityId: sale.id, status: "new" }),
     );
+    // Sin profit:read: el aviso sin costo ni margen. Gerencia y dueña
+    // (profit:read o «*») sí ven el detalle.
+    const hidden = await as(
+      supervisor,
+      "get",
+      "/alerts?type=low_margin_discount",
+    );
+    expect(hidden.status, JSON.stringify(hidden.body)).toBe(200);
+    const plain = hidden.body.find((a: any) => a.entityId === sale.id).message;
+    expect(plain).toContain(sale.number);
+    expect(plain).toContain("Cajera prueba");
+    for (const text of ["costo", "RD$", "Margen de la venta", "margen 0 %"])
+      expect(plain).not.toContain(text);
+    const withProfit = await seat(TENANT, "Gerencia con ganancia", [
+      "alerts:write",
+      "profit:read",
+    ]);
+    const full = await as(withProfit, "get", "/alerts?type=low_margin_discount");
+    expect(
+      full.body.find((a: any) => a.entityId === sale.id).message,
+    ).toContain("costo RD$ 90.00");
+    const admin = await t.get("/alerts?type=low_margin_discount");
+    expect(
+      admin.body.find((a: any) => a.entityId === sale.id).message,
+    ).toContain("margen 0 %");
     // Otra empresa no lo ve.
     const foreign = await as(
       otherOwner,
