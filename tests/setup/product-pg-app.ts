@@ -175,9 +175,20 @@ export async function startProductApp(name: string) {
     const http = supertest(app.getHttpServer());
     const as = (method: "get" | "post" | "patch" | "delete", path: string) =>
       (http as any)[method]("/api" + path).set("Authorization", token);
+    // Token para otra persona u otra empresa sembrada por la prueba.
+    const sign = (sub: string, sid: string, tenantId = TENANT) =>
+      "Bearer " +
+      new JwtService({ secret }).sign({
+        sub,
+        sid,
+        type: "access",
+        version: 0,
+        tenantId,
+      });
     return {
       http,
       token,
+      sign,
       q,
       db,
       as,

@@ -626,6 +626,17 @@ async function repeatedAdjustment(
   return safe(await lockVariant(tx, data.variantId, actor), actor);
 }
 
+// Dinero-12 (tienda, traído al producto el 21-nov): conteo ciego. El
+// «esperado» se guarda para aplicar, pero solo lo ve quien aprueba el conteo
+// (sale:manage), no quien cuenta.
+function blindCount<T extends { items: unknown }>(row: T, actor: Actor): T {
+  if (can(actor.permissions, "sale:manage") || !Array.isArray(row.items))
+    return row;
+  return {
+    ...row,
+    items: row.items.map(({ expected: _expected, ...item }: any) => item),
+  };
+}
 @Controller()
 export class InventoryController {
   constructor(@Inject(Database) private db: Database) {}
@@ -1599,13 +1610,14 @@ export class InventoryController {
       return safe((await describeReceipts(tx, [row], actor))[0], actor);
     });
   }
-  @Get("inventory/counts") @Permit("inventory:write") counts(
+  @Get("inventory/counts") @Permit("inventory:write") async counts(
     @CurrentUser() actor: Actor,
   ) {
-    return this.db.inventoryCount.findMany({
+    const rows = await this.db.inventoryCount.findMany({
       where: { branchId: actor.branchId },
       orderBy: { createdAt: "desc" },
     });
+    return rows.map((row) => blindCount(row, actor));
   }
   @Post("inventory/counts")
   @Permit("inventory:write")
@@ -1672,7 +1684,7 @@ export class InventoryController {
           );
       items.push({ ...item, expected: held });
     }
-    return this.db.inventoryCount.create({
+    const row = await this.db.inventoryCount.create({
       data: {
         items,
         userId: actor.id,
@@ -1680,6 +1692,7 @@ export class InventoryController {
         warehouseId: warehouse.id,
       },
     });
+    return blindCount(row, actor);
   }
   @Post("inventory/counts/:id/apply")
   @RequireTerminal()

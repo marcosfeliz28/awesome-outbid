@@ -90,6 +90,9 @@ export const MANUAL_ALERT_TYPES = [
   "zero_cost_sale",
   // Caja abierta con menos fondo que el último cierre (cash.ts, A3 19-nov).
   "opening_shortfall",
+  // Decisión 4 (20-nov): descuento que deja la venta o una línea por debajo
+  // del 15 % de margen (o sin costo); la venta se cobra normal (sales.ts).
+  "low_margin_discount",
 ];
 // CPC-10 y la tienda: avisos que sólo ve administración («*»).
 export const ADMIN_ONLY_ALERT_TYPES = [
