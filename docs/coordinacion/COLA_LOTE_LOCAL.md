@@ -174,3 +174,20 @@ Mismas reglas de siempre (solo lectura; salida en `docs/`; sin `docs/operacion/`
 | 90 | Funciones exportadas de `packages/shared/src` | `docs/api/FUNCIONES_SHARED.md` | una fila por `export`, con archivo:línea y firma literal copiada (sin interpretar) |
 | 91 | Texto con tildes rotas (mojibake «Ã», «â€») en el repo | `docs/auditoria/TILDES_ROTAS_CONTEO.md` | archivo:línea; si no hay, 'ninguna' y el comando usado |
 | 92 | Migraciones: tablas creadas vs `ENABLE ROW LEVEL SECURITY` | `docs/auditoria/RLS_POR_MIGRACION.md` | por migración: nº de `CREATE TABLE` y nº de `ENABLE ROW LEVEL SECURITY`; **es inventario, no conclusión de seguridad** (lo dice el encabezado); la lista de tablas sin coincidencia en la misma migración va aparte |
+
+---
+# BLOQUE 21-NOV · Publicación del producto (orden de Marcos) — rama `claude-pc/publicacion-21nov`
+Reglas: todo sale «sin revisar» en `docs/diseno/borradores-local/publicacion/`; nada de código de dinero, CI ni ramas de producto; lo no confirmable `[FALTA DATO]`. Modelo: `deepseek-r1` para textos. Plan completo: `docs/coordinacion/PLAN_PUBLICACION_21NOV.md`.
+
+| # | Tarea | Salida | Aceptación |
+|---|---|---|---|
+| C1 | Esqueleto de Términos de servicio SaaS (Norexos, RD) para el abogado | `terminos-saas-esqueleto.md` | secciones estándar (objeto, planes, prueba 7 días, pagos, suspensión, datos, responsabilidad, terminación, ley RD); sin cláusulas inventadas como definitivas; marcado «para revisión de abogado» |
+| C2 | Esqueleto de Política de privacidad B2B (Ley 172-13 RD) | `privacidad-b2b-esqueleto.md` | qué datos, para qué, encargados (Render, Cloudflare), derechos, contacto `[CORREO]` |
+| C3 | Meta descriptions ES/EN (≤ 155 caracteres) para landing, `/venta/` y la PWA | `meta-descripciones.md` | 3 opciones por página; sin precios ni IA |
+| C4 | Textos Open Graph (título ≤ 60, descripción ≤ 110) ES/EN | `og-textos.md` | 2 opciones por página |
+| C5 | Texto de la página 404 ES/EN | `pagina-404.md` | título, una frase y botón; tono cálido |
+| C6 | Preguntas frecuentes de venta (10) ES | `faq-venta.md` | basadas solo en `docs/venta/` y `billing-plans.ts` (4 planes, 7 días); sin inventar |
+| C7 | Lista de enlaces de la landing y `/venta/` con su destino esperado | `enlaces-revision.md` | tabla enlace → destino → estado `[POR PROBAR]` |
+| C8 | Mensajes de WhatsApp de bienvenida y seguimiento para prospectos (3) | `whatsapp-prospectos.md` | cortos, sin precios distintos a los 4 planes |
+| C9 | Glosario ES/EN de términos del POS para la landing en inglés | `glosario-es-en.md` | 30 términos; caja, cuadre, NCF, contraentrega |
+| C10 | Comparativo honesto Norexos vs. cuaderno/Excel (no contra marcas) | `comparativo.md` | basado en los 20 beneficios de `docs/coordinacion/PLAN_PUBLICACION_21NOV.md` y el código |
