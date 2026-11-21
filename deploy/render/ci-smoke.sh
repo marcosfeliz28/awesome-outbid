@@ -87,6 +87,9 @@ docker run -d --name "$web" --network "$net" \
   -e NEXORA_UPSTREAM_REFRESH_SECONDS=2 "$WEB_IMAGE" >/dev/null
 wait_status "$WEB_URL/healthz" 204 60
 [ "$(status_of "$WEB_URL/")" = 200 ] || fail "la PWA no se sirve sin API"
+[ "$(status_of "$WEB_URL/registro")" = 200 ] || fail "/registro no sirve la PWA"
+[ "$(status_of "$WEB_URL/no-existe")" = 404 ] || fail "una ruta inexistente no dio 404"
+[ "$(status_of "$WEB_URL/x.html")" = 404 ] || fail "un archivo inexistente no dio 404"
 [ "$(status_of "$WEB_URL/healthz/deep")" = 503 ] \
   || fail "/healthz/deep debe dar 503 sin API"
 body=$(curl -s --max-time 10 -w '\n%{http_code}' "$WEB_URL/api/health")

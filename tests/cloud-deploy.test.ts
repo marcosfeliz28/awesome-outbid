@@ -413,7 +413,7 @@ describe("Render · proxy público", () => {
       nginx.match(
         /include \/etc\/nginx\/snippets\/nexora-security-headers.conf;/g,
       ),
-    ).toHaveLength(13);
+    ).toHaveLength(14);
     // HSTS cubre subdominios.
     expect(headers).toContain(
       'Strict-Transport-Security "max-age=31536000; includeSubDomains"',
@@ -523,8 +523,25 @@ describe("Render · proxy público", () => {
       "try_files $uri =404;",
     );
     expect(block("location ~ ^/assets/ {")).toContain("try_files $uri =404;");
-    // Rutas sin extensión: fallback a index.html (que sigue sin caché).
-    expect(block("location / {")).toContain("try_files $uri $uri/index.html /index.html;");
+    // A3: sólo las rutas por pathname de la SPA reciben index.html (que sigue
+    // sin caché); cualquier otra ruta es 404 con la página propia.
+    expect(
+      block(
+        "location ~ ^/(registro|confirmar-correo|aceptar-invitacion|mcp/autorizar)/?$ {",
+      ),
+    ).toContain("rewrite ^ /index.html last;");
+    expect(block("location / {")).toContain("try_files $uri $uri/index.html =404;");
+    expect(nginx).toContain("error_page 404 /404.html;");
+    const notFound = block("location = /404.html {");
+    expect(notFound).toContain("internal;");
+    expect(notFound).toContain(
+      "include /etc/nginx/snippets/nexora-security-headers.conf;",
+    );
+    const page = read("apps/web/public/404.html");
+    expect(page).toMatch(/Página no encontrada/);
+    expect(page).toMatch(/Page not found/);
+    expect(page).toMatch(/<a href="\/"/);
+    expect(page).not.toMatch(/<script/i);
     // Las reglas de archivos van antes del fallback de la SPA.
     expect(nginx.indexOf("location ~ /\\. {")).toBeLessThan(
       nginx.indexOf("location / {"),
@@ -820,7 +837,9 @@ describe("Render · proxy público", () => {
     "Nginx real: la API recibe la IP de CF-Connecting-IP sólo desde el borde y nunca la X-Forwarded-For del cliente",
     async () => {
       const { createServer } = await import("node:http");
-      const { writeFileSync, mkdirSync, existsSync } = await import("node:fs");
+      const { writeFileSync, mkdirSync, existsSync, chmodSync } = await import(
+        "node:fs"
+      );
       const { spawn } = await import("node:child_process");
       const freePort = () =>
         new Promise<number>((done) => {
@@ -841,6 +860,11 @@ describe("Render · proxy público", () => {
       const snippets = join(dir, "snippets");
       mkdirSync(snippets);
       mkdirSync(join(dir, "html"));
+      chmodSync(dir, 0o755); // el worker de Nginx (nobody si corre como root) lee html/
+      mkdirSync(join(dir, "html", "venta"));
+      writeFileSync(join(dir, "html", "index.html"), "SPA");
+      writeFileSync(join(dir, "html", "404.html"), "NO ENCONTRADA");
+      writeFileSync(join(dir, "html", "venta", "index.html"), "VENTA");
       writeFileSync(
         join(snippets, "nexora-api-upstream.conf"),
         `server 127.0.0.1:${apiPort};\n`,
@@ -930,6 +954,30 @@ describe("Render · proxy público", () => {
         expect(real["x-real-ip"]).toBe("198.51.100.23");
         expect(real["cf-connecting-ip"]).toBeUndefined();
         expect(real["true-client-ip"]).toBeUndefined();
+        // A3: rutas de la SPA, portada estática y 404 propio.
+        const page = async (path: string) => {
+          const r = await fetch(`http://127.0.0.1:${webPort}${path}`);
+          return [r.status, (await r.text()).trim()];
+        };
+        for (const path of [
+          "/",
+          "/index.html",
+          "/registro",
+          "/confirmar-correo",
+          "/aceptar-invitacion/",
+          "/mcp/autorizar?x=1",
+        ])
+          expect(await page(path), path).toEqual([200, "SPA"]);
+        expect(await page("/venta/")).toEqual([200, "VENTA"]);
+        for (const path of [
+          "/no-existe",
+          "/x.html",
+          "/caja",
+          "/venta/x.js",
+          "/404.html",
+          "/.env",
+        ])
+          expect(await page(path), path).toEqual([404, "NO ENCONTRADA"]);
         const v6 = await seen(
           viaCloudflare({ "CF-Connecting-IP": "2001:db8::7" }, "2606:4700::1"),
         );

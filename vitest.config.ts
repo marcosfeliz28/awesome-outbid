@@ -14,6 +14,7 @@ export default defineConfig({
       "tests/landing-revelado-movimiento.test.ts",
       "tests/landing-texto-sin-ecf.test.ts",
       "tests/i18n-selector-portada.test.ts",
+      "tests/venta-sin-script-en-linea.test.ts",
       "tests/change-requests-validacion.test.ts",
       "tests/change-requests-migracion.test.ts",
       "tests/visual-fase1-gemini.test.ts",
